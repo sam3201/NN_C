@@ -31,6 +31,11 @@ int main(void) {
     int startY = (SCREEN_HEIGHT - DRAWING_AREA_SIZE) / 2;
 
     int recognizedDigit = -1;
+    bool isCorrect = false;
+    bool isDigitRecognized = false;
+
+    Rectangle correctButton = {10, SCREEN_HEIGHT - 80, 150, 30};
+    Rectangle incorrectButton = {170, SCREEN_HEIGHT - 80, 150, 30};
 
     while (!WindowShouldClose()) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -39,11 +44,26 @@ int main(void) {
 
         if (IsKeyPressed(KEY_SPACE)) {
             recognizedDigit = RecognizeDigit(nn, input);
+            isDigitRecognized = true;
         }
 
         if (IsKeyPressed(KEY_C)) {
             memset(input, 0, sizeof(input));
             recognizedDigit = -1;
+            isDigitRecognized = false;
+            isCorrect = false;
+        }
+
+        if (isDigitRecognized) {
+            Vector2 mousePoint = GetMousePosition();
+            if (CheckCollisionPointRec(mousePoint, correctButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                isCorrect = true;
+                memset(input, 0, sizeof(input)); // Clear the drawing
+                recognizedDigit = -1;
+                isDigitRecognized = false;
+            } else if (CheckCollisionPointRec(mousePoint, incorrectButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                isCorrect = false;
+            }
         }
 
         BeginDrawing();
@@ -64,7 +84,20 @@ int main(void) {
         if (recognizedDigit != -1) {
             char result[30];
             sprintf(result, "Recognized digit: %d", recognizedDigit);
-            DrawText(result, 10, SCREEN_HEIGHT - 30, 20, DARKGRAY);
+            DrawText(result, 10, SCREEN_HEIGHT - 120, 20, DARKGRAY);
+        }
+
+        if (isDigitRecognized) {
+            DrawRectangleRec(correctButton, LIGHTGRAY);
+            DrawRectangleRec(incorrectButton, LIGHTGRAY);
+            DrawText("Correct", correctButton.x + 20, correctButton.y + 5, 20, BLACK);
+            DrawText("Incorrect", incorrectButton.x + 20, incorrectButton.y + 5, 20, BLACK);
+
+            if (isCorrect) {
+                DrawText("User confirmed: Correct", 10, SCREEN_HEIGHT - 40, 20, GREEN);
+            } else if (!isCorrect && isDigitRecognized) {
+                DrawText("User confirmed: Incorrect", 10, SCREEN_HEIGHT - 40, 20, RED);
+            }
         }
 
         EndDrawing();
@@ -80,10 +113,10 @@ void InitializeNN(NN_t **nn) {
     size_t layers[] = {GRID_SIZE * GRID_SIZE, HIDDEN_SIZE, OUTPUT_SIZE};
     size_t numLayers = NUM_LAYERS;
 
-    long double (*activationFunctions[NUM_LAYERS-1])(long double) = {sigmoid, sigmoid};
-    long double (*activationDerivatives[NUM_LAYERS-1])(long double) = {sigmoid_derivative, sigmoid_derivative};
+    ActivationFunction **activationFunctions[NUM_LAYERS] = {SIGMOID, SIGMOID, SIGMOID};
+    ActivationDerivative **activationDerivatives[NUM_LAYERS] = {SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE}; 
 
-    *nn = NN_init(layers, numLayers, activationFunctions, activationDerivatives, mse, mse_derivative);
+    *nn = NN_init(layers, activationFunctions, activationDerivatives, MSE, MSE_DERIVATIVE);
 }
 
 void Draw_Grid(int startX, int startY) {
@@ -102,7 +135,6 @@ void UpdateDrawing(int startX, int startY, long double *input) {
         int index = gridY * GRID_SIZE + gridX;
         input[index] = 1.0;
 
-        // Smooth drawing by updating neighboring cells
         for (int dy = -1; dy <= 1; dy++) {
             for (int dx = -1; dx <= 1; dx++) {
                 int nx = gridX + dx;
@@ -131,3 +163,4 @@ int RecognizeDigit(NN_t *nn, long double *input) {
     free(output);
     return recognized_digit;
 }
+
