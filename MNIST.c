@@ -20,6 +20,7 @@ void UpdateDrawing(int startX, int startY, long double *input);
 int RecognizeDigit(NN_t *nn, long double *input);
 
 int main(void) {
+    SetTraceLogLevel(LOG_ERROR); 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MNIST Digit Recognition");
     SetTargetFPS(60);
 
@@ -110,11 +111,10 @@ int main(void) {
 }
 
 void InitializeNN(NN_t **nn) {
-    size_t layers[] = {GRID_SIZE * GRID_SIZE, HIDDEN_SIZE, OUTPUT_SIZE};
-    size_t numLayers = NUM_LAYERS;
+    size_t layers[] = {GRID_SIZE * GRID_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, 0};
 
-    ActivationFunction **activationFunctions[NUM_LAYERS] = {SIGMOID, SIGMOID, SIGMOID};
-    ActivationDerivative **activationDerivatives[NUM_LAYERS] = {SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE}; 
+    ActivationFunction activationFunctions[NUM_LAYERS] = {SIGMOID, SIGMOID, SIGMOID};
+    ActivationDerivative activationDerivatives[NUM_LAYERS] = {SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE}; 
 
     *nn = NN_init(layers, activationFunctions, activationDerivatives, MSE, MSE_DERIVATIVE);
 }
