@@ -1,86 +1,93 @@
 #include "NN.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
-const char* activation_function_to_string(ActivationFunction func) {
-    switch (func) {
-        #define X(name, str) case name: return str;
-        ACTIVATION_FUNCTIONS
-        #undef X
-        default: return "unknown";
-    }
+char* activation_function_to_string(ActivationFunction code) {
+    char *activationFunction = (char *)malloc(64 * sizeof(char)); 
+
+    switch (code) {
+        case SIGMOID: return "SIGMOID";
+        case RELU: return "RELU";
+        case TANH: return "TANH"; 
+        case ARGMAX: return "ARGMAX";
+        case SOFTMAX: return "SOFTMAX"; 
+       default: return "UNKNOWN";
+  }
+
+  return activationFunction;
 }
 
-const char* activation_derivative_to_string(ActivationDerivative deriv) {
+char* activation_derivative_to_string(ActivationDerivative deriv) {
+   char *activationDerivative = (char *)malloc(64 * sizeof(char));
+
     switch (deriv) {
-        #define X(name, str) case name: return str;
-        ACTIVATION_DERIVATIVES
-        #undef X
+      case SIGMOID: return "SIGMOID_DERIVATIVE";
+      case RELU: return "RELU_DERIVATIVE";
+      case TANH: return "TANH_DERIVATIVE";
+      case ARGMAX: return "ARGMAX_DERIVATIVE";
+      case SOFTMAX: return "SOFTMAX_DERIVATIVE";
+
         default: return "unknown";
     }
 }
 
-const char* loss_function_to_string(LossFunction func) {
+char* loss_function_to_string(LossFunction func) {
+   char *lossFunction = (char *)malloc(64 * sizeof(char));
     switch (func) {
-        #define X(name, str) case name: return str;
-        LOSS_FUNCTIONS
-        #undef X
+    case MSE: return "MSE";
+    case CE: return "CROSS_ENTROPY";
         default: return "unknown";
     }
 }
 
-const char* loss_derivative_to_string(LossDerivative deriv) {
+char* loss_derivative_to_string(LossDerivative deriv) {
+   char *lossDerivative = (char *)malloc(64 * sizeof(char));
     switch (deriv) {
-        #define X(name, str) case name: return str;
-        LOSS_DERIVATIVES
-        #undef X
+    case MSE: return "MSE_DERIVATIVE";
+    case CE: return "CROSS_ENTROPY_DERIVATIVE";
         default: return "unknown";
     }
 }
 
-NN_t *NN_init(size_t *layers,
-              ActivationFunction **activationFunctions, ActivationDerivative** activationDerivatives,
+NN_t *NN_init(size_t layers[],
+              ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[],
               LossFunction lossFunction, LossDerivative lossDerivative) {
 
  
     NN_t *nn = (NN_t*)malloc(sizeof(NN_t));
   
-    nn->numLayers = sizeof(layers) / sizeof(size_t);
-    nn->layers = malloc(nn->numLayers * sizeof(size_t));
-    for (size_t i = 0; i < nn->numLayers; i++) {
-        nn->layers[i] = layers[i];
+    nn->numLayers = 0;
+    while (layers[nn->numLayers] != 0) {
+      nn->numLayers++;
     }
-    printf("Layers: %zu\n", nn->numLayers);
+    
+    nn->layers = layers;
 
     nn->activationFunctions = malloc(nn->numLayers * sizeof(long double (*)(long double)));
     nn->activationDerivatives = malloc(nn->numLayers * sizeof(long double (*)(long double)));
-    printf("Activation functions: \n");
-    for (unsigned int a = 0; a < nn->numLayers; a++) {
-      ActivationFunction currentFunction = **activationFunctions;
-      printf("%d ", currentFunction);
-
-      if (currentFunction == SIGMOID) {
+    for (unsigned int a = 0; a < nn->numLayers; a++) { 
+      char *activationFunction = activation_function_to_string(activationFunctions[a]);
+      if (strcmp(activationFunction, "SIGMOID")) {
           nn->activationFunctions[a] = sigmoid;
           nn->activationDerivatives[a] = sigmoid_derivative;
-          printf("Sigmoid\n");
-      } else if (currentFunction == RELU) {
+      } else if (strcmp(activationFunction,"RELU")) {
           nn->activationFunctions[a] = relu;
           nn->activationDerivatives[a] = relu_derivative;
-          printf("Relu\n");
-      } else if (currentFunction == TANH) {
+      } else if (strcmp(activationFunction,"TANH")) {
           nn->activationFunctions[a] = tanh_activation;
           nn->activationDerivatives[a] = tanh_derivative;
-          printf("Tanh\n");
-      } else if (currentFunction == ARGMAX) {
+      } else if (strcmp(activationFunction,"ARGMAX")) {
           printf("Argmax not implemented yet!\n");
           exit(1);
-      } else if (currentFunction == SOFTMAX) {
+      } else if (strcmp(activationFunction,"SOFTMAX")) {
           printf("Softmax not implemented yet!\n");
           exit(1);
-        }
-    }   
-    nn->lossFunction = malloc(sizeof(ActivationDerivative)); 
-    nn->lossDerivative = malloc(sizeof(ActivationDerivative));
+      } 
+     }
+  
+    nn->lossFunction = malloc(sizeof(long double (*)(long double)));; 
+    nn->lossDerivative = malloc(sizeof(long double (*)(long double)));
     switch (lossFunction) {
       case MSE:
         nn->lossFunction = mse;
@@ -90,22 +97,17 @@ NN_t *NN_init(size_t *layers,
         printf("Cross entropy not implemented yet!\n");
         exit(1); 
     }
-    printf("Loss: %s\n", loss_function_to_string(lossFunction));
 
     nn->weights = (long double**)malloc((nn->numLayers - 1) * sizeof(long double*));
     nn->biases = (long double**)malloc((nn->numLayers - 1) * sizeof(long double*));
-    for (size_t i = 0; i < nn->numLayers - 1; i++) {
-        size_t numWeights = nn->layers[i] * nn->layers[i + 1];
-        nn->weights[i] = (long double*)malloc(numWeights * sizeof(long double));
-        nn->biases[i] = (long double*)malloc(nn->layers[i + 1] * sizeof(long double));
-        for (size_t j = 0; j < numWeights; j++) {
-            nn->weights[i][j] = (long double)rand() / RAND_MAX * 2 - 1; 
-        }
-        for (size_t j = 0; j < nn->layers[i + 1]; j++) {
-            nn->biases[i][j] = (long double)rand() / RAND_MAX * 2 - 1; 
+    for (size_t i = 1; i < nn->numLayers; i++) {
+        nn->weights[i - 1] = (long double*)malloc(nn->layers[i] * nn->layers[i - 1] * sizeof(long double));
+        nn->biases[i - 1] = (long double*)malloc(nn->layers[i] * sizeof(long double));
+
+        for (size_t j = 0; j < nn->layers[i] * nn->layers[i - 1]; j++) {
+            nn->weights[i - 1][j] = (long double)rand() / RAND_MAX * 2 - 1;
         }
     }
-    printf("Weights and Biases: \n");
 
     return nn;
 }
@@ -118,11 +120,15 @@ void NN_destroy(NN_t *nn) {
     free(nn->weights);
     free(nn->biases);
     free(nn->layers);
+    free(nn->activationFunctions);
+    free(nn->activationDerivatives);
+    free(nn->lossFunction);
+    free(nn->lossDerivative);
     free(nn);
 }
 
 
-void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction **activationFunctions, ActivationDerivative **activationDerivatives) {
+void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[]) {
    size_t prevNumLayers = nn->numLayers - layerSize;
    nn->layers = (size_t *)realloc(nn->layers, (nn->numLayers + 1) * sizeof(size_t));
    nn->layers[nn->numLayers] = layerSize;
@@ -132,7 +138,7 @@ void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction **activationFun
    nn->activationDerivatives = (ActivationDerivative *)realloc(nn->activationDerivatives, (nn->numLayers + layerSize) * sizeof(ActivationDerivative));
 
    for (size_t neuron = prevNumLayers; neuron < nn->numLayers; neuron++) {
-      switch(*activationFunctions[neuron]) {
+      switch(activationFunctions[neuron]) {
        case SIGMOID:
        nn->activationFunctions[neuron] = sigmoid;
        nn->activationDerivatives[neuron] = sigmoid_derivative;
@@ -197,38 +203,62 @@ long double *NN_forward(NN_t *nn, long double *inputs) {
     return outputs;
 } 
 
-void NN_backprop(NN_t *nn, long double *inputs, long double *outputs, long double *labels) {
-    long double **deltas = (long double **)malloc(sizeof(long double *) * nn->numLayers);
+void NN_backprop(NN_t *nn, long double *inputs, long double *y_true, long double *y_predicted) {
+    printf("Backprop\n");
+    
+    long double **deltas = (long double **)malloc(sizeof(long double *) * (nn->numLayers - 1));
 
-    deltas[nn->numLayers - 1] = (long double *)malloc(sizeof(long double) * nn->layers[nn->numLayers - 1]);
-    for (unsigned int i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
-        deltas[nn->numLayers - 1][i] = (outputs[i] - labels[i]) * nn->lossDerivative(outputs[i], labels[i]);
+    // Calculate the loss (optional, depending on whether you need this)
+    long double loss = 0.0;
+    for (size_t i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
+        loss += nn->lossFunction(y_true[i], y_predicted[i]);
     }
+    printf("Loss: %Lf\n", loss);
 
-    for (unsigned int layer = nn->numLayers - 2; layer != (unsigned int)-1; layer--) {
-        deltas[layer] = (long double *)malloc(sizeof(long double) * nn->layers[layer]);
+    // Calculate the delta for the output layer
+    deltas[nn->numLayers - 2] = (long double *)malloc(sizeof(long double) * nn->layers[nn->numLayers - 1]);
+    for (unsigned int i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
+        deltas[nn->numLayers - 2][i] = nn->lossDerivative(y_true[i], y_predicted[i]) * nn->activationDerivatives[nn->numLayers - 2](y_predicted[i]);
+    }
+    printf("Deltas\n");
+
+    // Backpropagate through the hidden layers
+    for (unsigned int layer = nn->numLayers - 2; layer > 0; layer--) {
+        deltas[layer - 1] = (long double *)malloc(sizeof(long double) * nn->layers[layer]);
         for (unsigned int neuron = 0; neuron < nn->layers[layer]; neuron++) {
-            long double sum = 0.;
+            long double sum = 0.0;
             for (unsigned int nextNeuron = 0; nextNeuron < nn->layers[layer + 1]; nextNeuron++) {
-                sum += deltas[layer + 1][nextNeuron] * nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron];
+                sum += deltas[layer][nextNeuron] * nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron];
             }
-            deltas[layer][neuron] = sum * nn->activationDerivatives[layer](outputs[neuron]);
+            deltas[layer - 1][neuron] = sum * nn->activationDerivatives[layer - 1](inputs[neuron]);
         }
     }
+    printf("Deltas2\n");
 
+    // Update weights and biases
     for (unsigned int layer = 0; layer < nn->numLayers - 1; layer++) {
         for (unsigned int neuron = 0; neuron < nn->layers[layer]; neuron++) {
             for (unsigned int nextNeuron = 0; nextNeuron < nn->layers[layer + 1]; nextNeuron++) {
-                nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron] -= deltas[layer + 1][nextNeuron] * inputs[neuron];
+                nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron] -= deltas[layer][nextNeuron] * inputs[neuron];
             }
-            nn->biases[layer + 1][neuron] -= deltas[layer + 1][neuron];
+        }
+        for (unsigned int neuron = 0; neuron < nn->layers[layer + 1]; neuron++) {
+            nn->biases[layer][neuron] -= deltas[layer][neuron];
+        }
+        *inputs = NN_matmul(inputs, nn->weights[layer], nn->biases[layer]);
+        for (size_t i = 0; i < nn->layers[layer + 1]; i++) {
+            inputs[i] = nn->activationFunctions[layer](inputs[i]);
         }
     }
+    printf("Weight Update\n");
+    printf("Biases Update\n");
 
-    for (unsigned int layer = 0; layer < nn->numLayers; layer++) {
+    // Clean up
+    for (unsigned int layer = 0; layer < nn->numLayers - 1; layer++) {
         free(deltas[layer]);
     }
     free(deltas);
+    printf("Done\n");
 }
 
 long double relu(long double x) {

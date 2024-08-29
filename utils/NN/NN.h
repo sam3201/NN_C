@@ -4,54 +4,30 @@
 #include <stddef.h>
 #include <math.h>
 
-#define ACTIVATION_FUNCTIONS \
-    X(SIGMOID, "sigmoid") \
-    X(RELU, "relu") \
-    X(TANH, "tanh") \
-    X(ARGMAX, "argmax") \
-    X(SOFTMAX, "softmax")
-
-#define ACTIVATION_DERIVATIVES \
-    X(SIGMOID_DERIVATIVE, "sigmoid_derivative") \
-    X(RELU_DERIVATIVE, "relu_derivative") \
-    X(TANH_DERIVATIVE, "tanh_derivative") \
-    X(ARGMAX_DERIVATIVE, "argmax_derivative") \
-    X(SOFTMAX_DERIVATIVE, "softmax_derivative")
-
-#define LOSS_FUNCTIONS \
-    X(CE, "cross-entropy") \
-    X(MSE, "mean-squared-error")
-
-#define LOSS_DERIVATIVES \
-    X(CE_DERIVATIVE, "cross-entropy_derivative") \
-    X(MSE_DERIVATIVE, "mean-squared-error_derivative")
-
 typedef enum {
-    #define X(name, str) name,
-    ACTIVATION_FUNCTIONS
-    #undef X
-    ACTIVATION_FUNCTION_COUNT 
+    SIGMOID,
+    RELU,
+    TANH,
+    ARGMAX,
+    SOFTMAX,
 } ActivationFunction;
 
 typedef enum {
-    #define X(name, str) name,
-    ACTIVATION_DERIVATIVES
-    #undef X 
-    ACTIVATION_DERIVATIVE_COUNT
+    SIGMOID_DERIVATIVE,
+    RELU_DERIVATIVE,
+    TANH_DERIVATIVE,
+    ARGMAX_DERIVATIVE,
+    SOFTMAX_DERIVATIVE,
 } ActivationDerivative;
 
 typedef enum {
-    #define X(name, str) name,
-    LOSS_FUNCTIONS
-    #undef X
-    LOSS_FUNCTION_COUNT
+   MSE,
+   CE
 } LossFunction;
 
 typedef enum {
-    #define X(name, str) name,
-    LOSS_DERIVATIVES
-    #undef X
-    LOSS_DERIVATIVE_COUNT
+   MSE_DERIVATIVE,
+   CE_DERIVATIVE
 } LossDerivative;
 
 typedef struct NN_t {
@@ -68,11 +44,11 @@ typedef struct NN_t {
     long double (*lossDerivative)(long double, long double);
 } NN_t;
 
-NN_t *NN_init(size_t *layers,
-              ActivationFunction **activationFunctions, ActivationDerivative **activationDerivatives,
+NN_t *NN_init(size_t layers[],
+              ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[],
               LossFunction lossFunction, LossDerivative lossDerivative);
 
-void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction **activationFunctions, ActivationDerivative **activationDerivatives);
+void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[]);
 
 long double NN_matmul(long double *inputs, long double *weights, long double *biases); 
 long double *NN_forward(NN_t *nn, long double *inputs);
