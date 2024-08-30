@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
-read -p "Enter: MNST / Game: " file 
+read -p "Enter: MNIST / Game: " file 
 
 if [ -z "$file" ]
 then
