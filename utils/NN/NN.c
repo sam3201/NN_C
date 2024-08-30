@@ -50,6 +50,63 @@ char* loss_derivative_to_string(LossDerivative deriv) {
     }
 }
 
+ActivationFunction string_to_activation_function(char *func) {
+   if (strcmp(func, "SIGMOID") == 0) {
+      return SIGMOID;
+   } else if (strcmp(func, "RELU") == 0) {
+      return RELU;
+   } else if (strcmp(func, "TANH") == 0) {
+      return TANH;
+   } else if (strcmp(func, "ARGMAX") == 0) {
+      return ARGMAX;
+   } else if (strcmp(func, "SOFTMAX") == 0) {
+      return SOFTMAX;
+   } else {
+      printf("Invalid activation function. Supported functions are SIGMOID, RELU, TANH, ARGMAX, and SOFTMAX.\n");
+      exit(1);
+   }
+}
+
+ActivationDerivative string_to_activation_derivative(char *deriv) {
+   if (strcmp(deriv, "SIGMOID") == 0) {
+      return SIGMOID_DERIVATIVE;
+   } else if (strcmp(deriv, "RELU") == 0) {
+      return RELU_DERIVATIVE;
+   } else if (strcmp(deriv, "TANH") == 0) {
+      return TANH_DERIVATIVE;
+   } else if (strcmp(deriv, "ARGMAX") == 0) {
+      return ARGMAX_DERIVATIVE;
+   } else if (strcmp(deriv, "SOFTMAX") == 0) {
+      return SOFTMAX_DERIVATIVE;
+   } else {
+      printf("Invalid activation function. Supported functions are SIGMOID, RELU, TANH, ARGMAX, and SOFTMAX.\n");
+      exit(1);
+   }
+}
+
+LossFunction string_to_loss_function(char *func) {
+   if (strcmp(func, "MSE") == 0) {
+      return MSE;
+   } else if (strcmp(func, "CE") == 0) {
+      return CE;
+   } else {
+      printf("Invalid loss function. Supported functions are MSE and CE.\n");
+      exit(1);
+   }
+}
+
+LossDerivative string_to_loss_derivative(char *deriv) {
+   if (strcmp(deriv, "MSE") == 0) {
+      return MSE_DERIVATIVE;
+   } else if (strcmp(deriv, "CE") == 0) {
+      return CE_DERIVATIVE;
+   } else {
+      printf("Invalid loss derivative. Supported functions are MSE and CE.\n");
+      exit(1);
+   }
+}
+
+
 NN_t *NN_init(size_t layers[],
               ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[],
               LossFunction lossFunction, LossDerivative lossDerivative) {
@@ -203,62 +260,56 @@ long double *NN_forward(NN_t *nn, long double *inputs) {
     return outputs;
 } 
 
-void NN_backprop(NN_t *nn, long double *inputs, long double *y_true, long double *y_predicted) {
-    printf("Backprop\n");
-    
-    long double **deltas = (long double **)malloc(sizeof(long double *) * (nn->numLayers - 1));
-
-    // Calculate the loss (optional, depending on whether you need this)
+void NN_backprop(NN_t *nn, long double *inputs, long double *y_true) {
+    long double *y_predicted = NN_forward(nn, inputs); // Forward pass to get predictions
     long double loss = 0.0;
     for (size_t i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
         loss += nn->lossFunction(y_true[i], y_predicted[i]);
     }
-    printf("Loss: %Lf\n", loss);
 
-    // Calculate the delta for the output layer
-    deltas[nn->numLayers - 2] = (long double *)malloc(sizeof(long double) * nn->layers[nn->numLayers - 1]);
-    for (unsigned int i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
-        deltas[nn->numLayers - 2][i] = nn->lossDerivative(y_true[i], y_predicted[i]) * nn->activationDerivatives[nn->numLayers - 2](y_predicted[i]);
+    long double *outputGradients = (long double *)malloc(sizeof(long double) * nn->layers[nn->numLayers - 1]);
+    for (size_t i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
+        outputGradients[i] = nn->lossDerivative(y_true[i], y_predicted[i]) * nn->activationDerivatives[nn->numLayers - 1](y_predicted[i]);
     }
-    printf("Deltas\n");
 
-    // Backpropagate through the hidden layers
-    for (unsigned int layer = nn->numLayers - 2; layer > 0; layer--) {
-        deltas[layer - 1] = (long double *)malloc(sizeof(long double) * nn->layers[layer]);
-        for (unsigned int neuron = 0; neuron < nn->layers[layer]; neuron++) {
-            long double sum = 0.0;
-            for (unsigned int nextNeuron = 0; nextNeuron < nn->layers[layer + 1]; nextNeuron++) {
-                sum += deltas[layer][nextNeuron] * nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron];
+    long double *layerOutputs = (long double *)malloc(sizeof(long double) * nn->layers[0]);
+    for (unsigned int i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        layerOutputs[i] = inputs[i];
+    }
+
+    for (size_t layer = 0; layer < nn->numLayers - 1; layer++) {
+        long double *layerGradients = (long double *)malloc(sizeof(long double) * nn->layers[layer]);
+
+        for (size_t neuron = 0; neuron < nn->layers[layer]; neuron++) {
+            long double gradientSum = 0.0;
+            for (size_t nextNeuron = 0; nextNeuron < nn->layers[layer + 1]; nextNeuron++) {
+                gradientSum += outputGradients[nextNeuron] * nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron];
             }
-            deltas[layer - 1][neuron] = sum * nn->activationDerivatives[layer - 1](inputs[neuron]);
+            layerGradients[neuron] = gradientSum * nn->activationDerivatives[layer](layerOutputs[neuron]);
         }
-    }
-    printf("Deltas2\n");
 
-    // Update weights and biases
-    for (unsigned int layer = 0; layer < nn->numLayers - 1; layer++) {
-        for (unsigned int neuron = 0; neuron < nn->layers[layer]; neuron++) {
-            for (unsigned int nextNeuron = 0; nextNeuron < nn->layers[layer + 1]; nextNeuron++) {
-                nn->weights[layer][neuron * nn->layers[layer + 1] + nextNeuron] -= deltas[layer][nextNeuron] * inputs[neuron];
+        for (size_t neuron = 0; neuron < nn->layers[layer + 1]; neuron++) {
+            for (size_t prevNeuron = 0; prevNeuron < nn->layers[layer]; prevNeuron++) {
+                nn->weights[layer][prevNeuron * nn->layers[layer + 1] + neuron] -= layerGradients[prevNeuron] * layerOutputs[prevNeuron];
             }
+            nn->biases[layer][neuron] -= layerGradients[neuron];
         }
-        for (unsigned int neuron = 0; neuron < nn->layers[layer + 1]; neuron++) {
-            nn->biases[layer][neuron] -= deltas[layer][neuron];
-        }
-        *inputs = NN_matmul(inputs, nn->weights[layer], nn->biases[layer]);
-        for (size_t i = 0; i < nn->layers[layer + 1]; i++) {
-            inputs[i] = nn->activationFunctions[layer](inputs[i]);
-        }
-    }
-    printf("Weight Update\n");
-    printf("Biases Update\n");
 
-    // Clean up
-    for (unsigned int layer = 0; layer < nn->numLayers - 1; layer++) {
-        free(deltas[layer]);
+        if (layer < nn->numLayers - 2) {
+            long double *newLayerOutputs = (long double *)malloc(sizeof(long double) * nn->layers[layer + 1]);
+            for (size_t i = 0; i < nn->layers[layer + 1]; i++) {
+                newLayerOutputs[i] = nn->activationFunctions[layer](layerOutputs[i]);
+            }
+            free(layerOutputs);
+            layerOutputs = newLayerOutputs;
+        }
+
+        free(outputGradients);
+        outputGradients = layerGradients;
     }
-    free(deltas);
-    printf("Done\n");
+
+    free(outputGradients);
+    free(layerOutputs);
 }
 
 long double relu(long double x) {

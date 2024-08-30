@@ -52,7 +52,7 @@ void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction activationFunct
 
 long double NN_matmul(long double *inputs, long double *weights, long double *biases); 
 long double *NN_forward(NN_t *nn, long double *inputs);
-void NN_backprop(NN_t *nn, long double *inputs, long double *outputs, long double *labels);
+void NN_backprop(NN_t *nn, long double *inputs, long double *y_true); 
 
 void NN_destroy(NN_t *nn);
 
