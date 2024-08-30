@@ -20,7 +20,7 @@ case "$file" in
 
   if [ $? -eq 0 ]; then
       echo "Compilation successful. Running the application..."
-      lldb ./MNIST
+      ./MNIST
       rm MNIST 
       clear
   else
@@ -32,7 +32,7 @@ case "$file" in
 
   if [ $? -eq 0 ]; then
       echo "Compilation successful. Running the application..."
-      lldb ./You_Vs_Ai
+      ./You_Vs_Ai
       rm You_Vs_Ai 
       clear
   else
