@@ -10,8 +10,8 @@
 #define GRID_SIZE 30 
 #define CELL_SIZE (DRAWING_AREA_SIZE / GRID_SIZE)
 
-#define NUM_LAYERS 3
-#define HIDDEN_SIZE 128
+#define NUM_LAYERS 3 
+#define HIDDEN_SIZE 4 
 #define OUTPUT_SIZE 10
 
 void InitializeNN(NN_t **nn);
@@ -149,18 +149,25 @@ void UpdateDrawing(int startX, int startY, long double *input) {
 }
 
 int RecognizeDigit(NN_t *nn, long double *input) {
-    long double *output = NN_forward(nn, input);
+    long double *y_pred = NN_forward(nn, input);
+
     int recognized_digit = 0;
-    long double max_prob = output[0];
+    long double max_prob = y_pred[0];
 
     for (int i = 1; i < OUTPUT_SIZE; i++) {
-        if (output[i] > max_prob) {
-            max_prob = output[i];
+        if (y_pred[i] > max_prob) {
+            max_prob = y_pred[i];
             recognized_digit = i;
         }
     }
 
-    free(output);
+    long double y_true[OUTPUT_SIZE] = {0};
+    y_true[recognized_digit] = 1.0;
+
+    NN_backprop(nn, input, y_true, *y_pred);
+
+    printf("Recognized digit: %d\n", recognized_digit);
+    free(y_pred);  
     return recognized_digit;
 }
 
