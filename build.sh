@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
-read -p "Enter: MNIST / Game: " file 
+read -p "Enter: MNIST / Game / Invaders: " file 
 
 if [ -z "$file" ]
 then
@@ -17,10 +17,9 @@ fi
 case "$file" in
   "MNIST")
   gcc -w -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL utils/Raylib/libraylib.a utils/NN/NN.c MNIST.c -o MNIST 
-
   if [ $? -eq 0 ]; then
-      echo "Compilation successful. Running the application..."
-      ./MNIST
+      echo "Compilation successful. Running the application with AddressSanitizer..."
+      lldb ./MNIST
       rm MNIST 
       clear
   else
@@ -31,14 +30,24 @@ case "$file" in
   gcc -w -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL utils/Raylib/libraylib.a utils/NN/NN.c You_Vs_Ai.c -o You_Vs_Ai 
 
   if [ $? -eq 0 ]; then
-      echo "Compilation successful. Running the application..."
-      ./You_Vs_Ai
+      echo "Compilation successful. Running the application with AddressSanitizer..."
+      lldb ./You_Vs_Ai
       rm You_Vs_Ai 
       clear
   else
       echo "Compilation failed. Please check for errors."
   fi
   ;;
+"Invaders")
+  gcc -w -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL utils/Raylib/libraylib.a utils/NN/NN.c Invaders.c -o Invaders
+  if [ $? -eq 0 ]; then
+      echo "Compilation successful. Running the application with AddressSanitizer..."
+      lldb ./Invaders
+      rm Invaders 
+      clear
+  else
+      echo "Compilation failed. Please check for errors."
+  fi
+  ;;
 esac
-
 

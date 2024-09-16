@@ -45,14 +45,15 @@ typedef struct NN_t {
 } NN_t;
 
 NN_t *NN_init(size_t layers[],
-              ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[],
+              ActivationFunction activationFunctions[*], ActivationDerivative activationDerivatives[],
               LossFunction lossFunction, LossDerivative lossDerivative);
 
 void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[]);
 
 long double NN_matmul(long double *inputs, long double *weights, long double *biases); 
 long double *NN_forward(NN_t *nn, long double *inputs);
-void NN_backprop(NN_t *nn, long double *inputs, long double *y_true); 
+void NN_backprop(NN_t *nn, long double *inputs, long double *y_true, long double y_pred);
+void NN_train(NN_t *nn, long double *inputs, long double *targets, size_t num_targets);
 
 void NN_destroy(NN_t *nn);
 
@@ -68,8 +69,8 @@ long double tanh_derivative(long double x);
 long double argmax(long double *x);
 long double argmax_derivative(long double *x);
 
-long double softmax(long double *x);
-long double softmax_derivative(long double *x);
+long double softmax(long double x);
+long double softmax_derivative(long double x);
 
 long double mse(long double y_true, long double y_pred);
 long double mse_derivative(long double y_true, long double y_pred);

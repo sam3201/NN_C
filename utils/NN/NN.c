@@ -115,7 +115,7 @@ NN_t *NN_init(size_t layers[],
   NN_t *nn = (NN_t*)malloc(sizeof(NN_t));
 
   nn->numLayers = 0;
-  while (layers[nn->numLayers] != 0) {
+  for (size_t i = 0; i < sizeof(layers)/sizeof(size_t); i++) {
     nn->numLayers++;
   }
 
@@ -170,20 +170,21 @@ NN_t *NN_init(size_t layers[],
 }
 
 void NN_destroy(NN_t *nn) {
-  for (size_t i = 0; i < sizeof(nn->layers) / sizeof(size_t); i++) {
-    free(nn->weights[i]);
-    free(nn->biases[i]);
-  }
-  free(nn->weights);
-  free(nn->biases);
-  free(nn->layers);
-  free(nn->activationFunctions);
-  free(nn->activationDerivatives);
-  free(nn->lossFunction);
-  free(nn->lossDerivative);
-  free(nn);
-}
+    if (nn == NULL) return;
 
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+        free(nn->weights[i]);
+        free(nn->biases[i]);
+    }
+
+    free(nn->weights);
+    free(nn->biases);
+    
+    free(nn->activationFunctions);
+    free(nn->activationDerivatives);
+
+    free(nn);
+}
 
 void NN_add_layer(NN_t *nn, size_t layerSize, ActivationFunction activationFunctions[], ActivationDerivative activationDerivatives[]) {
   size_t prevNumLayers = nn->numLayers - layerSize;
@@ -260,21 +261,23 @@ long double *NN_forward(NN_t *nn, long double *inputs) {
   return outputs;
 } 
 
-void NN_backprop(NN_t *nn, long double *inputs, long double *y_true) {
-  long double *y_predicted = NN_forward(nn, inputs); // Forward pass to get predictions
+void NN_backprop(NN_t *nn, long double *inputs, long double *y_true, long double y_predicted) {
   long double loss = 0.0;
   for (size_t i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
-    loss += nn->lossFunction(y_true[i], y_predicted[i]);
+    loss += nn->lossFunction(y_true[i], y_predicted);
   }
+  printf("Loss: %Lf\n", loss);
 
   long double *outputGradients = (long double *)malloc(sizeof(long double) * nn->layers[nn->numLayers - 1]);
   for (size_t i = 0; i < nn->layers[nn->numLayers - 1]; i++) {
-    outputGradients[i] = nn->lossDerivative(y_true[i], y_predicted[i]) * nn->activationDerivatives[nn->numLayers - 1](y_predicted[i]);
+    outputGradients[i] = nn->lossDerivative(y_true[i], y_predicted) * nn->activationDerivatives[nn->numLayers - 1](y_predicted);
+    printf("%Lf\n", outputGradients[i]);
   }
 
   long double *layerOutputs = (long double *)malloc(sizeof(long double) * nn->layers[0]);
   for (unsigned int i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
     layerOutputs[i] = inputs[i];
+    printf("%Lf\n", layerOutputs[i]);
   }
 
   for (size_t layer = 0; layer < nn->numLayers - 1; layer++) {
@@ -310,6 +313,18 @@ void NN_backprop(NN_t *nn, long double *inputs, long double *y_true) {
 
   free(outputGradients);
   free(layerOutputs);
+}
+
+void NN_train(NN_t *nn, long double *inputs, long double *targets, size_t num_targets) {
+  long double *outputs = NN_forward(nn, inputs);
+  long double loss = 0;
+  for (size_t i = 0; i < num_targets; i++) {
+      long double diff = outputs[i] - targets[i];
+      loss += diff * diff;
+  }
+  loss /= num_targets;
+
+  NN_backprop(nn, inputs, targets, loss);
 }
 
 long double relu(long double x) {
@@ -352,18 +367,11 @@ long double argmax_derivative(long double *x) {
   return 0; 
 }
 
-long double softmax(long double *x) {
-  long double sum = 0.0;
-  for (size_t i = 0; i < sizeof(x) / sizeof(x[0]); i++) {
-    sum += exp(x[i]);
-  }
-  for (size_t i = 0; i < sizeof(x) / sizeof(x[0]); i++) {
-    x[i] = exp(x[i]) / sum;
-  }
-  return x[0];
+long double softmax(long double x) {
+  return exp(x); 
 }
 
-long double softmax_derivative(long double *x) {
+long double softmax_derivative(long double x) {
   return softmax(x) * (1 - softmax(x)); 
 }
 
