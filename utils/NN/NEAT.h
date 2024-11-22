@@ -3,7 +3,6 @@
 
 #include "NN.h"
 #include <stdbool.h>
-#include <dispatch/dispatch.h>
 #include "../Raylib/raylib.h"
 
 typedef struct Perceptron_t Perceptron_t;
@@ -14,6 +13,7 @@ typedef struct Perceptron_t {
     unsigned int num_connections;    // Number of connections
     Perceptron_t *connections;      // Array of connections
     bool enabled;                   // Whether the Perceptron is enabled
+    int species_id;                 // Species ID for the perceptron
 } Perceptron_t;
 
 typedef struct {
@@ -28,7 +28,7 @@ Perceptron_t *Perceptron_init_random(unsigned int num_inputs, unsigned int num_o
 void Perceptron_destroy(Perceptron_t *perceptron);
 
 // NEAT initialization and management
-NEAT_t *NEAT_init(unsigned int num_inputs, unsigned int num_outputs);
+NEAT_t *NEAT_init(unsigned int num_inputs, unsigned int num_outputs, unsigned int initial_population);
 void NEAT_add_random(NEAT_t *neat, unsigned int num_nodes);
 void NEAT_destroy(NEAT_t *neat);
 void NEAT_destroy_node(Perceptron_t *node);
@@ -54,5 +54,31 @@ void perceptron_backprop(Perceptron_t *perceptron, long double inputs[], long do
 
 // Thread function for running visualizer
 void* NEAT_RunVisualizer(void* arg);
+
+// Configuration structure
+typedef struct {
+    long double speciation_threshold;    // Threshold for species separation
+    long double mutation_rate;           // Rate of mutation
+    long double crossover_rate;          // Rate of crossover
+    unsigned int elitism_count;          // Number of top performers to preserve
+    unsigned int tournament_size;        // Size of tournament for selection
+    long double weight_mutation_range;   // Range for weight mutations
+    bool allow_recurrent;               // Allow recurrent connections
+} NEATConfig_t;
+
+// Enhanced evolution functions
+void NEAT_mutate_weights(Perceptron_t* perceptron, NEATConfig_t* config);
+void NEAT_add_connection(Perceptron_t* perceptron, NEATConfig_t* config);
+void NEAT_remove_connection(Perceptron_t* perceptron);
+void NEAT_tournament_selection(NEAT_t* neat, NEATConfig_t* config);
+
+// Enhanced speciation functions
+void NEAT_adjust_species_fitness(NEAT_t* neat);
+void NEAT_remove_stagnant_species(NEAT_t* neat, unsigned int stagnation_threshold);
+
+// Statistics and debugging
+void NEAT_print_stats(NEAT_t* neat);
+void NEAT_save_best(NEAT_t* neat, const char* filename);
+void NEAT_load_best(NEAT_t* neat, const char* filename);
 
 #endif
