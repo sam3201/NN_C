@@ -20,10 +20,10 @@ MultiHeadAttention* create_attention(size_t model_dim, size_t num_heads) {
     ActivationFunctionType activations[] = {RELU, RELU};
     ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
 
-    mha->Q_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
-    mha->K_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
-    mha->V_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
-    mha->O_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
+    mha->Q_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+    mha->K_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+    mha->V_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+    mha->O_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
 
     if (!mha->Q_proj || !mha->K_proj || !mha->V_proj || !mha->O_proj) {
         free_attention(mha);
@@ -46,7 +46,7 @@ FeedForward* create_feed_forward(size_t input_dim, size_t hidden_dim) {
     ActivationFunctionType activations[] = {RELU, RELU, RELU};
     ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE};
 
-    ff->network = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
+    ff->network = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
     if (!ff->network) {
         free(ff);
         return NULL;
@@ -68,7 +68,7 @@ LayerNorm* create_layer_norm(size_t dim, long double epsilon) {
     ActivationFunctionType activations[] = {RELU, RELU};
     ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
 
-    ln->norm_network = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 0.01L);
+    ln->norm_network = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
     if (!ln->norm_network) {
         free(ln);
         return NULL;

@@ -7,6 +7,9 @@
 #include <string.h>
 #include <math.h>
 
+static size_t innovation_number = 0;
+static size_t species_id_counter = 0;
+
 Perceptron_t *Perceptron_init(NN_t *nn, long double fitness, unsigned int num_connections, Perceptron_t *connections, bool enabled) {
     if (!nn) {
         fprintf(stderr, "Neural network cannot be NULL\n");
@@ -29,17 +32,50 @@ Perceptron_t *Perceptron_init(NN_t *nn, long double fitness, unsigned int num_co
 }
 
 Perceptron_t *Perceptron_init_random(unsigned int num_inputs, unsigned int num_outputs) {
+    printf("Perceptron_init_random: Creating network with %u inputs, %u outputs\n", num_inputs, num_outputs);
+    fflush(stdout);
+    
     if (num_inputs == 0 || num_outputs == 0) {
         fprintf(stderr, "Invalid input/output dimensions\n");
         return NULL;
     }
 
-    NN_t *nn = NN_init_random(num_inputs, num_outputs); 
+    // Create layer sizes array with terminating 0
+    size_t num_layers = 3;
+    size_t layers[num_layers + 1];
+    for (size_t i = 0; i < num_layers; i++) {
+        // Random number between 1 and 2
+        layers[i] = 1 + (rand() % 2);
+    }
+    layers[num_layers] = 0;
+    
+    // Create activation functions array
+    ActivationFunctionType actFuncs[num_layers - 1];
+    ActivationDerivativeType actDerivs[num_layers - 1];
+    for (size_t i = 0; i < num_layers - 1; i++) {
+        actFuncs[i] = rand() % ACTIVATION_TYPE_COUNT;
+        actDerivs[i] = rand() % ACTIVATION_DERIVATIVE_TYPE_COUNT;
+    }
+    
+    LossFunctionType lossFunc = rand() % LOSS_TYPE_COUNT;
+    LossDerivativeType lossDeriv = map_loss_to_derivative(lossFunc);
+    RegularizationType regFunc = rand() % REGULARIZATION_TYPE_COUNT;
+    OptimizerType optFunc = rand() % OPTIMIZER_TYPE_COUNT;
+    
+    long double learningRate = ((long double)rand() / RAND_MAX) * 0.09L + 0.01L;
+    
+    printf("Perceptron_init_random: Initializing neural network\n");
+    fflush(stdout);
+    
+    NN_t *nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, regFunc, optFunc, learningRate);
     if (!nn) {
         fprintf(stderr, "Failed to initialize neural network\n");
         return NULL;
     }
-  
+    
+    printf("Perceptron_init_random: Neural network initialized successfully\n");
+    fflush(stdout);
+    
     Perceptron_t *perceptron = Perceptron_init(nn, 0.0, 0, NULL, true);
     if (!perceptron) {
         NN_destroy(nn);
@@ -58,41 +94,51 @@ void Perceptron_destroy(Perceptron_t *perceptron) {
     }
 }
 
-NEAT_t *NEAT_init(unsigned int num_inputs, unsigned int num_outputs) {
-    if (num_inputs == 0 || num_outputs == 0) {
-        fprintf(stderr, "Invalid input/output dimensions\n");
+NEAT_t *NEAT_init(unsigned int num_inputs, unsigned int num_outputs, unsigned int initial_population) {
+    srand(time(NULL));
+    innovation_number = 0;
+    species_id_counter = 0;
+    
+    NEAT_t* neat = (NEAT_t*)malloc(sizeof(NEAT_t));
+    if (!neat) return NULL;
+    
+    neat->population_size = initial_population;
+    
+    // Initialize population
+    neat->population = (Perceptron_t**)malloc(initial_population * sizeof(Perceptron_t*));
+    if (!neat->population) {
+        free(neat);
         return NULL;
     }
-
-    NEAT_t *neat = malloc(sizeof(NEAT_t));
-    if (!neat) {
-        fprintf(stderr, "Failed to allocate memory for NEAT structure\n");
-        return NULL;
+    
+    for (unsigned int i = 0; i < initial_population; i++) {
+        neat->population[i] = Perceptron_init_random(num_inputs, num_outputs);
+        if (!neat->population[i]) {
+            // Cleanup previously allocated perceptrons
+            for (unsigned int j = 0; j < i; j++) {
+                Perceptron_destroy(neat->population[j]);
+            }
+            free(neat->population);
+            free(neat);
+            return NULL;
+        }
+        neat->population[i]->fitness = 0.0;  // Set default fitness value
+        neat->population[i]->enabled = true;  // Ensure perceptron is enabled
+        printf("Initializing perceptron %u with fitness: %Lf\n", i, neat->population[i]->fitness);
     }
-
-    // Initialize all fields to 0/NULL
-    neat->num_nodes = 0;
-    neat->nodes = NULL;
-    neat->species_id = 0;
-
-    // Initialize with one node
-    neat->num_nodes = 1;
-    neat->nodes = calloc(neat->num_nodes, sizeof(Perceptron_t *));
+    
+    neat->nodes = (Perceptron_t**)malloc(initial_population * sizeof(Perceptron_t*));
     if (!neat->nodes) {
-        fprintf(stderr, "Failed to allocate memory for nodes\n");
+        free(neat->population);
         free(neat);
         return NULL;
     }
-
-    // Create initial perceptron
-    neat->nodes[0] = Perceptron_init_random(num_inputs, num_outputs);
-    if (!neat->nodes[0]) {
-        fprintf(stderr, "Failed to initialize perceptron\n");
-        free(neat->nodes);
-        free(neat);
-        return NULL;
+    for (unsigned int i = 0; i < initial_population; i++) {
+        neat->nodes[i] = neat->population[i];
     }
-
+    
+    neat->num_nodes = initial_population; // Set num_nodes to initial_population
+    
     return neat;
 }
 
@@ -260,15 +306,58 @@ void NEAT_add_neuron_random(NEAT_t *neat) {
             activation_funcs[i] = SIGMOID;
             activation_derivs[i] = SIGMOID_DERIVATIVE;
         }
+        switch (activation_funcs[i])
+        {
+        case SIGMOID:
+            activation_derivs[i] = SIGMOID_DERIVATIVE;
+            break;
+        case TANH:
+            activation_derivs[i] = TANH_DERIVATIVE;
+            break;
+        case RELU:
+            activation_derivs[i] = RELU_DERIVATIVE;
+            break;
+        case LINEAR:
+            activation_derivs[i] = LINEAR_DERIVATIVE;
+            break;
+        default:
+            break;
+        }
     }
+
+    LossFunctionType lossFunc = rand() % LOSS_TYPE_COUNT;
+    LossDerivativeType lossDeriv;
+    switch (lossFunc)
+    {
+    case MSE:
+        lossDeriv = MSE_DERIVATIVE;
+        break;
+    case MAE:
+        lossDeriv = MAE_DERIVATIVE;
+        break;
+    case HUBER:
+        lossDeriv = HUBER_DERIVATIVE;
+        break;
+    case LL:
+        lossDeriv = LL_DERIVATIVE;
+        break;
+    case CE:
+        lossDeriv = CE_DERIVATIVE;
+        break;
+    default:
+        lossDeriv = MSE_DERIVATIVE;
+        break;
+    }
+
+    RegularizationType regFunc = rand() % REGULARIZATION_TYPE_COUNT;
+    OptimizerType optFunc = rand() % OPTIMIZER_TYPE_COUNT;
+    long double learningRate = ((long double)rand() / RAND_MAX) * 0.09L + 0.01L;
 
     // Create new neural network with proper initialization
     NN_t *new_nn = NN_init(layer_sizes, 
                           activation_funcs,
                           activation_derivs,
-                          MSE,  // Use Mean Squared Error as loss function
-                          MSE_DERIVATIVE,
-                          0.01); // Learning rate
+                          lossFunc, lossDeriv, regFunc, optFunc, learningRate); // Learning rate
 
     if (!new_nn) {
         fprintf(stderr, "Failed to create new neural network\n");
@@ -315,295 +404,351 @@ void NEAT_add_neuron_random(NEAT_t *neat) {
     free(activation_derivs);
 }
 
-Perceptron_t *NEAT_crossover(Perceptron_t *parent1, Perceptron_t *parent2) {
-    printf("\nStarting NEAT crossover...\n");
+Perceptron_t* NEAT_crossover(Perceptron_t* parent1, Perceptron_t* parent2) {
+    if (!parent1 || !parent1->nn) return NULL;
     
-    // Validate parents
-    if (!parent1 || !parent2) {
-        fprintf(stderr, "Invalid parent nodes for crossover\n");
-        return NULL;
-    }
+    // Create new network with same structure as parent1
+    size_t* layers = malloc((parent1->nn->numLayers + 1) * sizeof(size_t));
+    if (!layers) return NULL;
     
-    if (!parent1->nn || !parent2->nn) {
-        fprintf(stderr, "Parent neural networks are NULL\n");
-        return NULL;
-    }
-
-    // Validate parent network structures
-    if (parent1->nn->layers[0] != parent2->nn->layers[0] ||
-        parent1->nn->layers[parent1->nn->numLayers - 1] != parent2->nn->layers[parent2->nn->numLayers - 1]) {
-        fprintf(stderr, "Parent networks have incompatible input/output dimensions\n");
-        return NULL;
-    }
+    // Copy layer structure
+    memcpy(layers, parent1->nn->layers, parent1->nn->numLayers * sizeof(size_t));
+    layers[parent1->nn->numLayers] = 0;  // Terminating zero
     
-    printf("Parent 1 network: Layers=%zu, Input=%zu, Output=%zu\n",
-           parent1->nn->numLayers,
-           parent1->nn->layers[0],
-           parent1->nn->layers[parent1->nn->numLayers - 1]);
-    printf("Parent 2 network: Layers=%zu, Input=%zu, Output=%zu\n",
-           parent2->nn->numLayers,
-           parent2->nn->layers[0],
-           parent2->nn->layers[parent2->nn->numLayers - 1]);
-
-    // Create offspring with structure based on fitness-weighted average of parents
-    Perceptron_t *offspring = malloc(sizeof(Perceptron_t));
-    if (!offspring) {
-        fprintf(stderr, "Failed to allocate memory for offspring\n");
+    // Copy activation functions
+    ActivationFunctionType* actFuncs = malloc((parent1->nn->numLayers - 1) * sizeof(ActivationFunctionType));
+    ActivationDerivativeType* actDerivs = malloc((parent1->nn->numLayers - 1) * sizeof(ActivationDerivativeType));
+    if (!actFuncs || !actDerivs) {
+        free(layers);
+        free(actFuncs);
+        free(actDerivs);
         return NULL;
     }
 
-    // Initialize offspring fields to prevent undefined behavior
-    offspring->nn = NULL;
-    offspring->enabled = true;
-    offspring->fitness = 0;
-    offspring->num_connections = 0;
-    offspring->connections = NULL;
-
-    // Determine better and weaker parent based on fitness
-    Perceptron_t *better_parent = (parent1->fitness >= parent2->fitness) ? parent1 : parent2;
-    Perceptron_t *weaker_parent = (parent1->fitness >= parent2->fitness) ? parent2 : parent1;
-
-    // Initialize layer sizes array with zero terminator
-    size_t num_layers = better_parent->nn->numLayers;
-    size_t *layer_sizes = calloc(num_layers + 1, sizeof(size_t)); // +1 for zero terminator
-    if (!layer_sizes) {
-        fprintf(stderr, "Failed to allocate memory for layer sizes\n");
-        free(offspring);
-        return NULL;
+    LossFunctionType lossFunc = rand() % LOSS_TYPE_COUNT;
+    LossDerivativeType lossDeriv;
+    switch (lossFunc)
+    {
+    case MSE:
+        lossDeriv = MSE_DERIVATIVE;
+        break;
+    case MAE:
+        lossDeriv = MAE_DERIVATIVE;
+        break;
+    case HUBER:
+        lossDeriv = HUBER_DERIVATIVE;
+        break;
+    case LL:
+        lossDeriv = LL_DERIVATIVE;
+        break;
+    case CE:
+        lossDeriv = CE_DERIVATIVE;
+        break;
+    default:
+        lossDeriv = MSE_DERIVATIVE;
+        break;
     }
 
-    // Copy layer sizes with potential mutations
-    layer_sizes[0] = better_parent->nn->layers[0]; // Input layer size (fixed)
-    layer_sizes[num_layers - 1] = better_parent->nn->layers[num_layers - 1]; // Output layer size (fixed)
-    for (unsigned int i = 1; i < num_layers - 1; i++) {
-        if (rand() % 100 < 10) {
-            // 10% chance to mutate hidden layer size
-            int size_diff = (rand() % 3) - 1; // -1, 0, or 1
-            layer_sizes[i] = better_parent->nn->layers[i] + size_diff;
-            if (layer_sizes[i] < 1) layer_sizes[i] = 1;
-            if (layer_sizes[i] > 10) layer_sizes[i] = 10;
-        } else {
-            layer_sizes[i] = better_parent->nn->layers[i];
-        }
-    }
-    layer_sizes[num_layers] = 0; // Zero terminator
+    RegularizationType regFunc = rand() % REGULARIZATION_TYPE_COUNT;
+    OptimizerType optFunc = rand() % OPTIMIZER_TYPE_COUNT;
+    long double learningRate = ((long double)rand() / RAND_MAX) * 0.09L + 0.01L;    
 
-    // Initialize activation functions and derivatives
-    ActivationFunctionType *activation_funcs = malloc(num_layers * sizeof(ActivationFunctionType));
-    ActivationDerivativeType *activation_derivs = malloc(num_layers * sizeof(ActivationDerivativeType));
+    // Initialize new network with parent's structure
+    NN_t* nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, regFunc, optFunc, learningRate);
+    free(layers);
+    free(actFuncs);
+    free(actDerivs);
     
-    if (!activation_funcs || !activation_derivs) {
-        fprintf(stderr, "Failed to allocate memory for activation functions\n");
-        free(layer_sizes);
-        if (activation_funcs) free(activation_funcs);
-        if (activation_derivs) free(activation_derivs);
-        free(offspring);
-        return NULL;
-    }
+    if (!nn) return NULL;
 
-    // Crossover activation functions with mutation
-    for (unsigned int i = 0; i < num_layers; i++) {
-        // Initialize with better parent's activation functions
-        activation_funcs[i] = activation_function_to_enum(better_parent->nn->activationFunctions[i]);
-        activation_derivs[i] = activation_derivative_to_enum(better_parent->nn->activationDerivatives[i]);
-
-        // 10% chance to mutate activation function (except for output layer)
-        if (i < num_layers - 1 && rand() % 100 < 10) {
-            int r = rand() % 3;
-            switch (r) {
-                case 0:
-                    activation_funcs[i] = RELU;
-                    activation_derivs[i] = RELU_DERIVATIVE;
-                    break;
-                case 1:
-                    activation_funcs[i] = TANH;
-                    activation_derivs[i] = TANH_DERIVATIVE;
-                    break;
-                case 2:
-                    activation_funcs[i] = SIGMOID;
-                    activation_derivs[i] = SIGMOID_DERIVATIVE;
-                    break;
-            }
-        }
-    }
-
-    // Force sigmoid activation for output layer
-    activation_funcs[num_layers - 1] = SIGMOID;
-    activation_derivs[num_layers - 1] = SIGMOID_DERIVATIVE;
-
-    // Create new neural network with MSE loss function
-    offspring->nn = NN_init(layer_sizes,
-                           activation_funcs,
-                           activation_derivs,
-                           MSE,
-                           MSE_DERIVATIVE,
-                           (better_parent->nn->learningRate + weaker_parent->nn->learningRate) / 2.0);
-
-    if (!offspring->nn) {
-        fprintf(stderr, "Failed to create offspring neural network\n");
-        free(layer_sizes);
-        free(activation_funcs);
-        free(activation_derivs);
-        free(offspring);
+    // Create child perceptron
+    Perceptron_t* child = Perceptron_init(nn, 0.0, 0, NULL, true);
+    if (!child) {
+        NN_destroy(nn);
         return NULL;
     }
 
     // Perform crossover of weights and biases
-    for (unsigned int i = 0; i < offspring->nn->numLayers - 1; i++) {
-        size_t num_weights = offspring->nn->layers[i + 1] * offspring->nn->layers[i];
-        size_t num_biases = offspring->nn->layers[i + 1];
+    for (size_t i = 0; i < parent1->nn->numLayers - 1; i++) {
+        size_t weights_size = parent1->nn->layers[i] * parent1->nn->layers[i + 1];
         
-        // Validate parent layer dimensions
-        if (i < better_parent->nn->numLayers - 1 && i < weaker_parent->nn->numLayers - 1) {
-            // Crossover weights with Xavier initialization
-            for (size_t j = 0; j < num_weights; j++) {
-                if (rand() % 100 < 80) { // 80% inheritance from better parent
-                    offspring->nn->weights[i][j] = better_parent->nn->weights[i][j];
-                } else {
-                    offspring->nn->weights[i][j] = weaker_parent->nn->weights[i][j];
-                }
-                
-                // Apply small random mutation (10% chance)
-                if (rand() % 100 < 10) {
-                    long double scale = sqrt(2.0 / offspring->nn->layers[i]); // Xavier initialization
-                    offspring->nn->weights[i][j] += ((rand() / (long double)RAND_MAX) * 2 - 1) * scale * 0.1;
-                }
-            }
-            
-            // Crossover biases
-            for (size_t j = 0; j < num_biases; j++) {
-                if (rand() % 100 < 80) { // 80% inheritance from better parent
-                    offspring->nn->biases[i][j] = better_parent->nn->biases[i][j];
-                } else {
-                    offspring->nn->biases[i][j] = weaker_parent->nn->biases[i][j];
-                }
-                
-                // Apply small random mutation (10% chance)
-                if (rand() % 100 < 10) {
-                    offspring->nn->biases[i][j] += ((rand() / (long double)RAND_MAX) * 2 - 1) * 0.1;
-                }
-            }
+        for (size_t j = 0; j < weights_size; j++) {
+            // Random mutation
+            long double mutation = ((rand() % 200) - 100) / 1000.0L;
+            child->nn->weights[i][j] = parent1->nn->weights[i][j] + mutation;
+        }
+        
+        // Mutate biases
+        size_t bias_size = parent1->nn->layers[i + 1];
+        for (size_t j = 0; j < bias_size; j++) {
+            long double mutation = ((rand() % 200) - 100) / 1000.0L;
+            child->nn->biases[i][j] = parent1->nn->biases[i][j] + mutation;
         }
     }
 
-    printf("Crossover complete. Offspring network: Layers=%zu, Input=%zu, Output=%zu\n",
-           offspring->nn->numLayers,
-           offspring->nn->layers[0],
-           offspring->nn->layers[offspring->nn->numLayers - 1]);
-    
-    // Clean up
-    free(layer_sizes);
-    free(activation_funcs);
-    free(activation_derivs);
-
-    return offspring;
+    return child;
 }
 
-void NEAT_evolve(NEAT_t *neat) {
-    if (!neat || !neat->nodes || neat->num_nodes == 0) {
-        return;
-    }
-
-    // Sort nodes by fitness
+void NEAT_evolve(NEAT_t* neat) {
+    // Find best performer
+    Perceptron_t* best = NULL;
+    long double best_fitness = -INFINITY;
+    unsigned int best_idx = 0;
+    
     for (unsigned int i = 0; i < neat->num_nodes; i++) {
-        for (unsigned int j = i + 1; j < neat->num_nodes; j++) {
-            if (neat->nodes[j]->fitness > neat->nodes[i]->fitness) {
-                Perceptron_t *temp = neat->nodes[i];
-                neat->nodes[i] = neat->nodes[j];
-                neat->nodes[j] = temp;
-            }
+        if (neat->nodes[i]->enabled && neat->nodes[i]->fitness > best_fitness) {
+            best_fitness = neat->nodes[i]->fitness;
+            best = neat->nodes[i];
+            best_idx = i;
         }
     }
-
-    // Keep the best performing node
-    Perceptron_t *best = neat->nodes[0];
     
-    // Get input/output dimensions from best network
-    size_t num_inputs = best->nn->layers[0];
-    size_t num_outputs = best->nn->layers[best->nn->numLayers - 1];
+    if (!best) return;
     
-    // Create new generation
-    for (unsigned int i = 1; i < neat->num_nodes; i++) {
-        // Destroy old node
-        NEAT_destroy_node(neat->nodes[i]);
+    // Create new generation based on best performer
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (i == best_idx) continue;  // Keep the best performer
         
-        // Create new node through mutation of best performer
-        neat->nodes[i] = Perceptron_init_random(num_inputs, num_outputs);
+        if (neat->nodes[i]) {
+            Perceptron_destroy(neat->nodes[i]);
+        }
         
-        // Random chance to add new neuron
-        if (rand() % 100 < 10) { // 10% chance
-            NEAT_add_neuron_random(neat);
+        neat->nodes[i] = NEAT_crossover(best, best);  // Self-crossover for mutation
+        if (neat->nodes[i]) {
+            neat->nodes[i]->enabled = true;
+            neat->nodes[i]->species_id = -1;
+            neat->nodes[i]->fitness = 0;
         }
     }
 }
 
-long double *NEAT_forward(NEAT_t *neat, long double inputs[]) {
+long double* NEAT_forward(NEAT_t* neat, long double inputs[]) {
     if (!neat || !inputs) {
+        printf("NEAT or inputs are NULL\n");
         return NULL;
     }
 
-    // Allocate memory for output
-    long double* output = malloc(sizeof(long double));
-    if (!output) return NULL;
-    *output = 0;
+    // Find best enabled perceptron
+    Perceptron_t* best = NULL;
+    long double best_fitness = -INFINITY;
 
-    // Forward pass through each node in the network
-    for (size_t i = 0; i < neat->num_nodes; i++) {
-        if (neat->nodes[i]->enabled) {
-            long double* node_output = perceptron_forward(neat->nodes[i], inputs);
-            if (node_output) {
-                *output += *node_output;
-                free(node_output);
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]) {
+            if (neat->nodes[i]->enabled && neat->nodes[i]->fitness > best_fitness) {
+                best_fitness = neat->nodes[i]->fitness;
+                best = neat->nodes[i];
             }
         }
     }
 
-    // Apply sigmoid activation to final output
-    *output = 1.0L / (1.0L + expl(-*output));
-    return output;
-}
+    if (!best) {
+        printf("No best perceptron found\n");
+        return NULL;
+    }
 
-void NEAT_backprop(NEAT_t *neat, long double inputs[], long double y_true, long double y_pred) {
-    // Backpropagate through each node in reverse order
-    for (int i = neat->num_nodes - 1; i >= 0; i--) {
+    long double* output = NN_forward(best->nn, inputs);
+    if (!output) {
+        printf("Failed to compute output\n");
+    }
+    return output;
+}       
+
+void NEAT_backprop(NEAT_t* neat, long double inputs[], long double y_true, long double y_pred) {
+    if (!neat || !inputs) {
+        return;
+    }
+
+    // Apply backpropagation to all enabled nodes
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
         if (neat->nodes[i]->enabled) {
-            perceptron_backprop(neat->nodes[i], inputs, y_true, y_pred);
+            size_t input_size = neat->nodes[i]->nn->layers[0];
+            size_t output_size = neat->nodes[i]->nn->layers[neat->nodes[i]->nn->numLayers - 1];
+            
+            long double target[output_size];
+            target[0] = y_true;  // Assuming single output for now
+            
+            NN_backprop(neat->nodes[i]->nn, inputs, y_true, y_pred);
         }
     }
 }
 
-long double *perceptron_forward(Perceptron_t *perceptron, long double inputs[]) {
-    // Forward pass through the perceptron's neural network
-    return NN_forward(perceptron->nn, inputs);
-}
+void NEAT_speciate(NEAT_t *neat) {
+    if (!neat || !neat->nodes || neat->num_nodes < 2) return;
 
-void perceptron_backprop(Perceptron_t *perceptron, long double inputs[], long double y_true, long double y_pred) {
-    // Backpropagate through the perceptron's neural network
-    NN_backprop(perceptron->nn, inputs, y_true, y_pred);
-}
+    // Reset species IDs
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        neat->nodes[i]->species_id = -1;
+    }
 
-void* NEAT_RunVisualizer(void* arg) {
-    NEAT_t* neat = (NEAT_t*)arg;
-    
-    // Initialize window on main thread
-    dispatch_async(dispatch_get_main_queue(), ^{
-        const int screenWidth = 800;
-        const int screenHeight = 600;
-        InitWindow(screenWidth, screenHeight, "Neural Network Visualizer");
-        SetTargetFPS(60);
-        
-        while (!WindowShouldClose()) {
-            BeginDrawing();
-            ClearBackground(RAYWHITE);
+    // Assign species based on compatibility distance
+    int current_species = 0;
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id == -1) {
+            neat->nodes[i]->species_id = current_species;
             
-            // Draw neural network visualization here
-            DrawText("Neural Network Visualization", 190, 200, 20, LIGHTGRAY);
-            
-            EndDrawing();
+            // Check other nodes for compatibility
+            for (unsigned int j = i + 1; j < neat->num_nodes; j++) {
+                if (neat->nodes[j]->species_id == -1) {
+                    long double distance = NEAT_compatibility_distance(neat->nodes[i], neat->nodes[j]);
+                    if (distance < 1.0L) {  // Threshold for species membership
+                        neat->nodes[j]->species_id = current_species;
+                    }
+                }
+            }
+            current_species++;
         }
-        
-        CloseWindow();
-    });
+    }
+}
+
+void NEAT_adjust_species_fitness(NEAT_t *neat) {
+    if (!neat || !neat->nodes) return;
+
+    // Count members per species
+    int max_species_id = -1;
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id > max_species_id) {
+            max_species_id = neat->nodes[i]->species_id;
+        }
+    }
+
+    int *species_count = calloc(max_species_id + 1, sizeof(int));
+    if (!species_count) return;
+
+    // Count members in each species
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id >= 0) {
+            species_count[neat->nodes[i]->species_id]++;
+        }
+    }
+
+    // Adjust fitness based on species size
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id >= 0) {
+            neat->nodes[i]->fitness /= species_count[neat->nodes[i]->species_id];
+        }
+    }
+
+    free(species_count);
+}
+
+void NEAT_remove_stagnant_species(NEAT_t *neat, unsigned int stagnation_threshold) {
+    if (!neat || !neat->nodes) return;
+
+    // Calculate average fitness per species
+    int max_species_id = -1;
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id > max_species_id) {
+            max_species_id = neat->nodes[i]->species_id;
+        }
+    }
+
+    long double *species_fitness = calloc(max_species_id + 1, sizeof(long double));
+    int *species_count = calloc(max_species_id + 1, sizeof(int));
+    if (!species_fitness || !species_count) {
+        free(species_fitness);
+        free(species_count);
+        return;
+    }
+
+    // Calculate average fitness
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id >= 0) {
+            species_fitness[neat->nodes[i]->species_id] += neat->nodes[i]->fitness;
+            species_count[neat->nodes[i]->species_id]++;
+        }
+    }
+
+    // Remove stagnant species
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+        if (neat->nodes[i]->species_id >= 0) {
+            long double avg_fitness = species_fitness[neat->nodes[i]->species_id] / 
+                                    species_count[neat->nodes[i]->species_id];
+            if (avg_fitness < stagnation_threshold) {
+                neat->nodes[i]->enabled = false;
+            }
+        }
+    }
+
+    free(species_fitness);
+    free(species_count);
+}
+
+int NEAT_save(NEAT_t* neat, const char* filename) {
+    if (!neat || !filename) return 0;
+
+    FILE* file = fopen(filename, "wb");
+    if (!file) return 0;
+
+    // Save global state
+    fwrite(&innovation_number, sizeof(size_t), 1, file);
+    fwrite(&species_id_counter, sizeof(size_t), 1, file);
+
+    fclose(file);
+    return 1;
+}
+
+void save_neat_state(const char* filename) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) return;
     
-    return NULL;
+    // Save global state
+    fwrite(&innovation_number, sizeof(size_t), 1, file);
+    fwrite(&species_id_counter, sizeof(size_t), 1, file);
+}
+
+long double NEAT_compatibility_distance(Perceptron_t *perceptron1, Perceptron_t *perceptron2) {
+    if (!perceptron1 || !perceptron2 || !perceptron1->nn || !perceptron2->nn) {
+        return INFINITY;
+    }
+
+    // Simple distance metric based on network weights
+    long double distance = 0.0L;
+    size_t weight_count = 0;
+
+    // Compare weights layer by layer
+    for (size_t i = 0; i < perceptron1->nn->numLayers - 1; i++) {
+        size_t weights_size = perceptron1->nn->layers[i] * perceptron1->nn->layers[i + 1];
+        
+        for (size_t j = 0; j < weights_size; j++) {
+            distance += fabsl(perceptron1->nn->weights[i][j] - perceptron2->nn->weights[i][j]);
+            weight_count++;
+        }
+    }
+
+    // Return average weight difference
+    return weight_count > 0 ? distance / weight_count : INFINITY;
+}
+
+long double* perceptron_forward(Perceptron_t* perceptron, long double inputs[]) {
+    if (!perceptron || !perceptron->nn || !inputs) {
+        return NULL;
+    }
+
+    // Use the neural network's forward pass
+    long double* output = NN_forward(perceptron->nn, inputs);
+    return output;
+}
+
+void perceptron_backprop(Perceptron_t* perceptron, long double inputs[], long double y_true, long double y_pred) {
+    if (!perceptron || !perceptron->nn || !inputs) {
+        return;
+    }
+
+    // Calculate loss
+    long double loss = perceptron->nn->loss(y_true, y_pred);
+    
+    // Update fitness based on loss (lower loss = higher fitness)
+    perceptron->fitness = 1.0L / (1.0L + loss);
+
+    // Use the neural network's backpropagation
+    size_t input_size = perceptron->nn->layers[0];
+    size_t output_size = perceptron->nn->layers[perceptron->nn->numLayers - 1];
+    
+    long double target[output_size];
+    target[0] = y_true;  // Assuming single output for now
+    
+    NN_backprop(perceptron->nn, inputs, y_true, y_pred);
+    
+    // Update weights using the optimizer
+    perceptron->nn->optimizer(perceptron->nn);
 }
