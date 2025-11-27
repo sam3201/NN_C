@@ -7,7 +7,24 @@ else
   echo "Raylib found. Skipping installation."
 fi
 
-gcc -w -o sim sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c ../utils/Raylib/src/raylib.h -lraylib 
+# Build raylib if static library does not exist
+if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
+    echo "Building raylib..."
+    cd ../utils/Raylib/src
+    make PLATFORM=PLATFORM_DESKTOP
+    cd ../../../SIMULATION
+fi
+
+# Compile your program
+gcc -w sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c \
+    -I../utils/Raylib/src \
+    -L../utils/Raylib/src \
+    -lraylib \
+    -framework OpenGL \
+    -framework Cocoa \
+    -framework IOKit \
+    -framework CoreVideo \
+    -o sim
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
@@ -18,4 +35,5 @@ else
 fi
 
 echo "Ran Successfully"
-rm sim 
+rm sim
+
