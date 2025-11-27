@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "../Raylib/raylib.h"
+#include "../Raylib/src/raylib.h"
 #include "../NN/NN.h"
 
 // Window dimensions
