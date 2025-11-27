@@ -15,7 +15,20 @@ typedef struct {
 } MuConfig;
 
 /* Opaque model handle */
-typedef struct MuModel MuModel;
+ttypedef struct {
+    MuConfig cfg;
+
+    float *repr_weights;
+    float *dyn_weights;
+    float *pred_weights;
+
+    int repr_weight_count;
+    int dyn_weight_count;
+    int pred_weight_count;
+
+    // You can add more members as the model expands
+} MuModel;
+ypedef struct MuModel MuModel;
 
 /* Create / free */
 MuModel *mu_model_create(const MuConfig *cfg);
