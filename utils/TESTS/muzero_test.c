@@ -1,5 +1,5 @@
 #include "../NN/MUZE/muzero_model.h"
-#include "mcts.h"
+#include "../NN/MUZE/mcts.h"
 #include <stdio.h>
 #include <stdlib.h>
 
