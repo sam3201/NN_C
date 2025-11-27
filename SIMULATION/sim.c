@@ -1,6 +1,6 @@
 #include "../utils/NN/NN.h"
 #include "../utils/NN/NEAT.h"
-#include "../utils/Raylib/raylib.h"
+#include "../utils/Raylib/src/raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
