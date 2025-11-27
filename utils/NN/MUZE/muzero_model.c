@@ -10,16 +10,6 @@
   - For now it uses tiny random-initialized linear layers inside the struct as placeholders.
 */
 
-struct MuModel {
-    MuConfig cfg;
-    /* Placeholder parameter blobs (for a minimal linear model). Replace with your NN_C model pointers. */
-    float *repr_W;   /* obs_dim x latent_dim */
-    float *dynamics_W; /* (latent_dim + action_onehot) x latent_dim */
-    float *reward_W;   /* (latent_dim + action_onehot) x 1 */
-    float *policy_W;   /* latent_dim x action_count */
-    float *value_W;    /* latent_dim x 1 */
-};
-
 /* helpers */
 static float randf() { return ((float)rand() / (float)RAND_MAX) * 2.0f - 1.0f; }
 
