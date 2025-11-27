@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile with debugging symbols
-gcc -w -o sim sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c -I. -I/opt/homebrew/include -L/opt/homebrew/lib -lraylib -lpthread -lm -framework OpenGL -framework Cocoa -framework IOKit -O0
+gcc -w -o sim sim.c ../utils/Raylib/raylib.c ../utils/NN/NN.c ../utils/NN/NEAT.c 
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
