@@ -3,7 +3,7 @@
 
 #include "NN.h"
 #include <stdbool.h>
-#include "../Raylib/raylib.h"
+#include "../Raylib/src/raylib.h"
 
 // Forward declarations
 typedef struct NEAT_t NEAT_t;
