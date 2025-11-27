@@ -7,6 +7,7 @@ else
   echo "Raylib found. Skipping installation."
 fi
 
+#correct the compilation
 gcc -w -o sim sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c ../utils/Raylib/src/raylib.h -lraylib 
 
 if [ $? -eq 0 ]; then
