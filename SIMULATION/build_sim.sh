@@ -7,7 +7,7 @@ else
   echo "Raylib found. Skipping installation."
 fi
 
-gcc -w -o sim sim.c utils/NN/NN.c ../utils/NN/NEAT.c -lraylib 
+gcc -w -o sim sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c -lraylib 
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
