@@ -1,4 +1,4 @@
-#include "muzero_model.h"
+#include "../utils/muzero_model.h"
 #include "mcts.h"
 #include <stdio.h>
 #include <stdlib.h>
