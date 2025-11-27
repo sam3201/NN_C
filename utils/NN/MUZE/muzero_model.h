@@ -14,7 +14,7 @@ typedef struct {
     int action_count;   /* number of discrete actions */
 } MuConfig;
 
-/* Opaque model handle */
+/* Basic model wrapper */ 
 typedef struct {
     MuConfig cfg;
 
