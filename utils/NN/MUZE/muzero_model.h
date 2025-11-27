@@ -15,7 +15,7 @@ typedef struct {
 } MuConfig;
 
 /* Opaque model handle */
-ttypedef struct {
+typedef struct {
     MuConfig cfg;
 
     float *repr_weights;
