@@ -7,7 +7,6 @@ else
   echo "Raylib found. Skipping installation."
 fi
 
-# Build raylib if static library does not exist
 if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     echo "Building raylib..."
     cd ../utils/Raylib/src
