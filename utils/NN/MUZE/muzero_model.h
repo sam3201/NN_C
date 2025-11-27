@@ -28,7 +28,6 @@ ttypedef struct {
 
     // You can add more members as the model expands
 } MuModel;
-ypedef struct MuModel MuModel;
 
 /* Create / free */
 MuModel *mu_model_create(const MuConfig *cfg);
