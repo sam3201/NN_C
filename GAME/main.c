@@ -3,7 +3,7 @@
 #ifdef STATUS(void*fn(int argc, char **argv)) 
   #define ERROR 0
 #else
-  #define SUCCESS1
+  #define SUCCESS 1
 #endif
 
 void hello(int argc, char **argv) {
