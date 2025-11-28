@@ -2,7 +2,6 @@
 
 #ifdef STATUS(void*fn(int argc, char **argv)) 
   int res = assert(fn(argc, argv) == 0);
-    )
   #define ERROR 0
 #else
   #define SUCCESS 1
