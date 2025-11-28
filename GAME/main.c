@@ -6,6 +6,7 @@
     #define SUCCESS 1
   #else
     #define ERROR 0
+  #endif
 #endif
 
 void hello(int argc, char **argv) {
