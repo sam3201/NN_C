@@ -1,8 +1,6 @@
 #include <stdio.h>
 
 #ifdef ERROR(void*fn(int argc, char **argv)) 
-  //check if it breaks(segfault or bus or whatever)! Then return the status!
-  #assert(0);
   #define STATUS 0
 #else
   #define STATUS 1
