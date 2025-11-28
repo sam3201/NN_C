@@ -6,9 +6,14 @@
   #define STATUS 1
 #endif
 
+int hello(int argc, char **argv) {
+
+  
+}
+
 int main(void) {
     printf("hello world\n");
 
-    return STATUS;
+    return  
 }
 
