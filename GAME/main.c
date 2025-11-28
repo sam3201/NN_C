@@ -6,7 +6,7 @@
   #define STATUS 1
 #endif
 
-int hello(int argc, char **argv) {
+void hello(int argc, char **argv) {
   printf("hello world\n");
 
   
