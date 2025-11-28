@@ -13,6 +13,7 @@ void hello(int argc, char **argv) {
 }
 
 int main(void) {
+  STATUS(hello);
  
 }
 
