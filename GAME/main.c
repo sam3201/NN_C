@@ -2,7 +2,10 @@
 
 #define STATUS \
  #ifdef ERROR \
-  "error" \
+  0 \
+ #else \
+  1 \
+ #endif
 
 int main(void) {
   printf("hello world\n");
