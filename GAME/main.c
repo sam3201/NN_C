@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define STATUS _Generic(NULL, \
+#define STATUS _typeof(0)
   int: "%d", \
   char: "%c", \
   float: "%f", \
