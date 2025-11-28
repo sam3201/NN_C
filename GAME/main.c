@@ -7,6 +7,7 @@
 #endif
 
 int hello(int argc, char **argv) {
+  printf("hello world\n");
 
   
 }
