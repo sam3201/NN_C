@@ -1,11 +1,8 @@
 #include <stdio.h>
 
 #define STATUS \
- #ifdef DEBUG \
-  "debug" \
- #else \
-  "release" \
- #endif
+ #ifdef ERROR \
+  "error" \
 
 int main(void) {
   printf("hello world\n");
