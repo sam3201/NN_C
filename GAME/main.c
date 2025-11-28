@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #ifdef STATUS(void*fn(int argc, char **argv)) 
-  int assert(fn(argc, argv) == 0);
+  int res = assert(fn(argc, argv) == 0);
   #if 
   #define ERROR 0
 #else
