@@ -8,7 +8,6 @@
 
 void hello(int argc, char **argv) {
   printf("hello world\n");
-  
 }
 
 int main(void) {
