@@ -13,6 +13,8 @@ void hello(int argc, char **argv) {
 }
 
 int main(void) {
-  return STATUS(hello);
+  int status = SUCCESS;
+  
+  printf
 }
 
