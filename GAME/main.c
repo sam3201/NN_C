@@ -9,9 +9,8 @@
             (status_var) = 0;            \
     } while (0)
 
-int hello(int argc, char **argv) {
+void hello(int argc, char **argv) {
     printf("hello world\n");
-    return 0;   // success
 }
 
 int main(void) {
