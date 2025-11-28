@@ -17,7 +17,5 @@ int main(void) {
   STATUS(hello(0, NULL));
 
   return status;
-  
-  printf
 }
 
