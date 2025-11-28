@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#ifdef ERROR(void*fn(int argc, char **argv)) 
-  #define STATUS 0
+#ifdef STATUS(void*fn(int argc, char **argv)) 
+  #define ERROR 0
 #else
   #define STATUS 1
 #endif
