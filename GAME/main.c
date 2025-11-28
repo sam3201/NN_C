@@ -11,8 +11,6 @@ void hello(int argc, char **argv) {
 }
 
 int main(void) {
-    printf("hello world\n");
-
-    return  
+    return; 
 }
 
