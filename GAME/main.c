@@ -2,6 +2,7 @@
 
 #ifdef ERROR
   #assert(0);
+  
   #define STATUS 0
 #else
   #define STATUS 1
