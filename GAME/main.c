@@ -1,14 +1,13 @@
 #include <stdio.h>
 
-#define STATUS \
- #ifdef ERROR \
-  0 \
- #else \
-  1 \
- #endif
+#ifdef ERROR
+  #define STATUS 0
+#else
+  #define STATUS 1
+#endif
 
 int main(void) {
-  printf("hello world\n");
-
-  return STATUS;
+    printf("hello world\n");
+    return STATUS;
 }
+
