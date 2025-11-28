@@ -15,6 +15,8 @@ void hello(int argc, char **argv) {
 int main(void) {
   int status; 
   STATUS(hello(0, NULL));
+
+  return status;
   
   printf
 }
