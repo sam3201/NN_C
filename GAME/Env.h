@@ -7,6 +7,7 @@
 
 for (int i = 0; i != NULL; i++) {
   File *f = NULL;
+  f = LoadFile("../utils/NN/f");
   #include "../utils/NN/f"
 }
 
