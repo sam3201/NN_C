@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 600
 #define MAX_INPUT_CHARS 256
 #define MAX_MESSAGES 100
-#define MAX_MESSAGE_LENGTH 500
+#define MAX_MESSAGE_LENGTH 8192 
 
 // Message structure
 typedef struct {
