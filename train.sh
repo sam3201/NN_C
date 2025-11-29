@@ -17,7 +17,7 @@ INCLUDES="-I."
 LIBS="-lm"
 
 # Source files
-SRC_FILES="sam_agi.c SAM/SAM.c utils/NN/TRANSFORMER.c utils/NN/NN.c utils/NN/NEAT.c"
+SRC_FILES="sam_agi.c SAM/SAM.c utils/NN/transformer.c utils/NN/NN.c utils/NN/NEAT.c"
 
 # Output executable
 OUTPUT="sam_agi"

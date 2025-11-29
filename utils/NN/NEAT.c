@@ -533,16 +533,26 @@ long double* NEAT_forward(NEAT_t* neat, long double inputs[]) {
     long double best_fitness = -INFINITY;
 
     for (unsigned int i = 0; i < neat->num_nodes; i++) {
-        if (neat->nodes[i]) {
-            if (neat->nodes[i]->enabled && neat->nodes[i]->fitness > best_fitness) {
+        if (neat->nodes[i] && neat->nodes[i]->enabled) {
+            if (neat->nodes[i]->fitness > best_fitness) {
                 best_fitness = neat->nodes[i]->fitness;
                 best = neat->nodes[i];
             }
         }
     }
 
+    // If no perceptron with fitness found, use first enabled one
     if (!best) {
-        printf("No best perceptron found\n");
+        for (unsigned int i = 0; i < neat->num_nodes; i++) {
+            if (neat->nodes[i] && neat->nodes[i]->enabled) {
+                best = neat->nodes[i];
+                break;
+            }
+        }
+    }
+
+    if (!best || !best->nn) {
+        printf("No enabled perceptron found\n");
         return NULL;
     }
 
@@ -673,6 +683,24 @@ void NEAT_remove_stagnant_species(NEAT_t *neat, unsigned int stagnation_threshol
     free(species_count);
 }
 
+void NEAT_train(NEAT_t* neat, long double* input, long double* target) {
+    if (!neat || !input || !target) return;
+
+    // Forward pass
+    long double* output = NEAT_forward(neat, input);
+    if (!output) return;
+
+    // Calculate prediction (use first output value)
+    long double y_pred = (neat->num_nodes > 0 && neat->nodes[0] && neat->nodes[0]->nn) 
+                         ? output[0] : 0.0L;
+    long double y_true = target[0];  // Assuming single output for now
+
+    // Backpropagate
+    NEAT_backprop(neat, input, y_true, y_pred);
+
+    free(output);
+}
+
 int NEAT_save(NEAT_t* neat, const char* filename) {
     if (!neat || !filename) return 0;
 
@@ -685,6 +713,23 @@ int NEAT_save(NEAT_t* neat, const char* filename) {
 
     fclose(file);
     return 1;
+}
+
+void NEAT_load(NEAT_t* neat, const char* filename) {
+    if (!neat || !filename) return;
+
+    FILE* file = fopen(filename, "rb");
+    if (!file) return;
+
+    // Load global state
+    size_t loaded_innovation, loaded_species;
+    if (fread(&loaded_innovation, sizeof(size_t), 1, file) == 1 &&
+        fread(&loaded_species, sizeof(size_t), 1, file) == 1) {
+        innovation_number = loaded_innovation;
+        species_id_counter = loaded_species;
+    }
+
+    fclose(file);
 }
 
 void save_neat_state(const char* filename) {

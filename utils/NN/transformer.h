@@ -2,6 +2,7 @@
 #define TRANSFORMER_H
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "NN.h"
 
 // Multi-head attention structures
@@ -58,6 +59,7 @@ Transformer_t* TRANSFORMER_init(size_t input_dim, size_t num_heads);
 long double *transformer_mha_forward(MultiHeadAttention *mha, long double *input, size_t seq_length);
 long double *transformer_norm_forward(LayerNorm *ln, long double *input);
 long double *transformer_forward(TransformerLayer *layer, long double *input);
+long double *TRANSFORMER_forward(Transformer_t* transformer, long double** input_sequence, size_t seq_length);
 
 // Backpropagation functions
 void transformer_mha_backprop(MultiHeadAttention *mha, long double *input, long double *grad_output, long double *grad_input);

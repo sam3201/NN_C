@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Creation functions
 MultiHeadAttention* create_attention(size_t model_dim, size_t num_heads) {
@@ -432,4 +433,192 @@ void free_transformer_layer(TransformerLayer *layer) {
         if (layer->norm2) free_layer_norm(layer->norm2);
         free(layer);
     }
+}
+
+// Transformer initialization
+Transformer_t* TRANSFORMER_init(size_t input_dim, size_t num_heads) {
+    Transformer_t* transformer = (Transformer_t*)malloc(sizeof(Transformer_t));
+    if (!transformer) return NULL;
+
+    transformer->model_dim = input_dim;
+    transformer->num_heads = num_heads;
+    transformer->num_layers = 2;  // Default to 2 layers
+
+    // Allocate layers
+    transformer->layers = (TransformerLayer**)malloc(transformer->num_layers * sizeof(TransformerLayer*));
+    if (!transformer->layers) {
+        free(transformer);
+        return NULL;
+    }
+
+    // Create transformer layers
+    size_t ff_dim = input_dim * 4;  // Feed-forward dimension is typically 4x model_dim
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+        transformer->layers[i] = create_transformer_layer(input_dim, num_heads, ff_dim);
+        if (!transformer->layers[i]) {
+            // Cleanup on error
+            for (size_t j = 0; j < i; j++) {
+                free_transformer_layer(transformer->layers[j]);
+            }
+            free(transformer->layers);
+            free(transformer);
+            return NULL;
+        }
+    }
+
+    return transformer;
+}
+
+// Transformer destruction
+void TRANSFORMER_destroy(Transformer_t* transformer) {
+    if (!transformer) return;
+
+    if (transformer->layers) {
+        for (size_t i = 0; i < transformer->num_layers; i++) {
+            if (transformer->layers[i]) {
+                free_transformer_layer(transformer->layers[i]);
+            }
+        }
+        free(transformer->layers);
+    }
+    free(transformer);
+}
+
+// Transformer forward pass for sequence
+long double* TRANSFORMER_forward(Transformer_t* transformer, long double** input_sequence, size_t seq_length) {
+    if (!transformer || !input_sequence || seq_length == 0) return NULL;
+
+    // Process first input through all layers
+    long double* output = (long double*)malloc(transformer->model_dim * sizeof(long double));
+    if (!output) return NULL;
+
+    // Copy first input
+    memcpy(output, input_sequence[0], transformer->model_dim * sizeof(long double));
+
+    // Process through all layers
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+        transformer->layers[i]->seq_length = seq_length;
+        long double* layer_output = transformer_forward(transformer->layers[i], output);
+        if (!layer_output) {
+            free(output);
+            return NULL;
+        }
+        free(output);
+        output = layer_output;
+    }
+
+    return output;
+}
+
+// Transformer training
+void TRANSFORMER_train(Transformer_t* transformer, long double** input_sequence, size_t seq_length, long double* target) {
+    if (!transformer || !input_sequence || !target) return;
+
+    // Forward pass
+    long double* output = TRANSFORMER_forward(transformer, input_sequence, seq_length);
+    if (!output) return;
+
+    // Calculate loss (simplified - just compute gradient)
+    long double* grad_output = (long double*)malloc(transformer->model_dim * sizeof(long double));
+    if (!grad_output) {
+        free(output);
+        return;
+    }
+
+    // Compute gradient (output - target)
+    for (size_t i = 0; i < transformer->model_dim; i++) {
+        grad_output[i] = output[i] - target[i];
+    }
+
+    // Backpropagate through layers (simplified)
+    long double* grad_input = (long double*)malloc(transformer->model_dim * sizeof(long double));
+    if (grad_input) {
+        memcpy(grad_input, grad_output, transformer->model_dim * sizeof(long double));
+        
+        // Backpropagate through layers in reverse
+        for (int i = transformer->num_layers - 1; i >= 0; i--) {
+            long double* temp_grad = (long double*)malloc(transformer->model_dim * sizeof(long double));
+            if (temp_grad) {
+                transformer_backprop(transformer->layers[i], input_sequence[0], grad_input, temp_grad);
+                free(grad_input);
+                grad_input = temp_grad;
+            }
+        }
+        free(grad_input);
+    }
+
+    free(grad_output);
+    free(output);
+}
+
+// Transformer save
+int TRANSFORMER_save(Transformer_t* transformer, FILE* file) {
+    if (!transformer || !file) return 0;
+
+    // Save transformer structure
+    fwrite(&transformer->model_dim, sizeof(size_t), 1, file);
+    fwrite(&transformer->num_heads, sizeof(size_t), 1, file);
+    fwrite(&transformer->num_layers, sizeof(size_t), 1, file);
+
+    // Save each layer (simplified - just save structure, not weights)
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+        if (transformer->layers[i]) {
+            fwrite(&transformer->layers[i]->model_dim, sizeof(size_t), 1, file);
+            fwrite(&transformer->layers[i]->seq_length, sizeof(size_t), 1, file);
+        }
+    }
+
+    return 1;
+}
+
+// Transformer load
+Transformer_t* TRANSFORMER_load(FILE* file) {
+    if (!file) return NULL;
+
+    Transformer_t* transformer = (Transformer_t*)malloc(sizeof(Transformer_t));
+    if (!transformer) return NULL;
+
+    // Load transformer structure
+    if (fread(&transformer->model_dim, sizeof(size_t), 1, file) != 1 ||
+        fread(&transformer->num_heads, sizeof(size_t), 1, file) != 1 ||
+        fread(&transformer->num_layers, sizeof(size_t), 1, file) != 1) {
+        free(transformer);
+        return NULL;
+    }
+
+    // Allocate layers
+    transformer->layers = (TransformerLayer**)malloc(transformer->num_layers * sizeof(TransformerLayer*));
+    if (!transformer->layers) {
+        free(transformer);
+        return NULL;
+    }
+
+    // Load each layer (simplified - just recreate structure)
+    size_t ff_dim = transformer->model_dim * 4;
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+        size_t model_dim, seq_length;
+        if (fread(&model_dim, sizeof(size_t), 1, file) != 1 ||
+            fread(&seq_length, sizeof(size_t), 1, file) != 1) {
+            // Cleanup on error
+            for (size_t j = 0; j < i; j++) {
+                free_transformer_layer(transformer->layers[j]);
+            }
+            free(transformer->layers);
+            free(transformer);
+            return NULL;
+        }
+        transformer->layers[i] = create_transformer_layer(model_dim, transformer->num_heads, ff_dim);
+        if (!transformer->layers[i]) {
+            // Cleanup on error
+            for (size_t j = 0; j < i; j++) {
+                free_transformer_layer(transformer->layers[j]);
+            }
+            free(transformer->layers);
+            free(transformer);
+            return NULL;
+        }
+        transformer->layers[i]->seq_length = seq_length;
+    }
+
+    return transformer;
 }

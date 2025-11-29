@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile the program
-gcc -o test sam_agi.c SAM/SAM.c utils/NN/TRANSFORMER.c utils/NN/NEAT.c utils/NN/NN.c -lm
+gcc -o test sam_agi.c SAM/SAM.c utils/NN/transformer.c utils/NN/NEAT.c utils/NN/NN.c -lm -I.
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"
