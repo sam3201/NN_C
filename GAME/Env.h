@@ -10,6 +10,7 @@ typedef struct Env {
   const static size_t height;
 
   Rectangle env[width][height];
+  Entity entities;
 } Env;
 
 #endif
