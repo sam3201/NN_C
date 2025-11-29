@@ -9,7 +9,7 @@ typedef struct Env {
   static size_t width;
   static size_t height;
 
-  Rectangle board[width][height];
+  const Rectangle board[width][height];
 } Env;
 
 #endif
