@@ -4,13 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-class Env {
-public:
-  std::vector<std::string> env;
-  Env(std::vector<std::string> env) {
-    this->env = env;
-  }
-};
+typedef struct Env {
+  int width;
+  int height;
+} Env;
 
 #endif
