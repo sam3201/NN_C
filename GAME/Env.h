@@ -7,6 +7,8 @@
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
 
+void *moveFn(void *args);
+
 // Fixed enum
 typedef enum {
     PLAYER,
