@@ -7,28 +7,36 @@
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
 
-typedef struct {
-  enum EntityType {
+// Fixed enum
+typedef enum {
     PLAYER,
-    ENEMY,
-  } type;
+    ENEMY
+} EntityType;
 
-  typedef struct {
-  NEAT_t *neat;
-  int exploration;
-  int exploration_reward;
-  int battle_reward;
-
+// Agent struct
+typedef struct {
+    NEAT_t *neat;
+    int exploration;
+    int exploration_reward;
+    int battle_reward;
 } Agent;
 
-} entity; 
+// Entity struct
+typedef struct {
+    EntityType type;
+    Agent *agent;  // pointer to agent if needed
+} Entity;
 
-typedef struct Env {
-  const static size_t width;
-  const static size_t height;
+// Environment constants
+#define ENV_WIDTH  100
+#define ENV_HEIGHT 100
 
-  Rectangle env[width][height];
-  Entity *entities;
+// Env struct
+typedef struct {
+    Rectangle env[ENV_WIDTH][ENV_HEIGHT];
+    Entity *entities;
+    size_t entity_count; // how many entities
 } Env;
 
 #endif
+
