@@ -9,7 +9,7 @@ typedef struct Env {
   size_t width;
   size_t height;
 
-  Rectangle **board;
+  Rectangle board[width][height];
 } Env;
 
 #endif
