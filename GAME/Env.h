@@ -4,12 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
-
-for (int i = 0; i != NULL; i++) {
-  File *f = NULL;
-  f = LoadFile("../utils/NN/{%s}", i);
-  #include "../utils/NN/f"
-}
+#inclide "../utils/NEAT/NEAT.h"
 
 typedef struct {
   enum EntityType {
