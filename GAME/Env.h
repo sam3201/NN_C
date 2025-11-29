@@ -7,6 +7,8 @@
 typedef struct Env {
   size_t width;
   size_t height;
+
+  char **board;
 } Env;
 
 #endif
