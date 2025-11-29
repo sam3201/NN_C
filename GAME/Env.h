@@ -8,6 +8,7 @@
 #include "../utils/NN/NN.h"
 
 void *movePlayer(int dir);
+void *moveEnemy(int dir);
 
 // Fixed enum
 typedef enum {
