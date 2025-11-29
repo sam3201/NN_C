@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
-#include "../utils/NEAT/src/NEAT.h"
+#include "../utils/NN/*
 typedef struct {
   enum EntityType {
     PLAYER,
