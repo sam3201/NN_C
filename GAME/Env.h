@@ -6,10 +6,10 @@
 #include "../utils/Raylib/src/raylib.h"
 
 typedef struct Env {
-  static size_t width;
-  static size_t height;
+  const static size_t width;
+  const static size_t height;
 
-  const Rectangle board[width][height];
+  Rectangle board[width][height];
 } Env;
 
 #endif
