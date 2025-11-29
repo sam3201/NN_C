@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
 
+typedef struct entity {
+  enum EntityType {
+    PLAYER,
+    ENEMY,
+    PROJECTILE,
+  } type;
+}
+
 typedef struct Env {
   const static size_t width;
   const static size_t height;
