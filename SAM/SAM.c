@@ -322,6 +322,18 @@ PerformanceMetrics SAM_calculate_metrics(NEAT_t* neat) {
 // SAM forward pass
 long double* SAM_forward(SAM_t* sam, long double** input_sequence, size_t seq_length) {
     if (!sam || !input_sequence || seq_length == 0) return NULL;
+    
+    // Check if transformer is initialized
+    if (!sam->transformer) {
+        printf("Error: Transformer not initialized in SAM model\n");
+        return NULL;
+    }
+    
+    // Check if layer_sizes is valid
+    if (!sam->layer_sizes || sam->num_layers == 0) {
+        printf("Error: Invalid layer configuration in SAM model\n");
+        return NULL;
+    }
 
     // Forward pass through transformer
     long double* transformer_output = TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);

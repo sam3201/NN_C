@@ -65,17 +65,36 @@ void decode_text(const long double* encoded, char* decoded, size_t max_len) {
 
 // Generate response using SAM model
 void generate_response(const char* user_input, char* response) {
-    if (!model_loaded || !sam_model) {
-        strcpy(response, "Model not loaded. Please train a model first.");
+    // Safety check
+    if (!sam_model) {
+        strcpy(response, "Model not available.");
         return;
     }
     
+    // Check if model is properly initialized
+    if (!sam_model->transformer || !sam_model->layer_sizes || sam_model->num_layers == 0) {
+        strcpy(response, "Model not properly initialized. Please train a model first.");
+        return;
+    }
+    
+    // Get the expected input dimension from the model
+    size_t input_dim = sam_model->layer_sizes[0];
+    
     // Encode user input
-    long double* input = (long double*)malloc(256 * sizeof(long double));
-    encode_text(user_input, input, 256);
+    long double* input = (long double*)malloc(input_dim * sizeof(long double));
+    if (!input) {
+        strcpy(response, "Memory allocation error.");
+        return;
+    }
+    encode_text(user_input, input, input_dim);
     
     // Create input sequence
     long double** input_seq = (long double**)malloc(sizeof(long double*));
+    if (!input_seq) {
+        free(input);
+        strcpy(response, "Memory allocation error.");
+        return;
+    }
     input_seq[0] = input;
     
     // Get model response
@@ -98,9 +117,14 @@ void generate_response(const char* user_input, char* response) {
             len--;
         }
         
+        // If response is empty or just spaces, provide a default
+        if (len == 0 || strlen(response) == 0) {
+            strcpy(response, "I'm processing your message...");
+        }
+        
         free(output);
     } else {
-        strcpy(response, "Error generating response.");
+        strcpy(response, "Error generating response. The model may need more training.");
     }
     
     free(input);
@@ -176,14 +200,38 @@ int main(void) {
         sam_model = SAM_load("../sam_hello_world.bin");
     }
     
+    // Verify model is properly loaded and initialized
     if (sam_model) {
-        model_loaded = true;
-        printf("Model loaded successfully!\n");
-        add_message("SAM model loaded. How can I help you?", false);
+        // Check if transformer is initialized
+        if (sam_model->transformer && sam_model->layer_sizes && sam_model->num_layers > 0) {
+            model_loaded = true;
+            printf("Model loaded successfully!\n");
+            add_message("SAM model loaded. How can I help you?", false);
+        } else {
+            printf("Model file loaded but transformer not initialized. Initializing new model...\n");
+            SAM_destroy(sam_model);
+            sam_model = SAM_init(256, 64, 8, 0);
+            if (sam_model && sam_model->transformer) {
+                model_loaded = true;
+                add_message("Initialized new SAM model. How can I help you?", false);
+            } else {
+                model_loaded = false;
+                add_message("Failed to initialize model.", false);
+            }
+        }
     } else {
-        printf("No model found. Using placeholder responses.\n");
-        add_message("No trained model found. Please train a model first.", false);
-        add_message("You can still chat, but responses will be placeholder.", false);
+        printf("No model found. Initializing new model...\n");
+        sam_model = SAM_init(256, 64, 8, 0);
+        if (sam_model && sam_model->transformer) {
+            model_loaded = true;
+            printf("New model initialized successfully!\n");
+            add_message("New SAM model initialized. How can I help you?", false);
+        } else {
+            printf("Failed to initialize model. Using placeholder responses.\n");
+            model_loaded = false;
+            add_message("No trained model found. Please train a model first.", false);
+            add_message("You can still chat, but responses will be placeholder.", false);
+        }
     }
     
     // Main loop
