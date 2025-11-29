@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
 
-typedef struct Entity
 typedef struct Env {
   const static size_t width;
   const static size_t height;
