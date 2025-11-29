@@ -1,4 +1,4 @@
-#include "../NN/LLM_NEAT.h"
+#include "../NN/NEAT.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,9 +23,9 @@ void test_evolution() {
     printf("Testing evolution...\n");
     
     // Initialize population
-    NEAT_Transformer* population[POPULATION_SIZE];
+    NEAT_t * population[POPULATION_SIZE];
     for (size_t i = 0; i < POPULATION_SIZE; i++) {
-        population[i] = create_neat_transformer(INPUT_DIM, MODEL_DIM, NUM_HEADS);
+        population[i] = NEAT_init(INPUT_DIM, MODEL_DIM, NUM_HEADS);
         if (!population[i]) {
             printf("Failed to create transformer %zu\n", i);
             return;
