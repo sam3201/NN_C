@@ -27,7 +27,7 @@ void test_evolution() {
     NEAT_t * neat = NEAT_init(INPUT_DIM, MODEL_DIM, POPULATION_SIZE);
     if (!neat) {
         printf("Failed to create NEAT population\n");
-        return;
+            return;
     }
 
     // Generate test data

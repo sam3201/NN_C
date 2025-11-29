@@ -100,9 +100,9 @@ int main(void) {
         // Initialize new SAM model
         printf("No existing model found. Initializing new SAM model...\n\n");
         sam = SAM_init(INPUT_DIM, OUTPUT_DIM, NUM_HEADS, 0);
-        if (!sam) {
-            fprintf(stderr, "Failed to initialize SAM\n");
-            return 1;
+    if (!sam) {
+        fprintf(stderr, "Failed to initialize SAM\n");
+        return 1;
         }
     }
 

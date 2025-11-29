@@ -487,16 +487,31 @@ void TRANSFORMER_destroy(Transformer_t* transformer) {
 // Transformer forward pass for sequence
 long double* TRANSFORMER_forward(Transformer_t* transformer, long double** input_sequence, size_t seq_length) {
     if (!transformer || !input_sequence || seq_length == 0) return NULL;
+    
+    // Check if transformer is properly initialized
+    if (!transformer->layers || transformer->num_layers == 0 || transformer->model_dim == 0) {
+        return NULL;
+    }
+    
+    if (!input_sequence[0]) {
+        return NULL;
+    }
 
     // Process first input through all layers
     long double* output = (long double*)malloc(transformer->model_dim * sizeof(long double));
     if (!output) return NULL;
 
-    // Copy first input
+    // Copy first input (handle dimension mismatch)
+    // We assume input_sequence[0] has at least model_dim elements
+    // In practice, the caller should ensure the input dimension matches model_dim
     memcpy(output, input_sequence[0], transformer->model_dim * sizeof(long double));
 
     // Process through all layers
     for (size_t i = 0; i < transformer->num_layers; i++) {
+        if (!transformer->layers[i]) {
+            free(output);
+            return NULL;
+        }
         transformer->layers[i]->seq_length = seq_length;
         long double* layer_output = transformer_forward(transformer->layers[i], output);
         if (!layer_output) {

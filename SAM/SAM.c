@@ -186,6 +186,18 @@ int SAM_save(SAM_t* sam, const char* filename) {
         fclose(file);
         return 0;
     }
+    
+    // Save layer configuration
+    if (fwrite(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
+        fclose(file);
+        return 0;
+    }
+    if (sam->layer_sizes && sam->num_layers > 0) {
+        if (fwrite(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) != sam->num_layers) {
+            fclose(file);
+            return 0;
+        }
+    }
 
     // Save transformer
     int result = TRANSFORMER_save(sam->transformer, file);
@@ -213,14 +225,60 @@ SAM_t* SAM_load(const char* filename) {
         fclose(file);
         return NULL;
     }
+    
+    // Initialize to zero
+    memset(sam, 0, sizeof(SAM_t));
 
     // Load SAM parameters
-    fread(&sam->num_submodels, sizeof(size_t), 1, file);
-    fread(&sam->context, sizeof(long double), 1, file);
+    if (fread(&sam->num_submodels, sizeof(size_t), 1, file) != 1) {
+        free(sam);
+        fclose(file);
+        return NULL;
+    }
+    if (fread(&sam->context, sizeof(long double), 1, file) != 1) {
+        free(sam);
+        fclose(file);
+        return NULL;
+    }
+    
+    // Load layer configuration
+    if (fread(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
+        free(sam);
+        fclose(file);
+        return NULL;
+    }
+    
+    if (sam->num_layers > 0 && sam->num_layers < 100) {  // Sanity check
+        sam->layer_sizes = (size_t*)malloc(sam->num_layers * sizeof(size_t));
+        if (!sam->layer_sizes) {
+            free(sam);
+            fclose(file);
+            return NULL;
+        }
+        if (fread(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) != sam->num_layers) {
+            free(sam->layer_sizes);
+            free(sam);
+            fclose(file);
+            return NULL;
+        }
+    } else {
+        // Default values if not saved (backward compatibility)
+        sam->num_layers = 3;
+        sam->layer_sizes = (size_t*)malloc(sam->num_layers * sizeof(size_t));
+        if (!sam->layer_sizes) {
+            free(sam);
+            fclose(file);
+            return NULL;
+        }
+        sam->layer_sizes[0] = 256;
+        sam->layer_sizes[1] = 256;
+        sam->layer_sizes[2] = 64;
+    }
 
     // Load transformer
     sam->transformer = TRANSFORMER_load(file);
     if (!sam->transformer) {
+        free(sam->layer_sizes);
         free(sam);
         fclose(file);
         return NULL;
@@ -230,6 +288,7 @@ SAM_t* SAM_load(const char* filename) {
     sam->submodels = (NEAT_t**)malloc(sam->num_submodels * sizeof(NEAT_t*));
     if (!sam->submodels) {
         TRANSFORMER_destroy(sam->transformer);
+        free(sam->layer_sizes);
         free(sam);
         fclose(file);
         return NULL;
@@ -237,8 +296,10 @@ SAM_t* SAM_load(const char* filename) {
 
     // Initialize submodels (NEAT_load expects filename, not FILE*, so we skip loading them)
     // In a full implementation, we'd need a NEAT_load_from_file function
+    size_t input_dim = sam->layer_sizes[0];
+    size_t output_dim = sam->layer_sizes[sam->num_layers - 1];
     for (size_t i = 0; i < sam->num_submodels; i++) {
-        sam->submodels[i] = NEAT_init(256, 256, 100);
+        sam->submodels[i] = NEAT_init(input_dim, output_dim, 100);
         if (!sam->submodels[i]) {
             // Cleanup on error
             for (size_t j = 0; j < i; j++) {
@@ -246,6 +307,7 @@ SAM_t* SAM_load(const char* filename) {
             }
             free(sam->submodels);
             TRANSFORMER_destroy(sam->transformer);
+            free(sam->layer_sizes);
             free(sam);
             fclose(file);
             return NULL;
@@ -253,6 +315,9 @@ SAM_t* SAM_load(const char* filename) {
         // Note: NEAT submodels are not loaded from file since NEAT_load expects a filename
         // In a production system, we'd need a FILE*-based load function
     }
+    
+    // Initialize weights (allocate but don't load - they'll be retrained)
+    init_weights(sam);
 
     fclose(file);
     return sam;
@@ -334,10 +399,21 @@ long double* SAM_forward(SAM_t* sam, long double** input_sequence, size_t seq_le
         printf("Error: Invalid layer configuration in SAM model\n");
         return NULL;
     }
+    
+    // Check if input dimension matches transformer's expected dimension
+    // The transformer expects input_sequence[0] to have at least model_dim elements
+    if (sam->transformer->model_dim > sam->layer_sizes[0]) {
+        printf("Error: Transformer model_dim (%zu) > input layer size (%zu)\n", 
+               sam->transformer->model_dim, sam->layer_sizes[0]);
+        return NULL;
+    }
 
     // Forward pass through transformer
     long double* transformer_output = TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-    if (!transformer_output) return NULL;
+    if (!transformer_output) {
+        printf("Error: TRANSFORMER_forward returned NULL\n");
+        return NULL;
+    }
 
     // Use transformer output as final output
     long double* output = (long double*)malloc(sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
