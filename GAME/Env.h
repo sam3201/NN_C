@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
-#include "../utils/NN/*.h"
+
+#for (i = 0; i < 10; i++)
 typedef struct {
   enum EntityType {
     PLAYER,
