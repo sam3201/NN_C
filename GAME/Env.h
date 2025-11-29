@@ -16,6 +16,8 @@ typedef struct {
   typedef struct {
   NEAT_t *neat;
   int exploration;
+  int exploration_reward;
+  int battle_reward;
 
 } Agent;
 
