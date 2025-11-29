@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
 
+typedef struct Rectangle {
+  float x;
+  float y;
+  float width;
+  float height;
+} Rectangle;
+
 typedef struct Env {
   const static size_t width;
   const static size_t height;
