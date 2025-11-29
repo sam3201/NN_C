@@ -404,34 +404,35 @@ void test_word_prediction() {
             // Encode target
             long double* target = (long double*)calloc(MODEL_DIM, sizeof(long double));
             encode_word(train_data->targets[i], target, MODEL_DIM);
-            
+                        
             // Forward pass
             long double* output = transformer_forward(layer, input);
-            
-            // Calculate loss and gradients
+
+            // Calculate loss and gradients (MSE)
             long double* grad_output = (long double*)malloc(MODEL_DIM * sizeof(long double));
             long double sample_loss = 0;
             for (size_t j = 0; j < MODEL_DIM; j++) {
                 long double diff = output[j] - target[j];
                 sample_loss += diff * diff;
-                grad_output[j] = 2 * diff;  // MSE derivative
+                grad_output[j] = 2 * diff;  // d/dy ( (y - t)^2 ) = 2 (y - t)
             }
             epoch_loss += sample_loss / MODEL_DIM;
-            
-            // Backpropagate
-            neat_llm_backward(layer, input, grad_output, learning_rate);
-            neat_llm_mutate(layer, 0.01L);  // Small mutation rate
-            
+
+            // Backpropagate through transformer
+            long double* grad_input = (long double*)malloc(MODEL_DIM * sizeof(long double));
+            if (grad_input) {
+                transformer_backprop(layer, input, grad_output, grad_input);
+                free(grad_input);
+            }
+
             // Clean up
             free(input);
             free(target);
             free(output);
             free(grad_output);
         }
-        
-        printf("Epoch %zu/%zu - Avg Loss: %.6Lf\n", epoch + 1, num_epochs, epoch_loss / train_data->num_samples);
     }
-
+    
     // Test prediction
     printf("\nTesting word prediction...\n");
     const char* test_sequences[][SEQUENCE_LENGTH] = {

@@ -1,0 +1,5 @@
+Hello world! This is a test of the transformer model.
+The quick brown fox jumps over the lazy dog.
+Neural networks are fascinating tools for machine learning.
+This is a simple test to see how the model processes text input.
+Let's see how well our transformer implementation works!
