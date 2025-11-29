@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
-#inclide "../utils/NEAT/NEAT.h"
+#inclide "../utils/NN/NEAT.h"
 
 typedef struct {
   enum EntityType {
