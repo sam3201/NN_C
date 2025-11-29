@@ -11,6 +11,7 @@ typedef struct {
     ENEMY,
     PROJECTILE,
   } type;
+
 } entity; 
 
 typedef struct Env {
