@@ -15,6 +15,7 @@ typedef struct {
 
   typedef struct {
   NEAT_t *neat;
+
 } Agent;
 
 } entity; 
