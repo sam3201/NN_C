@@ -9,7 +9,6 @@ typedef struct {
   enum EntityType {
     PLAYER,
     ENEMY,
-    PROJECTILE,
   } type;
 
 } entity; 
