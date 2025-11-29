@@ -6,8 +6,8 @@
 #include "../utils/Raylib/src/raylib.h"
 
 typedef struct Env {
-  size_t width;
-  size_t height;
+  static size_t width;
+  static size_t height;
 
   Rectangle board[width][height];
 } Env;
