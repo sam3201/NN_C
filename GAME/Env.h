@@ -11,7 +11,7 @@ typedef struct {
     ENEMY,
   } type;
 
-  Agent *agent;
+  NEAT_t *neat; 
 
 } entity; 
 
