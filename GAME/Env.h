@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
 
-#for (i = 0; i < 10; i++)
+#for (int i = 0; i !NULL; i++)
 typedef struct {
   enum EntityType {
     PLAYER,
