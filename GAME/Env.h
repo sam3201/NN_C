@@ -35,7 +35,6 @@ typedef struct {
 typedef struct {
     Rectangle env[ENV_WIDTH][ENV_HEIGHT];
     Entity *entities;
-    size_t entity_count; // how many entities
 } Env;
 
 #endif
