@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 typedef struct Env {
-  int width;
-  int height;
+  size_t width;
+  size_t height;
 } Env;
 
 #endif
