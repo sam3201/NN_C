@@ -15,8 +15,6 @@ typedef struct {
 
   NEAT_t *neat; 
 
-  Vector2 position;
-  Vector2 velocity;
 } entity; 
 
 typedef struct Env {
