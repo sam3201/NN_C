@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../utils/Raylib/src/raylib.h"
+
 typedef struct Env {
   size_t width;
   size_t height;
 
-  char **board;
+  Rectangle **board;
 } Env;
 
 #endif
