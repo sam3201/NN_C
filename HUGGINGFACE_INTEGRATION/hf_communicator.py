@@ -131,10 +131,14 @@ def main():
         "model": model_name
     }
     
-    with open("hf_response.json", "w") as f:
+    # Get absolute path for JSON file
+    import os
+    json_path = os.path.join(os.getcwd(), "hf_response.json")
+    
+    with open(json_path, "w") as f:
         json.dump(result, f, indent=2)
     
-    print(f"\nResponse saved to hf_response.json")
+    print(f"\nResponse saved to {json_path}", file=sys.stderr)  # Use stderr so it doesn't interfere
 
 if __name__ == "__main__":
     main()

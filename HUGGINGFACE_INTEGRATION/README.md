@@ -30,6 +30,13 @@ HUGGINGFACE_INTEGRATION/
 - torch (PyTorch)
 - numpy
 
+**Important:** Before using the communication bridge, install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+See [SETUP.md](SETUP.md) for detailed setup instructions.
+
 ## Usage
 
 1. Install Python dependencies:

@@ -18,50 +18,74 @@ typedef struct {
 int hf_query(const char* model_name, const char* prompt, char* response, size_t response_size) {
     char command[2048];
     snprintf(command, sizeof(command),
-             "python3 hf_communicator.py '%s' '%s'", model_name, prompt);
+             "cd %s && python3 hf_communicator.py '%s' '%s'", 
+             getcwd(NULL, 0), model_name, prompt);
     
-    FILE* pipe = popen(command, "r");
-    if (!pipe) {
-        fprintf(stderr, "Error running HF communicator\n");
+    // Run Python script
+    int result = system(command);
+    if (result != 0) {
+        fprintf(stderr, "Error: Python script returned %d\n", result);
         return 0;
     }
+    
+    // Wait a moment for file to be written
+    usleep(100000);  // 100ms
     
     // Read response from JSON file
     FILE* json_file = fopen("hf_response.json", "r");
     if (!json_file) {
-        pclose(pipe);
+        fprintf(stderr, "Error: Could not open hf_response.json\n");
         return 0;
     }
     
     // Simple JSON parsing (extract response field)
     char line[4096];
-    int in_response = 0;
-    size_t response_pos = 0;
+    int found_response = 0;
     
     while (fgets(line, sizeof(line), json_file)) {
         if (strstr(line, "\"response\"")) {
-            in_response = 1;
+            found_response = 1;
             // Extract response value
             char* start = strchr(line, ':');
             if (start) {
                 start++; // Skip ':'
-                while (*start == ' ' || *start == '"') start++;
+                while (*start == ' ' || *start == '\t') start++;
+                if (*start == '"') start++;  // Skip opening quote
+                
                 char* end = strrchr(start, '"');
-                if (end) {
+                if (end && end > start) {
                     size_t len = end - start;
                     if (len < response_size - 1) {
                         strncpy(response, start, len);
                         response[len] = '\0';
+                    } else {
+                        strncpy(response, start, response_size - 1);
+                        response[response_size - 1] = '\0';
+                    }
+                } else {
+                    // Response might be on multiple lines, read more
+                    strncpy(response, start, response_size - 1);
+                    response[response_size - 1] = '\0';
+                    // Remove trailing newline/quote if present
+                    size_t len = strlen(response);
+                    while (len > 0 && (response[len-1] == '\n' || response[len-1] == '"' || response[len-1] == ',')) {
+                        response[len-1] = '\0';
+                        len--;
                     }
                 }
             }
+            break;
         }
     }
     
     fclose(json_file);
-    pclose(pipe);
     
-    return strlen(response) > 0;
+    if (!found_response || strlen(response) == 0) {
+        fprintf(stderr, "Error: No response found in JSON file\n");
+        return 0;
+    }
+    
+    return 1;
 }
 
 // Load prompt from file or use default
@@ -109,9 +133,40 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
         
         // Query HF model
         printf("Querying %s...\n", hf_model_name);
+        fflush(stdout);
+        
         if (!hf_query(hf_model_name, current_prompt, hf_response, sizeof(hf_response))) {
             printf("Error: Failed to get response from HF model\n");
-            break;
+            printf("This might be because:\n");
+            printf("  1. Python dependencies not installed (run: pip install -r requirements.txt)\n");
+            printf("  2. Hugging Face model not downloaded yet\n");
+            printf("  3. Network issue downloading model\n\n");
+            
+            // Ask user what to do
+            printf("Options:\n");
+            printf("  [Enter] - Try again\n");
+            printf("  'new' - Enter new prompt\n");
+            printf("  'stop' or 'quit' - End conversation\n");
+            printf("Choice: ");
+            fflush(stdout);
+            
+            char choice[256];
+            if (!fgets(choice, sizeof(choice), stdin)) {
+                break;
+            }
+            choice[strcspn(choice, "\n")] = 0;
+            
+            if (strcmp(choice, "stop") == 0 || strcmp(choice, "quit") == 0 || strcmp(choice, "q") == 0) {
+                break;
+            } else if (strcmp(choice, "new") == 0 || strcmp(choice, "n") == 0) {
+                printf("Enter new prompt: ");
+                fflush(stdout);
+                if (fgets(current_prompt, sizeof(current_prompt), stdin)) {
+                    current_prompt[strcspn(current_prompt, "\n")] = 0;
+                }
+            }
+            // If Enter, continue to retry
+            continue;
         }
         
         printf("HF Model Response:\n");
@@ -169,9 +224,11 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
         printf("  'new' - Enter new prompt\n");
         printf("  'stop' or 'quit' - End conversation\n");
         printf("Choice: ");
+        fflush(stdout);  // Ensure prompt is displayed
         
         char choice[256];
         if (!fgets(choice, sizeof(choice), stdin)) {
+            printf("\nInput error. Ending conversation.\n");
             break;
         }
         
@@ -183,24 +240,31 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
             break;
         } else if (strcmp(choice, "new") == 0 || strcmp(choice, "n") == 0) {
             printf("Enter new prompt: ");
+            fflush(stdout);
             if (fgets(current_prompt, sizeof(current_prompt), stdin)) {
                 current_prompt[strcspn(current_prompt, "\n")] = 0;
             }
         } else {
+            // Empty input (just Enter) or any other input - continue with HF response
             // Continue with HF response as next prompt (take first part)
             size_t prompt_len = strlen(hf_response);
-            size_t take_len = (prompt_len < sizeof(current_prompt) - 1) ? prompt_len : sizeof(current_prompt) - 1;
-            strncpy(current_prompt, hf_response, take_len);
-            current_prompt[take_len] = '\0';
-            
-            // If response is too long, take first sentence or first 200 chars
-            if (take_len > 200) {
-                char* period = strchr(current_prompt, '.');
-                if (period) {
-                    *(period + 1) = '\0';
-                } else {
-                    current_prompt[200] = '\0';
+            if (prompt_len > 0) {
+                size_t take_len = (prompt_len < sizeof(current_prompt) - 1) ? prompt_len : sizeof(current_prompt) - 1;
+                strncpy(current_prompt, hf_response, take_len);
+                current_prompt[take_len] = '\0';
+                
+                // If response is too long, take first sentence or first 200 chars
+                if (take_len > 200) {
+                    char* period = strchr(current_prompt, '.');
+                    if (period) {
+                        *(period + 1) = '\0';
+                    } else {
+                        current_prompt[200] = '\0';
+                    }
                 }
+            } else {
+                // If HF response is empty, keep current prompt
+                printf("(HF response was empty, keeping current prompt)\n");
             }
         }
     }
