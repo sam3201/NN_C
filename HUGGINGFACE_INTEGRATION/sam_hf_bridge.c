@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include "../SAM/SAM.h"
 
 #define MAX_RESPONSE_LENGTH 4096
@@ -124,7 +126,8 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
     printf("----------------------------------------\n");
     printf("%s\n", current_prompt);
     printf("----------------------------------------\n\n");
-    printf("(Conversation will continue. Type 'stop' or 'quit' to end, 'new' for new prompt)\n\n");
+    printf("Conversation will continue automatically.\n");
+    printf("Press 'q' + Enter to quit, or Ctrl+C to exit immediately.\n\n");
     
     while (1) {
         conversation_round++;
@@ -142,30 +145,31 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
             printf("  2. Hugging Face model not downloaded yet\n");
             printf("  3. Network issue downloading model\n\n");
             
-            // Ask user what to do
-            printf("Options:\n");
-            printf("  [Enter] - Try again\n");
-            printf("  'new' - Enter new prompt\n");
-            printf("  'stop' or 'quit' - End conversation\n");
-            printf("Choice: ");
+            // Wait a moment and check for quit, then retry
+            printf("Retrying in 2 seconds... (Press 'q' + Enter to quit)\n");
             fflush(stdout);
             
-            char choice[256];
-            if (!fgets(choice, sizeof(choice), stdin)) {
-                break;
-            }
-            choice[strcspn(choice, "\n")] = 0;
+            struct timeval tv;
+            fd_set readfds;
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+            FD_ZERO(&readfds);
+            FD_SET(STDIN_FILENO, &readfds);
             
-            if (strcmp(choice, "stop") == 0 || strcmp(choice, "quit") == 0 || strcmp(choice, "q") == 0) {
-                break;
-            } else if (strcmp(choice, "new") == 0 || strcmp(choice, "n") == 0) {
-                printf("Enter new prompt: ");
-                fflush(stdout);
-                if (fgets(current_prompt, sizeof(current_prompt), stdin)) {
-                    current_prompt[strcspn(current_prompt, "\n")] = 0;
+            int select_result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
+            
+            if (select_result > 0 && FD_ISSET(STDIN_FILENO, &readfds)) {
+                char quit_check[10];
+                if (fgets(quit_check, sizeof(quit_check), stdin)) {
+                    quit_check[strcspn(quit_check, "\n")] = 0;
+                    if (quit_check[0] == 'q' || quit_check[0] == 'Q') {
+                        printf("\nQuit key pressed. Ending conversation.\n");
+                        break;
+                    }
                 }
             }
-            // If Enter, continue to retry
+            
+            // Retry the query
             continue;
         }
         
@@ -218,55 +222,55 @@ void sam_hf_dialogue(SAM_t* sam, const char* hf_model_name, const char* initial_
         free(input);
         free(input_seq);
         
-        // Continue conversation - use HF response as next prompt, or ask user
-        printf("\nOptions:\n");
-        printf("  [Enter] - Continue conversation (use HF response as next prompt)\n");
-        printf("  'new' - Enter new prompt\n");
-        printf("  'stop' or 'quit' - End conversation\n");
-        printf("Choice: ");
-        fflush(stdout);  // Ensure prompt is displayed
+        // Check for quit key (non-blocking) and continue automatically
+        printf("\n[Press 'q' + Enter to quit, or Ctrl+C to exit] Continuing in 1 second...\n");
+        fflush(stdout);
         
-        char choice[256];
-        if (!fgets(choice, sizeof(choice), stdin)) {
-            printf("\nInput error. Ending conversation.\n");
-            break;
+        // Set stdin to non-blocking mode temporarily to check for 'q'
+        struct timeval tv;
+        fd_set readfds;
+        tv.tv_sec = 1;  // 1 second timeout
+        tv.tv_usec = 0;
+        FD_ZERO(&readfds);
+        FD_SET(STDIN_FILENO, &readfds);
+        
+        int select_result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
+        
+        if (select_result > 0 && FD_ISSET(STDIN_FILENO, &readfds)) {
+            // Input available, check if it's 'q'
+            char quit_check[10];
+            if (fgets(quit_check, sizeof(quit_check), stdin)) {
+                quit_check[strcspn(quit_check, "\n")] = 0;
+                if (quit_check[0] == 'q' || quit_check[0] == 'Q') {
+                    printf("\nQuit key pressed. Ending conversation.\n");
+                    break;
+                }
+            }
         }
         
-        // Remove newline
-        choice[strcspn(choice, "\n")] = 0;
-        
-        if (strcmp(choice, "stop") == 0 || strcmp(choice, "quit") == 0 || strcmp(choice, "q") == 0) {
-            printf("\nEnding conversation.\n");
-            break;
-        } else if (strcmp(choice, "new") == 0 || strcmp(choice, "n") == 0) {
-            printf("Enter new prompt: ");
-            fflush(stdout);
-            if (fgets(current_prompt, sizeof(current_prompt), stdin)) {
-                current_prompt[strcspn(current_prompt, "\n")] = 0;
+        // Continue automatically with HF response as next prompt
+        size_t prompt_len = strlen(hf_response);
+        if (prompt_len > 0) {
+            size_t take_len = (prompt_len < sizeof(current_prompt) - 1) ? prompt_len : sizeof(current_prompt) - 1;
+            strncpy(current_prompt, hf_response, take_len);
+            current_prompt[take_len] = '\0';
+            
+            // If response is too long, take first sentence or first 200 chars
+            if (take_len > 200) {
+                char* period = strchr(current_prompt, '.');
+                if (period) {
+                    *(period + 1) = '\0';
+                } else {
+                    current_prompt[200] = '\0';
+                }
             }
         } else {
-            // Empty input (just Enter) or any other input - continue with HF response
-            // Continue with HF response as next prompt (take first part)
-            size_t prompt_len = strlen(hf_response);
-            if (prompt_len > 0) {
-                size_t take_len = (prompt_len < sizeof(current_prompt) - 1) ? prompt_len : sizeof(current_prompt) - 1;
-                strncpy(current_prompt, hf_response, take_len);
-                current_prompt[take_len] = '\0';
-                
-                // If response is too long, take first sentence or first 200 chars
-                if (take_len > 200) {
-                    char* period = strchr(current_prompt, '.');
-                    if (period) {
-                        *(period + 1) = '\0';
-                    } else {
-                        current_prompt[200] = '\0';
-                    }
-                }
-            } else {
-                // If HF response is empty, keep current prompt
-                printf("(HF response was empty, keeping current prompt)\n");
-            }
+            // If HF response is empty, keep current prompt
+            printf("(HF response was empty, keeping current prompt)\n");
         }
+        
+        // Small delay before next round
+        usleep(500000);  // 0.5 second delay
     }
     
     printf("\nSAM has processed %d rounds of conversation\n", conversation_round);
@@ -345,7 +349,7 @@ void sam_hf_interactive(SAM_t* sam, const char* hf_model_name) {
 }
 
 int main(int argc, char* argv[]) {
-    const char* hf_model = (argc > 1) ? argv[1] : "gpt2";
+    const char* hf_model = (argc > 1) ? argv[1] : "bert-base-uncased";
     int interactive = (argc > 2 && strcmp(argv[2], "interactive") == 0);
     const char* prompt_file = (argc > 3) ? argv[3] : "prompt.txt";
     const char* custom_prompt = NULL;

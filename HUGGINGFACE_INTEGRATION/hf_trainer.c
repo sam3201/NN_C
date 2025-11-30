@@ -69,7 +69,7 @@ void train_sam_with_hf(SAM_t* sam, const char* json_file, size_t epochs) {
     
     char command[1024];
     snprintf(command, sizeof(command), 
-             "python3 hf_trainer.py gpt2 %zu %s", epochs, json_file);
+             "python3 hf_trainer.py bert-base-uncased %zu %s", epochs, json_file);
     
     printf("Running: %s\n", command);
     int result = system(command);
@@ -101,7 +101,7 @@ void train_sam_with_hf(SAM_t* sam, const char* json_file, size_t epochs) {
 }
 
 int main(int argc, char* argv[]) {
-    const char* model_name = (argc > 1) ? argv[1] : "gpt2";
+    const char* model_name = (argc > 1) ? argv[1] : "bert-base-uncased";
     const size_t epochs = (argc > 2) ? atoi(argv[2]) : 10;
     const char* data_file = (argc > 3) ? argv[3] : "../utils/DATASETS/RomeoAndJuliet.txt";
     

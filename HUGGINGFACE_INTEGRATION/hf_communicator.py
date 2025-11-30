@@ -11,17 +11,28 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel
 import torch
 
 class HFCommunicator:
-    def __init__(self, model_name="gpt2"):
+    def __init__(self, model_name="bert-base-uncased"):
         """Initialize Hugging Face model for communication"""
         print(f"Initializing Hugging Face model: {model_name}")
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.model = AutoModelForCausalLM.from_pretrained(model_name)
+            
+            # BERT models use AutoModel, not AutoModelForCausalLM
+            if "bert" in model_name.lower():
+                self.model = AutoModel.from_pretrained(model_name)
+                self.is_bert = True
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(model_name)
+                self.is_bert = False
+            
             self.model.eval()
             
             # Add padding token if not present
             if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = self.tokenizer.eos_token
+                if self.tokenizer.eos_token:
+                    self.tokenizer.pad_token = self.tokenizer.eos_token
+                else:
+                    self.tokenizer.pad_token = self.tokenizer.unk_token
             
             self.model_name = model_name
             print(f"Model {model_name} ready for communication")
@@ -33,32 +44,46 @@ class HFCommunicator:
     def communicate(self, prompt, max_length=200, temperature=0.7, top_p=0.9):
         """Send a prompt to the HF model and get a response"""
         try:
-            # Tokenize input
-            inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
-            
-            # Generate response
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_length=max_length,
-                    num_return_sequences=1,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    do_sample=True,
-                    temperature=temperature,
-                    top_p=top_p,
-                    repetition_penalty=1.1
-                )
-            
-            # Decode response
-            generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            
-            # Remove the original prompt from response
-            if generated_text.startswith(prompt):
-                response = generated_text[len(prompt):].strip()
+            if self.is_bert:
+                # BERT is not a generative model, so we use it for understanding
+                # For BERT, we'll return a response based on embeddings
+                inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512, padding=True)
+                
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    # Get the last hidden state
+                    last_hidden = outputs.last_hidden_state
+                    # Take mean pooling
+                    pooled = last_hidden.mean(dim=1)
+                    # For BERT, we return a message indicating its understanding
+                    return f"[BERT Response] I understand your query: '{prompt}'. As a bidirectional encoder model, BERT is better suited for understanding and classification tasks rather than text generation. Consider using a generative model like GPT-2 for conversation."
             else:
-                response = generated_text.strip()
-            
-            return response
+                # Tokenize input
+                inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
+                
+                # Generate response
+                with torch.no_grad():
+                    outputs = self.model.generate(
+                        **inputs,
+                        max_length=max_length,
+                        num_return_sequences=1,
+                        pad_token_id=self.tokenizer.eos_token_id if self.tokenizer.eos_token_id else self.tokenizer.pad_token_id,
+                        do_sample=True,
+                        temperature=temperature,
+                        top_p=top_p,
+                        repetition_penalty=1.1
+                    )
+                
+                # Decode response
+                generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                
+                # Remove the original prompt from response
+                if generated_text.startswith(prompt):
+                    response = generated_text[len(prompt):].strip()
+                else:
+                    response = generated_text.strip()
+                
+                return response
             
         except Exception as e:
             print(f"Error in communication: {e}", file=sys.stderr)
@@ -107,10 +132,10 @@ class HFCommunicator:
 def main():
     if len(sys.argv) < 2:
         print("Usage: python hf_communicator.py <model_name> [prompt]")
-        print("Example: python hf_communicator.py gpt2 'How can we create a model that self actualizes?'")
+        print("Example: python hf_communicator.py bert-base-uncased 'How can we create a model that self actualizes?'")
         sys.exit(1)
     
-    model_name = sys.argv[1]
+    model_name = sys.argv[1] if len(sys.argv) > 1 else "bert-base-uncased"
     prompt = sys.argv[2] if len(sys.argv) > 2 else "How can we create a model that self actualizes?"
     
     # Initialize communicator

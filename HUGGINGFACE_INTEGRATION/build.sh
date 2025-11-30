@@ -48,9 +48,9 @@ if [ $? -eq 0 ]; then
     echo "3. Communicate: ./sam_hf_bridge [model_name] [interactive]"
     echo ""
     echo "Examples:"
-    echo "  ./hf_trainer gpt2 10 ../utils/DATASETS/RomeoAndJuliet.txt"
-    echo "  ./sam_hf_bridge gpt2"
-    echo "  ./sam_hf_bridge gpt2 interactive"
+    echo "  ./hf_trainer bert-base-uncased 10 ../utils/DATASETS/RomeoAndJuliet.txt"
+    echo "  ./sam_hf_bridge"
+    echo "  ./sam_hf_bridge bert-base-uncased interactive"
 else
     echo "✗ Communicator build failed!"
     exit 1

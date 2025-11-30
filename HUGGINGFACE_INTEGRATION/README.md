@@ -57,14 +57,14 @@ See [SETUP.md](SETUP.md) for detailed setup instructions.
 
    Examples:
    ```bash
-   # Train with GPT-2 on Romeo & Juliet
+   # Train with BERT (default) on Romeo & Juliet
+   ./hf_trainer bert-base-uncased 10 ../utils/DATASETS/RomeoAndJuliet.txt
+   
+   # Train with GPT-2
    ./hf_trainer gpt2 10 ../utils/DATASETS/RomeoAndJuliet.txt
    
    # Train with DistilBERT on Frankenstein
    ./hf_trainer distilbert-base-uncased 20 ../utils/DATASETS/Frankenstein.txt
-   
-   # Train with BERT
-   ./hf_trainer bert-base-uncased 15 ../utils/DATASETS/RomeoAndJuliet.txt
    ```
 
 ## Supported Models
@@ -80,11 +80,14 @@ See [SETUP.md](SETUP.md) for detailed setup instructions.
 The integration also supports direct communication between SAM and HF models:
 
 ```bash
-# Single query about self-actualization (default)
+# Single query about self-actualization (default - uses bert-base-uncased)
+./sam_hf_bridge
+
+# Use a different model
 ./sam_hf_bridge gpt2
 
 # Interactive dialogue
-./sam_hf_bridge gpt2 interactive
+./sam_hf_bridge bert-base-uncased interactive
 ```
 
 This allows SAM to:

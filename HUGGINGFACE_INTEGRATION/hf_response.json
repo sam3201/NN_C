@@ -1,5 +1,5 @@
 {
-  "prompt": "How are you doing?",
-  "response": "how are you doing?.....................................................................................................................................................................................................................................................................................................",
+  "prompt": "[BERT Response] I understand your query: [BERT",
+  "response": "[BERT Response] I understand your query: '[BERT Response] I understand your query: [BERT'. As a bidirectional encoder model, BERT is better suited for understanding and classification tasks rather than text generation. Consider using a generative model like GPT-2 for conversation.",
   "model": "bert-base-uncased"
 }

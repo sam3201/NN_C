@@ -192,12 +192,13 @@ void train_word_prediction(TransformerLayer* layer, Vocabulary* vocab, size_t nu
     free(target);
 }
 
-// Function to encode text into sequences for training
 void create_training_data(const char* input_file, const char* output_file, size_t sequence_length) {
     FILE* fin = fopen(input_file, "r");
     FILE* fout = fopen(output_file, "w");
     if (!fin || !fout) {
         fprintf(stderr, "Error opening files\n");
+        if (fin) fclose(fin);
+        if (fout) fclose(fout);
         return;
     }
 
@@ -220,6 +221,15 @@ void create_training_data(const char* input_file, const char* output_file, size_
     while ((read = getline(&line, &len, fin)) != -1) {
         char* word = strtok(line, " \t\n");
         while (word) {
+            // Ensure we never write past sequence_length
+            if (sequence_pos >= sequence_length) {
+                // Shift sequence left by one to make room
+                for (size_t i = 0; i < sequence_length - 1; i++) {
+                    strcpy(word_sequence[i], word_sequence[i + 1]);
+                }
+                sequence_pos = sequence_length - 1;
+            }
+
             // Add word to current sequence
             strncpy(word_sequence[sequence_pos], word, MAX_WORD_LENGTH - 1);
             word_sequence[sequence_pos][MAX_WORD_LENGTH - 1] = '\0';
@@ -244,6 +254,7 @@ void create_training_data(const char* input_file, const char* output_file, size_
                     sequence_pos--;
                 }
             }
+
             word = strtok(NULL, " \t\n");
         }
     }
@@ -389,16 +400,31 @@ void test_word_prediction() {
     // Train the model
     printf("\nTraining model...\n");
     const size_t num_epochs = 5;
-    const long double learning_rate = 0.01L;
     
     for (size_t epoch = 0; epoch < num_epochs; epoch++) {
         long double epoch_loss = 0;
         
         for (size_t i = 0; i < train_data->num_samples; i++) {
-            // Encode input sequence
+            // Encode input sequence - average all words in sequence
             long double* input = (long double*)calloc(MODEL_DIM, sizeof(long double));
-            for (size_t j = 0; j < train_data->seq_length; j++) {
-                encode_word(train_data->sequences[i][j], input, MODEL_DIM);
+            size_t word_count = 0;
+            for (size_t j = 0; j < SEQUENCE_LENGTH; j++) {
+                if (train_data->sequences[i][j] && strlen(train_data->sequences[i][j]) > 0) {
+                    long double* word_vec = (long double*)calloc(MODEL_DIM, sizeof(long double));
+                    encode_word(train_data->sequences[i][j], word_vec, MODEL_DIM);
+                    // Accumulate word vectors
+                    for (size_t k = 0; k < MODEL_DIM; k++) {
+                        input[k] += word_vec[k];
+                    }
+                    free(word_vec);
+                    word_count++;
+                }
+            }
+            // Average the accumulated vectors
+            if (word_count > 0) {
+                for (size_t k = 0; k < MODEL_DIM; k++) {
+                    input[k] /= word_count;
+                }
             }
             
             // Encode target
@@ -407,6 +433,11 @@ void test_word_prediction() {
                         
             // Forward pass
             long double* output = transformer_forward(layer, input);
+            if (!output) {
+                free(input);
+                free(target);
+                continue;
+            }
 
             // Calculate loss and gradients (MSE)
             long double* grad_output = (long double*)malloc(MODEL_DIM * sizeof(long double));
@@ -417,6 +448,13 @@ void test_word_prediction() {
                 grad_output[j] = 2 * diff;  // d/dy ( (y - t)^2 ) = 2 (y - t)
             }
             epoch_loss += sample_loss / MODEL_DIM;
+            
+            // Print progress
+            if ((i + 1) % 100 == 0) {
+                printf("\rEpoch %zu, Sample %zu/%zu, Avg Loss: %.6Lf", 
+                       epoch + 1, i + 1, train_data->num_samples, epoch_loss / (i + 1));
+                fflush(stdout);
+            }
 
             // Backpropagate through transformer
             long double* grad_input = (long double*)malloc(MODEL_DIM * sizeof(long double));
@@ -431,34 +469,73 @@ void test_word_prediction() {
             free(output);
             free(grad_output);
         }
+        printf("\nEpoch %zu completed. Average loss: %.6Lf\n", 
+               epoch + 1, epoch_loss / train_data->num_samples);
     }
     
-    // Test prediction
+        // Test prediction
     printf("\nTesting word prediction...\n");
-    const char* test_sequences[][SEQUENCE_LENGTH] = {
-        {"the", "quick", "brown"},
-        {"a", "beautiful", "summer"},
-        {"in", "the", "morning"}
-    };
-    size_t num_tests = sizeof(test_sequences) / sizeof(test_sequences[0]);
+    // Initialize test sequences with proper length
+    const char* test_sequences[3][SEQUENCE_LENGTH];
+    // First test sequence: "the quick brown"
+    test_sequences[0][0] = "the";
+    test_sequences[0][1] = "quick";
+    test_sequences[0][2] = "brown";
+    for (size_t i = 3; i < SEQUENCE_LENGTH; i++) {
+        test_sequences[0][i] = NULL;
+    }
+    // Second test sequence: "a beautiful summer"
+    test_sequences[1][0] = "a";
+    test_sequences[1][1] = "beautiful";
+    test_sequences[1][2] = "summer";
+    for (size_t i = 3; i < SEQUENCE_LENGTH; i++) {
+        test_sequences[1][i] = NULL;
+    }
+    // Third test sequence: "in the morning"
+    test_sequences[2][0] = "in";
+    test_sequences[2][1] = "the";
+    test_sequences[2][2] = "morning";
+    for (size_t i = 3; i < SEQUENCE_LENGTH; i++) {
+        test_sequences[2][i] = NULL;
+    }
+    size_t num_tests = 3;
 
     for (size_t i = 0; i < num_tests; i++) {
-        printf("\nInput sequence: ");
+        printf("Input sequence: ");
         for (size_t j = 0; j < SEQUENCE_LENGTH; j++) {
-            printf("%s ", test_sequences[i][j]);
+            if (test_sequences[i][j]) {              // guard NULL
+                printf("%s ", test_sequences[i][j]);
+            }
         }
         printf("\n");
 
-        // Encode input sequence
+        // Encode input sequence - average all words in sequence
         long double* input = (long double*)calloc(MODEL_DIM, sizeof(long double));
+        size_t word_count = 0;
         for (size_t j = 0; j < SEQUENCE_LENGTH; j++) {
-            encode_word(test_sequences[i][j], input, MODEL_DIM);
+            if (test_sequences[i][j] && strlen(test_sequences[i][j]) > 0) {
+                long double* word_vec = (long double*)calloc(MODEL_DIM, sizeof(long double));
+                encode_word(test_sequences[i][j], word_vec, MODEL_DIM);
+                // Accumulate word vectors
+                for (size_t k = 0; k < MODEL_DIM; k++) {
+                    input[k] += word_vec[k];
+                }
+                free(word_vec);
+                word_count++;
+            }
+        }
+        // Average the accumulated vectors
+        if (word_count > 0) {
+            for (size_t k = 0; k < MODEL_DIM; k++) {
+                input[k] /= word_count;
+            }
         }
 
         // Forward pass
         long double* output = transformer_forward(layer, input);
         if (!output) {
             fprintf(stderr, "Failed in transformer forward pass\n");
+            free(input);
             continue;
         }
 
