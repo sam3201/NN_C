@@ -11,12 +11,22 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 import torch
 
 class HFTrainer:
-    def __init__(self, model_name="gpt2"):
+    def __init__(self, model_name="distilbert-base-uncased"):
         """Initialize Hugging Face model"""
         print(f"Loading Hugging Face model: {model_name}")
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.model = AutoModelForCausalLM.from_pretrained(model_name)
+            
+            # Handle different model types
+            if any(x in model_name.lower() for x in ['bert', 'distilbert', 'roberta', 'albert']):
+                # For BERT-like models, use AutoModel for embeddings
+                self.model = AutoModel.from_pretrained(model_name)
+                self.is_encoder = True
+            else:
+                # For generative models, use AutoModelForCausalLM
+                self.model = AutoModelForCausalLM.from_pretrained(model_name)
+                self.is_encoder = False
+            
             self.model.eval()
             
             # Get model dimension
@@ -24,14 +34,20 @@ class HFTrainer:
                 self.model_dim = self.model.config.n_embd
             elif hasattr(self.model.config, 'hidden_size'):
                 self.model_dim = self.model.config.hidden_size
+            elif hasattr(self.model.config, 'd_model'):
+                self.model_dim = self.model.config.d_model
             else:
                 self.model_dim = 768
             
             # Add padding token if not present
             if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = self.tokenizer.eos_token
+                if self.tokenizer.eos_token:
+                    self.tokenizer.pad_token = self.tokenizer.eos_token
+                else:
+                    self.tokenizer.pad_token = "[PAD]"
             
             print(f"Model loaded. Dimension: {self.model_dim}")
+            print(f"Model type: {'Encoder' if self.is_encoder else 'Decoder'}")
             
         except Exception as e:
             print(f"Error loading model: {e}", file=sys.stderr)
@@ -49,20 +65,25 @@ class HFTrainer:
             )
             
             with torch.no_grad():
-                outputs = self.model(**inputs, output_hidden_states=True)
-                
-                # Get last hidden state
-                if hasattr(outputs, 'hidden_states') and outputs.hidden_states:
+                if self.is_encoder:
+                    # For encoder models (BERT, DistilBERT, etc.)
+                    outputs = self.model(**inputs, output_hidden_states=True)
                     hidden_states = outputs.hidden_states[-1]
                     # Average over sequence length
                     embeddings = hidden_states.mean(dim=1).squeeze().numpy()
                 else:
-                    # Fallback to logits
-                    logits = outputs.logits
-                    embeddings = logits.mean(dim=1).squeeze().numpy()
+                    # For decoder models (GPT, etc.)
+                    outputs = self.model(**inputs, output_hidden_states=True)
+                    if hasattr(outputs, 'hidden_states') and outputs.hidden_states:
+                        hidden_states = outputs.hidden_states[-1]
+                        embeddings = hidden_states.mean(dim=1).squeeze().numpy()
+                    else:
+                        # Fallback to logits
+                        logits = outputs.logits
+                        embeddings = logits.mean(dim=1).squeeze().numpy()
             
             # Normalize to [0, 1] range
-            if embeddings.max() > embeddings.min():
+            if len(embeddings.shape) > 0 and embeddings.max() > embeddings.min():
                 embeddings = (embeddings - embeddings.min()) / (embeddings.max() - embeddings.min())
             else:
                 embeddings = np.zeros_like(embeddings)
@@ -237,6 +258,18 @@ def main():
         # Vocabulary-based training for conversation
         trainer.train_sam_with_vocabulary(epochs, 500)
     else:
+        # Check if this is already training data (JSON format)
+        try:
+            with open(data_arg, 'r', encoding='utf-8') as f:
+                content = f.read(1000)  # Read first 1000 characters
+                if content.startswith('[') and ('input_text' in content or 'teacher_embeddings' in content):
+                    print(f"\nDetected existing training data in {data_arg}")
+                    print("Training data is already prepared - no processing needed")
+                    print(f"Run the C trainer directly: ./hf_trainer {model_name} {epochs} {data_arg}")
+                    sys.exit(0)
+        except Exception as e:
+            pass  # Continue with normal processing
+        
         # Load training data from file
         print(f"\nLoading training data from: {data_arg}")
         training_texts = []
