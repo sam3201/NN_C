@@ -125,8 +125,11 @@ get_sam_response() {
     local prompt="$1"
     echo "[SAM Input] $prompt" | tee -a "$LOG_FILE"
     
+    # Clean prompt to avoid accumulation
+    local clean_prompt=$(echo "$prompt" | sed 's/\[.*\]//g' | sed 's/SAM.*Response.*//g' | head -1)
+    
     # Run SAM and capture response (cleaner parsing)
-    local sam_response=$(echo "$prompt" | timeout 30 ./sam_hf_bridge distilbert-base-uncased interactive 2>/dev/null | \
+    local sam_response=$(echo "$clean_prompt" | timeout 30 ./sam_hf_bridge distilbert-base-uncased interactive 2>/dev/null | \
         grep -v "Loading" | grep -v "Model" | grep -v "SAM" | grep -v "Initializing" | grep -v "Destroying" | \
         grep -v "\[" | grep -v "^$" | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
