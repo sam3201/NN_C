@@ -318,7 +318,7 @@ int main(void) {
                              (int)input_box.width, (int)input_box.height, DARKGRAY);
         }
         
-        DrawText(input_text, (int)input_box.x + 5, (int)input_box.y + 15, 20, MAROON);
+        DrawText(input_text, (int)input_box.x + 5, (int)input_box.y + 15, 20, BLACK);
         
         // Draw blinking cursor
         if (mouse_on_input && (input_frames_counter / 20) % 2 == 0) {
