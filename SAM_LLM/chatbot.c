@@ -345,9 +345,9 @@ int main(void) {
         
         // Draw status
         if (model_loaded) {
-            DrawText("Model: Loaded", SCREEN_WIDTH - 150, 5, 16, GREEN);
+            DrawText("Model: Loaded", SCREEN_WIDTH - 150, 5, 16, BLACK);
         } else {
-            DrawText("Model: Not Loaded", SCREEN_WIDTH - 180, 5, 16, RED);
+            DrawText("Model: Not Loaded", SCREEN_WIDTH - 180, 5, 16, BLACK);
         }
         
         EndDrawing();
