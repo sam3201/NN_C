@@ -323,7 +323,7 @@ int main(void) {
         // Draw blinking cursor
         if (mouse_on_input && (input_frames_counter / 20) % 2 == 0) {
             int text_width = MeasureText(input_text, 20);
-            DrawText("_", (int)input_box.x + 10 + text_width, (int)input_box.y + 15, 20, MAROON);
+            DrawText("_", (int)input_box.x + 10 + text_width, (int)input_box.y + 15, 20, BLACK);
         }
         
         // Draw send button
