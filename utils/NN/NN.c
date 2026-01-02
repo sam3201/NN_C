@@ -499,34 +499,6 @@ long double *NN_forward_output_layer(NN_t *nn, long double inputs[]) {
   return output;
 }
 
-long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
-  if (!nn || !inputs)
-    return NULL;
-
-  long double *current = inputs;
-  long double *next = NULL;
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    next = NN_matmul(current, nn->weights[i], nn->biases[i], nn->layers[i],
-                     nn->layers[i + 1]);
-
-    // Handle vector activation at the output (or any layer)
-    if (i == nn->numLayers - 2) { // Typically the last layer
-      softmax(next, nn->layers[i + 1]);
-    } else {
-      // Standard element-wise activation
-      for (size_t j = 0; j < nn->layers[i + 1]; j++) {
-        next[j] = nn->activationFunctions[i](next[j]);
-      }
-    }
-
-    if (i > 0)
-      free(current);
-    current = next;
-  }
-  return current;
-}
-
 void NN_compute_output_gradients(NN_t *nn, long double y_true[],
                                  long double y_pred[],
                                  long double gradients[]) {
