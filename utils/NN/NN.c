@@ -912,7 +912,6 @@ void softmax(long double *vec, size_t size) {
     vec[i] /= sum;
 }
 
-// Argmax Activation (Hardmax)
 void argmax_vec(long double *vec, size_t size) {
   size_t max_idx = 0;
   long double max_val = vec[0];
