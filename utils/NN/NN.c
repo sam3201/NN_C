@@ -897,32 +897,50 @@ long double relu(long double x) { return x > 0 ? x : 0; }
 
 long double linear(long double x) { return x; }
 
-void softmax(long double *vec, size_t size) {
-  long double max = vec[0];
+// Softmax: Exponentiates and normalizes the vector
+void softmax(long double *layer, size_t size) {
+  long double max = layer[0];
   for (size_t i = 1; i < size; i++)
-    if (vec[i] > max)
-      max = vec[i];
+    if (layer[i] > max)
+      max = layer[i];
 
   long double sum = 0.0L;
   for (size_t i = 0; i < size; i++) {
-    vec[i] = expl(vec[i] - max); // Stability trick
-    sum += vec[i];
+    layer[i] = expl(layer[i] - max); // Numerical stability
+    sum += layer[i];
   }
   for (size_t i = 0; i < size; i++)
-    vec[i] /= sum;
+    layer[i] /= sum;
 }
 
-void argmax(long double *vec, size_t size) {
+// Argmax: Sets the highest value to 1.0 and all others to 0.0
+void argmax_vec(long double *layer, size_t size) {
   size_t max_idx = 0;
-  long double max_val = vec[0];
+  long double max_val = layer[0];
   for (size_t i = 1; i < size; i++) {
-    if (vec[i] > max_val) {
-      max_val = vec[i];
+    if (layer[i] > max_val) {
+      max_val = layer[i];
       max_idx = i;
     }
   }
   for (size_t i = 0; i < size; i++)
-    vec[i] = (i == max_idx) ? 1.0L : 0.0L;
+    layer[i] = (i == max_idx) ? 1.0L : 0.0L;
+}
+
+// Softmax Derivative: Standard gradient (Predicted - Target)
+// for use with Cross-Entropy or as a generalized delta.
+void softmax_derivative_vec(long double *predicted, long double *one_hot,
+                            long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    gradients[i] = predicted[i] - one_hot[i];
+  }
+}
+
+// Argmax is non-differentiable; usually returns 0 or acts as a pass-through
+void argmax_derivative_vec(long double *predicted, long double *one_hot,
+                           long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = 0.0L;
 }
 
 // Activation Derivatives
