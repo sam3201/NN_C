@@ -897,7 +897,6 @@ long double relu(long double x) { return x > 0 ? x : 0; }
 
 long double linear(long double x) { return x; }
 
-// Softmax: Exponentiates and normalizes the vector
 void softmax(long double *layer, size_t size) {
   long double max = layer[0];
   for (size_t i = 1; i < size; i++)
@@ -913,7 +912,6 @@ void softmax(long double *layer, size_t size) {
     layer[i] /= sum;
 }
 
-// Argmax: Sets the highest value to 1.0 and all others to 0.0
 void argmax_vec(long double *layer, size_t size) {
   size_t max_idx = 0;
   long double max_val = layer[0];
