@@ -123,6 +123,10 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
                  long double y_predicted);
 void NN_destroy(NN_t *nn);
 
+long double *NN_forward_classifier(NN_t *nn, long double inputs[]);
+void NN_backprop_classifier(NN_t *nn, long double inputs[],
+                            long double y_true_vec[], long double y_pred_vec[]);
+
 // Helper Functions for Type Conversion
 ActivationFunction get_activation_function(ActivationFunctionType type);
 ActivationDerivative get_activation_derivative(ActivationDerivativeType type);
