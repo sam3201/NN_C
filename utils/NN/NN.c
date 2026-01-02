@@ -541,10 +541,10 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
 // y_true: one-hot or label index
 // y_pred: raw outputs (logits or softmax probabilities)
 // lossDerivative: pointer to chosen loss derivative function
-void NN_backprop_argmax_loss(NN_t *nn, long double inputs[],
-                             long double y_true[], long double y_pred[],
-                             long double (*lossDerivative)(long double,
-                                                           long double)) {
+void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
+                        long double y_pred[],
+                        long double (*lossDerivative)(long double,
+                                                      long double)) {
   if (!nn || !y_true || !y_pred)
     return;
 
