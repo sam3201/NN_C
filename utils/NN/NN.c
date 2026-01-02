@@ -912,7 +912,7 @@ void softmax(long double *vec, size_t size) {
     vec[i] /= sum;
 }
 
-void argmax_vec(long double *vec, size_t size) {
+void argmax(long double *vec, size_t size) {
   size_t max_idx = 0;
   long double max_val = vec[0];
   for (size_t i = 1; i < size; i++) {
