@@ -18,7 +18,7 @@ typedef enum {
   LINEAR = 3,
   SOFTMAX = 4,
   ARGMAX = 5,
-  ACTIVATION_TYPE_COUNT = 4
+  ACTIVATION_TYPE_COUNT = 6
 } ActivationFunctionType;
 
 // Activation Derivative Types
