@@ -64,32 +64,25 @@ int load_hf_training_data(const char* json_file, HFTrainingSample** samples, siz
 void train_sam_with_hf(SAM_t* sam, const char* json_file, size_t epochs) {
     printf("Training SAM model using Hugging Face teacher model...\n");
     
-    // Check if training data already exists
-    FILE* check_file = fopen(json_file, "r");
-    if (check_file) {
-        fclose(check_file);
-        printf("Training data already exists at %s - skipping Python generation\n", json_file);
-    } else {
-        // Generate training data using Python script
-        printf("Generating training data with Python script...\n");
-        char command[1024];
-        // Use distilbert for better compatibility with vocabulary training
-        snprintf(command, sizeof(command), 
-                 "python3 hf_trainer.py distilbert-base-uncased %zu %s", epochs, json_file);
-        
-        printf("Running: %s\n", command);
-        int result = system(command);
-        
-        if (result != 0) {
-            fprintf(stderr, "Error running Python trainer\n");
-            return;
-        }
+    // For now, use a simpler approach: call Python script to get embeddings
+    // and then train SAM on those
+    
+    char command[1024];
+    snprintf(command, sizeof(command), 
+             "python3 hf_trainer.py bert-base-uncased %zu %s", epochs, json_file);
+    
+    printf("Running: %s\n", command);
+    int result = system(command);
+    
+    if (result != 0) {
+        fprintf(stderr, "Error running Python trainer\n");
+        return;
     }
     
-    // Load the training data
-    FILE* f = fopen(json_file, "r");
+    // Load the generated training data
+    FILE* f = fopen("hf_training_data.json", "r");
     if (!f) {
-        fprintf(stderr, "Error: Training data file %s not found\n", json_file);
+        fprintf(stderr, "Error: hf_training_data.json not found\n");
         return;
     }
     

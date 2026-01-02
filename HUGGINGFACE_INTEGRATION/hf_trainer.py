@@ -11,22 +11,12 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 import torch
 
 class HFTrainer:
-    def __init__(self, model_name="distilbert-base-uncased"):
+    def __init__(self, model_name="gpt2"):
         """Initialize Hugging Face model"""
         print(f"Loading Hugging Face model: {model_name}")
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            
-            # Handle different model types
-            if any(x in model_name.lower() for x in ['bert', 'distilbert', 'roberta', 'albert']):
-                # For BERT-like models, use AutoModel for embeddings
-                self.model = AutoModel.from_pretrained(model_name)
-                self.is_encoder = True
-            else:
-                # For generative models, use AutoModelForCausalLM
-                self.model = AutoModelForCausalLM.from_pretrained(model_name)
-                self.is_encoder = False
-            
+            self.model = AutoModelForCausalLM.from_pretrained(model_name)
             self.model.eval()
             
             # Get model dimension
@@ -34,20 +24,14 @@ class HFTrainer:
                 self.model_dim = self.model.config.n_embd
             elif hasattr(self.model.config, 'hidden_size'):
                 self.model_dim = self.model.config.hidden_size
-            elif hasattr(self.model.config, 'd_model'):
-                self.model_dim = self.model.config.d_model
             else:
                 self.model_dim = 768
             
             # Add padding token if not present
             if self.tokenizer.pad_token is None:
-                if self.tokenizer.eos_token:
-                    self.tokenizer.pad_token = self.tokenizer.eos_token
-                else:
-                    self.tokenizer.pad_token = "[PAD]"
+                self.tokenizer.pad_token = self.tokenizer.eos_token
             
             print(f"Model loaded. Dimension: {self.model_dim}")
-            print(f"Model type: {'Encoder' if self.is_encoder else 'Decoder'}")
             
         except Exception as e:
             print(f"Error loading model: {e}", file=sys.stderr)
@@ -65,25 +49,20 @@ class HFTrainer:
             )
             
             with torch.no_grad():
-                if self.is_encoder:
-                    # For encoder models (BERT, DistilBERT, etc.)
-                    outputs = self.model(**inputs, output_hidden_states=True)
+                outputs = self.model(**inputs, output_hidden_states=True)
+                
+                # Get last hidden state
+                if hasattr(outputs, 'hidden_states') and outputs.hidden_states:
                     hidden_states = outputs.hidden_states[-1]
                     # Average over sequence length
                     embeddings = hidden_states.mean(dim=1).squeeze().numpy()
                 else:
-                    # For decoder models (GPT, etc.)
-                    outputs = self.model(**inputs, output_hidden_states=True)
-                    if hasattr(outputs, 'hidden_states') and outputs.hidden_states:
-                        hidden_states = outputs.hidden_states[-1]
-                        embeddings = hidden_states.mean(dim=1).squeeze().numpy()
-                    else:
-                        # Fallback to logits
-                        logits = outputs.logits
-                        embeddings = logits.mean(dim=1).squeeze().numpy()
+                    # Fallback to logits
+                    logits = outputs.logits
+                    embeddings = logits.mean(dim=1).squeeze().numpy()
             
             # Normalize to [0, 1] range
-            if len(embeddings.shape) > 0 and embeddings.max() > embeddings.min():
+            if embeddings.max() > embeddings.min():
                 embeddings = (embeddings - embeddings.min()) / (embeddings.max() - embeddings.min())
             else:
                 embeddings = np.zeros_like(embeddings)
@@ -147,147 +126,40 @@ class HFTrainer:
         
         print(f"\nSaved {len(training_data)} training samples to hf_training_data.json")
         return training_data
-    
-    def load_vocabulary(self, words_file="../utils/DATASETS/words.txt"):
-        """Load vocabulary from words.txt file"""
-        vocabulary = []
-        try:
-            with open(words_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    word = line.strip()
-                    if word and len(word) > 0:
-                        vocabulary.append(word)
-            print(f"Loaded {len(vocabulary)} words from vocabulary")
-            return vocabulary
-        except Exception as e:
-            print(f"Error loading vocabulary: {e}", file=sys.stderr)
-            return []
-    
-    def create_vocabulary_training_data(self, vocabulary, num_samples=500):
-        """Create training data using vocabulary words"""
-        training_data = []
-        
-        # Filter to reasonable words
-        filtered_vocab = [word for word in vocabulary 
-                          if len(word) > 1 and len(word) < 20 
-                          and not word.replace('-', '').replace('.', '').replace(',', '').isdigit()]
-        
-        print(f"Using {len(filtered_vocab)} filtered words for training")
-        
-        for i in range(min(num_samples, len(filtered_vocab))):
-            if i % 50 == 0:
-                print(f"Creating vocabulary sample {i}/{min(num_samples, len(filtered_vocab))}...")
-            
-            word = filtered_vocab[i % len(filtered_vocab)]
-            
-            # Create conversation examples
-            examples = [
-                f"Hello, how are you?",
-                f"What is {word}?",
-                f"Tell me about {word}.",
-                f"Thank you for your help.",
-                f"Goodbye!"
-            ]
-            
-            input_text = examples[i % len(examples)]
-            
-            # Generate responses
-            if "how are you" in input_text.lower():
-                teacher_output = "I'm doing well, thank you for asking!"
-            elif "what is" in input_text.lower():
-                teacher_output = f"{word} is something I can help you learn about."
-            elif "tell me" in input_text.lower():
-                teacher_output = f"{word} is an interesting topic worth discussing."
-            elif "thank" in input_text.lower():
-                teacher_output = "You're welcome! Is there anything else I can help with?"
-            elif "goodbye" in input_text.lower():
-                teacher_output = "Goodbye! Have a great day!"
-            else:
-                teacher_output = "I'm here to help with your questions."
-            
-            # Get embeddings
-            input_embeddings = self.get_embeddings(input_text)
-            
-            if input_embeddings:
-                training_data.append({
-                    'input_text': input_text,
-                    'teacher_embeddings': input_embeddings,
-                    'teacher_output': teacher_output,
-                    'model_dim': self.model_dim
-                })
-        
-        return training_data
-    
-    def train_sam_with_vocabulary(self, epochs=5, num_samples=500):
-        """Train SAM model using vocabulary words"""
-        print(f"\n=== Vocabulary-based Training for SAM ===")
-        
-        # Load vocabulary
-        vocabulary = self.load_vocabulary()
-        if not vocabulary:
-            print("No vocabulary loaded!", file=sys.stderr)
-            return []
-        
-        # Create training data
-        training_data = self.create_vocabulary_training_data(vocabulary, num_samples)
-        
-        # Save training data
-        with open('hf_training_data.json', 'w') as f:
-            json.dump(training_data, f, indent=2)
-        
-        print(f"\nSaved {len(training_data)} vocabulary training samples to hf_training_data.json")
-        return training_data
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python hf_trainer.py <model_name> [epochs] [data_file|vocabulary]")
-        print("Examples:")
-        print("  python hf_trainer.py bert-base-uncased 10 ../utils/DATASETS/RomeoAndJuliet.txt")
-        print("  python hf_trainer.py bert-base-uncased 5 vocabulary  # Uses words.txt for conversation")
+        print("Usage: python hf_trainer.py <model_name> [epochs] [data_file]")
+        print("Example: python hf_trainer.py bert-base-uncased 10 ../utils/DATASETS/RomeoAndJuliet.txt")
         sys.exit(1)
     
     model_name = sys.argv[1] if len(sys.argv) > 1 else "bert-base-uncased"
     epochs = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-    data_arg = sys.argv[3] if len(sys.argv) > 3 else "../utils/DATASETS/RomeoAndJuliet.txt"
+    data_file = sys.argv[3] if len(sys.argv) > 3 else "../utils/DATASETS/RomeoAndJuliet.txt"
     
     # Initialize trainer
     trainer = HFTrainer(model_name)
     
-    # Check training mode
-    if data_arg.lower() == "vocabulary":
-        # Vocabulary-based training for conversation
-        trainer.train_sam_with_vocabulary(epochs, 500)
-    else:
-        # Check if this is already training data (JSON format)
-        try:
-            with open(data_arg, 'r', encoding='utf-8') as f:
-                content = f.read(1000)  # Read first 1000 characters
-                if content.startswith('[') and ('input_text' in content or 'teacher_embeddings' in content):
-                    print(f"\nDetected existing training data in {data_arg}")
-                    print("Training data is already prepared - no processing needed")
-                    print(f"Run the C trainer directly: ./hf_trainer {model_name} {epochs} {data_arg}")
-                    sys.exit(0)
-        except Exception as e:
-            pass  # Continue with normal processing
-        
-        # Load training data from file
-        print(f"\nLoading training data from: {data_arg}")
-        training_texts = []
-        
-        try:
-            with open(data_arg, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and len(line) > 10:  # Skip very short lines
-                        training_texts.append(line)
-                        if len(training_texts) >= 1000:  # Limit for testing
-                            break
-        except Exception as e:
-            print(f"Error loading data file: {e}", file=sys.stderr)
-            sys.exit(1)
-        
-        print(f"Loaded {len(training_texts)} training texts")
-        trainer.train_sam(training_texts, epochs)
+    # Load training data
+    print(f"\nLoading training data from: {data_file}")
+    training_texts = []
+    
+    try:
+        with open(data_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and len(line) > 10:  # Skip very short lines
+                    training_texts.append(line)
+                    if len(training_texts) >= 1000:  # Limit for testing
+                        break
+    except Exception as e:
+        print(f"Error loading data file: {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    print(f"Loaded {len(training_texts)} training texts")
+    
+    # Train SAM
+    trainer.train_sam(training_texts, epochs)
     
     print("\n✓ Training data prepared for SAM model")
     print("Run the C trainer to complete training: ./hf_trainer")

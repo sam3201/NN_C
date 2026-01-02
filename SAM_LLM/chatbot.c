@@ -318,12 +318,12 @@ int main(void) {
                              (int)input_box.width, (int)input_box.height, DARKGRAY);
         }
         
-        DrawText(input_text, (int)input_box.x + 5, (int)input_box.y + 15, 20, BLACK);
+        DrawText(input_text, (int)input_box.x + 5, (int)input_box.y + 15, 20, MAROON);
         
         // Draw blinking cursor
         if (mouse_on_input && (input_frames_counter / 20) % 2 == 0) {
             int text_width = MeasureText(input_text, 20);
-            DrawText("_", (int)input_box.x + 10 + text_width, (int)input_box.y + 15, 20, BLACK);
+            DrawText("_", (int)input_box.x + 10 + text_width, (int)input_box.y + 15, 20, MAROON);
         }
         
         // Draw send button
@@ -345,9 +345,9 @@ int main(void) {
         
         // Draw status
         if (model_loaded) {
-            DrawText("Model: Loaded", SCREEN_WIDTH - 150, 5, 16, BLACK);
+            DrawText("Model: Loaded", SCREEN_WIDTH - 150, 5, 16, GREEN);
         } else {
-            DrawText("Model: Not Loaded", SCREEN_WIDTH - 180, 5, 16, BLACK);
+            DrawText("Model: Not Loaded", SCREEN_WIDTH - 180, 5, 16, RED);
         }
         
         EndDrawing();
