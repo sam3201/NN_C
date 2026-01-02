@@ -538,6 +538,57 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
     nn->optimizer(nn); // apply weight updates
 }
 
+// y_true: one-hot or label index
+// y_pred: raw outputs (logits or softmax probabilities)
+// lossDerivative: pointer to chosen loss derivative function
+void NN_backprop_argmax_loss(NN_t *nn, long double inputs[],
+                             long double y_true[], long double y_pred[],
+                             long double (*lossDerivative)(long double,
+                                                           long double)) {
+  if (!nn || !y_true || !y_pred)
+    return;
+
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  // Find predicted class index
+  size_t pred_idx = 0;
+  long double max_val = y_pred[0];
+  for (size_t i = 1; i < out_size; i++) {
+    if (y_pred[i] > max_val) {
+      max_val = y_pred[i];
+      pred_idx = i;
+    }
+  }
+
+  // Compute gradients for backprop (sparse: only for predicted class)
+  long double *gradients = (long double *)calloc(out_size, sizeof(long double));
+  if (!gradients)
+    return;
+
+  for (size_t i = 0; i < out_size; i++) {
+    if (i == pred_idx) {
+      gradients[i] = lossDerivative(y_true[i], y_pred[i]);
+    } else {
+      gradients[i] = 0.0L; // non-max classes don’t contribute
+    }
+  }
+
+  // Update last layer weights and biases
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[last_layer_idx][j] = gradients[j];
+    for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
+      nn->weights_v[last_layer_idx][k * out_size + j] =
+          gradients[j] * inputs[k];
+    }
+  }
+
+  free(gradients);
+
+  if (nn->optimizer)
+    nn->optimizer(nn); // apply updates
+}
+
 // Function Getters
 ActivationFunction get_activation_function(ActivationFunctionType type) {
   if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
