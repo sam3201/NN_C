@@ -529,6 +529,7 @@ void NN_backprop_classifier(NN_t *nn, long double inputs[],
   free(out_gradients);
   nn->optimizer(nn); // Apply weight updates
 }
+
 long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
