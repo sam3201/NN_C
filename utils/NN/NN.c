@@ -478,7 +478,7 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
-long double *NN_forward_softmax_layer(NN_t *nn, long double inputs[]) {
+long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
   size_t last_layer_idx = nn->numLayers - 2;
   size_t out_size = nn->layers[nn->numLayers - 1];
 
