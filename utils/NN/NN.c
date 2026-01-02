@@ -478,48 +478,107 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
-//
-void softmax(long double *vec, size_t size) {
-  long double max = vec[0];
-  for (size_t i = 1; i < size; i++)
-    if (vec[i] > max)
-      max = vec[i];
+long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
+  if (!nn || !inputs)
+    return NULL;
 
-  long double sum = 0.0L;
-  for (size_t i = 0; i < size; i++) {
-    vec[i] = expl(vec[i] - max); // Numerical stability
-    sum += vec[i];
+  long double *current = inputs;
+  long double *next = NULL;
+
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    next = NN_matmul(current, nn->weights[i], nn->biases[i], nn->layers[i],
+                     nn->layers[i + 1]);
+
+    // Handle vector activation at the output (or any layer)
+    if (i == nn->numLayers - 2) { // Typically the last layer
+      softmax(next, nn->layers[i + 1]);
+    } else {
+      // Standard element-wise activation
+      for (size_t j = 0; j < nn->layers[i + 1]; j++) {
+        next[j] = nn->activationFunctions[i](next[j]);
+      }
+    }
+
+    if (i > 0)
+      free(current);
+    current = next;
   }
-  for (size_t i = 0; i < size; i++)
-    vec[i] /= sum;
+  return current;
 }
 
-void argmax_vec(long double *vec, size_t size) {
-  size_t max_idx = 0;
-  long double max_val = vec[0];
-  for (size_t i = 1; i < size; i++) {
-    if (vec[i] > max_val) {
-      max_val = vec[i];
-      max_idx = i;
+void NN_backprop_classifier(NN_t *nn, long double inputs[],
+                            long double y_true_vec[],
+                            long double y_pred_vec[]) {
+  size_t out_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  // 1. Calculate output gradients using the vector-based derivative
+  long double *out_gradients =
+      (long double *)malloc(out_size * sizeof(long double));
+  softmax_derivative_vec(y_pred_vec, y_true_vec, out_gradients, out_size);
+
+  // 2. Propagate back (simplification of the chain rule for your architecture)
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[out_layer_idx][j] = out_gradients[j];
+    for (size_t k = 0; k < nn->layers[out_layer_idx]; k++) {
+      nn->weights_v[out_layer_idx][k * out_size + j] =
+          out_gradients[j] * inputs[k];
     }
   }
-  for (size_t i = 0; i < size; i++)
-    vec[i] = (i == max_idx) ? 1.0L : 0.0L;
-}
 
-// Derivative where target mapping is the 2nd argument
-void softmax_derivative_vec(long double *predicted, long double *target,
-                            long double *out_gradient, size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    // Gradient of Softmax + Cross-Entropy simplifies to (pred - target)
-    out_gradient[i] = predicted[i] - target[i];
+  free(out_gradients);
+  nn->optimizer(nn); // Apply weight updates
+}
+long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
+  if (!nn || !inputs)
+    return NULL;
+
+  long double *current = inputs;
+  long double *next = NULL;
+
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    next = NN_matmul(current, nn->weights[i], nn->biases[i], nn->layers[i],
+                     nn->layers[i + 1]);
+
+    // Handle vector activation at the output (or any layer)
+    if (i == nn->numLayers - 2) { // Typically the last layer
+      softmax(next, nn->layers[i + 1]);
+    } else {
+      // Standard element-wise activation
+      for (size_t j = 0; j < nn->layers[i + 1]; j++) {
+        next[j] = nn->activationFunctions[i](next[j]);
+      }
+    }
+
+    if (i > 0)
+      free(current);
+    current = next;
   }
+  return current;
 }
 
-void argmax_derivative_vec(long double *predicted, long double *target,
-                           long double *out_gradient, size_t size) {
-  for (size_t i = 0; i < size; i++)
-    out_gradient[i] = 0.0L; // Non-differentiable
+void NN_backprop_classifier(NN_t *nn, long double inputs[],
+                            long double y_true_vec[],
+                            long double y_pred_vec[]) {
+  size_t out_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  // 1. Calculate output gradients using the vector-based derivative
+  long double *out_gradients =
+      (long double *)malloc(out_size * sizeof(long double));
+  softmax_derivative_vec(y_pred_vec, y_true_vec, out_gradients, out_size);
+
+  // 2. Propagate back (simplification of the chain rule for your architecture)
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[out_layer_idx][j] = out_gradients[j];
+    for (size_t k = 0; k < nn->layers[out_layer_idx]; k++) {
+      nn->weights_v[out_layer_idx][k * out_size + j] =
+          out_gradients[j] * inputs[k];
+    }
+  }
+
+  free(out_gradients);
+  nn->optimizer(nn); // Apply weight updates
 }
 
 // Function Getters
