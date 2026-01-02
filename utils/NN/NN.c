@@ -949,7 +949,7 @@ void softmax_derivative_vec(long double *predicted, long double *one_hot,
 
 // Argmax Derivative (Technically non-differentiable; returns 0 or passthrough)
 void argmax_derivative_vec(long double *predicted, long double *one_hot,
-                           long double *out_gradient, size_t size) {
+                           long double *gradients, size_t size) {
   for (size_t i = 0; i < size; i++)
     out_gradient[i] = 0.0L;
 }
