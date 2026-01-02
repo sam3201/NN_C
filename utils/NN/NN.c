@@ -478,49 +478,16 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
-long double *NN_forward_output_layer(NN_t *nn, long double inputs[]) {
-  size_t last_layer_idx = nn->numLayers - 2; // index of last weights
+long double *NN_forward_softmax_layer(NN_t *nn, long double inputs[]) {
+  size_t last_layer_idx = nn->numLayers - 2;
   size_t out_size = nn->layers[nn->numLayers - 1];
 
   long double *output =
       NN_matmul(inputs, nn->weights[last_layer_idx], nn->biases[last_layer_idx],
                 nn->layers[last_layer_idx], out_size);
 
-  // Apply activation for output layer
-  if (nn->activationFunctions[last_layer_idx]) {
-    if (nn->activationFunctions[last_layer_idx] == softmax) {
-      softmax(output, out_size); // special case for softmax
-    } else {
-      for (size_t i = 0; i < out_size; i++)
-        output[i] = nn->activationFunctions[last_layer_idx](output[i]);
-    }
-  }
-
+  softmax(output, out_size); // apply softmax activation
   return output;
-}
-
-void NN_compute_output_gradients(NN_t *nn, long double y_true[],
-                                 long double y_pred[],
-                                 long double gradients[]) {
-  size_t out_size = nn->layers[nn->numLayers - 1];
-  LossDerivative loss_deriv = nn->lossDerivative;
-  ActivationDerivative act_deriv = nn->activationDerivatives[nn->numLayers - 2];
-
-  for (size_t i = 0; i < out_size; i++) {
-    long double dL_dy = loss_deriv ? loss_deriv(y_true[i], y_pred[i]) : 0.0L;
-    if (act_deriv) {
-      // If output activation is softmax, its derivative is built into dL/dy for
-      // CE
-      if (nn->activationFunctions[nn->numLayers - 2] == softmax &&
-          loss_deriv == ce_derivative) {
-        gradients[i] = y_pred[i] - y_true[i]; // special CE+softmax shortcut
-      } else {
-        gradients[i] = dL_dy * act_deriv(y_pred[i]); // chain rule
-      }
-    } else {
-      gradients[i] = dL_dy; // no activation derivative
-    }
-  }
 }
 
 void NN_backprop_output_layer(NN_t *nn, long double inputs[],
