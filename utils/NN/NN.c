@@ -912,6 +912,20 @@ void softmax(long double *vec, size_t size) {
     vec[i] /= sum;
 }
 
+// Argmax Activation (Hardmax)
+void argmax_vec(long double *vec, size_t size) {
+  size_t max_idx = 0;
+  long double max_val = vec[0];
+  for (size_t i = 1; i < size; i++) {
+    if (vec[i] > max_val) {
+      max_val = vec[i];
+      max_idx = i;
+    }
+  }
+  for (size_t i = 0; i < size; i++)
+    vec[i] = (i == max_idx) ? 1.0L : 0.0L;
+}
+
 // Activation Derivatives
 long double sigmoid_derivative(long double x) {
   long double s = sigmoid(x);
