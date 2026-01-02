@@ -234,9 +234,6 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
     nn->optimizer(nn); // apply weight updates
 }
 
-// y_true: one-hot or label index
-// y_pred: raw outputs (logits or softmax probabilities)
-// lossDerivative: pointer to chosen loss derivative function
 void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
                         long double y_pred[],
                         long double (*lossDerivative)(long double,
