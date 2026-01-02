@@ -478,6 +478,26 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
+// General vectorized loss derivative for output layer
+void NN_compute_output_gradients(NN_t *nn, long double y_true_vec[],
+                                 long double y_pred_vec[],
+                                 long double gradients[]) {
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  // Determine loss derivative type
+  LossDerivative loss_deriv_func = nn->lossDerivative;
+
+  for (size_t i = 0; i < out_size; i++) {
+    // For CE + softmax, this is simplified
+    if (loss_deriv_func == ce_derivative) {
+      gradients[i] = y_pred_vec[i] - y_true_vec[i]; // still valid
+    } else {
+      // For scalar loss functions applied elementwise (MSE, MAE, Huber, LL)
+      gradients[i] = loss_deriv_func(y_true_vec[i], y_pred_vec[i]);
+    }
+  }
+}
+
 long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
