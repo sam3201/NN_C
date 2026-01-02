@@ -927,8 +927,6 @@ void argmax_vec(long double *layer, size_t size) {
     layer[i] = (i == max_idx) ? 1.0L : 0.0L;
 }
 
-// Softmax Derivative: Standard gradient (Predicted - Target)
-// for use with Cross-Entropy or as a generalized delta.
 void softmax_derivative_vec(long double *predicted, long double *one_hot,
                             long double *gradients, size_t size) {
   for (size_t i = 0; i < size; i++) {
@@ -936,7 +934,6 @@ void softmax_derivative_vec(long double *predicted, long double *one_hot,
   }
 }
 
-// Argmax is non-differentiable; usually returns 0 or acts as a pass-through
 void argmax_derivative_vec(long double *predicted, long double *one_hot,
                            long double *gradients, size_t size) {
   for (size_t i = 0; i < size; i++)
