@@ -178,7 +178,7 @@ void argmax(long double *vec, size_t size); // Sets max to 1, others to 0
 void softmax_derivative_vec(long double *predicted, long double *one_hot,
                             long double *gradients, size_t size);
 void argmax_derivative_vec(long double *predicted, long double *one_hot,
-                           long double *out_gradient, size_t size);
+                           long double *gradients, size_t size);
 
 // Helper to create a one-hot vector (useful for the user)
 long double *create_one_hot(size_t index, size_t size);
