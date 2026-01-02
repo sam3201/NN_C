@@ -172,7 +172,7 @@ long double linear_derivative(long double x);
 
 // Vector-based Activations
 void softmax(long double *vec, size_t size);
-void argmax_vec(long double *vec, size_t size); // Sets max to 1, others to 0
+void argmax(long double *vec, size_t size); // Sets max to 1, others to 0
 
 // Derivatives taking one-hot mapping as the second parameter
 void softmax_derivative_vec(long double *predicted, long double *one_hot,
