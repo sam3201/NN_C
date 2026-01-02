@@ -486,7 +486,7 @@ long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
       NN_matmul(inputs, nn->weights[last_layer_idx], nn->biases[last_layer_idx],
                 nn->layers[last_layer_idx], out_size);
 
-  softmax(output, out_size); // apply softmax activation
+  softmax(output, out_size);
   return output;
 }
 
