@@ -478,6 +478,27 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
+long double *NN_forward_output_layer(NN_t *nn, long double inputs[]) {
+  size_t last_layer_idx = nn->numLayers - 2; // index of last weights
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  long double *output =
+      NN_matmul(inputs, nn->weights[last_layer_idx], nn->biases[last_layer_idx],
+                nn->layers[last_layer_idx], out_size);
+
+  // Apply activation for output layer
+  if (nn->activationFunctions[last_layer_idx]) {
+    if (nn->activationFunctions[last_layer_idx] == softmax) {
+      softmax(output, out_size); // special case for softmax
+    } else {
+      for (size_t i = 0; i < out_size; i++)
+        output[i] = nn->activationFunctions[last_layer_idx](output[i]);
+    }
+  }
+
+  return output;
+}
+
 long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
