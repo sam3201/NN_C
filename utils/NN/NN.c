@@ -551,6 +551,34 @@ void NN_compute_output_gradients(NN_t *nn, long double y_true[],
   }
 }
 
+void NN_backprop_output_layer(NN_t *nn, long double inputs[],
+                              long double y_true[], long double y_pred[]) {
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  long double *gradients =
+      (long double *)malloc(out_size * sizeof(long double));
+  if (!gradients)
+    return;
+
+  NN_compute_output_gradients(nn, y_true, y_pred, gradients);
+
+  // Update weight and bias gradients
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[last_layer_idx][j] = gradients[j];
+    for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
+      nn->weights_v[last_layer_idx][k * out_size + j] =
+          gradients[j] * inputs[k];
+    }
+  }
+
+  free(gradients);
+
+  // Apply optimizer to update weights
+  if (nn->optimizer)
+    nn->optimizer(nn);
+}
+
 void NN_backprop_classifier(NN_t *nn, long double inputs[],
                             long double y_true_vec[],
                             long double y_pred_vec[]) {
