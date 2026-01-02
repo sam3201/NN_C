@@ -532,12 +532,11 @@ void NN_backprop_classifier(NN_t *nn, long double inputs[],
   size_t out_layer_idx = nn->numLayers - 2;
   size_t out_size = nn->layers[nn->numLayers - 1];
 
-  // 1. Calculate output gradients using the vector-based derivative
   long double *out_gradients =
       (long double *)malloc(out_size * sizeof(long double));
-  softmax_derivative_vec(y_pred_vec, y_true_vec, out_gradients, out_size);
 
-  // 2. Propagate back (simplification of the chain rule for your architecture)
+  NN_compute_output_gradients(nn, y_true_vec, y_pred_vec, out_gradients);
+
   for (size_t j = 0; j < out_size; j++) {
     nn->biases_v[out_layer_idx][j] = out_gradients[j];
     for (size_t k = 0; k < nn->layers[out_layer_idx]; k++) {
@@ -547,7 +546,8 @@ void NN_backprop_classifier(NN_t *nn, long double inputs[],
   }
 
   free(out_gradients);
-  nn->optimizer(nn); // Apply weight updates
+
+  nn->optimizer(nn);
 }
 
 // Function Getters
