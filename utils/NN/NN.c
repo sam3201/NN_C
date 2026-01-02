@@ -506,30 +506,6 @@ long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
   return current;
 }
 
-void NN_backprop_classifier(NN_t *nn, long double inputs[],
-                            long double y_true_vec[],
-                            long double y_pred_vec[]) {
-  size_t out_layer_idx = nn->numLayers - 2;
-  size_t out_size = nn->layers[nn->numLayers - 1];
-
-  long double *out_gradients =
-      (long double *)malloc(out_size * sizeof(long double));
-
-  NN_compute_output_gradients(nn, y_true_vec, y_pred_vec, out_gradients);
-
-  for (size_t j = 0; j < out_size; j++) {
-    nn->biases_v[out_layer_idx][j] = out_gradients[j];
-    for (size_t k = 0; k < nn->layers[out_layer_idx]; k++) {
-      nn->weights_v[out_layer_idx][k * out_size + j] =
-          out_gradients[j] * inputs[k];
-    }
-  }
-
-  free(out_gradients);
-
-  nn->optimizer(nn);
-}
-
 // General vectorized loss derivative for output layer
 void NN_compute_output_gradients(NN_t *nn, long double y_true_vec[],
                                  long double y_pred_vec[],
