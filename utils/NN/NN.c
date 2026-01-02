@@ -943,15 +943,14 @@ long double linear_derivative(long double x) { return 1.0L; }
 void softmax_derivative_vec(long double *predicted, long double *one_hot,
                             long double *gradients, size_t size) {
   for (size_t i = 0; i < size; i++) {
-    out_gradient[i] = predicted[i] - one_hot[i];
+    gradients[i] = predicted[i] - one_hot[i];
   }
 }
 
-// Argmax Derivative (Technically non-differentiable; returns 0 or passthrough)
 void argmax_derivative_vec(long double *predicted, long double *one_hot,
                            long double *gradients, size_t size) {
   for (size_t i = 0; i < size; i++)
-    out_gradient[i] = 0.0L;
+    gradients[i] = 0.0L;
 }
 
 // Loss Functions
