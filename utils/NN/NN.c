@@ -530,58 +530,6 @@ void NN_backprop_classifier(NN_t *nn, long double inputs[],
   nn->optimizer(nn); // Apply weight updates
 }
 
-long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
-  if (!nn || !inputs)
-    return NULL;
-
-  long double *current = inputs;
-  long double *next = NULL;
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    next = NN_matmul(current, nn->weights[i], nn->biases[i], nn->layers[i],
-                     nn->layers[i + 1]);
-
-    // Handle vector activation at the output (or any layer)
-    if (i == nn->numLayers - 2) { // Typically the last layer
-      softmax(next, nn->layers[i + 1]);
-    } else {
-      // Standard element-wise activation
-      for (size_t j = 0; j < nn->layers[i + 1]; j++) {
-        next[j] = nn->activationFunctions[i](next[j]);
-      }
-    }
-
-    if (i > 0)
-      free(current);
-    current = next;
-  }
-  return current;
-}
-
-void NN_backprop_classifier(NN_t *nn, long double inputs[],
-                            long double y_true_vec[],
-                            long double y_pred_vec[]) {
-  size_t out_layer_idx = nn->numLayers - 2;
-  size_t out_size = nn->layers[nn->numLayers - 1];
-
-  // 1. Calculate output gradients using the vector-based derivative
-  long double *out_gradients =
-      (long double *)malloc(out_size * sizeof(long double));
-  softmax_derivative_vec(y_pred_vec, y_true_vec, out_gradients, out_size);
-
-  // 2. Propagate back (simplification of the chain rule for your architecture)
-  for (size_t j = 0; j < out_size; j++) {
-    nn->biases_v[out_layer_idx][j] = out_gradients[j];
-    for (size_t k = 0; k < nn->layers[out_layer_idx]; k++) {
-      nn->weights_v[out_layer_idx][k * out_size + j] =
-          out_gradients[j] * inputs[k];
-    }
-  }
-
-  free(out_gradients);
-  nn->optimizer(nn); // Apply weight updates
-}
-
 // Function Getters
 ActivationFunction get_activation_function(ActivationFunctionType type) {
   if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
