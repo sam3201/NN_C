@@ -527,22 +527,26 @@ long double *NN_forward_classifier(NN_t *nn, long double inputs[]) {
   return current;
 }
 
-// General vectorized loss derivative for output layer
-void NN_compute_output_gradients(NN_t *nn, long double y_true_vec[],
-                                 long double y_pred_vec[],
+void NN_compute_output_gradients(NN_t *nn, long double y_true[],
+                                 long double y_pred[],
                                  long double gradients[]) {
   size_t out_size = nn->layers[nn->numLayers - 1];
-
-  // Determine loss derivative type
-  LossDerivative loss_deriv_func = nn->lossDerivative;
+  LossDerivative loss_deriv = nn->lossDerivative;
+  ActivationDerivative act_deriv = nn->activationDerivatives[nn->numLayers - 2];
 
   for (size_t i = 0; i < out_size; i++) {
-    // For CE + softmax, this is simplified
-    if (loss_deriv_func == ce_derivative) {
-      gradients[i] = y_pred_vec[i] - y_true_vec[i]; // still valid
+    long double dL_dy = loss_deriv ? loss_deriv(y_true[i], y_pred[i]) : 0.0L;
+    if (act_deriv) {
+      // If output activation is softmax, its derivative is built into dL/dy for
+      // CE
+      if (nn->activationFunctions[nn->numLayers - 2] == softmax &&
+          loss_deriv == ce_derivative) {
+        gradients[i] = y_pred[i] - y_true[i]; // special CE+softmax shortcut
+      } else {
+        gradients[i] = dL_dy * act_deriv(y_pred[i]); // chain rule
+      }
     } else {
-      // For scalar loss functions applied elementwise (MSE, MAE, Huber, LL)
-      gradients[i] = loss_deriv_func(y_true_vec[i], y_pred_vec[i]);
+      gradients[i] = dL_dy; // no activation derivative
     }
   }
 }
