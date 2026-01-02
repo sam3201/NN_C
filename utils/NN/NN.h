@@ -174,17 +174,7 @@ long double linear_derivative(long double x);
 void softmax(long double *vec, size_t size);
 void argmax(long double *vec, size_t size); // Sets max to 1, others to 0
 
-long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
-  size_t last_layer_idx = nn->numLayers - 2;
-  size_t out_size = nn->layers[nn->numLayers - 1];
-
-  long double *output =
-      NN_matmul(inputs, nn->weights[last_layer_idx], nn->biases[last_layer_idx],
-                nn->layers[last_layer_idx], out_size);
-
-  softmax(output, out_size);
-  return output;
-}
+long double *NN_forward_softmax(NN_t *nn, long double inputs[]);
 
 void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
                          long double y_pred[]);
