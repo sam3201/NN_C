@@ -123,10 +123,6 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
                  long double y_predicted);
 void NN_destroy(NN_t *nn);
 
-// softmax derivative
-//  void softmax_derivative(long double *predicted, long double *one_hot,
-//                          long double *gradients, size_t size);
-
 // Helper Functions for Type Conversion
 ActivationFunction get_activation_function(ActivationFunctionType type);
 ActivationDerivative get_activation_derivative(ActivationDerivativeType type);
