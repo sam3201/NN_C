@@ -478,6 +478,50 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
   nn->optimizer(nn);
 }
 
+//
+void softmax(long double *vec, size_t size) {
+  long double max = vec[0];
+  for (size_t i = 1; i < size; i++)
+    if (vec[i] > max)
+      max = vec[i];
+
+  long double sum = 0.0L;
+  for (size_t i = 0; i < size; i++) {
+    vec[i] = expl(vec[i] - max); // Numerical stability
+    sum += vec[i];
+  }
+  for (size_t i = 0; i < size; i++)
+    vec[i] /= sum;
+}
+
+void argmax_vec(long double *vec, size_t size) {
+  size_t max_idx = 0;
+  long double max_val = vec[0];
+  for (size_t i = 1; i < size; i++) {
+    if (vec[i] > max_val) {
+      max_val = vec[i];
+      max_idx = i;
+    }
+  }
+  for (size_t i = 0; i < size; i++)
+    vec[i] = (i == max_idx) ? 1.0L : 0.0L;
+}
+
+// Derivative where target mapping is the 2nd argument
+void softmax_derivative_vec(long double *predicted, long double *target,
+                            long double *out_gradient, size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    // Gradient of Softmax + Cross-Entropy simplifies to (pred - target)
+    out_gradient[i] = predicted[i] - target[i];
+  }
+}
+
+void argmax_derivative_vec(long double *predicted, long double *target,
+                           long double *out_gradient, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    out_gradient[i] = 0.0L; // Non-differentiable
+}
+
 // Function Getters
 ActivationFunction get_activation_function(ActivationFunctionType type) {
   if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
