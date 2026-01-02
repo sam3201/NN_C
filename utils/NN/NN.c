@@ -490,6 +490,54 @@ long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
   return output;
 }
 
+void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
+                         long double y_pred[]) {
+  if (!nn || !y_true || !y_pred)
+    return;
+
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  long double *gradients =
+      (long double *)malloc(out_size * sizeof(long double));
+  if (!gradients)
+    return;
+
+  // Compute gradient for each output using the configured loss derivative
+  for (size_t i = 0; i < out_size; i++) {
+    gradients[i] = nn->lossDerivative(y_true[i], y_pred[i]);
+  }
+
+  // Apply chain rule with softmax derivative
+  // Simplified: dL/dz = sum_j (dL/dy_j * dy_j/dz_i)
+  // For now, this uses the “vectorized CE trick” only if CE is used.
+  if (nn->loss == ce) {
+    for (size_t i = 0; i < out_size; i++)
+      gradients[i] = y_pred[i] - y_true[i]; // CE+softmax shortcut
+  } else {
+    // For other losses, multiply by softmax derivative if needed
+    long double sum = 0.0L;
+    for (size_t i = 0; i < out_size; i++)
+      sum += gradients[i] * y_pred[i]; // sum_j dL/dy_j * y_j
+    for (size_t i = 0; i < out_size; i++)
+      gradients[i] *= y_pred[i] - sum; // chain rule
+  }
+
+  // Propagate to weights and biases
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[last_layer_idx][j] = gradients[j];
+    for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
+      nn->weights_v[last_layer_idx][k * out_size + j] =
+          gradients[j] * inputs[k];
+    }
+  }
+
+  free(gradients);
+
+  if (nn->optimizer)
+    nn->optimizer(nn); // apply weight updates
+}
+
 void NN_backprop_output_layer(NN_t *nn, long double inputs[],
                               long double y_true[], long double y_pred[]) {
   size_t last_layer_idx = nn->numLayers - 2;
