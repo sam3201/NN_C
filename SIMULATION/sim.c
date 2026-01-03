@@ -54,6 +54,10 @@ typedef struct {
   MuModel *brain;
   Memory memory;
   size_t input_size;
+
+  // --- Groundkeeper Fields ---
+  bool is_groundkeeper;   // true if this is a groundkeeper
+  float punishment_timer; // time until next punishment
 } Agent;
 
 typedef struct {
