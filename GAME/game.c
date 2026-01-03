@@ -330,31 +330,39 @@ int decide_action(Agent *a, float *obs) {
   return (act >= 0 && act < ACTION_COUNT) ? act : rand() % ACTION_COUNT;
 }
 
-void update_agent(Agent *a) {
+void update_agent(Agent *a, Chunk *c) {
   if (!a->alive)
     return;
 
   float obs[a->input_size];
-  encode_observation(a, get_chunk(a->position.x, a->position.y), obs);
+  encode_observation(a, c, obs);
 
-  int act = decide_action(a, obs);
+  int action = decide_action(a, obs);
 
-  if (act == ACTION_UP)
-    a->position.y -= 0.4f;
-  if (act == ACTION_DOWN)
-    a->position.y += 0.4f;
-  if (act == ACTION_LEFT)
-    a->position.x -= 0.4f;
-  if (act == ACTION_RIGHT)
-    a->position.x += 0.4f;
+  switch (action) {
+  case ACTION_UP:
+    a->position.y -= 0.5f;
+    break;
+  case ACTION_DOWN:
+    a->position.y += 0.5f;
+    break;
+  case ACTION_LEFT:
+    a->position.x -= 0.5f;
+    break;
+  case ACTION_RIGHT:
+    a->position.x += 0.5f;
+    break;
+  default:
+    break;
+  }
 
-  float d = Vector2Distance(a->position, agent_base.position);
-  if (d < BASE_RADIUS) {
-    a->health = fminf(a->health + 0.3f, 100);
-    a->stamina = fminf(a->stamina + 0.3f, 100);
-    a->flash_timer = 0.2f;
+  float dist = Vector2Distance(a->position, agent_base.position);
+  if (dist < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100);
+    a->stamina = fminf(a->stamina + 0.5f, 100);
+    a->flash_timer += 0.1f;
   } else {
-    a->flash_timer = fmaxf(0, a->flash_timer - 0.01f);
+    a->flash_timer = 0;
   }
 }
 
