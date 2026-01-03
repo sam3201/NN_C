@@ -335,8 +335,7 @@ void update_agent(Agent *a) {
     return;
 
   float obs[a->input_size];
-  for (size_t i = 0; i < a->input_size; i++)
-    obs[i] = randf(0, 1);
+  encode_observation(a, c, obs);
 
   int act = decide_action(a, obs);
 
