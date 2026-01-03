@@ -12,6 +12,8 @@ static bool world_initialized = false;
 Resource resources[MAX_RESOURCES];
 int resource_count = 0;
 
+player.tool = TOOL_HAND;
+
 // ------------------------ helpers --------------------------
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 
