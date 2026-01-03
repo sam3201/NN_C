@@ -122,3 +122,22 @@ void draw_world(Vector2 camera) {
     }
   }
 }
+
+Player player;
+
+void init_player() {
+  player.position = (Vector2){0, 0};
+  player.max_health = 100;
+  player.health = 100;
+  player.max_stamina = 100;
+  player.stamina = 100;
+  player.move_speed = 2.0f;
+  player.attack_damage = 10.0f;
+  player.attack_range = 10.0f;
+
+  player.wood = 0;
+  player.stone = 0;
+  player.food = 0;
+
+  player.alive = true;
+}
