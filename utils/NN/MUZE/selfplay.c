@@ -10,7 +10,6 @@
 */
 
 ToyEnvState env;
-env.size = model->cfg.obs_dim; // must match obs_dim
 
 static void compute_discounted_returns(const float *rewards, int T, float gamma,
                                        float *z_out) {
