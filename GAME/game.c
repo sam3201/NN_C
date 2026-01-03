@@ -132,7 +132,7 @@ int ai_choose_action(Tank *ai, Tank *player) {
                        .dirichlet_eps = 0.25f,
                        .temperature = 1.0f,
                        .discount = 0.99f};
-  MCTSResult *res = mcts_run(ai_model, obs, &params);
+  MCTSResult res = mcts_run(ai_model, obs, &params);
   int action = res->chosen_action;
   mcts_result_free(res);
   return action;
