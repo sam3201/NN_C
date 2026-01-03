@@ -25,7 +25,6 @@ static void compute_discounted_returns(const float *rewards, int T, float gamma,
 void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
                   env_step_fn env_step, MCTSParams *mcts_params,
                   SelfPlayParams *sp_params, ReplayBuffer *rb) {
-
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
 
@@ -39,12 +38,7 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
   float *reward_buf = malloc(sizeof(float) * max_steps);
   int *act_buf = malloc(sizeof(int) * max_steps);
 
-  /* create a local ToyEnvState if needed */
-  ToyEnvState env_local;
-  env_local.size = obs_dim;
-
   for (int ep = 0; ep < sp_params->total_episodes; ep++) {
-
     /* reset env */
     float *obs0 = malloc(sizeof(float) * obs_dim);
     env_reset(env_state, obs0);
@@ -55,7 +49,6 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
     memcpy(obs_cur, obs0, sizeof(float) * obs_dim);
 
     while (!done && step < max_steps) {
-
       /* run MCTS for current obs */
       MCTSParams mp = *mcts_params;
       mp.temperature = sp_params->temperature > 0.0f ? sp_params->temperature
@@ -63,7 +56,7 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
 
       MCTSResult mr = mcts_run(model, obs_cur, &mp);
 
-      /* sample action according to pi */
+      /* sample action according to pi (with rng) */
       float r = (float)rand() / (float)RAND_MAX;
       float cum = 0.0f;
       int chosen = 0;
@@ -85,9 +78,9 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
       int done_flag = 0;
       int ret = env_step(env_state, chosen, next_obs, &reward, &done_flag);
       if (ret != 0) {
-        done_flag = 1; // env error
+        /* env error: stop episode */
+        done_flag = 1;
       }
-
       reward_buf[step] = reward;
       act_buf[step] = chosen;
 
@@ -97,22 +90,19 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
 
       mcts_result_free(&mr);
 
-      if (done_flag) {
+      if (done_flag)
         done = 1;
-        break;
-      }
-    } // end episode loop
+    }
 
-    /* compute discounted returns and push to replay buffer */
+    /* compute discounted returns z_t and push samples to replay buffer */
     float *z = malloc(sizeof(float) * step);
     compute_discounted_returns(reward_buf, step, sp_params->gamma, z);
     for (int t = 0; t < step; t++) {
       rb_push(rb, obs_buf + t * obs_dim, pi_buf + t * A, z[t]);
     }
-
     free(z);
     free(obs0);
-  } // end episodes
+  }
 
   free(obs_buf);
   free(pi_buf);
