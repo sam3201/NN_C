@@ -59,7 +59,6 @@ typedef struct {
   unsigned int radius;
   float time_alive;
   int agent_id;
-  float breeding_timer;
   Color color;
   NEAT_t *brain;
   Memory memory;
