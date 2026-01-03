@@ -1,13 +1,9 @@
+// MUZE/all.h
+// This file includes all headers in the MUZE directory
+
 #ifndef MUZE_ALL_H
 #define MUZE_ALL_H
 
-// Standard headers
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// MuZero-specific headers
 #include "ewc.h"
 #include "growth.h"
 #include "mcts.h"
