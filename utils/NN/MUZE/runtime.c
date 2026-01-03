@@ -39,26 +39,27 @@ void mu_model_step(MuModel *model, MuRuntime *rt, const float *obs, int action,
   rb_push(rt->rb, rt->last_obs, pi, z);
 
   memcpy(rt->last_obs, obs, sizeof(float) * model->cfg.obs_dim);
-  void mu_model_end_episode(MuModel * model, MuRuntime * rt,
-                            float terminal_reward) {
-    if (!rt->has_last)
-      return;
-
-    float pi[model->cfg.action_count];
-    memset(pi, 0, sizeof(pi));
-
-    rb_push(rt->rb, rt->last_obs, pi, terminal_reward);
-    rt->has_last = 0;
-  }
-
-  void mu_model_reset_episode(MuRuntime * rt) { rt->has_last = 0; }
-
-  void mu_model_train(MuModel * model, MuRuntime * rt) {
-    if (rb_size(rt->rb) < 32)
-      return;
-
-    /* Placeholder SGD stub — you can upgrade later */
-    printf("[MUZE] Training step (samples=%zu)\n", rb_size(rt->rb));
-  }
   rt->last_action = action;
+}
+
+void mu_model_end_episode(MuModel *model, MuRuntime *rt,
+                          float terminal_reward) {
+  if (!rt->has_last)
+    return;
+
+  float pi[model->cfg.action_count];
+  memset(pi, 0, sizeof(pi));
+
+  rb_push(rt->rb, rt->last_obs, pi, terminal_reward);
+  rt->has_last = 0;
+}
+
+void mu_model_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
+
+void mu_model_train(MuModel *model, MuRuntime *rt) {
+  if (rb_size(rt->rb) < 32)
+    return;
+
+  /* Placeholder SGD stub — you can upgrade later */
+  printf("[MUZE] Training step (samples=%zu)\n", rb_size(rt->rb));
 }
