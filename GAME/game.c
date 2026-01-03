@@ -125,31 +125,15 @@ Color biome_color(int type) {
 }
 
 Color resource_color(ResourceType type) {
-  float tree_radius = TILE_SIZE * 0.45f;
-  float rock_radius = TILE_SIZE * 0.35f;
-  float food_radius = TILE_SIZE * 0.25f;
-
-  switch (r->type) {
-
-  case RES_TREE: {
-    // trunk
-    DrawRectangle(s.x - TILE_SIZE * 0.08f, s.y + TILE_SIZE * 0.1f,
-                  TILE_SIZE * 0.16f, TILE_SIZE * 0.45f, BROWN);
-
-    // canopy
-    DrawCircleV((Vector2){s.x, s.y - TILE_SIZE * 0.1f}, tree_radius, DARKGREEN);
-    break;
-  }
-
-  case RES_ROCK: {
-    DrawCircleV(s, rock_radius, DARKGRAY);
-    DrawCircleV((Vector2){s.x + 3, s.y - 3}, rock_radius * 0.5f, GRAY);
-    break;
-  }
-
+  switch (type) {
+  case RES_TREE:
+    return DARKGREEN;
+  case RES_ROCK:
+    return GRAY;
   case RES_FOOD:
-    DrawCircleV(s, food_radius, ORANGE);
-    break;
+    return ORANGE;
+  default:
+    return WHITE;
   }
 }
 
