@@ -266,33 +266,55 @@ void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
 
-  // Update vision and get next action
+  // Encode vision for neural network
   encode_vision(game, agent_idx, game->vision_inputs);
+
+  // Forward pass
   long double *outputs = NEAT_forward(agent->brain, game->vision_inputs);
+  Action action = get_action_from_output(outputs);
 
-  if (outputs) {
-    // Find highest output (action)
-    Action action = ACTION_NONE;
-    long double max_output = outputs[0];
-    for (int i = 1; i < ACTION_COUNT; i++) {
-      if (outputs[i] > max_output) {
-        max_output = outputs[i];
-        action = i;
-      }
-    }
+  // Execute the action
+  execute_action(game, agent_idx, action);
+  game->last_actions[agent_idx] = action;
 
-    // Execute action
-    execute_action(game, agent_idx, action);
-    game->last_actions[agent_idx] = action;
-  }
+  // Compute simple reward (can be XP gained this step)
+  float reward = (float)agent->total_xp;
 
-  // Update breeding status
+  // Store experience in memory
+  store_memory(&agent->memory, game->vision_inputs, (int)action, reward, 0.0f,
+               agent->input_size);
+
+  // Breeding logic
   if (agent->is_breeding) {
     agent->breeding_timer += GetFrameTime();
     if (agent->breeding_timer >= BREEDING_DURATION) {
       handle_breeding(game, agent_idx);
     }
   }
+}
+if (outputs) {
+  // Find highest output (action)
+  Action action = ACTION_NONE;
+  long double max_output = outputs[0];
+  for (int i = 1; i < ACTION_COUNT; i++) {
+    if (outputs[i] > max_output) {
+      max_output = outputs[i];
+      action = i;
+    }
+  }
+
+  // Execute action
+  execute_action(game, agent_idx, action);
+  game->last_actions[agent_idx] = action;
+}
+
+// Update breeding status
+if (agent->is_breeding) {
+  agent->breeding_timer += GetFrameTime();
+  if (agent->breeding_timer >= BREEDING_DURATION) {
+    handle_breeding(game, agent_idx);
+  }
+}
 }
 
 void update_agent_size(Agent *agent) {
