@@ -4,10 +4,6 @@
 
 MuConfig config =
     {
-        .input_size = 4,
-        .hidden_size = 32,
-        .output_size = 4,
-        .learning_rate = 0.001,
 
 }
 
