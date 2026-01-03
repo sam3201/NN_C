@@ -335,7 +335,7 @@ void update_agent(Agent *a) {
     return;
 
   float obs[a->input_size];
-  encode_observation(a, , obs);
+  encode_observation(a, get_chunk(a->position.x, a->position.y), obs);
 
   int act = decide_action(a, obs);
 
