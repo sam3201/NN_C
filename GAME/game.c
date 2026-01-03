@@ -51,9 +51,9 @@ int main() {
   srand((unsigned int)time(NULL));
 
   SetConfigFlags(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
-  InitWindow(GetScreenWidth(), GetScreenHeight(), "MUZE — Infinite 2D World")
+  InitWindow(GetScreenWidth(), GetScreenHeight(), "MUZE — Infinite 2D World");
 
-      SetTargetFPS(60);
+  SetTargetFPS(60);
 
   init_world();
   init_base();
