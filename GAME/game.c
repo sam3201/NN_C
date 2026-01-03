@@ -454,7 +454,7 @@ int main() {
         }
 
         // Draw player
-        DrawCircle(player.position.x, player.position.y, 6, RED);
+        DrawCircleV(player.position, TILE_SIZE * 0.45f, RED);
 
         EndMode2D();
         EndDrawing();
