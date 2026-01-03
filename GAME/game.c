@@ -23,7 +23,7 @@ typedef enum {
 
 typedef struct {
   Vector2 position;
-  Rectangle rect;
+  unsigned int radius;
   unsigned int size;
   int level;
   int total_xp;
