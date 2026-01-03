@@ -51,6 +51,31 @@ void tank_draw(Tank *t) {
   DrawRectanglePro(arm2, origin, t->rotation, t->armColor);
 }
 
+void tank_update(Tank *t, int isTop) {
+  float moveSpeed = 2.5f;
+  float rotSpeed = 2.0f;
+
+  if (!isTop) {
+    if (IsKeyDown(KEY_A))
+      t->position.x -= moveSpeed;
+    if (IsKeyDown(KEY_D))
+      t->position.x += moveSpeed;
+    if (IsKeyDown(KEY_Q))
+      t->rotation -= rotSpeed;
+    if (IsKeyDown(KEY_E))
+      t->rotation += rotSpeed;
+  } else {
+    if (IsKeyDown(KEY_LEFT))
+      t->position.x -= moveSpeed;
+    if (IsKeyDown(KEY_RIGHT))
+      t->position.x += moveSpeed;
+    if (IsKeyDown(KEY_KP_1))
+      t->rotation -= rotSpeed;
+    if (IsKeyDown(KEY_KP_2))
+      t->rotation += rotSpeed;
+  }
+}
+
 int main(void) {
   printf("Hello, World!");
 
