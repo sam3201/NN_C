@@ -6,6 +6,7 @@
 #include "ewc.h"
 #include "growth.h"
 #include "mcts.h"
+#include "mcts_runtime.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
 #include "selfplay.h"
