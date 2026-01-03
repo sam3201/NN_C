@@ -57,7 +57,6 @@ typedef struct {
   float move_speed;
   Vector2 position;
   unsigned int radius;
-  unsigned int size;
   float time_alive;
   int agent_id;
   float breeding_timer;
