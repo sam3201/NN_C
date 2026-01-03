@@ -246,6 +246,9 @@ int decide_action(Agent *a, float *inputs) {
   // Run the MUZE model inference
   int out = mu_model_predict(a->brain, inputs, 0, 0);
 
+  if (out.chosen_action < 0 || out.chosen_action >= ACTION_COUNT)
+    out.chosen_action = rand() % ACTION_COUNT;
+
   // Ensure the chosen action is in bounds
   int action = out.chosen_action;
   if (action < 0 || action >= ACTION_COUNT)
