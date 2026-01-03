@@ -94,8 +94,6 @@ extern Player player;
 extern Resource resources[MAX_RESOURCES];
 extern int resource_count;
 
-extern player.tool_type;
-
 Resource *find_nearest_resource(Vector2 pos, float max_dist);
 void draw_resources(Vector2 camera);
 void spawn_resource(Vector2 pos, ResourceType type);
