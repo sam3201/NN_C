@@ -327,7 +327,6 @@ void init_base() {
 
 // ---------- MAIN ----------
 int main() {
-  srand(time(NULL));
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE Game");
   SetTargetFPS(60);
 
@@ -338,6 +337,8 @@ int main() {
   camera.target = player.position;
   camera.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
   camera.zoom = 1.0f;
+
+  srand(time(NULL));
 
   while (!WindowShouldClose()) {
     // --- Update ---
