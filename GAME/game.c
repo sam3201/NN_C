@@ -17,14 +17,11 @@
 #define MAX_MOBS 10
 #define MAX_AGENTS 8
 #define BASE_RADIUS 8
-
 #define MAX_BASE_PARTICLES 32
 
 // ---------- ENUMS ----------
 typedef enum { TOOL_HAND = 0, TOOL_AXE, TOOL_PICKAXE, TOOL_NONE } ToolType;
-
 typedef enum { RES_TREE = 0, RES_ROCK, RES_FOOD, RES_NONE } ResourceType;
-
 typedef enum {
   ACTION_UP = 0,
   ACTION_DOWN,
@@ -101,18 +98,40 @@ typedef struct {
 
 // ---------- GLOBALS ----------
 Chunk world[WORLD_SIZE][WORLD_SIZE];
-bool world_initialized = false;
 Player player;
 Base agent_base;
 BaseParticle base_particles[MAX_BASE_PARTICLES];
-Resource resources[MAX_RESOURCES];
-int resource_count = 0;
 
 // ---------- HELPERS ----------
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
-
 static inline float randf(float min, float max) {
   return min + (float)rand() / RAND_MAX * (max - min);
+}
+
+Color biome_color(int type) {
+  switch (type) {
+  case 0:
+    return (Color){120 + rand() % 20, 200, 120 + rand() % 20, 255}; // grass
+  case 1:
+    return (Color){34, 139 + rand() % 30, 34, 255}; // forest
+  case 2:
+    return (Color){139, 137, 137, 255}; // rock
+  default:
+    return RAYWHITE;
+  }
+}
+
+Color resource_color(ResourceType type) {
+  switch (type) {
+  case RES_TREE:
+    return DARKGREEN;
+  case RES_ROCK:
+    return GRAY;
+  case RES_FOOD:
+    return ORANGE;
+  default:
+    return WHITE;
+  }
 }
 
 // ---------- WORLD ----------
@@ -124,14 +143,13 @@ Chunk *get_chunk(int cx, int cy) {
     c->generated = true;
     c->biome_type = (abs(cx) + abs(cy)) % 3;
 
-    // terrain colors: 0=grass,1=forest,2=rock
     for (int i = 0; i < CHUNK_SIZE; i++)
       for (int j = 0; j < CHUNK_SIZE; j++)
         c->terrain[i][j] = c->biome_type;
 
-    // resources
     int target = (c->biome_type == 0) ? 6 : (c->biome_type == 1) ? 12 : 3;
     c->resource_count = target;
+
     for (int i = 0; i < target; i++) {
       int roll = rand() % 100;
       if (c->biome_type == 1 && roll < 70)
@@ -146,7 +164,6 @@ Chunk *get_chunk(int cx, int cy) {
       c->resources[i].visited = false;
     }
 
-    // mobs
     for (int i = 0; i < MAX_MOBS; i++) {
       c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
       c->mobs[i].value = 10;
@@ -154,11 +171,9 @@ Chunk *get_chunk(int cx, int cy) {
       c->mobs[i].visited = false;
     }
 
-    // agents
     for (int i = 0; i < MAX_AGENTS; i++) {
       Agent *a = &c->agents[i];
-      a->health = 100;
-      a->stamina = 100;
+      a->health = a->stamina = 100;
       a->agent_id = i;
       a->alive = true;
       a->flash_timer = 0;
@@ -167,9 +182,8 @@ Chunk *get_chunk(int cx, int cy) {
                        : (rand() % 4 == 2) ? GREEN
                                            : YELLOW;
 
-      // initial positions
       if (cx == WORLD_SIZE / 2 && cy == WORLD_SIZE / 2) {
-        float angle = ((float)i / MAX_AGENTS) * 6.28319f;
+        float angle = ((float)i / MAX_AGENTS) * 2 * PI;
         float dist = rand() % (BASE_RADIUS - 2) + 2;
         a->position.x = agent_base.position.x + cosf(angle) * dist;
         a->position.y = agent_base.position.y + sinf(angle) * dist;
@@ -178,7 +192,6 @@ Chunk *get_chunk(int cx, int cy) {
         a->position.y = rand() % CHUNK_SIZE;
       }
 
-      // MUZE brain
       MuConfig cfg = {
           .obs_dim = 10, .latent_dim = 32, .action_count = ACTION_COUNT};
       a->brain = mu_model_create(&cfg);
@@ -191,16 +204,12 @@ Chunk *get_chunk(int cx, int cy) {
 // ---------- PLAYER ----------
 void init_player() {
   player.position = (Vector2){0, 0};
-  player.max_health = 100;
-  player.health = 100;
-  player.max_stamina = 100;
-  player.stamina = 100;
+  player.max_health = player.health = 100;
+  player.max_stamina = player.stamina = 100;
   player.move_speed = 2.0f;
   player.attack_damage = 10;
   player.attack_range = 10;
-  player.wood = 0;
-  player.stone = 0;
-  player.food = 0;
+  player.wood = player.stone = player.food = 0;
   player.alive = true;
   player.tool = TOOL_HAND;
 }
@@ -222,28 +231,20 @@ void update_player() {
     move.x *= 0.7071f;
     move.y *= 0.7071f;
   }
+
   float speed = player.move_speed * (player.stamina / player.max_stamina);
   player.position.x += move.x * speed;
   player.position.y += move.y * speed;
 }
 
 // ---------- AGENT ----------
-int decide_action(Agent *a, float *inputs) {
-  /*
-  int out = mu_model_infer(a->brain, inputs);
-  int act = out.chosen_action;
-  mu_output_free(&out);
-  */
-
-  int act = rand() % ACTION_COUNT;
-  return act;
-}
+int decide_action(Agent *a, float *inputs) { return rand() % ACTION_COUNT; }
 
 void update_agent(Agent *a) {
   if (!a->alive)
     return;
   float obs[a->input_size];
-  for (int i = 0; i < a->input_size; i++)
+  for (size_t i = 0; i < a->input_size; i++)
     obs[i] = randf(0, 1);
   int action = decide_action(a, obs);
 
@@ -260,58 +261,30 @@ void update_agent(Agent *a) {
   case ACTION_RIGHT:
     a->position.x += 0.5f;
     break;
-  case ACTION_HARVEST:
-    break;
-  case ACTION_ATTACK:
+  default:
     break;
   }
 
   float dist = Vector2Distance(a->position, agent_base.position);
   if (dist < BASE_RADIUS) {
-    a->health += 0.5f;
-    a->stamina += 0.5f;
-    if (a->health > 100)
-      a->health = 100;
-    if (a->stamina > 100)
-      a->stamina = 100;
+    a->health = fminf(a->health + 0.5f, 100);
+    a->stamina = fminf(a->stamina + 0.5f, 100);
     a->flash_timer += 0.1f;
     if (a->flash_timer > 1.0f)
       a->flash_timer = 0;
-  } else {
+  } else
     a->flash_timer = 0;
-  }
 }
 
-// ---------- INIT BASE ----------
+// ---------- BASE ----------
 void init_base() {
   agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
   agent_base.radius = BASE_RADIUS;
-}
 
-// ---------- DRAW HELPERS ----------
-Color biome_color(int type) {
-  switch (type) {
-  case 0:
-    return (Color){120, 200, 120, 255}; // grass
-  case 1:
-    return (Color){34, 139, 34, 255}; // forest
-  case 2:
-    return (Color){139, 137, 137, 255}; // rock
-  default:
-    return RAYWHITE;
-  }
-}
-
-Color resource_color(ResourceType type) {
-  switch (type) {
-  case RES_TREE:
-    return DARKGREEN;
-  case RES_ROCK:
-    return GRAY;
-  case RES_FOOD:
-    return ORANGE;
-  default:
-    return WHITE;
+  for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+    base_particles[i].pos = agent_base.position;
+    base_particles[i].lifetime = randf(0, 1);
+    base_particles[i].flash_white = false;
   }
 }
 
@@ -324,8 +297,13 @@ int main() {
   init_base();
   init_player();
 
+  Camera2D camera = {0};
+  camera.target = player.position;
+  camera.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
+  camera.zoom = 1.0f;
+
   while (!WindowShouldClose()) {
-    // Update
+    // --- Update ---
     update_player();
 
     int cx = player.position.x / (CHUNK_SIZE * TILE_SIZE);
@@ -335,10 +313,27 @@ int main() {
     for (int i = 0; i < MAX_AGENTS; i++)
       update_agent(&c->agents[i]);
 
-    // Draw
+    // Update camera
+    camera.target = player.position;
+
+    // Update base particles
+    for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+      BaseParticle *p = &base_particles[i];
+      p->pos.x += randf(-0.2f, 0.2f);
+      p->pos.y += randf(-0.2f, 0.2f);
+      p->lifetime -= 0.01f;
+      if (p->lifetime <= 0) {
+        p->pos = agent_base.position;
+        p->lifetime = randf(0, 1);
+      }
+    }
+
+    // --- Draw ---
     BeginDrawing();
     ClearBackground(SKYBLUE);
+    BeginMode2D(camera);
 
+    // Draw chunks
     for (int dx = -1; dx <= 1; dx++)
       for (int dy = -1; dy <= 1; dy++) {
         Chunk *ch = get_chunk(cx + dx, cy + dy);
@@ -350,27 +345,33 @@ int main() {
                           biome_color(ch->terrain[i][j]));
           }
 
-        // draw resources
+        // resources
         for (int i = 0; i < ch->resource_count; i++) {
           Resource *r = &ch->resources[i];
-          int sx = (cx + dx) * CHUNK_SIZE * TILE_SIZE +
-                   r->position.x * TILE_SIZE + TILE_SIZE / 2;
-          int sy = (cy + dy) * CHUNK_SIZE * TILE_SIZE +
-                   r->position.y * TILE_SIZE + TILE_SIZE / 2;
-          DrawCircle(sx, sy, 3, resource_color(r->type));
+          Vector2 s = {(cx + dx) * CHUNK_SIZE * TILE_SIZE +
+                           r->position.x * TILE_SIZE + TILE_SIZE / 2,
+                       (cy + dy) * CHUNK_SIZE * TILE_SIZE +
+                           r->position.y * TILE_SIZE + TILE_SIZE / 2};
+          DrawCircleV(s, 3, resource_color(r->type));
         }
 
-        // draw agents
+        // agents
         for (int i = 0; i < MAX_AGENTS; i++) {
           Agent *a = &ch->agents[i];
           if (!a->alive)
             continue;
-          Vector2 s = {a->position.x * TILE_SIZE, a->position.y * TILE_SIZE};
-          DrawCircle(s.x, s.y, 4, a->tribe_color);
+          Vector2 s = {
+              (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
+              (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
+          DrawCircleV(s, 4, a->tribe_color);
         }
       }
 
     // draw base
+    for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+      BaseParticle *p = &base_particles[i];
+      DrawCircleV(p->pos, 1, p->flash_white ? WHITE : DARKGRAY);
+    }
     DrawCircle(agent_base.position.x * TILE_SIZE,
                agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
                DARKGRAY);
@@ -378,6 +379,7 @@ int main() {
     // draw player
     DrawCircle(player.position.x, player.position.y, 6, RED);
 
+    EndMode2D();
     EndDrawing();
   }
 
