@@ -42,8 +42,8 @@ void mu_runtime_step(MuModel *model, MuRuntime *rt, const float *obs,
   rt->last_action = action;
 }
 
-void mu_model_end_episode(MuModel *model, MuRuntime *rt,
-                          float terminal_reward) {
+void mu_runtime_end_episode(MuModel *model, MuRuntime *rt,
+                            float terminal_reward) {
   if (!rt->has_last)
     return;
 
