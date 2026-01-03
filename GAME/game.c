@@ -8,12 +8,14 @@
 #define COLS 75
 #define NUM_CHANNELS 3
 #define CELL_LIFETIME 120
+#define TANK_SIZE 40
 
 // ---------------- Structs -----------------
 typedef struct {
   Vector2 position;
   float speed;
   int health;
+  int isAI; // 0 = player, 1 = AI
 } Tank;
 
 // ---------------- Global Variables --------
@@ -22,7 +24,6 @@ Tank top;
 
 // Placeholder policy struct
 typedef struct {
-  // RL policy parameters go here later
   int dummy;
 } Policy;
 
@@ -32,23 +33,78 @@ Policy tank_policy;
 long double screen[ROWS * COLS * NUM_CHANNELS];
 
 // ---------------- Function Stubs ----------
-void move_left(Tank *t) { t->position.x -= t->speed; }
-void move_right(Tank *t) { t->position.x += t->speed; }
-void move_up(Tank *t) { t->position.y -= t->speed; }
-void move_down(Tank *t) { t->position.y += t->speed; }
+void move_left(Tank *t) {
+  t->position.x -= t->speed;
+  if (t->position.x < 0)
+    t->position.x = 0; // border collision
+}
+
+void move_right(Tank *t, int screen_width) {
+  t->position.x += t->speed;
+  if (t->position.x + TANK_SIZE > screen_width)
+    t->position.x = screen_width - TANK_SIZE;
+}
+
+void move_up(Tank *t) {
+  t->position.y -= t->speed;
+  if (t->position.y < 0)
+    t->position.y = 0;
+}
+
+void move_down(Tank *t, int screen_height) {
+  t->position.y += t->speed;
+  if (t->position.y + TANK_SIZE > screen_height)
+    t->position.y = screen_height - TANK_SIZE;
+}
+
 void shoot(Tank *t) { /* implement shooting */ }
 
-long double compute_reward(Tank *player, Tank *enemy) {
-  // placeholder reward
-  return 0;
-}
+long double compute_reward(Tank *player, Tank *enemy) { return 0; }
 
 // ---------------- Tank Update -------------
 void tank_update(Tank *t, int isTop, Vector2 target) {
-  // implement tank movement or RL logic here
-  // currently, just a stub
-  (void)isTop; // suppress unused warnings
+  (void)isTop;
   (void)target;
+  if (t->isAI) {
+    // simple AI movement placeholder
+    if (t->position.x < target.x)
+      move_right(t, 800);
+    if (t->position.x > target.x)
+      move_left(t);
+    if (t->position.y < target.y)
+      move_down(t, 600);
+    if (t->position.y > target.y)
+      move_up(t);
+  }
+  // Player movement handled elsewhere (keyboard input)
+}
+
+// ---------------- Title / Menu ----------------
+void show_title_screen() {
+  bool chooseDone = false;
+  while (!chooseDone && !WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText("TANK GAME", 300, 50, 40, WHITE);
+    DrawText("Controls: Arrow/WASD. Choose AI or Player", 150, 120, 20,
+             LIGHTGRAY);
+
+    DrawText("Bottom Tank: [P] Player, [A] AI", 200, 200, 20, WHITE);
+    DrawText("Top Tank:    [P] Player, [A] AI", 200, 250, 20, WHITE);
+
+    EndDrawing();
+
+    if (IsKeyPressed(KEY_P)) {
+      bottom.isAI = 0;
+      top.isAI = 0;
+      chooseDone = true;
+    }
+    if (IsKeyPressed(KEY_A)) {
+      bottom.isAI = 1;
+      top.isAI = 1;
+      chooseDone = true;
+    }
+  }
 }
 
 // ---------------- Main Game Loop -----------
@@ -59,37 +115,59 @@ int main() {
   bottom.position = (Vector2){100, 500};
   bottom.speed = 5;
   bottom.health = 3;
+  bottom.isAI = 0;
 
   top.position = (Vector2){700, 100};
   top.speed = 5;
   top.health = 3;
+  top.isAI = 0;
 
   SetTargetFPS(60);
 
+  show_title_screen(); // choose AI / Player before starting
+
   while (!WindowShouldClose()) {
 
+    // ---- Player Input ----
+    if (!bottom.isAI) {
+      if (IsKeyDown(KEY_A))
+        move_left(&bottom);
+      if (IsKeyDown(KEY_D))
+        move_right(&bottom, 800);
+      if (IsKeyDown(KEY_W))
+        move_up(&bottom);
+      if (IsKeyDown(KEY_S))
+        move_down(&bottom, 600);
+    }
+
+    if (!top.isAI) {
+      if (IsKeyDown(KEY_LEFT))
+        move_left(&top);
+      if (IsKeyDown(KEY_RIGHT))
+        move_right(&top, 800);
+      if (IsKeyDown(KEY_UP))
+        move_up(&top);
+      if (IsKeyDown(KEY_DOWN))
+        move_down(&top, 600);
+    }
+
     // ---- Tank updates ----
-    tank_update(&bottom, 0, bottom.position); // player control
-    tank_update(&top, 1, top.position);       // player control
+    tank_update(&bottom, 0, top.position);
+    tank_update(&top, 1, bottom.position);
 
     // ---- RL placeholders ----
-    long double *state = screen; // encode_screen placeholder
-    int action = 0;              // policy_select_action placeholder
+    long double *state = screen;
+    int action = 0; // policy placeholder
 
-    // ---- Move based on action (placeholder) ----
-    // Example: just move bottom tank randomly
-    move_left(&bottom);
-    move_right(&top);
-
-    // Compute reward placeholder
     long double reward = compute_reward(&bottom, &top);
 
     // ---- Rendering ----
     BeginDrawing();
     ClearBackground(BLACK);
 
-    DrawRectangle(bottom.position.x, bottom.position.y, 40, 40, BLUE);
-    DrawRectangle(top.position.x, top.position.y, 40, 40, RED);
+    DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
+                  BLUE);
+    DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
 
     EndDrawing();
   }
