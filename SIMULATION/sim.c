@@ -97,8 +97,7 @@ size_t get_total_input_size() { return (SCREEN_WIDTH * SCREEN_HEIGHT) + 7; }
 
 void store_experience(Agent *agent, long double *inputs, int action,
                       float reward) {
-  store_agent_memory(&agent->memory, inputs, action, reward, 0.0f,
-                     agent->input_size);
+  store_memory(&agent->memory, inputs, action, reward, 0.0f, agent->input_size);
 }
 
 // --- INIT ---
