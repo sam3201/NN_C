@@ -8,6 +8,8 @@ int main() {
   init_world();
   init_player();
 
+  Vector2 camera = {0, 0};
+
   Vector2 target = {player.position.x - SCREEN_WIDTH / 2,
                     player.position.y - SCREEN_HEIGHT / 2};
 
