@@ -492,6 +492,12 @@ int main(void) {
 
   system("clear");
 
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
+    init_agent(&game->agents[i], game->next_agent_id++, true);
+
+  for (int i = MAX_GROUNDSKEEPERS; i < POPULATION_SIZE; i++)
+    init_agent(&game->agents[i], game->next_agent_id++, false);
+
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_SPACE))
       game.paused = !game.paused;
