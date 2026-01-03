@@ -45,25 +45,23 @@ typedef struct {
 } Mob;
 
 typedef struct {
-  int biome_type; // 0=grassland,1=forest,2=desert etc
+  Vector2 position;
+  float health;
+  float stamina;
+  int agent_id;
+  Color tribe_color;
+  bool alive;
+} Agent;
+
+typedef struct {
+  int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
   int resource_count;
   Mob mobs[MAX_MOBS];
+  Agent agents[MAX_AGENTS];
   bool generated;
 } Chunk;
-
-typedef struct {
-  float health;
-  float stamina;
-  float attack;
-  float vision_radius;
-  float move_speed;
-  Vector2 position;
-  int agent_id;
-  Color color;
-} Agent;
-
 typedef struct {
   Vector2 position;
   float health;
