@@ -142,6 +142,19 @@ void draw_world(Vector2 camera) {
 
       Chunk *c = get_chunk(world_x, world_y);
 
+      Color col;
+      switch (c->terrain[i][j]) {
+      case 1:
+        col = grass;
+        break;
+      case 2:
+        col = forest;
+        break;
+      case 3:
+        col = desert;
+        break;
+      }
+
       DrawRectangle((world_x + i) * TILE_SIZE - camera.x,
                     (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE, TILE_SIZE,
                     col);
