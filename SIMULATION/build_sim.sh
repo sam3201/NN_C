@@ -14,6 +14,7 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     cd ../../../SIMULATION
 fi
 
+
 gcc -w sim.c \
     ../utils/NN/NN.c \
     ../utils/NN/NEAT.c \
