@@ -15,7 +15,6 @@ float TILE_SIZE;
 
 #define WORLD_SIZE 128
 #define CHUNK_SIZE 32
-#define TILE_SIZE 8
 
 #define MAX_RESOURCES 512
 #define MAX_MOBS 10
