@@ -28,18 +28,33 @@ Tank tank_new(Vector2 pos, Color base, Color arm) {
   return t;
 }
 
-void tank_draw(Tank *t) {
+void tank_draw(Tank *t, Vector2 aim) {
+  // Draw the base
   DrawCircleV(t->position, t->radius, t->baseColor);
 
-  Vector2 origin = {t->armWidth / 2};
+  // Calculate the angle to aim at (mouse or AI)
+  float angle = atan2f(aim.y - t->position.y, aim.x - t->position.x);
 
-  Rectangle arm = {t->position.x, t->position.y, t->armLength, t->armWidth};
+  t->rotation = angle; // store rotation for logic
 
-  DrawRectanglePro(arm, origin, t->rotation, t->armColor);
+  // Turret dimensions
+  float armLength = t->radius * 1.5f;
+  float armWidth = t->radius / 2;
 
-  Rectangle arm2 = arm;
-  arm2.y += t->armWidth + 4;
-  DrawRectanglePro(arm2, origin, t->rotation, t->armColor);
+  // Compute offsets for two arms (left/right of center)
+  Vector2 offset = {0, armWidth / 2 + 2};
+
+  // Draw left arm
+  Rectangle arm1 = {t->position.x - offset.x, t->position.y - offset.y,
+                    armLength, armWidth};
+  DrawRectanglePro(arm1, (Vector2){0, armWidth / 2}, angle * 180 / PI,
+                   t->armColor);
+
+  // Draw right arm
+  Rectangle arm2 = {t->position.x + offset.x, t->position.y + offset.y,
+                    armLength, armWidth};
+  DrawRectanglePro(arm2, (Vector2){0, armWidth / 2}, angle * 180 / PI,
+                   t->armColor);
 }
 
 void tank_update(Tank *t, int isTop) {
