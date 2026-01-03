@@ -29,13 +29,21 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
 
     switch (r->type) {
     case RES_TREE:
+      float hp_ratio = r->health / 100.0f;
+      if (hp_ratio < 0)
+        hp_ratio = 0;
+
+      Color trunk = ColorLerp(DARKBROWN, GRAY, 1.0f - hp_ratio);
+      Color leaves = ColorLerp(GREEN, BROWN, 1.0f - hp_ratio);
+
       // outline
       DrawRectangle(s.x - 6, s.y - 16, 12, 20, BLACK);
       // trunk
-      DrawRectangle(s.x - 4, s.y - 14, 8, 14, DARKBROWN);
-      // canopy outline
+      DrawRectangle(s.x - 4, s.y - 14, 8, 14, trunk);
+      // canopy
       DrawCircle(s.x, s.y - 18, 9, BLACK);
-      DrawCircle(s.x, s.y - 18, 7, GREEN);
+      DrawCircle(s.x, s.y - 18, 7, leaves);
+
       break;
 
     case RES_ROCK:
