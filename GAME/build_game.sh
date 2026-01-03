@@ -25,7 +25,6 @@ gcc -w game.c $MUZE_SRC \
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -o game
 
-# ---------------- Run ----------------
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./game
@@ -34,7 +33,6 @@ else
     exit 1
 fi
 
-# ---------------- Optional Cleanup ----------------
 # echo "Cleaning up..."
 # rm game
 
