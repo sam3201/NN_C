@@ -115,8 +115,6 @@ void mu_model_predict(MuModel *m, const float *latent_in,
   *value_out = tanhf(sum);
 }
 
-#include "runtime.h"
-
 void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
   mu_runtime_step((MuRuntime *)m->runtime, m, obs, action, reward);
 }
