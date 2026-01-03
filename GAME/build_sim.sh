@@ -14,7 +14,7 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     cd ../../../SIMULATION
 fi
 
-gcc -w sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c \
+gcc -w game.c ../utils/NN/NN.c ../utils/NN/NEAT.c \
     -I../utils/Raylib/src \
     -L../utils/Raylib/src \
     -lraylib \
@@ -22,7 +22,7 @@ gcc -w sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c \
     -framework Cocoa \
     -framework IOKit \
     -framework CoreVideo \
-    -o sim
+    -o game 
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
