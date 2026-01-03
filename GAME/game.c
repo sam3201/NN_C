@@ -274,6 +274,51 @@ void encode_observation(Agent *a, Chunk *c, float *obs) {
   obs[9] = 1.0f;
 }
 
+void encode_observation(Agent *a, Chunk *c, float *obs) {
+  // --- Health & stamina ---
+  obs[0] = a->health / 100.0f;
+  obs[1] = a->stamina / 100.0f;
+
+  // --- Base relation ---
+  Vector2 to_base = Vector2Subtract(agent_base.position, a->position);
+  float base_dist = Vector2Length(to_base);
+
+  obs[2] = fminf(base_dist / (BASE_RADIUS * 4.0f), 1.0f);
+  obs[3] = (base_dist > 0) ? to_base.x / base_dist : 0;
+  obs[4] = (base_dist > 0) ? to_base.y / base_dist : 0;
+
+  // --- Nearest resource ---
+  float nearest = 9999.0f;
+  Vector2 nearest_dir = {0, 0};
+
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    Vector2 delta = Vector2Subtract(r->position, a->position);
+    float d = Vector2Length(delta);
+
+    if (d < nearest) {
+      nearest = d;
+      nearest_dir = delta;
+    }
+  }
+
+  if (nearest < 9999.0f) {
+    obs[5] = fminf(nearest / (float)CHUNK_SIZE, 1.0f);
+    obs[6] = nearest_dir.x / (nearest + 0.0001f);
+    obs[7] = nearest_dir.y / (nearest + 0.0001f);
+  } else {
+    obs[5] = 1.0f;
+    obs[6] = 0.0f;
+    obs[7] = 0.0f;
+  }
+
+  // --- Inside base ---
+  obs[8] = (base_dist < BASE_RADIUS) ? 1.0f : 0.0f;
+
+  // --- Bias / time ---
+  obs[9] = 1.0f;
+}
+
 int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
     return rand() % ACTION_COUNT;
