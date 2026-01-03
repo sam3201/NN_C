@@ -157,6 +157,9 @@ void update_player() {
     move.x -= 1;
   if (IsKeyDown(KEY_D))
     move.x += 1;
+  if (IsKeyPressed(KEY_E)) {
+    harvest_resources();
+  }
 
   if ((move.x != 0 || move.y != 0) && player.stamina > 0) {
     player.position.x += move.x * player.move_speed;
