@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define ROWS 75
+#define COLS 75
+#define NUM_CHANNELS 3 // e.g., RGB
+
+unsigned char screen[ROWS][COLS][NUM_CHANNELS];
+
 typedef struct {
   NN_t *nn;
   size_t action_size;
