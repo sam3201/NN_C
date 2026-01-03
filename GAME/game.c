@@ -33,7 +33,7 @@ int main() {
 
   while (!WindowShouldClose()) {
     update_player();
-    for (agent_count = 0; agent_count < MAX_AGENTS; agent_count++) {
+    for (int agent_count = 0; agent_count < MAX_AGENTS; agent_count++) {
       update_agent(&agents[agent_count]);
     }
 
