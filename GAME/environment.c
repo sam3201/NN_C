@@ -283,7 +283,6 @@ void update_player() {
     if (player.stamina < 0)
       player.stamina = 0;
   } else {
-    // regen ONLY when not moving
     player.stamina += 0.6f;
   }
 
