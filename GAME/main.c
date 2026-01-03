@@ -17,7 +17,7 @@ typedef struct {
 
 } Tank;
 
-Tank new_tank(int x, int y) {
+Tank *new_tank(int x, int y) {
   Tank *tank = malloc(sizeof(Tank));
   tank->x = x;
   tank->y = y;
