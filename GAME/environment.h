@@ -16,6 +16,13 @@ typedef enum { RES_TREE, RES_ROCK } ResourceType;
 
 typedef struct {
   Vector2 position;
+  ResourceType type;
+  int health;
+  bool alive;
+} Resource;
+
+typedef struct {
+  Vector2 position;
   float value;
   int type;
   bool visited;
