@@ -17,6 +17,12 @@ Base agent_base;
 // ------------------------ helpers --------------------------
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 
+// ------------------------ init base --------------------------
+void init_base(void) {
+  agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  agent_base.health = 100;
+}
+
 // ------------------------ draw chunk resources --------------------------
 void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
   for (int i = 0; i < c->resource_count; i++) {
