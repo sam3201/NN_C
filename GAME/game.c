@@ -423,39 +423,38 @@ int main() {
             DrawCircleV(s, food_radius, ORANGE);
             break;
           }
-
-          // Draw agents
-          for (int i = 0; i < MAX_AGENTS; i++) {
-            Agent *a = &ch->agents[i];
-            if (!a->alive)
-              continue;
-            Vector2 s = {
-                (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
-                (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
-            // Add simple flashing effect when near base
-            Color agent_col = a->flash_timer > 0 ? WHITE : a->tribe_color;
-            DrawCircleV(s, 4, agent_col);
-          }
         }
-
-        // Draw base with particles
-        DrawCircle(agent_base.position.x * TILE_SIZE,
-                   agent_base.position.y * TILE_SIZE,
-                   agent_base.radius * TILE_SIZE, DARKGRAY);
-
-        for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-          BaseParticle *p = &base_particles[i];
-          DrawCircleV(p->pos, 1 + rand() % 2,
-                      p->flash_white ? WHITE : LIGHTGRAY);
+        // Draw agents
+        for (int i = 0; i < MAX_AGENTS; i++) {
+          Agent *a = &ch->agents[i];
+          if (!a->alive)
+            continue;
+          Vector2 s = {
+              (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
+              (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
+          // Add simple flashing effect when near base
+          Color agent_col = a->flash_timer > 0 ? WHITE : a->tribe_color;
+          DrawCircleV(s, 4, agent_col);
         }
-
-        // Draw player
-        DrawCircle(player.position.x, player.position.y, 6, RED);
-
-        EndMode2D();
-        EndDrawing();
       }
 
-    CloseWindow();
-    return 0;
+    // Draw base with particles
+    DrawCircle(agent_base.position.x * TILE_SIZE,
+               agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
+               DARKGRAY);
+
+    for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+      BaseParticle *p = &base_particles[i];
+      DrawCircleV(p->pos, 1 + rand() % 2, p->flash_white ? WHITE : LIGHTGRAY);
+    }
+
+    // Draw player
+    DrawCircle(player.position.x, player.position.y, 6, RED);
+
+    EndMode2D();
+    EndDrawing();
   }
+
+  CloseWindow();
+  return 0;
+}
