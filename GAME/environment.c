@@ -3,6 +3,7 @@
 #include "../utils/Raylib/src/raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define WORLD_SIZE 128 // 128×128 chunks = enough for “infinite feel”
 
