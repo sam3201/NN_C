@@ -2,14 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-void init_memory(Memory *memory, int initial_capacity, int input_size);
-Memory *memory = malloc(sizeof(Memory));
-MemoryEntry *buffer = malloc(sizeof(MemoryEntry) * initial_capacity);
-memory->size = 0;
-memory->index = 0;
-for (int i = 0; i < MEMORY_CAPACITY; i++) {
-  memory->buffer[i].vision_inputs = malloc(input_size * sizeof(long double));
-}
+void init_memory(Memory *memory, int input_size) {
+  memory->size = 0;
+  memory->index = 0;
+  for (int i = 0; i < MEMORY_CAPACITY; i++) {
+    memory->buffer[i].vision_inputs = malloc(input_size * sizeof(long double));
+  }
 }
 
 void store_memory(Memory *memory, long double *vision_inputs, int action,
