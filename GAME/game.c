@@ -141,7 +141,7 @@ int ai_choose_action(Tank *ai, Tank *player) {
 void tank_update(Tank *t, Tank *target, int screen_width, int screen_height) {
   if (t->isAI) {
     int action = ai_choose_action(t, target);
-    mcts_result_free(action);
+    mcts_result_free(&res, action);
 
     switch (action) {
     case 0:
