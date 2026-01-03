@@ -15,7 +15,7 @@
 
 typedef struct {
   int biome_type;
-  Vector3 biome_color;
+  Vector3 terrain[CHUNK_SIZE][CHUNK_SIZE];
 
   typedef enum {
     ACTION_NONE = 0,
