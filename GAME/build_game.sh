@@ -33,5 +33,4 @@ else
     exit 1
 fi
 
-# rm game
 
