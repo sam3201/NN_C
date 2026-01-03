@@ -548,19 +548,28 @@ void draw_world(Vector2 camera) {
 
           int sx = (world_x + i) * TILE_SIZE - camera.x;
           int sy = (world_y + j) * TILE_SIZE - camera.y;
+          // in draw_world, only for initial chunk
+          if (cx == 0 && cy == 0) {
+            Vector2 s = {agent_base.position.x * TILE_SIZE - camera.x,
+                         agent_base.position.y * TILE_SIZE - camera.y};
+            DrawCircle(s.x, s.y, agent_base.radius * TILE_SIZE,
+                       Fade(SKYBLUE, 0.2f)); // translucent base
+          }
 
-          DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
+          {
+            DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
 
-          // subtle grid lines
-          DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE, Fade(BLACK, 0.05f));
+            // subtle grid lines
+            DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE,
+                               Fade(BLACK, 0.05f));
+          }
         }
+
+        // ---------- draw resources ONCE per chunk ----------
+        draw_chunk_resources(c, cx + dx, cy + dy, camera);
+
+        // ---------- draw agents ONCE per chunk ----------
+        draw_chunk_agents(c, cx + dx, cy + dy, camera);
       }
-
-      // ---------- draw resources ONCE per chunk ----------
-      draw_chunk_resources(c, cx + dx, cy + dy, camera);
-
-      // ---------- draw agents ONCE per chunk ----------
-      draw_chunk_agents(c, cx + dx, cy + dy, camera);
     }
   }
-}
