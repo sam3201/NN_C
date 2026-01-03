@@ -325,26 +325,6 @@ void execute_action(GameState *game, int agent_idx, Action action) {
 }
 
 // --- GAME UPDATE ---
-void update_agent_state(GameState *game, int agent_idx) {
-  Agent *agent = &game->agents[agent_idx];
-  agent->time_alive += GetFrameTime();
-
-  encode_vision(game, agent_idx, game->vision_inputs);
-  long double *outputs = NEAT_forward(agent->brain, game->vision_inputs);
-  Action action = get_action_from_output(outputs);
-  execute_action(game, agent_idx, action);
-  game->last_actions[agent_idx] = action;
-
-  float reward = (float)agent->total_xp;
-  store_experience(agent, game->vision_inputs, (int)action, reward);
-
-  if (agent->is_breeding) {
-    agent->breeding_timer += GetFrameTime();
-    if (agent->breeding_timer >= BREEDING_DURATION)
-      handle_breeding(game, agent_idx);
-  }
-}
-
 void update_game(GameState *game) {
   for (int i = 0; i < MAX_FOOD; i++) {
     if (game->food[i].rect.width == 0 &&
