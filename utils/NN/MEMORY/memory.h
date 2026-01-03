@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "agent.h"
+#include "../AGENT/AGENT.h"
 
 #define MEMORY_CAPACITY 1000
 
