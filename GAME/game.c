@@ -6,30 +6,20 @@ int main() {
   SetTargetFPS(60);
 
   init_world();
-
-  Vector2 camera = {0, 0};
+  init_player();
 
   while (!WindowShouldClose()) {
+    update_player();
 
-    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D))
-      camera.x += 2;
-    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))
-      camera.x -= 2;
-    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))
-      camera.y -= 2;
-    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S))
-      camera.y += 2;
+    camera.x = player.position.x - SCREEN_WIDTH / 2;
+    camera.y = player.position.y - SCREEN_HEIGHT / 2;
 
     BeginDrawing();
     ClearBackground(BLACK);
 
     draw_world(camera);
-
-    DrawText("WASD/ARROWS to move", 10, 10, 20, WHITE);
+    draw_player(camera);
+    draw_ui();
 
     EndDrawing();
   }
-
-  CloseWindow();
-  return 0;
-}
