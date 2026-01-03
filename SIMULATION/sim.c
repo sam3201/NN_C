@@ -213,11 +213,6 @@ void update_agent_state(GameState *game, int agent_idx) {
     if (agent->breeding_timer >= BREEDING_DURATION)
       handle_breeding(game, agent_idx);
   }
-
-  if (agent->xp > agent->) {
-    level_up(agent);
-    evolve_agent(agent);
-  }
 }
 
 void update_game(GameState *game) {
@@ -320,6 +315,7 @@ void level_up(Agent *agent) {
     agent->size = agent->level + 1;
     agent->rect.width = agent->rect.height = agent->size;
     evolve_agent(agent);
+    mu_model_grow_latent(agent->mu_brain, agent->mu_brain->cfg.latent_dim + 1);
   }
 }
 
