@@ -62,7 +62,6 @@ typedef struct {
   Color color;
   NEAT_t *brain;
   Memory memory;
-  size_t input_size;
 } Agent;
 
 // ---------------- MuZero AI -----------------
