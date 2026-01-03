@@ -3,6 +3,7 @@
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -26,7 +27,7 @@
 #define FOOD_SIZE 5
 #define FOOD_SPAWN_CHANCE 0.1f
 #define LABEL_SIZE 10
-#define MEMORY_CAPACITY infinity
+#define MEMORY_CAPACITY SIZE_MAX
 
 typedef enum {
   ACTION_NONE = 0,
