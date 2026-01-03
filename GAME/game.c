@@ -425,36 +425,41 @@ int main() {
           }
         }
         // Draw agents
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          Agent *a = &ch->agents[i];
-          if (!a->alive)
-            continue;
-          Vector2 s = {
-              (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
-              (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
-          // Add simple flashing effect when near base
-          Color agent_col = a->flash_timer > 0 ? WHITE : a->tribe_color;
-          DrawCircleV(s, 4, agent_col);
+        float body_radius = TILE_SIZE * 0.35f;
+        float band_radius = TILE_SIZE * 0.38f;
+
+        Vector2 body_pos = s;
+
+        // body
+        DrawCircleV(body_pos, body_radius, LIGHTGRAY);
+
+        // headband (tribe color)
+        DrawRing(body_pos, band_radius * 0.85f, band_radius, 200, 340, 16,
+                 a->tribe_color);
+
+        // flash when healing
+        if (a->flash_timer > 0.0f) {
+          DrawCircleV(body_pos, body_radius * 0.9f, Fade(WHITE, 0.6f));
         }
+
+        // Draw base with particles
+        DrawCircle(agent_base.position.x * TILE_SIZE,
+                   agent_base.position.y * TILE_SIZE,
+                   agent_base.radius * TILE_SIZE, DARKGRAY);
+
+        for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+          BaseParticle *p = &base_particles[i];
+          DrawCircleV(p->pos, 1 + rand() % 2,
+                      p->flash_white ? WHITE : LIGHTGRAY);
+        }
+
+        // Draw player
+        DrawCircle(player.position.x, player.position.y, 6, RED);
+
+        EndMode2D();
+        EndDrawing();
       }
 
-    // Draw base with particles
-    DrawCircle(agent_base.position.x * TILE_SIZE,
-               agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
-               DARKGRAY);
-
-    for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-      BaseParticle *p = &base_particles[i];
-      DrawCircleV(p->pos, 1 + rand() % 2, p->flash_white ? WHITE : LIGHTGRAY);
-    }
-
-    // Draw player
-    DrawCircle(player.position.x, player.position.y, 6, RED);
-
-    EndMode2D();
-    EndDrawing();
+    CloseWindow();
+    return 0;
   }
-
-  CloseWindow();
-  return 0;
-}
