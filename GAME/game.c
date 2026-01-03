@@ -9,7 +9,7 @@
 int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
 
-float TILE_SIZE = 0;
+float TILE_SIZE = 0.f;
 
 #define BASE_TILE_SIZE 32
 
