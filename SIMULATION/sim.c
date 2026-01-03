@@ -670,6 +670,8 @@ void init_game(GameState *state) {
 
   state->vision_inputs = malloc(sizeof(long double) * state->num_active_agents *
                                 get_total_input_size());
+
+  state->vision_inputs = malloc(sizeof(long double) * get_total_input_size());
 }
 
 void free_game(GameState *game) {
