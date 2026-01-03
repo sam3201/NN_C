@@ -31,7 +31,7 @@ Tank tank_new(Vector2 pos, Color base, Color arm) {
 void tank_draw(Tank *t) {
   DrawCircleV(t->position, t->radius, t->baseColor);
 
-  Vector2 origin = {->armWidth / 2};
+  Vector2 origin = {t->armWidth / 2};
 
   Rectangle arm = {t->position.x, t->position.y, t->armLength, t->armWidth};
 
