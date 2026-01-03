@@ -101,6 +101,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
 
   // generate some resources
   for (int i = 0; i < MAX_RESOURCES; i++) {
+    int roll = rand() % 100;
     if (c->biome_type == 1 && roll < 60)
       c->resources[i].type = RES_TREE;
     else if (roll < 30)
