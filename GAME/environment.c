@@ -165,6 +165,12 @@ void draw_world(Vector2 camera) {
     }
   }
 
+  // draw current chunk
+  Chunk *c = get_chunk(cx, cy);
+
+  int dx = (int)(camera.x % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE;
+  int dy = (int)(camera.y % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE;
+
   // ✅ draw resources ONCE per chunk
   draw_chunk_resources(c, cx + dx, cy + dy, camera);
 }
