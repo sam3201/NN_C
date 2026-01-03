@@ -316,6 +316,10 @@ void harvest_resources() {
     Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
                          (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
 
+    float hit_radius = (r->type == RES_TREE)   ? 18.0f
+                       : (r->type == RES_ROCK) ? 14.0f
+                                               : 10.0f;
+
     if (Vector2Distance(player.position, world_pos) < 12) {
 
       // tool restrictions
