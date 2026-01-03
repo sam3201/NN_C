@@ -8,6 +8,8 @@ int main() {
   init_world();
   init_player();
 
+  Vector2 camera = {0};
+
   while (!WindowShouldClose()) {
     update_player();
 
