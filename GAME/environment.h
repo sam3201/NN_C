@@ -62,7 +62,8 @@ typedef struct {
   Agent agents[MAX_AGENTS];
   bool generated;
 } Chunk;
-typedef struct {
+
+ttypedef struct {
   Vector2 position;
   float health;
   float stamina;
