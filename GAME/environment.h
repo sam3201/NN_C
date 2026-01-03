@@ -46,6 +46,7 @@ typedef struct {
   int biome_type; // 0=grassland,1=forest,2=desert etc
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
+  int resource_count;
   Mob mobs[MAX_MOBS];
   bool generated;
 
