@@ -17,14 +17,11 @@ typedef struct {
 MuRuntime *mu_runtime_create(MuModel *model, int capacity, float gamma);
 void mu_runtime_free(MuRuntime *rt);
 
-/* Called every env step */
 void mu_model_step(MuModel *model, MuRuntime *rt, const float *obs, int action,
                    float reward);
 
-/* Called on death / terminal */
 void mu_model_end_episode(MuModel *model, MuRuntime *rt, float terminal_reward);
 
-/* Reset hidden state between lives */
 void mu_model_reset_episode(MuRuntime *rt);
 
 /* Train using replay buffer */
