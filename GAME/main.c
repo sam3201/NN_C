@@ -18,11 +18,21 @@ typedef struct {
   Color armColor;
 } Tank;
 
-Tank *tank_new(int x, int y) {
-  Tank *tank = malloc(sizeof(Tank));
-  tank->x = x;
-  tank->y = y;
-  return tank;
+Tank tank_new(Vector2 pos, Color base, Color arm) {
+  Tank t = {0};
+  t.position = pos;
+  t.radius = 25.0f;
+
+  t.rotation = 0.0f;
+  t.armLength = 35.0f;
+  t.armWidth = 8.0f;
+
+  t.maxHealth = 100;
+  t.health = 100;
+
+  t.baseColor = base;
+  t.armColor = arm;
+  return t;
 }
 
 void tank_free(Tank *tank) { free(tank); }
