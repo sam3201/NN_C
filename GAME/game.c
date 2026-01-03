@@ -327,6 +327,9 @@ void init_base() {
 
 // ---------- MAIN ----------
 int main() {
+  SCREEN_WIDTH = GetScreenWidth();
+  SCREEN_HEIGHT = GetScreenHeight();
+
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE Game");
   SetTargetFPS(60);
 
