@@ -65,4 +65,5 @@ void generate_chunk(Chunk *chunk, int cx, int cy);
 void draw_world(Vector2 camera);
 
 extern Player player;
+
 #endif
