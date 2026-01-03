@@ -19,6 +19,8 @@ typedef struct {
   int repr_W_count;
   int dyn_W_count;
   int pred_W_count;
+
+  void *runtime;
 } MuModel;
 
 MuModel *mu_model_create(const MuConfig *cfg);
