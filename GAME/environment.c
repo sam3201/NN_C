@@ -195,62 +195,6 @@ void generate_chunk(Chunk *c, int cx, int cy) {
   }
 }
 
-// ------------------------ draw world --------------------------
-void draw_world(Vector2 camera) {
-  int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
-  int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
-
-  Color grass = (Color){60, 160, 80, 255};
-  Color forest = (Color){30, 110, 60, 255};
-  Color desert = (Color){210, 185, 140, 255};
-
-  // draw surrounding 3×3 chunks
-  for (int dx = -1; dx <= 1; dx++) {
-    for (int dy = -1; dy <= 1; dy++) {
-
-      Chunk *c = get_chunk(cx + dx, cy + dy);
-      int world_x = (cx + dx) * CHUNK_SIZE;
-      int world_y = (cy + dy) * CHUNK_SIZE;
-
-      // ---------- draw terrain tiles ----------
-      for (int i = 0; i < CHUNK_SIZE; i++) {
-        for (int j = 0; j < CHUNK_SIZE; j++) {
-
-          Color col;
-          switch (c->terrain[i][j]) {
-          case 1:
-            col = grass;
-            break;
-          case 2:
-            col = forest;
-            break;
-          case 3:
-            col = desert;
-            break;
-          default:
-            col = GRAY;
-            break;
-          }
-
-          int sx = (world_x + i) * TILE_SIZE - camera.x;
-          int sy = (world_y + j) * TILE_SIZE - camera.y;
-
-          DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
-
-          // subtle grid lines
-          DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE, Fade(BLACK, 0.05f));
-        }
-      }
-
-      // ---------- draw resources ONCE per chunk ----------
-      draw_chunk_resources(c, cx + dx, cy + dy, camera);
-
-      // after draw_chunk_resources(c, cx+dx, cy+dy, camera);
-      draw_chunk_agents(c, cx + dx, cy + dy, camera);
-    }
-  }
-}
-
 // --- PLAYER ---
 void init_player(void);
 void update_player(void);
@@ -525,5 +469,61 @@ void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
 
     // bandana / headband
     DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
+  }
+}
+
+// ------------------------ draw world --------------------------
+void draw_world(Vector2 camera) {
+  int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
+
+  Color grass = (Color){60, 160, 80, 255};
+  Color forest = (Color){30, 110, 60, 255};
+  Color desert = (Color){210, 185, 140, 255};
+
+  // draw surrounding 3×3 chunks
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+
+      Chunk *c = get_chunk(cx + dx, cy + dy);
+      int world_x = (cx + dx) * CHUNK_SIZE;
+      int world_y = (cy + dy) * CHUNK_SIZE;
+
+      // ---------- draw terrain tiles ----------
+      for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int j = 0; j < CHUNK_SIZE; j++) {
+
+          Color col;
+          switch (c->terrain[i][j]) {
+          case 1:
+            col = grass;
+            break;
+          case 2:
+            col = forest;
+            break;
+          case 3:
+            col = desert;
+            break;
+          default:
+            col = GRAY;
+            break;
+          }
+
+          int sx = (world_x + i) * TILE_SIZE - camera.x;
+          int sy = (world_y + j) * TILE_SIZE - camera.y;
+
+          DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
+
+          // subtle grid lines
+          DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE, Fade(BLACK, 0.05f));
+        }
+      }
+
+      // ---------- draw resources ONCE per chunk ----------
+      draw_chunk_resources(c, cx + dx, cy + dy, camera);
+
+      // after draw_chunk_resources(c, cx+dx, cy+dy, camera);
+      draw_chunk_agents(c, cx + dx, cy + dy, camera);
+    }
   }
 }
