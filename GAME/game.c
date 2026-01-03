@@ -18,6 +18,12 @@
 #define MAX_MOBS 10
 
 typedef struct {
+  float x;
+  float y;
+  float z;
+} Vector3;
+
+typedef struct {
   int biome_type;
   Vector3 terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
