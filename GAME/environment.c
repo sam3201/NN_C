@@ -141,3 +141,31 @@ void init_player() {
 
   player.alive = true;
 }
+
+void update_player() {
+  if (!player.alive)
+    return;
+
+  Vector2 move = {0, 0};
+
+  if (IsKeyDown(KEY_W))
+    move.y -= 1;
+  if (IsKeyDown(KEY_S))
+    move.y += 1;
+  if (IsKeyDown(KEY_A))
+    move.x -= 1;
+  if (IsKeyDown(KEY_D))
+    move.x += 1;
+
+  if ((move.x != 0 || move.y != 0) && player.stamina > 0) {
+    player.position.x += move.x * player.move_speed;
+    player.position.y += move.y * player.move_speed;
+    player.stamina -= 0.5f;
+  } else {
+    // stamina regen
+    player.stamina += 0.25f;
+  }
+
+  if (player.stamina > player.max_stamina)
+    player.stamina = player.max_stamina;
+}
