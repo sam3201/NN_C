@@ -6,7 +6,7 @@
 
 #define ROWS 75
 #define COLS 75
-#define NUM_CHANNELS 3 // e.g., RGB
+#define NUM_CHANNELS 3
 
 unsigned char screen[ROWS][COLS][NUM_CHANNELS];
 
