@@ -17,13 +17,4 @@ typedef struct {
 MuRuntime *mu_runtime_create(MuModel *model, int capacity, float gamma);
 void mu_runtime_free(MuRuntime *rt);
 
-void mu_model_step(MuModel *model, MuRuntime *rt, const float *obs, int action,
-                   float reward);
-
-void mu_model_end_episode(MuModel *model, MuRuntime *rt, float terminal_reward);
-
-void mu_model_reset_episode(MuRuntime *rt);
-
-void mu_model_train(MuModel *model, MuRuntime *rt);
-
 #endif
