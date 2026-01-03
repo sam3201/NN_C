@@ -44,7 +44,8 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
       break;
 
     case RES_FOOD:
-      DrawCircle(s.x, s.y, 4, RED);
+      DrawCircle(s.x, s.y, 4, BLACK);
+      DrawCircle(s.x, s.y, 3, RED);
       break;
 
     default:
