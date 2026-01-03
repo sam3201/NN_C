@@ -1,6 +1,6 @@
+#include "../utils/NN/MEMORY/memory.h" // Added memory
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
-#include "../utils/NN_C/MEMORY/memory.h" // Added memory
 #include "../utils/Raylib/src/raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
