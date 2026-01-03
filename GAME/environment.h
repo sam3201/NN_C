@@ -93,6 +93,7 @@ extern Resource resources[MAX_RESOURCES];
 extern int resource_count;
 
 extern ToolType tool;
+player.tool = TOOL_HAND;
 
 Resource *find_nearest_resource(Vector2 pos, float max_dist);
 void draw_resources(Vector2 camera);
