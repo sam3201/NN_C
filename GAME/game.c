@@ -58,29 +58,32 @@ void tank_draw(Tank *t, Vector2 aim) {
                    t->armColor);
 }
 
-void tank_update(Tank *t, int isTop) {
+void tank_update(Tank *t, int isTop, Vector2 target) {
   float move = 2.5f;
-  float rot = 2.0f;
 
+  // Movement (keyboard)
   if (!isTop) {
     if (IsKeyDown(KEY_A))
       t->position.x -= move;
     if (IsKeyDown(KEY_D))
       t->position.x += move;
-    if (IsKeyDown(KEY_Q))
-      t->rotation -= rot;
-    if (IsKeyDown(KEY_E))
-      t->rotation += rot;
+    if (IsKeyDown(KEY_W))
+      t->position.y -= move;
+    if (IsKeyDown(KEY_S))
+      t->position.y += move;
   } else {
     if (IsKeyDown(KEY_LEFT))
       t->position.x -= move;
     if (IsKeyDown(KEY_RIGHT))
       t->position.x += move;
-    if (IsKeyDown(KEY_KP_1))
-      t->rotation -= rot;
-    if (IsKeyDown(KEY_KP_2))
-      t->rotation += rot;
+    if (IsKeyDown(KEY_UP))
+      t->position.y -= move;
+    if (IsKeyDown(KEY_DOWN))
+      t->position.y += move;
   }
+
+  // Rotation automatically toward target (mouse for player, enemy for AI)
+  t->rotation = atan2f(target.y - t->position.y, target.x - t->position.x);
 }
 
 // Draws the title screen and allows selection of AI/Player tanks
