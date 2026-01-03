@@ -24,7 +24,7 @@ typedef struct {
   Vector2 position;
   ResourceType type;
   int health;
-  bool alive;
+  bool visited;
 } Resource;
 
 typedef struct {
