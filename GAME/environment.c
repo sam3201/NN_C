@@ -320,13 +320,27 @@ void update_player() {
 }
 
 void update_agent(Agent *a) {
-  if (Vector2Distance(a->position, agent_base.position) < BASE_RADIUS) {
+  if (!a->alive)
+    return;
+
+  float dist = Vector2Distance(a->position, agent_base.position);
+
+  if (dist < BASE_RADIUS) {
+    // Heal agent
     a->health += 0.5f;
     a->stamina += 0.5f;
     if (a->health > 100)
       a->health = 100;
     if (a->stamina > 100)
       a->stamina = 100;
+
+    // flash timer
+    a->heal_flash_timer += 0.1f;
+    if (a->heal_flash_timer > 1.0f)
+      a->heal_flash_timer = 0;
+  } else {
+    // reset flash when outside
+    a->heal_flash_timer = 0;
   }
 }
 
