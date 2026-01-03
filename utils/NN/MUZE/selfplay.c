@@ -1,8 +1,8 @@
 #include "selfplay.h"
+#include "toy_env.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <toy_env.h>
 
 /* Helper: compute discounted returns for an episode of length T.
    rewards[0..T-1], gamma -> returns z_t = sum_{k=0..T-1-t} gamma^k *
