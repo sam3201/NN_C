@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+int SCREEN_WIDTH;
+int SCREEN_HEIGHT;
 
 #define WORLD_SIZE 128
 #define CHUNK_SIZE 32
