@@ -13,6 +13,10 @@
 
 #define MEMORY_CAPACITY infinity
 
+#define CHUNK_SIZE 10
+#define MAX_RESOURCES 10
+#define MAX_MOBS 10
+
 typedef struct {
   int biome_type;
   Vector3 terrain[CHUNK_SIZE][CHUNK_SIZE];
