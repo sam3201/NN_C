@@ -209,6 +209,33 @@ int main(void) {
 
     DrawLine(0, 300, 800, 300, GRAY); // battlefield divider
 
+    long double *state = encode_screen(screen, ROWS, COLS, NUM_CHANNELS);
+    int action = policy_select_action(&tank_policy, state);
+
+    // Map action index to tank movement/shooting
+    switch (action) {
+    case 0:
+      move_left(&tank);
+      break;
+    case 1:
+      move_right(&tank);
+      break;
+    case 2:
+      move_up(&tank);
+      break;
+    case 3:
+      move_down(&tank);
+      break;
+    case 4:
+      shoot(&tank);
+      break;
+    }
+
+    long double reward = compute_reward(&tank, &enemy); // +1/-1 etc
+    policy_update(&tank_policy, state, action, reward);
+
+    free(state);
+
     Vector2 mouse = GetMousePosition();
 
     // Bottom tank aims at mouse
