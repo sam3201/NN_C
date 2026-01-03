@@ -31,7 +31,8 @@ MuModel *mu_model_create(const MuConfig *cfg) {
   for (int i = 0; i < m->pred_W_count; i++)
     m->pred_W[i] = 0.01f;
 
-  m->runtime = NULL;
+  m->runtime = mu_runtime_create(m, 4096, 0.95f);
+
   return m;
 }
 
