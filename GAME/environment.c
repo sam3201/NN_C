@@ -107,16 +107,13 @@ void draw_world(Vector2 camera) {
 
           switch (c->terrain[i][j]) {
           case 1:
-            col = GREEN;
+            col = grass;
             break;
           case 2:
-            col = DARKGREEN;
+            col = forest;
             break;
           case 3:
-            col = BEIGE;
-            break;
-          default:
-            col = GRAY;
+            col = desert;
             break;
           }
 
