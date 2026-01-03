@@ -330,7 +330,7 @@ int main() {
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
 
-  TILE_SIZE =
+  float TILE_SIZE =
       ((float)SCREEN_WIDTH + (float)SCREEN_HEIGHT) / (float)WORLD_SIZE * 2;
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE Game");
@@ -343,8 +343,6 @@ int main() {
   camera.target = player.position;
   camera.zoom = 1.0f;
   camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
-
-  camera.zoom = 1.0f;
 
   srand(time(NULL));
 
