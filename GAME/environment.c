@@ -247,30 +247,41 @@ void update_player() {
 }
 
 void harvest_resources() {
-  int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
-  int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+  int tool_power = 1;
 
-  Chunk *chunk = get_chunk(cx, cy);
+  if (player.tool == TOOL_AXE)
+    tool_power = 3;
+  if (player.tool == TOOL_PICKAXE)
+    tool_power = 4;
 
   for (int i = 0; i < MAX_RESOURCES; i++) {
     Resource *r = &chunk->resources[i];
-    if (r->visited)
+    if (r->visited || r->health <= 0)
       continue;
 
     Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
                          (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
 
-    float dist = Vector2Distance(player.position, world_pos);
-    if (dist < 12) {
-      r->visited = true;
-      player.stamina -= 5;
+    if (Vector2Distance(player.position, world_pos) < 12) {
 
-      if (r->type == 0)
-        player.wood++;
-      if (r->type == 1)
-        player.stone++;
-      if (r->type == 2)
-        player.food++;
+      // tool check
+      if ((r->type == RES_TREE && player.tool != TOOL_AXE) ||
+          (r->type == RES_ROCK && player.tool != TOOL_PICKAXE))
+        continue;
+
+      r->health -= tool_power;
+      player.stamina -= 2;
+
+      if (r->health <= 0) {
+        r->visited = true;
+
+        if (r->type == RES_TREE)
+          player.wood += 3;
+        if (r->type == RES_ROCK)
+          player.stone += 2;
+        if (r->type == RES_FOOD)
+          player.food += 1;
+      }
     }
   }
 }
