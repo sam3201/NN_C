@@ -76,6 +76,8 @@ typedef struct {
   int food;
 
   bool alive;
+
+  ToolType tool;
 } Player;
 
 void init_world();
