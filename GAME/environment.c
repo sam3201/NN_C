@@ -99,16 +99,15 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     }
   }
 
-  int roll = rand() % 100;
-  if (c->biome_type == 1 && roll < 60)
-    c->resources[i].type = RES_TREE;
-  else if (roll < 30)
-    c->resources[i].type = RES_ROCK;
-  else
-    c->resources[i].type = RES_FOOD;
-
   // generate some resources
   for (int i = 0; i < MAX_RESOURCES; i++) {
+    if (c->biome_type == 1 && roll < 60)
+      c->resources[i].type = RES_TREE;
+    else if (roll < 30)
+      c->resources[i].type = RES_ROCK;
+    else
+      c->resources[i].type = RES_FOOD;
+
     c->resources[i].position =
         (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
     c->resources[i].type = rand() % RES_COUNT;
