@@ -57,23 +57,22 @@ void draw_base_particles(Vector2 camera) {
   }
 }
 
-void apply_action(ActionType action) {
+void muze_apply_action(Player *p, int action) {
   switch (action) {
   case ACTION_UP:
-    player.position.y -= 1;
+    p->position.y -= p->move_speed;
     break;
   case ACTION_DOWN:
-    player.position.y += 1;
+    p->position.y += p->move_speed;
     break;
   case ACTION_LEFT:
-    player.position.x -= 1;
+    p->position.x -= p->move_speed;
     break;
   case ACTION_RIGHT:
-    player.position.x += 1;
-    break;
-  case ACTION_ATTACK:
+    p->position.x += p->move_speed;
     break;
   case ACTION_HARVEST:
+    harvest_resources();
     break;
   }
 }
