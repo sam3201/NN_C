@@ -104,72 +104,73 @@ void title_screen(int *topAI, int *bottomAI) {
         break;
     }
   }
+}
 
-  // ---------------- Main Game Loop -----------
-  int main() {
-    InitWindow(800, 600, "Tank Game");
+// ---------------- Main Game Loop -----------
+int main() {
+  InitWindow(800, 600, "Tank Game");
 
-    // initialize tanks
-    bottom.position = (Vector2){100, 500};
-    bottom.speed = 5;
-    bottom.health = 3;
-    bottom.isAI = 0;
+  // initialize tanks
+  bottom.position = (Vector2){100, 500};
+  bottom.speed = 5;
+  bottom.health = 3;
+  bottom.isAI = 0;
 
-    top.position = (Vector2){700, 100};
-    top.speed = 5;
-    top.health = 3;
-    top.isAI = 0;
+  top.position = (Vector2){700, 100};
+  top.speed = 5;
+  top.health = 3;
+  top.isAI = 0;
 
-    SetTargetFPS(60);
+  SetTargetFPS(60);
 
-    show_title_screen(); // choose AI / Player before starting
+  show_title_screen(); // choose AI / Player before starting
 
-    while (!WindowShouldClose()) {
+  while (!WindowShouldClose()) {
 
-      // ---- Player Input ----
-      if (!bottom.isAI) {
-        if (IsKeyDown(KEY_A))
-          move_left(&bottom);
-        if (IsKeyDown(KEY_D))
-          move_right(&bottom, 800);
-        if (IsKeyDown(KEY_W))
-          move_up(&bottom);
-        if (IsKeyDown(KEY_S))
-          move_down(&bottom, 600);
-      }
-
-      if (!top.isAI) {
-        if (IsKeyDown(KEY_LEFT))
-          move_left(&top);
-        if (IsKeyDown(KEY_RIGHT))
-          move_right(&top, 800);
-        if (IsKeyDown(KEY_UP))
-          move_up(&top);
-        if (IsKeyDown(KEY_DOWN))
-          move_down(&top, 600);
-      }
-
-      // ---- Tank updates ----
-      tank_update(&bottom, 0, top.position);
-      tank_update(&top, 1, bottom.position);
-
-      // ---- RL placeholders ----
-      long double *state = screen;
-      int action = 0; // policy placeholder
-
-      long double reward = compute_reward(&bottom, &top);
-
-      // ---- Rendering ----
-      BeginDrawing();
-      ClearBackground(BLACK);
-
-      DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
-                    BLUE);
-      DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
-
-      EndDrawing();
+    // ---- Player Input ----
+    if (!bottom.isAI) {
+      if (IsKeyDown(KEY_A))
+        move_left(&bottom);
+      if (IsKeyDown(KEY_D))
+        move_right(&bottom, 800);
+      if (IsKeyDown(KEY_W))
+        move_up(&bottom);
+      if (IsKeyDown(KEY_S))
+        move_down(&bottom, 600);
     }
 
-    CloseWindow();
-    return 0;
+    if (!top.isAI) {
+      if (IsKeyDown(KEY_LEFT))
+        move_left(&top);
+      if (IsKeyDown(KEY_RIGHT))
+        move_right(&top, 800);
+      if (IsKeyDown(KEY_UP))
+        move_up(&top);
+      if (IsKeyDown(KEY_DOWN))
+        move_down(&top, 600);
+    }
+
+    // ---- Tank updates ----
+    tank_update(&bottom, 0, top.position);
+    tank_update(&top, 1, bottom.position);
+
+    // ---- RL placeholders ----
+    long double *state = screen;
+    int action = 0; // policy placeholder
+
+    long double reward = compute_reward(&bottom, &top);
+
+    // ---- Rendering ----
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
+                  BLUE);
+    DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
+
+    EndDrawing();
   }
+
+  CloseWindow();
+  return 0;
+}
