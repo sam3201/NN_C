@@ -11,10 +11,10 @@ typedef struct {
 } MemoryEntry;
 
 typedef struct {
-  MemoryEntry *buffer; // Dynamic array
-  int size;            // Current number of entries
-  int capacity;        // Maximum entries before resize
-  int index;           // Current write head
+  MemoryEntry *buffer;
+  int size;
+  int capacity;
+  int index;
 } Memory;
 
 void init_memory(Memory *memory, int initial_capacity, int input_size);
