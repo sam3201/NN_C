@@ -320,7 +320,7 @@ void harvest_resources() {
                        : (r->type == RES_ROCK) ? 14.0f
                                                : 10.0f;
 
-    if (Vector2Distance(player.position, world_pos) < 12) {
+    if (Vector2Distance(player.position, world_pos) < hit_radius) {
 
       // tool restrictions
       if ((r->type == RES_TREE && player.tool != TOOL_AXE) ||
