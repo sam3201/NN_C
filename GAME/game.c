@@ -2,7 +2,10 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
-MuConfig config = {}
+MuConfig config =
+    {
+        // --- PLAYER ---
+}
 
 mu_model_create();
 
