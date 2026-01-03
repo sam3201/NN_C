@@ -238,7 +238,7 @@ int main() {
     DrawLineV(t_center,
               (Vector2){t_center.x + cosf(top.turretAngle) * TANK_SIZE,
                         t_center.y + sinf(top.turretAngle) * TANK_SIZE},
-              DARKRED);
+              RED);
 
     // Draw bullets
     for (int i = 0; i < bullet_count; i++) {
