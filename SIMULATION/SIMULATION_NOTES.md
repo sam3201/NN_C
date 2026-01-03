@@ -148,3 +148,8 @@
     ├─ memory : Memory ── Stores past inputs, actions, rewards
     └─ input_size : size_t
 
+
+    Food
+    ├─ position : Vector2
+    └─ rect : Rectangle
+
