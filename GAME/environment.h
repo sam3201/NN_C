@@ -83,6 +83,11 @@ typedef struct {
   ToolType tool;
 } Player;
 
+typedef struct {
+  Vector2 position;
+  float radius;
+} Base;
+
 void init_world();
 Chunk *get_chunk(int cx, int cy);
 void generate_chunk(Chunk *chunk, int cx, int cy);
@@ -94,6 +99,7 @@ void draw_player(Vector2 camera);
 void draw_ui(void);
 
 extern Player player;
+extern Base agent_base;
 extern Resource resources[MAX_RESOURCES];
 extern int resource_count;
 
