@@ -100,7 +100,7 @@ int main() {
 
   title_screen();
 
-  init_ai(); // MuZero init
+  init_ai();
 
   while (!WindowShouldClose()) {
     // Player Input
