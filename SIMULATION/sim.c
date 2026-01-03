@@ -255,6 +255,13 @@ void init_agent(Agent *agent, int id) {
 
   // Initialize brain
   agent->brain = NEAT_init(get_total_input_size(), ACTION_COUNT, 1);
+
+  // Initialize neural network
+  agent->input_size = get_total_input_size();
+  agent->brain = NEAT_init(agent->input_size, ACTION_COUNT, 1);
+
+  // Initialize memory
+  init_memory(&agent->memory, agent->input_size);
 }
 
 void update_agent(GameState *game, int agent_idx) {
