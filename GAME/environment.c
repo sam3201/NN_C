@@ -285,7 +285,7 @@ void harvest_resources() {
 
   Chunk *chunk = get_chunk(cx, cy);
 
-  for (int i = 0; i < MAX_RESOURCES; i++) {
+  for (int i = 0; i < chunk->resource_count; i++) {
     Resource *r = &chunk->resources[i];
     if (r->visited || r->health <= 0)
       continue;
