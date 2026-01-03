@@ -11,8 +11,8 @@
 #define MAX_FOOD 100
 #define MAX_GROUNDSKEEPERS (POPULATION_SIZE / 2)
 #define GROUNDSKEEPER_SPEED 3.0f
-#define XP_LEECH_RATE 1.0f       // XP stolen per second
-#define PUNISHMENT_COOLDOWN 3.0f // Seconds between punishments
+#define XP_LEECH_RATE 1.0f
+#define PUNISHMENT_COOLDOWN 3.0f
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FRAME_RATE 60
