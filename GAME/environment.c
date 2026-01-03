@@ -330,6 +330,7 @@ void update_player() {
   if (player.stamina > player.max_stamina)
     player.stamina = player.max_stamina;
 }
+
 int decide_action(Agent *agent, long double *inputs) {
   float obs[agent->input_size];
   for (int i = 0; i < agent->input_size; i++)
