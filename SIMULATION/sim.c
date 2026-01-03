@@ -565,7 +565,6 @@ int main(void) {
     EndDrawing();
   }
 
-  free(game.vision_inputs);
   free_game(&game);
   CloseWindow();
   return 0;
