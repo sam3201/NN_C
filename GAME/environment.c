@@ -126,34 +126,6 @@ void generate_chunk(Chunk *c, int cx, int cy) {
 }
 
 // ------------------------ draw world --------------------------
-void draw_world(Vector2 camera) {
-  int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
-  int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
-
-  Color grass = (Color){60, 160, 80, 255};
-  Color forest = (Color){30, 110, 60, 255};
-  Color desert = (Color){210, 185, 140, 255};
-
-  for (int i = 0; i < CHUNK_SIZE; i++) {
-    for (int j = 0; j < CHUNK_SIZE; j++) {
-      int world_x = cx * CHUNK_SIZE + i;
-      int world_y = cy * CHUNK_SIZE + j;
-
-      Chunk *c = get_chunk(world_x, world_y);
-
-      DrawRectangle((world_x + i) * TILE_SIZE - camera.x,
-                    (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE, TILE_SIZE,
-                    col);
-
-      DrawRectangleLines((world_x + i) * TILE_SIZE - camera.x,
-                         (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
-                         TILE_SIZE, Fade(BLACK, 0.05f));
-    }
-  }
-
-  // ✅ draw resources ONCE per chunk
-  draw_chunk_resources(c, cx + dx, cy + dy, camera);
-}
 
 // --- PLAYER ---
 void init_player(void);
