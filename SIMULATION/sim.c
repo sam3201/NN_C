@@ -78,7 +78,7 @@ typedef struct {
 } GameState;
 
 // --- DECLARATIONS ---
-void init_agent(Agent *agent, int id);
+void init_agent(Agent *agent, int id, bool groundkeeper);
 void init_game(GameState *game);
 void update_game(GameState *game);
 void encode_vision(GameState *game, int agent_idx, long double *vision_output);
