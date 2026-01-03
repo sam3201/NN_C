@@ -202,3 +202,29 @@ void harvest_resources() {
     }
   }
 }
+
+void attack_mobs() {
+  int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+
+  Chunk *chunk = get_chunk(cx, cy);
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &chunk->mobs[i];
+    if (m->visited)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + m->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + m->position.y) * TILE_SIZE};
+
+    if (Vector2Distance(player.position, world_pos) < player.attack_range) {
+      m->value -= player.attack_damage;
+      player.stamina -= 10;
+
+      if (m->value <= 0) {
+        m->visited = true;
+        player.food += 2;
+      }
+    }
+  }
+}
