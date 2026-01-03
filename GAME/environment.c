@@ -267,7 +267,6 @@ void update_player() {
     move.y *= 0.7071f;
   }
 
-  // stamina ratio (0.1 → 1.0)
   float stamina_ratio = player.stamina / player.max_stamina;
   if (stamina_ratio < 0.1f)
     stamina_ratio = 0.1f;
