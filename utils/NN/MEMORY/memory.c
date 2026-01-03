@@ -56,7 +56,6 @@ void free_memory(Memory *memory) {
   if (memory->buffer == NULL)
     return;
 
-  // Free each individual vision input buffer
   for (int i = 0; i < memory->size; i++) {
     if (memory->buffer[i].vision_inputs != NULL) {
       free(memory->buffer[i].vision_inputs);
