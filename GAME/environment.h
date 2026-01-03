@@ -9,6 +9,10 @@
 
 #define CHUNK_SIZE 32
 #define TILE_SIZE 8
+#define MAX_RESOURCES 512
+Resource resources[MAX_RESOURCES];
+int resource_count = 0;
+
 #define MAX_RESOURCES 10
 #define MAX_MOBS 10
 
