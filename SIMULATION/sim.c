@@ -378,6 +378,45 @@ void execute_agent_action(GameState *game, int agent_idx, Action action) {
   move_agent(game, agent, action);
 }
 
+void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
+  int idx = 0;
+
+  // Self
+  inputs[idx++] = agent->size;
+  inputs[idx++] = agent->time_alive;
+
+  // Punishment timers of all groundkeepers
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
+    inputs[idx++] = state->gks[i].punishment_timer;
+
+  // XP stolen (placeholder: could be computed dynamically)
+  inputs[idx++] = 0;
+
+  // Relative size (normalized)
+  inputs[idx++] = agent->size / 10.0;
+
+  // Food presence (binary)
+  for (int i = 0; i < MAX_FOOD; i++)
+    inputs[idx++] = (state->food[i].size > 0) ? 1.0 : 0.0;
+
+  // Other agents
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    if (state->agents[i].agent_id == agent->agent_id)
+      continue;
+    inputs[idx++] = state->agents[i].position.x - agent->position.x;
+    inputs[idx++] = state->agents[i].position.y - agent->position.y;
+    inputs[idx++] = state->agents[i].size;
+    inputs[idx++] = state->agents[i].total_xp;
+  }
+
+  // Groundkeepers
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    inputs[idx++] = state->gks[i].position.x - agent->position.x;
+    inputs[idx++] = state->gks[i].position.y - agent->position.y;
+    inputs[idx++] = state->gks[i].punishment_timer;
+  }
+}
+
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
