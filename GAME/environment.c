@@ -501,3 +501,26 @@ Resource *find_nearest_resource(Vector2 pos, float max_dist) {
   }
   return best;
 }
+
+void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &c->agents[i];
+    if (!a->alive)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + a->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + a->position.y) * TILE_SIZE};
+    Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
+
+    // body
+    DrawCircle(s.x, s.y, 6, BLACK);                       // outline
+    DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255}); // tan/cream body
+
+    // hands
+    DrawCircle(s.x - 6, s.y, 2, BLACK);
+    DrawCircle(s.x + 6, s.y, 2, BLACK);
+
+    // bandana / headband
+    DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
+  }
+}
