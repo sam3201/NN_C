@@ -98,7 +98,7 @@ int main() {
   InitWindow(800, 600, "Tank Game");
   SetTargetFPS(60);
 
-  title_screen(&top.isAI, &bottom.isAI);
+  title_screen();
 
   init_ai(); // MuZero init
 
