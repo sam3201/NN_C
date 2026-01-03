@@ -54,7 +54,7 @@ void mu_runtime_end_episode(MuModel *model, MuRuntime *rt,
   rt->has_last = 0;
 }
 
-void mu_model_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
+void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
 
 void mu_model_train(MuModel *model, MuRuntime *rt) {
   if (rb_size(rt->rb) < 32)
