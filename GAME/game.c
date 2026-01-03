@@ -1,7 +1,9 @@
+#include "../MUZE/selfplay.h"
+#include "../MUZE/toy_env.h"
 #include "../utils/Raylib/src/raylib.h"
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // ---------------- Constants ----------------
 #define ROWS 75
@@ -36,7 +38,7 @@ long double screen[ROWS * COLS * NUM_CHANNELS];
 void move_left(Tank *t) {
   t->position.x -= t->speed;
   if (t->position.x < 0)
-    t->position.x = 0; // border collision
+    t->position.x = 0;
 }
 
 void move_right(Tank *t, int screen_width) {
@@ -76,11 +78,9 @@ void tank_update(Tank *t, int isTop, Vector2 target) {
     if (t->position.y > target.y)
       move_up(t);
   }
-  // Player movement handled elsewhere (keyboard input)
 }
 
 // ---------------- Title / Menu ----------------
-// Draws the title screen and allows selection of AI/Player tanks
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -95,22 +95,36 @@ void title_screen(int *topAI, int *bottomAI) {
     DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
     DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
     EndDrawing();
-    if (IsKeyPressed(KEY_ONE)) {
+    if (IsKeyPressed(KEY_ONE))
       *topAI = !(*topAI);
-    }
-    if (IsKeyPressed(KEY_TWO)) {
+    if (IsKeyPressed(KEY_TWO))
       *bottomAI = !(*bottomAI);
-    }
     if (IsKeyPressed(KEY_ENTER))
       break;
   }
+}
+
+// ---------------- Toy Environment Wrapper for Self-Play ----------------
+typedef struct {
+  ToyEnvState env;
+} GameEnv;
+
+void game_env_reset(void *state_ptr, float *obs) {
+  GameEnv *ge = (GameEnv *)state_ptr;
+  ge->env.size = 5; // minimal positions
+  toy_env_reset(&ge->env, obs);
+}
+
+void game_env_step(void *state_ptr, int action, float *obs, float *reward,
+                   int *done) {
+  GameEnv *ge = (GameEnv *)state_ptr;
+  toy_env_step(&ge->env, action, obs, reward, done);
 }
 
 // ---------------- Main Game Loop -----------
 int main() {
   InitWindow(800, 600, "Tank Game");
 
-  // initialize tanks
   bottom.position = (Vector2){100, 500};
   bottom.speed = 5;
   bottom.health = 3;
@@ -123,12 +137,32 @@ int main() {
 
   SetTargetFPS(60);
 
-  title_screen(&top.isAI,
-               &bottom.isAI); // choose AI / Player before starting the game
+  title_screen(&top.isAI, &bottom.isAI);
 
+  // ----------- MuZero Self-Play Setup -----------
+  GameEnv game_env;
+  float obs[5];
+  game_env_reset(&game_env, obs);
+
+  // Note: model, MCTSParams, SelfPlayParams, ReplayBuffer need to exist
+  // For demo we can skip actual replay buffer pushes
+  printf("Starting demo self-play episode...\n");
+
+  int done = 0;
+  int step = 0;
+  while (!done && step < 20) { // limit episode length
+    float reward = 0.0f;
+    int action = rand() % 2; // random action for demo
+    game_env_step(&game_env, action, obs, &reward, &done);
+    printf("Step %d: Action=%d, Pos=%d, Reward=%.1f, Done=%d\n", step, action,
+           game_env.env.pos, reward, done);
+    step++;
+  }
+  printf("Demo self-play finished!\n");
+
+  // ----------- Main Game Loop -----------
   while (!WindowShouldClose()) {
-
-    // ---- Player Input ----
+    // Player input
     if (!bottom.isAI) {
       if (IsKeyDown(KEY_A))
         move_left(&bottom);
@@ -139,7 +173,6 @@ int main() {
       if (IsKeyDown(KEY_S))
         move_down(&bottom, 600);
     }
-
     if (!top.isAI) {
       if (IsKeyDown(KEY_LEFT))
         move_left(&top);
@@ -151,24 +184,15 @@ int main() {
         move_down(&top, 600);
     }
 
-    // ---- Tank updates ----
     tank_update(&bottom, 0, top.position);
     tank_update(&top, 1, bottom.position);
 
-    // ---- RL placeholders ----
-    long double *state = screen;
-    int action = 0; // policy placeholder
-
-    long double reward = compute_reward(&bottom, &top);
-
-    // ---- Rendering ----
+    // Rendering
     BeginDrawing();
     ClearBackground(BLACK);
-
     DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
                   BLUE);
     DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
-
     EndDrawing();
   }
 
