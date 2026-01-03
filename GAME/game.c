@@ -39,7 +39,7 @@ typedef enum {
   ACTION_ATTACK,
   ACTION_HARVEST,
   ACTION_COUNT
-} ActionType;
+} Action;
 
 /* =======================
    STRUCTS
