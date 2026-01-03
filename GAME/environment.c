@@ -303,8 +303,10 @@ Resource *find_nearest_resource(Vector2 pos, float max_dist) {
 
   for (int i = 0; i < resource_count; i++) {
     Resource *r = &resources[i];
-    if (r->health > 0)
+    if (r->health <= 0)
       continue;
+
+    continue;
 
     float d = Vector2Distance(pos, r->position);
     if (d < best_dist) {
