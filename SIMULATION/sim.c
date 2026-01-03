@@ -1,6 +1,6 @@
-#include "../utils/NN/MEMORY/MEMORY.h"
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
+#include "../utils/NN_C/MEMORY/memory.h" // Added memory
 #include "../utils/Raylib/src/raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,16 +14,15 @@
 #define SCREEN_HEIGHT 600
 #define FRAME_RATE 60
 #define XP_PER_LEVEL 100
-#define XP_FROM_FOOD 1 // Added XP gain values
+#define XP_FROM_FOOD 1
 #define XP_FROM_AGENT 25
 #define XP_FROM_OFFSPRING 50
 #define BREEDING_DURATION 2.0f
 #define INITIAL_AGENT_SIZE 1
 #define MOVEMENT_SPEED 2.0f
 #define FOOD_SIZE 5
-#define FOOD_SPAWN_CHANCE 0.1f // 10% chance per frame to spawn new food
+#define FOOD_SPAWN_CHANCE 0.1f
 
-// Add these constants for entity types
 #define VISION_EMPTY 0
 #define VISION_SELF 1
 #define VISION_FOOD 2
@@ -31,10 +30,8 @@
 #define VISION_SAME_SIZE 5
 #define VISION_OTHER 6
 
-// Add this constant for label size
 #define LABEL_SIZE 10
-
-#define MEMORY_CAPACITY infinity
+#define MEMORY_CAPACITY 1024
 
 typedef enum {
   ACTION_NONE = 0,
@@ -45,7 +42,6 @@ typedef enum {
   ACTION_COUNT = 5
 } Action;
 
-// Add these struct definitions before GameState
 typedef struct {
   Vector2 position;
   Vector2 velocity;
@@ -63,9 +59,9 @@ typedef struct {
   Color color;
   NEAT_t *brain;
 
+  // MEMORY SYSTEM
   Memory memory;
   size_t input_size;
-
 } Agent;
 
 typedef struct {
@@ -73,7 +69,6 @@ typedef struct {
   Rectangle rect;
 } Food;
 
-// Remove GameStateEnum since we're not using states anymore
 typedef struct {
   Agent agents[POPULATION_SIZE];
   Food food[MAX_FOOD];
@@ -90,15 +85,14 @@ typedef struct {
   unsigned int num_active_players;
 } GameState;
 
-// Add these function declarations after the struct definitions and before any
-// function implementations
+// --- Function Declarations ---
 void init_agent(Agent *agent, int id);
 void init_game(GameState *game);
 void update_game(GameState *game);
-void update_agent_stats(Agent *agent);
 void encode_vision(GameState *game, int player_idx, long double *vision_output);
 void spawn_food(Food *food);
 void execute_action(GameState *game, int agent_idx, Action action);
+void check_collisions(GameState *game, int agent_idx);
 void handle_agent_collision(GameState *game, int agent1_idx, int agent2_idx);
 void eat_agent(Agent *predator, Agent *prey);
 void kill_agent(GameState *game, int agent_idx);
@@ -106,134 +100,24 @@ void start_breeding(Agent *agent1, Agent *agent2);
 void handle_breeding(GameState *game, int agent_idx);
 void eat_food(Agent *agent);
 void transfer_weights_with_mutation(NN_t *old_nn, NN_t *new_nn, int level);
-void check_collisions(GameState *game, int agent_idx);
 void update_agent(GameState *game, int agent_idx);
-void draw_game_state(GameState *game);
-void draw_stats(unsigned int generation, unsigned int current_player,
-                unsigned int total_players, float current_fitness,
-                float best_fitness);
-void update_game(GameState *game);
-void apply_action(GameState *game, Action action);
-void update_agent_physics(Agent *agent);
-void init_agent(Agent *agent, int id);
-void level_up(Agent *agent);
-void init_food(Food *food);
-void try_breed(GameState *game, int p1_idx, int p2_idx);
-void cleanup_game_state(GameState *game);
 void update_agent_size(Agent *agent);
 void update_agent_color(Agent *agent);
-void move_agent(GameState *game, Agent *agent, Action action);
-bool check_collision(Rectangle rect1, Rectangle rect2);
-void evolve_population(GameState *game);
-void handle_breeding_completion(GameState *game, int agent_idx);
+void level_up(Agent *agent);
+size_t get_total_input_size();
+Action get_action_from_output(long double *outputs);
+float calculate_fitness(Agent *agent);
 void evolve_agent(Agent *agent);
-void transfer_weights(NN_t *old_nn, NN_t *new_nn);
 
-// Add this helper function to get total input size
-size_t get_total_input_size() {
-  return (SCREEN_WIDTH * SCREEN_HEIGHT) +
-         7; // Vision grid + 7 additional inputs
+// --- MEMORY HELPER FUNCTIONS ---
+size_t get_total_input_size() { return (SCREEN_WIDTH * SCREEN_HEIGHT) + 7; }
+
+void store_experience(Agent *agent, long double *inputs, int action,
+                      float reward) {
+  store_memory(&agent->memory, inputs, action, reward, 0.0f, agent->input_size);
 }
 
-// Update encode_vision to handle all inputs
-void encode_vision(GameState *game, int player_idx,
-                   long double *vision_output) {
-  size_t vision_size = SCREEN_WIDTH * SCREEN_HEIGHT;
-  Agent *current = &game->agents[player_idx];
-
-  // 1. First encode the vision grid (as before)
-  memset(vision_output, 0, vision_size * sizeof(long double));
-
-  // Encode current agent (SELF)
-  for (int y = 0; y < current->size; y++) {
-    for (int x = 0; x < current->size; x++) {
-      int pos_x = (int)current->position.x + x;
-      int pos_y = (int)current->position.y + y;
-
-      if (pos_x >= 0 && pos_x < SCREEN_WIDTH && pos_y >= 0 &&
-          pos_y < SCREEN_HEIGHT) {
-        vision_output[pos_y * SCREEN_WIDTH + pos_x] = VISION_SELF;
-      }
-    }
-  }
-
-  // Encode other agents
-  for (int i = 0; i < POPULATION_SIZE; i++) {
-    if (i == player_idx)
-      continue;
-
-    Agent *other = &game->agents[i];
-    int vision_type = (other->parent_id == current->agent_id) ? VISION_OFFSPRING
-                                                              : VISION_OTHER;
-
-    for (int y = 0; y < other->size; y++) {
-      for (int x = 0; x < other->size; x++) {
-        int pos_x = (int)other->position.x + x;
-        int pos_y = (int)other->position.y + y;
-
-        if (pos_x >= 0 && pos_x < SCREEN_WIDTH && pos_y >= 0 &&
-            pos_y < SCREEN_HEIGHT) {
-          vision_output[pos_y * SCREEN_WIDTH + pos_x] = vision_type;
-        }
-      }
-    }
-  }
-
-  // Encode food
-  for (int i = 0; i < MAX_FOOD; i++) {
-    Food *food = &game->food[i];
-    int pos_x = (int)food->position.x;
-    int pos_y = (int)food->position.y;
-
-    if (pos_x >= 0 && pos_x < SCREEN_WIDTH && pos_y >= 0 &&
-        pos_y < SCREEN_HEIGHT) {
-      vision_output[pos_y * SCREEN_WIDTH + pos_x] = VISION_FOOD;
-    }
-  }
-
-  // 2. Add the additional inputs after the vision grid
-  size_t additional_input_idx = vision_size;
-
-  // Normalize values to range [0, 1] for neural network
-  vision_output[additional_input_idx++] = current->is_breeding ? 1.0L : 0.0L;
-  vision_output[additional_input_idx++] =
-      (long double)current->num_offsprings / POPULATION_SIZE;
-  vision_output[additional_input_idx++] =
-      (long double)current->parent_id / POPULATION_SIZE;
-  vision_output[additional_input_idx++] =
-      (long double)current->agent_id / POPULATION_SIZE;
-  vision_output[additional_input_idx++] = (long double)current->size;
-  vision_output[additional_input_idx++] = (long double)current->level;
-  vision_output[additional_input_idx] = (long double)current->total_xp;
-}
-
-// Update the neural network initialization to account for all inputs
-void init_agent_brain(Agent *agent) {
-  size_t total_inputs = get_total_input_size();
-  agent->brain = NEAT_init(total_inputs, ACTION_COUNT, 1);
-
-  if (!agent->brain) {
-    fprintf(stderr, "Failed to initialize agent brain\n");
-    exit(1);
-  }
-}
-
-// Helper function to process neural network output into an action
-Action get_action_from_output(long double *outputs) {
-  Action best_action = ACTION_NONE;
-  long double max_value = -INFINITY;
-
-  // Find action with highest output value
-  for (int i = 0; i < ACTION_COUNT; i++) {
-    if (outputs[i] > max_value) {
-      max_value = outputs[i];
-      best_action = (Action)i;
-    }
-  }
-
-  return best_action;
-}
-
+// --- INIT AGENT ---
 void init_agent(Agent *agent, int id) {
   agent->level = 0;
   agent->total_xp = 0;
@@ -247,44 +131,35 @@ void init_agent(Agent *agent, int id) {
   agent->breeding_timer = 0;
   agent->color = WHITE;
 
-  // Random starting position
   agent->rect.x = (float)(rand() % (SCREEN_WIDTH - 10));
   agent->rect.y = (float)(rand() % (SCREEN_HEIGHT - 10));
   agent->rect.width = agent->size;
   agent->rect.height = agent->size;
 
-  // Initialize neural network
   agent->input_size = get_total_input_size();
-  // Initialize brain
   agent->brain = NEAT_init(agent->input_size, ACTION_COUNT, 1);
 
-  // Initialize memory
+  // Init memory
   init_memory(&agent->memory, agent->input_size);
 }
 
+// --- UPDATE AGENT ---
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
 
-  // Encode vision for neural network
   encode_vision(game, agent_idx, game->vision_inputs);
 
-  // Forward pass
   long double *outputs = NEAT_forward(agent->brain, game->vision_inputs);
   Action action = get_action_from_output(outputs);
 
-  // Execute the action
   execute_action(game, agent_idx, action);
   game->last_actions[agent_idx] = action;
 
-  // Compute simple reward (can be XP gained this step)
+  // Store in memory
   float reward = (float)agent->total_xp;
+  store_experience(agent, game->vision_inputs, (int)action, reward);
 
-  // Store experience in memory
-  store_memory(&agent->memory, game->vision_inputs, (int)action, reward, 0.0f,
-               agent->input_size);
-
-  // Breeding logic
   if (agent->is_breeding) {
     agent->breeding_timer += GetFrameTime();
     if (agent->breeding_timer >= BREEDING_DURATION) {
@@ -292,7 +167,6 @@ void update_agent(GameState *game, int agent_idx) {
     }
   }
 }
-
 void update_agent_size(Agent *agent) {
   agent->size = agent->level + 1; // Size is level + 1 (so level 0 = size 1)
   agent->rect = (Rectangle){agent->position.x, agent->position.y, agent->size,
