@@ -1,4 +1,6 @@
 // agent.h
+#ifndef AGENT_H
+#define AGENT_H
 
 #include "../NN_C/memory/memory.h"
 
@@ -25,3 +27,5 @@ typedef struct {
   Memory memory;     // Replay memory for MuZero / RL
   size_t input_size; // Total input size for vision + additional inputs
 } Agent;
+
+#endif
