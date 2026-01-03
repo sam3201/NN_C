@@ -18,10 +18,11 @@
 #define MAX_MOBS 10
 
 typedef struct {
-  float x;
-  float y;
-  float z;
-} Vector3;
+  Vector2 position;
+  float value;
+  int type;
+  bool visited;
+} Resource;
 
 typedef struct {
   int biome_type;
