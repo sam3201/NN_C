@@ -232,9 +232,11 @@ void update_player() {
 
 // ---------- AGENT ----------
 int decide_action(Agent *a, float *inputs) {
+  /*
   int out = mu_model_infer(a->brain, inputs);
   int act = out.chosen_action;
   mu_output_free(&out);
+  */
   return act;
 }
 
