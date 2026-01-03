@@ -138,8 +138,20 @@ int main(void) {
 
     DrawLine(0, 300, 800, 300, GRAY); // battlefield divider
 
-    tank_draw(&bottom);
-    tank_draw(&top);
+    Vector2 mouse = GetMousePosition();
+
+    // Bottom tank aims at mouse
+    tank_draw(&bottom, mouse);
+
+    // Top tank (player or AI)
+    Vector2 topAim;
+    if (!topAI) {
+      topAim = GetMousePosition();
+    } else {
+      // For now, aim at bottom tank
+      topAim = bottom.position;
+    }
+    tank_draw(&top, topAim);
 
     EndDrawing();
   }
