@@ -124,6 +124,16 @@ void draw_world(Vector2 camera) {
   }
 }
 
+// --- PLAYER ---
+void init_player(void);
+void update_player(void);
+void draw_player(Vector2 camera);
+void draw_ui(void);
+
+// --- INTERACTION ---
+void harvest_resources(void);
+void attack_mobs(void);
+
 Player player;
 
 void init_player() {
