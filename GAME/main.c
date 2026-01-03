@@ -17,12 +17,14 @@ typedef struct {
 
 } Tank;
 
-Tank *new_tank(int x, int y) {
+Tank *tank_new(int x, int y) {
   Tank *tank = malloc(sizeof(Tank));
   tank->x = x;
   tank->y = y;
   return tank;
 }
+
+void(Tank *tank) { free(tank); }
 
 int main(void) {
   printf("Hello, World!");
