@@ -99,6 +99,14 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     }
   }
 
+  int roll = rand() % 100;
+  if (roll == 0) {
+    c->terrain[0][0] = 0;
+    c->terrain[CHUNK_SIZE - 1][0] = 0;
+    c->terrain[0][CHUNK_SIZE - 1] = 0;
+    c->terrain[CHUNK_SIZE - 1][CHUNK_SIZE - 1] = 0;
+  }
+
   // generate some resources
   for (int i = 0; i < MAX_RESOURCES; i++) {
     c->resources[i].position =
