@@ -50,7 +50,7 @@ void free_ai() {
   }
 }
 
-int ai_choose_action(Tank *ai, Tank *player) {
+int ai_choose_action(Agent *ai, Tank *player) {
   if (!ai_model)
     return 0; // fallback safety
 
