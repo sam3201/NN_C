@@ -50,7 +50,6 @@ void free_ai() {
   }
 }
 
-// Returns action: 0=up,1=down,2=left,3=right,4=shoot
 int ai_choose_action(Tank *ai, Tank *player) {
   if (!ai_model)
     return 0; // fallback safety
