@@ -14,6 +14,7 @@
 #define MEMORY_CAPACITY infinity
 
 #define CHUNK_SIZE 32
+#define TILE_SIZE 8
 #define MAX_RESOURCES 10
 #define MAX_MOBS 10
 
