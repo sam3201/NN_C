@@ -76,6 +76,6 @@ void draw_ui(void);
 
 extern Player player;
 extern Resource resources[MAX_RESOURCES];
-int resource_count = 0;
+extern int resource_count = 0;
 
 #endif
