@@ -55,7 +55,6 @@ typedef struct {
   float attack;
   float vision_radius;
   float move_speed;
-
   Vector2 position;
   unsigned int radius;
   unsigned int size;
