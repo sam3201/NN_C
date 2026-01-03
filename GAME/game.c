@@ -406,6 +406,14 @@ int main(void) {
 
   init_base();
   init_player();
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &c->agents[i];
+    if (!a->alive) {
+      respawn_agent(a);
+    } else {
+      update_agent(a, c);
+    }
+  }
 
   Camera2D cam = {0};
   cam.zoom = 1.0f;
