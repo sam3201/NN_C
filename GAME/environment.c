@@ -29,8 +29,13 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
 
     switch (r->type) {
     case RES_TREE:
-      DrawRectangle(s.x - 3, s.y - 8, 6, 10, DARKGREEN);
-      DrawCircle(s.x, s.y - 10, 6, GREEN);
+      // outline
+      DrawRectangle(s.x - 6, s.y - 16, 12, 20, BLACK);
+      // trunk
+      DrawRectangle(s.x - 4, s.y - 14, 8, 14, DARKBROWN);
+      // canopy outline
+      DrawCircle(s.x, s.y - 18, 9, BLACK);
+      DrawCircle(s.x, s.y - 18, 7, GREEN);
       break;
 
     case RES_ROCK:
