@@ -8,6 +8,10 @@
    rewards[0..T-1], gamma -> returns z_t = sum_{k=0..T-1-t} gamma^k *
    rewards[t+k] output z_out must be length T
 */
+
+ToyEnvState env;
+env.size = model->cfg.obs_dim; // must match obs_dim
+
 static void compute_discounted_returns(const float *rewards, int T, float gamma,
                                        float *z_out) {
   for (int t = 0; t < T; t++) {
