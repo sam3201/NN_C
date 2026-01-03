@@ -25,8 +25,6 @@ typedef struct {
   Vector2 position;
   unsigned int radius;
   unsigned int size;
-  int level;
-  int total_xp;
   float time_alive;
   int agent_id;
   int parent_id;
