@@ -522,7 +522,7 @@ void draw_world(Vector2 camera) {
       // ---------- draw resources ONCE per chunk ----------
       draw_chunk_resources(c, cx + dx, cy + dy, camera);
 
-      // after draw_chunk_resources(c, cx+dx, cy+dy, camera);
+      // ---------- draw agents ONCE per chunk ----------
       draw_chunk_agents(c, cx + dx, cy + dy, camera);
     }
   }
