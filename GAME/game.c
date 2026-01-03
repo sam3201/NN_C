@@ -435,7 +435,8 @@ int main() {
 
     EndMode2D();
     EndDrawing();
-
-    CloseWindow();
-    return 0;
   }
+
+  CloseWindow();
+  return 0;
+}
