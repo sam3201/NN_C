@@ -15,6 +15,38 @@ int resource_count = 0;
 // ------------------------ helpers --------------------------
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 
+// ------------------------ draw chunk resources --------------------------
+void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
+  for (int i = 0; i < MAX_RESOURCES; i++) {
+    Resource *r = &c->resources[i];
+    if (r->visited || r->health <= 0)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
+
+    Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
+
+    switch (r->type) {
+    case RES_TREE:
+      DrawRectangle(s.x - 3, s.y - 8, 6, 10, DARKGREEN);
+      DrawCircle(s.x, s.y - 10, 6, GREEN);
+      break;
+
+    case RES_ROCK:
+      DrawCircle(s.x, s.y, 5, GRAY);
+      break;
+
+    case RES_FOOD:
+      DrawCircle(s.x, s.y, 4, RED);
+      break;
+
+    default:
+      break;
+    }
+  }
+}
+
 // ------------------------ initialize entire world --------------------------
 void init_world() {
   if (world_initialized)
@@ -316,35 +348,4 @@ Resource *find_nearest_resource(Vector2 pos, float max_dist) {
     }
   }
   return best;
-}
-
-void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
-  for (int i = 0; i < MAX_RESOURCES; i++) {
-    Resource *r = &c->resources[i];
-    if (r->visited || r->health <= 0)
-      continue;
-
-    Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
-                         (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
-
-    Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
-
-    switch (r->type) {
-    case RES_TREE:
-      DrawRectangle(s.x - 3, s.y - 8, 6, 10, DARKGREEN);
-      DrawCircle(s.x, s.y - 10, 6, GREEN);
-      break;
-
-    case RES_ROCK:
-      DrawCircle(s.x, s.y, 5, GRAY);
-      break;
-
-    case RES_FOOD:
-      DrawCircle(s.x, s.y, 4, RED);
-      break;
-
-    default:
-      break;
-    }
-  }
 }
