@@ -535,7 +535,7 @@ void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
     // healing + flash
     if (a->flash_timer > 0) {
       // oscillate color between green and white
-      float t = a->heal_flash_timer;
+      float t = a->flash_timer;
       Color col = ColorLerp(GREEN, WHITE, (sinf(t * 6.28319f) + 1) / 2);
       DrawText("+", s.x - 4, s.y - 14, 12, col);
     }
