@@ -1,19 +1,15 @@
-#include <stdio.h>
-
 #include "../utils/Raylib/src/raylib.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct {
   Vector2 position;
   float radius;
-
   float rotation;
   float armLength;
   float armWidth;
-
   int health;
   int maxHealth;
-
   Color baseColor;
   Color armColor;
 } Tank;
@@ -21,21 +17,16 @@ typedef struct {
 Tank tank_new(Vector2 pos, Color base, Color arm) {
   Tank t = {0};
   t.position = pos;
-  t.radius = 25.0f;
-
-  t.rotation = 0.0f;
-  t.armLength = 35.0f;
-  t.armWidth = 8.0f;
-
+  t.radius = 25;
+  t.rotation = 0;
+  t.armLength = 35;
+  t.armWidth = 8;
   t.maxHealth = 100;
   t.health = 100;
-
   t.baseColor = base;
   t.armColor = arm;
   return t;
 }
-
-void tank_free(Tank *tank) { free(tank); }
 
 void tank_draw(Tank *t) {
   DrawCircleV(t->position, t->radius, t->baseColor);
@@ -52,32 +43,52 @@ void tank_draw(Tank *t) {
 }
 
 void tank_update(Tank *t, int isTop) {
-  float moveSpeed = 2.5f;
-  float rotSpeed = 2.0f;
+  float move = 2.5f;
+  float rot = 2.0f;
 
   if (!isTop) {
     if (IsKeyDown(KEY_A))
-      t->position.x -= moveSpeed;
+      t->position.x -= move;
     if (IsKeyDown(KEY_D))
-      t->position.x += moveSpeed;
+      t->position.x += move;
     if (IsKeyDown(KEY_Q))
-      t->rotation -= rotSpeed;
+      t->rotation -= rot;
     if (IsKeyDown(KEY_E))
-      t->rotation += rotSpeed;
+      t->rotation += rot;
   } else {
     if (IsKeyDown(KEY_LEFT))
-      t->position.x -= moveSpeed;
+      t->position.x -= move;
     if (IsKeyDown(KEY_RIGHT))
-      t->position.x += moveSpeed;
+      t->position.x += move;
     if (IsKeyDown(KEY_KP_1))
-      t->rotation -= rotSpeed;
+      t->rotation -= rot;
     if (IsKeyDown(KEY_KP_2))
-      t->rotation += rotSpeed;
+      t->rotation += rot;
   }
 }
 
 int main(void) {
-  printf("Hello, World!");
+  InitWindow(800, 600, "Tank NN_C Testbed");
+  SetTargetFPS(60);
 
+  Tank bottom = tank_new((Vector2){400, 500}, DARKGREEN, GREEN);
+  Tank top = tank_new((Vector2){400, 100}, MAROON, RED);
+
+  while (!WindowShouldClose()) {
+    tank_update(&bottom, 0);
+    tank_update(&top, 1);
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    DrawLine(0, 300, 800, 300, GRAY); // battlefield divider
+
+    tank_draw(&bottom);
+    tank_draw(&top);
+
+    EndDrawing();
+  }
+
+  CloseWindow();
   return 0;
 }
