@@ -101,6 +101,7 @@ void store_experience(Agent *agent, long double *inputs, int action,
 }
 
 // --- INIT ---
+// --- INIT AGENT ---
 void init_agent(Agent *agent, int id) {
   agent->level = 0;
   agent->total_xp = 0;
@@ -120,8 +121,74 @@ void init_agent(Agent *agent, int id) {
                             (float)agent->size, (float)agent->size};
 
   agent->input_size = get_total_input_size();
-  agent->brain = NEAT_init(agent->input_size, ACTION_COUNT, 1);
-  init_memory(&agent->memory, 1, agent->input_size);
+
+  // 1. Initialize MuZero Brain
+  MuConfig mu_cfg = {.obs_dim = (int)agent->input_size,
+                     .latent_dim = 32, // Starting IQ
+                     .action_count = ACTION_COUNT};
+  agent->brain = mu_model_create(&mu_cfg);
+
+  // 2. Initialize Infinite Memory
+  init_memory(&agent->memory, 100, (int)agent->input_size);
+}
+
+// --- UPDATE AGENT (Thinking & Moving) ---
+void update_agent_state(GameState *game, int agent_idx) {
+  Agent *agent = &game->agents[agent_idx];
+  agent->time_alive += GetFrameTime();
+
+  // 1. Vision Setup
+  encode_vision(game, agent_idx, game->vision_inputs);
+
+  // Convert vision to float for MUZE
+  float obs[agent->input_size];
+  for (int i = 0; i < agent->input_size; i++)
+    obs[i] = (float)game->vision_inputs[i];
+
+  // 2. MCTS Planning (Thinking before moving)
+  MCTSParams mcts_cfg = {.num_simulations = 40,
+                         .c_puct = 1.2f,
+                         .discount = 0.95f,
+                         .temperature = 1.0f};
+
+  MCTSResult res = mcts_run(agent->brain, obs, &mcts_cfg);
+  Action action = (Action)res.chosen_action;
+
+  // 3. Act & Remember
+  execute_action(game, agent_idx, action);
+  game->last_actions[agent_idx] = action;
+
+  // Use current XP as reward signal
+  float reward = (float)agent->total_xp;
+  store_memory(&agent->memory, game->vision_inputs, (int)action, reward,
+               res.root_value);
+
+  mcts_result_free(&res);
+
+  if (agent->is_breeding) {
+    agent->breeding_timer += GetFrameTime();
+    if (agent->breeding_timer >= BREEDING_DURATION)
+      handle_breeding(game, agent_idx);
+  }
+}
+
+// --- LEVEL UP (Growth) ---
+void level_up(Agent *agent) {
+  while (agent->total_xp >= (agent->level + 1) * XP_PER_LEVEL) {
+    agent->total_xp -= (agent->level + 1) * XP_PER_LEVEL;
+    agent->level++;
+
+    // Physical Growth
+    agent->size = agent->level + 1;
+    agent->rect.width = agent->rect.height = (float)agent->size;
+
+    // Neural Growth: Expand Latent Dimensions
+    // We add 8 more "concepts" the agent can imagine per level
+    mu_model_grow_latent(agent->brain, agent->brain->cfg.latent_dim + 8);
+
+    printf("Agent %d leveled up to %d! Latent Dims: %d\n", agent->agent_id,
+           agent->level, agent->brain->cfg.latent_dim);
+  }
 }
 
 // --- VISION ---
