@@ -14,11 +14,10 @@ typedef struct {
   MemoryEntry *buffer;
   int size;
   int capacity;
-  int input_size; // Store the dimension of vision_inputs here
-  int index;      // Useful if you decide to go back to a circular buffer later
+  int input_size;
+  int index;
 } Memory;
 
-// Memory interface
 void init_memory(Memory *memory, int initial_capacity, int input_size);
 void store_memory(Memory *memory, long double *vision_inputs, int action,
                   float reward, float value_estimate);
