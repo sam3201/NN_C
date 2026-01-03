@@ -286,8 +286,6 @@ void draw_resources(Vector2 camera) {
     if (r->health <= 0)
       continue;
 
-    continue;
-
     Vector2 s = {r->position.x - camera.x, r->position.y - camera.y};
 
     if (r->type == RES_TREE) {
