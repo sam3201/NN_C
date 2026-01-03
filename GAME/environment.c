@@ -111,7 +111,6 @@ void generate_chunk(Chunk *c, int cx, int cy) {
 
     c->resources[i].position =
         (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
-    c->resources[i].type = rand() % RES_COUNT;
     c->resources[i].health = 100;
     c->resources[i].visited = false;
   }
