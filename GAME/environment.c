@@ -87,6 +87,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
 void draw_world(Vector2 camera) {
   int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
   int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
+
   Color grass = (Color){60, 160, 80, 255};
   Color forest = (Color){30, 110, 60, 255};
   Color desert = (Color){210, 185, 140, 255};
