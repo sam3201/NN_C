@@ -63,3 +63,19 @@ void mu_model_train(MuModel *model, MuRuntime *rt) {
   /* Placeholder SGD stub — you can upgrade later */
   printf("[MUZE] Training step (samples=%zu)\n", rb_size(rt->rb));
 }
+
+#include "runtime.h"
+
+void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
+  mu_model_step(m, (MuRuntime *)m->runtime, obs, action, reward);
+}
+
+void mu_model_end_episode(MuModel *m, float terminal_reward) {
+  mu_model_end_episode(m, (MuRuntime *)m->runtime, terminal_reward);
+}
+
+void mu_model_reset_episode(MuModel *m) {
+  mu_model_reset_episode((MuRuntime *)m->runtime);
+}
+
+void mu_model_train(MuModel *m) { mu_model_train(m, (MuRuntime *)m->runtime); }
