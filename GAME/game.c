@@ -278,6 +278,26 @@ void encode_observation(Agent *a, Chunk *c, float *obs) {
   obs[9] = 1.0f;
 }
 
+float compute_reward(Agent *a, Chunk *c, float *obs) {
+  float r = 0.0f;
+
+  // survival incentive
+  r += 0.001f;
+
+  // low health penalty
+  if (a->health < 30)
+    r -= 0.02f;
+
+  // inside base = healing
+  if (obs[8] > 0.5f)
+    r += 0.05f;
+
+  // encourage resource seeking
+  r += (1.0f - obs[5]) * 0.01f;
+
+  return r;
+}
+
 int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
     return rand() % ACTION_COUNT;
