@@ -1,33 +1,56 @@
-#include "../utils/NN/MUZE/all.h"
+#include "../utils/NN/MEMORY/memory.h"
+#include "../utils/NN/NEAT.h"
+#include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <time.h>
 
-#define ROWS 75
-#define COLS 75
-#define NUM_CHANNELS 3
-#define CELL_LIFETIME 120
-#define TANK_SIZE 40
-#define BULLET_SIZE 8
-#define BULLET_SPEED 8
-#define MAX_BULLETS 50
+#define POPULATION_SIZE 20
+#define MAX_FOOD 100
+#define MAX_GROUNDSKEEPERS (POPULATION_SIZE / 2)
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+#define FRAME_RATE 60
+#define XP_PER_LEVEL 100
+#define XP_FROM_FOOD 1
+#define XP_FROM_AGENT 25
+#define XP_FROM_OFFSPRING 50
+#define BREEDING_DURATION 2.0f
+#define INITIAL_AGENT_SIZE 1
+#define MOVEMENT_SPEED 2.0f
+#define FOOD_SIZE 5
+#define FOOD_SPAWN_CHANCE 0.1f
+#define LABEL_SIZE 10
+#define MEMORY_CAPACITY 1024
+
+typedef enum {
+  ACTION_NONE = 0,
+  ACTION_MOVE_LEFT,
+  ACTION_MOVE_RIGHT,
+  ACTION_MOVE_UP,
+  ACTION_MOVE_DOWN,
+  ACTION_COUNT
+} Action;
 
 typedef struct {
   Vector2 position;
-  float speed;
-  int health;
-  int isAI;          // 0 = player, 1 = AI
-  float turretAngle; // rotation in radians
-} Tank;
-
-typedef struct {
-  Vector2 pos;
-  Vector2 vel;
-  int active;
-} Bullet;
-
+  Rectangle rect;
+  unsigned int size;
+  int level;
+  int total_xp;
+  float time_alive;
+  int agent_id;
+  int parent_id;
+  int num_offsprings;
+  int num_eaten;
+  bool is_breeding;
+  float breeding_timer;
+  Color color;
+  NEAT_t *brain;
+  Memory memory;
+  size_t input_size;
+} Agent;
 // ---------------- Global -----------------
 Tank bottom, top;
 Bullet bullets[MAX_BULLETS];
