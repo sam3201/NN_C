@@ -42,6 +42,23 @@ typedef struct {
   Color color;
 } Agent;
 
+typedef struct {
+  Vector2 position;
+  float health;
+  float stamina;
+  float max_health;
+  float max_stamina;
+  float move_speed;
+  float attack_damage;
+  float attack_range;
+
+  int wood;
+  int stone;
+  int food;
+
+  bool alive;
+} Player;
+
 void init_world();
 Chunk *get_chunk(int cx, int cy);
 void generate_chunk(Chunk *chunk, int cx, int cy);
