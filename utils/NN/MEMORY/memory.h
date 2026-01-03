@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEMORY_CAPACITY 1000
+#include <stdlib.h>
 
 typedef struct {
   long double *vision_inputs;
@@ -11,15 +11,15 @@ typedef struct {
 } MemoryEntry;
 
 typedef struct {
-  MemoryEntry buffer[MEMORY_CAPACITY];
-  int size;
-  int index; // Circular buffer
+  MemoryEntry *buffer; // Dynamic array
+  int size;            // Current number of entries
+  int capacity;        // Maximum entries before resize
+  int index;           // Current write head
 } Memory;
 
-// Memory interface
-void init_memory(Memory *memory, int input_size);
+void init_memory(Memory *memory, int initial_capacity, int input_size);
 void store_memory(Memory *memory, long double *vision_inputs, int action,
                   float reward, float value_estimate, int input_size);
-MemoryEntry *sample_memory(Memory *memory, int idx);
+void free_memory(Memory *memory);
 
 #endif
