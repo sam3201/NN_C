@@ -69,6 +69,10 @@ typedef struct {
   float flash_timer;
   MuModel *brain;
   size_t input_size;
+  float reward_accumulator;
+  int age;
+  int steps_alive;
+
 } Agent;
 
 typedef struct {
