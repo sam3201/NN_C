@@ -495,21 +495,51 @@ void update_game(GameState *game) {
   }
 }
 
-void init_game(GameState *game) {
-  game->current_generation = 0;
-  game->num_active_agents = POPULATION_SIZE - MAX_GROUNDSKEEPERS;
-  game->next_agent_id = 0;
-  game->paused = false;
-  game->vision_inputs = malloc(get_total_input_size() * sizeof(long double));
+void init_game(GameState *state) {
+  state->over = false;
+  state->paused = false;
+  state->evolution_timer = 0;
+  state->current_generation = 0;
+  state->next_agent_id = 0;
+  state->num_active_agents = POPULATION_SIZE - MAX_GROUNDSKEEPERS;
 
-  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
-    init_agent(&game->agents[i], game->next_agent_id++);
+  // Initialize agents
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    init_agent(&state->agents[i], state->next_agent_id++);
+    state->agents[i].brain =
+        mu_model_create(&(MuConfig){.obs_dim = get_total_input_size(),
+                                    .latent_dim = 16,
+                                    .action_count = ACTION_COUNT});
+    state->agents[i].input_size = get_total_input_size();
+    init_memory(&state->agents[i].memory, 1024, state->agents[i].input_size,
+                ACTION_COUNT);
+  }
 
-  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
-    init_groundkeeper(&game->gks[i]);
+  // Initialize groundkeepers
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    state->gks[i].position =
+        (Vector2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
+    state->gks[i].rect =
+        (Rectangle){state->gks[i].position.x, state->gks[i].position.y, 20, 20};
+    state->gks[i].punishment_timer = 0;
+    state->gks[i].color = RED;
+  }
 
-  for (int i = 0; i < MAX_FOOD; i++)
-    spawn_food(&game->food[i]);
+  // Initialize food
+  for (int i = 0; i < MAX_FOOD; i++) {
+    state->food[i].position =
+        (Vector2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
+    state->food[i].rect =
+        (Rectangle){state->food[i].position.x, state->food[i].position.y,
+                    FOOD_SIZE, FOOD_SIZE};
+  }
+
+  // Clear last actions
+  for (int i = 0; i < POPULATION_SIZE; i++)
+    state->last_actions[i] = ACTION_NONE;
+
+  state->vision_inputs = malloc(sizeof(long double) * state->num_active_agents *
+                                get_total_input_size());
 }
 
 void free_game(GameState *game) {
