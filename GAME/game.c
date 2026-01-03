@@ -48,6 +48,8 @@ void draw_base_particles(Vector2 camera) {
 }
 
 int main() {
+  srand((unsigned int)time(NULL));
+
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE — Infinite 2D World");
   SetTargetFPS(60);
 
