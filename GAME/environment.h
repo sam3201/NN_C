@@ -12,6 +12,9 @@
 #define MAX_RESOURCES 512
 #define MAX_MOBS 10
 
+#define BASE_RADIUS 8
+
+after draw_chunk_resources(c, cx + dx, cy + dy, camera);
 #define MAX_AGENTS 8
 
 typedef enum {
