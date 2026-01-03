@@ -14,8 +14,9 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     cd ../../../SIMULATION
 fi
 
+MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
 
-gcc -w sim.c \
+gcc -w sim.c $MUZE_SRC \
     ../utils/NN/NN.c \
     ../utils/NN/NEAT.c \
     ../utils/NN/MEMORY/MEMORY.c \
