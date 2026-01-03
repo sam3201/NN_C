@@ -573,3 +573,4 @@ void draw_world(Vector2 camera) {
       }
     }
   }
+}
