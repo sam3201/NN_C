@@ -231,381 +231,380 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     c->agents[i].alive = true;
     c->agents[i].flash_timer = 0; // initialize flash timer
   }
+}
 
-  // --- PLAYER ---
-  void init_player(void);
-  void update_player(void);
-  void draw_player(Vector2 camera);
-  void draw_ui(void);
+// --- PLAYER ---
+void init_player(void);
+void update_player(void);
+void draw_player(Vector2 camera);
+void draw_ui(void);
 
-  // --- INTERACTION ---
-  void harvest_resources(void);
-  void attack_mobs(void);
+// --- INTERACTION ---
+void harvest_resources(void);
+void attack_mobs(void);
 
-  Player player;
+Player player;
 
-  void init_player() {
-    player.position = (Vector2){0, 0};
-    player.max_health = 100;
-    player.health = 100;
-    player.max_stamina = 100;
-    player.stamina = 100;
-    player.move_speed = 2.0f;
-    player.attack_damage = 10.0f;
-    player.attack_range = 10.0f;
+void init_player() {
+  player.position = (Vector2){0, 0};
+  player.max_health = 100;
+  player.health = 100;
+  player.max_stamina = 100;
+  player.stamina = 100;
+  player.move_speed = 2.0f;
+  player.attack_damage = 10.0f;
+  player.attack_range = 10.0f;
 
-    player.wood = 0;
-    player.stone = 0;
-    player.food = 0;
+  player.wood = 0;
+  player.stone = 0;
+  player.food = 0;
 
-    player.alive = true;
+  player.alive = true;
 
+  player.tool = TOOL_HAND;
+}
+
+void update_player() {
+  if (!player.alive)
+    return;
+
+  Vector2 move = {0, 0};
+
+  if (IsKeyDown(KEY_W))
+    move.y -= 1;
+  if (IsKeyDown(KEY_S))
+    move.y += 1;
+  if (IsKeyDown(KEY_A))
+    move.x -= 1;
+  if (IsKeyDown(KEY_D))
+    move.x += 1;
+  if (IsKeyPressed(KEY_E)) {
+    harvest_resources();
+  }
+  if (IsKeyPressed(KEY_SPACE)) {
+    attack_mobs();
+  }
+  if (IsKeyPressed(KEY_ONE))
     player.tool = TOOL_HAND;
+  if (IsKeyPressed(KEY_TWO))
+    player.tool = TOOL_AXE;
+  if (IsKeyPressed(KEY_THREE))
+    player.tool = TOOL_PICKAXE;
+
+  bool moving = (move.x != 0 || move.y != 0);
+
+  // normalize diagonal movement
+  if (move.x != 0 && move.y != 0) {
+    move.x *= 0.7071f;
+    move.y *= 0.7071f;
   }
 
-  void update_player() {
-    if (!player.alive)
-      return;
+  float stamina_ratio = player.stamina / player.max_stamina;
+  if (stamina_ratio < 0.1f)
+    stamina_ratio = 0.1f;
 
-    Vector2 move = {0, 0};
+  float speed = player.move_speed * stamina_ratio;
 
-    if (IsKeyDown(KEY_W))
-      move.y -= 1;
-    if (IsKeyDown(KEY_S))
-      move.y += 1;
-    if (IsKeyDown(KEY_A))
-      move.x -= 1;
-    if (IsKeyDown(KEY_D))
-      move.x += 1;
-    if (IsKeyPressed(KEY_E)) {
-      harvest_resources();
-    }
-    if (IsKeyPressed(KEY_SPACE)) {
-      attack_mobs();
-    }
-    if (IsKeyPressed(KEY_ONE))
-      player.tool = TOOL_HAND;
-    if (IsKeyPressed(KEY_TWO))
-      player.tool = TOOL_AXE;
-    if (IsKeyPressed(KEY_THREE))
-      player.tool = TOOL_PICKAXE;
+  if (moving) {
+    player.position.x += move.x * speed;
+    player.position.y += move.y * speed;
 
-    bool moving = (move.x != 0 || move.y != 0);
-
-    // normalize diagonal movement
-    if (move.x != 0 && move.y != 0) {
-      move.x *= 0.7071f;
-      move.y *= 0.7071f;
-    }
-
-    float stamina_ratio = player.stamina / player.max_stamina;
-    if (stamina_ratio < 0.1f)
-      stamina_ratio = 0.1f;
-
-    float speed = player.move_speed * stamina_ratio;
-
-    if (moving) {
-      player.position.x += move.x * speed;
-      player.position.y += move.y * speed;
-
-      player.stamina -= 0.4f;
-      if (player.stamina < 0)
-        player.stamina = 0;
-    } else {
-      player.stamina += 0.6f;
-    }
-
-    if (player.stamina > player.max_stamina)
-      player.stamina = player.max_stamina;
+    player.stamina -= 0.4f;
+    if (player.stamina < 0)
+      player.stamina = 0;
+  } else {
+    player.stamina += 0.6f;
   }
 
-  void update_agent(Agent * a) {
-    if (!a->alive)
-      return;
+  if (player.stamina > player.max_stamina)
+    player.stamina = player.max_stamina;
+}
 
-    float dist = Vector2Distance(a->position, agent_base.position);
+void update_agent(Agent *a) {
+  if (!a->alive)
+    return;
 
-    if (dist < BASE_RADIUS) {
-      // Heal agent
-      a->health += 0.5f;
-      a->stamina += 0.5f;
-      if (a->health > 100)
-        a->health = 100;
-      if (a->stamina > 100)
-        a->stamina = 100;
+  float dist = Vector2Distance(a->position, agent_base.position);
 
-      // flash timer
-      a->flash_timer += 0.1f;
-      if (a->flash_timer > 1.0f)
-        a->flash_timer = 0;
-    } else {
-      // reset flash when outside
+  if (dist < BASE_RADIUS) {
+    // Heal agent
+    a->health += 0.5f;
+    a->stamina += 0.5f;
+    if (a->health > 100)
+      a->health = 100;
+    if (a->stamina > 100)
+      a->stamina = 100;
+
+    // flash timer
+    a->flash_timer += 0.1f;
+    if (a->flash_timer > 1.0f)
       a->flash_timer = 0;
-    }
+  } else {
+    // reset flash when outside
+    a->flash_timer = 0;
   }
+}
 
-  void harvest_resources() {
-    int tool_power = 1;
+void harvest_resources() {
+  int tool_power = 1;
 
-    int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
-    int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+  int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
 
-    Chunk *chunk = get_chunk(cx, cy);
+  Chunk *chunk = get_chunk(cx, cy);
 
-    for (int i = 0; i < chunk->resource_count; i++) {
-      Resource *r = &chunk->resources[i];
-      if (r->visited || r->health <= 0)
+  for (int i = 0; i < chunk->resource_count; i++) {
+    Resource *r = &chunk->resources[i];
+    if (r->visited || r->health <= 0)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
+
+    float hit_radius = (r->type == RES_TREE)   ? 18.0f
+                       : (r->type == RES_ROCK) ? 14.0f
+                                               : 10.0f;
+
+    if (r->type == RES_TREE) {
+      if (player.tool == TOOL_AXE)
+        tool_power = 4;
+      else
+        tool_power = 1;
+    }
+
+    if (r->type == RES_ROCK) {
+      if (player.tool == TOOL_PICKAXE)
+        tool_power = 5;
+      else
+        tool_power = 0;
+    }
+
+    if (r->type == RES_FOOD) {
+      tool_power = 2;
+    }
+
+    if (Vector2Distance(player.position, world_pos) < hit_radius) {
+
+      // tool restrictions
+      if ((r->type == RES_TREE && player.tool != TOOL_AXE) ||
+          (r->type == RES_ROCK && player.tool != TOOL_PICKAXE))
         continue;
 
-      Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
-                           (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
+      r->health -= tool_power;
 
-      float hit_radius = (r->type == RES_TREE)   ? 18.0f
-                         : (r->type == RES_ROCK) ? 14.0f
-                                                 : 10.0f;
+      r->position.x += (rand() % 3 - 1) * 0.1f;
+      r->position.y += (rand() % 3 - 1) * 0.1f;
 
-      if (r->type == RES_TREE) {
-        if (player.tool == TOOL_AXE)
-          tool_power = 4;
-        else
-          tool_power = 1;
+      player.stamina -= 2;
+
+      if (r->health <= 0) {
+        for (int k = 0; k < 6; k++) {
+          DrawCircle(world_pos.x + rand() % 6 - 3, world_pos.y + rand() % 6 - 3,
+                     1, (r->type == RES_TREE) ? BROWN : GRAY);
+        }
+
+        r->visited = true;
+
+        if (r->type == RES_TREE)
+          player.wood += 3;
+        if (r->type == RES_ROCK)
+          player.stone += 2;
+        if (r->type == RES_FOOD)
+          player.food += 1;
       }
+    }
+  }
+}
 
-      if (r->type == RES_ROCK) {
-        if (player.tool == TOOL_PICKAXE)
-          tool_power = 5;
-        else
-          tool_power = 0;
+void attack_mobs() {
+  int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+
+  Chunk *chunk = get_chunk(cx, cy);
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &chunk->mobs[i];
+    if (m->visited)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + m->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + m->position.y) * TILE_SIZE};
+
+    if (Vector2Distance(player.position, world_pos) < player.attack_range) {
+      m->value -= player.attack_damage;
+      player.stamina -= 10;
+
+      if (m->value <= 0) {
+        m->visited = true;
+        player.food += 2;
       }
+    }
+  }
+}
 
-      if (r->type == RES_FOOD) {
-        tool_power = 2;
-      }
+void draw_player(Vector2 camera) {
+  Vector2 screen = {player.position.x - camera.x, player.position.y - camera.y};
 
-      if (Vector2Distance(player.position, world_pos) < hit_radius) {
+  DrawCircle(screen.x, screen.y, 6, BLACK); // outline
+  DrawCircle(screen.x, screen.y, 4, RED);   // body
+}
 
-        // tool restrictions
-        if ((r->type == RES_TREE && player.tool != TOOL_AXE) ||
-            (r->type == RES_ROCK && player.tool != TOOL_PICKAXE))
-          continue;
+void draw_ui() {
+  DrawRectangleRounded((Rectangle){10, 10, 220, 80}, 0.2f, 8,
+                       Fade((Color){20, 20, 20, 255}, 0.8f));
 
-        r->health -= tool_power;
+  DrawText(TextFormat("HP: %.0f", player.health), 20, 18, 16, RED);
+  DrawText(TextFormat("STA: %.0f", player.stamina), 20, 36, 16, SKYBLUE);
+  DrawText(TextFormat("Wood:%d Stone:%d Food:%d", player.wood, player.stone,
+                      player.food),
+           20, 56, 14, GREEN);
 
-        r->position.x += (rand() % 3 - 1) * 0.1f;
-        r->position.y += (rand() % 3 - 1) * 0.1f;
+  const char *tool_name = (player.tool == TOOL_HAND)  ? "HAND"
+                          : (player.tool == TOOL_AXE) ? "AXE"
+                                                      : "PICK";
 
-        player.stamina -= 2;
+  DrawText(TextFormat("Tool: %s", tool_name), 20, 74, 14, YELLOW);
+}
 
-        if (r->health <= 0) {
-          for (int k = 0; k < 6; k++) {
-            DrawCircle(world_pos.x + rand() % 6 - 3,
-                       world_pos.y + rand() % 6 - 3, 1,
-                       (r->type == RES_TREE) ? BROWN : GRAY);
+void spawn_resource(Vector2 pos, ResourceType type) {
+  if (resource_count >= MAX_RESOURCES)
+    return;
+
+  Resource *r = &resources[resource_count++];
+  r->position = pos;
+  r->type = type;
+  r->health = (type == RES_TREE) ? 5 : 8;
+  r->visited = false;
+}
+
+void draw_resources(Vector2 camera) {
+  for (int i = 0; i < resource_count; i++) {
+    Resource *r = &resources[i];
+    if (r->health <= 0)
+      continue;
+
+    Vector2 s = {r->position.x - camera.x, r->position.y - camera.y};
+
+    if (r->type == RES_TREE) {
+      DrawRectangle(s.x - 4, s.y - 12, 8, 16, DARKGREEN);
+      DrawCircle(s.x, s.y - 16, 10, GREEN);
+    } else {
+      DrawCircle(s.x, s.y, 8, GRAY);
+    }
+  }
+}
+
+Resource *find_nearest_resource(Vector2 pos, float max_dist) {
+  Resource *best = NULL;
+  float best_dist = max_dist;
+
+  for (int i = 0; i < resource_count; i++) {
+    Resource *r = &resources[i];
+    if (r->health <= 0)
+      continue;
+
+    float d = Vector2Distance(pos, r->position);
+    if (d < best_dist) {
+      best_dist = d;
+      best = r;
+    }
+  }
+  return best;
+}
+
+void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &c->agents[i];
+    if (!a->alive)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + a->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + a->position.y) * TILE_SIZE};
+    Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
+
+    // body
+    DrawCircle(s.x, s.y, 6, BLACK);                       // outline
+    DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255}); // tan body
+
+    // hands
+    DrawCircle(s.x - 6, s.y, 2, BLACK);
+    DrawCircle(s.x + 6, s.y, 2, BLACK);
+
+    // bandana / headband
+    DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
+
+    // healing + flash
+    if (a->flash_timer > 0) {
+      // oscillate color between green and white
+      float t = a->flash_timer;
+      Color col = ColorLerp(GREEN, WHITE, (sinf(t * 6.28319f) + 1) / 2);
+      DrawText("+", s.x - 4, s.y - 14, 12, col);
+    }
+  }
+}
+
+// ------------------------ draw world --------------------------
+void draw_world(Vector2 camera) {
+  int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
+
+  Color grass = (Color){60, 160, 80, 255};
+  Color forest = (Color){30, 110, 60, 255};
+  Color desert = (Color){210, 185, 140, 255};
+
+  // draw surrounding 3×3 chunks
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+
+      Chunk *c = get_chunk(cx + dx, cy + dy);
+      int world_x = (cx + dx) * CHUNK_SIZE;
+      int world_y = (cy + dy) * CHUNK_SIZE;
+
+      // ---------- draw terrain tiles ----------
+      for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int j = 0; j < CHUNK_SIZE; j++) {
+
+          Color col;
+          switch (c->terrain[i][j]) {
+          case 1:
+            col = grass;
+            break;
+          case 2:
+            col = forest;
+            break;
+          case 3:
+            col = desert;
+            break;
+          default:
+            col = GRAY;
+            break;
           }
 
-          r->visited = true;
+          int sx = (world_x + i) * TILE_SIZE - camera.x;
+          int sy = (world_y + j) * TILE_SIZE - camera.y;
+          {
+            DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
 
-          if (r->type == RES_TREE)
-            player.wood += 3;
-          if (r->type == RES_ROCK)
-            player.stone += 2;
-          if (r->type == RES_FOOD)
-            player.food += 1;
-        }
-      }
-    }
-  }
-
-  void attack_mobs() {
-    int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
-    int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
-
-    Chunk *chunk = get_chunk(cx, cy);
-
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &chunk->mobs[i];
-      if (m->visited)
-        continue;
-
-      Vector2 world_pos = {(cx * CHUNK_SIZE + m->position.x) * TILE_SIZE,
-                           (cy * CHUNK_SIZE + m->position.y) * TILE_SIZE};
-
-      if (Vector2Distance(player.position, world_pos) < player.attack_range) {
-        m->value -= player.attack_damage;
-        player.stamina -= 10;
-
-        if (m->value <= 0) {
-          m->visited = true;
-          player.food += 2;
-        }
-      }
-    }
-  }
-
-  void draw_player(Vector2 camera) {
-    Vector2 screen = {player.position.x - camera.x,
-                      player.position.y - camera.y};
-
-    DrawCircle(screen.x, screen.y, 6, BLACK); // outline
-    DrawCircle(screen.x, screen.y, 4, RED);   // body
-  }
-
-  void draw_ui() {
-    DrawRectangleRounded((Rectangle){10, 10, 220, 80}, 0.2f, 8,
-                         Fade((Color){20, 20, 20, 255}, 0.8f));
-
-    DrawText(TextFormat("HP: %.0f", player.health), 20, 18, 16, RED);
-    DrawText(TextFormat("STA: %.0f", player.stamina), 20, 36, 16, SKYBLUE);
-    DrawText(TextFormat("Wood:%d Stone:%d Food:%d", player.wood, player.stone,
-                        player.food),
-             20, 56, 14, GREEN);
-
-    const char *tool_name = (player.tool == TOOL_HAND)  ? "HAND"
-                            : (player.tool == TOOL_AXE) ? "AXE"
-                                                        : "PICK";
-
-    DrawText(TextFormat("Tool: %s", tool_name), 20, 74, 14, YELLOW);
-  }
-
-  void spawn_resource(Vector2 pos, ResourceType type) {
-    if (resource_count >= MAX_RESOURCES)
-      return;
-
-    Resource *r = &resources[resource_count++];
-    r->position = pos;
-    r->type = type;
-    r->health = (type == RES_TREE) ? 5 : 8;
-    r->visited = false;
-  }
-
-  void draw_resources(Vector2 camera) {
-    for (int i = 0; i < resource_count; i++) {
-      Resource *r = &resources[i];
-      if (r->health <= 0)
-        continue;
-
-      Vector2 s = {r->position.x - camera.x, r->position.y - camera.y};
-
-      if (r->type == RES_TREE) {
-        DrawRectangle(s.x - 4, s.y - 12, 8, 16, DARKGREEN);
-        DrawCircle(s.x, s.y - 16, 10, GREEN);
-      } else {
-        DrawCircle(s.x, s.y, 8, GRAY);
-      }
-    }
-  }
-
-  Resource *find_nearest_resource(Vector2 pos, float max_dist) {
-    Resource *best = NULL;
-    float best_dist = max_dist;
-
-    for (int i = 0; i < resource_count; i++) {
-      Resource *r = &resources[i];
-      if (r->health <= 0)
-        continue;
-
-      float d = Vector2Distance(pos, r->position);
-      if (d < best_dist) {
-        best_dist = d;
-        best = r;
-      }
-    }
-    return best;
-  }
-
-  void draw_chunk_agents(Chunk * c, int cx, int cy, Vector2 camera) {
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      Agent *a = &c->agents[i];
-      if (!a->alive)
-        continue;
-
-      Vector2 world_pos = {(cx * CHUNK_SIZE + a->position.x) * TILE_SIZE,
-                           (cy * CHUNK_SIZE + a->position.y) * TILE_SIZE};
-      Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
-
-      // body
-      DrawCircle(s.x, s.y, 6, BLACK);                       // outline
-      DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255}); // tan body
-
-      // hands
-      DrawCircle(s.x - 6, s.y, 2, BLACK);
-      DrawCircle(s.x + 6, s.y, 2, BLACK);
-
-      // bandana / headband
-      DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
-
-      // healing + flash
-      if (a->flash_timer > 0) {
-        // oscillate color between green and white
-        float t = a->flash_timer;
-        Color col = ColorLerp(GREEN, WHITE, (sinf(t * 6.28319f) + 1) / 2);
-        DrawText("+", s.x - 4, s.y - 14, 12, col);
-      }
-    }
-  }
-
-  // ------------------------ draw world --------------------------
-  void draw_world(Vector2 camera) {
-    int cx = (int)(camera.x / (CHUNK_SIZE * TILE_SIZE));
-    int cy = (int)(camera.y / (CHUNK_SIZE * TILE_SIZE));
-
-    Color grass = (Color){60, 160, 80, 255};
-    Color forest = (Color){30, 110, 60, 255};
-    Color desert = (Color){210, 185, 140, 255};
-
-    // draw surrounding 3×3 chunks
-    for (int dx = -1; dx <= 1; dx++) {
-      for (int dy = -1; dy <= 1; dy++) {
-
-        Chunk *c = get_chunk(cx + dx, cy + dy);
-        int world_x = (cx + dx) * CHUNK_SIZE;
-        int world_y = (cy + dy) * CHUNK_SIZE;
-
-        // ---------- draw terrain tiles ----------
-        for (int i = 0; i < CHUNK_SIZE; i++) {
-          for (int j = 0; j < CHUNK_SIZE; j++) {
-
-            Color col;
-            switch (c->terrain[i][j]) {
-            case 1:
-              col = grass;
-              break;
-            case 2:
-              col = forest;
-              break;
-            case 3:
-              col = desert;
-              break;
-            default:
-              col = GRAY;
-              break;
-            }
-
-            int sx = (world_x + i) * TILE_SIZE - camera.x;
-            int sy = (world_y + j) * TILE_SIZE - camera.y;
-            {
-              DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE, col);
-
-              // subtle grid lines
-              DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE,
-                                 Fade(BLACK, 0.05f));
-            }
+            // subtle grid lines
+            DrawRectangleLines(sx, sy, TILE_SIZE, TILE_SIZE,
+                               Fade(BLACK, 0.05f));
           }
-
-          // in draw_world, only for initial chunk
-          if (cx == 0 && cy == 0) {
-            Vector2 s = {agent_base.position.x * TILE_SIZE - camera.x,
-                         agent_base.position.y * TILE_SIZE - camera.y};
-            DrawCircle(s.x, s.y, agent_base.radius * TILE_SIZE,
-                       Fade(SKYBLUE, 0.2f)); // translucent base
-          }
-
-          // ---------- draw resources ONCE per chunk ----------
-          draw_chunk_resources(c, cx + dx, cy + dy, camera);
-
-          // ---------- draw agents ONCE per chunk ----------
-          draw_chunk_agents(c, cx + dx, cy + dy, camera);
         }
+
+        // in draw_world, only for initial chunk
+        if (cx == 0 && cy == 0) {
+          Vector2 s = {agent_base.position.x * TILE_SIZE - camera.x,
+                       agent_base.position.y * TILE_SIZE - camera.y};
+          DrawCircle(s.x, s.y, agent_base.radius * TILE_SIZE,
+                     Fade(SKYBLUE, 0.2f)); // translucent base
+        }
+
+        // ---------- draw resources ONCE per chunk ----------
+        draw_chunk_resources(c, cx + dx, cy + dy, camera);
+
+        // ---------- draw agents ONCE per chunk ----------
+        draw_chunk_agents(c, cx + dx, cy + dy, camera);
       }
     }
   }
+}
