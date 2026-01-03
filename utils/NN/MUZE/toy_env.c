@@ -8,8 +8,9 @@ void toy_env_reset(void *state_ptr, float *obs) {
   obs[state->pos] = 1.0f; // one-hot position
 }
 
-void toy_env_step(void *state_ptr, int action, float *obs, float *reward,
-                  int *done) {
+// changed return type from void -> int
+int toy_env_step(void *state_ptr, int action, float *obs, float *reward,
+                 int *done) {
   ToyEnvState *state = (ToyEnvState *)state_ptr;
 
   if (action == 0 && state->pos > 0)
@@ -23,4 +24,6 @@ void toy_env_step(void *state_ptr, int action, float *obs, float *reward,
   // update observation (one-hot)
   memset(obs, 0, sizeof(float) * state->size);
   obs[state->pos] = 1.0f;
+
+  return 0; // success
 }
