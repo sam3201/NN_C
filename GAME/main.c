@@ -38,10 +38,8 @@ Tank tank_new(Vector2 pos, Color base, Color arm) {
 void tank_free(Tank *tank) { free(tank); }
 
 void tank_draw(Tank *t) {
-  // Base
   DrawCircleV(t->position, t->radius, t->baseColor);
 
-  // Arms (barrels)
   Vector2 origin = {0, t->armWidth / 2};
 
   Rectangle arm = {t->position.x, t->position.y, t->armLength, t->armWidth};
