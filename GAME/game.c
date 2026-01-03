@@ -366,11 +366,6 @@ int main() {
     ClearBackground(SKYBLUE);
     BeginMode2D(camera);
 
-    // --- Draw ---
-    BeginDrawing();
-    ClearBackground(SKYBLUE);
-    BeginMode2D(camera);
-
     // Draw chunks
     for (int dx = -1; dx <= 1; dx++)
       for (int dy = -1; dy <= 1; dy++) {
