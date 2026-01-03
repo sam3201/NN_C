@@ -236,6 +236,16 @@ void update_player() {
   player.position.x += move.x * speed;
   player.position.y += move.y * speed;
 }
+// Configure MCTS for this decision
+MCTSParams mcts_params = {
+    .num_simulations = 40, // can tune later
+    .c_puct = 1.2f,
+    .discount = 0.95f,
+    .temperature = 1.0f,
+    .max_depth = 20,         // optional
+    .dirichlet_alpha = 0.3f, // optional
+    .dirichlet_eps = 0.25f   // optional
+};
 
 // ---------- AGENT ----------
 int decide_action(Agent *agent, long double *inputs) {
@@ -248,17 +258,6 @@ int decide_action(Agent *agent, long double *inputs) {
   for (int i = 0; i < obs_dim; i++) {
     obs[i] = (float)inputs[i];
   }
-
-  // Configure MCTS for this decision
-  MCTSParams mcts_params = {
-      .num_simulations = 40, // can tune later
-      .c_puct = 1.2f,
-      .discount = 0.95f,
-      .temperature = 1.0f,
-      .max_depth = 20,         // optional
-      .dirichlet_alpha = 0.3f, // optional
-      .dirichlet_eps = 0.25f   // optional
-  };
 
   // Run MUZE + MCTS
   MCTSResult res = mcts_run(agent->brain, obs, &mcts_params);
