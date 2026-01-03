@@ -238,24 +238,38 @@ void update_player() {
 }
 
 // ---------- AGENT ----------
-
-int decide_action(Agent *a, float *inputs) {
-  if (!a->brain)
+int decide_action(Agent *agent, long double *inputs) {
+  if (!agent || !agent->brain)
     return rand() % ACTION_COUNT;
 
-  // Run the MUZE model inference
-  mu_model_predict(a->brain, inputs, 0, 0);
+  // Convert long double inputs to float for MUZE
+  int obs_dim = agent->brain->cfg.obs_dim;
+  float obs[obs_dim];
+  for (int i = 0; i < obs_dim; i++) {
+    obs[i] = (float)inputs[i];
+  }
 
-  if (out.chosen_action < 0 || out.chosen_action >= ACTION_COUNT)
-    out.chosen_action = rand() % ACTION_COUNT;
+  // Configure MCTS for this decision
+  MCTSParams mcts_params = {
+      .num_simulations = 40, // can tune later
+      .c_puct = 1.2f,
+      .discount = 0.95f,
+      .temperature = 1.0f,
+      .max_depth = 20,         // optional
+      .dirichlet_alpha = 0.3f, // optional
+      .dirichlet_eps = 0.25f   // optional
+  };
 
-  // Ensure the chosen action is in bounds
-  int action = out.chosen_action;
+  // Run MUZE + MCTS
+  MCTSResult res = mcts_run(agent->brain, obs, &mcts_params);
+  int action = res.chosen_action;
+
+  // Free resources
+  mcts_result_free(&res);
+
+  // Safety fallback
   if (action < 0 || action >= ACTION_COUNT)
     action = rand() % ACTION_COUNT;
-
-  // Free the output resources
-  mu_output_free(&out);
 
   return action;
 }
