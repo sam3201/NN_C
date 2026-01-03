@@ -57,6 +57,27 @@ void draw_base_particles(Vector2 camera) {
   }
 }
 
+void apply_action(ActionType action) {
+  switch (action) {
+  case ACTION_UP:
+    player.position.y -= 1;
+    break;
+  case ACTION_DOWN:
+    player.position.y += 1;
+    break;
+  case ACTION_LEFT:
+    player.position.x -= 1;
+    break;
+  case ACTION_RIGHT:
+    player.position.x += 1;
+    break;
+  case ACTION_ATTACK:
+    break;
+  case ACTION_HARVEST:
+    break;
+  }
+}
+
 int main() {
   srand((unsigned int)time(NULL));
 
