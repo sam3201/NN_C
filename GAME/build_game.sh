@@ -16,7 +16,6 @@ fi
 
 echo "Compiling game..."
 
-# Automatically collect all MUZE .c files
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
 
 gcc -w game.c $MUZE_SRC \
