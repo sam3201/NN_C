@@ -264,6 +264,7 @@ void update_agent(Agent *a, Chunk *c) {
     a->flash_timer = 0;
   }
 }
+
 int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
     return rand() % ACTION_COUNT;
