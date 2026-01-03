@@ -378,6 +378,17 @@ void init_base(void) {
   }
 }
 
+void respawn_agent(Agent *a) {
+  a->alive = true;
+  a->health = a->stamina = 100;
+  a->position = agent_base.position;
+  a->reward_accumulator = 0;
+  a->age = 0;
+  a->steps_alive = 0;
+
+  mu_model_reset_episode(a->brain);
+}
+
 /* =======================
    MAIN
 ======================= */
