@@ -7,6 +7,16 @@
 
 #define MAX_BASE_PARTICLES 32
 
+typedef enum {
+  ACTION_UP = 0,
+  ACTION_DOWN,
+  ACTION_LEFT,
+  ACTION_RIGHT,
+  ACTION_HARVEST,
+  ACTION_ATTACK,
+  ACTION_COUNT
+}
+
 typedef struct {
   Vector2 pos;
   float lifetime;
