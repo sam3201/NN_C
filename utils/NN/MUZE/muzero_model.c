@@ -47,6 +47,7 @@ void mu_model_free(MuModel *m) {
   free(m->dyn_W);
   free(m->pred_W);
   free(m);
+  mu_runtime_free(m->runtime);
 }
 
 /* ------------------------
