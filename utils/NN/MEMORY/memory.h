@@ -1,8 +1,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "../AGENT/AGENT.h"
-
 #define MEMORY_CAPACITY 1000
 
 typedef struct {
