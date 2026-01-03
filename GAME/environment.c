@@ -361,6 +361,11 @@ void harvest_resources() {
       player.stamina -= 2;
 
       if (r->health <= 0) {
+        for (int k = 0; k < 6; k++) {
+          DrawCircle(world_pos.x + rand() % 6 - 3, world_pos.y + rand() % 6 - 3,
+                     1, (r->type == RES_TREE) ? BROWN : GRAY);
+        }
+
         r->visited = true;
 
         if (r->type == RES_TREE)
