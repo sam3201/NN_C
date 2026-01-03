@@ -1,4 +1,4 @@
-// game.c
+// game.c (visual improvements)
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <math.h>
@@ -42,12 +42,14 @@ typedef struct {
   int health;
   bool visited;
 } Resource;
+
 typedef struct {
   Vector2 position;
   float value;
   int type;
   bool visited;
 } Mob;
+
 typedef struct {
   Vector2 position;
   float health;
@@ -90,6 +92,7 @@ typedef struct {
   Vector2 position;
   float radius;
 } Base;
+
 typedef struct {
   Vector2 pos;
   float lifetime;
@@ -107,9 +110,11 @@ int resource_count = 0;
 
 // ---------- HELPERS ----------
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
+
 static inline float randf(float min, float max) {
   return min + (float)rand() / RAND_MAX * (max - min);
 }
+
 float Vector2Distance(Vector2 a, Vector2 b) {
   return sqrtf((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
 }
@@ -122,11 +127,11 @@ Chunk *get_chunk(int cx, int cy) {
   if (!c->generated) {
     c->generated = true;
     c->biome_type = (abs(cx) + abs(cy)) % 3;
+
+    // terrain colors: 0=grass,1=forest,2=rock
     for (int i = 0; i < CHUNK_SIZE; i++)
       for (int j = 0; j < CHUNK_SIZE; j++)
-        c->terrain[i][j] = (c->biome_type == 0)   ? 1
-                           : (c->biome_type == 1) ? 2
-                                                  : 3;
+        c->terrain[i][j] = c->biome_type;
 
     // resources
     int target = (c->biome_type == 0) ? 6 : (c->biome_type == 1) ? 12 : 3;
@@ -178,9 +183,8 @@ Chunk *get_chunk(int cx, int cy) {
       }
 
       // MUZE brain
-      MuConfig cfg = {.obs_dim = 10,
-                      .latent_dim = 32,
-                      .action_count = ACTION_COUNT}; // adjust obs_dim
+      MuConfig cfg = {
+          .obs_dim = 10, .latent_dim = 32, .action_count = ACTION_COUNT};
       a->brain = mu_model_create(&cfg);
       a->input_size = cfg.obs_dim;
     }
@@ -218,7 +222,6 @@ void update_player() {
   if (IsKeyDown(KEY_D))
     move.x += 1;
 
-  // normalize diagonal
   if (move.x != 0 && move.y != 0) {
     move.x *= 0.7071f;
     move.y *= 0.7071f;
@@ -241,7 +244,7 @@ void update_agent(Agent *a) {
     return;
   float obs[a->input_size];
   for (int i = 0; i < a->input_size; i++)
-    obs[i] = randf(0, 1); // dummy obs, replace with actual perception
+    obs[i] = randf(0, 1);
   int action = decide_action(a, obs);
 
   switch (action) {
@@ -274,14 +277,42 @@ void update_agent(Agent *a) {
     a->flash_timer += 0.1f;
     if (a->flash_timer > 1.0f)
       a->flash_timer = 0;
-  } else
+  } else {
     a->flash_timer = 0;
+  }
 }
 
 // ---------- INIT BASE ----------
 void init_base() {
   agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
   agent_base.radius = BASE_RADIUS;
+}
+
+// ---------- DRAW HELPERS ----------
+Color biome_color(int type) {
+  switch (type) {
+  case 0:
+    return (Color){120, 200, 120, 255}; // grass
+  case 1:
+    return (Color){34, 139, 34, 255}; // forest
+  case 2:
+    return (Color){139, 137, 137, 255}; // rock
+  default:
+    return RAYWHITE;
+  }
+}
+
+Color resource_color(ResourceType type) {
+  switch (type) {
+  case RES_TREE:
+    return DARKGREEN;
+  case RES_ROCK:
+    return GRAY;
+  case RES_FOOD:
+    return ORANGE;
+  default:
+    return WHITE;
+  }
 }
 
 // ---------- MAIN ----------
@@ -306,33 +337,8 @@ int main() {
 
     // Draw
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(SKYBLUE);
+
     for (int dx = -1; dx <= 1; dx++)
       for (int dy = -1; dy <= 1; dy++) {
-        Chunk *ch = get_chunk(cx + dx, cy + dy);
-        for (int i = 0; i < CHUNK_SIZE; i++)
-          for (int j = 0; j < CHUNK_SIZE; j++) {
-            int sx = (cx + dx) * CHUNK_SIZE + i - TILE_SIZE;
-            int sy = (cy + dy) * CHUNK_SIZE + j - TILE_SIZE;
-            DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE,
-                          (Color){100, 200, 100, 255});
-          }
-        // draw agents
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          Agent *a = &ch->agents[i];
-          if (!a->alive)
-            continue;
-          Vector2 s = {a->position.x - TILE_SIZE, a->position.y - TILE_SIZE};
-          DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255});
-        }
-      }
-
-    // draw player
-    DrawCircle(player.position.x, player.position.y, 6, RED);
-
-    EndDrawing();
-  }
-
-  CloseWindow();
-  return 0;
-}
+                Chunk *ch = get_chunk(_*
