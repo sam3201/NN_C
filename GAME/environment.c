@@ -356,7 +356,7 @@ void harvest_resources() {
         continue;
 
       r->health -= tool_power;
-      player.stamina -= 2;
+      r->position player.stamina -= 2;
 
       if (r->health <= 0) {
         r->visited = true;
