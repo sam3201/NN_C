@@ -437,6 +437,53 @@ int decide_action(MuModel *brain, long double *inputs) {
   return action;
 }
 
+void step_agent(GameState *state, Agent *agent, int action) {
+  Vector2 old_pos = agent->position;
+
+  switch (action) {
+  case ACTION_MOVE_LEFT:
+    agent->position.x -= MOVEMENT_SPEED;
+    break;
+  case ACTION_MOVE_RIGHT:
+    agent->position.x += MOVEMENT_SPEED;
+    break;
+  case ACTION_MOVE_UP:
+    agent->position.y -= MOVEMENT_SPEED;
+    break;
+  case ACTION_MOVE_DOWN:
+    agent->position.y += MOVEMENT_SPEED;
+    break;
+  default:
+    break;
+  }
+
+  // Clamp to screen
+  if (agent->position.x < 0)
+    agent->position.x = 0;
+  if (agent->position.x > SCREEN_WIDTH)
+    agent->position.x = SCREEN_WIDTH;
+  if (agent->position.y < 0)
+    agent->position.y = 0;
+  if (agent->position.y > SCREEN_HEIGHT)
+    agent->position.y = SCREEN_HEIGHT;
+
+  agent->rect.x = agent->position.x;
+  agent->rect.y = agent->position.y;
+
+  // Food collection
+  for (int i = 0; i < MAX_FOOD; i++) {
+    if (CheckCollisionRecs(agent->rect, state->food[i].rect)) {
+      agent->total_xp += XP_FROM_FOOD;
+      agent->num_eaten++;
+      // move food to random position
+      state->food[i].position =
+          (Vector2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
+      state->food[i].rect.x = state->food[i].position.x;
+      state->food[i].rect.y = state->food[i].position.y;
+    }
+  }
+}
+
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
