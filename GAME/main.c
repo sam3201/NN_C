@@ -25,7 +25,10 @@ Tank *tank_new(int x, int y) {
   return tank;
 }
 
-void tank_free(Tank *tank) { free(tank); }
+void tank_free(Tank *tank) {
+  free(tank->tank);
+  free(tank);
+}
 
 int main(void) {
   printf("Hello, World!");
