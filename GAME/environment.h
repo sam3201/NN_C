@@ -49,7 +49,6 @@ typedef struct {
   int resource_count;
   Mob mobs[MAX_MOBS];
   bool generated;
-
 } Chunk;
 
 typedef struct {
