@@ -212,7 +212,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     c->agents[i].stamina = 100;
     c->agents[i].agent_id = i;
     c->agents[i].alive = true;
-    c->agents[i].heal_flash_timer = 0;
+    c->agents[i].flash_timer = 0;
 
     // assign a random tribe color
     switch (rand() % 4) {
