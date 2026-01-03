@@ -63,7 +63,7 @@ typedef struct {
   bool generated;
 } Chunk;
 
-ttypedef struct {
+typedef struct {
   Vector2 position;
   float health;
   float stamina;
