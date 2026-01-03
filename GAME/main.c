@@ -46,10 +46,8 @@ void tank_draw(Tank *t) {
 
   Rectangle arm = {t->position.x, t->position.y, t->armLength, t->armWidth};
 
-  // Main barrel
   DrawRectanglePro(arm, origin, t->rotation, t->armColor);
 
-  // Secondary arm (slight offset)
   Rectangle arm2 = arm;
   arm2.y += t->armWidth + 4;
   DrawRectanglePro(arm2, origin, t->rotation, t->armColor);
