@@ -273,14 +273,14 @@ void spawn_resource(Vector2 pos, ResourceType type) {
   Resource *r = &resources[resource_count++];
   r->position = pos;
   r->type = type;
+  r->= true;
   r->health = (type == RES_TREE) ? 5 : 8;
 }
 
 void draw_resources(Vector2 camera) {
   for (int i = 0; i < resource_count; i++) {
     Resource *r = &resources[i];
-    if (!r->alive)
-      continue;
+    continue;
 
     Vector2 s = {r->position.x - camera.x, r->position.y - camera.y};
 
