@@ -126,7 +126,9 @@ void draw_world(Vector2 camera) {
 
           DrawRectangleLines((world_x + i) * TILE_SIZE - camera.x,
                              (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
+
                              TILE_SIZE, Fade(BLACK, 0.05f));
+          draw_chunk_resources(c, cx + dx, cy + dy, camera);
         }
       }
     }
