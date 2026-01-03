@@ -234,6 +234,65 @@ void eat_agent(Agent *predator, Agent *prey) {
   update_agent_color(predator);
 }
 
+// --- AGENT BREEDING ---
+bool can_breed(Agent *a1, Agent *a2) {
+  return !a1->is_breeding && !a2->is_breeding &&
+         CheckCollisionRecs(a1->rect, a2->rect);
+}
+
+Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
+  Agent child;
+  child.level = 0;
+  child.total_xp = XP_FROM_OFFSPRING;
+  child.size = INITIAL_AGENT_SIZE;
+  child.time_alive = 0;
+  child.agent_id = new_id;
+  child.parent_id = parent1->agent_id;
+  child.num_offsprings = 0;
+  child.num_eaten = 0;
+  child.is_breeding = false;
+  child.breeding_timer = 0;
+  child.position.x = (parent1->position.x + parent2->position.x) / 2;
+  child.position.y = (parent1->position.y + parent2->position.y) / 2;
+  child.rect = (Rectangle){child.position.x, child.position.y,
+                           (float)child.size, (float)child.size};
+  child.input_size = get_total_input_size();
+  update_agent_color(&child);
+
+  MuConfig cfg = {.obs_dim = (int)child.input_size,
+                  .latent_dim = 32,
+                  .action_count = ACTION_COUNT};
+  child.brain = mu_model_create(&cfg);
+  init_memory(&child.memory, 100, (int)child.input_size);
+
+  parent1->num_offsprings++;
+  parent2->num_offsprings++;
+
+  return child;
+}
+
+// Call this inside update_agent or update_game to handle breeding
+void handle_breeding(GameState *game) {
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    for (int j = i + 1; j < POPULATION_SIZE - MAX_GROUNDSKEEPERS; j++) {
+      Agent *a1 = &game->agents[i];
+      Agent *a2 = &game->agents[j];
+      if (can_breed(a1, a2)) {
+        a1->is_breeding = a2->is_breeding = true;
+        a1->breeding_timer = a2->breeding_timer = BREEDING_DURATION;
+
+        // Replace first inactive agent with offspring
+        for (int k = 0; k < POPULATION_SIZE - MAX_GROUNDSKEEPERS; k++) {
+          if (game->agents[k].level == 0 && game->agents[k].time_alive == 0) {
+            game->agents[k] = spawn_offspring(a1, a2, game->next_agent_id++);
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
 void execute_agent_action(GameState *game, int agent_idx, Action action) {
   Agent *agent = &game->agents[agent_idx];
   move_agent(game, agent, action);
