@@ -167,6 +167,7 @@ void update_agent(GameState *game, int agent_idx) {
     }
   }
 }
+
 void update_agent_size(Agent *agent) {
   agent->size = agent->level + 1; // Size is level + 1 (so level 0 = size 1)
   agent->rect = (Rectangle){agent->position.x, agent->position.y, agent->size,
