@@ -523,7 +523,7 @@ void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
 
     // body
     DrawCircle(s.x, s.y, 6, BLACK);                       // outline
-    DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255}); // tan/cream body
+    DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255}); // tan body
 
     // hands
     DrawCircle(s.x - 6, s.y, 2, BLACK);
@@ -531,6 +531,14 @@ void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
 
     // bandana / headband
     DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
+
+    // healing + flash
+    if (a->heal_flash_timer > 0) {
+      // oscillate color between green and white
+      float t = a->heal_flash_timer;
+      Color col = ColorLerp(GREEN, WHITE, (sinf(t * 6.28319f) + 1) / 2);
+      DrawText("+", s.x - 4, s.y - 14, 12, col);
+    }
   }
 }
 
