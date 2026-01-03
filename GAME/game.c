@@ -27,8 +27,6 @@ typedef struct {
   unsigned int size;
   float time_alive;
   int agent_id;
-  int num_offsprings;
-  int num_eaten;
   bool is_breeding;
   float breeding_timer;
   Color color;
