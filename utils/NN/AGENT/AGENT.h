@@ -2,9 +2,9 @@
 #ifndef AGENT_H
 #define AGENT_H
 
+#include "..//raylib.h"
 #include "../MEMORY/MEMORY.h"
 #include "../NEAT.h"
-#include "../utils/raylib.h"
 
 typedef struct {
   Vector2 position;
