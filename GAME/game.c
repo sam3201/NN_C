@@ -69,8 +69,6 @@ int ai_choose_action(Agent *ai) {
   return res.chosen_action;
 }
 
-// ---------------- Tank Update -----------------
-// ---------------- Title / Menu -----------------
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -99,9 +97,6 @@ void title_screen(int *topAI, int *bottomAI) {
 int main() {
   InitWindow(800, 600, "Tank Game");
   SetTargetFPS(60);
-
-  bottom = (Tank){{100, 500}, 5, 3, 0, 0};
-  top = (Tank){{700, 100}, 5, 3, 0, 0};
 
   title_screen(&top.isAI, &bottom.isAI);
 
