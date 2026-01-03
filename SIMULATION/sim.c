@@ -121,7 +121,7 @@ void init_agent(Agent *agent, int id) {
 
   agent->input_size = get_total_input_size();
   agent->brain = NEAT_init(agent->input_size, ACTION_COUNT, 1);
-  init_memory(&agent->memory, agent->input_size, MEMORY_CAPACITY);
+  init_memory(&agent->memory, 1, agent->input_size);
 }
 
 // --- VISION ---
