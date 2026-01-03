@@ -142,7 +142,6 @@ int ai_choose_action(Tank *ai, Tank *player) {
                        .temperature = 1.0f,
                        .discount = 0.99f};
 
-  // MCTSResult is returned by value, do not free it
   MCTSResult res = mcts_run(ai_model, obs, &params);
   return res.chosen_action;
 }
