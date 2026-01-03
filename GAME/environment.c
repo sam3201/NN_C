@@ -3,7 +3,6 @@
 #include "../utils/Raylib/src/raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define WORLD_SIZE 128 // 128×128 chunks = enough for “infinite feel”
 
@@ -361,7 +360,6 @@ void harvest_resources() {
       Vector2 curr_pos = r->position;
       r->position.x += (rand() % 3 - 1) * 0.1f;
       r->position.y += (rand() % 3 - 1) * 0.1f;
-      usleep(1000);
       r->position = curr_pos;
 
       player.stamina -= 2;
