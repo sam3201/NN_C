@@ -85,8 +85,15 @@ typedef struct {
 
 // --- MEMORY ---
 size_t get_total_input_size() {
-  return (SCREEN_WIDTH * SCREEN_HEIGHT) + 7 +
-         4; // 4 extra: time_alive, punishment_timer, xp_stolen, relative_size
+  size_t size = 1;                                        // self
+  size += 1;                                              // time_alive
+  size += MAX_GROUNDSKEEPERS;                             // punishment timers
+  size += 1;                                              // xp_stolen
+  size += 1;                                              // relative size
+  size += MAX_FOOD;                                       // food presence
+  size += (POPULATION_SIZE - MAX_GROUNDSKEEPERS - 1) * 4; // other agents
+  size += MAX_GROUNDSKEEPERS * 3;                         // groundkeepers
+  return size;
 }
 
 void store_experience(Agent *agent, long double *inputs, int action,
