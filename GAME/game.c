@@ -365,7 +365,7 @@ int main(void) {
     Chunk *c = get_chunk(cx, cy);
 
     for (int i = 0; i < MAX_AGENTS; i++)
-      update_agent(&c->agents[i]);
+      update_agent(&c->agents[i], c);
 
     cam.target = player.position;
 
