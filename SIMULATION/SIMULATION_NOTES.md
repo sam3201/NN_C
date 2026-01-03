@@ -152,3 +152,11 @@
     ├─ position : Vector2
     └─ rect : Rectangle
 
+    NEAT_t
+    ├─ nodes : Perceptron_t*[]
+    └─ other internal NN structures
+
+    Perceptron_t
+    ├─ weights : long double[]
+    └─ activation function
+     
