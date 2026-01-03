@@ -198,9 +198,9 @@ int main(void) {
 
   while (!WindowShouldClose()) {
     if (!bottomAI)
-      tank_update(&bottom, 0); // player control
+      tank_update(&bottom, 0, bottom.position); // player control
     if (!topAI)
-      tank_update(&top, 1); // player control
+      tank_update(&top, 1, top.position); // player control
 
     // TODO: replace AI logic here for tanks with AI
 
