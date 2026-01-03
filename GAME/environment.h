@@ -67,7 +67,6 @@ Chunk *get_chunk(int cx, int cy);
 void generate_chunk(Chunk *chunk, int cx, int cy);
 void draw_world(Vector2 camera);
 
-// --- PLAYER ---
 void init_player(void);
 void update_player(void);
 void draw_player(Vector2 camera);
