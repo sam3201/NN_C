@@ -12,6 +12,8 @@
 #define MAX_RESOURCES 10
 #define MAX_MOBS 10
 
+typedef enum { RES_TREE, RES_ROCK } ResourceType;
+
 typedef struct {
   Vector2 position;
   float value;
