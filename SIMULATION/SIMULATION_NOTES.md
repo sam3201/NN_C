@@ -129,3 +129,22 @@
     ├─ vision_inputs : long double* ── Input vector for NN per agent
     ├─ next_agent_id : int
     └─ num_active_players : unsigned int
+
+    Agent
+    ├─ position : Vector2
+    ├─ rect : Rectangle
+    ├─ size : unsigned int
+    ├─ level : int
+    ├─ total_xp : int
+    ├─ time_alive : float
+    ├─ agent_id : int
+    ├─ parent_id : int
+    ├─ num_offsprings : int
+    ├─ num_eaten : int
+    ├─ is_breeding : bool
+    ├─ breeding_timer : float
+    ├─ color : Color
+    ├─ brain : NEAT_t* ── Neural network controlling movement/actions
+    ├─ memory : Memory ── Stores past inputs, actions, rewards
+    └─ input_size : size_t
+
