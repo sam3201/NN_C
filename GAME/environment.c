@@ -168,6 +168,31 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     c->mobs[i].type = rand() % 2;
     c->mobs[i].visited = false;
   }
+
+  // in generate_chunk after mobs
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    c->agents[i].position =
+        (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
+    c->agents[i].health = 100;
+    c->agents[i].stamina = 100;
+    c->agents[i].agent_id = i;
+    // assign a random tribe color
+    switch (rand() % 4) {
+    case 0:
+      c->agents[i].tribe_color = RED;
+      break;
+    case 1:
+      c->agents[i].tribe_color = BLUE;
+      break;
+    case 2:
+      c->agents[i].tribe_color = GREEN;
+      break;
+    case 3:
+      c->agents[i].tribe_color = YELLOW;
+      break;
+    }
+    c->agents[i].alive = true;
+  }
 }
 
 // ------------------------ draw world --------------------------
