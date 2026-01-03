@@ -72,7 +72,6 @@ typedef struct {
   float reward_accumulator;
   int age;
   int steps_alive;
-
 } Agent;
 
 typedef struct {
