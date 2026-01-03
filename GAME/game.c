@@ -238,7 +238,11 @@ void update_player() {
 }
 
 // ---------- AGENT ----------
-int decide_action(Agent *a, float *inputs) { return rand() % ACTION_COUNT; }
+
+int decide_action(Agent *a, float *inputs) {
+  int action = mu_model_predict(a->brain, inputs);
+  return action;
+}
 
 void update_agent(Agent *a) {
   if (!a->alive)
