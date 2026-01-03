@@ -20,7 +20,6 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
 void store_memory(Memory *memory, long double *vision_inputs, int action,
                   float reward, float value_estimate) {
 
-  // Check if we need to expand our "infinite" capacity
   if (memory->size >= memory->capacity) {
     int new_capacity = memory->capacity * 2;
     MemoryEntry *new_buffer = (MemoryEntry *)realloc(
