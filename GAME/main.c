@@ -27,11 +27,6 @@ Tank *tank_new(int x, int y) {
 
 void tank_free(Tank *tank) { free(tank); }
 
-void tank_move(Tank *tank, int x, int y) {
-  tank->x = x;
-  tank->y = y;
-}
-
 int main(void) {
   printf("Hello, World!");
 
