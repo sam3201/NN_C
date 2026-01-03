@@ -358,7 +358,7 @@ void update_agent(Agent *a, Chunk *c) {
   float reward = compute_reward(a, c, obs);
   a->reward_accumulator += reward;
 
-  muze_step(a, obs, action, reward);
+  mu_model_end_episode(a, obs, action, reward);
 
   a->age++;
   a->steps_alive++;
