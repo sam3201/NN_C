@@ -26,13 +26,6 @@ typedef struct {
   float value;
   int type;
   bool visited;
-} Resource;
-
-typedef struct {
-  Vector2 position;
-  float value;
-  int type;
-  bool visited;
 } Mob;
 
 typedef struct {
