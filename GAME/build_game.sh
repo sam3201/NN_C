@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# ---------------- Raylib Setup ----------------
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
@@ -14,17 +15,11 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
   cd ../../GAME || exit
 fi
 
+# ---------------- Game Compilation ----------------
 echo "Compiling game..."
 
-MUZE_SRC="../utils/NN/MUZE/ewc.c \
-../utils/NN/MUZE/growth.c \
-../utils/NN/MUZE/mcts.c \
-../utils/NN/MUZE/muzero_model.c \
-../utils/NN/MUZE/replay_buffer.c \
-../utils/NN/MUZE/selfplay.c \
-../utils/NN/MUZE/toy_env.c \
-../utils/NN/MUZE/trainer.c \
-../utils/NN/MUZE/util.c"
+# Automatically collect all MUZE .c files
+MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
 
 gcc -w game.c $MUZE_SRC \
     -I../utils/Raylib/src \
@@ -33,6 +28,7 @@ gcc -w game.c $MUZE_SRC \
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -o game
 
+# ---------------- Run ----------------
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./game
@@ -41,7 +37,7 @@ else
     exit 1
 fi
 
-# Optional: cleanup
+# ---------------- Optional Cleanup ----------------
 # echo "Cleaning up..."
 # rm game
 
