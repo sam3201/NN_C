@@ -129,15 +129,68 @@ void init_agent(Agent *agent, int id) {
   init_memory(&agent->memory, 100, (int)agent->input_size);
 }
 
+// --- VISION ENCODING ---
 void encode_vision(GameState *game, int agent_idx, long double *vision_output) {
+  Agent *self = &game->agents[agent_idx];
+
+  // Clear vision
   for (int i = 0; i < get_total_input_size(); i++)
     vision_output[i] = 0.0L;
-  vision_output[0] = 1.0L; // self
 
-  Agent *agent = &game->agents[agent_idx];
-  vision_output[1] = agent->time_alive; // additional input
-  // further vision encoding: food, offspring, other agents, GKs etc.
-  // Simplified for example, can be expanded with grid scanning
+  int idx = 0;
+
+  // Self indicator
+  vision_output[idx++] = 1.0L;
+
+  // Time alive (normalized)
+  vision_output[idx++] = self->time_alive / 100.0L; // adjust scaling as needed
+
+  // Punishment timer of nearby gks (max of 3)
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    vision_output[idx++] = game->gks[i].punishment_timer / PUNISHMENT_COOLDOWN;
+  }
+
+  // XP stolen recently (sum of XP leeched by GKs)
+  long double xp_stolen = 0.0L;
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    if (CheckCollisionRecs(self->rect, game->gks[i].rect)) {
+      xp_stolen += XP_LEECH_RATE * GetFrameTime();
+    }
+  }
+  vision_output[idx++] = xp_stolen;
+
+  // Relative size (normalized)
+  vision_output[idx++] =
+      (long double)self->size / 10.0L; // assuming max 10 size
+
+  // Vision grid for food
+  for (int i = 0; i < MAX_FOOD; i++) {
+    Food *f = &game->food[i];
+    vision_output[idx++] = (f->rect.width > 0) ? 1.0L : 0.0L; // food present
+    // optionally could encode distance or direction here
+  }
+
+  // Vision of other agents
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    if (i == agent_idx)
+      continue;
+    Agent *other = &game->agents[i];
+    vision_output[idx++] =
+        (long double)other->level / 10.0L;                   // normalized level
+    vision_output[idx++] = (long double)other->size / 10.0L; // normalized size
+    vision_output[idx++] =
+        CheckCollisionRecs(self->rect, other->rect) ? 1.0L : 0.0L; // touching
+    vision_output[idx++] = other->is_breeding ? 1.0L : 0.0L;
+  }
+
+  // Vision of groundkeepers
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    Groundkeeper *gk = &game->gks[i];
+    vision_output[idx++] = (gk->rect.width > 0) ? 1.0L : 0.0L;         // exists
+    vision_output[idx++] = gk->punishment_timer / PUNISHMENT_COOLDOWN; // timer
+    vision_output[idx++] =
+        CheckCollisionRecs(self->rect, gk->rect) ? 1.0L : 0.0L; // touching
+  }
 }
 
 Action get_action_from_output(long double *outputs) {
