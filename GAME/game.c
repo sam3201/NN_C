@@ -100,6 +100,7 @@ int main() {
 
   title_screen();
 
+initialize_world()
 initialize_agents()
 while simulation_running:
     for each agent:
