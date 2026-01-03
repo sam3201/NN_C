@@ -293,3 +293,21 @@ void draw_resources(Vector2 camera) {
     }
   }
 }
+
+Resource *find_nearest_resource(Vector2 pos, float max_dist) {
+  Resource *best = NULL;
+  float best_dist = max_dist;
+
+  for (int i = 0; i < resource_count; i++) {
+    Resource *r = &resources[i];
+    if (!r->alive)
+      continue;
+
+    float d = Vector2Distance(pos, r->position);
+    if (d < best_dist) {
+      best_dist = d;
+      best = r;
+    }
+  }
+  return best;
+}
