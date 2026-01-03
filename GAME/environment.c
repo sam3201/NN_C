@@ -331,6 +331,12 @@ void update_player() {
     player.stamina = player.max_stamina;
 }
 
+long double inputs[get_total_input_size()];
+gather_agent_inputs(&game, agent, inputs);
+int action = decide_action(agent, inputs);
+execute_agent_action(&game, agent_idx, action);
+store_experience(agent, inputs, action, agent->total_xp);
+
 void update_agent(Agent *a) {
   if (!a->alive)
     return;
