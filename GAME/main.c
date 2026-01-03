@@ -75,6 +75,7 @@ void tank_update(Tank *t, int isTop) {
       t->rotation += rotSpeed;
   }
 }
+
 int main(void) {
   printf("Hello, World!");
 
