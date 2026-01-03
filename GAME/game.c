@@ -2,10 +2,9 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
-MuConfig config =
-    {
-        // --- PLAYER ---
-}
+MuConfig config = {} int obs_dim; // dimension of input observation
+int latent_dim;                   // learned hidden state size
+int action_count;                 // number of discrete actions
 
 mu_model_create();
 
