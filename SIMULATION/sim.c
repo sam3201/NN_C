@@ -356,6 +356,15 @@ void update_game(GameState *game) {
     if (game->agents[i].level >= 0)
       update_agent_state(game, i);
   }
+
+  for (int i = 0; i < POPULATION_SIZE; i++) {
+    if (game->agents[i].level >= 0) {
+      if (game->agents[i].is_groundkeeper)
+        update_groundkeeper(game, i);
+      else
+        update_agent_state(game, i);
+    }
+  }
 }
 
 // --- FOOD ---
