@@ -33,4 +33,6 @@ else
     exit 1
 fi
 
+echo "Cleaning up..."
+# rm game
 
