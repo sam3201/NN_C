@@ -330,6 +330,8 @@ int main() {
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
 
+  TILE_SIZE = (float)SCREEN_WIDTH / (float)WORLD_SIZE;
+
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE Game");
   SetTargetFPS(60);
 
