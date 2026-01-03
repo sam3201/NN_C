@@ -418,6 +418,16 @@ int main(void) {
     int cy = player.position.y / (CHUNK_SIZE * TILE_SIZE);
     Chunk *c = get_chunk(cx, cy);
 
+    static int train_timer = 0;
+    train_timer++;
+
+    if (train_timer > 30) {
+      for (int i = 0; i < MAX_AGENTS; i++) {
+        mu_model_train(c->agents[i].brain);
+      }
+      train_timer = 0;
+    }
+
     for (int i = 0; i < MAX_AGENTS; i++) {
       Agent *a = &c->agents[i];
       if (!a->alive) {
