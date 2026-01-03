@@ -335,12 +335,12 @@ void update_agent(Agent *a) {
       a->stamina = 100;
 
     // flash timer
-    a->heal_flash_timer += 0.1f;
-    if (a->heal_flash_timer > 1.0f)
-      a->heal_flash_timer = 0;
+    a->flash_timer += 0.1f;
+    if (a->flash_timer > 1.0f)
+      a->flash_timer = 0;
   } else {
     // reset flash when outside
-    a->heal_flash_timer = 0;
+    a->flash_timer = 0;
   }
 }
 
