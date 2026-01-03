@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 600
 #define FRAME_RATE 60
 
-#define MEMORY_CAPACITY 1024
+#define MEMORY_CAPACITY infinity
 
 typedef enum {
   ACTION_NONE = 0,
