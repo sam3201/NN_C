@@ -10,10 +10,6 @@
 #define CHUNK_SIZE 32
 #define TILE_SIZE 8
 #define MAX_RESOURCES 512
-Resource resources[MAX_RESOURCES];
-int resource_count = 0;
-
-#define MAX_RESOURCES 10
 #define MAX_MOBS 10
 
 typedef enum { RES_TREE, RES_ROCK } ResourceType;
@@ -79,5 +75,7 @@ void draw_player(Vector2 camera);
 void draw_ui(void);
 
 extern Player player;
+Resource resources[MAX_RESOURCES];
+int resource_count = 0;
 
 #endif
