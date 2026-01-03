@@ -2,9 +2,13 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
-MuConfig config = {} int obs_dim; // dimension of input observation
-int latent_dim;                   // learned hidden state size
-int action_count;                 // number of discrete actions
+MuConfig config =
+    {
+        .obs_dim = CHUNK_SIZE * CHUNK_SIZE * 3,
+        .latent_dim = 32,
+        .action_dim = 4,
+
+}
 
 mu_model_create();
 
