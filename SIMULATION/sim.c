@@ -291,30 +291,29 @@ void update_agent(GameState *game, int agent_idx) {
       handle_breeding(game, agent_idx);
     }
   }
-}
-if (outputs) {
-  // Find highest output (action)
-  Action action = ACTION_NONE;
-  long double max_output = outputs[0];
-  for (int i = 1; i < ACTION_COUNT; i++) {
-    if (outputs[i] > max_output) {
-      max_output = outputs[i];
-      action = i;
+  if (outputs) {
+    // Find highest output (action)
+    Action action = ACTION_NONE;
+    long double max_output = outputs[0];
+    for (int i = 1; i < ACTION_COUNT; i++) {
+      if (outputs[i] > max_output) {
+        max_output = outputs[i];
+        action = i;
+      }
+    }
+
+    // Execute action
+    execute_action(game, agent_idx, action);
+    game->last_actions[agent_idx] = action;
+  }
+
+  // Update breeding status
+  if (agent->is_breeding) {
+    agent->breeding_timer += GetFrameTime();
+    if (agent->breeding_timer >= BREEDING_DURATION) {
+      handle_breeding(game, agent_idx);
     }
   }
-
-  // Execute action
-  execute_action(game, agent_idx, action);
-  game->last_actions[agent_idx] = action;
-}
-
-// Update breeding status
-if (agent->is_breeding) {
-  agent->breeding_timer += GetFrameTime();
-  if (agent->breeding_timer >= BREEDING_DURATION) {
-    handle_breeding(game, agent_idx);
-  }
-}
 }
 
 void update_agent_size(Agent *agent) {
