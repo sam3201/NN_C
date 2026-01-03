@@ -128,6 +128,7 @@ void draw_world(Vector2 camera) {
                              (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
 
                              TILE_SIZE, Fade(BLACK, 0.05f));
+
           draw_chunk_resources(c, cx + dx, cy + dy, camera);
         }
       }
