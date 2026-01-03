@@ -9,6 +9,7 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FRAME_RATE 60
+
 #define MEMORY_CAPACITY 1024
 
 typedef enum {
