@@ -39,6 +39,7 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
       break;
 
     case RES_ROCK:
+      DrawCircle(s.x, s.y, 7, BLACK);
       DrawCircle(s.x, s.y, 5, GRAY);
       break;
 
