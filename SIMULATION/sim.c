@@ -213,6 +213,11 @@ void update_agent_state(GameState *game, int agent_idx) {
     if (agent->breeding_timer >= BREEDING_DURATION)
       handle_breeding(game, agent_idx);
   }
+
+  if (agent->xp > agent->next_level_xp) {
+    level_up(agent);
+    evolve_agent(agent);
+  }
 }
 
 void update_game(GameState *game) {
