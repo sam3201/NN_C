@@ -265,3 +265,14 @@ void draw_ui() {
                       player.food),
            20, 56, 14, GREEN);
 }
+
+void spawn_resource(Vector2 pos, ResourceType type) {
+  if (resource_count >= MAX_RESOURCES)
+    return;
+
+  Resource *r = &resources[resource_count++];
+  r->position = pos;
+  r->type = type;
+  r->alive = true;
+  r->health = (type == RES_TREE) ? 5 : 8;
+}
