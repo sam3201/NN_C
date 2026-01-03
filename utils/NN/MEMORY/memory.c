@@ -7,6 +7,7 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
   memory->size = 0;
   memory->capacity = initial_capacity;
   memory->input_size = input_size;
+  memory->index = 0;
 
   // Allocate the initial array of entries
   memory->buffer =
@@ -20,11 +21,11 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
 void store_memory(Memory *memory, long double *vision_inputs, int action,
                   float reward, float value_estimate) {
 
-  // Check if we need more "infinite" space
+  // Check if we need to expand our "infinite" capacity
   if (memory->size >= memory->capacity) {
     int new_capacity = memory->capacity * 2;
-    MemoryEntry *new_buffer =
-        realloc(memory->buffer, new_capacity * sizeof(MemoryEntry));
+    MemoryEntry *new_buffer = (MemoryEntry *)realloc(
+        memory->buffer, new_capacity * sizeof(MemoryEntry));
 
     if (new_buffer == NULL) {
       fprintf(stderr, "Critical: Could not expand memory capacity!\n");
@@ -39,7 +40,7 @@ void store_memory(Memory *memory, long double *vision_inputs, int action,
 
   // Allocate space for the vision data for this specific entry
   memory->buffer[idx].vision_inputs =
-      malloc(memory->input_size * sizeof(long double));
+      (long double *)malloc(memory->input_size * sizeof(long double));
 
   if (memory->buffer[idx].vision_inputs != NULL) {
     memcpy(memory->buffer[idx].vision_inputs, vision_inputs,
@@ -51,15 +52,18 @@ void store_memory(Memory *memory, long double *vision_inputs, int action,
   memory->buffer[idx].value_estimate = value_estimate;
 
   memory->size++;
+  memory->index++;
 }
 
 void free_memory(Memory *memory) {
   if (memory->buffer == NULL)
     return;
 
-  // We must free the vision_inputs for EVERY entry we created
+  // Free each individual vision input buffer
   for (int i = 0; i < memory->size; i++) {
-    free(memory->buffer[i].vision_inputs);
+    if (memory->buffer[i].vision_inputs != NULL) {
+      free(memory->buffer[i].vision_inputs);
+    }
   }
 
   free(memory->buffer);
