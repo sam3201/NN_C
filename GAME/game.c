@@ -92,7 +92,7 @@ void update_bullets() {
         bullets[i].pos.y < 0 || bullets[i].pos.y > 600)
       bullets[i].active = 0;
 
-    // Collision
+    // Collision with tanks
     if (CheckCollisionCircleRec(bullets[i].pos, BULLET_SIZE / 2,
                                 (Rectangle){bottom.position.x,
                                             bottom.position.y, TANK_SIZE,
@@ -119,10 +119,18 @@ void init_ai() {
   ai_model = mu_model_create(&cfg);
 }
 
-void free_ai() { mu_model_free(ai_model); }
+void free_ai() {
+  if (ai_model) {
+    mu_model_free(ai_model);
+    ai_model = NULL;
+  }
+}
 
 // Returns action: 0=up,1=down,2=left,3=right,4=shoot
 int ai_choose_action(Tank *ai, Tank *player) {
+  if (!ai_model)
+    return 0; // fallback safety
+
   float obs[4] = {ai->position.x, ai->position.y, player->position.x,
                   player->position.y};
 
@@ -134,9 +142,8 @@ int ai_choose_action(Tank *ai, Tank *player) {
                        .temperature = 1.0f,
                        .discount = 0.99f};
 
-  // DO NOT free this, it's a value struct
+  // MCTSResult is returned by value, do not free it
   MCTSResult res = mcts_run(ai_model, obs, &params);
-
   return res.chosen_action;
 }
 
@@ -256,6 +263,7 @@ int main() {
               (Vector2){b_center.x + cosf(bottom.turretAngle) * TANK_SIZE,
                         b_center.y + sinf(bottom.turretAngle) * TANK_SIZE},
               DARKBLUE);
+
     Vector2 t_center = {top.position.x + TANK_SIZE / 2,
                         top.position.y + TANK_SIZE / 2};
     DrawLineV(t_center,
