@@ -447,10 +447,6 @@ int main() {
                    agent_base.position.y * TILE_SIZE,
                    agent_base.radius * TILE_SIZE, DARKGRAY);
 
-        DrawCircle(agent_base.position.x * TILE_SIZE,
-                   agent_base.position.y * TILE_SIZE,
-                   agent_base.radius * TILE_SIZE * 0.9f, Fade(WHITE, 0.6f));
-
         for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
           BaseParticle *p = &base_particles[i];
           DrawCircleV(p->pos, 1 + rand() % 2,
