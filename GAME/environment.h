@@ -6,6 +6,7 @@
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
+
 #define CHUNK_SIZE 32
 #define TILE_SIZE 8
 #define MAX_RESOURCES 10
