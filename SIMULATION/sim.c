@@ -168,7 +168,6 @@ Action get_action_from_output(long double *outputs) {
   }
   return (Action)max_idx;
 }
-
 // --- UPDATE AGENT ---
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
