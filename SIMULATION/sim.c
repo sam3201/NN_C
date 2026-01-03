@@ -47,7 +47,7 @@ typedef struct {
   bool is_breeding;
   float breeding_timer;
   Color color;
-  Muze_t brain;
+  MuModel *brain;
   Memory memory;
   size_t input_size;
 } Agent;
