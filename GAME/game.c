@@ -18,8 +18,8 @@ typedef struct {
   Vector2 position;
   float speed;
   int health;
-  int isAI; // 0 = player, 1 = AI
-  Vector2 turretDir;
+  int isAI;          // 0 = player, 1 = AI
+  float turretAngle; // rotation in radians
 } Tank;
 
 typedef struct {
@@ -28,7 +28,7 @@ typedef struct {
   int active;
 } Bullet;
 
-// Global tanks
+// Global tanks and bullets
 Tank bottom, top;
 Bullet bullets[MAX_BULLETS];
 int bullet_count = 0;
@@ -38,29 +38,21 @@ void move_left(Tank *t) {
   t->position.x -= t->speed;
   if (t->position.x < 0)
     t->position.x = 0;
-  t->turretDir.x = -1;
-  t->turretDir.y = 0;
 }
 void move_right(Tank *t, int screen_width) {
   t->position.x += t->speed;
   if (t->position.x + TANK_SIZE > screen_width)
     t->position.x = screen_width - TANK_SIZE;
-  t->turretDir.x = 1;
-  t->turretDir.y = 0;
 }
 void move_up(Tank *t) {
   t->position.y -= t->speed;
   if (t->position.y < 0)
     t->position.y = 0;
-  t->turretDir.x = 0;
-  t->turretDir.y = -1;
 }
 void move_down(Tank *t, int screen_height) {
   t->position.y += t->speed;
   if (t->position.y + TANK_SIZE > screen_height)
     t->position.y = screen_height - TANK_SIZE;
-  t->turretDir.x = 0;
-  t->turretDir.y = 1;
 }
 
 // ---------------- Shooting -----------------
@@ -71,32 +63,43 @@ void tank_shoot(Tank *t) {
   bullets[bullet_count].pos =
       (Vector2){t->position.x + TANK_SIZE / 2 - BULLET_SIZE / 2,
                 t->position.y + TANK_SIZE / 2 - BULLET_SIZE / 2};
-  bullets[bullet_count].vel =
-      (Vector2){t->turretDir.x * BULLET_SPEED, t->turretDir.y * BULLET_SPEED};
+  bullets[bullet_count].vel = (Vector2){cosf(t->turretAngle) * BULLET_SPEED,
+                                        sinf(t->turretAngle) * BULLET_SPEED};
   bullets[bullet_count].active = 1;
   bullet_count++;
 }
 
 // ---------------- Tank Update ----------------
-void tank_update(Tank *t, Vector2 target) {
+void tank_update(Tank *t, Vector2 target, int screen_width, int screen_height) {
   if (t->isAI) {
-    // Simple AI: move toward target and shoot
+    // Move toward target
     if (fabs(t->position.x - target.x) > 5) {
       if (t->position.x < target.x)
-        move_right(t, 800);
+        move_right(t, screen_width);
       else
         move_left(t);
     }
     if (fabs(t->position.y - target.y) > 5) {
       if (t->position.y < target.y)
-        move_down(t, 600);
+        move_down(t, screen_height);
       else
         move_up(t);
     }
 
+    // Aim at target
+    Vector2 center = {t->position.x + TANK_SIZE / 2,
+                      t->position.y + TANK_SIZE / 2};
+    t->turretAngle = atan2f(target.y - center.y, target.x - center.x);
+
     // Shoot randomly
     if (rand() % 50 == 0)
       tank_shoot(t);
+  } else {
+    // Player turret follows mouse
+    Vector2 center = {t->position.x + TANK_SIZE / 2,
+                      t->position.y + TANK_SIZE / 2};
+    Vector2 mouse = GetMousePosition();
+    t->turretAngle = atan2f(mouse.y - center.y, mouse.x - center.x);
   }
 }
 
@@ -121,8 +124,7 @@ void update_bullets() {
                                             bottom.position.y, TANK_SIZE,
                                             TANK_SIZE}) &&
         bullets[i].active) {
-      if (bullets[i].vel.y != 0 || bullets[i].vel.x != 0)
-        bottom.health--;
+      bottom.health--;
       bullets[i].active = 0;
     }
     if (CheckCollisionCircleRec(bullets[i].pos, BULLET_SIZE / 2,
@@ -163,8 +165,8 @@ int main() {
   InitWindow(800, 600, "Tank Game");
   SetTargetFPS(60);
 
-  bottom = (Tank){{100, 500}, 5, 3, 0, {0, -1}};
-  top = (Tank){{700, 100}, 5, 3, 0, {0, -1}};
+  bottom = (Tank){{100, 500}, 5, 3, 0, 0};
+  top = (Tank){{700, 100}, 5, 3, 0, 0};
 
   title_screen(&top.isAI, &bottom.isAI);
 
@@ -174,7 +176,6 @@ int main() {
   float obs[ROWS];
   toy_env_reset(&env, obs);
   env_step_fn step_fn = toy_env_step;
-  env_reset_fn reset_fn = toy_env_reset;
 
   while (!WindowShouldClose()) {
     // Player Input
@@ -186,7 +187,7 @@ int main() {
       if (IsKeyDown(KEY_W))
         move_up(&bottom);
       if (IsKeyDown(KEY_S))
-        move_down(&bottom);
+        move_down(&bottom, 600);
       if (IsKeyPressed(KEY_SPACE))
         tank_shoot(&bottom);
     }
@@ -198,19 +199,19 @@ int main() {
       if (IsKeyDown(KEY_UP))
         move_up(&top);
       if (IsKeyDown(KEY_DOWN))
-        move_down(&top);
+        move_down(&top, 600);
       if (IsKeyPressed(KEY_ENTER))
         tank_shoot(&top);
     }
 
-    // Update AI
-    tank_update(&bottom, top.position);
-    tank_update(&top, bottom.position);
+    // Update AI and turret angles
+    tank_update(&bottom, top.position, 800, 600);
+    tank_update(&top, bottom.position, 800, 600);
 
     // Update bullets
     update_bullets();
 
-    // ToyEnv step (placeholder RL)
+    // ToyEnv step placeholder
     int action = 0;
     float reward = 0.0f;
     int done = 0;
@@ -220,19 +221,32 @@ int main() {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    // Tanks (body + turret)
+    // Draw tanks (body + turret)
     DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
                   BLUE);
     DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
 
-    // Bullets
+    // Turrets (line from center pointing forward)
+    Vector2 b_center = {bottom.position.x + TANK_SIZE / 2,
+                        bottom.position.y + TANK_SIZE / 2};
+    DrawLineV(b_center,
+              (Vector2){b_center.x + cosf(bottom.turretAngle) * TANK_SIZE,
+                        b_center.y + sinf(bottom.turretAngle) * TANK_SIZE},
+              DARKBLUE);
+    Vector2 t_center = {top.position.x + TANK_SIZE / 2,
+                        top.position.y + TANK_SIZE / 2};
+    DrawLineV(t_center,
+              (Vector2){t_center.x + cosf(top.turretAngle) * TANK_SIZE,
+                        t_center.y + sinf(top.turretAngle) * TANK_SIZE},
+              DARKRED);
+
+    // Draw bullets
     for (int i = 0; i < bullet_count; i++) {
-      if (bullets[i].active) {
+      if (bullets[i].active)
         DrawCircleV(bullets[i].pos, BULLET_SIZE / 2, YELLOW);
-      }
     }
 
-    // Health
+    // Draw health
     DrawText(TextFormat("Bottom HP: %d", bottom.health), 10, 10, 20, LIGHTGRAY);
     DrawText(TextFormat("Top HP: %d", top.health), 650, 10, 20, LIGHTGRAY);
 
