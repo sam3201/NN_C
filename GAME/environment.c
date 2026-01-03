@@ -20,7 +20,7 @@ static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 // ------------------------ init base --------------------------
 void init_base(void) {
   agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
-  agent_base.health = 100;
+  agent_base.radius = BASE_RADIUS;
 }
 
 // ------------------------ draw chunk resources --------------------------
