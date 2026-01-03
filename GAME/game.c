@@ -318,6 +318,7 @@ void update_agent(Agent *a, Chunk *c) {
 
   int action = decide_action(a, obs);
 
+  // --- Apply action ---
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
@@ -335,6 +336,7 @@ void update_agent(Agent *a, Chunk *c) {
     break;
   }
 
+  // --- Base healing ---
   float dist = Vector2Distance(a->position, agent_base.position);
   if (dist < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100);
@@ -342,7 +344,24 @@ void update_agent(Agent *a, Chunk *c) {
     a->flash_timer += 0.1f;
   } else {
     a->flash_timer = 0;
+    a->stamina -= 0.05f;
   }
+
+  // --- Death ---
+  if (a->stamina <= 0 || a->health <= 0) {
+    a->alive = false;
+    mu_model_end_episode(a->brain, -1.0f);
+    return;
+  }
+
+  // --- Reward ---
+  float reward = compute_reward(a, c, obs);
+  a->reward_accumulator += reward;
+
+  muze_step(a, obs, action, reward);
+
+  a->age++;
+  a->steps_alive++;
 }
 
 /* =======================
