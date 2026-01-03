@@ -24,7 +24,6 @@ void mu_model_end_episode(MuModel *model, MuRuntime *rt, float terminal_reward);
 
 void mu_model_reset_episode(MuRuntime *rt);
 
-/* Train using replay buffer */
 void mu_model_train(MuModel *model, MuRuntime *rt);
 
 #endif
