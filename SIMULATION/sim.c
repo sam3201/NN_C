@@ -505,16 +505,19 @@ int main(void) {
       DrawRectangleRec(game.food[i].rect, GREEN);
 
     for (int i = 0; i < POPULATION_SIZE; i++) {
-      Agent *a = &game.agents[i];
+      Agent *a = &game->agents[i];
       if (a->level >= 0) {
         DrawRectangleRec(a->rect, a->color);
-        if (a->is_breeding)
-          DrawRectangleLinesEx(a->rect, 2, PINK);
-        const char *label = (i < MAX_GROUNDSKEEPERS) ? "GK" : "AG";
-        DrawText(label, a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE,
-                 (i < MAX_GROUNDSKEEPERS) ? RED : WHITE);
-        DrawText(TextFormat("%d", a->level), a->rect.x + a->rect.width + 2,
-                 a->rect.y, LABEL_SIZE, WHITE);
+        if (a->is_groundkeeper) {
+          DrawText("GK", a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE,
+                   RED);
+        } else {
+          if (a->is_breeding)
+            DrawRectangleLinesEx(a->rect, 2, PINK);
+          const char *label = (i < MAX_GROUNDSKEEPERS) ? "GK" : "AG";
+          DrawText(label, a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE,
+                   (i < MAX_GROUNDSKEEPERS) ? RED : WHITE);
+        }
       }
     }
 
