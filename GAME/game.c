@@ -102,73 +102,23 @@ int main() {
 
   init_ai();
 
-  while (!WindowShouldClose()) {
-    // Player Input
-    if (!bottom.isAI) {
-      if (IsKeyDown(KEY_A))
-        move_left(&bottom);
-      if (IsKeyDown(KEY_D))
-        move_right(&bottom, 800);
-      if (IsKeyDown(KEY_W))
-        move_up(&bottom);
-      if (IsKeyDown(KEY_S))
-        move_down(&bottom, 600);
-      if (IsKeyPressed(KEY_SPACE))
-        tank_shoot(&bottom);
-    }
-    if (!top.isAI) {
-      if (IsKeyDown(KEY_LEFT))
-        move_left(&top);
-      if (IsKeyDown(KEY_RIGHT))
-        move_right(&top, 800);
-      if (IsKeyDown(KEY_UP))
-        move_up(&top);
-      if (IsKeyDown(KEY_DOWN))
-        move_down(&top, 600);
-      if (IsKeyPressed(KEY_ENTER))
-        tank_shoot(&top);
-    }
-
-    // AI Update
-    tank_update(&bottom, &top, 800, 600);
-    tank_update(&top, &bottom, 800, 600);
-
-    // Update bullets
-    update_bullets();
-
-    // ---------------- Rendering ----------------
-    BeginDrawing();
-    ClearBackground(BLACK);
-
-    DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
-                  BLUE);
-    DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
-
-    Vector2 b_center = {bottom.position.x + TANK_SIZE / 2,
-                        bottom.position.y + TANK_SIZE / 2};
-    DrawLineV(b_center,
-              (Vector2){b_center.x + cosf(bottom.turretAngle) * TANK_SIZE,
-                        b_center.y + sinf(bottom.turretAngle) * TANK_SIZE},
-              DARKBLUE);
-
-    Vector2 t_center = {top.position.x + TANK_SIZE / 2,
-                        top.position.y + TANK_SIZE / 2};
-    DrawLineV(t_center,
-              (Vector2){t_center.x + cosf(top.turretAngle) * TANK_SIZE,
-                        t_center.y + sinf(top.turretAngle) * TANK_SIZE},
-              RED);
-
-    for (int i = 0; i < bullet_count; i++)
-      if (bullets[i].active)
-        DrawCircleV(bullets[i].pos, BULLET_SIZE / 2, YELLOW);
-
-    DrawText(TextFormat("Bottom HP: %d", bottom.health), 10, 10, 20, LIGHTGRAY);
-    DrawText(TextFormat("Top HP: %d", top.health), 650, 10, 20, LIGHTGRAY);
-
-    EndDrawing();
-  }
+initialize_world()
+initialize_agents()
+while simulation_running:
+    for each agent:
+        encode_state()
+        predicted_action = MuZero_forward(state)
+        execute_action(action)
+        observe_next_state_and_reward()
+        store_transition(state, action, reward)
+    update_world()
+    render_world()
+    if generation_end:
+        evaluate_fitness()
+        evolve_agents()
+        optionally scale world difficulty
 
   free_ai();
-  CloseWindow();
-  return 0;
+CloseWindow();
+return 0;
 }
