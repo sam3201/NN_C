@@ -98,6 +98,8 @@ void update_player(void);
 void draw_player(Vector2 camera);
 void draw_ui(void);
 
+void init_base(void);
+
 extern Player player;
 extern Base agent_base;
 extern Resource resources[MAX_RESOURCES];
