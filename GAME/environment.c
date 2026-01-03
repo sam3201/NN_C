@@ -169,3 +169,32 @@ void update_player() {
   if (player.stamina > player.max_stamina)
     player.stamina = player.max_stamina;
 }
+
+void harvest_resources() {
+  int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+  int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+
+  Chunk *chunk = get_chunk(cx, cy);
+
+  for (int i = 0; i < MAX_RESOURCES; i++) {
+    Resource *r = &chunk->resources[i];
+    if (r->visited)
+      continue;
+
+    Vector2 world_pos = {(cx * CHUNK_SIZE + r->position.x) * TILE_SIZE,
+                         (cy * CHUNK_SIZE + r->position.y) * TILE_SIZE};
+
+    float dist = Vector2Distance(player.position, world_pos);
+    if (dist < 12) {
+      r->visited = true;
+      player.stamina -= 5;
+
+      if (r->type == 0)
+        player.wood++;
+      if (r->type == 1)
+        player.stone++;
+      if (r->type == 2)
+        player.food++;
+    }
+  }
+}
