@@ -214,7 +214,7 @@ void update_agent_state(GameState *game, int agent_idx) {
       handle_breeding(game, agent_idx);
   }
 
-  if (agent->xp > agent->xp_threshold) {
+  if (agent->xp > agent->) {
     level_up(agent);
     evolve_agent(agent);
   }
