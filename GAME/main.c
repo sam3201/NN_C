@@ -7,7 +7,7 @@ typedef struct {
   Vector2 position;
   float radius;
 
-  float rotation; // turret rotation
+  float rotation;
   float armLength;
   float armWidth;
 
