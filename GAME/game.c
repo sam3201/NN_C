@@ -244,7 +244,7 @@ int decide_action(Agent *a, float *inputs) {
     return rand() % ACTION_COUNT;
 
   // Run the MUZE model inference
-  MuOutput out = mu_model_infer(a->brain, inputs);
+  int out = mu_model_infer(a->brain, inputs);
 
   // Ensure the chosen action is in bounds
   int action = out.chosen_action;
