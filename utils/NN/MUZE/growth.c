@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Helper to get a random small float for new weights
+/* Small random init for new weights */
 static float small_rand() {
   return ((float)rand() / (float)RAND_MAX) * 0.002f - 0.001f;
 }
@@ -14,51 +14,36 @@ int mu_model_grow_latent(MuModel *m, int new_L) {
   int A = m->cfg.action_count;
 
   if (new_L <= old_L)
-    return -1; // Can't grow to a smaller size
+    return -1;
 
   printf("[Growth] Increasing Latent Dims: %d -> %d\n", old_L, new_L);
 
-  // 1. GROW REPRESENTATION WEIGHTS (Input -> Latent)
-  // Old size: old_L * O | New size: new_L * O
-  float *new_repr = (float *)malloc(sizeof(float) * new_L * O);
+  /* Representation weights */
+  float *new_repr = malloc(sizeof(float) * new_L * O);
   for (int i = 0; i < new_L; i++) {
     for (int j = 0; j < O; j++) {
-      if (i < old_L) {
-        new_repr[i * O + j] = m->repr_W[i * O + j]; // Copy old
-      } else {
-        new_repr[i * O + j] = small_rand(); // New neuron
-      }
+      new_repr[i * O + j] = (i < old_L) ? m->repr_W[i * O + j] : small_rand();
     }
   }
 
-  // 2. GROW DYNAMICS WEIGHTS (Latent -> Latent)
-  // Old size: old_L * old_L | New size: new_L * new_L
-  float *new_dyn = (float *)malloc(sizeof(float) * new_L * new_L);
+  /* Dynamics weights */
+  float *new_dyn = malloc(sizeof(float) * new_L * new_L);
   for (int i = 0; i < new_L; i++) {
     for (int j = 0; j < new_L; j++) {
-      if (i < old_L && j < old_L) {
-        new_dyn[i * new_L + j] = m->dyn_W[i * old_L + j]; // Copy old
-      } else {
-        new_dyn[i * new_L + j] = small_rand();
-      }
+      new_dyn[i * new_L + j] =
+          (i < old_L && j < old_L) ? m->dyn_W[i * old_L + j] : small_rand();
     }
   }
 
-  // 3. GROW PREDICTION WEIGHTS (Latent -> Policy + Value)
-  // Policy weights: A * L | Value weights: 1 * L
-  // Note: muzero_model.c packs value head at the end
-  float *new_pred = (float *)malloc(sizeof(float) * (A + 1) * new_L);
-  for (int a = 0; a < (A + 1); a++) {
+  /* Prediction weights */
+  float *new_pred = malloc(sizeof(float) * (A + 1) * new_L);
+  for (int a = 0; a < A + 1; a++) {
     for (int j = 0; j < new_L; j++) {
-      if (j < old_L) {
-        new_pred[a * new_L + j] = m->pred_W[a * old_L + j];
-      } else {
-        new_pred[a * new_L + j] = small_rand();
-      }
+      new_pred[a * new_L + j] =
+          (j < old_L) ? m->pred_W[a * old_L + j] : small_rand();
     }
   }
 
-  // 4. SWAP AND FREE
   free(m->repr_W);
   free(m->dyn_W);
   free(m->pred_W);
