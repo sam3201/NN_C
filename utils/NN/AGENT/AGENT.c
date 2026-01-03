@@ -26,3 +26,39 @@ void init_agent(Agent *agent, int id) {
   // Initialize memory
   init_memory(&agent->memory, agent->input_size);
 }
+
+void update_agent(GameState *game, int agent_idx) {
+  Agent *agent = &game->agents[agent_idx];
+    agent->time_alive += GetFrameTime();
+
+    // 1️⃣ Encode vision
+    encode_vision(game, agent_idx, game->vision_inputs);
+
+    // 2️⃣ Get NN output (action)
+    long double *outputs = NEAT_forward(agent->brain, game->vision_inputs);
+    Action action = ACTION_NONE;
+
+    if (outputs) {
+        action = get_action_from_output(outputs);
+        execute_action(game, agent_idx, action);
+        game->last_actions[agent_idx] = action;
+    }
+
+    // 3️⃣ Store in memory
+    float reward = (float)agent->total_xp; // Simple reward: XP gained
+    float value_estimate = 0.0f;           // Placeholder for MuZero value function
+    store_memory(&agent->memory, game->vision_inputs, (int)action, reward, value_estimate, agent->input_size);
+
+    // 4️⃣ Handle breeding
+    if (agent->is_breeding) {
+        agent->breeding_timer += GetFrameTime();
+        if (agent->breeding_timer >= BREEDING_DURATION) {
+            handle_breeding(game, agent_idx);
+        }
+    }
+
+    // 5️⃣ Update agent stats
+    update_agent_color(agent);
+    update_agent_size(agent);
+}
+
