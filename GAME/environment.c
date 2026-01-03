@@ -48,7 +48,6 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
       break;
 
     case RES_ROCK:
-      float hp_ratio = r->health / 100.0f;
       if (hp_ratio < 0)
         hp_ratio = 0;
 
