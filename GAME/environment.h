@@ -1,6 +1,7 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 
+#include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <stdbool.h>
 
