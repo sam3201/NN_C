@@ -579,7 +579,7 @@ void update_groundkeeper(GameState *game, int idx) {
     Agent *a = &game->agents[i];
     if (CheckCollisionRecs(a->rect, gk->rect)) {
       float leech = XP_LEECH_RATE * GetFrameTime();
-      a->total_xp -= (int)leech;
+      a->total_xp -= leech;
       if (gk->punishment_timer <= 0) {
         a->level = fmax(a->level - 1, 0);
         gk->punishment_timer = PUNISHMENT_COOLDOWN;
