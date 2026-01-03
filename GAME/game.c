@@ -50,7 +50,6 @@ void draw_base_particles(Vector2 camera) {
 int main() {
   srand((unsigned int)time(NULL));
 
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE — Infinite 2D World");
   SetConfigFlags(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
   InitWindow(GetScreenWidth(), GetScreenHeight(), "Borderless fullscreen");
 
