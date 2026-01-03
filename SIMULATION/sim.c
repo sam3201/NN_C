@@ -255,7 +255,6 @@ void init_agent(Agent *agent, int id) {
 
   // Initialize neural network
   agent->input_size = get_total_input_size();
-
   // Initialize brain
   agent->brain = NEAT_init(agent->input_size, ACTION_COUNT, 1);
 
