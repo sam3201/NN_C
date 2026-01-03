@@ -132,6 +132,28 @@ int policy_select_action(Policy *policy, long double *state) {
   return action;
 }
 
+void policy_update(Policy *policy, long double *state, int action,
+                   long double reward) {
+  size_t out_size = policy->action_size;
+
+  // Forward pass
+  long double *probs = NN_forward_softmax(policy->nn, state);
+
+  // Create one-hot vector for chosen action
+  long double *action_one_hot = create_one_hot(action, out_size);
+
+  // Gradient: dL/dz = (p - 1) for chosen action scaled by reward
+  for (size_t i = 0; i < out_size; i++) {
+    action_one_hot[i] = reward * (probs[i] - action_one_hot[i]);
+  }
+
+  // Backprop through last layer
+  NN_backprop_argmax(policy->nn, state, action_one_hot, probs, ce_derivative);
+
+  free(probs);
+  free(action_one_hot);
+}
+
 // Draws the title screen and allows selection of AI/Player tanks
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
