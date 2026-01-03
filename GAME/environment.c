@@ -273,7 +273,6 @@ void spawn_resource(Vector2 pos, ResourceType type) {
   Resource *r = &resources[resource_count++];
   r->position = pos;
   r->type = type;
-  r->alive = true;
   r->health = (type == RES_TREE) ? 5 : 8;
 }
 
