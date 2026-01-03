@@ -204,6 +204,36 @@ void eat_food(Agent *agent) {
   update_agent_color(agent);
 }
 
+// --- AGENT EATS OTHER AGENT ---
+void eat_agent(Agent *predator, Agent *prey) {
+  if (prey->level < 0)
+    return;                             // already dead
+  predator->total_xp += prey->total_xp; // gain all XP
+  predator->num_eaten += 1;
+
+  // Reset prey
+  prey->total_xp = 0;
+  prey->level = 0;
+  prey->size = INITIAL_AGENT_SIZE;
+  prey->rect.width = prey->rect.height = (float)prey->size;
+  prey->position.x = (float)(rand() % (SCREEN_WIDTH - 10));
+  prey->position.y = (float)(rand() % (SCREEN_HEIGHT - 10));
+  prey->time_alive = 0;
+  prey->num_offsprings = 0;
+  prey->num_eaten = 0;
+  prey->is_breeding = false;
+  update_agent_color(prey);
+
+  // Update predator color/level
+  if (predator->total_xp >= (predator->level + 1) * XP_PER_LEVEL) {
+    predator->total_xp -= (predator->level + 1) * XP_PER_LEVEL;
+    predator->level++;
+    predator->size = predator->level + 1;
+    predator->rect.width = predator->rect.height = (float)predator->size;
+  }
+  update_agent_color(predator);
+}
+
 void execute_agent_action(GameState *game, int agent_idx, Action action) {
   Agent *agent = &game->agents[agent_idx];
   move_agent(game, agent, action);
