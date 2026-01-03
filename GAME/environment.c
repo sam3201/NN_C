@@ -100,19 +100,42 @@ void generate_chunk(Chunk *c, int cx, int cy) {
   }
 
   // generate some resources
-  for (int i = 0; i < MAX_RESOURCES; i++) {
+  int target = 0;
+
+  switch (c->biome_type) {
+  case 0:
+    target = 6;
+    break; // grassland
+  case 1:
+    target = 12;
+    break; // forest
+  case 2:
+    target = 3;
+    break; // desert
+  }
+
+  c->resource_count = target;
+
+  for (int i = 0; i < target; i++) {
     int roll = rand() % 100;
-    if (c->biome_type == 1 && roll < 60)
+
+    if (c->biome_type == 1 && roll < 70)
       c->resources[i].type = RES_TREE;
-    else if (roll < 30)
+    else if (roll < 40)
       c->resources[i].type = RES_ROCK;
     else
       c->resources[i].type = RES_FOOD;
 
     c->resources[i].position =
-        (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
+        (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
+
     c->resources[i].health = 100;
     c->resources[i].visited = false;
+  }
+
+  // mark remaining as inactive
+  for (int i = target; i < MAX_RESOURCES; i++) {
+    c->resources[i].type = RES_NONE;
   }
 
   // generate mobs
