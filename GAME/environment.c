@@ -135,44 +135,6 @@ void draw_world(Vector2 camera) {
   Color desert = (Color){210, 185, 140, 255};
 
   // draw surrounding 3×3 chunks
-  for (int dx = -1; dx <= 1; dx++) {
-    for (int dy = -1; dy <= 1; dy++) {
-
-      Chunk *c = get_chunk(cx + dx, cy + dy);
-      int world_x = (cx + dx) * CHUNK_SIZE;
-      int world_y = (cy + dy) * CHUNK_SIZE;
-
-      // draw terrain tiles
-      for (int i = 0; i < CHUNK_SIZE; i++) {
-        for (int j = 0; j < CHUNK_SIZE; j++) {
-          Color col;
-
-          switch (c->terrain[i][j]) {
-          case 1:
-            col = grass;
-            break;
-          case 2:
-            col = forest;
-            break;
-          case 3:
-            col = desert;
-            break;
-          }
-
-          DrawRectangle((world_x + i) * TILE_SIZE - camera.x,
-                        (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
-                        TILE_SIZE, col);
-
-          DrawRectangleLines((world_x + i) * TILE_SIZE - camera.x,
-                             (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
-
-                             TILE_SIZE, Fade(BLACK, 0.05f));
-
-          draw_chunk_resources(c, cx + dx, cy + dy, camera);
-        }
-      }
-    }
-  }
 }
 
 // --- PLAYER ---
