@@ -2,10 +2,7 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
-MuConfig config =
-    {
-
-}
+MuConfig config = {}
 
 mu_model_create();
 
