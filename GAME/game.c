@@ -1,6 +1,7 @@
 #include "../utils/NN/MUZE/selfplay.h"
 #include "../utils/NN/MUZE/toy_env.h"
 #include "../utils/Raylib/src/raylib.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 #define NUM_CHANNELS 3
 #define CELL_LIFETIME 120
 #define TANK_SIZE 40
+#define MAX_STEPS 200
 
 // ---------------- Structs -----------------
 typedef struct {
@@ -20,15 +22,14 @@ typedef struct {
   int isAI; // 0 = player, 1 = AI
 } Tank;
 
-// ---------------- Global Variables --------
-Tank bottom;
-Tank top;
-
 // Placeholder policy struct
 typedef struct {
   int dummy;
 } Policy;
 
+// ---------------- Global Variables --------
+Tank bottom;
+Tank top;
 Policy tank_policy;
 
 // Screen representation for RL
@@ -59,16 +60,19 @@ void move_down(Tank *t, int screen_height) {
     t->position.y = screen_height - TANK_SIZE;
 }
 
-void shoot(Tank *t) { /* implement shooting */ }
+void shoot(Tank *t) {
+  // placeholder for shooting mechanics
+}
 
-long double compute_reward(Tank *player, Tank *enemy) { return 0; }
+long double compute_reward(Tank *player, Tank *enemy) {
+  // placeholder for RL reward computation
+  return 0;
+}
 
 // ---------------- Tank Update -------------
-void tank_update(Tank *t, int isTop, Vector2 target) {
-  (void)isTop;
-  (void)target;
+void tank_update(Tank *t, Vector2 target) {
   if (t->isAI) {
-    // simple AI movement placeholder
+    // Simple AI movement placeholder
     if (t->position.x < target.x)
       move_right(t, 800);
     if (t->position.x > target.x)
@@ -95,6 +99,7 @@ void title_screen(int *topAI, int *bottomAI) {
     DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
     DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
     EndDrawing();
+
     if (IsKeyPressed(KEY_ONE))
       *topAI = !(*topAI);
     if (IsKeyPressed(KEY_TWO))
@@ -104,27 +109,11 @@ void title_screen(int *topAI, int *bottomAI) {
   }
 }
 
-// ---------------- Toy Environment Wrapper for Self-Play ----------------
-typedef struct {
-  ToyEnvState env;
-} GameEnv;
-
-void game_env_reset(void *state_ptr, float *obs) {
-  GameEnv *ge = (GameEnv *)state_ptr;
-  ge->env.size = 5; // minimal positions
-  toy_env_reset(&ge->env, obs);
-}
-
-void game_env_step(void *state_ptr, int action, float *obs, float *reward,
-                   int *done) {
-  GameEnv *ge = (GameEnv *)state_ptr;
-  toy_env_step(&ge->env, action, obs, reward, done);
-}
-
 // ---------------- Main Game Loop -----------
 int main() {
   InitWindow(800, 600, "Tank Game");
 
+  // initialize tanks
   bottom.position = (Vector2){100, 500};
   bottom.speed = 5;
   bottom.health = 3;
@@ -137,65 +126,20 @@ int main() {
 
   SetTargetFPS(60);
 
+  // choose AI / Player before starting
   title_screen(&top.isAI, &bottom.isAI);
 
-  // ----------- MuZero Self-Play Setup -----------
-  GameEnv game_env;
-  float obs[5];
-  game_env_reset(&game_env, obs);
+  // ----------- Setup ToyEnv for RL -----------
+  ToyEnvState env;
+  env.size = ROWS; // simple example: rows = obs_dim
+  float obs[ROWS];
+  toy_env_reset(&env, obs);
 
-  // Note: model, MCTSParams, SelfPlayParams, ReplayBuffer need to exist
-  // For demo we can skip actual replay buffer pushes
-  printf("Starting demo self-play episode...\n");
+  env_step_fn step_fn = toy_env_step;
+  env_reset_fn reset_fn = toy_env_reset;
 
-  int done = 0;
-  int step = 0;
-  while (!done && step < 20) { // limit episode length
-    float reward = 0.0f;
-    int action = rand() % 2; // random action for demo
-    game_env_step(&game_env, action, obs, &reward, &done);
-    printf("Step %d: Action=%d, Pos=%d, Reward=%.1f, Done=%d\n", step, action,
-           game_env.env.pos, reward, done);
-    step++;
-  }
-  printf("Demo self-play finished!\n");
-
-  // ----------- Main Game Loop -----------
+  // ---------------- Game Loop ----------------
   while (!WindowShouldClose()) {
-    // Player input
-    if (!bottom.isAI) {
-      if (IsKeyDown(KEY_A))
-        move_left(&bottom);
-      if (IsKeyDown(KEY_D))
-        move_right(&bottom, 800);
-      if (IsKeyDown(KEY_W))
-        move_up(&bottom);
-      if (IsKeyDown(KEY_S))
-        move_down(&bottom, 600);
-    }
-    if (!top.isAI) {
-      if (IsKeyDown(KEY_LEFT))
-        move_left(&top);
-      if (IsKeyDown(KEY_RIGHT))
-        move_right(&top, 800);
-      if (IsKeyDown(KEY_UP))
-        move_up(&top);
-      if (IsKeyDown(KEY_DOWN))
-        move_down(&top, 600);
-    }
 
-    tank_update(&bottom, 0, top.position);
-    tank_update(&top, 1, bottom.position);
-
-    // Rendering
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
-                  BLUE);
-    DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
-    EndDrawing();
-  }
-
-  CloseWindow();
-  return 0;
-}
+    // ---- Player Input ----
+        if (!bottom.isAI
