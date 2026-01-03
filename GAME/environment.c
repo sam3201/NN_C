@@ -169,7 +169,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
     c->mobs[i].visited = false;
   }
 
-  // in generate_chunk after mobs
+  // generate agents
   for (int i = 0; i < MAX_AGENTS; i++) {
     c->agents[i].position =
         (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
