@@ -421,7 +421,7 @@ int main(void) {
     static int train_timer = 0;
     train_timer++;
 
-    if (train_timer > 30) {
+    if (train_timer > TRAIN_INTERVAL) {
       for (int i = 0; i < MAX_AGENTS; i++) {
         mu_model_train(c->agents[i].brain);
       }
