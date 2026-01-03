@@ -97,35 +97,35 @@
     Punishment severity vs Level requirement
 
 # DATA STRUCTURE DIAGRAM
-GameState
-├─ agents[POPULATION_SIZE] : Agent
-│   ├─ position : Vector2
-│   ├─ rect : Rectangle
-│   ├─ size : unsigned int
-│   ├─ level : int
-│   ├─ total_xp : int
-│   ├─ time_alive : float
-│   ├─ agent_id : int
-│   ├─ parent_id : int
-│   ├─ num_offsprings : int
-│   ├─ num_eaten : int
-│   ├─ is_breeding : bool
-│   ├─ breeding_timer : float
-│   ├─ color : Color
-│   ├─ brain : NEAT_t*  ──┐
-│   │                     └─ Neural network controlling agent actions
-│   ├─ memory : Memory    ── Stores experiences for reinforcement learning
-│   └─ input_size : size_t
-│
-├─ food[MAX_FOOD] : Food
-│   ├─ position : Vector2
-│   └─ rect : Rectangle
-│
-├─ last_actions[POPULATION_SIZE] : Action  ── Last action executed per agent
-├─ over : bool            ── Whether simulation is over
-├─ paused : bool          ── Whether simulation is paused
-├─ evolution_timer : float ── Tracks time for evolution events
-├─ current_generation : unsigned int
-├─ vision_inputs : long double* ── Input vector for NN per agent
-├─ next_agent_id : int
-└─ num_active_players : unsigned int
+    GameState
+    ├─ agents[POPULATION_SIZE] : Agent
+    │   ├─ position : Vector2
+    │   ├─ rect : Rectangle
+    │   ├─ size : unsigned int
+    │   ├─ level : int
+    │   ├─ total_xp : int
+    │   ├─ time_alive : float
+    │   ├─ agent_id : int
+    │   ├─ parent_id : int
+    │   ├─ num_offsprings : int
+    │   ├─ num_eaten : int
+    │   ├─ is_breeding : bool
+    │   ├─ breeding_timer : float
+    │   ├─ color : Color
+    │   ├─ brain : NEAT_t*  ──┐
+    │   │                     └─ Neural network controlling agent actions
+    │   ├─ memory : Memory    ── Stores experiences for reinforcement learning
+    │   └─ input_size : size_t
+    │
+    ├─ food[MAX_FOOD] : Food
+    │   ├─ position : Vector2
+    │   └─ rect : Rectangle
+    │
+    ├─ last_actions[POPULATION_SIZE] : Action  ── Last action executed per agent
+    ├─ over : bool            ── Whether simulation is over
+    ├─ paused : bool          ── Whether simulation is paused
+    ├─ evolution_timer : float ── Tracks time for evolution events
+    ├─ current_generation : unsigned int
+    ├─ vision_inputs : long double* ── Input vector for NN per agent
+    ├─ next_agent_id : int
+    └─ num_active_players : unsigned int
