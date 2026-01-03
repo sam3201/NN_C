@@ -52,7 +52,7 @@ void free_ai() {
 
 int ai_choose_action(Agent *ai) {
   if (!ai_model)
-    return 0; // fallback safety
+    return 0;
 
   float obs[4] = {ai->position.x, ai->position.y, player->position.x,
                   player->position.y};
