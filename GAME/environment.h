@@ -54,6 +54,10 @@ typedef struct {
   Color tribe_color;
   bool alive;
   float flash_timer;
+
+  MuModel *brain;    // MUZE brain
+  size_t input_size; // input size for the brain
+
 } Agent;
 
 typedef struct {
