@@ -112,6 +112,26 @@ long double *encode_screen(int **screen, size_t rows, size_t cols,
   return input_vector;
 }
 
+// Sample action from softmax output
+int policy_select_action(Policy *policy, long double *state) {
+  long double *probs = NN_forward_softmax(policy->nn, state);
+
+  // Sample action based on probability distribution
+  long double r = (long double)rand() / RAND_MAX;
+  long double cumulative = 0.0L;
+  int action = 0;
+  for (size_t i = 0; i < policy->action_size; i++) {
+    cumulative += probs[i];
+    if (r <= cumulative) {
+      action = i;
+      break;
+    }
+  }
+
+  free(probs);
+  return action;
+}
+
 // Draws the title screen and allows selection of AI/Player tanks
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
