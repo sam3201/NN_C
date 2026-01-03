@@ -6,6 +6,7 @@
 void init_memory(Memory *memory, int initial_capacity, int input_size) {
   memory->size = 0;
   memory->capacity = initial_capacity;
+  memory->input_size = input_size;
 
   // Allocate the initial array of entries
   memory->buffer =
