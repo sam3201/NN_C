@@ -249,8 +249,10 @@ void attack_mobs() {
 }
 
 void draw_player(Vector2 camera) {
-  DrawCircle(player.position.x - camera.x, player.position.y - camera.y, 5,
-             RED);
+  Vector2 screen = {player.position.x - camera.x, player.position.y - camera.y};
+
+  DrawCircle(screen.x, screen.y, 6, BLACK); // outline
+  DrawCircle(screen.x, screen.y, 4, RED);   // body
 }
 
 void draw_ui() {
