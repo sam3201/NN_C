@@ -14,11 +14,14 @@ typedef void (*env_reset_fn)(void *state, float *obs);
 typedef void (*env_step_fn)(void *state, int action, float *obs, float *reward,
                             int *done);
 
-// initialize/reset
-void toy_env_reset(void *state, float *obs);
+int toy_env_step(void *state_ptr, int action, float *obs, float *reward,
+                 int *done) {
 
-// step
-void toy_env_step(void *state, int action, float *obs, float *reward,
-                  int *done);
+  // initialize/reset
+  void toy_env_reset(void *state, float *obs);
+
+  // step
+  void toy_env_step(void *state, int action, float *obs, float *reward,
+                    int *done);
 
 #endif
