@@ -28,7 +28,7 @@ typedef struct {
   int active;
 } Bullet;
 
-// Global tanks and bullets
+// ---------------- Global -----------------
 Tank bottom, top;
 Bullet bullets[MAX_BULLETS];
 int bullet_count = 0;
@@ -56,14 +56,6 @@ void move_down(Tank *t, int screen_height) {
 }
 
 // ---------------- Shooting -----------------
-#include <math.h>
-
-void aim_turret(Tank *shooter, Tank *target) {
-  float dx = target->x - shooter->x;
-  float dy = target->y - shooter->y;
-  shooter->turretAngle = atan2f(dy, dx); // angle in radians
-}
-
 void tank_shoot(Tank *t) {
   if (bullet_count >= MAX_BULLETS)
     return;
@@ -77,41 +69,17 @@ void tank_shoot(Tank *t) {
   bullet_count++;
 }
 
-// ---------------- Tank Update ----------------
-void tank_update(Tank *t, Vector2 target, int screen_width, int screen_height) {
-  if (t->isAI) {
-    // Move toward target
-    if (fabs(t->position.x - target.x) > 5) {
-      if (t->position.x < target.x)
-        move_right(t, screen_width);
-      else
-        move_left(t);
-    }
-    if (fabs(t->position.y - target.y) > 5) {
-      if (t->position.y < target.y)
-        move_down(t, screen_height);
-      else
-        move_up(t);
-    }
-
-    // Aim at target
-    Vector2 center = {t->position.x + TANK_SIZE / 2,
-                      t->position.y + TANK_SIZE / 2};
-    t->turretAngle = atan2f(target.y - center.y, target.x - center.x);
-
-    // Shoot randomly
-    if (rand() % 50 == 0)
-      tank_shoot(t);
-  } else {
-    // Player turret follows mouse
-    Vector2 center = {t->position.x + TANK_SIZE / 2,
-                      t->position.y + TANK_SIZE / 2};
-    Vector2 mouse = GetMousePosition();
-    t->turretAngle = atan2f(mouse.y - center.y, mouse.x - center.x);
-  }
+// ---------------- Turret Aiming -----------------
+void aim_turret(Tank *shooter, Tank *target) {
+  Vector2 center = {shooter->position.x + TANK_SIZE / 2,
+                    shooter->position.y + TANK_SIZE / 2};
+  Vector2 target_center = {target->position.x + TANK_SIZE / 2,
+                           target->position.y + TANK_SIZE / 2};
+  shooter->turretAngle =
+      atan2f(target_center.y - center.y, target_center.x - center.x);
 }
 
-// ---------------- Bullet Update ----------------
+// ---------------- Bullet Update -----------------
 void update_bullets() {
   for (int i = 0; i < bullet_count; i++) {
     if (!bullets[i].active)
@@ -120,13 +88,11 @@ void update_bullets() {
     bullets[i].pos.x += bullets[i].vel.x;
     bullets[i].pos.y += bullets[i].vel.y;
 
-    // Check walls
     if (bullets[i].pos.x < 0 || bullets[i].pos.x > 800 ||
-        bullets[i].pos.y < 0 || bullets[i].pos.y > 600) {
+        bullets[i].pos.y < 0 || bullets[i].pos.y > 600)
       bullets[i].active = 0;
-    }
 
-    // Check collisions with tanks
+    // Collision
     if (CheckCollisionCircleRec(bullets[i].pos, BULLET_SIZE / 2,
                                 (Rectangle){bottom.position.x,
                                             bottom.position.y, TANK_SIZE,
@@ -145,7 +111,64 @@ void update_bullets() {
   }
 }
 
-// ---------------- Title / Menu ----------------
+// ---------------- MuZero AI -----------------
+MuModel *ai_model = NULL;
+
+void init_ai() {
+  MuConfig cfg = {.obs_dim = 4, .latent_dim = 16, .action_count = 5};
+  ai_model = mu_model_create(&cfg);
+}
+
+void free_ai() { mu_model_free(ai_model); }
+
+// Returns action: 0=up,1=down,2=left,3=right,4=shoot
+int ai_choose_action(Tank *ai, Tank *player) {
+  float obs[4] = {ai->position.x, ai->position.y, player->position.x,
+                  player->position.y};
+  MCTSParams params = {.num_simulations = 25,
+                       .c_puct = 1.0f,
+                       .max_depth = 10,
+                       .dirichlet_alpha = 0.3f,
+                       .dirichlet_eps = 0.25f,
+                       .temperature = 1.0f,
+                       .discount = 0.99f};
+  MCTSResult res = mcts_run(ai_model, obs, &params);
+  int action = res.chosen_action;
+  mcts_result_free(&res);
+  return action;
+}
+
+// ---------------- Tank Update -----------------
+void tank_update(Tank *t, Tank *target, int screen_width, int screen_height) {
+  if (t->isAI) {
+    int action = ai_choose_action(t, target);
+    switch (action) {
+    case 0:
+      move_up(t);
+      break;
+    case 1:
+      move_down(t, screen_height);
+      break;
+    case 2:
+      move_left(t);
+      break;
+    case 3:
+      move_right(t, screen_width);
+      break;
+    case 4:
+      tank_shoot(t);
+      break;
+    }
+    aim_turret(t, target);
+  } else {
+    Vector2 center = {t->position.x + TANK_SIZE / 2,
+                      t->position.y + TANK_SIZE / 2};
+    Vector2 mouse = GetMousePosition();
+    t->turretAngle = atan2f(mouse.y - center.y, mouse.x - center.x);
+  }
+}
+
+// ---------------- Title / Menu -----------------
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -160,6 +183,7 @@ void title_screen(int *topAI, int *bottomAI) {
     DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
     DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
     EndDrawing();
+
     if (IsKeyPressed(KEY_ONE))
       *topAI = !(*topAI);
     if (IsKeyPressed(KEY_TWO))
@@ -169,6 +193,7 @@ void title_screen(int *topAI, int *bottomAI) {
   }
 }
 
+// ---------------- Main -----------------
 int main() {
   InitWindow(800, 600, "Tank Game");
   SetTargetFPS(60);
@@ -178,12 +203,7 @@ int main() {
 
   title_screen(&top.isAI, &bottom.isAI);
 
-  // ---------------- ToyEnv ----------------
-  ToyEnvState env;
-  env.size = ROWS;
-  float obs[ROWS];
-  toy_env_reset(&env, obs);
-  env_step_fn step_fn = toy_env_step;
+  init_ai(); // MuZero init
 
   while (!WindowShouldClose()) {
     // Player Input
@@ -212,29 +232,21 @@ int main() {
         tank_shoot(&top);
     }
 
-    // Update AI and turret angles
-    tank_update(&bottom, top.position, 800, 600);
-    tank_update(&top, bottom.position, 800, 600);
+    // AI Update
+    tank_update(&bottom, &top, 800, 600);
+    tank_update(&top, &bottom, 800, 600);
 
     // Update bullets
     update_bullets();
-
-    // ToyEnv step placeholder
-    int action = 0;
-    float reward = 0.0f;
-    int done = 0;
-    step_fn(&env, action, obs, &reward, &done);
 
     // ---------------- Rendering ----------------
     BeginDrawing();
     ClearBackground(BLACK);
 
-    // Draw tanks (body + turret)
     DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
                   BLUE);
     DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
 
-    // Turrets (line from center pointing forward)
     Vector2 b_center = {bottom.position.x + TANK_SIZE / 2,
                         bottom.position.y + TANK_SIZE / 2};
     DrawLineV(b_center,
@@ -248,19 +260,17 @@ int main() {
                         t_center.y + sinf(top.turretAngle) * TANK_SIZE},
               RED);
 
-    // Draw bullets
-    for (int i = 0; i < bullet_count; i++) {
+    for (int i = 0; i < bullet_count; i++)
       if (bullets[i].active)
         DrawCircleV(bullets[i].pos, BULLET_SIZE / 2, YELLOW);
-    }
 
-    // Draw health
     DrawText(TextFormat("Bottom HP: %d", bottom.health), 10, 10, 20, LIGHTGRAY);
     DrawText(TextFormat("Top HP: %d", top.health), 650, 10, 20, LIGHTGRAY);
 
     EndDrawing();
   }
 
+  free_ai();
   CloseWindow();
   return 0;
 }
