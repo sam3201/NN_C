@@ -80,33 +80,17 @@ void tank_update(Tank *t, int isTop, Vector2 target) {
 }
 
 // ---------------- Title / Menu ----------------
-void show_title_screen() {
-  bool chooseDone = false;
-  while (!chooseDone && !WindowShouldClose()) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawText("TANK GAME", 300, 50, 40, WHITE);
-    DrawText("Controls: Arrow/WASD. Choose AI or Player", 150, 120, 20,
-             LIGHTGRAY);
-
-    DrawText("Bottom Tank: [P] Player, [A] AI", 200, 200, 20, WHITE);
-    DrawText("Top Tank:    [P] Player, [A] AI", 200, 250, 20, WHITE);
-
-    EndDrawing();
-
-    if (IsKeyPressed(KEY_P)) {
-      bottom.isAI = 0;
-      top.isAI = 0;
-      chooseDone = true;
-    }
-    if (IsKeyPressed(KEY_A)) {
-      bottom.isAI = 1;
-      top.isAI = 1;
-      chooseDone = true;
-    }
-  }
-}
-
+// Draws the title screen and allows selection of AI/Player tanks void
+// title_screen(int *topAI, int *bottomAI) { while (!WindowShouldClose()) {
+// BeginDrawing(); ClearBackground(BLACK); DrawText("Tank NN_C Testbed", 220,
+// 50, 40, LIGHTGRAY); DrawText("Top Tank:", 100, 200, 20, LIGHTGRAY);
+// DrawText(*topAI ? "AI" : "PLAYER", 250, 200, 20, *topAI ? RED : GREEN);
+// DrawText("Press 1 to toggle", 400, 200, 20, GRAY); DrawText("Bottom Tank:",
+// 100, 300, 20, LIGHTGRAY); DrawText(*bottomAI ? "AI" : "PLAYER", 250, 300, 20,
+// *bottomAI ? RED : GREEN); DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
+// DrawText("Press ENTER to start", 200, 450, 30, YELLOW); EndDrawing(); if
+// (IsKeyPressed(KEY_ONE)) *topAI = !(*topAI); if (IsKeyPressed(KEY_TWO))
+// *bottomAI = !(*bottomAI); if (IsKeyPressed(KEY_ENTER)) break; } }
 // ---------------- Main Game Loop -----------
 int main() {
   InitWindow(800, 600, "Tank Game");
