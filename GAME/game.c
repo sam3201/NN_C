@@ -1,6 +1,9 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define MAX_BASE_PARTICLES 32
 
