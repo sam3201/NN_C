@@ -229,40 +229,14 @@ MCTSParams mcts_params = {.num_simulations = 40,
                           .discount = 0.95f,
                           .temperature = 1.0f};
 
-void update_agent(Agent *a, Chunk *c) {
-  if (!a->alive)
-    return;
-
-  float obs[a->input_size];
-  encode_observation(a, c, obs);
-
-  int action = decide_action(a, obs);
-
-  switch (action) {
-  case ACTION_UP:
-    a->position.y -= 0.5f;
-    break;
-  case ACTION_DOWN:
-    a->position.y += 0.5f;
-    break;
-  case ACTION_LEFT:
-    a->position.x -= 0.5f;
-    break;
-  case ACTION_RIGHT:
-    a->position.x += 0.5f;
-    break;
-  default:
-    break;
-  }
-
-  float dist = Vector2Distance(a->position, agent_base.position);
-  if (dist < BASE_RADIUS) {
-    a->health = fminf(a->health + 0.5f, 100);
-    a->stamina = fminf(a->stamina + 0.5f, 100);
-    a->flash_timer += 0.1f;
-  } else {
-    a->flash_timer = 0;
-  }
+float dist = Vector2Distance(a->position, agent_base.position);
+if (dist < BASE_RADIUS) {
+  a->health = fminf(a->health + 0.5f, 100);
+  a->stamina = fminf(a->stamina + 0.5f, 100);
+  a->flash_timer += 0.1f;
+} else {
+  a->flash_timer = 0;
+}
 }
 
 int decide_action(Agent *a, float *obs) {
