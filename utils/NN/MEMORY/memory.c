@@ -3,6 +3,8 @@
 #include <string.h>
 
 void init_memory(Memory *memory, int initial_capacity, int input_size);
+Memory *memory = malloc(sizeof(Memory));
+MemoryEntry *buffer = malloc(sizeof(MemoryEntry) * initial_capacity);
 memory->size = 0;
 memory->index = 0;
 for (int i = 0; i < MEMORY_CAPACITY; i++) {
