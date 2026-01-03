@@ -100,9 +100,9 @@ void title_screen(int *topAI, int *bottomAI) {
     }
     if (IsKeyPressed(KEY_TWO)) {
       *bottomAI = !(*bottomAI);
-      if (IsKeyPressed(KEY_ENTER))
-        break;
     }
+    if (IsKeyPressed(KEY_ENTER))
+      break;
   }
 }
 
