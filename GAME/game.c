@@ -341,4 +341,46 @@ int main() {
 
     for (int dx = -1; dx <= 1; dx++)
       for (int dy = -1; dy <= 1; dy++) {
-                Chunk *ch = get_chunk(_*
+        Chunk *ch = get_chunk(cx + dx, cy + dy);
+        for (int i = 0; i < CHUNK_SIZE; i++)
+          for (int j = 0; j < CHUNK_SIZE; j++) {
+            int sx = (cx + dx) * CHUNK_SIZE * TILE_SIZE + i * TILE_SIZE;
+            int sy = (cy + dy) * CHUNK_SIZE * TILE_SIZE + j * TILE_SIZE;
+            DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE,
+                          biome_color(ch->terrain[i][j]));
+          }
+
+        // draw resources
+        for (int i = 0; i < ch->resource_count; i++) {
+          Resource *r = &ch->resources[i];
+          int sx = (cx + dx) * CHUNK_SIZE * TILE_SIZE +
+                   r->position.x * TILE_SIZE + TILE_SIZE / 2;
+          int sy = (cy + dy) * CHUNK_SIZE * TILE_SIZE +
+                   r->position.y * TILE_SIZE + TILE_SIZE / 2;
+          DrawCircle(sx, sy, 3, resource_color(r->type));
+        }
+
+        // draw agents
+        for (int i = 0; i < MAX_AGENTS; i++) {
+          Agent *a = &ch->agents[i];
+          if (!a->alive)
+            continue;
+          Vector2 s = {a->position.x * TILE_SIZE, a->position.y * TILE_SIZE};
+          DrawCircle(s.x, s.y, 4, a->tribe_color);
+        }
+      }
+
+    // draw base
+    DrawCircle(agent_base.position.x * TILE_SIZE,
+               agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
+               DARKGRAY);
+
+    // draw player
+    DrawCircle(player.position.x, player.position.y, 6, RED);
+
+    EndDrawing();
+  }
+
+  CloseWindow();
+  return 0;
+}
