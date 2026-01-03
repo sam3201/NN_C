@@ -102,6 +102,8 @@ void draw_ui(void);
 
 void init_base(void);
 
+void update_agent(Agent *a);
+
 extern Player player;
 extern Base agent_base;
 extern Resource resources[MAX_RESOURCES];
