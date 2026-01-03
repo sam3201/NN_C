@@ -142,4 +142,50 @@ int main() {
   while (!WindowShouldClose()) {
 
     // ---- Player Input ----
-        if (!bottom.isAI
+    if (!bottom.isAI) {
+      if (IsKeyDown(KEY_A))
+        move_left(&bottom);
+      if (IsKeyDown(KEY_D))
+        move_right(&bottom, 800);
+      if (IsKeyDown(KEY_W))
+        move_up(&bottom);
+      if (IsKeyDown(KEY_S))
+        move_down(&bottom, 600);
+    }
+
+    if (!top.isAI) {
+      if (IsKeyDown(KEY_LEFT))
+        move_left(&top);
+      if (IsKeyDown(KEY_RIGHT))
+        move_right(&top, 800);
+      if (IsKeyDown(KEY_UP))
+        move_up(&top);
+      if (IsKeyDown(KEY_DOWN))
+        move_down(&top, 600);
+    }
+
+    // ---- Tank updates ----
+    tank_update(&bottom, top.position);
+    tank_update(&top, bottom.position);
+
+    // ---- RL placeholder ----
+    int action = 0;
+    float reward = 0.0f;
+    int done = 0;
+    // Example: step toy_env (no real AI yet)
+    step_fn(&env, action, obs, &reward, &done);
+
+    // ---- Rendering ----
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
+                  BLUE);
+    DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
+
+    EndDrawing();
+  }
+
+  CloseWindow();
+  return 0;
+}
