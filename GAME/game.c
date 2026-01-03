@@ -77,6 +77,11 @@ int ai_choose_action(Agent *ai) {
   return res.chosen_action;
 }
 
+float calculate_fitness(Agent *agent) {
+  return (agent->total_xp + agent->num_offsprings * XP_FROM_OFFSPRING +
+          agent->num_eaten * XP_FROM_AGENT + agent->exploration_score);
+}
+
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
     BeginDrawing();
