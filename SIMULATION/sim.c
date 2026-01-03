@@ -505,6 +505,30 @@ void update_agent(GameState *game, int agent_idx) {
   mcts_result_free(&res);
 }
 
+void update_agents(GameState *state, float dt) {
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    Agent *agent = &state->agents[i];
+    agent->time_alive += dt;
+
+    // Gather inputs
+    long double inputs[get_total_input_size()];
+    gather_agent_inputs(state, agent, inputs);
+
+    // Decide action
+    int action = decide_action(agent->brain, inputs);
+    state->last_actions[i] = action;
+
+    // Store experience
+    store_experience(agent, inputs, action, 0); // reward 0 for now
+
+    // Step agent
+    step_agent(state, agent, action);
+
+    // Update color based on XP
+    update_agent_color(agent);
+  }
+}
+
 // --- GROUNDSKEEPER FUNCTIONS ---
 void init_groundkeeper(Groundkeeper *gk) {
   gk->punishment_timer = 0;
