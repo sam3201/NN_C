@@ -114,10 +114,6 @@ static inline float randf(float min, float max) {
   return min + (float)rand() / RAND_MAX * (max - min);
 }
 
-float Vector2Distance(Vector2 a, Vector2 b) {
-  return sqrtf((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
-}
-
 // ---------- WORLD ----------
 Chunk *get_chunk(int cx, int cy) {
   cx = wrap(cx);
