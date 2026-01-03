@@ -533,7 +533,7 @@ void draw_chunk_agents(Chunk *c, int cx, int cy, Vector2 camera) {
     DrawRectangle(s.x - 4, s.y - 6, 8, 2, a->tribe_color);
 
     // healing + flash
-    if (a->heal_flash_timer > 0) {
+    if (a->flash_timer > 0) {
       // oscillate color between green and white
       float t = a->heal_flash_timer;
       Color col = ColorLerp(GREEN, WHITE, (sinf(t * 6.28319f) + 1) / 2);
