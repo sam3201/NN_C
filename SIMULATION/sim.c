@@ -1,3 +1,4 @@
+#include "../utils/NN/MEMORY/MEMORY.h"
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
