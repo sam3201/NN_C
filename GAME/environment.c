@@ -120,6 +120,10 @@ void draw_world(Vector2 camera) {
           DrawRectangle((world_x + i) * TILE_SIZE - camera.x,
                         (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
                         TILE_SIZE, col);
+
+          DrawRectangleLines((world_x + i) * TILE_SIZE - camera.x,
+                             (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE,
+                             TILE_SIZE, Fade(BLACK, 0.05f));
         }
       }
     }
