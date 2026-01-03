@@ -29,7 +29,6 @@ gcc -w sim.c \
     -framework CoreVideo \
     -o sim
 
-# Run if successful
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./sim
