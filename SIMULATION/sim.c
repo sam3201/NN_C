@@ -348,6 +348,7 @@ void evolve_population(GameState *game) {
   game->current_generation++;
 }
 
+// --- INIT GAME ---
 void init_game(GameState *game) {
   game->current_generation = 0;
   game->num_active_players = POPULATION_SIZE;
@@ -355,12 +356,10 @@ void init_game(GameState *game) {
   game->paused = false;
   game->vision_inputs = malloc(get_total_input_size() * sizeof(long double));
 
-  // Initialize agents
   for (int i = 0; i < POPULATION_SIZE; i++) {
     init_agent(&game->agents[i], game->next_agent_id++);
   }
 
-  // Initialize food
   for (int i = 0; i < MAX_FOOD; i++) {
     spawn_food(&game->food[i]);
   }
