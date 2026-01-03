@@ -38,7 +38,7 @@ typedef struct {
   int dyn_W_count;
   int pred_W_count;
 
-} MuModel;
+} MuModel_t;
 
 /* ------------------------
    Constructor / Destructor
