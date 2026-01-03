@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "MEMORY.h"
 #include <stdlib.h>
 #include <string.h>
 
