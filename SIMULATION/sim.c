@@ -397,7 +397,7 @@ void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
 
   // Food presence (binary)
   for (int i = 0; i < MAX_FOOD; i++)
-    inputs[idx++] = (state->food[i].size > 0) ? 1.0 : 0.0;
+    inputs[idx++] = (state->food[i].rect.width > 0) ? 1.0L : 0.0L;
 
   // Other agents
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
