@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 typedef struct {
-  NN_t *nn;           // Neural network policy
-  size_t action_size; // Number of discrete actions (e.g., move/shoot)
+  NN_t *nn;
+  size_t action_size;
 } Policy;
 
 typedef struct {
