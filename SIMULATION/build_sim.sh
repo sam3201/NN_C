@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Check Raylib
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
@@ -15,7 +14,6 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     cd ../../../SIMULATION
 fi
 
-# Compile simulation
 gcc -w sim.c \
     ../utils/NN/NN.c \
     ../utils/NN/NEAT.c \
