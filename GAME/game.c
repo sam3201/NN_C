@@ -86,8 +86,6 @@ void tank_update(Tank *t, int isTop, Vector2 target) {
   t->rotation = atan2f(target.y - t->position.y, target.x - t->position.x);
 }
 
-// Flatten screen and create one-hot vector
-// e.g., screen[ROWS][COLS] -> inputs[ROWS*COLS*NUM_CHANNELS]
 long double *encode_screen(int **screen, size_t rows, size_t cols,
                            size_t num_channels) {
   size_t input_size = rows * cols * num_channels;
