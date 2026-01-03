@@ -21,10 +21,10 @@ typedef struct {
 } MCTSParams;
 
 typedef struct {
+  int chosen_action;
   int action_count;
   float
       *pi; /* normalized visit-count policy (len action_count) - caller frees */
-  int chosen_action;
   float root_value; /* estimated value of root after search */
 } MCTSResult;
 
