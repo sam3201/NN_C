@@ -406,14 +406,6 @@ int main(void) {
 
   init_base();
   init_player();
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &c->agents[i];
-    if (!a->alive) {
-      respawn_agent(a);
-    } else {
-      update_agent(a, c);
-    }
-  }
 
   Camera2D cam = {0};
   cam.zoom = 1.0f;
@@ -426,8 +418,14 @@ int main(void) {
     int cy = player.position.y / (CHUNK_SIZE * TILE_SIZE);
     Chunk *c = get_chunk(cx, cy);
 
-    for (int i = 0; i < MAX_AGENTS; i++)
-      update_agent(&c->agents[i], c);
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      Agent *a = &c->agents[i];
+      if (!a->alive) {
+        respawn_agent(a);
+      } else {
+        update_agent(a, c);
+      }
+    }
 
     cam.target = player.position;
 
