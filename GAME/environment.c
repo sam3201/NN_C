@@ -259,10 +259,9 @@ void draw_ui() {
   DrawRectangleRounded((Rectangle){10, 10, 220, 80}, 0.2f, 8,
                        Fade((Color){20, 20, 20, 255}, 0.8f));
 
-  DrawText(TextFormat("HP: %.0f", player.health), 20, 20, 16, RED);
-  DrawText(TextFormat("STA: %.0f", player.stamina), 20, 40, 16, BLUE);
-
+  DrawText(TextFormat("HP: %.0f", player.health), 20, 18, 16, RED);
+  DrawText(TextFormat("STA: %.0f", player.stamina), 20, 36, 16, SKYBLUE);
   DrawText(TextFormat("Wood:%d Stone:%d Food:%d", player.wood, player.stone,
                       player.food),
-           20, 60, 16, GREEN);
+           20, 56, 14, GREEN);
 }
