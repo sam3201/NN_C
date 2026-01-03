@@ -298,10 +298,23 @@ void update_player() {
 void harvest_resources() {
   int tool_power = 1;
 
-  if (player.tool == TOOL_AXE)
-    tool_power = 3;
-  if (player.tool == TOOL_PICKAXE)
-    tool_power = 4;
+  if (r->type == RES_TREE) {
+    if (player.tool == TOOL_AXE)
+      tool_power = 4;
+    else
+      tool_power = 1;
+  }
+
+  if (r->type == RES_ROCK) {
+    if (player.tool == TOOL_PICKAXE)
+      tool_power = 5;
+    else
+      tool_power = 0; // no effect
+  }
+
+  if (r->type == RES_FOOD) {
+    tool_power = 2;
+  }
 
   int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
   int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
