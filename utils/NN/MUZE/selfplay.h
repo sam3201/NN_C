@@ -14,7 +14,6 @@ extern "C" {
    - step: given action, perform env step, write next obs to obs_out (length
    obs_dim), set *reward_out and *done_out (0/1). Return 0 on success. env_state
    is an opaque pointer to environment instance. */
-typedef void (*env_reset_fn)(void *env_state, float *obs_out);
 typedef int (*env_step_fn)(void *env_state, int action, float *obs_out,
                            float *reward_out, int *done_out);
 
