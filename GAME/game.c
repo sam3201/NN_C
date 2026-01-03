@@ -8,7 +8,11 @@ int main() {
   init_world();
   init_player();
 
-  Vector2 camera = {0};
+  Vector2 target = {player.position.x - SCREEN_WIDTH / 2,
+                    player.position.y - SCREEN_HEIGHT / 2};
+
+  camera.x += (target.x - camera.x) * 0.1f;
+  camera.y += (target.y - camera.y) * 0.1f;
 
   while (!WindowShouldClose()) {
     update_player();
