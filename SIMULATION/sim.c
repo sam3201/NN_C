@@ -512,6 +512,16 @@ void init_game(GameState *game) {
     spawn_food(&game->food[i]);
 }
 
+void free_game(GameState *game) {
+  free(game->vision_inputs);
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    mu_model_free(game->agents[i].brain);
+    free(game->agents[i].memory.inputs);
+    free(game->agents[i].memory.actions);
+    free(game->agents[i].memory.rewards);
+  }
+}
+
 // --- MAIN ---
 int main(void) {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Evolution Simulator");
