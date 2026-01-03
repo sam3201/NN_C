@@ -229,7 +229,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
       break;
     }
     c->agents[i].alive = true;
-    c->agents[i].heal_flash_timer = 0; // initialize flash timer
+    c->agents[i].flash_timer = 0; // initialize flash timer
   }
 
   // --- PLAYER ---
