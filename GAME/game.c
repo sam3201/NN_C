@@ -33,6 +33,11 @@ int main() {
 
   while (!WindowShouldClose()) {
     update_player();
+    update_world();
+    update_base();
+    for (int a = 0; a < MAX_AGENTS; a++) {
+      update_agent(&agents[a]);
+    }
 
     camera.x = player.position.x - SCREEN_WIDTH / 2;
     camera.y = player.position.y - SCREEN_HEIGHT / 2;
