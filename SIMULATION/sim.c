@@ -108,8 +108,7 @@ void store_experience(Agent *agent, long double *inputs, int action,
 }
 
 // --- INIT ---
-// --- INIT AGENT ---
-void init_agent(Agent *agent, int id) {
+void init_agent(Agent *agent, int id, bool groundkeeper) {
   agent->level = 0;
   agent->total_xp = 0;
   agent->size = INITIAL_AGENT_SIZE;
@@ -120,7 +119,9 @@ void init_agent(Agent *agent, int id) {
   agent->num_eaten = 0;
   agent->is_breeding = false;
   agent->breeding_timer = 0;
-  agent->color = WHITE;
+  agent->punishment_timer = 0;
+  agent->is_groundkeeper = groundkeeper;
+  agent->color = groundkeeper ? RED : WHITE;
 
   agent->position.x = (float)(rand() % (SCREEN_WIDTH - 10));
   agent->position.y = (float)(rand() % (SCREEN_HEIGHT - 10));
@@ -129,14 +130,17 @@ void init_agent(Agent *agent, int id) {
 
   agent->input_size = get_total_input_size();
 
-  // 1. Initialize MuZero Brain
-  MuConfig mu_cfg = {.obs_dim = (int)agent->input_size,
-                     .latent_dim = 32, // Starting IQ
-                     .action_count = ACTION_COUNT};
-  agent->brain = mu_model_create(&mu_cfg);
-
-  // 2. Initialize Infinite Memory
-  init_memory(&agent->memory, 100, (int)agent->input_size);
+  // Only initialize brain & memory for agents, not for groundkeepers
+  if (!groundkeeper) {
+    MuConfig mu_cfg = {.obs_dim = (int)agent->input_size,
+                       .latent_dim = 32,
+                       .action_count = ACTION_COUNT};
+    agent->brain = mu_model_create(&mu_cfg);
+    init_memory(&agent->memory, 100, (int)agent->input_size);
+  } else {
+    agent->brain = NULL;
+    init_memory(&agent->memory, 0, 0);
+  }
 }
 
 // --- UPDATE AGENT (Thinking & Moving) ---
