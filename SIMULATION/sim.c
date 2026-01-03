@@ -186,6 +186,14 @@ void move_agent(GameState *game, Agent *agent, Action action) {
   }
 }
 
+void execute_action(GameState *game, int agent_idx, Action action) {
+  Agent *agent = &game->agents[agent_idx];
+  if (action != ACTION_NONE) {
+    move_agent(game, agent, action);
+    check_collisions(game, agent_idx);
+  }
+}
+
 // --- GAME UPDATE ---
 void update_agent_state(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
