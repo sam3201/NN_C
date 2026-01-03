@@ -2,6 +2,8 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
+mu_model_create(model, 2, 1, 16);
+
 int main() {
   InitWindow(800, 600, "MUZE — Infinite 2D World");
   SetTargetFPS(60);
