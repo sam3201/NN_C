@@ -21,7 +21,6 @@ typedef struct {
   int isAI; // 0 = player, 1 = AI
 } Tank;
 
-// Placeholder policy struct
 typedef struct {
   int dummy;
 } Policy;
@@ -34,44 +33,30 @@ Policy tank_policy;
 // Screen representation for RL
 long double screen[ROWS * COLS * NUM_CHANNELS];
 
-// ---------------- Function Stubs ----------
+// ---------------- Movement -----------------
 void move_left(Tank *t) {
   t->position.x -= t->speed;
   if (t->position.x < 0)
     t->position.x = 0;
 }
-
 void move_right(Tank *t, int screen_width) {
   t->position.x += t->speed;
   if (t->position.x + TANK_SIZE > screen_width)
     t->position.x = screen_width - TANK_SIZE;
 }
-
 void move_up(Tank *t) {
   t->position.y -= t->speed;
   if (t->position.y < 0)
     t->position.y = 0;
 }
-
 void move_down(Tank *t, int screen_height) {
   t->position.y += t->speed;
   if (t->position.y + TANK_SIZE > screen_height)
     t->position.y = screen_height - TANK_SIZE;
 }
 
-void shoot(Tank *t) {
-  // placeholder for shooting mechanics
-}
-
-long double compute_reward(Tank *player, Tank *enemy) {
-  // placeholder for RL reward computation
-  return 0;
-}
-
-// ---------------- Tank Update -------------
 void tank_update(Tank *t, Vector2 target) {
   if (t->isAI) {
-    // Simple AI movement placeholder
     if (t->position.x < target.x)
       move_right(t, 800);
     if (t->position.x > target.x)
@@ -83,7 +68,6 @@ void tank_update(Tank *t, Vector2 target) {
   }
 }
 
-// ---------------- Title / Menu ----------------
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -98,7 +82,6 @@ void title_screen(int *topAI, int *bottomAI) {
     DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
     DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
     EndDrawing();
-
     if (IsKeyPressed(KEY_ONE))
       *topAI = !(*topAI);
     if (IsKeyPressed(KEY_TWO))
@@ -108,39 +91,22 @@ void title_screen(int *topAI, int *bottomAI) {
   }
 }
 
-// ---------------- Main Game Loop -----------
 int main() {
   InitWindow(800, 600, "Tank Game");
-
-  // initialize tanks
-  bottom.position = (Vector2){100, 500};
-  bottom.speed = 5;
-  bottom.health = 3;
-  bottom.isAI = 0;
-
-  top.position = (Vector2){700, 100};
-  top.speed = 5;
-  top.health = 3;
-  top.isAI = 0;
-
+  bottom = (Tank){{100, 500}, 5, 3, 0};
+  top = (Tank){{700, 100}, 5, 3, 0};
   SetTargetFPS(60);
 
-  // choose AI / Player before starting
   title_screen(&top.isAI, &bottom.isAI);
 
-  // ----------- Setup ToyEnv for RL -----------
   ToyEnvState env;
-  env.size = ROWS; // simple example: rows = obs_dim
+  env.size = ROWS;
   float obs[ROWS];
   toy_env_reset(&env, obs);
-
   env_step_fn step_fn = toy_env_step;
   env_reset_fn reset_fn = toy_env_reset;
 
-  // ---------------- Game Loop ----------------
   while (!WindowShouldClose()) {
-
-    // ---- Player Input ----
     if (!bottom.isAI) {
       if (IsKeyDown(KEY_A))
         move_left(&bottom);
@@ -151,7 +117,6 @@ int main() {
       if (IsKeyDown(KEY_S))
         move_down(&bottom, 600);
     }
-
     if (!top.isAI) {
       if (IsKeyDown(KEY_LEFT))
         move_left(&top);
@@ -163,25 +128,19 @@ int main() {
         move_down(&top, 600);
     }
 
-    // ---- Tank updates ----
     tank_update(&bottom, top.position);
     tank_update(&top, bottom.position);
 
-    // ---- RL placeholder ----
     int action = 0;
     float reward = 0.0f;
     int done = 0;
-    // Example: step toy_env (no real AI yet)
     step_fn(&env, action, obs, &reward, &done);
 
-    // ---- Rendering ----
     BeginDrawing();
     ClearBackground(BLACK);
-
     DrawRectangle(bottom.position.x, bottom.position.y, TANK_SIZE, TANK_SIZE,
                   BLUE);
     DrawRectangle(top.position.x, top.position.y, TANK_SIZE, TANK_SIZE, RED);
-
     EndDrawing();
   }
 
