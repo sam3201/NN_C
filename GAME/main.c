@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "../utils/Raylib/src/raylib.h"
+#include <stdlib.h>
 
 typedef struct {
   int x;
