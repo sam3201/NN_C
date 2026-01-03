@@ -157,6 +157,18 @@ void encode_vision(GameState *game, int player_idx,
   // TODO: add nearby food, other agents, offspring, etc.
 }
 
+Action get_action_from_output(long double *outputs) {
+  int max_idx = 0;
+  long double max_val = outputs[0];
+  for (int i = 1; i < ACTION_COUNT; i++) {
+    if (outputs[i] > max_val) {
+      max_val = outputs[i];
+      max_idx = i;
+    }
+  }
+  return (Action)max_idx;
+}
+
 // --- UPDATE AGENT ---
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
