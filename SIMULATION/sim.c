@@ -641,8 +641,7 @@ void init_game(GameState *state) {
                                     .latent_dim = 16,
                                     .action_count = ACTION_COUNT});
     state->agents[i].input_size = get_total_input_size();
-    init_memory(&state->agents[i].memory, 1024, state->agents[i].input_size,
-                ACTION_COUNT);
+    init_memory(&state->agents[i].memory, 1024, state->agents[i].input_size);
   }
 
   // Initialize groundkeepers
