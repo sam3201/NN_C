@@ -8,9 +8,6 @@
    rewards[0..T-1], gamma -> returns z_t = sum_{k=0..T-1-t} gamma^k *
    rewards[t+k] output z_out must be length T
 */
-
-ToyEnvState env;
-
 static void compute_discounted_returns(const float *rewards, int T, float gamma,
                                        float *z_out) {
   for (int t = 0; t < T; t++) {
@@ -28,6 +25,7 @@ static void compute_discounted_returns(const float *rewards, int T, float gamma,
 void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
                   env_step_fn env_step, MCTSParams *mcts_params,
                   SelfPlayParams *sp_params, ReplayBuffer *rb) {
+
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
 
@@ -36,14 +34,19 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
   int max_steps = sp_params->max_steps > 0 ? sp_params->max_steps : 200;
 
   /* temporary buffers for one episode */
-  float *obs_buf = (float *)malloc(sizeof(float) * max_steps * obs_dim);
-  float *pi_buf = (float *)malloc(sizeof(float) * max_steps * A);
-  float *reward_buf = (float *)malloc(sizeof(float) * max_steps);
-  int *act_buf = (int *)malloc(sizeof(int) * max_steps);
+  float *obs_buf = malloc(sizeof(float) * max_steps * obs_dim);
+  float *pi_buf = malloc(sizeof(float) * max_steps * A);
+  float *reward_buf = malloc(sizeof(float) * max_steps);
+  int *act_buf = malloc(sizeof(int) * max_steps);
+
+  /* create a local ToyEnvState if needed */
+  ToyEnvState env_local;
+  env_local.size = obs_dim;
 
   for (int ep = 0; ep < sp_params->total_episodes; ep++) {
+
     /* reset env */
-    float *obs0 = (float *)malloc(sizeof(float) * obs_dim);
+    float *obs0 = malloc(sizeof(float) * obs_dim);
     env_reset(env_state, obs0);
 
     int step = 0;
@@ -52,15 +55,15 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
     memcpy(obs_cur, obs0, sizeof(float) * obs_dim);
 
     while (!done && step < max_steps) {
+
       /* run MCTS for current obs */
-      /* copy params so we can override temperature for self-play */
       MCTSParams mp = *mcts_params;
       mp.temperature = sp_params->temperature > 0.0f ? sp_params->temperature
                                                      : mcts_params->temperature;
 
       MCTSResult mr = mcts_run(model, obs_cur, &mp);
 
-      /* sample action according to pi (with rng) */
+      /* sample action according to pi */
       float r = (float)rand() / (float)RAND_MAX;
       float cum = 0.0f;
       int chosen = 0;
@@ -71,6 +74,7 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
           break;
         }
       }
+
       /* store obs and pi */
       memcpy(obs_buf + step * obs_dim, obs_cur, sizeof(float) * obs_dim);
       memcpy(pi_buf + step * A, mr.pi, sizeof(float) * A);
@@ -81,9 +85,9 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
       int done_flag = 0;
       int ret = env_step(env_state, chosen, next_obs, &reward, &done_flag);
       if (ret != 0) {
-        /* env error: stop episode */
-        done_flag = 1;
+        done_flag = 1; // env error
       }
+
       reward_buf[step] = reward;
       act_buf[step] = chosen;
 
@@ -91,25 +95,24 @@ void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
       memcpy(obs_cur, next_obs, sizeof(float) * obs_dim);
       step++;
 
-      /* free MCTS result */
       mcts_result_free(&mr);
 
       if (done_flag) {
         done = 1;
         break;
       }
-    } /* end episode loop */
+    } // end episode loop
 
-    /* compute discounted returns z_t and push samples to replay buffer */
-    float *z = (float *)malloc(sizeof(float) * step);
+    /* compute discounted returns and push to replay buffer */
+    float *z = malloc(sizeof(float) * step);
     compute_discounted_returns(reward_buf, step, sp_params->gamma, z);
     for (int t = 0; t < step; t++) {
       rb_push(rb, obs_buf + t * obs_dim, pi_buf + t * A, z[t]);
     }
+
     free(z);
     free(obs0);
-
-  } /* end episodes */
+  } // end episodes
 
   free(obs_buf);
   free(pi_buf);
