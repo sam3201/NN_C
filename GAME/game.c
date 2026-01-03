@@ -15,6 +15,8 @@ typedef struct {
   size_t action_size;
 } Policy;
 
+Policy tank_policy;
+
 typedef struct {
   Vector2 position;
   float radius;
