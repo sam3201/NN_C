@@ -319,6 +319,17 @@ void update_player() {
     player.stamina = player.max_stamina;
 }
 
+void update_agent(Agent *a) {
+  if (Vector2Distance(a->position, agent_base.position) < BASE_RADIUS) {
+    a->health += 0.5f;
+    a->stamina += 0.5f;
+    if (a->health > 100)
+      a->health = 100;
+    if (a->stamina > 100)
+      a->stamina = 100;
+  }
+}
+
 void harvest_resources() {
   int tool_power = 1;
 
