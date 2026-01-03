@@ -24,6 +24,8 @@ float TILE_SIZE;
 #define BASE_RADIUS 8
 #define MAX_BASE_PARTICLES 32
 
+#define TRAIN_INTERVAL 1
+
 /* =======================
    ENUMS
 ======================= */
