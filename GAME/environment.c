@@ -326,7 +326,7 @@ void harvest_resources() {
       if (player.tool == TOOL_PICKAXE)
         tool_power = 5;
       else
-        tool_power = 0; // no effect
+        tool_power = 0;
     }
 
     if (r->type == RES_FOOD) {
