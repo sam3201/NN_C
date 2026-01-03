@@ -15,7 +15,7 @@ typedef enum {
   ACTION_ATTACK,
   ACTION_HARVEST,
   ACTION_COUNT
-}
+} ActionType;
 
 typedef struct {
   Vector2 pos;
