@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# ---------------- Raylib check ----------------
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
@@ -15,10 +14,8 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
   cd ../../GAME || exit
 fi
 
-# ---------------- Compile Game ----------------
 echo "Compiling game..."
 
-# Collect all MuZero source files
 MUZE_SRC="../utils/NN/MUZE/ewc.c \
 ../utils/NN/MUZE/growth.c \
 ../utils/NN/MUZE/mcts.c \
