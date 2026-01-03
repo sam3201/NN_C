@@ -13,92 +13,96 @@
 
 #define MEMORY_CAPACITY infinity
 
-typedef enum {
-  ACTION_NONE = 0,
-  ACTION_MOVE_LEFT,
-  ACTION_MOVE_RIGHT,
-  ACTION_MOVE_UP,
-  ACTION_MOVE_DOWN,
-  ACTION_COUNT
-} Action;
-
 typedef struct {
-  Vector2 position;
-  unsigned int radius;
-  unsigned int size;
-  float time_alive;
-  int agent_id;
-  float breeding_timer;
-  Color color;
-  NEAT_t *brain;
-  Memory memory;
-  size_t input_size;
-} Agent;
+  int biome_type;
+  Vector3 biome_color;
 
-// ---------------- MuZero AI -----------------
-MuModel *ai_model = NULL;
+  typedef enum {
+    ACTION_NONE = 0,
+    ACTION_MOVE_LEFT,
+    ACTION_MOVE_RIGHT,
+    ACTION_MOVE_UP,
+    ACTION_MOVE_DOWN,
+    ACTION_COUNT
+  } Action;
 
-void init_ai() {
-  MuConfig cfg = {.obs_dim = 4, .latent_dim = 16, .action_count = 5};
-  ai_model = mu_model_create(&cfg);
-}
+  typedef struct {
+    Vector2 position;
+    unsigned int radius;
+    unsigned int size;
+    float time_alive;
+    int agent_id;
+    float breeding_timer;
+    Color color;
+    NEAT_t *brain;
+    Memory memory;
+    size_t input_size;
+  } Agent;
 
-void free_ai() {
-  if (ai_model) {
-    mu_model_free(ai_model);
-    ai_model = NULL;
+  // ---------------- MuZero AI -----------------
+  MuModel *ai_model = NULL;
+
+  void init_ai() {
+    MuConfig cfg = {.obs_dim = 4, .latent_dim = 16, .action_count = 5};
+    ai_model = mu_model_create(&cfg);
   }
-}
 
-int ai_choose_action(Agent *ai) {
-  if (!ai_model)
-    return 0;
-
-  float obs[4] = {ai->position.x, ai->position.y, player->position.x,
-                  player->position.y};
-
-  MCTSParams params = {.num_simulations = 25,
-                       .c_puct = 1.0f,
-                       .max_depth = 10,
-                       .dirichlet_alpha = 0.3f,
-                       .dirichlet_eps = 0.25f,
-                       .temperature = 1.0f,
-                       .discount = 0.99f};
-
-  MCTSResult res = mcts_run(ai_model, obs, &params);
-  return res.chosen_action;
-}
-
-void title_screen(int *topAI, int *bottomAI) {
-  while (!WindowShouldClose()) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawText("Tank NN_C Testbed", 220, 50, 40, LIGHTGRAY);
-    DrawText("Top Tank:", 100, 200, 20, LIGHTGRAY);
-    DrawText(*topAI ? "AI" : "PLAYER", 250, 200, 20, *topAI ? RED : GREEN);
-    DrawText("Press 1 to toggle", 400, 200, 20, GRAY);
-    DrawText("Bottom Tank:", 100, 300, 20, LIGHTGRAY);
-    DrawText(*bottomAI ? "AI" : "PLAYER", 250, 300, 20,
-             *bottomAI ? RED : GREEN);
-    DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
-    DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
-    EndDrawing();
-
-    if (IsKeyPressed(KEY_ONE))
-      *topAI = !(*topAI);
-    if (IsKeyPressed(KEY_TWO))
-      *bottomAI = !(*bottomAI);
-    if (IsKeyPressed(KEY_ENTER))
-      break;
+  void free_ai() {
+    if (ai_model) {
+      mu_model_free(ai_model);
+      ai_model = NULL;
+    }
   }
-}
 
-// ---------------- Main -----------------
-int main() {
-  InitWindow(800, 600, "Tank Game");
-  SetTargetFPS(60);
+  int ai_choose_action(Agent *ai) {
+    if (!ai_model)
+      return 0;
 
-  title_screen();
+    float obs[4] = {ai->position.x, ai->position.y, player->position.x,
+                    player->position.y};
+
+    MCTSParams params = {.num_simulations = 25,
+                         .c_puct = 1.0f,
+                         .max_depth = 10,
+                         .dirichlet_alpha = 0.3f,
+                         .dirichlet_eps = 0.25f,
+                         .temperature = 1.0f,
+                         .discount = 0.99f};
+
+    MCTSResult res = mcts_run(ai_model, obs, &params);
+    return res.chosen_action;
+  }
+
+  void title_screen(int *topAI, int *bottomAI) {
+    while (!WindowShouldClose()) {
+      BeginDrawing();
+      ClearBackground(BLACK);
+      DrawText("Tank NN_C Testbed", 220, 50, 40, LIGHTGRAY);
+      DrawText("Top Tank:", 100, 200, 20, LIGHTGRAY);
+      DrawText(*topAI ? "AI" : "PLAYER", 250, 200, 20, *topAI ? RED : GREEN);
+      DrawText("Press 1 to toggle", 400, 200, 20, GRAY);
+      DrawText("Bottom Tank:", 100, 300, 20, LIGHTGRAY);
+      DrawText(*bottomAI ? "AI" : "PLAYER", 250, 300, 20,
+               *bottomAI ? RED : GREEN);
+      DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
+      DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
+      EndDrawing();
+
+      if (IsKeyPressed(KEY_ONE))
+        *topAI = !(*topAI);
+      if (IsKeyPressed(KEY_TWO))
+        *bottomAI = !(*bottomAI);
+      if (IsKeyPressed(KEY_ENTER))
+        break;
+    }
+  }
+
+  // ---------------- Main -----------------
+  int main() {
+    InitWindow(800, 600, "Tank Game");
+    SetTargetFPS(60);
+
+    title_screen();
 
 initialize_world()
 initialize_agents()
@@ -119,4 +123,4 @@ while simulation_running:
   free_ai();
 CloseWindow();
 return 0;
-}
+  }
