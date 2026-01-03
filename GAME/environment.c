@@ -357,8 +357,10 @@ void harvest_resources() {
 
       r->health -= tool_power;
 
+      Vector2 curr_pos = r->position;
       r->position.x += (rand() % 3 - 1) * 0.1f;
       r->position.y += (rand() % 3 - 1) * 0.1f;
+      r->position = curr_pos;
 
       player.stamina -= 2;
 
