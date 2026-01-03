@@ -61,7 +61,7 @@ void move_down(Tank *t, int screen_height) {
 void aim_turret(Tank *shooter, Tank *target) {
   float dx = target->x - shooter->x;
   float dy = target->y - shooter->y;
-  shooter->turret_angle = atan2f(dy, dx); // angle in radians
+  shooter->angle = atan2f(dy, dx); // angle in radians
 }
 
 void tank_shoot(Tank *t) {
