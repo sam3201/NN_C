@@ -671,81 +671,59 @@ void handle_breeding(GameState *game, int agent_idx) {
   }
 }
 
+// --- MAIN ---
 int main(void) {
-  // Initialize window
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Evolution Simulator");
   SetTargetFPS(FRAME_RATE);
-
-  // Initialize random seed
   srand(time(NULL));
 
-  // Initialize game state
   GameState game = {0};
   init_game(&game);
 
   system("clear");
 
-  // Main game loop
   while (!WindowShouldClose()) {
-    // Update
-    if (IsKeyPressed(KEY_SPACE)) {
+    if (IsKeyPressed(KEY_SPACE))
       game.paused = !game.paused;
-    }
 
-    if (!game.paused) {
+    if (!game.paused)
       update_game(&game);
-    }
 
-    // Draw
     BeginDrawing();
     ClearBackground(BLACK);
 
-    // Draw food
-    for (int i = 0; i < MAX_FOOD; i++) {
+    for (int i = 0; i < MAX_FOOD; i++)
       DrawRectangleRec(game.food[i].rect, GREEN);
-    }
 
-    // Draw agents
     for (int i = 0; i < POPULATION_SIZE; i++) {
       if (game.agents[i].level >= 0) {
-        // Draw agent body
         DrawRectangleRec(game.agents[i].rect, game.agents[i].color);
-
-        // Draw breeding indicator
-        if (game.agents[i].is_breeding) {
+        if (game.agents[i].is_breeding)
           DrawRectangleLinesEx(game.agents[i].rect, 2, PINK);
-        }
 
-        // Draw label above the agent
         const char *label = (i < MAX_GROUNDSKEEPERS) ? "GK" : "AG";
         Vector2 textPos = {game.agents[i].rect.x,
                            game.agents[i].rect.y - LABEL_SIZE - 2};
         Color labelColor = (i < MAX_GROUNDSKEEPERS) ? RED : WHITE;
         DrawText(label, textPos.x, textPos.y, LABEL_SIZE, labelColor);
-
-        // Draw level number
         DrawText(TextFormat("%d", game.agents[i].level),
                  game.agents[i].rect.x + game.agents[i].rect.width + 2,
                  game.agents[i].rect.y, LABEL_SIZE, labelColor);
       }
     }
 
-    // Draw UI
     DrawText(TextFormat("Generation: %d", game.current_generation), 10, 10, 20,
              WHITE);
     DrawText(TextFormat("Active Agents: %d", game.num_active_players), 10, 35,
              20, WHITE);
 
-    if (game.paused) {
+    if (game.paused)
       DrawText("PAUSED", SCREEN_WIDTH / 2 - 50, 10, 20, WHITE);
-    }
 
     EndDrawing();
   }
 
-  // Cleanup
   free(game.vision_inputs);
   CloseWindow();
-
   return 0;
 }
