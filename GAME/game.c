@@ -20,7 +20,7 @@ int main() {
   SetTargetFPS(60);
 
   init_world();
-  init_agent_base();
+  init_base();
   init_player();
 
   Vector2 camera = {0, 0};
