@@ -25,6 +25,12 @@ typedef struct {
 
 BaseParticle base_particles[MAX_BASE_PARTICLES];
 
+MuConfig cfg = {.obs_dim = (int)get_total_input_size(),
+                .latent_dim = 32, // you can tune this
+                .action_count = ACTION_COUNT};
+agent->brain = mu_model_create(&cfg);
+agent->input_size = get_total_input_size();
+
 void init_base_particles(void) {
   for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
     float angle = ((float)i / MAX_BASE_PARTICLES) * 6.28319f;
