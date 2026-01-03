@@ -4,14 +4,16 @@
 #include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define POPULATION_SIZE 20
+#define POPULATION_SIZE 10
 #define MAX_FOOD 100
-#define MAX_GROUNDSKEEPERS (POPULATION_SIZE / 2)
+#define MAX_GROUNDSKEEPERS 3
 #define GROUNDSKEEPER_SPEED 3.0f
+#define MOVEMENT_SPEED 2.0f
 #define XP_LEECH_RATE 1.0f
 #define PUNISHMENT_COOLDOWN 3.0f
 #define SCREEN_WIDTH 800
@@ -23,11 +25,9 @@
 #define XP_FROM_OFFSPRING 50
 #define BREEDING_DURATION 2.0f
 #define INITIAL_AGENT_SIZE 1
-#define MOVEMENT_SPEED 2.0f
 #define FOOD_SIZE 5
 #define FOOD_SPAWN_CHANCE 0.1f
 #define LABEL_SIZE 10
-#define MEMORY_CAPACITY SIZE_MAX
 
 typedef enum {
   ACTION_NONE = 0,
@@ -84,7 +84,10 @@ typedef struct {
 } GameState;
 
 // --- MEMORY ---
-size_t get_total_input_size() { return (SCREEN_WIDTH * SCREEN_HEIGHT) + 7; }
+size_t get_total_input_size() {
+  return (SCREEN_WIDTH * SCREEN_HEIGHT) + 7 +
+         4; // 4 extra: time_alive, punishment_timer, xp_stolen, relative_size
+}
 
 void store_experience(Agent *agent, long double *inputs, int action,
                       float reward) {
@@ -92,6 +95,15 @@ void store_experience(Agent *agent, long double *inputs, int action,
 }
 
 // --- AGENT FUNCTIONS ---
+void update_agent_color(Agent *agent) {
+  int red = (int)((agent->total_xp % XP_PER_LEVEL) / (float)XP_PER_LEVEL * 255);
+  int green =
+      (int)((agent->total_xp / (float)((agent->level + 1) * XP_PER_LEVEL)) *
+            255);
+  int blue = fmin(agent->size * 50, 255); // scale for visibility
+  agent->color = (Color){red, green, blue, 255};
+}
+
 void init_agent(Agent *agent, int id) {
   agent->level = 0;
   agent->total_xp = 0;
@@ -103,26 +115,29 @@ void init_agent(Agent *agent, int id) {
   agent->num_eaten = 0;
   agent->is_breeding = false;
   agent->breeding_timer = 0;
-  agent->color = WHITE;
-
   agent->position.x = (float)(rand() % (SCREEN_WIDTH - 10));
   agent->position.y = (float)(rand() % (SCREEN_HEIGHT - 10));
   agent->rect = (Rectangle){agent->position.x, agent->position.y,
                             (float)agent->size, (float)agent->size};
-
   agent->input_size = get_total_input_size();
+  update_agent_color(agent);
 
-  MuConfig mu_cfg = {.obs_dim = (int)agent->input_size,
-                     .latent_dim = 32,
-                     .action_count = ACTION_COUNT};
-  agent->brain = mu_model_create(&mu_cfg);
+  MuConfig cfg = {.obs_dim = (int)agent->input_size,
+                  .latent_dim = 32,
+                  .action_count = ACTION_COUNT};
+  agent->brain = mu_model_create(&cfg);
   init_memory(&agent->memory, 100, (int)agent->input_size);
 }
 
 void encode_vision(GameState *game, int agent_idx, long double *vision_output) {
   for (int i = 0; i < get_total_input_size(); i++)
     vision_output[i] = 0.0L;
-  vision_output[0] = 1.0L; // mark self
+  vision_output[0] = 1.0L; // self
+
+  Agent *agent = &game->agents[agent_idx];
+  vision_output[1] = agent->time_alive; // additional input
+  // further vision encoding: food, offspring, other agents, GKs etc.
+  // Simplified for example, can be expanded with grid scanning
 }
 
 Action get_action_from_output(long double *outputs) {
@@ -144,7 +159,7 @@ bool can_move_to_agent(GameState *game, Agent *agent, Vector2 new_pos) {
       new_pos.y < 0 || new_pos.y + agent->size > SCREEN_HEIGHT)
     return false;
 
-  for (int i = 0; i < (int)(POPULATION_SIZE - MAX_GROUNDSKEEPERS); i++) {
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     if (&game->agents[i] != agent && game->agents[i].level >= 0) {
       if (CheckCollisionRecs(new_rect, game->agents[i].rect))
         return false;
@@ -185,15 +200,13 @@ void eat_food(Agent *agent) {
     agent->level++;
     agent->size = agent->level + 1;
     agent->rect.width = agent->rect.height = (float)agent->size;
-    mu_model_grow_latent(agent->brain, agent->brain->cfg.latent_dim + 8);
   }
+  update_agent_color(agent);
 }
 
 void execute_agent_action(GameState *game, int agent_idx, Action action) {
   Agent *agent = &game->agents[agent_idx];
-  if (action != ACTION_NONE) {
-    move_agent(game, agent, action);
-  }
+  move_agent(game, agent, action);
 }
 
 void update_agent(GameState *game, int agent_idx) {
@@ -205,19 +218,15 @@ void update_agent(GameState *game, int agent_idx) {
   for (int i = 0; i < agent->input_size; i++)
     obs[i] = (float)game->vision_inputs[i];
 
-  MCTSParams mcts_cfg = {.num_simulations = 40,
-                         .c_puct = 1.2f,
-                         .discount = 0.95f,
-                         .temperature = 1.0f};
-  MCTSResult res = mcts_run(agent->brain, obs, &mcts_cfg);
+  MCTSParams cfg = {.num_simulations = 40,
+                    .c_puct = 1.2f,
+                    .discount = 0.95f,
+                    .temperature = 1.0f};
+  MCTSResult res = mcts_run(agent->brain, obs, &cfg);
   Action action = (Action)res.chosen_action;
 
   execute_agent_action(game, agent_idx, action);
-  game->last_actions[agent_idx] = action;
-
-  float reward = (float)agent->total_xp;
-  store_memory(&agent->memory, game->vision_inputs, (int)action, reward,
-               res.root_value);
+  store_experience(agent, game->vision_inputs, (int)action, agent->total_xp);
   mcts_result_free(&res);
 }
 
@@ -245,8 +254,7 @@ void update_groundkeeper(GameState *game, int idx) {
     gk->punishment_timer -= GetFrameTime();
 
   Vector2 new_pos = gk->position;
-  int dir = rand() % 4;
-  switch (dir) {
+  switch (rand() % 4) {
   case 0:
     new_pos.x -= GROUNDSKEEPER_SPEED;
     break;
@@ -267,15 +275,16 @@ void update_groundkeeper(GameState *game, int idx) {
     gk->rect.y = new_pos.y;
   }
 
-  // Steal XP from agents
+  // Leech XP from agents
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     Agent *a = &game->agents[i];
-    if (a->level >= 0 && CheckCollisionRecs(gk->rect, a->rect)) {
+    if (CheckCollisionRecs(a->rect, gk->rect)) {
       float leech = XP_LEECH_RATE * GetFrameTime();
-      if (a->total_xp > 0) {
-        a->total_xp -= (int)leech;
+      a->total_xp -= (int)leech;
+      if (gk->punishment_timer <= 0) {
+        a->level = fmax(a->level - 1, 0);
+        gk->punishment_timer = PUNISHMENT_COOLDOWN;
       }
-      gk->punishment_timer = PUNISHMENT_COOLDOWN;
     }
   }
 }
@@ -290,22 +299,18 @@ void spawn_food(Food *food) {
 
 // --- GAME ---
 void update_game(GameState *game) {
-  for (int i = 0; i < MAX_FOOD; i++) {
+  for (int i = 0; i < MAX_FOOD; i++)
     if (game->food[i].rect.width == 0 &&
         ((float)rand() / RAND_MAX) < FOOD_SPAWN_CHANCE)
       spawn_food(&game->food[i]);
-  }
 
-  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-    if (game->agents[i].level >= 0)
-      update_agent(game, i);
-  }
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
+    update_agent(game, i);
 
   for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
     update_groundkeeper(game, i);
 }
 
-// --- INIT ---
 void init_game(GameState *game) {
   game->current_generation = 0;
   game->num_active_agents = POPULATION_SIZE - MAX_GROUNDSKEEPERS;
@@ -346,13 +351,10 @@ int main(void) {
 
     for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
       Agent *a = &game.agents[i];
-      if (a->level >= 0) {
-        DrawRectangleRec(a->rect, a->color);
-        if (a->is_breeding)
-          DrawRectangleLinesEx(a->rect, 2, PINK);
-        DrawText("AG", a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE,
-                 WHITE);
-      }
+      DrawRectangleRec(a->rect, a->color);
+      if (a->is_breeding)
+        DrawRectangleLinesEx(a->rect, 2, PINK);
+      DrawText("AG", a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE, WHITE);
     }
 
     for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
