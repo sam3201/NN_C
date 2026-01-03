@@ -9,7 +9,6 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
   memory->input_size = input_size;
   memory->index = 0;
 
-  // Allocate the initial array of entries
   memory->buffer =
       (MemoryEntry *)malloc(initial_capacity * sizeof(MemoryEntry));
 
