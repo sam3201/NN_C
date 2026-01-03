@@ -20,8 +20,8 @@ void mu_runtime_free(MuRuntime *rt) {
   free(rt);
 }
 
-void mu_model_step(MuModel *model, MuRuntime *rt, const float *obs, int action,
-                   float reward) {
+void mu_runtime_step(MuModel *model, MuRuntime *rt, const float *obs,
+                     int action, float reward) {
   if (!rt->has_last) {
     memcpy(rt->last_obs, obs, sizeof(float) * model->cfg.obs_dim);
     rt->last_action = action;
