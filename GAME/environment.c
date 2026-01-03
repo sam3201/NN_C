@@ -47,8 +47,15 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
       break;
 
     case RES_ROCK:
+      float hp_ratio = r->health / 100.0f;
+      if (hp_ratio < 0)
+        hp_ratio = 0;
+
+      Color rock = ColorLerp(GRAY, LIGHTGRAY, 1.0f - hp_ratio);
+
       DrawCircle(s.x, s.y, 7, BLACK);
-      DrawCircle(s.x, s.y, 5, GRAY);
+      DrawCircle(s.x, s.y, 5, rock);
+
       break;
 
     case RES_FOOD:
