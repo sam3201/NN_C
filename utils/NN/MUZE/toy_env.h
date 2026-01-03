@@ -7,7 +7,7 @@ extern "C" {
 
 typedef struct {
   int pos;
-  int size; // number of positions
+  int size;
 } ToyEnvState;
 
 typedef void (*env_reset_fn)(void *state, float *obs);
