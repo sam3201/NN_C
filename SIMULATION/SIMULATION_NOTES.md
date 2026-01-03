@@ -160,3 +160,7 @@
     ├─ weights : long double[]
     └─ activation function
      
+    Memory
+    ├─ experiences : struct { inputs, action, reward, extra }[]
+    └─ capacity : size_t
+
