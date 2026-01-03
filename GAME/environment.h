@@ -75,7 +75,7 @@ void draw_player(Vector2 camera);
 void draw_ui(void);
 
 extern Player player;
-Resource resources[MAX_RESOURCES];
+extern Resource resources[MAX_RESOURCES];
 int resource_count = 0;
 
 #endif
