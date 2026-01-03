@@ -1,4 +1,3 @@
-// game.c (visual improvements)
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <math.h>
