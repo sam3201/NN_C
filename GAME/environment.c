@@ -21,6 +21,33 @@ static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 void init_base(void) {
   agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
   agent_base.radius = BASE_RADIUS;
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    float angle = ((float)i / MAX_AGENTS) * 6.28319f; // circle around base
+    float dist =
+        (float)(rand() % (BASE_RADIUS - 2) + 2); // avoid overlapping center
+    c->agents[i].position.x = agent_base.position.x + cosf(angle) * dist;
+    c->agents[i].position.y = agent_base.position.y + sinf(angle) * dist;
+    c->agents[i].health = 100;
+    c->agents[i].stamina = 100;
+    c->agents[i].agent_id = i;
+    c->agents[i].alive = true;
+
+    // random tribe color
+    switch (rand() % 4) {
+    case 0:
+      c->agents[i].tribe_color = RED;
+      break;
+    case 1:
+      c->agents[i].tribe_color = BLUE;
+      break;
+    case 2:
+      c->agents[i].tribe_color = GREEN;
+      break;
+    case 3:
+      c->agents[i].tribe_color = YELLOW;
+      break;
+    }
+  }
 }
 
 // ------------------------ draw chunk resources --------------------------
