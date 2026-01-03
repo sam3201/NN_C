@@ -1,5 +1,6 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
+#include "../utils/Raylib/src/raymath.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
