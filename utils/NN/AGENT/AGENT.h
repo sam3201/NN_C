@@ -3,7 +3,7 @@
 #define AGENT_H
 
 #include "../MEMORY/MEMORY.h"
-
+#include "../NEAT/NEAT.h"
 typedef struct {
   Vector2 position;
   Vector2 velocity;
