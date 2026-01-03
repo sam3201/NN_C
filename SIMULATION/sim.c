@@ -33,6 +33,8 @@
 // Add this constant for label size
 #define LABEL_SIZE 10
 
+#define MEMORY_CAPACITY infinity
+
 typedef enum {
   ACTION_NONE = 0,
   ACTION_MOVE_LEFT = 1,
