@@ -4,18 +4,18 @@
 #include <stdlib.h>
 
 typedef struct {
-  int x;
-  int y;
-  int width;
-  int height;
+  Vector2 position;
+  float radius;
+
+  float rotation; // turret rotation
+  float armLength;
+  float armWidth;
+
   int health;
   int maxHealth;
-  int speed;
-  int damage;
-  int direction;
-  int xVelocity;
-  int yVelocity;
 
+  Color baseColor;
+  Color armColor;
 } Tank;
 
 Tank *tank_new(int x, int y) {
