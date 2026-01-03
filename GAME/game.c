@@ -51,7 +51,9 @@ int main() {
   srand((unsigned int)time(NULL));
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE — Infinite 2D World");
-  SetConfigFlags(FLAG_FULLSCREEN_MODE);
+  SetConfigFlags(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
+  InitWindow(GetScreenWidth(), GetScreenHeight(), "Borderless fullscreen");
+
   SetTargetFPS(60);
 
   init_world();
