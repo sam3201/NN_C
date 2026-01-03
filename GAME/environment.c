@@ -259,13 +259,32 @@ void update_player() {
   if (IsKeyPressed(KEY_THREE))
     player.tool = TOOL_PICKAXE;
 
-  if ((move.x != 0 || move.y != 0) && player.stamina > 0) {
-    player.position.x += move.x * player.move_speed;
-    player.position.y += move.y * player.move_speed;
-    player.stamina -= 0.5f;
+  bool moving = (move.x != 0 || move.y != 0);
+
+  // normalize diagonal movement
+  if (move.x != 0 && move.y != 0) {
+    move.x *= 0.7071f;
+    move.y *= 0.7071f;
+  }
+
+  // stamina ratio (0.1 → 1.0)
+  float stamina_ratio = player.stamina / player.max_stamina;
+  if (stamina_ratio < 0.1f)
+    stamina_ratio = 0.1f;
+
+  // scale speed smoothly
+  float speed = player.move_speed * stamina_ratio;
+
+  if (moving) {
+    player.position.x += move.x * speed;
+    player.position.y += move.y * speed;
+
+    player.stamina -= 0.4f;
+    if (player.stamina < 0)
+      player.stamina = 0;
   } else {
-    // stamina regen
-    player.stamina += 0.25f;
+    // regen ONLY when not moving
+    player.stamina += 0.6f;
   }
 
   if (player.stamina > player.max_stamina)
