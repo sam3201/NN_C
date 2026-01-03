@@ -36,7 +36,6 @@ void store_memory(Memory *memory, long double *vision_inputs, int action,
 
   int idx = memory->size;
 
-  // Allocate space for the vision data for this specific entry
   memory->buffer[idx].vision_inputs =
       (long double *)malloc(memory->input_size * sizeof(long double));
 
