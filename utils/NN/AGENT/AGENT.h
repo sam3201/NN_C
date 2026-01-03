@@ -2,7 +2,7 @@
 #ifndef AGENT_H
 #define AGENT_H
 
-#include "../NN_C/memory/memory.h"
+#include "../MEMORY/MEMORY.h"
 
 typedef struct {
   Vector2 position;
