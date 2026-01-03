@@ -137,6 +137,10 @@ void draw_world(Vector2 camera) {
   // draw surrounding 3×3 chunks
   for (int i = 0; i < CHUNK_SIZE; i++) {
     for (int j = 0; j < CHUNK_SIZE; j++) {
+      int world_x = cx * CHUNK_SIZE + i;
+      int world_y = cy * CHUNK_SIZE + j;
+
+      Chunk *c = get_chunk(world_x, world_y);
 
       DrawRectangle((world_x + i) * TILE_SIZE - camera.x,
                     (world_y + j) * TILE_SIZE - camera.y, TILE_SIZE, TILE_SIZE,
