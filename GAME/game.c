@@ -4,6 +4,11 @@
 #include <stdlib.h>
 
 typedef struct {
+  NN_t *nn;           // Neural network policy
+  size_t action_size; // Number of discrete actions (e.g., move/shoot)
+} Policy;
+
+typedef struct {
   Vector2 position;
   float radius;
   float rotation;
