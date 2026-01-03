@@ -183,6 +183,58 @@ void update_agent_state(GameState *game, int agent_idx) {
   }
 }
 
+void update_groundkeeper(GameState *game, int idx) {
+  Agent *gk = &game->agents[idx];
+
+  // Reduce punishment timer
+  if (gk->punishment_timer > 0)
+    gk->punishment_timer -= GetFrameTime();
+
+  // Simple patrol: move randomly
+  Vector2 new_pos = gk->position;
+  int dir = rand() % 4;
+  switch (dir) {
+  case 0:
+    new_pos.x -= GROUNDSKEEPER_SPEED;
+    break;
+  case 1:
+    new_pos.x += GROUNDSKEEPER_SPEED;
+    break;
+  case 2:
+    new_pos.y -= GROUNDSKEEPER_SPEED;
+    break;
+  case 3:
+    new_pos.y += GROUNDSKEEPER_SPEED;
+    break;
+  }
+
+  if (can_move_to(game, gk, new_pos)) {
+    gk->position = new_pos;
+    gk->rect.x = new_pos.x;
+    gk->rect.y = new_pos.y;
+  }
+
+  // Check collisions with agents
+  for (int i = 0; i < POPULATION_SIZE; i++) {
+    Agent *a = &game->agents[i];
+    if (!a->is_groundkeeper && a->level >= 0 &&
+        CheckCollisionRecs(gk->rect, a->rect)) {
+      // Steal XP
+      float leech = XP_LEECH_RATE * GetFrameTime();
+      if (a->total_xp > 0) {
+        a->total_xp -= (int)leech;
+        gk->total_xp += (int)leech;
+      }
+
+      // Punish if timer allows
+      if (gk->punishment_timer <= 0) {
+        a->level = a->level > 0 ? a->level - 1 : 0;
+        gk->punishment_timer = PUNISHMENT_COOLDOWN;
+      }
+    }
+  }
+}
+
 // --- LEVEL UP (Growth) ---
 void level_up(Agent *agent) {
   while (agent->total_xp >= (agent->level + 1) * XP_PER_LEVEL) {
