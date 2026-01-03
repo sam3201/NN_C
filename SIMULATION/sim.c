@@ -62,6 +62,10 @@ typedef struct {
   float breeding_timer;
   Color color;
   NEAT_t *brain;
+
+  Memory memory;     // Stores past observations, actions, rewards
+  size_t input_size; // Vision grid + additional inputs
+
 } Agent;
 
 typedef struct {
