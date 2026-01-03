@@ -2,7 +2,7 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "environment.h"
 
-MuConfig config =
+/* MuConfig config =
     {
         .obs_dim = CHUNK_SIZE * CHUNK_SIZE * 3,
         .latent_dim = 64,
@@ -12,6 +12,8 @@ MuConfig config =
 
 muze_t *muze = NULL;
 muze = mu_model_create(config);
+
+*/
 
 int main() {
   InitWindow(800, 600, "MUZE — Infinite 2D World");
