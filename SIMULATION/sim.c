@@ -142,6 +142,7 @@ void init_agent(Agent *agent, int id, bool groundkeeper) {
     init_memory(&agent->memory, 0, 0);
   }
 }
+
 // --- UPDATE AGENT (Thinking & Moving) ---
 void update_agent_state(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
