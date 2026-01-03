@@ -70,36 +70,6 @@ int ai_choose_action(Agent *ai) {
 }
 
 // ---------------- Tank Update -----------------
-void tank_update(Tank *t, Tank *target, int screen_width, int screen_height) {
-  if (t->isAI) {
-    int action = ai_choose_action(t, target);
-
-    switch (action) {
-    case 0:
-      move_up(t);
-      break;
-    case 1:
-      move_down(t, screen_height);
-      break;
-    case 2:
-      move_left(t);
-      break;
-    case 3:
-      move_right(t, screen_width);
-      break;
-    case 4:
-      tank_shoot(t);
-      break;
-    }
-    aim_turret(t, target);
-  } else {
-    Vector2 center = {t->position.x + TANK_SIZE / 2,
-                      t->position.y + TANK_SIZE / 2};
-    Vector2 mouse = GetMousePosition();
-    t->turretAngle = atan2f(mouse.y - center.y, mouse.x - center.x);
-  }
-}
-
 // ---------------- Title / Menu -----------------
 void title_screen(int *topAI, int *bottomAI) {
   while (!WindowShouldClose()) {
