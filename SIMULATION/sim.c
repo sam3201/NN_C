@@ -22,7 +22,7 @@
 #define FOOD_SIZE 5
 #define FOOD_SPAWN_CHANCE 0.1f
 #define LABEL_SIZE 10
-#define MEMORY_CAPACITY infinite
+#define MEMORY_CAPACITY infinity
 
 typedef enum {
   ACTION_NONE = 0,
