@@ -5,7 +5,7 @@
 MuConfig config =
     {
         .obs_dim = CHUNK_SIZE * CHUNK_SIZE * 3,
-        .latent_dim = 32,
+        .latent_dim = 64,
         .action_dim = 4,
 
 }
