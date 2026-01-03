@@ -67,16 +67,55 @@ void tank_update(Tank *t, int isTop) {
   }
 }
 
+// Draws the title screen and allows selection of AI/Player tanks
+void title_screen(int *topAI, int *bottomAI) {
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    DrawText("Tank NN_C Testbed", 220, 50, 40, LIGHTGRAY);
+
+    DrawText("Top Tank:", 100, 200, 20, LIGHTGRAY);
+    DrawText(*topAI ? "AI" : "PLAYER", 250, 200, 20, *topAI ? RED : GREEN);
+    DrawText("Press 1 to toggle", 400, 200, 20, GRAY);
+
+    DrawText("Bottom Tank:", 100, 300, 20, LIGHTGRAY);
+    DrawText(*bottomAI ? "AI" : "PLAYER", 250, 300, 20,
+             *bottomAI ? RED : GREEN);
+    DrawText("Press 2 to toggle", 400, 300, 20, GRAY);
+
+    DrawText("Press ENTER to start", 200, 450, 30, YELLOW);
+
+    EndDrawing();
+
+    if (IsKeyPressed(KEY_1))
+      *topAI = !(*topAI);
+    if (IsKeyPressed(KEY_2))
+      *bottomAI = !(*bottomAI);
+    if (IsKeyPressed(KEY_ENTER))
+      break;
+  }
+}
+
 int main(void) {
   InitWindow(800, 600, "Tank NN_C Testbed");
   SetTargetFPS(60);
+
+  int topAI = 0;    // 0 = Player, 1 = AI
+  int bottomAI = 0; // 0 = Player, 1 = AI
+
+  title_screen(&topAI, &bottomAI); // select AI/Player
 
   Tank bottom = tank_new((Vector2){400, 500}, DARKGREEN, GREEN);
   Tank top = tank_new((Vector2){400, 100}, MAROON, RED);
 
   while (!WindowShouldClose()) {
-    tank_update(&bottom, 0);
-    tank_update(&top, 1);
+    if (!bottomAI)
+      tank_update(&bottom, 0); // player control
+    if (!topAI)
+      tank_update(&top, 1); // player control
+
+    // TODO: replace AI logic here for tanks with AI
 
     BeginDrawing();
     ClearBackground(BLACK);
