@@ -51,6 +51,7 @@ typedef struct {
   Memory memory;
   size_t input_size;
 } Agent;
+
 // ---------------- Global -----------------
 Tank bottom, top;
 Bullet bullets[MAX_BULLETS];
