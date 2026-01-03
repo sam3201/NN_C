@@ -226,6 +226,12 @@ void update_player() {
   if (IsKeyPressed(KEY_SPACE)) {
     attack_mobs();
   }
+  if (IsKeyPressed(KEY_ONE))
+    player.tool = TOOL_HAND;
+  if (IsKeyPressed(KEY_TWO))
+    player.tool = TOOL_AXE;
+  if (IsKeyPressed(KEY_THREE))
+    player.tool = TOOL_PICKAXE;
 
   if ((move.x != 0 || move.y != 0) && player.stamina > 0) {
     player.position.x += move.x * player.move_speed;
