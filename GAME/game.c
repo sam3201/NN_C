@@ -125,6 +125,7 @@ void free_ai() { mu_model_free(ai_model); }
 int ai_choose_action(Tank *ai, Tank *player) {
   float obs[4] = {ai->position.x, ai->position.y, player->position.x,
                   player->position.y};
+
   MCTSParams params = {.num_simulations = 25,
                        .c_puct = 1.0f,
                        .max_depth = 10,
@@ -132,9 +133,11 @@ int ai_choose_action(Tank *ai, Tank *player) {
                        .dirichlet_eps = 0.25f,
                        .temperature = 1.0f,
                        .discount = 0.99f};
+
+  // DO NOT free this, it's a value struct
   MCTSResult res = mcts_run(ai_model, obs, &params);
-  int action = res.chosen_action;
-  return action;
+
+  return res.chosen_action;
 }
 
 // ---------------- Tank Update -----------------
