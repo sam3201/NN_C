@@ -2,7 +2,7 @@
 #ifndef AGENT_H
 #define AGENT_H
 
-#include "../../utils/Raylib/src/raylib.h"
+#include "../../Raylib/src/raylib.h"
 #include "..//raylib.h"
 #include "../MEMORY/MEMORY.h"
 
