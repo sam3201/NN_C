@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Check Raylib
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
@@ -14,9 +15,13 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
     cd ../../../SIMULATION
 fi
 
-gcc -w sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c ../utils/NN/MEMORY/memory.c \
+# Compile simulation
+gcc -w sim.c \
+    ../utils/NN/NN.c \
+    ../utils/NN/NEAT.c \
+    ../utils/NN/MEMORY/MEMORY.c \
     -I../utils/NN \
-    -I../utils/NN_C/MEMORY \
+    -I../utils/NN/MEMORY \
     -I../utils/Raylib/src \
     -L../utils/Raylib/src \
     -lraylib \
@@ -26,6 +31,7 @@ gcc -w sim.c ../utils/NN/NN.c ../utils/NN/NEAT.c ../utils/NN/MEMORY/memory.c \
     -framework CoreVideo \
     -o sim
 
+# Run if successful
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./sim
