@@ -1,5 +1,6 @@
 #include "environment.h"
 #include "../utils/Raylib/src/raylib.h"
+#include "../utils/Raylib/src/raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
 
