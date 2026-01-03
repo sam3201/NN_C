@@ -134,7 +134,6 @@ void draw_world(Vector2 camera) {
   Color forest = (Color){30, 110, 60, 255};
   Color desert = (Color){210, 185, 140, 255};
 
-  // draw surrounding 3×3 chunks
   for (int i = 0; i < CHUNK_SIZE; i++) {
     for (int j = 0; j < CHUNK_SIZE; j++) {
       int world_x = cx * CHUNK_SIZE + i;
