@@ -396,57 +396,66 @@ int main() {
                            r->position.x * TILE_SIZE + TILE_SIZE / 2,
                        (cy + dy) * CHUNK_SIZE * TILE_SIZE +
                            r->position.y * TILE_SIZE + TILE_SIZE / 2};
+          float tree_radius = TILE_SIZE * 0.45f;
+          float rock_radius = TILE_SIZE * 0.35f;
+          float food_radius = TILE_SIZE * 0.25f;
+
           switch (r->type) {
-          case RES_TREE:
-            // simple tree: green circle with brown trunk
-            DrawRectangle(s.x - 1, s.y + 2, 2, 4, BROWN);
-            DrawCircleV((Vector2){s.x, s.y}, 4, DARKGREEN);
+
+          case RES_TREE: {
+            // trunk
+            DrawRectangle(s.x - TILE_SIZE * 0.08f, s.y + TILE_SIZE * 0.1f,
+                          TILE_SIZE * 0.16f, TILE_SIZE * 0.45f, BROWN);
+
+            // canopy
+            DrawCircleV((Vector2){s.x, s.y - TILE_SIZE * 0.1f}, tree_radius,
+                        DARKGREEN);
             break;
-          case RES_ROCK:
-            // rock: gray circle with jagged edges
-            DrawCircleV(s, 3, GRAY);
-            DrawLine(s.x - 2, s.y - 1, s.x + 1, s.y + 2, LIGHTGRAY);
+          }
+
+          case RES_ROCK: {
+            DrawCircleV(s, rock_radius, DARKGRAY);
+            DrawCircleV((Vector2){s.x + 3, s.y - 3}, rock_radius * 0.5f, GRAY);
             break;
+          }
+
           case RES_FOOD:
-            // food: small orange circle
-            DrawCircleV(s, 2, ORANGE);
+            DrawCircleV(s, food_radius, ORANGE);
             break;
-          default:
-            break;
+          }
+
+          // Draw agents
+          for (int i = 0; i < MAX_AGENTS; i++) {
+            Agent *a = &ch->agents[i];
+            if (!a->alive)
+              continue;
+            Vector2 s = {
+                (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
+                (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
+            // Add simple flashing effect when near base
+            Color agent_col = a->flash_timer > 0 ? WHITE : a->tribe_color;
+            DrawCircleV(s, 4, agent_col);
           }
         }
 
-        // Draw agents
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          Agent *a = &ch->agents[i];
-          if (!a->alive)
-            continue;
-          Vector2 s = {
-              (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
-              (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
-          // Add simple flashing effect when near base
-          Color agent_col = a->flash_timer > 0 ? WHITE : a->tribe_color;
-          DrawCircleV(s, 4, agent_col);
+        // Draw base with particles
+        DrawCircle(agent_base.position.x * TILE_SIZE,
+                   agent_base.position.y * TILE_SIZE,
+                   agent_base.radius * TILE_SIZE, DARKGRAY);
+
+        for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
+          BaseParticle *p = &base_particles[i];
+          DrawCircleV(p->pos, 1 + rand() % 2,
+                      p->flash_white ? WHITE : LIGHTGRAY);
         }
+
+        // Draw player
+        DrawCircle(player.position.x, player.position.y, 6, RED);
+
+        EndMode2D();
+        EndDrawing();
       }
 
-    // Draw base with particles
-    DrawCircle(agent_base.position.x * TILE_SIZE,
-               agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
-               DARKGRAY);
-
-    for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-      BaseParticle *p = &base_particles[i];
-      DrawCircleV(p->pos, 1 + rand() % 2, p->flash_white ? WHITE : LIGHTGRAY);
-    }
-
-    // Draw player
-    DrawCircle(player.position.x, player.position.y, 6, RED);
-
-    EndMode2D();
-    EndDrawing();
+    CloseWindow();
+    return 0;
   }
-
-  CloseWindow();
-  return 0;
-}
