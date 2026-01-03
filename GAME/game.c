@@ -115,6 +115,19 @@ static inline float randf(float min, float max) {
   return min + (float)rand() / RAND_MAX * (max - min);
 }
 
+Color biome_color(int type) {
+  switch (type) {
+  case 0:
+    return (Color){120 + rand() % 20, 200, 120 + rand() % 20, 255}; // grass
+  case 1:
+    return (Color){34, 139 + rand() % 30, 34, 255}; // forest
+  case 2:
+    return (Color){139, 137, 137, 255}; // rock
+  default:
+    return RAYWHITE;
+  }
+}
+
 // ---------- WORLD ----------
 Chunk *get_chunk(int cx, int cy) {
   cx = wrap(cx);
