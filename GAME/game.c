@@ -1,11 +1,29 @@
+// game.c
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
-#include "environment.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
 
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+
+#define WORLD_SIZE 128
+#define CHUNK_SIZE 32
+#define TILE_SIZE 8
+
+#define MAX_RESOURCES 512
+#define MAX_MOBS 10
+#define MAX_AGENTS 8
+#define BASE_RADIUS 8
+
 #define MAX_BASE_PARTICLES 32
+
+// ---------- ENUMS ----------
+typedef enum { TOOL_HAND = 0, TOOL_AXE, TOOL_PICKAXE, TOOL_NONE } ToolType;
+
+typedef enum { RES_TREE = 0, RES_ROCK, RES_FOOD, RES_NONE } ResourceType;
 
 typedef enum {
   ACTION_UP = 0,
@@ -17,112 +35,300 @@ typedef enum {
   ACTION_COUNT
 } ActionType;
 
+// ---------- STRUCTS ----------
+typedef struct {
+  Vector2 position;
+  ResourceType type;
+  int health;
+  bool visited;
+} Resource;
+typedef struct {
+  Vector2 position;
+  float value;
+  int type;
+  bool visited;
+} Mob;
+typedef struct {
+  Vector2 position;
+  float health;
+  float stamina;
+  int agent_id;
+  Color tribe_color;
+  bool alive;
+  float flash_timer;
+  MuModel *brain;
+  size_t input_size;
+} Agent;
+
+typedef struct {
+  int biome_type;
+  int terrain[CHUNK_SIZE][CHUNK_SIZE];
+  Resource resources[MAX_RESOURCES];
+  int resource_count;
+  Mob mobs[MAX_MOBS];
+  Agent agents[MAX_AGENTS];
+  bool generated;
+} Chunk;
+
+typedef struct {
+  Vector2 position;
+  float health;
+  float stamina;
+  float max_health;
+  float max_stamina;
+  float move_speed;
+  float attack_damage;
+  float attack_range;
+  int wood;
+  int stone;
+  int food;
+  bool alive;
+  ToolType tool;
+} Player;
+
+typedef struct {
+  Vector2 position;
+  float radius;
+} Base;
 typedef struct {
   Vector2 pos;
   float lifetime;
   bool flash_white;
 } BaseParticle;
 
+// ---------- GLOBALS ----------
+Chunk world[WORLD_SIZE][WORLD_SIZE];
+bool world_initialized = false;
+Player player;
+Base agent_base;
 BaseParticle base_particles[MAX_BASE_PARTICLES];
+Resource resources[MAX_RESOURCES];
+int resource_count = 0;
 
-MuConfig cfg = {.obs_dim = (int)get_total_input_size(),
-                .latent_dim = 32, // you can tune this
-                .action_count = ACTION_COUNT};
-agent->brain = mu_model_create(&cfg);
-agent->input_size = get_total_input_size();
-
-void init_base_particles(void) {
-  for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-    float angle = ((float)i / MAX_BASE_PARTICLES) * 6.28319f;
-    float dist = (float)(rand() % (BASE_RADIUS * TILE_SIZE));
-    base_particles[i].pos.x =
-        agent_base.position.x * TILE_SIZE + cosf(angle) * dist;
-    base_particles[i].pos.y =
-        agent_base.position.y * TILE_SIZE + sinf(angle) * dist;
-    base_particles[i].lifetime = (float)(rand() % 60);
-    base_particles[i].flash_white = false;
-  }
+// ---------- HELPERS ----------
+static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
+static inline float randf(float min, float max) {
+  return min + (float)rand() / RAND_MAX * (max - min);
+}
+float Vector2Distance(Vector2 a, Vector2 b) {
+  return sqrtf((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
 }
 
-void update_base_particles(void) {
-  for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-    base_particles[i].lifetime += 1.0f;
-    // flash white every 30 frames
-    if (((int)base_particles[i].lifetime) % 30 < 15)
-      base_particles[i].flash_white = true;
-    else
-      base_particles[i].flash_white = false;
-  }
-}
+// ---------- WORLD ----------
+Chunk *get_chunk(int cx, int cy) {
+  cx = wrap(cx);
+  cy = wrap(cy);
+  Chunk *c = &world[cx][cy];
+  if (!c->generated) {
+    c->generated = true;
+    c->biome_type = (abs(cx) + abs(cy)) % 3;
+    for (int i = 0; i < CHUNK_SIZE; i++)
+      for (int j = 0; j < CHUNK_SIZE; j++)
+        c->terrain[i][j] = (c->biome_type == 0)   ? 1
+                           : (c->biome_type == 1) ? 2
+                                                  : 3;
 
-void draw_base_particles(Vector2 camera) {
-  for (int i = 0; i < MAX_BASE_PARTICLES; i++) {
-    Vector2 s = {base_particles[i].pos.x - camera.x,
-                 base_particles[i].pos.y - camera.y};
-    DrawCircle(s.x, s.y, 2, base_particles[i].flash_white ? WHITE : GREEN);
-  }
-}
-
-void muze_apply_action(Player *p, int action) {
-  switch (action) {
-  case ACTION_UP:
-    p->position.y -= p->move_speed;
-    break;
-  case ACTION_DOWN:
-    p->position.y += p->move_speed;
-    break;
-  case ACTION_LEFT:
-    p->position.x -= p->move_speed;
-    break;
-  case ACTION_RIGHT:
-    p->position.x += p->move_speed;
-    break;
-  case ACTION_HARVEST:
-    harvest_resources();
-    break;
-  }
-}
-
-int main() {
-  srand((unsigned int)time(NULL));
-
-  SetConfigFlags(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE — Infinite 2D World");
-  SetTargetFPS(60);
-
-  init_world();
-  init_base();
-  init_base_particles(); // initialize particles
-  init_player();
-
-  Vector2 camera = {0, 0};
-
-  while (!WindowShouldClose()) {
-    update_player();
-
-    // Update agents: heal if in base
-    for (int dx = -1; dx <= 1; dx++) {
-      for (int dy = -1; dy <= 1; dy++) {
-        Chunk *c = get_chunk(WORLD_SIZE / 2 + dx, WORLD_SIZE / 2 + dy);
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          if (c->agents[i].alive)
-            update_agent(&c->agents[i]);
-        }
-      }
+    // resources
+    int target = (c->biome_type == 0) ? 6 : (c->biome_type == 1) ? 12 : 3;
+    c->resource_count = target;
+    for (int i = 0; i < target; i++) {
+      int roll = rand() % 100;
+      if (c->biome_type == 1 && roll < 70)
+        c->resources[i].type = RES_TREE;
+      else if (roll < 40)
+        c->resources[i].type = RES_ROCK;
+      else
+        c->resources[i].type = RES_FOOD;
+      c->resources[i].position =
+          (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
+      c->resources[i].health = 100;
+      c->resources[i].visited = false;
     }
 
-    update_base_particles(); // update particle flashing
+    // mobs
+    for (int i = 0; i < MAX_MOBS; i++) {
+      c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
+      c->mobs[i].value = 10;
+      c->mobs[i].type = rand() % 2;
+      c->mobs[i].visited = false;
+    }
 
-    camera.x = player.position.x - SCREEN_WIDTH / 2;
-    camera.y = player.position.y - SCREEN_HEIGHT / 2;
+    // agents
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      Agent *a = &c->agents[i];
+      a->health = 100;
+      a->stamina = 100;
+      a->agent_id = i;
+      a->alive = true;
+      a->flash_timer = 0;
+      a->tribe_color = (rand() % 4 == 0)   ? RED
+                       : (rand() % 4 == 1) ? BLUE
+                       : (rand() % 4 == 2) ? GREEN
+                                           : YELLOW;
 
+      // initial positions
+      if (cx == WORLD_SIZE / 2 && cy == WORLD_SIZE / 2) {
+        float angle = ((float)i / MAX_AGENTS) * 6.28319f;
+        float dist = rand() % (BASE_RADIUS - 2) + 2;
+        a->position.x = agent_base.position.x + cosf(angle) * dist;
+        a->position.y = agent_base.position.y + sinf(angle) * dist;
+      } else {
+        a->position.x = rand() % CHUNK_SIZE;
+        a->position.y = rand() % CHUNK_SIZE;
+      }
+
+      // MUZE brain
+      MuConfig cfg = {.obs_dim = 10,
+                      .latent_dim = 32,
+                      .action_count = ACTION_COUNT}; // adjust obs_dim
+      a->brain = mu_model_create(&cfg);
+      a->input_size = cfg.obs_dim;
+    }
+  }
+  return c;
+}
+
+// ---------- PLAYER ----------
+void init_player() {
+  player.position = (Vector2){0, 0};
+  player.max_health = 100;
+  player.health = 100;
+  player.max_stamina = 100;
+  player.stamina = 100;
+  player.move_speed = 2.0f;
+  player.attack_damage = 10;
+  player.attack_range = 10;
+  player.wood = 0;
+  player.stone = 0;
+  player.food = 0;
+  player.alive = true;
+  player.tool = TOOL_HAND;
+}
+
+void update_player() {
+  if (!player.alive)
+    return;
+  Vector2 move = {0, 0};
+  if (IsKeyDown(KEY_W))
+    move.y -= 1;
+  if (IsKeyDown(KEY_S))
+    move.y += 1;
+  if (IsKeyDown(KEY_A))
+    move.x -= 1;
+  if (IsKeyDown(KEY_D))
+    move.x += 1;
+
+  // normalize diagonal
+  if (move.x != 0 && move.y != 0) {
+    move.x *= 0.7071f;
+    move.y *= 0.7071f;
+  }
+  float speed = player.move_speed * (player.stamina / player.max_stamina);
+  player.position.x += move.x * speed;
+  player.position.y += move.y * speed;
+}
+
+// ---------- AGENT ----------
+int decide_action(Agent *a, float *inputs) {
+  MuOutput out = mu_model_infer(a->brain, inputs);
+  int act = out.chosen_action;
+  mu_output_free(&out);
+  return act;
+}
+
+void update_agent(Agent *a) {
+  if (!a->alive)
+    return;
+  float obs[a->input_size];
+  for (int i = 0; i < a->input_size; i++)
+    obs[i] = randf(0, 1); // dummy obs, replace with actual perception
+  int action = decide_action(a, obs);
+
+  switch (action) {
+  case ACTION_UP:
+    a->position.y -= 0.5f;
+    break;
+  case ACTION_DOWN:
+    a->position.y += 0.5f;
+    break;
+  case ACTION_LEFT:
+    a->position.x -= 0.5f;
+    break;
+  case ACTION_RIGHT:
+    a->position.x += 0.5f;
+    break;
+  case ACTION_HARVEST:
+    break;
+  case ACTION_ATTACK:
+    break;
+  }
+
+  float dist = Vector2Distance(a->position, agent_base.position);
+  if (dist < BASE_RADIUS) {
+    a->health += 0.5f;
+    a->stamina += 0.5f;
+    if (a->health > 100)
+      a->health = 100;
+    if (a->stamina > 100)
+      a->stamina = 100;
+    a->flash_timer += 0.1f;
+    if (a->flash_timer > 1.0f)
+      a->flash_timer = 0;
+  } else
+    a->flash_timer = 0;
+}
+
+// ---------- INIT BASE ----------
+void init_base() {
+  agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  agent_base.radius = BASE_RADIUS;
+}
+
+// ---------- MAIN ----------
+int main() {
+  srand(time(NULL));
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MUZE Game");
+  SetTargetFPS(60);
+
+  init_base();
+  init_player();
+
+  while (!WindowShouldClose()) {
+    // Update
+    update_player();
+
+    int cx = player.position.x / (CHUNK_SIZE * TILE_SIZE);
+    int cy = player.position.y / (CHUNK_SIZE * TILE_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    for (int i = 0; i < MAX_AGENTS; i++)
+      update_agent(&c->agents[i]);
+
+    // Draw
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground(RAYWHITE);
+    for (int dx = -1; dx <= 1; dx++)
+      for (int dy = -1; dy <= 1; dy++) {
+        Chunk *ch = get_chunk(cx + dx, cy + dy);
+        for (int i = 0; i < CHUNK_SIZE; i++)
+          for (int j = 0; j < CHUNK_SIZE; j++) {
+            int sx = (cx + dx) * CHUNK_SIZE + i - TILE_SIZE;
+            int sy = (cy + dy) * CHUNK_SIZE + j - TILE_SIZE;
+            DrawRectangle(sx, sy, TILE_SIZE, TILE_SIZE,
+                          (Color){100, 200, 100, 255});
+          }
+        // draw agents
+        for (int i = 0; i < MAX_AGENTS; i++) {
+          Agent *a = &ch->agents[i];
+          if (!a->alive)
+            continue;
+          Vector2 s = {a->position.x - TILE_SIZE, a->position.y - TILE_SIZE};
+          DrawCircle(s.x, s.y, 5, (Color){245, 222, 179, 255});
+        }
+      }
 
-    draw_world(camera);
-    draw_base_particles(camera); // draw green/white healing particles
-    draw_player(camera);
-    draw_ui();
+    // draw player
+    DrawCircle(player.position.x, player.position.y, 6, RED);
 
     EndDrawing();
   }
