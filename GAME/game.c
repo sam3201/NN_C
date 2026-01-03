@@ -237,6 +237,8 @@ int decide_action(Agent *a, float *inputs) {
   int act = out.chosen_action;
   mu_output_free(&out);
   */
+
+  int act = rand() % ACTION_COUNT;
   return act;
 }
 
