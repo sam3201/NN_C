@@ -19,6 +19,5 @@ void toy_env_reset(void *state, float *obs);
 
 // step
 int toy_env_step(void *state_ptr, int action, float *obs, float *reward,
-                 int *done) {
-
+                 int *done);
 #endif
