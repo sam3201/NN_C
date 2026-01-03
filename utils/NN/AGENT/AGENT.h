@@ -4,6 +4,7 @@
 
 #include "../../Raylib/src/raylib.h"
 #include "../MEMORY/MEMORY.h"
+#include "../NEAT.h"
 
 typedef struct {
   Vector2 position;
