@@ -25,7 +25,6 @@ typedef struct {
   Vector2 position;
   unsigned int radius;
   unsigned int size;
-  float time_alive;
   int agent_id;
   int parent_id;
   int num_offsprings;
