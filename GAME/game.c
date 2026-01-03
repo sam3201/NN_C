@@ -229,16 +229,6 @@ MCTSParams mcts_params = {.num_simulations = 40,
                           .discount = 0.95f,
                           .temperature = 1.0f};
 
-float dist = Vector2Distance(a->position, agent_base.position);
-if (dist < BASE_RADIUS) {
-  a->health = fminf(a->health + 0.5f, 100);
-  a->stamina = fminf(a->stamina + 0.5f, 100);
-  a->flash_timer += 0.1f;
-} else {
-  a->flash_timer = 0;
-}
-}
-
 int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
     return rand() % ACTION_COUNT;
