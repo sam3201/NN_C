@@ -328,6 +328,12 @@ void draw_ui() {
   DrawText(TextFormat("Wood:%d Stone:%d Food:%d", player.wood, player.stone,
                       player.food),
            20, 56, 14, GREEN);
+
+  const char *tool_name = (player.tool == TOOL_HAND)  ? "HAND"
+                          : (player.tool == TOOL_AXE) ? "AXE"
+                                                      : "PICK";
+
+  DrawText(TextFormat("Tool: %s", tool_name), 20, 74, 14, YELLOW);
 }
 
 void spawn_resource(Vector2 pos, ResourceType type) {
