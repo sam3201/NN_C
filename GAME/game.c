@@ -1,5 +1,5 @@
 #include "../utils/Raylib/src/raylib.h"
-#include "../utils/Raylib/src/rlgl.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
