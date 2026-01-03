@@ -8,6 +8,7 @@
 
 static Chunk world[WORLD_SIZE][WORLD_SIZE];
 static bool world_initialized = false;
+
 Resource resources[MAX_RESOURCES];
 int resource_count = 0;
 
