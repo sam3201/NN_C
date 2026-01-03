@@ -274,6 +274,7 @@ void spawn_resource(Vector2 pos, ResourceType type) {
   r->position = pos;
   r->type = type;
   r->health = (type == RES_TREE) ? 5 : 8;
+  r->visited = false;
 }
 
 void draw_resources(Vector2 camera) {
