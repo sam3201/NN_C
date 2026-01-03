@@ -32,6 +32,11 @@ void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
 void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out);
 
+void mu_model_step(MuModel *m, const float *obs, int action, float reward);
+void mu_model_end_episode(MuModel *m, float terminal_reward);
+void mu_model_reset_episode(MuModel *m);
+void mu_model_train(MuModel *m);
+
 #ifdef __cplusplus
 }
 #endif
