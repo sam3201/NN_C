@@ -25,6 +25,13 @@ typedef struct {
 } Resource;
 
 typedef struct {
+  Vector2 position;
+  float value;
+  int type;
+  bool visited;
+} Mob;
+
+typedef struct {
   int biome_type;
   Vector3 terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
