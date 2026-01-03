@@ -110,10 +110,6 @@ void generate_chunk(Chunk *c, int cx, int cy) {
   int target = 0;
 
   switch (c->biome_type) {
-    float hit_radius = (r->type == RES_TREE)   ? 18
-                       : (r->type == RES_ROCK) ? 14
-                                               : 10;
-
   case 0:
     target = 6;
     break; // grassland
