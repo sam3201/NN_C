@@ -356,7 +356,9 @@ void harvest_resources() {
         continue;
 
       r->health -= tool_power;
-      r->position player.stamina -= 2;
+      r->position.x += (rand() % 3 - 1) * 0.1f;
+      r->position.y += (rand() % 3 - 1) * 0.1f;
+      player.stamina -= 2;
 
       if (r->health <= 0) {
         r->visited = true;
