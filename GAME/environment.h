@@ -12,7 +12,7 @@
 #define MAX_RESOURCES 512
 #define MAX_MOBS 10
 
-#define MAX_AGENTS 3
+#define MAX_AGENTS 32
 
 typedef enum {
   TOOL_HAND = 0,
