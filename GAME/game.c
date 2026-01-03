@@ -1,5 +1,5 @@
-#include "../MUZE/toy_env.h"
 #include "../utils/NN/MUZE/selfplay.h"
+#include "../utils/NN/MUZE/toy_env.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
