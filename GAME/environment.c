@@ -330,12 +330,15 @@ void update_player() {
   if (player.stamina > player.max_stamina)
     player.stamina = player.max_stamina;
 }
-
-long double inputs[get_total_input_size()];
-gather_agent_inputs(&game, agent, inputs);
-int action = decide_action(agent, inputs);
-execute_agent_action(&game, agent_idx, action);
-store_experience(agent, inputs, action, agent->total_xp);
+int decide_action(Agent *agent, long double *inputs) {
+  float obs[agent->input_size];
+  for (int i = 0; i < agent->input_size; i++)
+    obs[i] = (float)inputs[i];
+  MuOutput out = mu_model_infer(agent->brain, obs);
+  int action = out.chosen_action; // map MUZE output to ACTION enum
+  mu_output_free(&out);
+  return action;
+}
 
 void update_agent(Agent *a) {
   if (!a->alive)
