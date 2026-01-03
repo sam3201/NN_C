@@ -271,7 +271,6 @@ void update_player() {
   if (stamina_ratio < 0.1f)
     stamina_ratio = 0.1f;
 
-  // scale speed smoothly
   float speed = player.move_speed * stamina_ratio;
 
   if (moving) {
