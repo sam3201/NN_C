@@ -413,7 +413,7 @@ void handle_breeding(GameState *game, int agent_idx) {
 
   for (int i = 0; i < POPULATION_SIZE; i++) {
     if (game->agents[i].level < 0) {
-      init_agent(&game->agents[i], game->next_agent_id++);
+      init_agent(&game->agents[i], game->next_agent_id++, false);
       game->agents[i].parent_id = parent->agent_id;
       game->num_active_players++;
       break;
