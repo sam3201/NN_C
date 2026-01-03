@@ -358,7 +358,7 @@ void update_agent(Agent *a, Chunk *c) {
   float reward = compute_reward(a, c, obs);
   a->reward_accumulator += reward;
 
-  muze_model_step(a->brain, obs, action, reward);(
+  muze_model_step(a->brain, obs, action, reward);
 
   a->age++;
   a->steps_alive++;
