@@ -256,7 +256,8 @@ void draw_player(Vector2 camera) {
 }
 
 void draw_ui() {
-  DrawRectangle(10, 10, 200, 70, Fade(BLACK, 0.6f));
+  DrawRectangleRounded((Rectangle){10, 10, 220, 80}, 0.2f, 8,
+                       Fade((Color){20, 20, 20, 255}, 0.8f));
 
   DrawText(TextFormat("HP: %.0f", player.health), 20, 20, 16, RED);
   DrawText(TextFormat("STA: %.0f", player.stamina), 20, 40, 16, BLUE);
