@@ -27,9 +27,10 @@ void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
 
     Vector2 s = {world_pos.x - camera.x, world_pos.y - camera.y};
 
+    float hp_ratio = r->health / 100.0f;
+
     switch (r->type) {
     case RES_TREE:
-      float hp_ratio = r->health / 100.0f;
       if (hp_ratio < 0)
         hp_ratio = 0;
 
