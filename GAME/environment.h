@@ -12,7 +12,13 @@
 #define MAX_RESOURCES 512
 #define MAX_MOBS 10
 
-typedef enum { RES_TREE, RES_ROCK, RES_FOOD, RES_NONE } ResourceType;
+typedef enum {
+  RES_TREE = 0,
+  RES_ROCK,
+  RES_FOOD,
+  RES_NONE,
+  RES_COUNT
+} ResourceType;
 
 typedef struct {
   Vector2 position;
