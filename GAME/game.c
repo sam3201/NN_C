@@ -123,7 +123,8 @@ int main() {
 
   SetTargetFPS(60);
 
-  show_title_screen(); // choose AI / Player before starting
+  title_screen(&top.isAI,
+               &bottom.isAI); // choose AI / Player before starting();
 
   while (!WindowShouldClose()) {
 
