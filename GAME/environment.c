@@ -17,7 +17,7 @@ static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 
 // ------------------------ draw chunk resources --------------------------
 void draw_chunk_resources(Chunk *c, int cx, int cy, Vector2 camera) {
-  for (int i = 0; i < MAX_RESOURCES; i++) {
+  for (int i = 0; i < c->resource_count; i++) {
     Resource *r = &c->resources[i];
     if (r->visited || r->health <= 0)
       continue;
