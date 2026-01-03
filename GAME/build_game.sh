@@ -34,5 +34,5 @@ else
 fi
 
 echo "Cleaning up..."
-# rm game
+rm game
 
