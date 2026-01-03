@@ -143,6 +143,20 @@ void init_agent(Agent *agent, int id) {
   init_memory(&agent->memory, agent->input_size);
 }
 
+void encode_vision(GameState *game, int player_idx,
+                   long double *vision_output) {
+  // Simple placeholder: mark self, food, others in vision grid
+  Agent *agent = &game->agents[player_idx];
+  for (int i = 0; i < get_total_input_size(); i++) {
+    vision_output[i] = 0.0L;
+  }
+
+  // Example: mark self
+  vision_output[0] = 1.0L;
+
+  // TODO: add nearby food, other agents, offspring, etc.
+}
+
 // --- UPDATE AGENT ---
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
