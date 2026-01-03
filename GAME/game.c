@@ -341,7 +341,9 @@ int main() {
 
   Camera2D camera = {0};
   camera.target = player.position;
-  camera.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
+  camera.zoom = 1.0f;
+  camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+
   camera.zoom = 1.0f;
 
   srand(time(NULL));
