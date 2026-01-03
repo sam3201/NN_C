@@ -417,6 +417,26 @@ void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
   }
 }
 
+int decide_action(MuModel *brain, long double *inputs) {
+  int obs_dim = brain->cfg.obs_dim;
+  float obs[obs_dim];
+  for (int i = 0; i < obs_dim; i++)
+    obs[i] = (float)inputs[i];
+
+  MCTSParams mcts_params = {.num_simulations = 10,
+                            .c_puct = 1.0f,
+                            .max_depth = 20,
+                            .dirichlet_alpha = 0.3f,
+                            .dirichlet_eps = 0.25f,
+                            .temperature = 1.0f,
+                            .discount = 0.99f};
+
+  MCTSResult res = mcts_run(brain, obs, &mcts_params);
+  int action = res.chosen_action;
+  mcts_result_free(&res);
+  return action;
+}
+
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
