@@ -1,5 +1,4 @@
 // MUZE/all.h
-// This file includes all headers in the MUZE directory
 
 #ifndef MUZE_ALL_H
 #define MUZE_ALL_H
