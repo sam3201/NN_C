@@ -88,7 +88,7 @@ void title_screen(int *topAI, int *bottomAI) {
 
     EndDrawing();
 
-    if (IsKeyPressed(KEY_kp_1))
+    if (IsKeyPressed(KEY_KP_1))
       *topAI = !(*topAI);
     if (IsKeyPressed(KEY_2))
       *bottomAI = !(*bottomAI);
