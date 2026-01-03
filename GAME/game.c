@@ -6,22 +6,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define POPULATION_SIZE 20
-#define MAX_FOOD 100
-#define MAX_GROUNDSKEEPERS (POPULATION_SIZE / 2)
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FRAME_RATE 60
-#define XP_PER_LEVEL 100
-#define XP_FROM_FOOD 1
-#define XP_FROM_AGENT 25
-#define XP_FROM_OFFSPRING 50
-#define BREEDING_DURATION 2.0f
-#define INITIAL_AGENT_SIZE 1
-#define MOVEMENT_SPEED 2.0f
-#define FOOD_SIZE 5
-#define FOOD_SPAWN_CHANCE 0.1f
-#define LABEL_SIZE 10
 #define MEMORY_CAPACITY 1024
 
 typedef enum {
