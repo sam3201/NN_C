@@ -52,7 +52,7 @@ typedef struct {
   int agent_id;
   Color tribe_color;
   bool alive;
-  float flash_timer;
+  float heal_flash_timer;
 } Agent;
 
 typedef struct {
