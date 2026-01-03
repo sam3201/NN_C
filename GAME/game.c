@@ -11,7 +11,7 @@ MuConfig config =
 }
 
 muze_t *muze = NULL;
-mu_model_create(config);
+muze = mu_model_create(config);
 
 int main() {
   InitWindow(800, 600, "MUZE — Infinite 2D World");
