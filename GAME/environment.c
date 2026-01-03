@@ -22,6 +22,7 @@ void init_base(void) {
   agent_base.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
   agent_base.radius = BASE_RADIUS;
 
+  Chunk *c = get_chunk(agent_base.position.x, agent_base.position.y);
   for (int i = 0; i < MAX_AGENTS; i++) {
     float angle = ((float)i / MAX_AGENTS) * 6.28319f; // circle around base
     float dist =
