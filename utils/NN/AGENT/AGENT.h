@@ -30,4 +30,6 @@ typedef struct {
   size_t input_size; // Total input size for vision + additional inputs
 } Agent;
 
+void init_agent(Agent *agent, int id);
+
 #endif
