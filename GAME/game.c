@@ -8,7 +8,7 @@
 #define COLS 75
 #define NUM_CHANNELS 3
 
-unsigned char screen[ROWS][COLS][NUM_CHANNELS];
+long double screen[ROWS][COLS][NUM_CHANNELS];
 
 typedef struct {
   NN_t *nn;
