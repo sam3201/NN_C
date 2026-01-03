@@ -11,13 +11,13 @@ int main() {
 
   while (!WindowShouldClose()) {
 
-    if (IsKeyDown(KEY_RIGHT))
+    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D))
       camera.x += 2;
-    if (IsKeyDown(KEY_LEFT))
+    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))
       camera.x -= 2;
-    if (IsKeyDown(KEY_UP))
+    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))
       camera.y -= 2;
-    if (IsKeyDown(KEY_DOWN))
+    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S))
       camera.y += 2;
 
     BeginDrawing();
