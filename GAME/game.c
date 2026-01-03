@@ -240,7 +240,20 @@ void update_player() {
 // ---------- AGENT ----------
 
 int decide_action(Agent *a, float *inputs) {
-  int action = mu_model_predict(a->brain, inputs);
+  if (!a->brain)
+    return rand() % ACTION_COUNT;
+
+  // Run the MUZE model inference
+  MuOutput out = mu_model_infer(a->brain, inputs);
+
+  // Ensure the chosen action is in bounds
+  int action = out.chosen_action;
+  if (action < 0 || action >= ACTION_COUNT)
+    action = rand() % ACTION_COUNT;
+
+  // Free the output resources
+  mu_output_free(&out);
+
   return action;
 }
 
