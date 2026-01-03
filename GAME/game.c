@@ -83,6 +83,16 @@ void muze_apply_action(Player *p, int action) {
   }
 }
 
+int decide_action(Agent *agent, long double *inputs) {
+  float obs[agent->input_size];
+  for (int i = 0; i < agent->input_size; i++)
+    obs[i] = (float)inputs[i];
+  MuOutput out = mu_model_infer(agent->brain, obs);
+  int action = out.chosen_action; // map MUZE output to ACTION enum
+  mu_output_free(&out);
+  return action;
+}
+
 int main() {
   srand((unsigned int)time(NULL));
 
