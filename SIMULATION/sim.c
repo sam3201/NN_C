@@ -292,6 +292,26 @@ void handle_breeding(GameState *game) {
     }
   }
 }
+// --- EVOLUTION CHECK ---
+void check_evolution(GameState *game) {
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    Agent *a = &game->agents[i];
+    if (a->total_xp >= (a->level + 1) * XP_PER_LEVEL) {
+      a->level++;
+      a->size = a->level + 1;
+      a->rect.width = a->rect.height = (float)a->size;
+      update_agent_color(a);
+    }
+  }
+  // Groundskeeper evolution (simplified example)
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++) {
+    Groundkeeper *gk = &game->gks[i];
+    if (gk->punishment_timer == 0) {
+      // Could increase speed, leech rate, or other parameters
+      gk->punishment_timer = PUNISHMENT_COOLDOWN;
+    }
+  }
+}
 
 void execute_agent_action(GameState *game, int agent_idx, Action action) {
   Agent *agent = &game->agents[agent_idx];
