@@ -70,7 +70,7 @@ void generate_chunk(Chunk *c, int cx, int cy) {
         (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
     c->resources[i].type = rand() % RES_COUNT;
     c->resources[i].health = 100;
-    c->resources[i].alive = true;
+    c->resources[i].visited = false;
   }
 
   // generate mobs
