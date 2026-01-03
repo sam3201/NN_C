@@ -208,11 +208,12 @@ void generate_chunk(Chunk *c, int cx, int cy) {
 
   // generate agents
   for (int i = 0; i < MAX_AGENTS; i++) {
-    c->agents[i].position =
-        (Vector2){(float)(rand() % CHUNK_SIZE), (float)(rand() % CHUNK_SIZE)};
     c->agents[i].health = 100;
     c->agents[i].stamina = 100;
     c->agents[i].agent_id = i;
+    c->agents[i].alive = true;
+    c->agents[i].heal_flash_timer = 0;
+
     // assign a random tribe color
     switch (rand() % 4) {
     case 0:
@@ -228,8 +229,18 @@ void generate_chunk(Chunk *c, int cx, int cy) {
       c->agents[i].tribe_color = YELLOW;
       break;
     }
-    c->agents[i].alive = true;
-    c->agents[i].flash_timer = 0; // initialize flash timer
+
+    // Initial chunk: spawn in circle around base
+    if (cx == WORLD_SIZE / 2 && cy == WORLD_SIZE / 2) {
+      float angle = ((float)i / MAX_AGENTS) * 6.28319f; // full circle
+      float dist = (float)(rand() % (BASE_RADIUS - 2) + 2);
+      c->agents[i].position.x = agent_base.position.x + cosf(angle) * dist;
+      c->agents[i].position.y = agent_base.position.y + sinf(angle) * dist;
+    } else {
+      // other chunks: random positions
+      c->agents[i].position.x = (float)(rand() % CHUNK_SIZE);
+      c->agents[i].position.y = (float)(rand() % CHUNK_SIZE);
+    }
   }
 }
 
