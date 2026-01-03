@@ -4,6 +4,7 @@
 
 #include "../MEMORY/MEMORY.h"
 #include "../NEAT.h"
+
 typedef struct {
   Vector2 position;
   Vector2 velocity;
