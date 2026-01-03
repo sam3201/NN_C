@@ -418,6 +418,21 @@ void update_game(GameState *game) {
 
   for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
     update_groundkeeper(game, i);
+
+  // Handle breeding
+  handle_breeding(game);
+
+  // Check evolution & level up
+  check_evolution(game);
+
+  // Handle agent collisions (eat each other)
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+    for (int j = i + 1; j < POPULATION_SIZE - MAX_GROUNDSKEEPERS; j++) {
+      if (CheckCollisionRecs(game->agents[i].rect, game->agents[j].rect)) {
+        eat_agent(&game->agents[i], &game->agents[j]);
+      }
+    }
+  }
 }
 
 void init_game(GameState *game) {
