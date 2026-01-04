@@ -326,7 +326,7 @@ void update_agent(Agent *a) {
 
   if (a->health <= 0 || a->stamina <= 0) {
     a->alive = false;
-    mu_model_end_episode(a->brain, -1.0f);
+    mu_model_end_episode(tr->brain, -1.0f);
   } else {
     mu_model_step(a->brain, obs, action, 0.01f);
   }
