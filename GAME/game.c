@@ -246,7 +246,6 @@ Chunk *get_chunk(int cx, int cy) {
     if (cx == (int)tr->base.position.x && cy == (int)tr->base.position.y) {
       float ang = randf(0, 2 * PI);
       float d = randf(2, tr->base.radius - 1);
-
       a->position = (Vector2){tr->base.position.x + cosf(ang) * d,
                               tr->base.position.y + sinf(ang) * d};
     }
