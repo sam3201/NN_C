@@ -3,6 +3,7 @@
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
+#include <assert.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
