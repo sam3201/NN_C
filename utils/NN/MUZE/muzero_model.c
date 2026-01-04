@@ -114,19 +114,3 @@ void mu_model_predict(MuModel *m, const float *latent_in,
   }
   *value_out = tanhf(sum);
 }
-
-void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
-  mu_runtime_step((MuRuntime *)m->runtime, m, obs, action, reward);
-}
-
-void mu_model_end_episode(MuModel *m, float terminal_reward) {
-  mu_runtime_end_episode((MuRuntime *)m->runtime, m, terminal_reward);
-}
-
-void mu_model_reset_episode(MuModel *m) {
-  mu_runtime_reset_episode((MuRuntime *)m->runtime);
-}
-
-void mu_model_train(MuModel *m) {
-  mu_runtime_train((MuRuntime *)m->runtime, m);
-}
