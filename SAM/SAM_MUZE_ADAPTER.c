@@ -39,7 +39,6 @@ static void sam_learn(void *brain, float reward, int terminal) {
   }
 }
 
-/* Public factory */
 MuCortex SAM_as_MUZE(SAM_t *sam) {
   MuCortex c = {.brain = sam,
                 .encode = sam_encode,
