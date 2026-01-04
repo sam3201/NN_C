@@ -406,6 +406,7 @@ void update_player(void) {
   else
     player.hand_swing = 0;
 }
+
 void draw_player(Player *p) {
   // --- Body ---
   DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
