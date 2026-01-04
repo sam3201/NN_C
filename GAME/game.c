@@ -690,6 +690,13 @@ void draw_zombie(Vector2 pos, float size) {
 void draw_mob(Mob *m, Vector2 chunk_offset) {
   Vector2 p = Vector2Add(Vector2Scale(m->position, TILE_SIZE), chunk_offset);
 
+  // shake effect
+  if (m->visited) {
+    p.x += rand() % 3 - 1;
+    p.y += rand() % 3 - 1;
+    m->visited = false;
+  }
+
   switch (m->type) {
   case MOB_PIG:
     draw_pig(p, TILE_SIZE * 0.8f);
