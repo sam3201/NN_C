@@ -200,7 +200,6 @@ void init_agents(void) {
     a->health = a->stamina = 100;
     a->flash_timer = 0;
     a->age = 0;
-    a->brain = mu_model_create(&cfg);
 
     Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
     float ang = randf(0, 2 * PI);
