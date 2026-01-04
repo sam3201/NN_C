@@ -565,15 +565,23 @@ void update_agents(GameState *state, float dt) {
     long double inputs[get_total_input_size()];
     gather_agent_inputs(state, agent, inputs);
 
-    // Decide action
+    int old_xp = agent->total_xp;
+    int old_level = agent->level;
+
+    // Decide
     int action = decide_action(agent, inputs);
-    state->last_actions[i] = action;
 
-    // Store experience
-    store_experience(agent, inputs, action, 0); // reward 0 for now
-
-    // Step agent
+    // Step environment
     step_agent(state, agent, action);
+
+    // Compute reward
+    float reward = compute_reward(agent, old_xp, old_level);
+
+    // Update latent
+    update_latent_after_step(agent, inputs, action, reward);
+
+    // Optional logging memory (not required for MuZE)
+    store_experience(agent, inputs, action, reward);
 
     // Update color based on XP
     update_agent_color(agent);
