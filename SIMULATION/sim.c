@@ -29,6 +29,8 @@
 #define FOOD_SPAWN_CHANCE 0.1f
 #define LABEL_SIZE 10
 
+#define LATENT_MAX 64
+
 typedef enum {
   ACTION_NONE = 0,
   ACTION_MOVE_LEFT,
@@ -55,6 +57,8 @@ typedef struct {
   MuModel *brain;
   Memory memory;
   size_t input_size;
+  float latent_state[LATENT_MAX];
+  bool has_latent;
 } Agent;
 
 typedef struct {
@@ -134,6 +138,7 @@ void init_agent(Agent *agent, int id) {
                   .action_count = ACTION_COUNT};
   agent->brain = mu_model_create(&cfg);
   init_memory(&agent->memory, 100, (int)agent->input_size);
+  agent->has_latent = false;
 }
 
 // --- VISION ENCODING ---
@@ -417,24 +422,45 @@ void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
   }
 }
 
-int decide_action(MuModel *brain, long double *inputs) {
+int decide_action(Agent *agent, long double *inputs) {
+  MuModel *brain = agent->brain;
+
   int obs_dim = brain->cfg.obs_dim;
   float obs[obs_dim];
   for (int i = 0; i < obs_dim; i++)
     obs[i] = (float)inputs[i];
 
-  MCTSParams mcts_params = {.num_simulations = 10,
-                            .c_puct = 1.0f,
-                            .max_depth = 20,
-                            .dirichlet_alpha = 0.3f,
-                            .dirichlet_eps = 0.25f,
-                            .temperature = 1.0f,
-                            .discount = 0.99f};
+  // 🔑 Only encode observation if no latent exists
+  if (!agent->has_latent) {
+    mu_model_repr(brain, obs, agent->latent);
+    agent->has_latent = true;
+  }
 
-  MCTSResult res = mcts_run(brain, obs, &mcts_params);
+  MCTSParams mcts = {.num_simulations = 25,
+                     .c_puct = 1.2f,
+                     .discount = 0.99f,
+                     .temperature = 1.0f};
+
+  MCTSResult res = mcts_run_latent(brain, agent->latent, &mcts);
   int action = res.chosen_action;
   mcts_result_free(&res);
+
   return action;
+}
+
+void update_latent_after_step(Agent *agent, long double *obs, int action,
+                              float reward) {
+  float obs_f[agent->input_size];
+  for (int i = 0; i < agent->input_size; i++)
+    obs_f[i] = (float)obs[i];
+
+  float next_latent[LATENT_MAX];
+  float predicted_reward;
+
+  mu_model_dynamics(agent->brain, agent->latent, action, next_latent,
+                    &predicted_reward);
+
+  memcpy(agent->latent, next_latent, sizeof(float) * LATENT_MAX);
 }
 
 void step_agent(GameState *state, Agent *agent, int action) {
