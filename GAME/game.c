@@ -277,64 +277,62 @@ void update_agent(Agent *a) {
   float reward = 0.0f;
 
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-Vector2Subtract(a->position, tr->base.position)
-
-  if (Vector2Length()) <
+  if (Vector2Length(Vector2Subtract(a->position, tr->base.position))) <
       BASE_RADIUS) {
-  a->health = fminf(a->health + 0.5f, 100);
-  a->stamina = fminf(a->stamina + 0.5f, 100);
-  reward += 0.01f;
-}
-else {
-  a->stamina -= 0.05f;
-  reward -= 0.001f;
-}
+      a->health = fminf(a->health + 0.5f, 100);
+      a->stamina = fminf(a->stamina + 0.5f, 100);
+      reward += 0.01f;
+    }
+  else {
+    a->stamina -= 0.05f;
+    reward -= 0.001f;
+  }
 
-if (!a->alive) {
-  reward -= 1.0f;
-}
+  if (!a->alive) {
+    reward -= 1.0f;
+  }
 
-tribes[a->agent_id / AGENT_PER_TRIBE].reward_accumulator += reward;
+  tribes[a->agent_id / AGENT_PER_TRIBE].reward_accumulator += reward;
 
-float obs[10];
-encode_observation(a, c, obs);
+  float obs[10];
+  encode_observation(a, c, obs);
 
-int action = decide_action(a, obs);
+  int action = decide_action(a, obs);
 
-switch (action) {
-case ACTION_UP:
-  a->position.y -= 0.5f;
-  break;
-case ACTION_DOWN:
-  a->position.y += 0.5f;
-  break;
-case ACTION_LEFT:
-  a->position.x -= 0.5f;
-  break;
-case ACTION_RIGHT:
-  a->position.x += 0.5f;
-  break;
-default:
-  break;
-}
+  switch (action) {
+  case ACTION_UP:
+    a->position.y -= 0.5f;
+    break;
+  case ACTION_DOWN:
+    a->position.y += 0.5f;
+    break;
+  case ACTION_LEFT:
+    a->position.x -= 0.5f;
+    break;
+  case ACTION_RIGHT:
+    a->position.x += 0.5f;
+    break;
+  default:
+    break;
+  }
 
-Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-float d = Vector2Distance(a->position, tr->base.position);
-if (d < BASE_RADIUS) {
-  a->health = fminf(a->health + 0.5f, 100);
-  a->stamina = fminf(a->stamina + 0.5f, 100);
-} else {
-  a->stamina -= 0.05f;
-}
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+  float d = Vector2Distance(a->position, tr->base.position);
+  if (d < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100);
+    a->stamina = fminf(a->stamina + 0.5f, 100);
+  } else {
+    a->stamina -= 0.05f;
+  }
 
-if (a->health <= 0 || a->stamina <= 0) {
-  a->alive = false;
-  mu_model_end_episode(a->brain, -1.0f);
-} else {
-  mu_model_step(a->brain, obs, action, 0.01f);
-}
+  if (a->health <= 0 || a->stamina <= 0) {
+    a->alive = false;
+    mu_model_end_episode(a->brain, -1.0f);
+  } else {
+    mu_model_step(a->brain, obs, action, 0.01f);
+  }
 
-a->age++;
+  a->age++;
 }
 
 /* =======================
