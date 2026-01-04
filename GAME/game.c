@@ -391,7 +391,7 @@ void respawn_agent(Agent *a) {
   mu_model_reset_episode(a->brain);
 }
 
-draw_ui(void) {
+draw_ui(Player player) {
   DrawText("Health:", 10, 10, 16, WHITE);
   DrawText("Stamina:", 10, 30, 16, WHITE);
   DrawText("Age:", 10, 50, 16, WHITE);
