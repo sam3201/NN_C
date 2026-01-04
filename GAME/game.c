@@ -315,7 +315,6 @@ void update_agent(Agent *a) {
     break;
   }
 
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
   float d = Vector2Distance(a->position, tr->base.position);
   if (d < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100);
