@@ -204,7 +204,7 @@ void init_tribes(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
   float spacing = 24.0f;
 
-  MuConfig cfg = {.obs_dim = 16, // expandable, not fixed memory
+  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
                   .latent_dim = 64,
                   .action_count = ACTION_COUNT};
 
