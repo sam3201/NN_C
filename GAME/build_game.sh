@@ -17,6 +17,7 @@ fi
 echo "Compiling game..."
 
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
+SAM_SRC=$(find ../utils/NN/SAM -name "*.c" | tr '\n' ' ')
 
 gcc -w game.c $MUZE_SRC \
     -I../utils/Raylib/src \
