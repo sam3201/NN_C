@@ -791,7 +791,7 @@ void draw_chunk(Chunk *c, int cx, int cy) {
 
   // Agents
   for (int i = 0; i < MAX_AGENTS; i++)
-    draw_agent(&c->agents[i], offset);
+    draw_agent(&agents[i], offset);
 }
 
 /* =======================
