@@ -488,15 +488,9 @@ void draw_sheep(Vector2 pos, float size) {
   // Body
   DrawCircleV(pos, size * 0.5f, Fade(WHITE, 0.5f));
 
-  // Head (small circle on top)
   DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.3f,
               Fade(WHITE, 0.5f));
 
-  // Snout
-  DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.15f,
-              (Color){255, 160, 160, 255});
-
-  // Legs (simple rectangles)
   DrawRectangleV((Vector2){pos.x - size * 0.35f, pos.y + size * 0.3f},
                  (Vector2){size * 0.2f, size * 0.2f}, Fade(WHITE, 0.5f));
   DrawRectangleV((Vector2){pos.x + size * 0.15f, pos.y + size * 0.3f},
