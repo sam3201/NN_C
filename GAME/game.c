@@ -353,7 +353,7 @@ void update_agent(Agent *a) {
     a->alive = false;
     mu_model_end_episode(tr->brain, -1.0f);
   } else {
-    mu_model_step(tr->brain, obs.data, obs.size, action, reward);
+    mu_model_step(tr->brain, obs.data, action, reward);
     obs_free(&obs);
   }
 
