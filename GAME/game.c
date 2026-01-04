@@ -456,6 +456,13 @@ int main(void) {
                   tribes[agents[i].agent_id / AGENT_PER_TRIBE].color);
     }
 
+    Vector2 pp = Vector2Subtract(player.position, camera_pos);
+    pp = Vector2Scale(pp, WORLD_SCALE);
+    pp.x += SCREEN_WIDTH / 2;
+    pp.y += SCREEN_HEIGHT / 2;
+
+    DrawCircleV(pp, WORLD_SCALE * 0.45f, YELLOW);
+
     DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
     EndDrawing();
   }
