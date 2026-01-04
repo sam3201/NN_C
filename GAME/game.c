@@ -325,10 +325,6 @@ void init_player(void) {
   player.tool = TOOL_HAND;
 }
 
-/* =======================
-   PLAYER
-======================= */
-
 void update_player(void) {
   // --- Movement ---
   Vector2 m = {0};
@@ -392,7 +388,6 @@ void update_player(void) {
     }
   }
 
-  // Store angle in player's tool for hand rotation
   player.stamina = angle; // using stamina temporarily to store rotation angle
 }
 
