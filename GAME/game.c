@@ -905,9 +905,12 @@ int main(void) {
     }
 
     // Draw base
-    DrawCircle(agent_base.position.x * TILE_SIZE,
-               agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
-               DARKGRAY);
+    for (int t = 0; t < TRIBE_COUNT; t++) {
+      Tribe *tr = &tribes[t];
+      DrawCircle(tr->base.position.x * TILE_SIZE,
+                 tr->base.position.y * TILE_SIZE, tr->base.radius * TILE_SIZE,
+                 Fade(tr->color, 0.3f));
+    }
 
     // Draw player
     draw_player(&player);
