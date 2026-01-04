@@ -913,12 +913,7 @@ int main(void) {
     }
 
     // Draw base
-    for (int t = 0; t < TRIBE_COUNT; t++) {
-      Tribe *tr = &tribes[t];
-      DrawCircle(tr->base.position.x * TILE_SIZE,
-                 tr->base.position.y * TILE_SIZE, tr->base.radius * TILE_SIZE,
-                 Fade(tr->color, 0.3f));
-    }
+    draw_base();
 
     // Draw player
     draw_player(&player);
