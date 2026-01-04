@@ -392,6 +392,7 @@ int main(void) {
 
   init_tribes();
   init_agents();
+  init_player();
 
   int train_timer = 0;
 
