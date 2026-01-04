@@ -302,6 +302,8 @@ int main(void) {
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
+  camera_pos = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+
   init_tribes();
   init_agents();
 
