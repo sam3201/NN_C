@@ -228,7 +228,7 @@ Chunk *get_chunk(int cx, int cy) {
   }
 
   for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &c->agents[i];
+    Agent *a = &agents[i];
     a->alive = true;
     a->health = a->stamina = 100;
     a->flash_timer = 0;
