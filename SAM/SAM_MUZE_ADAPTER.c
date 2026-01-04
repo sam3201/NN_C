@@ -1,5 +1,5 @@
 #include "../utils/NN/MUZE/muze_cortex.h"
-#include "SAM/SAM.h"
+#include "SAM.h"
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
                        long double **latent_seq, size_t *seq_len) {
