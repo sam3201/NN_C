@@ -18,7 +18,8 @@ typedef struct {
 } MuRuntime;
 
 /* Runtime lifecycle */
-MuRuntime *mu_runtime_create(MuModel *model, int capacity, float gamma);
+MuRuntime *mu_runtime_create(MuModel *model, TRAIN_WINDOW, rb_type,
+                             float gamma);
 void mu_runtime_free(MuRuntime *rt);
 
 /* Internal runtime ops */
