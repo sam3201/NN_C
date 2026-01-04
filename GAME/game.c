@@ -505,7 +505,10 @@ void draw_mob(Mob *m, Vector2 chunk_offset) {
   if (m->type == MOB_PIG) {
     draw_pig(p, TILE_SIZE * 0.8f);
   }
-  // future mobs like sheep, zombies can be added here
+
+  if (m->type == MOB_SHEEP) {
+    draw_sheep(p, TILE_SIZE * 0.8f);
+  }
 }
 
 void draw_agent(Agent *a, Vector2 chunk_offset) {
