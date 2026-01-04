@@ -243,6 +243,63 @@ Chunk *get_chunk(int cx, int cy) {
   return c;
 }
 
+/* =======================
+   HARVESTING
+======================= */
+void agent_harvest(Agent *a, Chunk *c) {
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->type == RES_NONE)
+      continue;
+
+    float dist = Vector2Distance(a->position, r->position);
+    if (dist < HARVEST_DISTANCE) {
+      // Harvest amount can depend on tool
+      int amount = HARVEST_AMOUNT;
+      if (a->tribe_color == RED)
+        amount *= 1; // example for tribe bonuses
+
+      r->health -= amount;
+      r->visited = true; // flash effect
+
+      // Reward agent
+      a->reward_accumulator += 0.05f;
+
+      // If resource depleted
+      if (r->health <= 0) {
+        r->type = RES_NONE;
+        a->reward_accumulator += 0.1f; // extra reward
+      }
+
+      break; // harvest one resource per step
+    }
+  }
+}
+
+/* =======================
+   ATTACK
+======================= */
+void agent_attack(Agent *a, Chunk *c) {
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    float dist = Vector2Distance(a->position, m->position);
+    if (dist < ATTACK_DISTANCE) {
+      m->health -= ATTACK_DAMAGE;
+      a->reward_accumulator += 0.05f;
+
+      if (m->health <= 0) {
+        m->health = 0;
+        a->reward_accumulator += 0.1f; // bonus for killing
+      }
+
+      break; // attack one mob per step
+    }
+  }
+}
+
 void respawn_agent(Agent *a) {
   a->alive = true;
   a->health = a->stamina = 100;
