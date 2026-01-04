@@ -19,3 +19,5 @@ typedef struct {
 } MuCortex;
 
 #endif
+
+MuCortex *SAM_as_MUZE(SAM_t *sam);
