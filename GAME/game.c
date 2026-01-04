@@ -270,6 +270,33 @@ void draw_resources(void) {
   }
 }
 
+void draw_mobs(void) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      Chunk *c = get_chunk(pcx + dx, pcy + dy);
+
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+
+        Vector2 wp = {(pcx + dx) * CHUNK_SIZE + m->position.x,
+                      (pcy + dy) * CHUNK_SIZE + m->position.y};
+
+        Vector2 sp = Vector2Subtract(wp, camera_pos);
+        sp = Vector2Scale(sp, WORLD_SCALE);
+        sp.x += SCREEN_WIDTH / 2;
+        sp.y += SCREEN_HEIGHT / 2;
+
+        DrawCircleV(sp, WORLD_SCALE * 0.35f, mob_colors[m->type]);
+      }
+    }
+  }
+}
+
 /* =======================
    TRIBES & AGENTS
 ======================= */
