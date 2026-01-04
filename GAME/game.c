@@ -30,7 +30,13 @@ float TILE_SIZE;
    ENUMS
 ======================= */
 
-typedef enum { TOOL_HAND = 0, TOOL_AXE, TOOL_PICKAXE, TOOL_NONE } ToolType;
+typedef enum {
+  TOOL_HAND = 0,
+  TOOL_AXE,
+  TOOL_PICKAXE,
+  TOOL_SHOVEL,
+  TOOL_NONE
+} ToolType;
 typedef enum { RES_TREE = 0, RES_ROCK, RES_FOOD, RES_NONE } ResourceType;
 
 typedef enum {
