@@ -264,8 +264,7 @@ void update_agent(Agent *a) {
 
   float reward = 0.0f;
 
-  if (Vector2Length(Vector2Subtract(a->position, c->base.position)) <
-      BASE_RADIUS) {
+  if (d < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100);
     a->stamina = fminf(a->stamina + 0.5f, 100);
     reward += 0.01f;
