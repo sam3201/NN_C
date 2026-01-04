@@ -376,6 +376,21 @@ void init_player(void) {
   player.stamina = 100;
 }
 
+void update_player(void) {
+  float speed = 0.6f;
+
+  if (IsKeyDown(KEY_W))
+    player.position.y -= speed;
+  if (IsKeyDown(KEY_S))
+    player.position.y += speed;
+  if (IsKeyDown(KEY_A))
+    player.position.x -= speed;
+  if (IsKeyDown(KEY_D))
+    player.position.x += speed;
+
+  player.stamina = fmaxf(0, player.stamina - 0.02f);
+}
+
 /* =======================
    MAIN
 ======================= */
