@@ -10,7 +10,7 @@
 /* =======================
    GLOBAL CONFIG
 ======================= */
-#define WORLD_SIZE 32
+#define WORLD_SIZE 128
 #define CHUNK_SIZE 32
 
 #define MAX_RESOURCES 512
