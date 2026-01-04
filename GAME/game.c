@@ -589,14 +589,10 @@ void update_agent(Agent *a, Chunk *c) {
   }
 
   // --- Base healing ---
-  float dist = Vector2Distance(a->position, agent_base.position);
-  if (dist < BASE_RADIUS) {
+  float dist = Vector2Distance(a->position, tr->base.position);
+  if (dist < tr->base.radius) {
     a->health = fminf(a->health + 0.5f, 100);
     a->stamina = fminf(a->stamina + 0.5f, 100);
-    a->flash_timer += 0.1f;
-  } else {
-    a->flash_timer = 0;
-    a->stamina -= 0.05f;
   }
 
   // --- Death ---
