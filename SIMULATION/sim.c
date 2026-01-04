@@ -426,6 +426,24 @@ void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
   }
 }
 
+float compute_reward(Agent *a, int old_xp, int old_level) {
+  float r = 0.0f;
+
+  if (a->total_xp > old_xp)
+    r += 0.1f * (a->total_xp - old_xp);
+
+  if (a->level > old_level)
+    r += 1.0f;
+
+  if (a->num_eaten > 0)
+    r += 2.0f;
+
+  if (a->total_xp < 0)
+    r -= 1.0f;
+
+  return r;
+}
+
 int decide_action(Agent *agent, long double *inputs) {
   MuModel *brain = agent->brain;
 
