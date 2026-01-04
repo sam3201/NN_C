@@ -510,6 +510,7 @@ void step_agent(GameState *state, Agent *agent, int action) {
   }
 }
 
+/*
 void update_agent(GameState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
@@ -530,6 +531,7 @@ void update_agent(GameState *game, int agent_idx) {
   store_experience(agent, game->vision_inputs, (int)action, agent->total_xp);
   mcts_result_free(&res);
 }
+*/
 
 void update_agents(GameState *state, float dt) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
