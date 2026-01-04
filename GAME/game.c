@@ -256,7 +256,7 @@ void agent_harvest(Agent *a, Chunk *c) {
     if (dist < HARVEST_DISTANCE) {
       // Harvest amount can depend on tool
       int amount = HARVEST_AMOUNT;
-      if (a->tribe_color == RED)
+      if (a->tribe_color == (Color)RED)
         amount *= 1; // example for tribe bonuses
 
       r->health -= amount;
