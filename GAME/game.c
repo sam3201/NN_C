@@ -199,6 +199,13 @@ Chunk *get_chunk(int cx, int cy) {
     m->health = 10;
   }
 
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    m->type = MOB_SHEEP;
+    m->position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
+    m->health = 10;
+  }
+
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &c->agents[i];
     a->alive = true;
