@@ -411,19 +411,25 @@ void draw_player(Player *p) {
   // --- Body ---
   DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
 
-  // --- Hands orbiting body towards mouse ---
-  float hand_distance = TILE_SIZE * 0.45f;
-  Vector2 left_hand = {p->position.x + cosf(p->hand_angle + PI) * hand_distance,
-                       p->position.y +
-                           sinf(p->hand_angle + PI) * hand_distance};
-  Vector2 right_hand = {p->position.x + cosf(p->hand_angle) * hand_distance,
-                        p->position.y + sinf(p->hand_angle) * hand_distance};
+  // --- Swing amplitude ---
+  float swing_offset = sinf((0.2f - p->hand_swing) * 10.0f) * 0.3f;
 
-  // Optionally, change hand color if attacking/harvesting
-  Color hand_color = RED;
+  // --- Left hand points exactly to mouse ---
+  Vector2 left_hand = {
+      p->position.x +
+          cosf(p->hand_angle) * (TILE_SIZE * 0.45f + swing_offset * TILE_SIZE),
+      p->position.y +
+          sinf(p->hand_angle) * (TILE_SIZE * 0.45f + swing_offset * TILE_SIZE)};
 
-  DrawCircleV(left_hand, TILE_SIZE * 0.15f, hand_color);
-  DrawCircleV(right_hand, TILE_SIZE * 0.15f, hand_color);
+  // --- Right hand swings slightly opposite ---
+  Vector2 right_hand = {
+      p->position.x + cosf(p->hand_angle + PI) *
+                          (TILE_SIZE * 0.45f - swing_offset * TILE_SIZE),
+      p->position.y + sinf(p->hand_angle + PI) *
+                          (TILE_SIZE * 0.45f - swing_offset * TILE_SIZE)};
+
+  DrawCircleV(left_hand, TILE_SIZE * 0.15f, RED);
+  DrawCircleV(right_hand, TILE_SIZE * 0.15f, RED);
 }
 
 /* =======================
