@@ -243,9 +243,6 @@ Chunk *get_chunk(int cx, int cy) {
     a->tribe_color = tr->color;
     a->agent_id = i;
 
-    int tribe_id = i / AGENT_PER_TRIBE;
-    Tribe *tr = &tribes[tribe_id];
-
     if (cx == (int)tr->base.position.x && cy == (int)tr->base.position.y) {
 
       float ang = randf(0, 2 * PI);
