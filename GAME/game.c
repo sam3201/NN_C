@@ -244,7 +244,6 @@ Chunk *get_chunk(int cx, int cy) {
     a->agent_id = i;
 
     if (cx == (int)tr->base.position.x && cy == (int)tr->base.position.y) {
-
       float ang = randf(0, 2 * PI);
       float d = randf(2, tr->base.radius - 1);
 
