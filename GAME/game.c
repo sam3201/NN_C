@@ -315,8 +315,6 @@ void update_agent(Agent *a) {
     break;
   }
 
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-
   mu_model_end_episode(tr->brain, -1.0f);
   mu_model_step(tr->brain, obs, action, reward);
 
