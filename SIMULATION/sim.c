@@ -349,6 +349,16 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
 void handle_breeding(GameState *game) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     for (int j = i + 1; j < POPULATION_SIZE - MAX_GROUNDSKEEPERS; j++) {
+      static float train_timer = 0;
+      train_timer += GetFrameTime();
+
+      if (train_timer > 1.0f) {
+        for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+          mu_model_train(game->agents[i].brain);
+        }
+        train_timer = 0;
+      }
+
       Agent *a1 = &game->agents[i];
       Agent *a2 = &game->agents[j];
       if (can_breed(a1, a2)) {
