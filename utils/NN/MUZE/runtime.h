@@ -11,6 +11,7 @@ typedef struct {
   int has_last;
   float gamma;
 
+  uint64_t total_steps;
 } MuRuntime;
 
 /* Runtime lifecycle */
