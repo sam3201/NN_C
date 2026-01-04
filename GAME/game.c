@@ -203,6 +203,32 @@ Chunk *get_chunk(int cx, int cy) {
   return c;
 }
 
+void draw_chunks(void) {
+  int view_radius = 6;
+
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  for (int dx = -view_radius; dx <= view_radius; dx++) {
+    for (int dy = -view_radius; dy <= view_radius; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+
+      Vector2 world_pos = {cx * CHUNK_SIZE, cy * CHUNK_SIZE};
+
+      Vector2 screen = Vector2Subtract(world_pos, camera_pos);
+      screen = Vector2Scale(screen, WORLD_SCALE);
+      screen.x += SCREEN_WIDTH / 2;
+      screen.y += SCREEN_HEIGHT / 2;
+
+      DrawRectangle(screen.x, screen.y, CHUNK_SIZE * WORLD_SCALE,
+                    CHUNK_SIZE * WORLD_SCALE,
+                    Fade(biome_colors[c->biome_type], 0.9f));
+    }
+  }
+}
+
 /* =======================
    TRIBES & AGENTS
 ======================= */
