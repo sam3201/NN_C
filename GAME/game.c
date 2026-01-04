@@ -130,6 +130,7 @@ typedef struct {
   int wood, stone, food;
   bool alive;
   ToolType tool;
+  float hand_angle; // NEW: angle hands face (radians)
 } Player;
 
 typedef struct {
