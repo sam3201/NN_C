@@ -390,7 +390,6 @@ void respawn_agent(Agent *a) {
 
   mu_model_reset_episode(a->brain);
 }
-
 draw_ui(void) {}
 
 /* =======================
