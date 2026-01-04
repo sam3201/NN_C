@@ -72,7 +72,7 @@ void ForeRunner_backprop(ForeRunner_t *model, long double **input_sequence,
   if (!model || !grad_loss)
     return;
 
-  TRANSFORMER_backward(model->transformer, input_sequence, seq_length,
+  TRANSFORMER_backprop(model->transformer, input_sequence, seq_length,
                        grad_loss);
 }
 
