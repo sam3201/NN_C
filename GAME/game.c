@@ -209,7 +209,7 @@ void init_agents(void) {
 /* =======================
    OBSERVATION & RL
 ======================= */
-void encode_observation(Agent *a, Chunk *c, float *obs) {
+void encode_observation(Tribe *tr, Chunk *c, float *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
   obs[0] = a->health / 100.0f;
