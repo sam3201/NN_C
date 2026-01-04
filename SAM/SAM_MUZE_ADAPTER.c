@@ -1,4 +1,4 @@
-#include "../utils/NN/MUZE/all.h"
+#include "../utils/NN/MUZE/muze_cortex.h"
 #include "SAM.h"
 #include <stdlib.h>
 
