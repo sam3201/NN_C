@@ -57,7 +57,7 @@ typedef struct {
   MuModel *brain;
   Memory memory;
   size_t input_size;
-  float latent_state[LATENT_MAX];
+  float latent[LATENT_MAX];
   bool has_latent;
 } Agent;
 
