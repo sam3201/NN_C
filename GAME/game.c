@@ -339,7 +339,7 @@ void update_player(void) {
     m.x += 1;
 
   if (m.x && m.y)
-    m = Vector2Scale(m, M_PI / 3);
+    m = Vector2Scale(m, M_PI / 4.0f);
   player.position =
       Vector2Add(player.position, Vector2Scale(m, player.move_speed));
 
