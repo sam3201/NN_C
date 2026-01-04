@@ -290,6 +290,7 @@ void eat_agent(Agent *predator, Agent *prey) {
   prey->num_offsprings = 0;
   prey->num_eaten = 0;
   prey->is_breeding = false;
+  prey->has_latent = false;
   update_agent_color(prey);
 
   // Update predator color/level
