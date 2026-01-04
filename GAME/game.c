@@ -121,7 +121,7 @@ typedef struct {
   int agent_count;
 
   SAM_t *sam;
-  MuCortex *brain;
+  MuCortex *cortex;
   float reward_accumulator;
 } Tribe;
 
