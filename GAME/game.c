@@ -318,8 +318,8 @@ void init_tribes(void) {
     tr->agent_count = AGENT_PER_TRIBE;
     tr->reward_accumulator = 0.0f;
 
-    tr->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-    tr->cortex = SAM_as_MUZE(tr->sam);
+    tr->cortex->brain = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
+    tr->cortex = SAM_as_MUZE(tr->cortex->brain);
     tr->base.position =
         (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
@@ -391,7 +391,7 @@ int decide_action(Agent *a, ObsBuffer *obs) {
                    .temperature = 0.8f,
                    .discount = 0.95f};
 
-  MCTSResult r = mcts_run(tr->sam, obs->data, &mp);
+  MCTSResult r = mcts_run(tr->cortex->brain, obs->data, &mp);
   int action = r.chosen_action;
   mcts_result_free(&r);
   return action;
@@ -462,9 +462,9 @@ void update_agent(Agent *a) {
 
   if (a->health <= 0 || a->stamina <= 0) {
     a->alive = false;
-    mu_model_end_episode(tr->sam, -1.0f);
+    mu_model_end_episode(tr->cortex->brain, -1.0f);
   } else {
-    mu_model_step(tr->sam, obs.data, action, reward);
+    mu_model_step(tr->cortex->brain, obs.data, action, reward);
     obs_free(&obs);
   }
 
