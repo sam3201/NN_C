@@ -201,9 +201,11 @@ Chunk *get_chunk(int cx, int cy) {
   }
 
   for (int i = 0; i < MAX_MOBS; i++) {
+    MobType type = rand() % MOB_COUNT;
+    printf("%d\n", type);
+    c->mobs[i].type = type;
     c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
     c->mobs[i].health = 100;
-    c->mobs[i].type = rand() % 3;
   }
 
   for (int i = 0; i < MAX_AGENTS; i++) {
