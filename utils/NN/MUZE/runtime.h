@@ -10,6 +10,7 @@ typedef struct {
   int last_action;
   int has_last;
   float gamma;
+
 } MuRuntime;
 
 /* Runtime lifecycle */
