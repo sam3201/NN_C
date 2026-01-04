@@ -368,7 +368,7 @@ void update_agent(Agent *a) {
 }
 
 /* =======================
-   CHUNK UPDATE
+   PLAYER
 ======================= */
 void init_player(void) {
   player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
