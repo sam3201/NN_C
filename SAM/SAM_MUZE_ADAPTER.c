@@ -39,3 +39,5 @@ static void sam_learn(void *brain, float reward, int terminal) {
     SAM_transfuse(sam);
   }
 }
+
+muze_plan(cortex, observation); // cortex and observation
