@@ -188,6 +188,14 @@ Chunk *get_chunk(int cx, int cy) {
     c->resources[i].health = 100;
   }
 
+  // --- Spawn passive pigs ---
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    m->type = MOB_PIG; // all pigs for now
+    m->position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
+    m->health = 10; // just a placeholder
+  }
+
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &c->agents[i];
     a->alive = true;
