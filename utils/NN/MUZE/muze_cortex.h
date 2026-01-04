@@ -19,12 +19,3 @@ typedef struct {
 } MuCortex;
 
 #endif
-
-MuCortex *SAM_as_MUZE(SAM_t *sam) {
-  MuCortex *c = malloc(sizeof(MuCortex));
-  c->brain = sam;
-  c->encode = sam_encode;
-  c->policy = sam_policy;
-  c->learn = sam_learn;
-  return c;
-}
