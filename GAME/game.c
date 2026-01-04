@@ -113,6 +113,12 @@ typedef struct {
   int age;
 } Agent;
 
+typedef struct {
+  Vector2 position;
+  float health;
+  float stamina;
+} Player;
+
 /* =======================
    GLOBAL STATE
 ======================= */
