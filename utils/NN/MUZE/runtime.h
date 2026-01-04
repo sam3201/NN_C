@@ -5,6 +5,8 @@
 #include "replay_buffer.h"
 #include <stdint.h>
 
+#define TRAIN_WINDOW 256
+
 typedef struct {
   ReplayBuffer *rb;
   float *last_obs;
