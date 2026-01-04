@@ -26,8 +26,6 @@ Color gray = (Color){100, 100, 100, 255};
 
 #define MAX_RESOURCES 512
 #define MAX_MOBS 512
-#define MAX_PIGS 64
-#define MAX_SHEEPS 64
 #define AGENT_PER_TRIBE 8
 #define MAX_AGENTS AGENT_PER_TRIBE *TRIBE_COUNT
 #define BASE_RADIUS 8
