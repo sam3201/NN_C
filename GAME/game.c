@@ -598,21 +598,25 @@ void init_base(void) {
 void draw_resource(Resource *r) {
   Vector2 pos = Vector2Scale(r->position, TILE_SIZE);
 
+  // shake effect
+  if (r->visited) {
+    pos.x += rand() % 3 - 1; // small shake
+    pos.y += rand() % 3 - 1;
+  }
+
   float size_multiplier = 1.0f;
 
   switch (r->type) {
   case RES_TREE:
-    size_multiplier = 3.0f; // Trees big
-    // Trunk
+    size_multiplier = 3.0f;
     DrawRectangleV((Vector2){pos.x - TILE_SIZE * 0.15f, pos.y},
                    (Vector2){TILE_SIZE * 0.3f, TILE_SIZE * 0.7f},
                    (Color){101, 67, 33, 255});
-    // Leaves
     DrawCircleV((Vector2){pos.x, pos.y - TILE_SIZE * 0.35f}, TILE_SIZE * 0.5f,
                 GREEN);
     break;
   case RES_ROCK:
-    size_multiplier = 1.5f; // Rocks smaller than trees but bigger than player
+    size_multiplier = 1.5f;
     DrawCircleV(pos, TILE_SIZE * 0.35f, GRAY);
     break;
   case RES_GOLD:
@@ -625,10 +629,8 @@ void draw_resource(Resource *r) {
     break;
   }
 
-  if (r->visited) {
-    DrawCircleV(pos, TILE_SIZE * 0.35f * size_multiplier, Fade(WHITE, 0.5f));
+  if (r->visited)
     r->visited = false; // reset after flash
-  }
 }
 
 /* =======================
