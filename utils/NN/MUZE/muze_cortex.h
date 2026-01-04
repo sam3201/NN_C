@@ -1,3 +1,6 @@
+#ifndef MUZE_CORTEX_H
+#define MUZE_CORTEX_H
+
 typedef struct {
   void *brain; // opaque (SAM_t*)
 
