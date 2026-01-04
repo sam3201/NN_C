@@ -25,6 +25,9 @@ typedef struct {
 } MCTSResult;
 
 MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params);
+MCTSResult mcts_run_latent(MuModel *model, const float *latent,
+                           const MCTSParams *params);
+
 void mcts_result_free(MCTSResult *res);
 
 #ifdef __cplusplus
