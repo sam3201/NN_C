@@ -291,6 +291,8 @@ void eat_agent(Agent *predator, Agent *prey) {
   prey->num_eaten = 0;
   prey->is_breeding = false;
   prey->has_latent = false;
+  mu_model_reset_episode(prey->brain);
+
   update_agent_color(prey);
 
   // Update predator color/level
