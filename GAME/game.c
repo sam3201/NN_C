@@ -248,7 +248,19 @@ void encode_observation(Agent *a, Chunk *c, float *obs) {
 
 int decide_action(Agent *a, float *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-  return mu_model_act(tr->brain, obs);
+
+  MCTSParams mp = {.num_simulations = 32,
+                   .c_puct = 1.5f,
+                   .max_depth = 16,
+                   .dirichlet_alpha = 0.3f,
+                   .dirichlet_eps = 0.25f,
+                   .temperature = 0.8f,
+                   .discount = 0.95f};
+
+  MCTSResult r = mcts_run(tr->brain, obs, &mp);
+  int action = r.chosen_action;
+  mcts_result_free(&r);
+  return action;
 }
 
 /* =======================
