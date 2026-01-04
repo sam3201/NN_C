@@ -558,7 +558,7 @@ int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
     return 0;
 
-  return rand() %
+  return rand() % ACTION_COUNT;
 }
 
 void update_agent(Agent *a, Chunk *c) {
