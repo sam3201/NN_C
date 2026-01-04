@@ -53,7 +53,7 @@ typedef struct {
   int parent_id;
   int num_offsprings;
   int num_eaten;
-  int last_eaten;
+  int last_num_eaten;
   bool is_breeding;
   float breeding_timer;
   Color color;
