@@ -15,3 +15,5 @@ typedef struct {
   // learning signal
   void (*learn)(void *brain, float reward, int terminal);
 } MuCortex;
+
+#endif
