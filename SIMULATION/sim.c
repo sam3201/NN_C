@@ -526,7 +526,6 @@ void step_agent(GameState *state, Agent *agent, int action) {
     if (CheckCollisionRecs(agent->rect, state->food[i].rect)) {
       eat_food(agent);
       agent->num_eaten++;
-
       // move food to random position
       state->food[i].position =
           (Vector2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
