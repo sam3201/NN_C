@@ -23,7 +23,7 @@ Color gray = (Color){100, 100, 100, 255};
 #define CHUNK_SIZE 32
 
 #define MAX_RESOURCES 512
-#define MAX_MOBS 10
+#define MAX_MOBS 512
 #define MAX_AGENTS 8
 #define BASE_RADIUS 8
 #define MAX_BASE_PARTICLES 32
