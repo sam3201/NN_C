@@ -470,6 +470,7 @@ void update_agent(Agent *a) {
 
   a->age++;
 
+  bool terminal = !a->alive;
   tr->cortex->learn(tr->cortex->brain, reward, terminal);
 }
 
