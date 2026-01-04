@@ -680,7 +680,6 @@ void free_game(GameState *game) {
 
 void save_game(GameState *game, const char *filename) {
   FILE *file = fopen(filename, "wb");
-  fwrite(game, sizeof(GameState), 1, file);
   fclose(file);
 }
 
