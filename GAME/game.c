@@ -460,7 +460,6 @@ void draw_resource(Resource *r) {
     break;
   }
 
-  // Flash effect when harvested
   if (r->visited) {
     DrawCircleV(pos, TILE_SIZE * 0.35f, Fade(WHITE, 0.5f));
     r->visited = false; // reset after flash
