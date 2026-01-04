@@ -454,7 +454,6 @@ int decide_action(Agent *agent, long double *inputs) {
   for (int i = 0; i < obs_dim; i++)
     obs[i] = (float)inputs[i];
 
-  // 🔑 Only encode observation if no latent exists
   if (!agent->has_latent) {
     mu_model_repr(brain, obs, agent->latent);
     agent->has_latent = true;
