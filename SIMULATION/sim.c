@@ -142,6 +142,7 @@ void init_agent(Agent *agent, int id) {
 }
 
 // --- VISION ENCODING ---
+/*
 void encode_vision(GameState *game, int agent_idx, long double *vision_output) {
   Agent *self = &game->agents[agent_idx];
 
@@ -204,6 +205,7 @@ void encode_vision(GameState *game, int agent_idx, long double *vision_output) {
         CheckCollisionRecs(self->rect, gk->rect) ? 1.0L : 0.0L; // touching
   }
 }
+*/
 
 Action get_action_from_output(long double *outputs) {
   int max_idx = 0;
