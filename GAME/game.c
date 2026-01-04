@@ -37,6 +37,7 @@ typedef enum {
   TOOL_SHOVEL,
   TOOL_NONE
 } ToolType;
+
 typedef enum {
   RES_TREE = 0,
   RES_ROCK,
