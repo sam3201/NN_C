@@ -195,6 +195,7 @@ Chunk *get_chunk(int cx, int cy) {
 
   return c;
 }
+
 void respawn_agent(Agent *a) {
   a->alive = true;
   a->health = a->stamina = 100;
