@@ -118,6 +118,7 @@ typedef struct {
   Color color;
   float lifetime;
 } Base;
+
 typedef struct {
   int tribe_id;
   Color color;
