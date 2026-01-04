@@ -507,6 +507,17 @@ void draw_agent(Agent *a, Vector2 chunk_offset) {
     DrawCircleV(p, TILE_SIZE * 0.25f, Fade(WHITE, 0.6f));
 }
 
+void draw_player(Player *p) {
+  // Body (tan)
+  DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
+
+  // Hands/tool (tribe color)
+  DrawCircleV((Vector2){p->position.x - TILE_SIZE * 0.2f, p->position.y},
+              TILE_SIZE * 0.15f, RED);
+  DrawCircleV((Vector2){p->position.x + TILE_SIZE * 0.2f, p->position.y},
+              TILE_SIZE * 0.15f, RED);
+}
+
 /* =======================
    UI
 ======================= */
