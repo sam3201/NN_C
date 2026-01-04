@@ -36,6 +36,7 @@ float TILE_SIZE;
 Color pink = (Color){255, 192, 203, 255};
 Color yellow = (Color){255, 255, 0, 255};
 Color gray = (Color){100, 100, 100, 255};
+Agent agents[MAX_AGENTS];
 
 /* =======================
    ENUMS
@@ -118,7 +119,6 @@ typedef struct {
   Resource resources[MAX_RESOURCES];
   int resource_count;
   Mob mobs[MAX_MOBS];
-  Agent agents[MAX_AGENTS];
   bool generated;
 } Chunk;
 
