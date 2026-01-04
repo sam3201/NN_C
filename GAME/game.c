@@ -213,6 +213,9 @@ Chunk *get_chunk(int cx, int cy) {
     a->health = a->stamina = 100;
     a->flash_timer = 0;
     a->agent_id = i;
+    a->reward_accumulator = 0;
+    a->age = 0;
+    a->steps_alive = 0;
 
     a->tribe_color = (i % 4 == 0)   ? RED
                      : (i % 4 == 1) ? BLUE
