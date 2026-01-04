@@ -631,7 +631,7 @@ void update_game(GameState *game) {
         ((float)rand() / RAND_MAX) < FOOD_SPAWN_CHANCE)
       spawn_food(&game->food[i]);
 
-  update_agents(game, i);
+  update_agents(game, GetFrameTime());
 
   for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
     update_groundkeeper(game, i);
