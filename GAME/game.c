@@ -111,6 +111,13 @@ typedef struct {
 ======================= */
 
 Chunk world[WORLD_SIZE][WORLD_SIZE];
+Mob *mob = malloc(sizeof(Mob));
+mob->mob_id = mob_id;
+mob->position = (Vector2){x, y};
+mob->health = 100;
+mob->alive = true;
+
+Mobs[mob_id] = mob;
 Player player;
 Base agent_base;
 BaseParticle base_particles[MAX_BASE_PARTICLES];
