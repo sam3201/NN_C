@@ -340,7 +340,7 @@ void update_player(void) {
     m.x += 1;
 
   if (m.x && m.y)
-    m = Vector2Scale(m, 0.7071f);
+    m = Vector2Scale(m, 0.707f);
   player.position =
       Vector2Add(player.position, Vector2Scale(m, player.move_speed));
 
@@ -360,6 +360,8 @@ void update_player(void) {
   int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
   Chunk *c = get_chunk(cx, cy);
 
+  bool action_performed = false;
+
   // Left click = attack
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
     for (int i = 0; i < MAX_MOBS; i++) {
@@ -370,6 +372,8 @@ void update_player(void) {
       float dist = Vector2Distance(player.position, m->position) * TILE_SIZE;
       if (dist < ATTACK_DISTANCE * TILE_SIZE) {
         m->health -= ATTACK_DAMAGE;
+        m->visited = true; // shake
+        action_performed = true;
         break;
       }
     }
@@ -385,14 +389,23 @@ void update_player(void) {
       float dist = Vector2Distance(player.position, r->position) * TILE_SIZE;
       if (dist < HARVEST_DISTANCE * TILE_SIZE) {
         r->health -= HARVEST_AMOUNT;
+        r->visited = true; // shake
         if (r->health <= 0)
           r->type = RES_NONE;
+        action_performed = true;
         break;
       }
     }
   }
-}
 
+  // --- Swing animation ---
+  if (action_performed)
+    player.hand_swing = 0.2f; // duration of swing
+  if (player.hand_swing > 0)
+    player.hand_swing -= GetFrameTime();
+  else
+    player.hand_swing = 0;
+}
 void draw_player(Player *p) {
   // --- Body ---
   DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
