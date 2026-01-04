@@ -547,11 +547,11 @@ int main(void) {
     }
 
     BeginDrawing();
+    ClearBackground((Color){20, 20, 20, 255});
+
     draw_chunks();
     draw_resources();
     draw_mobs();
-
-    ClearBackground((Color){20, 20, 20, 255});
 
     /* Draw bases */
     for (int t = 0; t < TRIBE_COUNT; t++) {
