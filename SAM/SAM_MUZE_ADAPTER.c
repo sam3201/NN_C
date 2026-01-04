@@ -40,4 +40,4 @@ static void sam_learn(void *brain, float reward, int terminal) {
   }
 }
 
-muze_plan(cortex, observation); // cortex and observation
+void muze_plan(cortex, observation);
