@@ -323,6 +323,7 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
                            (float)child.size, (float)child.size};
   child.input_size = get_total_input_size();
   update_agent_color(&child);
+  child.has_latent = false;
 
   MuConfig cfg = {.obs_dim = (int)child.input_size,
                   .latent_dim = 32,
