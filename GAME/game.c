@@ -390,6 +390,13 @@ void init_base(void) {
     base_particles[i].lifetime = randf(0, 1);
   }
 }
+/* =======================
+  MOBS
+======================= */
+
+/* =======================
+   UI
+======================= */
 
 void draw_ui(Player player) {
   DrawText("Health:", SCREEN_WIDTH - 100, 10, 16, WHITE);
