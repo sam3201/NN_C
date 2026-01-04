@@ -192,7 +192,7 @@ Chunk *get_chunk(int cx, int cy) {
     c->resources[i].health = 100;
   }
 
-  for (int i = 0; i < MAX_MOBS; i++) {
+  for (int i = 0; i < MAX_MOBS - PIG_COUNT; i++) {
     Mob *m = &c->mobs[i];
     m->type = MOB_PIG;
     m->position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
