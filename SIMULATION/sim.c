@@ -684,6 +684,12 @@ void save_game(GameState *game, const char *filename) {
   fclose(file);
 }
 
+void load_game(GameState *game, const char *filename) {
+  FILE *file = fopen(filename, "rb");
+  fread(game, sizeof(GameState), 1, file);
+  fclose(file);
+}
+
 // --- MAIN ---
 int main(void) {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Evolution Simulator");
