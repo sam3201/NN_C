@@ -290,10 +290,7 @@ void eat_agent(Agent *predator, Agent *prey) {
   prey->num_offsprings = 0;
   prey->num_eaten = 0;
   prey->is_breeding = false;
-  // End the episode with a strong negative terminal reward
   mu_model_end_episode(prey->brain, -5.0f);
-
-  // Reset latent state
   prey->has_latent = false;
   mu_model_reset_episode(prey->brain);
 
