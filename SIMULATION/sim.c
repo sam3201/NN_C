@@ -665,11 +665,6 @@ void init_game(GameState *state) {
   // Initialize agents
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     init_agent(&state->agents[i], state->next_agent_id++);
-    state->agents[i].brain =
-        mu_model_create(&(MuConfig){.obs_dim = get_total_input_size(),
-                                    .latent_dim = 16,
-                                    .action_count = ACTION_COUNT});
-    state->agents[i].input_size = get_total_input_size();
   }
 
   // Initialize groundkeepers
