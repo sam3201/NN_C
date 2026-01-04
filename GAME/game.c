@@ -282,7 +282,7 @@ int decide_action(Agent *a, ObsBuffer *obs) {
                    .temperature = 0.8f,
                    .discount = 0.95f};
 
-  MCTSResult r = mcts_run(tr->brain, obs, &mp);
+  MCTSResult r = mcts_run(tr->brain, obs->size, &mp);
   int action = r.chosen_action;
   mcts_result_free(&r);
   return action;
