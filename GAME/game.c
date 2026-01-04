@@ -38,6 +38,13 @@ Color biome_colors[] = {
     (Color){200, 180, 80, 255},  // desert
 };
 
+Color mob_colors[] = {
+    PINK,     // pig
+    RAYWHITE, // sheep
+    DARKGRAY, // skeleton
+    GREEN     // zombie
+};
+
 Color resource_colors[] = {
     DARKGREEN, // tree
     GRAY,      // rock
