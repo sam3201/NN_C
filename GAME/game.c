@@ -123,6 +123,26 @@ Agent agents[MAX_AGENTS];
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
 
+/* OBS BUFFER */
+static inline void obs_init(ObsBuffer *o) {
+  o->capacity = 32;
+  o->size = 0;
+  o->data = malloc(sizeof(float) * o->capacity);
+}
+
+static inline void obs_push(ObsBuffer *o, float v) {
+  if (o->size >= o->capacity) {
+    o->capacity *= 2;
+    o->data = realloc(o->data, sizeof(float) * o->capacity);
+  }
+  o->data[o->size++] = v;
+}
+
+static inline void obs_free(ObsBuffer *o) {
+  free(o->data);
+  o->data = NULL;
+  o->size = o->capacity = 0;
+}
 /* =======================
    HELPERS
 ======================= */
