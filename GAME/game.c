@@ -212,33 +212,38 @@ void init_agents(void) {
 void encode_observation(Agent *a, Chunk *c, float *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
+  Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
+  float dbase = Vector2Length(to_base);
+
   obs[0] = a->health / 100.0f;
   obs[1] = a->stamina / 100.0f;
+  obs[2] = fminf(dbase / 64.0f, 1.0f);
+  obs[3] = to_base.x / (dbase + 1e-4f);
+  obs[4] = to_base.y / (dbase + 1e-4f);
 
-  Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
-  float d = Vector2Length(to_base);
+  /* Resource density encoding (infinite world compatible) */
+  float res_count = (float)c->resource_count / MAX_RESOURCES;
+  obs[5] = res_count;
 
-  obs[2] = fminf(d / (BASE_RADIUS * 4.0f), 1.0f);
-  obs[3] = (d > 0) ? to_base.x / d : 0;
-  obs[4] = (d > 0) ? to_base.y / d : 0;
-
-  obs[5] = 1.0f;
-  obs[6] = obs[7] = 0.0f;
-
-  float nearest = 9999.0f;
+  /* Mean resource direction */
+  Vector2 mean = {0};
   for (int i = 0; i < c->resource_count; i++) {
-    Vector2 dv = Vector2Subtract(c->resources[i].position, a->position);
-    float nd = Vector2Length(dv);
-    if (nd < nearest) {
-      nearest = nd;
-      obs[5] = fminf(nd / CHUNK_SIZE, 1.0f);
-      obs[6] = dv.x / (nd + 1e-4f);
-      obs[7] = dv.y / (nd + 1e-4f);
-    }
+    mean = Vector2Add(mean,
+                      Vector2Subtract(c->resources[i].position, a->position));
   }
+  if (c->resource_count > 0)
+    mean = Vector2Scale(mean, 1.0f / c->resource_count);
 
-  obs[8] = (d < BASE_RADIUS) ? 1.0f : 0.0f;
-  obs[9] = 1.0f;
+  float md = Vector2Length(mean);
+  obs[6] = mean.x / (md + 1e-4f);
+  obs[7] = mean.y / (md + 1e-4f);
+
+  obs[8] = (dbase < BASE_RADIUS) ? 1.0f : 0.0f;
+  obs[9] = 1.0f; /* bias */
+
+  /* Remaining slots reserved for future memory expansion */
+  for (int i = 10; i < 16; i++)
+    obs[i] = 0.0f;
 }
 
 int decide_action(Agent *a, float *obs) { return rand() % ACTION_COUNT; }
