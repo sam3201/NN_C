@@ -469,13 +469,10 @@ void init_tribes(void) {
   }
 }
 
-void draw_base(void) {
-  for (int t = 0; t < TRIBE_COUNT; t++) {
-    Tribe *tr = &tribes[t];
-    DrawCircle(tr->base.position.x * TILE_SIZE, tr->base.position.y * TILE_SIZE,
-               tr->base.radius * TILE_SIZE, Fade(tr->color, 0.3f));
-  }
-}
+/* =======================
+  BASE
+======================= */
+void draw_base(Tribe *tr) {}
 
 /* =======================
    AGENTS
