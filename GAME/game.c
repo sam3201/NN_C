@@ -32,6 +32,12 @@
 Vector2 camera_pos;
 float WORLD_SCALE = 12.0f;
 
+Color biome_colors[] = {
+    (Color){40, 120, 40, 255},   // grass
+    (Color){140, 140, 140, 255}, // stone
+    (Color){200, 180, 80, 255},  // desert
+};
+
 /* =======================
    ENUMS
 ======================= */
