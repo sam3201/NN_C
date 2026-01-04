@@ -347,9 +347,7 @@ int main(void) {
     train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int t = 0; t < TRIBE_COUNT; t++) {
-        mu_model_step(tribes[t].brain,
-                      NULL, // MUZE already has per-agent steps
-                      -1, tribes[t].reward_accumulator);
+        mu_model_step(tribes[t].brain, NULL, -1, tribes[t].reward_accumulator);
 
         mu_model_train(tribes[t].brain);
         tribes[t].reward_accumulator = 0.0f;
