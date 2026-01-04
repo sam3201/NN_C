@@ -476,18 +476,21 @@ void draw_resource(Resource *r) {
 /* =======================
   MOBS
 ======================= */
+/* =======================
+  MOBS
+======================= */
 void draw_pig(Vector2 pos, float size) {
   // Body
   DrawCircleV(pos, size * 0.5f, pink);
 
-  // Head (small circle on top)
+  // Head
   DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.3f, pink);
 
   // Snout
   DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.15f,
               (Color){255, 160, 160, 255});
 
-  // Legs (simple rectangles)
+  // Legs
   DrawRectangleV((Vector2){pos.x - size * 0.35f, pos.y + size * 0.3f},
                  (Vector2){size * 0.2f, size * 0.2f}, pink);
   DrawRectangleV((Vector2){pos.x + size * 0.15f, pos.y + size * 0.3f},
@@ -495,29 +498,53 @@ void draw_pig(Vector2 pos, float size) {
 }
 
 void draw_sheep(Vector2 pos, float size) {
-  // Body
   DrawCircleV(pos, size * 0.5f, Fade(WHITE, 0.5f));
-
-  // Head
   DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.3f,
               Fade(WHITE, 0.5f));
-
-  // Legs
   DrawRectangleV((Vector2){pos.x - size * 0.35f, pos.y + size * 0.3f},
                  (Vector2){size * 0.2f, size * 0.2f}, Fade(WHITE, 0.5f));
   DrawRectangleV((Vector2){pos.x + size * 0.15f, pos.y + size * 0.3f},
                  (Vector2){size * 0.2f, size * 0.2f}, Fade(WHITE, 0.5f));
 }
 
+void draw_skeleton(Vector2 pos, float size) {
+  DrawCircleV(pos, size * 0.5f, WHITE); // Body
+  DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.3f,
+              WHITE); // Head
+  // Bones (lines)
+  DrawLine(pos.x - size * 0.25f, pos.y, pos.x + size * 0.25f, pos.y, GRAY);
+  DrawLine(pos.x, pos.y - size * 0.25f, pos.x, pos.y + size * 0.25f, GRAY);
+}
+
+void draw_zombie(Vector2 pos, float size) {
+  DrawRectangleV((Vector2){pos.x - size * 0.4f, pos.y - size * 0.4f},
+                 (Vector2){size * 0.8f, size * 0.8f}, GREEN); // Body
+  DrawRectangleV((Vector2){pos.x - size * 0.2f, pos.y - size * 0.6f},
+                 (Vector2){size * 0.4f, size * 0.2f}, GREEN); // Head
+  DrawRectangleV((Vector2){pos.x - size * 0.35f, pos.y + size * 0.3f},
+                 (Vector2){size * 0.15f, size * 0.3f}, GREEN); // Left leg
+  DrawRectangleV((Vector2){pos.x + size * 0.2f, pos.y + size * 0.3f},
+                 (Vector2){size * 0.15f, size * 0.3f}, GREEN); // Right leg
+}
+
 void draw_mob(Mob *m, Vector2 chunk_offset) {
   Vector2 p = Vector2Add(Vector2Scale(m->position, TILE_SIZE), chunk_offset);
 
-  if (m->type == MOB_PIG) {
+  switch (m->type) {
+  case MOB_PIG:
     draw_pig(p, TILE_SIZE * 0.8f);
-  }
-
-  if (m->type == MOB_SHEEP) {
+    break;
+  case MOB_SHEEP:
     draw_sheep(p, TILE_SIZE * 0.8f);
+    break;
+  case MOB_SKELETON:
+    draw_skeleton(p, TILE_SIZE * 0.8f);
+    break;
+  case MOB_ZOMBIE:
+    draw_zombie(p, TILE_SIZE * 0.8f);
+    break;
+  default:
+    break;
   }
 }
 
