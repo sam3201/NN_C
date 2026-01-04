@@ -103,7 +103,6 @@ typedef struct {
   int agent_id;
   bool alive;
   float flash_timer;
-  MuModel *brain;
   int age;
 } Agent;
 
