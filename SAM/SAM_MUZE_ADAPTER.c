@@ -39,10 +39,11 @@ static void sam_learn(void *brain, float reward, int terminal) {
   }
 }
 
-MuCortex SAM_as_MUZE(SAM_t *sam) {
-  MuCortex c = {.brain = sam,
-                .encode = sam_encode,
-                .policy = sam_policy,
-                .learn = sam_learn};
+MuCortex *SAM_as_MUZE(SAM_t *sam) {
+  MuCortex *c = malloc(sizeof(MuCortex));
+  c->brain = sam;
+  c->encode = sam_encode;
+  c->policy = sam_policy;
+  c->learn = sam_learn;
   return c;
 }
