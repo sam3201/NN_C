@@ -274,13 +274,13 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
 int decide_action(Agent *a, ObsBuffer *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
-  MCTSParams *mp = {.num_simulations = 32,
-                    .c_puct = 1.5f,
-                    .max_depth = 16,
-                    .dirichlet_alpha = 0.3f,
-                    .dirichlet_eps = 0.25f,
-                    .temperature = 0.8f,
-                    .discount = 0.95f};
+  MCTSParams mp = {.num_simulations = 32,
+                   .c_puct = 1.5f,
+                   .max_depth = 16,
+                   .dirichlet_alpha = 0.3f,
+                   .dirichlet_eps = 0.25f,
+                   .temperature = 0.8f,
+                   .discount = 0.95f};
 
   MCTSResult r = mcts_run(tr->brain, obs->data, obs->size, &mp);
   int action = r.chosen_action;
