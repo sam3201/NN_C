@@ -38,6 +38,13 @@ Color biome_colors[] = {
     (Color){200, 180, 80, 255},  // desert
 };
 
+Color resource_colors[] = {
+    DARKGREEN, // tree
+    GRAY,      // rock
+    GOLD,      // gold
+    RED        // food
+};
+
 /* =======================
    ENUMS
 ======================= */
