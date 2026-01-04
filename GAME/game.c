@@ -435,7 +435,7 @@ void update_agent(Agent *a, Chunk *c) {
 
   int action = decide_action(a, obs);
 
-  // --- Apply action ---
+  // --- Action handling ---
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
@@ -448,6 +448,12 @@ void update_agent(Agent *a, Chunk *c) {
     break;
   case ACTION_RIGHT:
     a->position.x += 0.5f;
+    break;
+  case ACTION_HARVEST:
+    agent_harvest(a, c);
+    break;
+  case ACTION_ATTACK:
+    agent_attack(a, c);
     break;
   default:
     break;
