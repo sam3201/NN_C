@@ -44,7 +44,8 @@ typedef enum {
   TOOL_AXE,
   TOOL_PICKAXE,
   TOOL_SHOVEL,
-  TOOL_NONE
+  TOOL_NONE,
+  TOOL_COUNT
 } ToolType;
 
 typedef enum {
@@ -52,7 +53,8 @@ typedef enum {
   RES_ROCK,
   RES_GOLD,
   RES_FOOD,
-  RES_NONE
+  RES_NONE,
+  RES_COUNT
 } ResourceType;
 
 typedef enum {
@@ -60,7 +62,8 @@ typedef enum {
   MOB_SHEEP,
   MOB_SKELETON,
   MOB_ZOMBIE,
-  MOB_NONE
+  MOB_NONE,
+  MOB_COUNT
 } MobType;
 
 typedef enum {
