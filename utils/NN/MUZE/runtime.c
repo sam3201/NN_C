@@ -67,6 +67,4 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
     return;
 
   /* Placeholder training hook */
-  printf("[MUZE] Train | steps=%llu | window=%zu\n",
-         (unsigned long long)rt->total_steps, rb_size(rt->rb));
 }
