@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
-                       long double ***latent_seq, size_t *seq_len) {
+                       long double **latent_seq, size_t *seq_len) {
   (void)brain;
 
   long double *input = malloc(sizeof(long double) * obs_dim);
