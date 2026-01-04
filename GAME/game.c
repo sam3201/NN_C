@@ -92,6 +92,9 @@ typedef struct {
   Base base;
   int agent_start;
   int agent_count;
+  MuModel *brain;
+  float reward_accumulator;
+
 } Tribe;
 
 typedef struct {
