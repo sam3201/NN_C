@@ -696,17 +696,6 @@ void draw_agent(Agent *a, Vector2 chunk_offset) {
     DrawCircleV(p, TILE_SIZE * 0.25f, Fade(WHITE, 0.6f));
 }
 
-void draw_player(Player *p) {
-  // Body (tan)
-  DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
-
-  float hand_offset = TILE_SIZE * 0.4; // moved slightly outside body
-  DrawCircleV((Vector2){p->position.x - hand_offset, p->position.y},
-              TILE_SIZE * 0.15f, RED);
-  DrawCircleV((Vector2){p->position.x + hand_offset, p->position.y},
-              TILE_SIZE * 0.15f, RED);
-}
-
 void draw_chunk(Chunk *c, int cx, int cy) {
   Vector2 offset = {cx * CHUNK_SIZE * TILE_SIZE, cy * CHUNK_SIZE * TILE_SIZE};
 
