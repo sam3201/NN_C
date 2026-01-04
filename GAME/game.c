@@ -456,6 +456,7 @@ int main(void) {
                   tribes[agents[i].agent_id / AGENT_PER_TRIBE].color);
     }
 
+    /* Draw player */
     Vector2 pp = Vector2Subtract(player.position, camera_pos);
     pp = Vector2Scale(pp, WORLD_SCALE);
     pp.x += SCREEN_WIDTH / 2;
