@@ -1,7 +1,6 @@
 #ifndef MUZE_CORTEX_H
 #define MUZE_CORTEX_H
 
-#include "muze.h"
 #include <vector>
 
 typedef struct {
