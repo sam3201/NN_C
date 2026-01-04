@@ -394,7 +394,7 @@ void init_base(void) {
 /* =======================
   MOBS
 ======================= */
-void init_mob(void) {
+void init_mob(int x, int y, int mob_id) {
   mob.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
   mob.health = 100;
   mob.alive = true;
