@@ -318,10 +318,11 @@ void update_agent(Agent *a) {
 
   tribes[a->agent_id / AGENT_PER_TRIBE].reward_accumulator += reward;
 
-  float obs[16];
-  encode_observation(a, c, obs);
+  ObsBuffer obs;
+  obs_init(&obs);
 
-  int action = decide_action(a, obs);
+  encode_observation(a, c, &obs);
+  int action = decide_action(a, &obs);
 
   switch (action) {
   case ACTION_UP:
