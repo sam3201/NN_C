@@ -29,6 +29,9 @@
 
 #define TRAIN_INTERVAL 1
 
+Vector2 camera_pos;
+float WORLD_SCALE = 12.0f;
+
 /* =======================
    ENUMS
 ======================= */
