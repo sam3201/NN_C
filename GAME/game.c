@@ -540,33 +540,47 @@ void draw_chunk(Chunk *c, int cx, int cy) {
 /* =======================
    UI
 ======================= */
+/* =======================
+   UI
+======================= */
 void draw_ui(Player player) {
+  const int margin = 10;     // distance from screen edges
+  const int row_height = 20; // spacing between UI rows
+  const int bar_width = 120; // width of health/stamina bars
+  const int bar_height = 16; // height of health/stamina bars
+  int x = margin;
+  int y = margin;
+
   // --- Health ---
-  DrawText("Health:", 10, 10, 16, RED);
-  DrawRectangle(80, 10, 100, 16, DARKGRAY);
-  DrawRectangle(80, 10, (int)(100 * (player.health / player.max_health)), 16,
-                RED);
+  DrawText("Health:", x, y, 16, RED);
+  DrawRectangle(x + 70, y, bar_width, bar_height, DARKGRAY);
+  DrawRectangle(x + 70, y,
+                (int)(bar_width * (player.health / player.max_health)),
+                bar_height, RED);
+  y += row_height;
 
   // --- Stamina ---
-  DrawText("Stamina:", 10, 30, 16, YELLOW);
-  DrawRectangle(80, 30, 100, 16, DARKGRAY);
+  DrawText("Stamina:", x, y, 16, YELLOW);
+  DrawRectangle(x + 70, y, bar_width, bar_height, DARKGRAY);
 
-  // Smooth stamina visualization
   static float displayed_stamina = 100;
   if (displayed_stamina < player.stamina)
-    displayed_stamina += 0.5f; // regen smoothing
+    displayed_stamina += 0.5f;
   else if (displayed_stamina > player.stamina)
-    displayed_stamina -= 0.5f; // decrease smoothing
+    displayed_stamina -= 0.5f;
 
-  DrawRectangle(80, 30, (int)(100 * (displayed_stamina / player.max_stamina)),
-                16, YELLOW);
+  DrawRectangle(x + 70, y,
+                (int)(bar_width * (displayed_stamina / player.max_stamina)),
+                bar_height, YELLOW);
+  y += row_height;
 
   // --- Current Tool ---
   const char *tool_names[] = {"Hand", "Axe", "Pickaxe", "Shovel", "None"};
-  DrawText(TextFormat("Tool: %s", tool_names[player.tool]), 10, 50, 16, GREEN);
+  DrawText(TextFormat("Tool: %s", tool_names[player.tool]), x, y, 16, GREEN);
+  y += row_height;
 
   // --- FPS ---
-  DrawText(TextFormat("FPS: %d", (int)GetFPS()), 10, 70, 16, BLUE);
+  DrawText(TextFormat("FPS: %d", (int)GetFPS()), x, y, 16, BLUE);
 }
 
 /* =======================
