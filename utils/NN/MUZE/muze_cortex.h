@@ -1,8 +1,8 @@
 #ifndef MUZE_CORTEX_H
 #define MUZE_CORTEX_H
 
+#include "../../../SAM/SAM.h"
 #include <stdio.h>
-#include <../../
 
 typedef struct {
   void *brain; // opaque (SAM_t*)
