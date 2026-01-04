@@ -1,13 +1,12 @@
-#include "../utils/NN/MUZE/all.h"
 #include "../utils/NN/MUZE/muze_cortex.h"
 #include "SAM.h"
+#include <stdlib.h>
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
-                       long double **latent_seq, size_t *seq_len) {
-  SAM_t *sam = (SAM_t *)brain;
+                       long double ***latent_seq, size_t *seq_len) {
+  (void)brain;
 
-  // convert obs → long double
-  long double *input = malloc(obs_dim * sizeof(long double));
+  long double *input = malloc(sizeof(long double) * obs_dim);
   for (size_t i = 0; i < obs_dim; i++)
     input[i] = obs[i];
 
@@ -38,4 +37,13 @@ static void sam_learn(void *brain, float reward, int terminal) {
     SAM_generalize(sam);
     SAM_transfuse(sam);
   }
+}
+
+/* Public factory */
+MuCortex SAM_as_MUZE(SAM_t *sam) {
+  MuCortex c = {.brain = sam,
+                .encode = sam_encode,
+                .policy = sam_policy,
+                .learn = sam_learn};
+  return c;
 }
