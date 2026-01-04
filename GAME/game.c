@@ -113,6 +113,26 @@ typedef struct {
 } Agent;
 
 typedef struct {
+  Vector2 position;
+  float radius;
+  Color color;
+  float lifetime;
+} Base;
+typedef struct {
+  int tribe_id;
+  Color color;
+
+  Base base;
+
+  int agent_start;
+  int agent_count;
+
+  // future
+  // int wood, stone, food;
+  // MuSharedMemory *collective_memory;
+} Tribe;
+
+typedef struct {
   int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
