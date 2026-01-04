@@ -25,9 +25,6 @@ int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
 float TILE_SIZE;
 
-int TRIBE_COUNT = 1;
-int MAX_AGENTS = AGENT_PER_TRIBE * TRIBE_COUNT;
-
 Color pink = (Color){255, 192, 203, 255};
 Color yellow = (Color){255, 255, 0, 255};
 Color gray = (Color){100, 100, 100, 255};
