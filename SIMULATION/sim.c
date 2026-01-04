@@ -454,13 +454,8 @@ void update_latent_after_step(Agent *agent, long double *obs, int action,
   for (int i = 0; i < agent->input_size; i++)
     obs_f[i] = (float)obs[i];
 
-  float next_latent[LATENT_MAX];
-  float predicted_reward;
-
-  mu_model_dynamics(agent->brain, agent->latent, action, next_latent,
-                    &predicted_reward);
-
-  memcpy(agent->latent, next_latent, sizeof(float) * LATENT_MAX);
+  int L = agent->brain->cfg.latent_dim;
+  memcpy(agent->latent, next_latent, sizeof(float) * L);
 }
 
 void step_agent(GameState *state, Agent *agent, int action) {
