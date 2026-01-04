@@ -119,9 +119,10 @@ typedef struct {
   Base base;
   int agent_start;
   int agent_count;
+
+  SAM_t *sam;
   MuModel *brain;
   float reward_accumulator;
-
 } Tribe;
 
 typedef struct {
