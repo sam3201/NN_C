@@ -390,9 +390,15 @@ void init_base(void) {
     base_particles[i].lifetime = randf(0, 1);
   }
 }
+
 /* =======================
   MOBS
 ======================= */
+void init_mob(void) {
+  mob.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  mob.health = 100;
+  mob.alive = true;
+}
 
 /* =======================
    UI
