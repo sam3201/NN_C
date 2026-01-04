@@ -58,6 +58,13 @@ typedef enum {
 /* =======================
    STRUCTS
 ======================= */
+
+typedef struct {
+  float *data;
+  int size;
+  int capacity;
+} ObsBuffer;
+
 typedef struct {
   Vector2 position;
   ResourceType type;
