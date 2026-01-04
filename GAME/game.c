@@ -209,7 +209,7 @@ void init_agents(void) {
 /* =======================
    OBSERVATION & RL
 ======================= */
-void encode_observation(Tribe *tr, Chunk *c, float *obs) {
+void encode_observation(Agent *a, Chunk *c, float *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
   obs[0] = a->health / 100.0f;
@@ -241,12 +241,12 @@ void encode_observation(Tribe *tr, Chunk *c, float *obs) {
   obs[9] = 1.0f;
 }
 
-int decide_action(Tribe *tr, float *obs) { return rand() % ACTION_COUNT; }
+int decide_action(Agent *a, float *obs) { return rand() % ACTION_COUNT; }
 
 /* =======================
    AGENT UPDATE
 ======================= */
-void update_agent(Tribe *tr) {
+void update_agent(Agent *a) {
   if (!a->alive)
     return;
 
