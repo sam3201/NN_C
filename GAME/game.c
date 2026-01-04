@@ -131,6 +131,7 @@ typedef struct {
   bool alive;
   ToolType tool;
   float hand_angle;
+  float hand_swing;
 } Player;
 
 typedef struct {
