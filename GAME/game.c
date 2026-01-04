@@ -37,7 +37,13 @@ typedef enum {
   TOOL_SHOVEL,
   TOOL_NONE
 } ToolType;
-typedef enum { RES_TREE = 0, RES_ROCK, RES_FOOD, RES_NONE } ResourceType;
+typedef enum {
+  RES_TREE = 0,
+  RES_ROCK,
+  RES_GOLD,
+  RES_FOOD,
+  RES_NONE
+} ResourceType;
 
 typedef enum {
   MOB_PIG = 0,
