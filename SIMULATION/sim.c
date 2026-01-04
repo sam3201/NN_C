@@ -541,7 +541,7 @@ void update_agents(GameState *state, float dt) {
     gather_agent_inputs(state, agent, inputs);
 
     // Decide action
-    int action = decide_action(agent->brain, inputs);
+    int action = decide_action(agent, inputs);
     state->last_actions[i] = action;
 
     // Store experience
