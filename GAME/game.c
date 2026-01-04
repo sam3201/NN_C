@@ -144,6 +144,19 @@ typedef struct {
   float lifetime;
 } BaseParticle;
 
+typedef struct {
+  int tribe_id;
+  Color color;
+
+  Base base;
+
+  int agent_start;
+  int agent_count;
+
+  // future
+  // int wood, stone, food;
+  // MuSharedMemory *collective_memory;
+} Tribe;
 Tribe tribes[TRIBE_COUNT];
 
 /* =======================
