@@ -556,13 +556,9 @@ float compute_reward(Agent *a, Chunk *c, float *obs) {
 
 int decide_action(Agent *a, float *obs) {
   if (!a || !a->brain)
-    return rand() % ACTION_COUNT;
+    return 0;
 
-  MCTSResult r = mcts_run(a->brain, obs, &mcts_params);
-  int act = r.chosen_action;
-  mcts_result_free(&r);
-
-  return (act >= 0 && act < ACTION_COUNT) ? act : rand() % ACTION_COUNT;
+  return rand() %
 }
 
 void update_agent(Agent *a, Chunk *c) {
