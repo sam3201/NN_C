@@ -22,7 +22,7 @@ SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 gcc -w game.c $MUZE_SRC $SAM_SRC \
     -I../utils/Raylib/src \
     -I../utils/NN/MUZE \
-    -I..//SAM \
+    -I../SAM \
     -L../utils/Raylib/src -lraylib \
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -o game
