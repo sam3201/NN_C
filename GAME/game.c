@@ -394,15 +394,6 @@ void init_base(void) {
 /* =======================
   MOBS
 ======================= */
-void init_mob(int x, int y, int mob_id) {
-  Mob *mob = malloc(sizeof(Mob));
-  mob->mob_id = mob_id;
-  mob->position = (Vector2){x, y};
-  mob->health = 100;
-  mob->alive = true;
-
-  Mobs[mob_id] = mob;
-}
 
 /* =======================
    UI
