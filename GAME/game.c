@@ -236,6 +236,33 @@ void draw_chunks(void) {
   }
 }
 
+void draw_resources(void) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      Chunk *c = get_chunk(pcx + dx, pcy + dy);
+
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+
+        Vector2 wp = {(pcx + dx) * CHUNK_SIZE + r->position.x,
+                      (pcy + dy) * CHUNK_SIZE + r->position.y};
+
+        Vector2 sp = Vector2Subtract(wp, camera_pos);
+        sp = Vector2Scale(sp, WORLD_SCALE);
+        sp.x += SCREEN_WIDTH / 2;
+        sp.y += SCREEN_HEIGHT / 2;
+
+        DrawCircleV(sp, WORLD_SCALE * 0.25f, resource_colors[r->type]);
+      }
+    }
+  }
+}
+
 /* =======================
    TRIBES & AGENTS
 ======================= */
