@@ -396,16 +396,19 @@ void draw_player(Player *p) {
   // --- Body ---
   DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
 
-  // --- Hands rotate around the body towards mouse ---
-  float angle = p->stamina; // angle stored from update_player
-  float hand_distance = TILE_SIZE * 0.4f;
-  Vector2 left_hand = {p->position.x + cosf(angle + PI) * hand_distance,
-                       p->position.y + sinf(angle + PI) * hand_distance};
-  Vector2 right_hand = {p->position.x + cosf(angle) * hand_distance,
-                        p->position.y + sinf(angle) * hand_distance};
+  // --- Hands orbiting body towards mouse ---
+  float hand_distance = TILE_SIZE * 0.45f;
+  Vector2 left_hand = {p->position.x + cosf(p->hand_angle + PI) * hand_distance,
+                       p->position.y +
+                           sinf(p->hand_angle + PI) * hand_distance};
+  Vector2 right_hand = {p->position.x + cosf(p->hand_angle) * hand_distance,
+                        p->position.y + sinf(p->hand_angle) * hand_distance};
 
-  DrawCircleV(left_hand, TILE_SIZE * 0.15f, RED);
-  DrawCircleV(right_hand, TILE_SIZE * 0.15f, RED);
+  // Optionally, change hand color if attacking/harvesting
+  Color hand_color = RED;
+
+  DrawCircleV(left_hand, TILE_SIZE * 0.15f, hand_color);
+  DrawCircleV(right_hand, TILE_SIZE * 0.15f, hand_color);
 }
 
 /* =======================
