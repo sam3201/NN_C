@@ -326,6 +326,7 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
   child.parent_id = parent1->agent_id;
   child.num_offsprings = 0;
   child.num_eaten = 0;
+  child.last_num_eaten = 0;
   child.is_breeding = false;
   child.breeding_timer = 0;
   child.position.x = (parent1->position.x + parent2->position.x) / 2;
