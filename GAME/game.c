@@ -401,7 +401,7 @@ void init_mob(int x, int y, int mob_id) {
   mob->health = 100;
   mob->alive = true;
 
-  MOBS[mob_id] = mob;
+  Mobs[mob_id] = mob;
 }
 
 /* =======================
