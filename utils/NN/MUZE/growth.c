@@ -16,8 +16,6 @@ int mu_model_grow_latent(MuModel *m, int new_L) {
   if (new_L <= old_L)
     return -1;
 
-  // printf("[Growth] Increasing Latent Dims: %d -> %d\n", old_L, new_L);
-
   /* Representation weights */
   float *new_repr = malloc(sizeof(float) * new_L * O);
   for (int i = 0; i < new_L; i++) {
