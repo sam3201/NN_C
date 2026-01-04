@@ -589,6 +589,7 @@ void update_agent(Agent *a, Chunk *c) {
   }
 
   // --- Base healing ---
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
   float dist = Vector2Distance(a->position, tr->base.position);
   if (dist < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100);
