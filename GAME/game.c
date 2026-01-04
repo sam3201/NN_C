@@ -325,7 +325,12 @@ void init_player(void) {
   player.tool = TOOL_HAND;
 }
 
+/* =======================
+   PLAYER
+======================= */
+
 void update_player(void) {
+  // --- Movement ---
   Vector2 m = {0};
   if (IsKeyDown(KEY_W))
     m.y -= 1;
@@ -337,9 +342,74 @@ void update_player(void) {
     m.x += 1;
 
   if (m.x && m.y)
-    m = Vector2Scale(m, 0.707f);
+    m = Vector2Scale(m, 0.707f); // diagonal normalization
   player.position =
       Vector2Add(player.position, Vector2Scale(m, player.move_speed));
+
+  // --- Face mouse ---
+  Vector2 mouse_world = GetMousePosition(); // mouse in world coordinates
+  Camera2D cam = {0};
+  cam.zoom = 1.0f;
+  cam.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
+  cam.target = player.position;
+  mouse_world = GetScreenToWorld2D(mouse_world, cam);
+
+  Vector2 dir = Vector2Subtract(mouse_world, player.position);
+  float angle = atan2f(dir.y, dir.x);
+
+  // --- Mouse actions ---
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    // Attack action: check nearby mobs
+    int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+    int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+    Chunk *c = get_chunk(cx, cy);
+
+    for (int i = 0; i < MAX_MOBS; i++) {
+      Mob *m = &c->mobs[i];
+      float dist = Vector2Distance(player.position, m->position);
+      if (dist < ATTACK_DISTANCE * TILE_SIZE && m->health > 0) {
+        m->health -= ATTACK_DAMAGE;
+        break;
+      }
+    }
+  }
+
+  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+    // Harvest action: check nearby resources
+    int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+    int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
+    Chunk *c = get_chunk(cx, cy);
+
+    for (int i = 0; i < c->resource_count; i++) {
+      Resource *r = &c->resources[i];
+      float dist = Vector2Distance(player.position, r->position) * TILE_SIZE;
+      if (dist < HARVEST_DISTANCE * TILE_SIZE && r->type != RES_NONE) {
+        r->health -= HARVEST_AMOUNT;
+        if (r->health <= 0)
+          r->type = RES_NONE;
+        break;
+      }
+    }
+  }
+
+  // Store angle in player's tool for hand rotation
+  player.stamina = angle; // using stamina temporarily to store rotation angle
+}
+
+void draw_player(Player *p) {
+  // --- Body ---
+  DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
+
+  // --- Hands rotate around the body towards mouse ---
+  float angle = p->stamina; // angle stored from update_player
+  float hand_distance = TILE_SIZE * 0.4f;
+  Vector2 left_hand = {p->position.x + cosf(angle + PI) * hand_distance,
+                       p->position.y + sinf(angle + PI) * hand_distance};
+  Vector2 right_hand = {p->position.x + cosf(angle) * hand_distance,
+                        p->position.y + sinf(angle) * hand_distance};
+
+  DrawCircleV(left_hand, TILE_SIZE * 0.15f, RED);
+  DrawCircleV(right_hand, TILE_SIZE * 0.15f, RED);
 }
 
 /* =======================
