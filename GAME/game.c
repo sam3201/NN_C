@@ -316,6 +316,11 @@ void update_agent(Agent *a) {
   }
 
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+
+  mu_model_end_episode(tr->brain, -1.0f);
+  mu_model_step(tr->brain, obs, action, reward);
+
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
   float d = Vector2Distance(a->position, tr->base.position);
   if (d < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100);
@@ -323,10 +328,6 @@ void update_agent(Agent *a) {
   } else {
     a->stamina -= 0.05f;
   }
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-
-  mu_model_end_episode(tr->brain, -1.0f);
-  mu_model_step(tr->brain, obs, action, reward);
 
   if (a->health <= 0 || a->stamina <= 0) {
     a->alive = false;
