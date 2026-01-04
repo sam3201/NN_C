@@ -10,6 +10,16 @@
 /* =======================
    GLOBAL CONFIG
 ======================= */
+#define WORLD_SIZE 128
+#define CHUNK_SIZE 32
+
+#define MAX_RESOURCES 512
+#define MAX_MOBS 512
+#define AGENT_PER_TRIBE 8
+#define BASE_RADIUS 8
+#define MAX_BASE_PARTICLES 32
+
+#define TRAIN_INTERVAL 1
 
 int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
@@ -21,17 +31,6 @@ int MAX_AGENTS = AGENT_PER_TRIBE * TRIBE_COUNT;
 Color pink = (Color){255, 192, 203, 255};
 Color yellow = (Color){255, 255, 0, 255};
 Color gray = (Color){100, 100, 100, 255};
-
-#define WORLD_SIZE 128
-#define CHUNK_SIZE 32
-
-#define MAX_RESOURCES 512
-#define MAX_MOBS 512
-#define AGENT_PER_TRIBE 8
-#define BASE_RADIUS 8
-#define MAX_BASE_PARTICLES 32
-
-#define TRAIN_INTERVAL 1
 
 /* =======================
    ENUMS
