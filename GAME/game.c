@@ -396,7 +396,9 @@ void draw_ui(Player player) {
   DrawText("Stamina:", 10, 30, 16, WHITE);
   DrawText("Age:", 10, 50, 16, WHITE);
 
-  DrawText(f "FPS: {GetFPS()}", 10, 130, 16, WHITE);
+  long double FPS = GetFPS();
+
+  DrawText(TextFormat("FPS: %d", (int)FPS), 10, 70, 16, WHITE);
 }
 
 /* =======================
