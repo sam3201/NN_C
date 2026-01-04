@@ -893,7 +893,7 @@ int main(void) {
 
     // Update agents
     for (int i = 0; i < MAX_AGENTS; i++) {
-      Agent *a = &c->agents[i];
+      Agent *a = &agents[i];
       if (!a->alive)
         respawn_agent(a);
       else
