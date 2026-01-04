@@ -469,7 +469,7 @@ void init_tribes(void) {
   }
 }
 
-void draw_tribes(void) {
+void draw_base(void) {
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
     DrawCircle(tr->base.position.x * TILE_SIZE, tr->base.position.y * TILE_SIZE,
