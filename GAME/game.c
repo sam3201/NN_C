@@ -525,6 +525,7 @@ void update_agent(Agent *a, Chunk *c) {
   encode_observation(a, c, obs);
 
   int action = decide_action(a, obs);
+  printf("%d\n", action);
 
   // --- apply action ---
   switch (action) {
