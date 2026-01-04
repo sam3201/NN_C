@@ -18,7 +18,7 @@ typedef struct {
 } MuRuntime;
 
 /* Runtime lifecycle */
-MuRuntime *mu_runtime_create(MuModel *model, TRAIN_WINDOW, rb_type,
+MuRuntime *mu_runtime_create(MuModel *model, ReplayBuffer *rb, rb_type,
                              float gamma);
 void mu_runtime_free(MuRuntime *rt);
 
