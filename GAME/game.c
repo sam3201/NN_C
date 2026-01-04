@@ -15,7 +15,7 @@ int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
 float TILE_SIZE;
 
-int TRIBE_COUNT;
+int TRIBE_COUNT = 1;
 
 Color pink = (Color){255, 192, 203, 255};
 Color yellow = (Color){255, 255, 0, 255};
