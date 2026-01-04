@@ -317,6 +317,9 @@ void init_tribes(void) {
     tr->agent_count = AGENT_PER_TRIBE;
     tr->reward_accumulator = 0.0f;
 
+    tr->sam = SAM_create(...);
+    tr->cortex = SAM_as_MUZE(tr->sam);
+
     tr->brain = mu_model_create(&cfg);
 
     tr->base.position =
