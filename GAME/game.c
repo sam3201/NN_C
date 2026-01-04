@@ -29,6 +29,8 @@
 
 #define TRAIN_INTERVAL 1
 
+typedef Agent_t Agent;
+
 int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
 float TILE_SIZE;
