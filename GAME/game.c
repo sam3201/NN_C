@@ -237,10 +237,11 @@ Chunk *get_chunk(int cx, int cy) {
     a->age = 0;
     a->steps_alive = 0;
 
-    a->tribe_color = (i % 4 == 0)   ? RED
-                     : (i % 4 == 1) ? BLUE
-                     : (i % 4 == 2) ? GREEN
-                                    : YELLOW;
+    int tribe_id = i / AGENT_PER_TRIBE;
+    Tribe *tr = &tribes[tribe_id];
+
+    a->tribe_color = tr->color;
+    a->agent_id = i;
 
     if (cx == WORLD_SIZE / 2 && cy == WORLD_SIZE / 2) {
       float ang = (float)i / MAX_AGENTS * 2 * PI;
