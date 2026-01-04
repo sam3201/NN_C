@@ -271,7 +271,7 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, 1.0f);                              // bias
 }
 
-int decide_action(Agent *a, float *obs) {
+int decide_action(Agent *a, ObsBuffer *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
   MCTSParams mp = {.num_simulations = 32,
