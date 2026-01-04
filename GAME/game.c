@@ -488,6 +488,24 @@ void update_player(void) {
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
 
+  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    int cx = (int)(player.position.x / CHUNK_SIZE);
+    int cy = (int)(player.position.y / CHUNK_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    for (int i = 0; i < c->resource_count; i++) {
+      Resource *r = &c->resources[i];
+      Vector2 rp = {cx * CHUNK_SIZE + r->position.x,
+                    cy * CHUNK_SIZE + r->position.y};
+
+      if (Vector2Distance(player.position, rp) < HARVEST_DISTANCE) {
+        r->health -= 25;
+        player.stamina -= 2;
+        break;
+      }
+    }
+  }
+
   player.stamina = fmaxf(0, player.stamina - 0.02f);
 }
 
