@@ -414,9 +414,6 @@ int main(void) {
     for (int i = 0; i < MAX_AGENTS; i++)
       update_agent(&agents[i]);
 
-    for (int i = 0; i < MAX_AGENTS; i++)
-      update_agent(&agents[i]);
-
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
 
