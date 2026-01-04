@@ -391,6 +391,11 @@ void respawn_agent(Agent *a) {
   mu_model_reset_episode(a->brain);
 }
 
+draw_ui(void) {
+  DrawRectangleLinesEx(agent_base.position, agent_base.radius, 1, RED);
+  DrawRectangleLinesEx(player.position, 0.5f, 1, BLUE);
+}
+
 /* =======================
    MAIN
 ======================= */
