@@ -496,6 +496,17 @@ void draw_mob(Mob *m, Vector2 chunk_offset) {
   // future mobs like sheep, zombies can be added here
 }
 
+void draw_agent(Agent *a, Vector2 chunk_offset) {
+  if (!a->alive)
+    return;
+
+  Vector2 p = Vector2Add(Vector2Scale(a->position, TILE_SIZE), chunk_offset);
+
+  DrawCircleV(p, TILE_SIZE * 0.35f, a->tribe_color);
+  if (a->flash_timer > 0)
+    DrawCircleV(p, TILE_SIZE * 0.25f, Fade(WHITE, 0.6f));
+}
+
 /* =======================
    UI
 ======================= */
