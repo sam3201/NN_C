@@ -11,7 +11,7 @@
    GLOBAL CONFIG
 ======================= */
 #define WORLD_SIZE 128
-#define CHUNK_SIZE 128
+#define CHUNK_SIZE 32
 
 #define MAX_RESOURCES 512
 #define MAX_MOBS 16
