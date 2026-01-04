@@ -435,7 +435,7 @@ void update_agent(Agent *a, Chunk *c) {
 
   int action = decide_action(a, obs);
 
-  // --- Action handling ---
+  // --- Apply handling ---
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
