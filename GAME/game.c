@@ -393,8 +393,8 @@ void respawn_agent(Agent *a) {
 
 void draw_ui(Player player) {
   DrawText("Health:", SCREEN_WIDTH - 100, 10, 16, WHITE);
-  DrawText("Stamina:", 10, 30, 16, WHITE);
-  DrawText("Age:", 10, 50, 16, WHITE);
+  DrawText("Stamina:", SCREEN_WIDTH - 100, 30, 16, WHITE);
+  DrawText("Age:", 10, SCREEN_HEIGHT - 30, 16, WHITE);
 
   DrawText(TextFormat("FPS: %d", (int)GetFPS()), 10, 70, 16, WHITE);
 }
