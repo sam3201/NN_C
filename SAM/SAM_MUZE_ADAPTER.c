@@ -1,4 +1,4 @@
-#include "../utils/NN/MUZE/mu_cortex.h"
+#include "../utils/NN/NN.h"
 #include "SAM/SAM.h"
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
