@@ -547,6 +547,10 @@ int main(void) {
     }
 
     BeginDrawing();
+    draw_chunks();
+    draw_resources();
+    draw_mobs();
+
     ClearBackground((Color){20, 20, 20, 255});
 
     /* Draw bases */
