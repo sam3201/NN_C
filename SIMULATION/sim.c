@@ -451,7 +451,7 @@ float compute_reward(Agent *a, int old_xp, int old_level) {
     r += 1.0f;
 
   if (a->num_eaten > 0)
-    static int last_eaten[MAX_AGENTS];
+    static int last_eaten[MAX_AGENTS]; // or store in Agent
 
   int delta = a->num_eaten - last_eaten[a->agent_id];
   if (delta > 0)
