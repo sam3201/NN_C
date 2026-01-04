@@ -15,7 +15,9 @@
 
 #define MAX_RESOURCES 512
 #define MAX_MOBS 512
+#define TRIBE_COUNT 1
 #define AGENT_PER_TRIBE 8
+
 #define BASE_RADIUS 8
 #define MAX_BASE_PARTICLES 32
 
