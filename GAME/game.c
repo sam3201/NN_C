@@ -24,7 +24,7 @@ Color gray = (Color){100, 100, 100, 255};
 
 #define MAX_RESOURCES 512
 #define MAX_MOBS 512
-#define MAX_AGENTS 32
+#define MAX_AGENTS
 #define BASE_RADIUS 8
 #define MAX_BASE_PARTICLES 32
 
