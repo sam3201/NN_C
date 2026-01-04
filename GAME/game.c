@@ -203,7 +203,6 @@ Chunk *get_chunk(int cx, int cy) {
   for (int i = 0; i < MAX_MOBS; i++) {
     c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
     c->mobs[i].health = 100;
-    c->mobs[i].stamina = 100;
     c->mobs[i].type = rand() % 3;
   }
 
