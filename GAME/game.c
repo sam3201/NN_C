@@ -319,7 +319,7 @@ void agent_attack(Agent *a, Chunk *c) {
 void respawn_agent(Agent *a) {
   a->alive = true;
   a->health = a->stamina = 100;
-  a->position = agent_base.position;
+  a->position =.position;
   a->reward_accumulator = 0;
   a->age = 0;
   a->steps_alive = 0;
