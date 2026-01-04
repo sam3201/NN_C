@@ -320,8 +320,6 @@ void init_tribes(void) {
     tr->sam = SAM_create(...);
     tr->cortex = SAM_as_MUZE(tr->sam);
 
-    tr->brain = mu_model_create(&cfg);
-
     tr->base.position =
         (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
