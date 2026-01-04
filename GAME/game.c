@@ -248,7 +248,7 @@ void encode_observation(Agent *a, Chunk *c, float *obs) {
 
 int decide_action(Agent *a, float *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-  return mu_model_predict(tr->brain, obs);
+  return mu_model_run(tr->brain, obs);
 }
 
 /* =======================
