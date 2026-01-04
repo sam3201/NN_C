@@ -887,7 +887,7 @@ int main(void) {
     train_timer++;
     if (train_timer > TRAIN_INTERVAL) {
       for (int i = 0; i < MAX_AGENTS; i++)
-        mu_model_train(c->agents[i].brain);
+        mu_model_train(agents[i].brain);
       train_timer = 0;
     }
 
