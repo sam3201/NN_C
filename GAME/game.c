@@ -321,12 +321,34 @@ int main(void) {
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground((Color){20, 20, 20, 255});
+
+    /* Draw bases */
+    for (int t = 0; t < TRIBE_COUNT; t++) {
+      Vector2 bp = Vector2Subtract(tribes[t].base.position, camera_pos);
+      bp = Vector2Scale(bp, WORLD_SCALE);
+      bp.x += SCREEN_WIDTH / 2;
+      bp.y += SCREEN_HEIGHT / 2;
+
+      DrawCircleLines(bp.x, bp.y, tribes[t].base.radius * WORLD_SCALE,
+                      tribes[t].color);
+    }
+
+    /* Draw agents */
     for (int i = 0; i < MAX_AGENTS; i++) {
-      Vector2 p = Vector2Scale(agents[i].position, TILE_SIZE);
-      DrawCircleV(p, TILE_SIZE * 0.3f,
+      if (!agents[i].alive)
+        continue;
+
+      Vector2 p = Vector2Subtract(agents[i].position, camera_pos);
+      p = Vector2Scale(p, WORLD_SCALE);
+      p.x += SCREEN_WIDTH / 2;
+      p.y += SCREEN_HEIGHT / 2;
+
+      DrawCircleV(p, WORLD_SCALE * 0.3f,
                   tribes[agents[i].agent_id / AGENT_PER_TRIBE].color);
     }
+
+    DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
     EndDrawing();
   }
 
