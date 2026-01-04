@@ -540,13 +540,26 @@ void draw_chunk(Chunk *c, int cx, int cy) {
 /* =======================
    UI
 ======================= */
-
 void draw_ui(Player player) {
-  DrawText("Health:", SCREEN_WIDTH - 100, 10, 16, WHITE);
-  DrawText("Stamina:", SCREEN_WIDTH - 100, 30, 16, WHITE);
-  DrawText("Age:", 10, SCREEN_HEIGHT - 30, 16, WHITE);
+  // Health bar
+  DrawText("Health:", 10, 10, 16, WHITE);
+  DrawRectangle(80, 10, 100, 16, DARKGRAY);
+  DrawRectangle(80, 10, (int)(100 * (player.health / player.max_health)), 16,
+                RED);
 
-  DrawText(TextFormat("FPS: %d", (int)GetFPS()), 10, 70, 16, WHITE);
+  // Stamina bar
+  DrawText("Stamina:", 10, 30, 16, WHITE);
+  DrawRectangle(80, 30, 100, 16, DARKGRAY);
+  DrawRectangle(80, 30, (int)(100 * (player.stamina / player.max_stamina)), 16,
+                YELLOW);
+
+  // Current tool
+  const char *tool_names[] = {"Hand", "Axe", "Pickaxe", "Shovel", "None"};
+  DrawText(TextFormat("Tool: %s", tool_names[player.tool]), 10, 50, 16, WHITE);
+
+  // FPS
+  DrawText(TextFormat("FPS: %d", (int)GetFPS()), SCREEN_WIDTH - 80, 10, 16,
+           WHITE);
 }
 
 /* =======================
