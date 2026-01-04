@@ -535,17 +535,17 @@ int main(void) {
           if (a->flash_timer > 0)
             DrawCircleV(p, TILE_SIZE * 0.25f, Fade(WHITE, 0.6f));
         }
-      }
 
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &ch->mobs[i];
-      if (m->type == MOB_PIG) {
-        Vector2 p = {
-            (cx + dx) * CHUNK_SIZE * TILE_SIZE + m->position.x * TILE_SIZE,
-            (cy + dy) * CHUNK_SIZE * TILE_SIZE + m->position.y * TILE_SIZE};
-        draw_pig(p, TILE_SIZE * 0.8f);
+        for (int i = 0; i < MAX_MOBS; i++) {
+          Mob *m = &ch->mobs[i];
+          if (m->type == MOB_PIG) {
+            Vector2 p = {
+                (cx + dx) * CHUNK_SIZE * TILE_SIZE + m->position.x * TILE_SIZE,
+                (cy + dy) * CHUNK_SIZE * TILE_SIZE + m->position.y * TILE_SIZE};
+            draw_pig(p, TILE_SIZE * 0.8f);
+          }
+        }
       }
-    }
 
     DrawCircle(agent_base.position.x * TILE_SIZE,
                agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
