@@ -392,7 +392,7 @@ void respawn_agent(Agent *a) {
 }
 
 void draw_ui(Player player) {
-  DrawText("Health:", 10, 10, 16, WHITE);
+  DrawText("Health:", SCREEN_WIDTH - 100, 10, 16, WHITE);
   DrawText("Stamina:", 10, 30, 16, WHITE);
   DrawText("Age:", 10, 50, 16, WHITE);
 
