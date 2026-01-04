@@ -425,6 +425,49 @@ void init_base(void) {
 }
 
 /* =======================
+   RESOURCES
+======================= */
+void draw_resource(Resource *r) {
+  Vector2 pos = Vector2Scale(r->position, TILE_SIZE);
+
+  // Jiggle effect when harvested
+  float offset = 0;
+  if (r->visited)
+    offset = sinf((float)rand() / RAND_MAX * 2 * PI) * TILE_SIZE * 0.1f;
+
+  pos.x += offset;
+
+  switch (r->type) {
+  case RES_TREE:
+    // Trunk
+    DrawRectangleV((Vector2){pos.x - TILE_SIZE * 0.1f, pos.y},
+                   (Vector2){TILE_SIZE * 0.2f, TILE_SIZE * 0.5f},
+                   (Color){101, 67, 33, 255}); // brown
+    // Leaves
+    DrawCircleV((Vector2){pos.x, pos.y - TILE_SIZE * 0.25f}, TILE_SIZE * 0.3f,
+                GREEN);
+    break;
+  case RES_ROCK:
+    DrawCircleV(pos, TILE_SIZE * 0.25f, GRAY);
+    break;
+  case RES_GOLD:
+    DrawCircleV(pos, TILE_SIZE * 0.25f, YELLOW);
+    break;
+  case RES_FOOD:
+    DrawCircleV(pos, TILE_SIZE * 0.2f, RED);
+    break;
+  default:
+    break;
+  }
+
+  // Flash effect when harvested
+  if (r->visited) {
+    DrawCircleV(pos, TILE_SIZE * 0.35f, Fade(WHITE, 0.5f));
+    r->visited = false; // reset after flash
+  }
+}
+
+/* =======================
   MOBS
 ======================= */
 void draw_pig(Vector2 pos, float size) {
