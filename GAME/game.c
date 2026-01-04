@@ -169,12 +169,19 @@ void init_tribes(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
   float spacing = 24.0f;
 
+  MuConfig cfg = {.obs_dim = 16, // expandable, not fixed memory
+                  .latent_dim = 64,
+                  .action_count = ACTION_COUNT};
+
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
     tr->tribe_id = t;
     tr->color = colors[t % 4];
     tr->agent_start = t * AGENT_PER_TRIBE;
     tr->agent_count = AGENT_PER_TRIBE;
+    tr->reward_accumulator = 0.0f;
+
+    tr->brain = mu_model_create(&cfg);
 
     tr->base.position =
         (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
