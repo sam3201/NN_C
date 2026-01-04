@@ -125,6 +125,7 @@ typedef struct {
 Chunk world[WORLD_SIZE][WORLD_SIZE];
 Tribe tribes[TRIBE_COUNT];
 Agent agents[MAX_AGENTS];
+Player player;
 
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
