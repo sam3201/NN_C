@@ -123,7 +123,9 @@ Agent agents[MAX_AGENTS];
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
 
-/* OBS BUFFER */
+/* =======================
+ OBS BUFFER
+ * ====================== */
 static inline void obs_init(ObsBuffer *o) {
   o->capacity = 32;
   o->size = 0;
