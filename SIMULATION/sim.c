@@ -683,6 +683,11 @@ void save_game(GameState *game, const char *filename) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
     NN_save(game->agents[i].brain, file);
 
+  for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
+    NN_save(game->gks[i].brain, file);
+
+  fwrite(game, sizeof(GameState), 1, file);
+
   fclose(file);
 }
 
