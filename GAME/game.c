@@ -423,6 +423,25 @@ void init_base(void) {
 /* =======================
   MOBS
 ======================= */
+void draw_pig(Vector2 pos, float size) {
+  Color pink = (Color){255, 192, 203, 255};
+
+  // Body
+  DrawCircleV(pos, size * 0.5f, pink);
+
+  // Head (small circle on top)
+  DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.3f, pink);
+
+  // Snout
+  DrawCircleV((Vector2){pos.x, pos.y - size * 0.4f}, size * 0.15f,
+              (Color){255, 160, 160, 255});
+
+  // Legs (simple rectangles)
+  DrawRectangleV((Vector2){pos.x - size * 0.35f, pos.y + size * 0.3f},
+                 (Vector2){size * 0.2f, size * 0.2f}, pink);
+  DrawRectangleV((Vector2){pos.x + size * 0.15f, pos.y + size * 0.3f},
+                 (Vector2){size * 0.2f, size * 0.2f}, pink);
+}
 
 /* =======================
    UI
