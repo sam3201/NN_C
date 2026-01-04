@@ -484,6 +484,7 @@ int main(void) {
                DARKGRAY);
 
     DrawCircleV(player.position, TILE_SIZE * 0.4f, RED);
+    draw_ui(player);
 
     EndMode2D();
     EndDrawing();
