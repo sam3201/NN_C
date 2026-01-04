@@ -559,6 +559,9 @@ void draw_ui(Player player) {
 int main(void) {
   srand(time(NULL));
 
+  // -----------------------
+  // Window & camera setup
+  // -----------------------
   InitWindow(1280, 800, "MUZE Game");
 
   SCREEN_WIDTH = GetScreenWidth();
@@ -567,97 +570,69 @@ int main(void) {
 
   SetTargetFPS(60);
 
-  init_base();
-  init_player();
-
   Camera2D cam = {0};
   cam.zoom = 1.0f;
   cam.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
 
+  // -----------------------
+  // Game initialization
+  // -----------------------
+  init_base();
+  init_player();
+
+  int train_timer = 0;
+
+  // -----------------------
+  // Main loop
+  // -----------------------
   while (!WindowShouldClose()) {
+    // --- Update ---
     update_player();
 
-    int cx = player.position.x / (CHUNK_SIZE * TILE_SIZE);
-    int cy = player.position.y / (CHUNK_SIZE * TILE_SIZE);
+    int cx = (int)(player.position.x / (CHUNK_SIZE * TILE_SIZE));
+    int cy = (int)(player.position.y / (CHUNK_SIZE * TILE_SIZE));
     Chunk *c = get_chunk(cx, cy);
 
-    static int train_timer = 0;
+    // Train agents periodically
     train_timer++;
-
     if (train_timer > TRAIN_INTERVAL) {
-      for (int i = 0; i < MAX_AGENTS; i++) {
+      for (int i = 0; i < MAX_AGENTS; i++)
         mu_model_train(c->agents[i].brain);
-      }
       train_timer = 0;
     }
 
+    // Update agents
     for (int i = 0; i < MAX_AGENTS; i++) {
       Agent *a = &c->agents[i];
-      if (!a->alive) {
+      if (!a->alive)
         respawn_agent(a);
-      } else {
+      else
         update_agent(a, c);
-      }
     }
 
     cam.target = player.position;
 
+    // --- Draw ---
     BeginDrawing();
     ClearBackground(SKYBLUE);
     BeginMode2D(cam);
 
-    for (int dx = -1; dx <= 1; dx++)
+    // Draw surrounding chunks
+    for (int dx = -1; dx <= 1; dx++) {
       for (int dy = -1; dy <= 1; dy++) {
-        Chunk *ch = get_chunk(cx + dx, cy + dy);
-
-        for (int i = 0; i < CHUNK_SIZE; i++)
-          for (int j = 0; j < CHUNK_SIZE; j++) {
-            DrawRectangle((cx + dx) * CHUNK_SIZE * TILE_SIZE + i * TILE_SIZE,
-                          (cy + dy) * CHUNK_SIZE * TILE_SIZE + j * TILE_SIZE,
-                          TILE_SIZE, TILE_SIZE, biome_color(ch->terrain[i][j]));
-          }
-
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          Agent *a = &ch->agents[i];
-          if (!a->alive)
-            continue;
-
-          Vector2 p = {
-              (cx + dx) * CHUNK_SIZE * TILE_SIZE + a->position.x * TILE_SIZE,
-              (cy + dy) * CHUNK_SIZE * TILE_SIZE + a->position.y * TILE_SIZE};
-
-          DrawCircleV(p, TILE_SIZE * 0.35f, a->tribe_color);
-          if (a->flash_timer > 0)
-            DrawCircleV(p, TILE_SIZE * 0.25f, Fade(WHITE, 0.6f));
-        }
-
-        for (int i = 0; i < MAX_MOBS; i++) {
-          Mob *m = &ch->mobs[i];
-          if (m->type == MOB_PIG) {
-            Vector2 p = {
-                (cx + dx) * CHUNK_SIZE * TILE_SIZE + m->position.x * TILE_SIZE,
-                (cy + dy) * CHUNK_SIZE * TILE_SIZE + m->position.y * TILE_SIZE};
-            draw_pig(p, TILE_SIZE * 0.8f);
-          }
-        }
+        draw_chunk(get_chunk(cx + dx, cy + dy), cx + dx, cy + dy);
       }
+    }
 
+    // Draw base
     DrawCircle(agent_base.position.x * TILE_SIZE,
                agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
                DARKGRAY);
 
-    // Body (tan)
-    DrawCircleV(player.position, TILE_SIZE * 0.35f,
-                (Color){245, 222, 179, 255}); // cream/tan
+    // Draw player
+    draw_player(&player);
 
-    // Hands / tool color (tribe red)
-    DrawCircleV(
-        (Vector2){player.position.x - TILE_SIZE * 0.2f, player.position.y},
-        TILE_SIZE * 0.15f, RED);
-    DrawCircleV(
-        (Vector2){player.position.x + TILE_SIZE * 0.2f, player.position.y},
-        TILE_SIZE * 0.15f, RED);
-
+    // Draw UI
     draw_ui(player);
 
     EndMode2D();
