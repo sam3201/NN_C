@@ -3,6 +3,7 @@
 
 #include "muzero_model.h"
 #include "replay_buffer.h"
+#include <stdint.h>
 
 typedef struct {
   ReplayBuffer *rb;
