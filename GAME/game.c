@@ -518,6 +518,28 @@ void draw_player(Player *p) {
               TILE_SIZE * 0.15f, RED);
 }
 
+void draw_chunk(Chunk *c, int cx, int cy) {
+  Vector2 offset = {cx * CHUNK_SIZE * TILE_SIZE, cy * CHUNK_SIZE * TILE_SIZE};
+
+  // Terrain tiles
+  for (int i = 0; i < CHUNK_SIZE; i++)
+    for (int j = 0; j < CHUNK_SIZE; j++)
+      DrawRectangle(offset.x + i * TILE_SIZE, offset.y + j * TILE_SIZE,
+                    TILE_SIZE, TILE_SIZE, biome_color(c->terrain[i][j]));
+
+  // Resources
+  for (int i = 0; i < c->resource_count; i++)
+    draw_resource(&c->resources[i]);
+
+  // Mobs
+  for (int i = 0; i < MAX_MOBS; i++)
+    draw_mob(&c->mobs[i], offset);
+
+  // Agents
+  for (int i = 0; i < MAX_AGENTS; i++)
+    draw_agent(&c->agents[i], offset);
+}
+
 /* =======================
    UI
 ======================= */
