@@ -15,6 +15,8 @@ int SCREEN_WIDTH;
 int SCREEN_HEIGHT;
 float TILE_SIZE;
 
+Color pink = (Color){255, 192, 203, 255};
+
 #define WORLD_SIZE 128
 #define CHUNK_SIZE 32
 
@@ -424,8 +426,6 @@ void init_base(void) {
   MOBS
 ======================= */
 void draw_pig(Vector2 pos, float size) {
-  Color pink = (Color){255, 192, 203, 255};
-
   // Body
   DrawCircleV(pos, size * 0.5f, pink);
 
