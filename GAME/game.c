@@ -509,9 +509,10 @@ void draw_player(Player *p) {
   DrawCircleV(p->position, TILE_SIZE * 0.35f, (Color){245, 222, 179, 255});
 
   // Hands/tool (tribe color)
-  DrawCircleV((Vector2){p->position.x - TILE_SIZE * 0.2f, p->position.y},
+  float hand_offset = TILE_SIZE * 0.45f; // moved slightly outside body
+  DrawCircleV((Vector2){p->position.x - hand_offset, p->position.y},
               TILE_SIZE * 0.15f, RED);
-  DrawCircleV((Vector2){p->position.x + TILE_SIZE * 0.2f, p->position.y},
+  DrawCircleV((Vector2){p->position.x + hand_offset, p->position.y},
               TILE_SIZE * 0.15f, RED);
 }
 
