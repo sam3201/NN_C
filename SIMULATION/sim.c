@@ -128,7 +128,7 @@ void init_agent(Agent *agent, int id) {
   agent->parent_id = -1;
   agent->num_offsprings = 0;
   agent->num_eaten = 0;
-  agent->last_eaten = -1;
+  agent->last_num_eaten = -1;
   agent->is_breeding = false;
   agent->breeding_timer = 0;
   agent->position.x = (float)(rand() % (SCREEN_WIDTH - 10));
