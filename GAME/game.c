@@ -165,7 +165,6 @@ typedef struct {
 
 Chunk world[WORLD_SIZE][WORLD_SIZE];
 Player player;
-Base agent_base;
 BaseParticle base_particles[MAX_BASE_PARTICLES];
 Tribe tribes[TRIBE_COUNT];
 
