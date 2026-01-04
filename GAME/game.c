@@ -448,6 +448,30 @@ void draw_player(Player *p) {
 }
 
 /* =======================
+   TRIBES
+======================= */
+void init_tribes(void) {
+  float spacing = 24.0f;
+
+  Color tribe_colors[] = {RED, BLUE, GREEN, ORANGE};
+
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Tribe *tr = &tribes[t];
+
+    tr->tribe_id = t;
+    tr->color = tribe_colors[t % 4];
+    tr->agent_start = t * AGENT_PER_TRIBE;
+    tr->agent_count = AGENT_PER_TRIBE;
+
+    tr->base.position =
+        (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
+                  WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
+
+    tr->base.radius = BASE_RADIUS;
+  }
+}
+
+/* =======================
    AGENTS
 ======================= */
 
