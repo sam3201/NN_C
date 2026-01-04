@@ -469,15 +469,6 @@ void draw_resource(Resource *r) {
 /* =======================
   MOBS
 ======================= */
-void draw_mob(Mob *m, Vector2 chunk_offset) {
-  Vector2 p = Vector2Add(Vector2Scale(m->position, TILE_SIZE), chunk_offset);
-
-  if (m->type == MOB_PIG) {
-    draw_pig(p, TILE_SIZE * 0.8f);
-  }
-  // future mobs like sheep, zombies can be added here
-}
-
 void draw_pig(Vector2 pos, float size) {
   // Body
   DrawCircleV(pos, size * 0.5f, pink);
@@ -494,6 +485,15 @@ void draw_pig(Vector2 pos, float size) {
                  (Vector2){size * 0.2f, size * 0.2f}, pink);
   DrawRectangleV((Vector2){pos.x + size * 0.15f, pos.y + size * 0.3f},
                  (Vector2){size * 0.2f, size * 0.2f}, pink);
+}
+
+void draw_mob(Mob *m, Vector2 chunk_offset) {
+  Vector2 p = Vector2Add(Vector2Scale(m->position, TILE_SIZE), chunk_offset);
+
+  if (m->type == MOB_PIG) {
+    draw_pig(p, TILE_SIZE * 0.8f);
+  }
+  // future mobs like sheep, zombies can be added here
 }
 
 /* =======================
