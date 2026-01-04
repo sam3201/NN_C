@@ -649,10 +649,11 @@ int main(void) {
     // Draw player
     draw_player(&player);
 
+    EndMode2D();
+
     // Draw UI
     draw_ui(player);
 
-    EndMode2D();
     EndDrawing();
   }
 
