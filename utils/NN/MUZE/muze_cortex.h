@@ -2,6 +2,7 @@
 #define MUZE_CORTEX_H
 
 #include <stdio.h>
+#include <../../
 
 typedef struct {
   void *brain; // opaque (SAM_t*)
