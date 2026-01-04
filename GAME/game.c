@@ -410,6 +410,10 @@ int main(void) {
   int train_timer = 0;
 
   while (!WindowShouldClose()) {
+    update_player();
+    for (int i = 0; i < MAX_AGENTS; i++)
+      update_agent(&agents[i]);
+
     for (int i = 0; i < MAX_AGENTS; i++)
       update_agent(&agents[i]);
 
