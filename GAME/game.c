@@ -243,22 +243,33 @@ Chunk *get_chunk(int cx, int cy) {
     a->tribe_color = tr->color;
     a->agent_id = i;
 
-    if (cx == WORLD_SIZE / 2 && cy == WORLD_SIZE / 2) {
-      float ang = (float)i / MAX_AGENTS * 2 * PI;
-      float d = randf(2, BASE_RADIUS - 1);
-      a->position = (Vector2){agent_base.position.x + cosf(ang) * d,
-                              agent_base.position.y + sinf(ang) * d};
-    } else {
-      a->position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
-    }
+    int tribe_id = i / AGENT_PER_TRIBE;
+    Tribe *tr = &tribes[tribe_id];
 
-    MuConfig cfg = {
-        .obs_dim = 10, .latent_dim = 32, .action_count = ACTION_COUNT};
-    a->brain = mu_model_create(&cfg);
-    a->input_size = cfg.obs_dim;
+    if (cx == (int)tr->base.position.x && cy == (int)tr->base.position.y) {
+
+      float ang = randf(0, 2 * PI);
+      float d = randf(2, tr->base.radius - 1);
+
+      a->position = (Vector2){tr->base.position.x + cosf(ang) * d,
+                              tr->base.position.y + sinf(ang) * d};
+    }
+    float ang = (float)i / MAX_AGENTS * 2 * PI;
+    float d = randf(2, BASE_RADIUS - 1);
+    a->position = (Vector2){agent_base.position.x + cosf(ang) * d,
+                            agent_base.position.y + sinf(ang) * d};
+  }
+  else {
+    a->position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
   }
 
-  return c;
+  MuConfig cfg = {
+      .obs_dim = 10, .latent_dim = 32, .action_count = ACTION_COUNT};
+  a->brain = mu_model_create(&cfg);
+  a->input_size = cfg.obs_dim;
+}
+
+return c;
 }
 
 /* =======================
