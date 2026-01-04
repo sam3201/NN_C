@@ -238,21 +238,20 @@ void init_agents(void) {
 /* =======================
    OBSERVATION & RL
 ======================= */
-void encode_observation(Agent *a, Chunk *c, float *obs) {
+void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
   Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
   float dbase = Vector2Length(to_base);
 
-  obs[0] = a->health / 100.0f;
-  obs[1] = a->stamina / 100.0f;
-  obs[2] = fminf(dbase / 64.0f, 1.0f);
-  obs[3] = to_base.x / (dbase + 1e-4f);
-  obs[4] = to_base.y / (dbase + 1e-4f);
+  obs_push(obs, a->health / 100.0f);
+  obs_push(obs, a->stamina / 100.0f);
+  obs_push(obs, fminf(dbase / 64.0f, 1.0f));
+  obs_push(obs, to_base.x / (dbase + 1e-4f));
+  obs_push(obs, to_base.y / (dbase + 1e-4f));
 
-  /* Resource density encoding (infinite world compatible) */
-  float res_count = (float)c->resource_count / MAX_RESOURCES;
-  obs[5] = res_count;
+  /* Resource density */
+  obs_push(obs, (float)c->resource_count / MAX_RESOURCES);
 
   /* Mean resource direction */
   Vector2 mean = {0};
@@ -260,19 +259,16 @@ void encode_observation(Agent *a, Chunk *c, float *obs) {
     mean = Vector2Add(mean,
                       Vector2Subtract(c->resources[i].position, a->position));
   }
+
   if (c->resource_count > 0)
     mean = Vector2Scale(mean, 1.0f / c->resource_count);
 
   float md = Vector2Length(mean);
-  obs[6] = mean.x / (md + 1e-4f);
-  obs[7] = mean.y / (md + 1e-4f);
+  obs_push(obs, mean.x / (md + 1e-4f));
+  obs_push(obs, mean.y / (md + 1e-4f));
 
-  obs[8] = (dbase < BASE_RADIUS) ? 1.0f : 0.0f;
-  obs[9] = 1.0f; /* bias */
-
-  /* Remaining slots reserved for future memory expansion */
-  for (int i = 10; i < 16; i++)
-    obs[i] = 0.0f;
+  obs_push(obs, dbase < BASE_RADIUS ? 1.0f : 0.0f); // in base
+  obs_push(obs, 1.0f);                              // bias
 }
 
 int decide_action(Agent *a, float *obs) {
