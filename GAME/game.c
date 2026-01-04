@@ -277,13 +277,12 @@ void update_agent(Agent *a) {
   float reward = 0.0f;
 
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-  if (Vector2Length(Vector2Subtract(a->position, tr->base.position))) <
+  if (Vector2Length(Vector2Subtract(a->position, tr->base.position)) <
       BASE_RADIUS) {
-      a->health = fminf(a->health + 0.5f, 100);
-      a->stamina = fminf(a->stamina + 0.5f, 100);
-      reward += 0.01f;
-    }
-  else {
+    a->health = fminf(a->health + 0.5f, 100);
+    a->stamina = fminf(a->stamina + 0.5f, 100);
+    reward += 0.01f;
+  } else {
     a->stamina -= 0.05f;
     reward -= 0.001f;
   }
