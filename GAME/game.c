@@ -246,7 +246,7 @@ int decide_action(Tribe *tr, float *obs) { return rand() % ACTION_COUNT; }
 /* =======================
    AGENT UPDATE
 ======================= */
-void update_agent(Agent *a) {
+void update_agent(Tribe *tr) {
   if (!a->alive)
     return;
 
