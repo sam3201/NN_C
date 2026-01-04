@@ -262,6 +262,21 @@ void update_agent(Agent *a) {
   int cy = (int)(a->position.y / CHUNK_SIZE);
   Chunk *c = get_chunk(cx, cy);
 
+  float reward = 0.0f;
+
+  if (d < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100);
+    a->stamina = fminf(a->stamina + 0.5f, 100);
+    reward += 0.01f;
+  } else {
+    a->stamina -= 0.05f;
+    reward -= 0.001f;
+  }
+
+  if (!a->alive) {
+    reward -= 1.0f;
+  }
+
   float obs[10];
   encode_observation(a, c, obs);
 
