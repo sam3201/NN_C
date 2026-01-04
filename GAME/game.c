@@ -541,7 +541,18 @@ int main(void) {
                agent_base.position.y * TILE_SIZE, agent_base.radius * TILE_SIZE,
                DARKGRAY);
 
-    DrawCircleV(player.position, TILE_SIZE * 0.4f, RED);
+    // Body (tan)
+    DrawCircleV(player.position, TILE_SIZE * 0.35f,
+                (Color){245, 222, 179, 255}); // cream/tan
+
+    // Hands / tool color (tribe red)
+    DrawCircleV(
+        (Vector2){player.position.x - TILE_SIZE * 0.2f, player.position.y},
+        TILE_SIZE * 0.15f, RED);
+    DrawCircleV(
+        (Vector2){player.position.x + TILE_SIZE * 0.2f, player.position.y},
+        TILE_SIZE * 0.15f, RED);
+
     draw_ui(player);
 
     EndMode2D();
