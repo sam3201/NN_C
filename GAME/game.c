@@ -470,7 +470,7 @@ void update_agent(Agent *a) {
 
   a->age++;
 
-  tr->cortex.learn(tr->cortex.brain, reward, !a->alive);
+  tr->cortex->learn(tr->cortex->brain, reward, terminal);
 }
 
 /* =======================
