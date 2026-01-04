@@ -396,20 +396,7 @@ void draw_ui(Player player) {
   DrawText("Stamina:", 10, 30, 16, WHITE);
   DrawText("Age:", 10, 50, 16, WHITE);
 
-  DrawText(FormatText("%d", player.health), 100, 10, 16, WHITE);
-  DrawText(FormatText("%d", player.stamina), 100, 30, 16, WHITE);
-  DrawText(FormatText("%d", player.age), 100, 50, 16, WHITE);
-
-  DrawText("Tool:", 10, 70, 16, WHITE);
-  DrawText(FormatText("%d", player.tool), 100, 70, 16, WHITE);
-
-  DrawText("Resources:", 10, 90, 16, WHITE);
-  DrawText(FormatText("%d", player.wood), 100, 90, 16, WHITE);
-  DrawText(FormatText("%d", player.stone), 150, 90, 16, WHITE);
-  DrawText(FormatText("%d", player.food), 200, 90, 16, WHITE);
-
-  DrawText("FPS:", 10, 130, 16, WHITE);
-  DrawText(FormatText("%d", GetFPS()), 100, 130, 16, WHITE);
+  DrawText(f "FPS: {GetFPS()}", 10, 130, 16, WHITE);
 }
 
 /* =======================
