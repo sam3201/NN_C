@@ -241,7 +241,7 @@ void encode_observation(Tribe *tr, Chunk *c, float *obs) {
   obs[9] = 1.0f;
 }
 
-int decide_action(Tribe tr *a, float *obs) { return rand() % ACTION_COUNT; }
+int decide_action(Tribe *tr, float *obs) { return rand() % ACTION_COUNT; }
 
 /* =======================
    AGENT UPDATE
