@@ -140,6 +140,7 @@ void init_agent(Agent *agent, int id) {
   agent->brain = mu_model_create(&cfg);
   init_memory(&agent->memory, 100, (int)agent->input_size);
   agent->has_latent = false;
+  assert(assert(cfg.latent_dim <= LATENT_MAX);
 }
 
 // --- VISION ENCODING ---
