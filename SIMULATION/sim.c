@@ -577,9 +577,18 @@ void update_agents(GameState *state, float dt) {
     step_agent(state, agent, action);
 
     // Compute reward
+    // Compute reward
     float reward = compute_reward(agent, old_xp, old_level);
 
-    // Update latent
+    // TERMINAL CONDITION
+    if (agent->total_xp < 0) {
+      mu_model_end_episode(agent->brain, reward - 2.0f);
+      agent->has_latent = false;
+      mu_model_reset_episode(agent->brain);
+      continue; // skip latent update
+    }
+
+    // Update latent (non-terminal transition)
     update_latent_after_step(agent, inputs, action, reward);
 
     // Optional logging memory (not required for MuZE)
