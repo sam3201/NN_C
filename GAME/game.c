@@ -403,7 +403,8 @@ int main(void) {
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
-  camera_pos = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
+  camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
 
   init_tribes();
   init_agents();
