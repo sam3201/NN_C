@@ -53,6 +53,7 @@ typedef struct {
   int parent_id;
   int num_offsprings;
   int num_eaten;
+  int last_eaten;
   bool is_breeding;
   float breeding_timer;
   Color color;
@@ -61,6 +62,7 @@ typedef struct {
   size_t input_size;
   float latent[LATENT_MAX];
   bool has_latent;
+
 } Agent;
 
 typedef struct {
