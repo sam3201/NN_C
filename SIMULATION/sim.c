@@ -678,6 +678,12 @@ void free_game(GameState *game) {
   }
 }
 
+void save_game(GameState *game, const char *filename) {
+  FILE *file = fopen(filename, "wb");
+  fwrite(game, sizeof(GameState), 1, file);
+  fclose(file);
+}
+
 // --- MAIN ---
 int main(void) {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Evolution Simulator");
