@@ -368,6 +368,15 @@ void update_agent(Agent *a) {
 }
 
 /* =======================
+   CHUNK UPDATE
+======================= */
+void init_player(void) {
+  player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  player.health = 100;
+  player.stamina = 100;
+}
+
+/* =======================
    MAIN
 ======================= */
 int main(void) {
