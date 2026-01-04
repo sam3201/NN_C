@@ -683,8 +683,30 @@ void save_game(GameState *game, const char *filename) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
     NN_save(game->agents[i].brain, file);
 
+  for (int i = 0; i < MAX_FOOD; i++)
+    fwrite(&game->food[i].position, sizeof(Vector2), 1, file);
+
   for (int i = 0; i < MAX_GROUNDSKEEPERS; i++)
-    NN_save(game->gks[i].brain, file);
+    fwrite(&game->gks[i].position, sizeof(Vector2), 1, file);
+
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
+    fwrite(&game->agents[i].position, sizeof(Vector2), 1, file);
+
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
+    fwrite(&game->agents[i].total_xp, sizeof(long double), 1, file);
+
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
+    fwrite(&game->agents[i].level, sizeof(long double), 1, file);
+
+  fwrite(&game->current_generation, sizeof(int), 1, file);
+  fwrite(&game->next_agent_id, sizeof(int), 1, file);
+  fwrite(&game->num_active_agents, sizeof(int), 1, file);
+
+  fwrite(&game->evolution_timer, sizeof(long double), 1, file);
+  fwrite(&game->paused, sizeof(bool), 1, file);
+  fwrite(&game->over, sizeof(bool), 1, file);
+
+  fwrite(game->last_actions, sizeof(Action), POPULATION_SIZE, file);
 
   fwrite(game, sizeof(GameState), 1, file);
 
