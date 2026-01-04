@@ -190,9 +190,6 @@ void init_tribes(void) {
 }
 
 void init_agents(void) {
-  MuConfig cfg = {
-      .obs_dim = 10, .latent_dim = 32, .action_count = ACTION_COUNT};
-
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
     a->agent_id = i;
