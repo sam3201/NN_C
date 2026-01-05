@@ -416,27 +416,21 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
     }
   }
 
-  // Loop over each layer and update its NNs using the helper backprop
   for (size_t i = 0; i < L; i++) {
     TransformerLayer *layer = transformer->layers[i];
 
-    // --- Multi-Head Attention ---
     transformer_mha_backprop(layer->attention, layer_inputs[i], grad_loss,
-                             NULL); // grad_input not needed
+                             NULL);
 
-    // --- LayerNorm1 ---
     transformer_norm_backprop(layer->norm1, layer_inputs[i], grad_loss, NULL);
 
-    // --- FeedForward ---
     NN_backprop(layer->feed_forward->network, layer_inputs[i], 0.0L,
-                grad_loss[0]); // propagate scalar gradient
+                grad_loss[0]);
 
-    // --- LayerNorm2 ---
     transformer_norm_backprop(layer->norm2, layer_inputs[i + 1], grad_loss,
                               NULL);
   }
 
-  // Cleanup
   for (size_t i = 0; i <= L; i++)
     free(layer_inputs[i]);
   free(layer_inputs);
