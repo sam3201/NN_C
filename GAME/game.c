@@ -555,8 +555,8 @@ int main(void) {
           tribes[t].cortex->learn(tribes[t].cortex->brain,
                                 tribes[t].reward_accumulator,
                                 1 // terminal
-                                */
         );
+                                */
 
         tribes[t].reward_accumulator = 0.0f;
       }
