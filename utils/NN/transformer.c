@@ -423,6 +423,47 @@ cleanup:
   free(grad_attn);
 }
 
+void TRANSFORMER_backprop(Transformer_t *transformer,
+                          long double **input_sequence, size_t seq_length,
+                          long double *grad_loss) {
+  if (!transformer || !grad_loss)
+    return;
+
+  size_t L = transformer->num_layers;
+  size_t D = transformer->model_dim;
+
+  // 1️⃣ Store layer inputs
+  long double **layer_inputs = malloc((L + 1) * sizeof(long double *));
+  layer_inputs[0] = malloc(D * sizeof(long double));
+  memcpy(layer_inputs[0], input_sequence[0], D * sizeof(long double));
+
+  for (size_t i = 0; i < L; i++) {
+    transformer->layers[i]->seq_length = seq_length;
+    layer_inputs[i + 1] =
+        transformer_forward(transformer->layers[i], layer_inputs[i]);
+  }
+
+  // 2️⃣ Backprop
+  long double *grad = malloc(D * sizeof(long double));
+  memcpy(grad, grad_loss, D * sizeof(long double));
+
+  for (int i = (int)L - 1; i >= 0; i--) {
+    long double *next_grad = calloc(D, sizeof(long double));
+
+    TRANSFORMER_layer_backprop(transformer->layers[i], layer_inputs[i], grad,
+                               next_grad);
+
+    free(grad);
+    grad = next_grad;
+  }
+
+  // 3️⃣ Cleanup
+  for (size_t i = 0; i <= L; i++)
+    free(layer_inputs[i]);
+  free(layer_inputs);
+  free(grad);
+}
+
 void free_feed_forward(FeedForward *ff) {
   if (ff) {
     if (ff->network)
