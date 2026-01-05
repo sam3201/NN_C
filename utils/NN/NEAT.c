@@ -225,8 +225,6 @@ void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
 // ------------------- Genome Add Connection -------------------
 void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight) {
-  if (fromNode >= genome->numNodes || toNode >= genome->numNodes)
-    return; // safety check
   if (creates_cycle(genome, fromNode, toNode))
     return;
 
