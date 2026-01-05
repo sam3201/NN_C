@@ -1018,6 +1018,7 @@ NN_t *NN_load(const char *filename) {
   fclose(file);
   return nn;
 }
+
 // Loss Functions
 long double mse(long double y_true, long double y_pred) {
   long double diff = y_true - y_pred;
