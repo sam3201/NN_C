@@ -344,6 +344,7 @@ void adam(NN_t *nn) {
     for (size_t i = 0; i < wcount; i++) {
       nn->opt_m_w[l][i] =
           beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
+
       nn->opt_v_w[l][i] =
           beta2 * nn->opt_v_w[l][i] +
           (1 - beta2) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
