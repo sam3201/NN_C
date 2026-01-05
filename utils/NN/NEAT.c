@@ -377,7 +377,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 
   ActivationFunctionType actFuncs[2] = {
       get_activation_function_from_func((ActivationFunction)actFunc1),
-      (ActivationFunctionType)actFunc2,
+      actFunc2,
   };
 
   ActivationDerivativeType actDerivs[2] = {(ActivationDerivativeType)actFunc1,
