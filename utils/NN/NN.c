@@ -301,34 +301,24 @@ void adagrad(NN_t *nn) {
 }
 
 void adam(NN_t *nn) {
-  const long double beta1 = 0.9L;
-  const long double beta2 = 0.999L;
-  const long double epsilon = 1e-8L;
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t current_layer = nn->layers[i];
-    size_t next_layer = nn->layers[i + 1];
-
-    for (size_t j = 0; j < current_layer * next_layer; j++) {
-      nn->weights_v[i][j] =
-          beta2 * nn->weights_v[i][j] +
-          (1 - beta2) * nn->weights_v[i][j] * nn->weights_v[i][j];
-
-      long double m_hat = nn->weights_v[i][j] / (1 - powl(beta1, nn->t));
-      long double v_hat = nn->weights_v[i][j] / (1 - powl(beta2, nn->t));
-
-      nn->weights[i][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + epsilon);
+  const long double beta1 = 0.9L, beta2 = 0.999L, eps = 1e-8L;
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
+    for (size_t j = 0; j < in_size * out_size; j++) {
+      nn->weights_v[l][j] =
+          beta2 * nn->weights_v[l][j] +
+          (1 - beta2) * nn->weights_v[l][j] * nn->weights_v[l][j];
+      long double m_hat = nn->weights_v[l][j] / (1 - powl(beta1, nn->t));
+      long double v_hat = nn->weights_v[l][j] / (1 - powl(beta2, nn->t));
+      nn->weights[l][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
     }
-
-    for (size_t j = 0; j < next_layer; j++) {
-      nn->biases_v[i][j] = beta2 * nn->biases_v[i][j] + (1 - beta2) *
-                                                            nn->biases_v[i][j] *
-                                                            nn->biases_v[i][j];
-
-      long double m_hat = nn->biases_v[i][j] / (1 - powl(beta1, nn->t));
-      long double v_hat = nn->biases_v[i][j] / (1 - powl(beta2, nn->t));
-
-      nn->biases[i][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + epsilon);
+    for (size_t j = 0; j < out_size; j++) {
+      nn->biases_v[l][j] = beta2 * nn->biases_v[l][j] + (1 - beta2) *
+                                                            nn->biases_v[l][j] *
+                                                            nn->biases_v[l][j];
+      long double m_hat = nn->biases_v[l][j] / (1 - powl(beta1, nn->t));
+      long double v_hat = nn->biases_v[l][j] / (1 - powl(beta2, nn->t));
+      nn->biases[l][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
     }
   }
   nn->t++;
