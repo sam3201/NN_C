@@ -115,11 +115,17 @@ long double *NN_forward_softmax(NN_t *nn, long double inputs[]);
 void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
                               long double *output_delta);
 void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
-                         long double y_pred[]);
+                         long double y_pred[]) {
+  size_t output_size = nn->layers[nn->numLayers - 1];
+  long double *grad = calloc(output_size, sizeof(long double));
+  softmax_derivative(y_pred, y_true, grad, output_size);
+
+  // feed grad backward through previous layers normally
+  NN_backprop_custom_delta(nn, inputs, grad);
+  free(grad);
+}
+
 void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
-                        long double y_pred[],
-                        long double (*lossDerivative)(long double,
-                                                      long double));
 
 // Matrix multiplication
 long double *NN_matmul(long double inputs[], long double weights[],
