@@ -59,6 +59,7 @@ void Genome_forward(Genome *genome, long double *input, long double *output);
 // Activation functions
 long double activate(long double x, ActivationFunctionType type);
 
+// Serialization
 void Genome_save(Genome *genome, const char *filename);
 Genome *Genome_load(const char *filename);
 
