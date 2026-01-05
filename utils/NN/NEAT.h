@@ -82,6 +82,7 @@ Genome_t *GENOME_load(const char *filename);
 // ------------------- Population-------------------
 Population *POPULATION_init(size_t popSize, size_t numInputs,
                             size_t numOutputs);
+void POP_destroy(Population *pop);
 
 // ------------------- Innovation Number -------------------
 size_t get_innovation_number(size_t from, size_t to);
