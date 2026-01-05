@@ -16,12 +16,10 @@ fi
 
 echo "Compiling game..."
 
-# --- Collect all source files ---
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
 NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
 SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 
-# --- Compile and link ---
 gcc -w game.c $MUZE_SRC $NN_SRC $SAM_SRC \
     -I../utils/Raylib/src \
     -I../utils/NN \
@@ -31,7 +29,6 @@ gcc -w game.c $MUZE_SRC $NN_SRC $SAM_SRC \
     -arch arm64 \
     -o game
 
-# --- Run game if compilation succeeded ---
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./game
@@ -40,6 +37,5 @@ else
     exit 1
 fi
 
-# --- Optional cleanup ---
 rm game
 
