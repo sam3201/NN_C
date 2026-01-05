@@ -126,6 +126,7 @@ long double *NN_forward_softmax(NN_t *nn, long double inputs[]);
 // Backpropagation
 void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
                               long double *output_delta);
+void NN_backprop(NN_t *nn, long double inputs[], long double y_true[]);
 void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
                          long double y_pred[]);
 void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
