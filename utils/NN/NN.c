@@ -568,45 +568,24 @@ long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
 
 void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
                          long double y_pred[]) {
-  if (!nn || !y_true || !y_pred)
-    return;
+  size_t output_size = nn->layers[nn->numLayers - 1];
+  long double *grad = calloc(output_size, sizeof(long double));
+  softmax_derivative(y_pred, y_true, grad, output_size);
 
-  size_t out_size = nn->layers[nn->numLayers - 1];
-  long double *ce_delta = (long double *)malloc(out_size * sizeof(long double));
-  for (size_t i = 0; i < out_size; i++)
-    ce_delta[i] = y_pred[i] - y_true[i]; // CE + softmax delta
-
-  NN_backprop_custom_delta(nn, inputs, ce_delta);
-
-  free(ce_delta);
+  // feed grad backward through previous layers normally
+  NN_backprop_custom_delta(nn, inputs, grad);
+  free(grad);
 }
 
-// y_true: one-hot or label index
-// y_pred: raw outputs (logits or softmax probabilities)
-// lossDerivative: pointer to chosen loss derivative function
 void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
-                        long double y_pred[],
-                        long double (*lossDerivative)(long double,
-                                                      long double)) {
-  if (!nn || !y_true || !y_pred)
-    return;
+                        long double y_pred[]) {
+  size_t output_size = nn->layers[nn->numLayers - 1];
+  long double *grad = calloc(output_size, sizeof(long double));
+  argmax_derivative(y_pred, y_true, grad, output_size);
 
-  size_t out_size = nn->layers[nn->numLayers - 1];
-
-  // Sparse gradient only for predicted class
-  long double *gradients = (long double *)calloc(out_size, sizeof(long double));
-  size_t pred_idx = 0;
-  long double max_val = y_pred[0];
-  for (size_t i = 1; i < out_size; i++) {
-    if (y_pred[i] > max_val) {
-      max_val = y_pred[i];
-      pred_idx = i;
-    }
-  }
-  gradients[pred_idx] = lossDerivative(y_true[pred_idx], y_pred[pred_idx]);
-
-  NN_backprop_custom_delta(nn, inputs, gradients);
-  free(gradients);
+  // feed grad backward through previous layers normally
+  NN_backprop_custom_delta(nn, inputs, grad);
+  free(grad);
 }
 
 // Function Getters
