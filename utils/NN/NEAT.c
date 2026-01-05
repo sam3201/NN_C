@@ -373,7 +373,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
 
   int actFunc1 = rand() % REGULARIZATION_TYPE_COUNT;
-  int = rand() % REGULARIZATION_TYPE_COUNT;
+  int actFunc2 = rand() % REGULARIZATION_TYPE_COUNT;
   ActivationFunctionType actFuncs[2] = {
       actFunc1,
       actFunc2,
