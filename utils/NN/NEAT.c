@@ -262,6 +262,128 @@ void POPULATION_destroy(Population *pop) {
   free(pop);
 }
 
+// ------------------- Compatibility Distance -------------------
+long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
+                                   long double c2, long double c3) {
+  size_t i1 = 0, i2 = 0;
+  size_t excess = 0, disjoint = 0;
+  long double weightDiff = 0.0L;
+  size_t matching = 0;
+
+  while (i1 < g1->numConnections || i2 < g2->numConnections) {
+    if (i1 >= g1->numConnections) {
+      excess++;
+      i2++;
+    } else if (i2 >= g2->numConnections) {
+      excess++;
+      i1++;
+    } else {
+      Connection *c1 = g1->connections[i1];
+      Connection *c2 = g2->connections[i2];
+      if (c1->innovation == c2->innovation) {
+        weightDiff += fabsl(c1->weight - c2->weight);
+        matching++;
+        i1++;
+        i2++;
+      } else if (c1->innovation < c2->innovation) {
+        disjoint++;
+        i1++;
+      } else {
+        disjoint++;
+        i2++;
+      }
+    }
+  }
+
+  long double avgWeightDiff = matching > 0 ? weightDiff / matching : 0.0L;
+  size_t N = g1->numConnections > g2->numConnections ? g1->numConnections
+                                                     : g2->numConnections;
+  if (N < 20)
+    N = 1; // small genome adjustment
+
+  return (c1 * excess / N) + (c2 * disjoint / N) + (c3 * avgWeightDiff);
+}
+
+// ------------------- Species Assignment -------------------
+size_t assign_species(Population *pop) {
+  // Simplest: cluster by compatibility threshold
+  const long double threshold = 3.0L; // adjust as needed
+  size_t numSpecies = 0;
+  size_t *species = calloc(pop->size, sizeof(size_t));
+
+  for (size_t i = 0; i < pop->size; i++) {
+    int found = 0;
+    for (size_t j = 0; j < numSpecies; j++) {
+      if (compatibility_distance(pop->genomes[i], pop->genomes[j], 1.0L, 1.0L,
+                                 0.4L) < threshold) {
+        species[i] = j;
+        found = 1;
+        break;
+      }
+    }
+    if (!found) {
+      species[i] = numSpecies++;
+    }
+  }
+  free(species);
+  return numSpecies;
+}
+
+// ------------------- Next Generation -------------------
+void POPULATION_evolve(Population *pop) {
+  if (!pop)
+    return;
+
+  // 1. Assign species
+  size_t numSpecies = assign_species(pop);
+
+  // 2. Sort genomes by fitness descending
+  for (size_t i = 0; i < pop->size - 1; i++) {
+    for (size_t j = i + 1; j < pop->size; j++) {
+      if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
+        Genome_t *tmp = pop->genomes[i];
+        pop->genomes[i] = pop->genomes[j];
+        pop->genomes[j] = tmp;
+      }
+    }
+  }
+
+  // 3. Keep top 20% as elites
+  size_t eliteCount = pop->size / 5;
+
+  Genome_t **nextGen = malloc(pop->size * sizeof(Genome_t *));
+  for (size_t i = 0; i < eliteCount; i++) {
+    nextGen[i] =
+        GENOME_crossover(pop->genomes[i], pop->genomes[i]); // self-copy
+  }
+
+  // 4. Fill remaining with crossover + mutation
+  for (size_t i = eliteCount; i < pop->size; i++) {
+    size_t p1 = rand() % eliteCount;
+    size_t p2 = rand() % eliteCount;
+    Genome_t *child = GENOME_crossover(pop->genomes[p1], pop->genomes[p2]);
+    GENOME_mutate_weights(child, 0.8L, 0.2L);           // adjust rates
+    if (rand() % 10 < 3 && child->numConnections > 0) { // add node 30% chance
+      GENOME_add_node(child, rand() % child->numConnections);
+    }
+    if (rand() % 10 < 5) { // add connection 50% chance
+      size_t from = rand() % child->numNodes;
+      size_t to = rand() % child->numNodes;
+      if (from != to)
+        GENOME_add_connection(child, from, to,
+                              ((rand() % 2000) / 1000.0L - 1.0L));
+    }
+    nextGen[i] = child;
+  }
+
+  // 5. Destroy old population genomes
+  for (size_t i = 0; i < pop->size; i++)
+    GENOME_destroy(pop->genomes[i]);
+
+  free(pop->genomes);
+  pop->genomes = nextGen;
+}
+
 // Return innovation number, create if new
 size_t get_innovation_number(size_t from, size_t to) {
   for (size_t i = 0; i < innovationCount; i++) {
