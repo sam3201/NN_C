@@ -281,6 +281,14 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
 // ----------------------
 // Backprop
 // ----------------------
+long double *transformer_layer_backprop(TransformerLayer *layer,
+                                        long double *grad_output) {
+  // TEMP: pass-through gradient
+  long double *grad = malloc(layer->model_dim * sizeof(long double));
+  memcpy(grad, grad_output, layer->model_dim * sizeof(long double));
+  return grad;
+}
+
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
