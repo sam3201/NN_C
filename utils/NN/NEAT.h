@@ -1,6 +1,7 @@
 #ifndef NEAT_H
 #define NEAT_H
 
+#include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
