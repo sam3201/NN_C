@@ -78,10 +78,10 @@ Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
                                 size_t num_layers);
 
 // Forward pass
-long double *transformer_long double **
-transformer_mha_forward(MultiHeadAttention *mha, long double **input_seq,
-                        size_t seq_length);
-norm_forward(LayerNorm *ln, long double *input);
+long double **transformer_mha_forward(MultiHeadAttention *mha,
+                                      long double **input_seq,
+                                      size_t seq_length);
+long double *transformer_norm_forward(LayerNorm *ln, long double *input);
 long double *transformer_layer_forward(TransformerLayer *layer,
                                        long double *input);
 long double **TRANSFORMER_forward(Transformer_t *transformer,
