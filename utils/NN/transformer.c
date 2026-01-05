@@ -566,46 +566,64 @@ int TRANSFORMER_save(Transformer_t *t, const char *base_filename) {
   return 0;
 }
 
-Transformer_t *TRANSFORMER_load(const char *filename) {
-  FILE *f = fopen(filename, "rb");
+Transformer_t *TRANSFORMER_load(const char *base_filename) {
+  if (!base_filename)
+    return NULL;
+
+  char fname[512];
+
+  // ---- Load metadata ----
+  snprintf(fname, sizeof(fname), "%s.meta", base_filename);
+  FILE *f = fopen(fname, "rb");
   if (!f)
     return NULL;
 
-  Transformer_t *t = malloc(sizeof(Transformer_t));
-  if (!t)
+  uint32_t magic;
+  fread(&magic, sizeof(uint32_t), 1, f);
+  if (magic != 0x54524E53) { // "TRNS"
+    fclose(f);
     return NULL;
+  }
+
+  Transformer_t *t = calloc(1, sizeof(Transformer_t));
+  if (!t) {
+    fclose(f);
+    return NULL;
+  }
 
   fread(&t->model_dim, sizeof(size_t), 1, f);
   fread(&t->num_heads, sizeof(size_t), 1, f);
   fread(&t->num_layers, sizeof(size_t), 1, f);
+  fclose(f);
 
+  // ---- Allocate layers ----
   t->layers = malloc(t->num_layers * sizeof(TransformerLayer *));
-  if (!t->layers) {
-    free(t);
-    return NULL;
-  }
-
   size_t ff_dim = t->model_dim * 4;
 
   for (size_t l = 0; l < t->num_layers; l++) {
     TransformerLayer *layer =
         create_transformer_layer(t->model_dim, t->num_heads, ff_dim);
 
-    fread(&layer->model_dim, sizeof(size_t), 1, f);
-    fread(&layer->seq_length, sizeof(size_t), 1, f);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.Q.nn", base_filename, l);
+    layer->attention->Q_proj = NN_load(fname);
 
-    // ---- Attention ----
-    layer->attention->Q_proj = NN_load(filename);
-    layer->attention->K_proj = NN_load(filename);
-    layer->attention->V_proj = NN_load(filename);
-    layer->attention->O_proj = NN_load(filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.K.nn", base_filename, l);
+    layer->attention->K_proj = NN_load(fname);
 
-    // ---- Feed Forward ----
-    layer->feed_forward->network = NN_load(filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.V.nn", base_filename, l);
+    layer->attention->V_proj = NN_load(fname);
 
-    // ---- LayerNorms ----
-    layer->norm1->norm_network = NN_load(filename);
-    layer->norm2->norm_network = NN_load(filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.O.nn", base_filename, l);
+    layer->attention->O_proj = NN_load(fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.FF.nn", base_filename, l);
+    layer->feed_forward->network = NN_load(fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.N1.nn", base_filename, l);
+    layer->norm1->norm_network = NN_load(fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.N2.nn", base_filename, l);
+    layer->norm2->norm_network = NN_load(fname);
 
     t->layers[l] = layer;
   }
