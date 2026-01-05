@@ -396,6 +396,51 @@ void GENOME_save_safe(Genome_t *genome, const char *filename) {
   fclose(f);
 }
 
+Genome_t *GENOME_load_safe(const char *filename) {
+  FILE *f = fopen(filename, "rb");
+  if (!f)
+    return NULL;
+
+  Genome_t *genome = malloc(sizeof(Genome_t));
+  fread(&genome->numNodes, sizeof(size_t), 1, f);
+
+  genome->nodes = malloc(genome->numNodes * sizeof(Node *));
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    Node *n = malloc(sizeof(Node));
+    fread(&n->id, sizeof(size_t), 1, f);
+    fread(&n->type, sizeof(NodeType), 1, f);
+    fread(&n->actFunc, sizeof(ActivationFunctionType), 1, f);
+    fread(&n->value, sizeof(long double), 1, f);
+    genome->nodes[i] = n;
+  }
+
+  fread(&genome->numConnections, sizeof(size_t), 1, f);
+  genome->connections = malloc(genome->numConnections * sizeof(Connection *));
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = malloc(sizeof(Connection));
+    size_t fromID, toID;
+    fread(&fromID, sizeof(size_t), 1, f);
+    fread(&toID, sizeof(size_t), 1, f);
+    fread(&c->weight, sizeof(long double), 1, f);
+    fread(&c->enabled, sizeof(bool), 1, f);
+    fread(&c->innovation, sizeof(size_t), 1, f);
+
+    if (fromID < genome->numNodes && toID < genome->numNodes) {
+      c->from = genome->nodes[fromID];
+      c->to = genome->nodes[toID];
+    } else {
+      c->from = NULL;
+      c->to = NULL;
+    }
+
+    genome->connections[i] = c;
+  }
+
+  fread(&genome->fitness, sizeof(long double), 1, f);
+  fclose(f);
+  return genome;
+}
+
 void GENOME_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
   fwrite(&genome->numNodes, sizeof(size_t), 1, f);
