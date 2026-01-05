@@ -93,11 +93,6 @@ typedef struct NN_t {
   long double **opt_m_b;
   long double **opt_v_b;
 
-  long double **opt_m_w; // Adam / momentum m
-  long double **opt_v_w; // Adam / RMSProp v
-  long double **opt_m_b;
-  long double **opt_v_b;
-
   long double learningRate; // Learning rate
   size_t t;                 // Time step for Adam
 
