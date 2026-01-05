@@ -184,7 +184,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 }
 
 // ------------------- Serialization -------------------
-void Genome_save(Genome_t *genome, const char *filename) {
+void GENOME_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
   fwrite(&genome->numNodes, sizeof(size_t), 1, f);
   for (size_t i = 0; i < genome->numNodes; i++) {
@@ -198,7 +198,7 @@ void Genome_save(Genome_t *genome, const char *filename) {
   fclose(f);
 }
 
-Genome_t *Genome_load(const char *filename) {
+Genome_t *GENOME_load(const char *filename) {
   FILE *f = fopen(filename, "rb");
   if (!f)
     return NULL;
