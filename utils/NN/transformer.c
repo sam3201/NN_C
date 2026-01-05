@@ -264,6 +264,31 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
   return out;
 }
 
+long double *transformer_norm_forward(LayerNorm *ln, long double *input) {
+  size_t D = ln->dim;
+  long double mean = 0, var = 0;
+
+  for (size_t i = 0; i < D; i++)
+    mean += input[i];
+  mean /= D;
+
+  for (size_t i = 0; i < D; i++) {
+    long double d = input[i] - mean;
+    var += d * d;
+  }
+  var /= D;
+
+  long double *out = malloc(D * sizeof(long double));
+  ln->input_cache = malloc(D * sizeof(long double));
+
+  for (size_t i = 0; i < D; i++) {
+    ln->input_cache[i] = input[i];
+    out[i] = (input[i] - mean) / sqrtl(var + ln->epsilon);
+  }
+
+  return out;
+}
+
 long double **transformer_layer_forward(TransformerLayer *layer,
                                         long double **input,
                                         size_t seq_length) {
