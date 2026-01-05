@@ -389,8 +389,7 @@ long double *NN_matmul(long double inputs[], long double weights[],
 }
 
 // Forward Propagation Functions
-// Forward propagation (stores activations for backprop)
-long double **NN_forward_full(NN_t *nn, long double inputs[]) {
+long double **NN_forward(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
 
