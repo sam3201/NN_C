@@ -72,7 +72,6 @@ void Genome_destroy(Genome *genome) {
 // ------------------- Forward Propagation (Topological) -------------------
 #include <string.h>
 void Genome_forward(Genome *genome, long double *input, long double *output) {
-  // reset all node values except bias
   for (size_t i = 0; i < genome->numNodes; i++) {
     if (genome->nodes[i]->type != BIAS_NODE)
       genome->nodes[i]->value = 0.0L;
@@ -84,22 +83,23 @@ void Genome_forward(Genome *genome, long double *input, long double *output) {
       genome->nodes[i]->value = input[inputIdx++];
   }
 
-  // Simple topological propagation: naive, repeat passes until stable
-  for (size_t pass = 0; pass < genome->numNodes; pass++) {
-    for (size_t i = 0; i < genome->numConnections; i++) {
-      Connection *c = genome->connections[i];
-      if (c->enabled)
-        c->to->value += c->from->value * c->weight;
-    }
-  }
+  size_t topoSize;
+  size_t *order = topological_sort(genome, &topoSize);
 
-  for (size_t i = 0; i < genome->numNodes; i++) {
-    Node *n = genome->nodes[i];
+  for (size_t i = 0; i < topoSize; i++) {
+    Node *n = genome->nodes[order[i]];
+    for (size_t j = 0; j < genome->numConnections; j++) {
+      Connection *c = genome->connections[j];
+      if (c->enabled && c->from == n) {
+        c->to->value += c->from->value * c->weight;
+      }
+    }
     if (n->type != INPUT_NODE && n->type != BIAS_NODE)
       n->value = activate(n->value, n->actFunc);
   }
 
-  // output
+  free(order);
+
   size_t outIdx = 0;
   for (size_t i = 0; i < genome->numNodes; i++) {
     if (genome->nodes[i]->type == OUTPUT_NODE)
