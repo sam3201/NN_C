@@ -163,39 +163,68 @@ static void toggle_random_connection(Genome_t *genome) {
 }
 
 // Extended mutation
+// ------------------- Extended NEAT Mutation -------------------
 void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
                    long double weightPerturbAmount, long double addNodeRate,
                    long double addConnectionRate,
                    long double toggleConnectionRate,
-                   long double biasPerturbRate) {
-
-  // 1. Mutate weights
+                   long double biasPerturbRate,
+                   long double actFuncMutateRate) // new
+{
+  // 1️⃣ Mutate connection weights
   for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
     if ((rand() % 10000) / 10000.0L < weightPerturbRate) {
-      genome->connections[i]->weight +=
-          (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
+      c->weight += (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
     } else {
-      genome->connections[i]->weight =
-          (((rand() % 20000) / 10000.0L) * 2.0L - 1.0L);
+      c->weight = ((rand() % 20000) / 10000.0L) * 2.0L - 1.0L;
+    }
+
+    // 2️⃣ Toggle connection enabled/disabled
+    if ((rand() % 10000) / 10000.0L < toggleConnectionRate) {
+      c->enabled = !c->enabled;
     }
   }
 
-  // 2. Mutate bias nodes
+  // 3️⃣ Mutate bias nodes
   for (size_t i = 0; i < genome->numNodes; i++) {
-    if (genome->nodes[i]->type == BIAS_NODE) {
-      if ((rand() % 10000) / 10000.0L < biasPerturbRate) {
-        genome->nodes[i]->value +=
-            (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
+    Node *n = genome->nodes[i];
+    if (n->type == BIAS_NODE &&
+        ((rand() % 10000) / 10000.0L < biasPerturbRate)) {
+      n->value += (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
+    }
+  }
+
+  // 4️⃣ Mutate activation functions (hidden/output nodes)
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    Node *n = genome->nodes[i];
+    if ((n->type == HIDDEN_NODE || n->type == OUTPUT_NODE) &&
+        ((rand() % 10000) / 10000.0L < actFuncMutateRate)) {
+      int choice = rand() % 4;
+      switch (choice) {
+      case 0:
+        n->actFunc = SIGMOID;
+        break;
+      case 1:
+        n->actFunc = TANH;
+        break;
+      case 2:
+        n->actFunc = RELU;
+        break;
+      case 3:
+        n->actFunc = LINEAR;
+        break;
       }
     }
   }
 
-  // 3. Add node
-  if ((rand() % 10000) / 10000.0L < addNodeRate && genome->numConnections > 0) {
+  // 5️⃣ Add new node
+  if (genome->numConnections > 0 &&
+      ((rand() % 10000) / 10000.0L < addNodeRate)) {
     GENOME_add_node(genome, rand() % genome->numConnections);
   }
 
-  // 4. Add connection
+  // 6️⃣ Add new connection
   if ((rand() % 10000) / 10000.0L < addConnectionRate) {
     size_t from = rand() % genome->numNodes;
     size_t to = rand() % genome->numNodes;
@@ -203,11 +232,6 @@ void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
       GENOME_add_connection(genome, from, to,
                             ((rand() % 2000) / 1000.0L - 1.0L));
     }
-  }
-
-  // 5. Toggle connection enable/disable
-  if ((rand() % 10000) / 10000.0L < toggleConnectionRate) {
-    toggle_random_connection(genome);
   }
 }
 
