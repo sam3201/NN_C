@@ -307,7 +307,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
 
-  Genome_t *child = GENOME_init_empty(0, 0);
+  Genome_t *child = GENOME_init_empty(p1->numInputs, p1->numOutputs, 0);
 
   // Copy nodes
   for (size_t i = 0; i < p1->numNodes; i++) {
