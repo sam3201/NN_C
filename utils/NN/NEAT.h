@@ -41,7 +41,7 @@ typedef struct Genome {
   Connection **connections;
 
   long double fitness;
-} Genome;
+} Genome_t;
 
 // ------------------- Constructors / Destructors -------------------
 Genome *Genome_init(size_t numInputs, size_t numOutputs);
