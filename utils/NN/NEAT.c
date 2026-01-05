@@ -387,7 +387,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 
   LossFunctionType loss = rand() % LOSS_TYPE_COUNT;
 
-  LossDerivativeType lossDeriv = rand() % LOSS_DERIVATIVE_TYPE_COUNT;
+  LossDerivativeType lossDeriv = (LossDerivativeType)loss;
 
   child->nn = NN_init(layers, actFuncs, actDerivs, loss, lossDeriv, opt, 0.01L);
 
