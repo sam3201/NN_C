@@ -576,17 +576,17 @@ Transformer_t *TRANSFORMER_load(FILE *f) {
     fread(&layer->seq_length, sizeof(size_t), 1, f);
 
     // ---- Attention ----
-    layer->attention->Q_proj = NN_load_from_file(f);
-    layer->attention->K_proj = NN_load_from_file(f);
-    layer->attention->V_proj = NN_load_from_file(f);
-    layer->attention->O_proj = NN_load_from_file(f);
+    layer->attention->Q_proj = NN_load(f);
+    layer->attention->K_proj = NN_load(f);
+    layer->attention->V_proj = NN_load(f);
+    layer->attention->O_proj = NN_load(f);
 
     // ---- Feed Forward ----
-    layer->feed_forward->network = NN_load_from_file(f);
+    layer->feed_forward->network = NN_load(f);
 
     // ---- LayerNorms ----
-    layer->norm1->norm_network = NN_load_from_file(f);
-    layer->norm2->norm_network = NN_load_from_file(f);
+    layer->norm1->norm_network = NN_load(f);
+    layer->norm2->norm_network = NN_load(f);
 
     t->layers[l] = layer;
   }
