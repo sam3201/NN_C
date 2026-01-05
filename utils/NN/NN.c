@@ -520,16 +520,14 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
   if (!nn || !y_true || !y_pred)
     return;
 
-  // For CE+softmax, delta = y_pred - y_true
   size_t out_size = nn->layers[nn->numLayers - 1];
-  long double *ce_delta = (long double *)malloc(out_size * sizeof(long double));
+  long double *delta = malloc(out_size * sizeof(long double));
+
   for (size_t i = 0; i < out_size; i++)
-    ce_delta[i] = y_pred[i] - y_true[i];
+    delta[i] = y_pred[i] - y_true[i]; // standard CE+Softmax delta
 
-  // Call generic backprop with custom delta
-  NN_backprop(nn, inputs, y_true, ce_delta);
-
-  free(ce_delta);
+  NN_backprop(nn, inputs, y_true, y_pred, delta);
+  free(delta);
 }
 
 // y_true: one-hot or label index
