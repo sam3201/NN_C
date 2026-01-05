@@ -439,6 +439,7 @@ void update_agent(Agent *a) {
   // MuCortex *cortex = &tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
 
   // int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
+  int action = decide_action(a, &obs);
 
   switch (action) {
   case ACTION_UP:
