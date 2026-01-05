@@ -393,22 +393,23 @@ PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat) {
   metrics.fitness = 0.0L;
 
   // Calculate metrics based on NEAT performance
-  if (neat && neat->num_nodes > 0) {
-    // Calculate average fitness
-    long double total_fitness = 0.0L;
-    unsigned int count = 0;
-    for (unsigned int i = 0; i < neat->num_nodes; i++) {
-      if (neat->nodes[i] && neat->nodes[i]->enabled) {
-        total_fitness += neat->nodes[i]->fitness;
-        count++;
-      }
-    }
-    if (count > 0) {
-      metrics.fitness = total_fitness / count;
+  if (neat && neat->pop->genomes->num_nodes > 0) {
+  }
+  // Calculate average fitness
+  long double total_fitness = 0.0L;
+  unsigned int count = 0;
+  for (unsigned int i = 0; i < neat->num_nodes; i++) {
+    if (neat->nodes[i] && neat->nodes[i]->enabled) {
+      total_fitness += neat->nodes[i]->fitness;
+      count++;
     }
   }
+  if (count > 0) {
+    metrics.fitness = total_fitness / count;
+  }
+}
 
-  return metrics;
+return metrics;
 }
 
 // SAM forward pass
