@@ -242,35 +242,30 @@ NN_t *NN_init_random(size_t num_inputs, size_t num_outputs) {
 void NN_destroy(NN_t *nn) {
   if (!nn)
     return;
-  // Free layers
-  free(nn->layers);
 
-  // Free weights and biases, momentum, and velocity
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
     free(nn->weights[i]);
     free(nn->biases[i]);
-    free(nn->weights_v[i]);
-    free(nn->biases_v[i]);
-
-    size_t wcount = nn->layers[i] * nn->layers[i + 1];
-    size_t bcount = nn->layers[i + 1];
-    nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
-    nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
-    nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
-    nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
+    free(nn->weights_grad[i]);
+    free(nn->biases_grad[i]);
+    free(nn->opt_m_w[i]);
+    free(nn->opt_v_w[i]);
+    free(nn->opt_m_b[i]);
+    free(nn->opt_v_b[i]);
   }
 
-  // Free weights and biases arrays
   free(nn->weights);
   free(nn->biases);
-  free(nn->weights_v);
-  free(nn->biases_v);
+  free(nn->weights_grad);
+  free(nn->biases_grad);
+  free(nn->opt_m_w);
+  free(nn->opt_v_w);
+  free(nn->opt_m_b);
+  free(nn->opt_v_b);
 
-  // Free activation functions
+  free(nn->layers);
   free(nn->activationFunctions);
   free(nn->activationDerivatives);
-
-  // Free network
   free(nn);
 }
 
