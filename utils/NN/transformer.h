@@ -109,7 +109,7 @@ void free_transformer_layer(TransformerLayer *layer);
 void TRANSFORMER_destroy(Transformer_t *transformer);
 
 // Serialization
-int TRANSFORMER_save(Transformer_t *t, const char *filename);
-Transformer_t *TRANSFORMER_load(const char *filename);
+int TRANSFORMER_save(Transformer_t *t, FILE *file);
+Transformer_t *TRANSFORMER_load(FILE *file);
 
 #endif // TRANSFORMER_H
