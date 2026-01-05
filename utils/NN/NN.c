@@ -259,27 +259,22 @@ void sgd(NN_t *nn) {
 }
 
 void rmsprop(NN_t *nn) {
-  const long double decay_rate = 0.9L;
-  const long double epsilon = 1e-8L;
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t current_layer = nn->layers[i];
-    size_t next_layer = nn->layers[i + 1];
-
-    for (size_t j = 0; j < current_layer * next_layer; j++) {
-      nn->weights_v[i][j] =
-          decay_rate * nn->weights_v[i][j] +
-          (1 - decay_rate) * nn->weights_v[i][j] * nn->weights_v[i][j];
-      nn->weights[i][j] -= nn->learningRate * nn->weights_v[i][j] /
-                           (sqrtl(nn->weights_v[i][j]) + epsilon);
+  const long double decay = 0.9L, eps = 1e-8L;
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
+    for (size_t j = 0; j < in_size * out_size; j++) {
+      nn->weights_v[l][j] =
+          decay * nn->weights_v[l][j] +
+          (1 - decay) * nn->weights_v[l][j] * nn->weights_v[l][j];
+      nn->weights[l][j] -= nn->learningRate * nn->weights_v[l][j] /
+                           (sqrtl(nn->weights_v[l][j]) + eps);
     }
-
-    for (size_t j = 0; j < next_layer; j++) {
-      nn->biases_v[i][j] =
-          decay_rate * nn->biases_v[i][j] +
-          (1 - decay_rate) * nn->biases_v[i][j] * nn->biases_v[i][j];
-      nn->biases[i][j] -= nn->learningRate * nn->biases_v[i][j] /
-                          (sqrtl(nn->biases_v[i][j]) + epsilon);
+    for (size_t j = 0; j < out_size; j++) {
+      nn->biases_v[l][j] = decay * nn->biases_v[l][j] + (1 - decay) *
+                                                            nn->biases_v[l][j] *
+                                                            nn->biases_v[l][j];
+      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j] /
+                          (sqrtl(nn->biases_v[l][j]) + eps);
     }
   }
 }
