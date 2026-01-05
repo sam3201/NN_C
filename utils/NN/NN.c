@@ -659,9 +659,9 @@ void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
     size_t out_size = nn->layers[l + 1];
 
     for (size_t j = 0; j < out_size; j++) {
-      nn->biases_v[l][j] = deltas[l][j];
+      nn->biases_grad[l][j] = deltas[l][j];
+
       for (size_t i = 0; i < in_size; i++)
-        nn->weights_v[l][i * out_size + j] = activations[l][i] * deltas[l][j];
     }
   }
 
