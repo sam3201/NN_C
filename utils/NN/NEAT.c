@@ -227,6 +227,8 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight) {
   if (fromNode >= genome->numNodes || toNode >= genome->numNodes)
     return; // safety check
+  if (creates_cycle(genome, fromNode, toNode))
+    return;
 
   genome->connections = realloc(
       genome->connections, (genome->numConnections + 1) * sizeof(Connection *));
