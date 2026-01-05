@@ -78,7 +78,6 @@ long double *TRANSFORMER_forward(Transformer_t *transformer,
 void transformer_mha_backprop(MultiHeadAttention *mha, long double *input);
 
 void transformer_norm_backprop(LayerNorm *ln, long double *input);
-
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss);
