@@ -112,9 +112,6 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
     nn->weights[i] = (long double *)malloc(current_size * sizeof(long double));
     nn->biases[i] =
         (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
-    nn->weights_v[i] = (long double *)calloc(current_size, sizeof(long double));
-    nn->biases_v[i] =
-        (long double *)calloc(nn->layers[i + 1], sizeof(long double));
 
     size_t wcount = nn->layers[i] * nn->layers[i + 1];
     size_t bcount = nn->layers[i + 1];
