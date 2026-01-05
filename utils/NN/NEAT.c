@@ -243,6 +243,25 @@ Genome_t *GENOME_load(const char *filename) {
   return genome;
 }
 
+// Initialize population
+Population *POPULATION_init(size_t popSize, size_t numInputs,
+                            size_t numOutputs) {
+  Population *pop = malloc(sizeof(Population));
+  pop->size = popSize;
+  pop->genomes = malloc(popSize * sizeof(Genome_t *));
+  for (size_t i = 0; i < popSize; i++)
+    pop->genomes[i] = GENOME_init(numInputs, numOutputs);
+  return pop;
+}
+
+// Free population
+void POPULATION_destroy(Population *pop) {
+  for (size_t i = 0; i < pop->size; i++)
+    GENOME_destroy(pop->genomes[i]);
+  free(pop->genomes);
+  free(pop);
+}
+
 // Return innovation number, create if new
 size_t get_innovation_number(size_t from, size_t to) {
   for (size_t i = 0; i < innovationCount; i++) {
