@@ -516,36 +516,54 @@ Transformer_t *TRANSFORMER_load(FILE *file) {
   return transformer;
 }
 
-int TRANSFORMER_save(Transformer_t *t, const char *filename) {
-  FILE *f = fopen(filename, "wb");
-  if (!t || !f)
-    return 0;
+int TRANSFORMER_save(Transformer_t *t, const char *base_filename) {
+  if (!t || !base_filename)
+    return -1;
+
+  char fname[512];
+
+  // ---- Save metadata ----
+  snprintf(fname, sizeof(fname), "%s.meta", base_filename);
+  FILE *f = fopen(fname, "wb");
+  if (!f)
+    return -1;
+
+  uint32_t magic = 0x54524E53; // "TRNS"
+  fwrite(&magic, sizeof(uint32_t), 1, f);
 
   fwrite(&t->model_dim, sizeof(size_t), 1, f);
   fwrite(&t->num_heads, sizeof(size_t), 1, f);
   fwrite(&t->num_layers, sizeof(size_t), 1, f);
 
+  fclose(f);
+
+  // ---- Save layers ----
   for (size_t l = 0; l < t->num_layers; l++) {
     TransformerLayer *layer = t->layers[l];
-    // Layer metadata
-    fwrite(&layer->model_dim, sizeof(size_t), 1, f);
-    fwrite(&layer->seq_length, sizeof(size_t), 1, f);
 
-    // ---- Attention ----
-    NN_save(layer->attention->Q_proj, filename);
-    NN_save(layer->attention->K_proj, filename);
-    NN_save(layer->attention->V_proj, filename);
-    NN_save(layer->attention->O_proj, filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.Q.nn", base_filename, l);
+    NN_save(layer->attention->Q_proj, fname);
 
-    // ---- Feed Forward ----
-    NN_save(layer->feed_forward->network, filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.K.nn", base_filename, l);
+    NN_save(layer->attention->K_proj, fname);
 
-    // ---- LayerNorms ----
-    NN_save(layer->norm1->norm_network, filename);
-    NN_save(layer->norm2->norm_network, filename);
+    snprintf(fname, sizeof(fname), "%s.layer%zu.V.nn", base_filename, l);
+    NN_save(layer->attention->V_proj, fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.O.nn", base_filename, l);
+    NN_save(layer->attention->O_proj, fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.FF.nn", base_filename, l);
+    NN_save(layer->feed_forward->network, fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.N1.nn", base_filename, l);
+    NN_save(layer->norm1->norm_network, fname);
+
+    snprintf(fname, sizeof(fname), "%s.layer%zu.N2.nn", base_filename, l);
+    NN_save(layer->norm2->norm_network, fname);
   }
 
-  return 1;
+  return 0;
 }
 
 Transformer_t *TRANSFORMER_load(const char *filename) {
