@@ -141,7 +141,7 @@ void GENOME_add_node(Genome_t *genome, size_t connectionIndex) {
   GENOME_add_connection(genome, n->id, c->to->id, c->weight);
 }
 
-void Genome_mutate_weights(Genome_t *genome, long double perturbRate,
+void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount) {
   for (size_t i = 0; i < genome->numConnections; i++) {
     if ((rand() % 10000) / 10000.0L < perturbRate) {
