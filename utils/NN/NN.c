@@ -311,21 +311,23 @@ void adam(NN_t *nn) {
 
     for (size_t j = 0; j < out_size; j++) {
       for (size_t i = 0; i < in_size; i++) {
-        long double idx = i * out_size + j;
-        // Update biased first moment estimate
+        size_t idx = i * out_size + j; // ✅ safe integer index
+
+        // First and second moment updates
         nn->weights_v[l][idx] =
             beta1 * nn->weights_v[l][idx] + (1 - beta1) * nn->weights[l][idx];
-        // Update biased second raw moment estimate
         nn->biases_v[l][j] =
             beta2 * nn->biases_v[l][j] +
             (1 - beta2) * nn->weights[l][idx] * nn->weights[l][idx];
-        // Compute bias-corrected estimates
+
         long double m_hat = nn->weights_v[l][idx] / (1 - powl(beta1, nn->t));
         long double v_hat = nn->biases_v[l][j] / (1 - powl(beta2, nn->t));
-        // Update weights
+
+        // Weight update
         nn->weights[l][idx] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
       }
-      // Update biases
+
+      // Bias update
       nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j];
     }
   }
