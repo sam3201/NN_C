@@ -417,6 +417,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     child->connections[child->numConnections++] = newC;
   }
 
+  /*
   // Build NN from nodes
   size_t numLayers[2] = {numInputs, numOutputs};
 
@@ -429,6 +430,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     actFuncs[i] = child->nodes[nodeIdx]->actFunc;
     actDerivs[i] = get_derivative_from_activation(actFuncs[i]);
   }
+  */
 
   child->nn = NULL;
 
