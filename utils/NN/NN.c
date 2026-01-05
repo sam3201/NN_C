@@ -254,6 +254,8 @@ void NN_destroy(NN_t *nn) {
 
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
 
+    size_t wcount = nn->layers[i] * nn->layers[i + 1];
+    size_t bcount = nn->layers[i + 1];
     nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
     nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
     nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
