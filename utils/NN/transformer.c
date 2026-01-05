@@ -525,6 +525,7 @@ int TRANSFORMER_save(Transformer_t *t, const char *filename) {
   fwrite(&t->num_heads, sizeof(size_t), 1, f);
   fwrite(&t->num_layers, sizeof(size_t), 1, f);
 
+  const char *filename = "layer.nn";
   for (size_t l = 0; l < t->num_layers; l++) {
     TransformerLayer *layer = t->layers[l];
 
