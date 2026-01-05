@@ -44,7 +44,7 @@ typedef struct Genome_t {
 } Genome_t;
 
 // ------------------- Constructors / Destructors -------------------
-Genome_t *Genome_init(size_t numInputs, size_t numOutputs);
+Genome_t *GENOME_init(size_t numInputs, size_t numOutputs);
 void Genome_destroy(Genome_t *genome);
 
 // ------------------- NEAT Operators -------------------
