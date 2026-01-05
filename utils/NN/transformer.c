@@ -388,7 +388,7 @@ void TRANSFORMER_backprop(Transformer_t *model, long double *input,
   if (!model || !input || !grad_output || !grad_input)
     return;
 
-  size_t d = layer->model_dim;
+  size_t d = model->model_dim;
 
   long double *grad_ff = calloc(d, sizeof(long double));
   long double *grad_norm1 = calloc(d, sizeof(long double));
