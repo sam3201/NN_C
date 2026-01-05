@@ -23,7 +23,7 @@ echo "Compiling game..."
 NN_SRC=../utils/NN/NN.c 
 
 gcc -w game.c $NN_SRC \
-    -I../utils/NN 
+    -I../utils/NN \ 
     -I../utils/Raylib/src \
     -L../utils/Raylib/src -lraylib 
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
