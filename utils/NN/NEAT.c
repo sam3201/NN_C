@@ -108,7 +108,7 @@ void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
 }
 
 // ------------------- Mutation -------------------
-void Genome_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
+void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight) {
   genome->connections = realloc(
       genome->connections, (genome->numConnections + 1) * sizeof(Connection *));
