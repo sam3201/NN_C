@@ -32,8 +32,8 @@ typedef struct Connection {
   bool enabled;
 } Connection;
 
-// Genome structure (a single NEAT network)
-typedef struct Genome {
+// Genome_t structure (a single NEAT network)
+typedef struct Genome_t {
   size_t numNodes;
   Node **nodes;
 
@@ -44,26 +44,26 @@ typedef struct Genome {
 } Genome_t;
 
 // ------------------- Constructors / Destructors -------------------
-Genome *Genome_init(size_t numInputs, size_t numOutputs);
-void Genome_destroy(Genome *genome);
+Genome_t *Genome_init(size_t numInputs, size_t numOutputs);
+void Genome_destroy(Genome_t *genome);
 
 // ------------------- NEAT Operators -------------------
-void Genome_add_node(Genome *genome, size_t connectionIndex);
-void Genome_add_connection(Genome *genome, size_t fromNode, size_t toNode,
+void Genome_add_node(Genome_t *genome, size_t connectionIndex);
+void Genome_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight);
-void Genome_mutate_weights(Genome *genome, long double perturbRate,
+void Genome_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount);
-Genome *Genome_crossover(Genome *parent1, Genome *parent2);
+Genome_t *Genome_crossover(Genome_t *parent1, Genome_t *parent2);
 
 // ------------------- Forward Propagation -------------------
-void Genome_forward(Genome *genome, long double *input, long double *output);
+void Genome_forward(Genome_t *genome, long double *input, long double *output);
 long double activate(long double x, ActivationFunctionType type);
 
 // ------------------- Serialization -------------------
-void Genome_save(Genome *genome, const char *filename);
-Genome *Genome_load(const char *filename);
+void Genome_save(Genome_t *genome, const char *filename);
+Genome_t *Genome_load(const char *filename);
 
 // ------------------- Topological Sort -------------------
-size_t *topological_sort(Genome *genome, size_t *outSize);
+size_t *topological_sort(Genome_t *genome, size_t *outSize);
 
 #endif // NEAT_H
