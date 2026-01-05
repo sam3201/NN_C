@@ -356,40 +356,64 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input) {
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
-  if (!transformer || !input_sequence)
+  if (!transformer || !input_sequence || !grad_loss)
     return;
 
   size_t L = transformer->num_layers;
   size_t D = transformer->model_dim;
 
-  // Forward pass to compute intermediate activations
-  long double **layer_inputs = malloc((L + 1) * sizeof(long double *));
-  if (!layer_inputs)
+  // Forward pass for caching (needed if not done yet)
+  long double *output =
+      TRANSFORMER_forward(transformer, input_sequence, seq_length);
+  if (!output)
     return;
 
-  layer_inputs[0] = malloc(D * sizeof(long double));
-  memcpy(layer_inputs[0], input_sequence[0], D * sizeof(long double));
-
-  for (size_t i = 0; i < L; i++) {
-    transformer->layers[i]->seq_length = seq_length;
-    layer_inputs[i + 1] =
-        transformer_forward(transformer->layers[i], layer_inputs[i]);
+  // Initialize gradient from loss
+  long double *grad = malloc(D * sizeof(long double));
+  if (!grad) {
+    free(output);
+    return;
   }
+  memcpy(grad, grad_loss, D * sizeof(long double));
 
-  // Update weights for each layer
-  for (size_t i = 0; i < L; i++) {
+  // Backpropagate through layers in reverse
+  for (ssize_t i = L - 1; i >= 0; i--) {
     TransformerLayer *layer = transformer->layers[i];
+    if (!layer)
+      continue;
 
-    transformer_mha_backprop(layer->attention, layer_inputs[i]);
-    transformer_norm_backprop(layer->norm1, layer_inputs[i]);
-    NN_backprop(layer->feed_forward->network, layer_inputs[i], 0.0L, 0.0L);
-    transformer_norm_backprop(layer->norm2, layer_inputs[i + 1]);
+    // Gradient w.r.t norm2 input (after residual2)
+    long double *grad_norm2_input = malloc(D * sizeof(long double));
+    for (size_t j = 0; j < D; j++)
+      grad_norm2_input[j] = grad[j];
+
+    // LayerNorm2 backprop
+    layernorm_backprop(layer->norm2, grad_norm2_input, layer->norm2_input);
+
+    // Gradient through feedforward + residual1
+    NN_backprop(layer->feed_forward->network, layer->ff_input, grad_norm2_input,
+                0.01L);
+
+    // Gradient w.r.t norm1 input (after residual1)
+    long double *grad_residual1 = malloc(D * sizeof(long double));
+    for (size_t j = 0; j < D; j++)
+      grad_residual1[j] = grad_norm2_input[j];
+
+    // LayerNorm1 backprop
+    layernorm_backprop(layer->norm1, grad_residual1, layer->norm1_input);
+
+    // MHA backprop
+    mha_backprop(layer->attention, grad_residual1, layer->attention_input);
+
+    // Gradient for previous layer
+    memcpy(grad, grad_residual1, D * sizeof(long double));
+
+    free(grad_norm2_input);
+    free(grad_residual1);
   }
 
-  // Cleanup
-  for (size_t i = 0; i <= L; i++)
-    free(layer_inputs[i]);
-  free(layer_inputs);
+  free(grad);
+  free(output);
 }
 
 void free_feed_forward(FeedForward *ff) {
