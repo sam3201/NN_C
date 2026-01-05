@@ -516,7 +516,7 @@ Transformer_t *TRANSFORMER_load(FILE *file) {
   return transformer;
 }
 
-int TRANSFORMER_save(Transformer_t *t, FILE *f) {
+int TRANSFORMER_save(Transformer_t *t, const char *filename) {
   if (!t || !f)
     return 0;
 
