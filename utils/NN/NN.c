@@ -252,8 +252,9 @@ void NN_destroy(NN_t *nn) {
   free(nn->weights_v);
   free(nn->biases_v);
 
-  // Free activation functions
-  free(nn->activationFunctions);
+  /
+      // Free activation functions
+      free(nn->activationFunctions);
   free(nn->activationDerivatives);
 
   // Free network
