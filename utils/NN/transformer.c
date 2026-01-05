@@ -261,13 +261,15 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
 // ----------------------
 // Transformer forward and backprop
 // ----------------------
-long double *TRANSFORMER_forward(Transformer_t *transformer,
-                                 long double **input_sequence,
-                                 size_t seq_length) {
-  long double *x = input_sequence[0];
+long double **TRANSFORMER_forward(Transformer_t *transformer,
+                                  long double **input_sequence,
+                                  size_t seq_length) {
+  long double **x = input_sequence;
+
   for (size_t l = 0; l < transformer->num_layers; l++)
-    x = transformer_layer_forward(transformer->layers[l], x);
-  return x;
+    x = transformer_layer_forward(transformer->layers[l], x, seq_length);
+
+  return x; // [seq][model_dim]
 }
 
 // ----------------------
