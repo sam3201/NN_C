@@ -528,9 +528,9 @@ Transformer_t *TRANSFORMER_load(const char *filename) {
     }
 
     // Load NNs
-    NN_load(layer->attention->Q_proj, );
-    NN_load(layer->attention->K_proj, file);
-    NN_load(layer->attention->V_proj, file);
+    NN_load(layer->attention->Q_proj, filename);
+    NN_load(layer->attention->K_proj, filename);
+    NN_load(layer->attention->V_proj, filename);
     NN_load(layer->attention->O_proj, file);
 
     NN_load(layer->feed_forward->network, file);
