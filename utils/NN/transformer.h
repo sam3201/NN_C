@@ -74,21 +74,20 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
                                long double *grad_input);
 
 void TRANSFORMER_backprop(TransformerLayer *layer, long double *input,
-                          long double *grad_output, long double *grad_input) {
+                          long double *grad_output, long double *grad_input);
 
-  void TRANSFORMER_train(Transformer_t * transformer,
-                         long double **input_sequence, size_t seq_length,
-                         long double *target);
+void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
+                       size_t seq_length, long double *target);
 
-  // Memory management functions
-  void free_attention(MultiHeadAttention * mha);
-  void free_feed_forward(FeedForward * ff);
-  void free_layer_norm(LayerNorm * ln);
-  void free_transformer_layer(TransformerLayer * layer);
-  void TRANSFORMER_destroy(Transformer_t * transformer);
+// Memory management functions
+void free_attention(MultiHeadAttention *mha);
+void free_feed_forward(FeedForward *ff);
+void free_layer_norm(LayerNorm *ln);
+void free_transformer_layer(TransformerLayer *layer);
+void TRANSFORMER_destroy(Transformer_t *transformer);
 
-  // Serialization functions
-  int TRANSFORMER_save(Transformer_t * transformer, FILE * file);
-  Transformer_t *TRANSFORMER_load(FILE * file);
+// Serialization functions
+int TRANSFORMER_save(Transformer_t *transformer, FILE *file);
+Transformer_t *TRANSFORMER_load(FILE *file);
 
 #endif // TRANSFORMER_H
