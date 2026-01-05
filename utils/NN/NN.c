@@ -66,7 +66,7 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
   nn->weights_grad = malloc((nn->numLayers - 1) * sizeof(long double *));
   nn->biases_grad = malloc((nn->numLayers - 1) * sizeof(long double *));
 
-  if (!nn->weights || !nn->biases || !nn->weights_v || !nn->biases_v) {
+  if (!nn->weights || !nn->biases || !nn->weights_grad || !nn->biases_grad) {
     NN_destroy(nn);
     return NULL;
   }
