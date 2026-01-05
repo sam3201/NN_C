@@ -420,7 +420,7 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
     free(grad);
     grad = next_grad;
   }
-  size_t d = layer->model_dim;
+  size_t d = transformer->model_dim;
 
   long double *grad_ff = calloc(d, sizeof(long double));
   long double *grad_norm1 = calloc(d, sizeof(long double));
