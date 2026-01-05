@@ -124,6 +124,7 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
     nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
     nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
     nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
+
     if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
         !nn->biases_v[i]) {
       fprintf(stderr,
