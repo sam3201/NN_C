@@ -447,6 +447,7 @@ long double *transformer_layer_backprop(TransformerLayer *layer,
 
   return grad_ff; // gradient to previous layer
 }
+
 long double **TRANSFORMER_backprop(Transformer_t *transformer,
                                    long double **grad_output,
                                    size_t seq_length) {
