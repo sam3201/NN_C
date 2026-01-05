@@ -331,6 +331,48 @@ long double *transformer_forward(TransformerLayer *layer, long double *input) {
   return output;
 }
 
+void transformer_mha_backprop(MultiHeadAttention *mha, long double *grad_output,
+                              long double *input) {
+  if (!mha || !grad_output || !input)
+    return;
+
+  size_t D = mha->model_dim;
+  size_t H = mha->num_heads;
+  size_t head_dim = mha->head_dim;
+
+  // Step 1: Backprop through output projection
+  NN_backprop(mha->O_proj, NULL, grad_output,
+              0.01L); // grad_output used internally
+
+  // Step 2: Backprop through attention scores (softmax)
+  // For simplicity, assume scores and V cached in mha struct during forward
+  long double *scores = mha->cached_scores;
+  long double *V = mha->cached_V;
+
+  // Gradient w.r.t scores
+  long double *grad_scores = malloc(H * head_dim * sizeof(long double));
+  // (simplified: assume single head for now, extend to multiple heads as
+  // needed)
+  for (size_t i = 0; i < H * head_dim; i++)
+    grad_scores[i] = grad_output[i]; // chain rule via O_proj
+
+  // Softmax gradient
+  for (size_t i = 0; i < mha->seq_length; i++) {
+    long double sum = 0;
+    for (size_t j = 0; j < mha->seq_length; j++)
+      sum += grad_scores[j] * scores[j];
+    for (size_t j = 0; j < mha->seq_length; j++)
+      grad_scores[j] = scores[j] * (grad_scores[j] - sum);
+  }
+
+  // Step 3: Backprop through Q, K, V projections
+  NN_backprop(mha->Q_proj, input, grad_scores, 0.01L);
+  NN_backprop(mha->K_proj, input, grad_scores, 0.01L);
+  NN_backprop(mha->V_proj, V, grad_output, 0.01L);
+
+  free(grad_scores);
+}
+
 void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output,
                                     long double *input) {
   if (!ln || !grad_output || !input)
