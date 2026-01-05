@@ -201,6 +201,11 @@ LossFunctionType get_loss_function_type(const char *str);
 OptimizerType get_optimizer_type(const char *str);
 RegularizationType get_regularization_type(const char *str);
 
+ActivationFunctionType
+get_activation_function_from_func(ActivationFunction func);
+
+ActivationDerivativeType
+get_activation_derivative_from_func(ActivationDerivative func);
 LossFunctionType get_loss_function_from_func(LossFunction func);
 OptimizerType get_optimizer_from_func(OptimizerFunction func);
 RegularizationType get_regularization_from_func(RegularizationFunction func);
