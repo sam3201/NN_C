@@ -252,6 +252,11 @@ void NN_destroy(NN_t *nn) {
   free(nn->weights_v);
   free(nn->biases_v);
 
+  nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
+  nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
+  nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
+  nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
+
   // Free activation functions
   free(nn->activationFunctions);
   free(nn->activationDerivatives);
