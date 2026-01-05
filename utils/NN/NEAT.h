@@ -15,6 +15,16 @@ typedef enum { INPUT_NODE, HIDDEN_NODE, OUTPUT_NODE, BIAS_NODE } NodeType;
 // Activation functions
 typedef enum { SIGMOID = 0, TANH, RELU, LINEAR } ActivationFunctionType;
 
+// Global innovation tracking
+typedef struct {
+  size_t from;
+  size_t to;
+  size_t innovation;
+} InnovationRecord;
+
+static InnovationRecord *innovationHistory = NULL;
+static size_t innovationCount = 0;
+
 // Node structure
 typedef struct Node {
   size_t id;
