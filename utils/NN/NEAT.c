@@ -1,4 +1,5 @@
 #include "NEAT.h"
+#include <string.h>
 
 // ------------------- Activation -------------------
 long double activate(long double x, ActivationFunctionType type) {
@@ -70,8 +71,7 @@ void GENOME_destroy(Genome_t *genome) {
 }
 
 // ------------------- Forward Propagation (Topological) -------------------
-#include <string.h>
-void Genome_forward(Genome_t *genome, long double *input, long double *output) {
+void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
   for (size_t i = 0; i < genome->numNodes; i++) {
     if (genome->nodes[i]->type != BIAS_NODE)
       genome->nodes[i]->value = 0.0L;
