@@ -372,7 +372,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   // Rebuild NN_t from node & connection structure
   size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
   ActivationFunctionType actFuncs[2] = {LINEAR, SIGMOID};
-  child->nn = NN_init(layers, actFuncs, NULL, MSE, NULL, NONE, SGD, 0.01L);
+  child->nn = NN_init(layers, actFuncs, NULL, MSE, NONE, NONE, SGD, 0.01L);
 
   return child;
 }
