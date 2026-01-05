@@ -66,12 +66,26 @@ long double *TRANSFORMER_forward(Transformer_t *transformer,
                                  size_t seq_length);
 
 // Backpropagation functions
-void transformer_mha_backprop(MultiHeadAttention *mha, long double *input,
-                              long double *grad_output,
-                              long double *grad_input);
-void transformer_norm_backprop(LayerNorm *ln, long double *input,
-                               long double *grad_output,
-                               long double *grad_input);
+void transformer_mha_backprop(MultiHeadAttention *mha, long double *input) {
+  if (!mha || !input)
+    return;
+
+  // Update output projection
+  NN_backprop(mha->O_proj, input, 0.0L, 0.0L);
+
+  // Update Q, K, V projections
+  NN_backprop(mha->Q_proj, input, 0.0L, 0.0L);
+  NN_backprop(mha->K_proj, input, 0.0L, 0.0L);
+  NN_backprop(mha->V_proj, input, 0.0L, 0.0L);
+}
+
+void transformer_norm_backprop(LayerNorm *ln, long double *input) {
+  if (!ln || !input)
+    return;
+
+  // Only update the internal affine NN of LayerNorm
+  NN_backprop(ln->norm_network, input, 0.0L, 0.0L);
+}
 
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
