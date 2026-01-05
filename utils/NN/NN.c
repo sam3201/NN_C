@@ -388,6 +388,27 @@ long double *NN_matmul(long double inputs[], long double weights[],
   return output;
 }
 
+// Loss calculation function
+long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
+  if (!nn || !nn->loss)
+    return INFINITY;
+
+  // Calculate base loss
+  long double loss = nn->loss(y_true, y_predicted);
+
+  // Add regularization if configured
+  if (nn->regularization) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+      for (size_t j = 0; j < weights_size; j++) {
+        loss += nn->regularization(nn->weights[i][j]);
+      }
+    }
+  }
+
+  return loss;
+}
+
 // Forward Propagation Functions
 long double **NN_forward(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
@@ -503,27 +524,6 @@ void NN_backprop(NN_t *nn, long double inputs[], long double y_true[],
   for (size_t i = 0; i < nn->numLayers - 1; i++)
     free(deltas[i]);
   free(deltas);
-}
-
-// Loss calculation function
-long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
-  if (!nn || !nn->loss)
-    return INFINITY;
-
-  // Calculate base loss
-  long double loss = nn->loss(y_true, y_predicted);
-
-  // Add regularization if configured
-  if (nn->regularization) {
-    for (size_t i = 0; i < nn->numLayers - 1; i++) {
-      size_t weights_size = nn->layers[i] * nn->layers[i + 1];
-      for (size_t j = 0; j < weights_size; j++) {
-        loss += nn->regularization(nn->weights[i][j]);
-      }
-    }
-  }
-
-  return loss;
 }
 
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
