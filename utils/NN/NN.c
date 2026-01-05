@@ -553,6 +553,17 @@ long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
 }
 
 // Forward Propagation Functions
+long double *NN_forward(NN_t *nn, long double inputs[]) {
+  long double **acts = NN_forward_full(nn, inputs);
+  long double *out = acts[nn->numLayers - 1];
+
+  for (size_t i = 0; i < nn->numLayers - 1; i++)
+    free(acts[i]);
+  free(acts);
+
+  return out;
+}
+
 long double **NN_forward(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
