@@ -312,6 +312,14 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
 // ----------------------
 // Backprop
 // ----------------------
+long double *transformer_layer_backprop(TransformerLayer *layer,
+                                        long double *grad_output) {
+  // TEMP: pass-through gradient
+  long double *grad = malloc(layer->model_dim * sizeof(long double));
+  memcpy(grad, grad_output, layer->model_dim * sizeof(long double));
+  return grad;
+}
+
 long double **TRANSFORMER_backprop(Transformer_t *transformer,
                                    long double **grad_output,
                                    size_t seq_length) {
@@ -325,51 +333,6 @@ long double **TRANSFORMER_backprop(Transformer_t *transformer,
 
   return grad;
 }
-
-void TRANSFORMER_backprop(Transformer_t *transformer,
-                          long double **input_sequence, size_t seq_length,
-                          long double *grad_loss) {
-  if (!transformer || !input_sequence || !grad_loss)
-    return;
-
-  size_t model_dim = transformer->model_dim;
-
-  // Allocate gradient buffer for each time step
-  long double **grad_step = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++) {
-    grad_step[t] = malloc(model_dim * sizeof(long double));
-    // For the last time step, initialize from grad_loss
-    if (t == seq_length - 1) {
-      memcpy(grad_step[t], grad_loss, model_dim * sizeof(long double));
-    } else {
-      memset(grad_step[t], 0, model_dim * sizeof(long double));
-    }
-  }
-
-  // Backprop through layers in reverse order
-  for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
-    TransformerLayer *layer = transformer->layers[l];
-
-    // Iterate backward through the sequence
-    for (ssize_t t = seq_length - 1; t >= 0; t--) {
-      long double *grad_in = transformer_layer_backprop(layer, grad_step[t]);
-
-      // Accumulate gradient into previous time step if not first
-      if (t > 0) {
-        for (size_t i = 0; i < model_dim; i++)
-          grad_step[t - 1][i] += grad_in[i];
-      }
-
-      free(grad_in);
-    }
-  }
-
-  // Free sequence gradient buffers
-  for (size_t t = 0; t < seq_length; t++)
-    free(grad_step[t]);
-  free(grad_step);
-}
-
 // ----------------------
 // Save/load transformer
 // ----------------------
