@@ -375,7 +375,10 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT,
       (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
   ActivationDerivativeType actDerivs[2] = {
-      get_activation_function_type(get_acvivation_function(actFuncs[0])), NULL};
+      get_activation_function_type(
+          get_acvivation_function_from_type(actFuncs[0])),
+      get_activation_function_type(
+          get_acvivation_function_from_type(actFuncs[1]))};
 
   child->nn = NN_init(layers, actFuncs, NULL,
                       (LossFunctionType)rand() % LOSS_TYPE_COUNT,
