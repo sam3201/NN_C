@@ -108,6 +108,10 @@ size_t assign_species(Population *pop);
 long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
                                    long double c2, long double c3);
 
+NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size);
+void NEAT_destroy(NEAT_t *neat);
+void NEAT_train(NEAT_t *neat, long double *input, long double *target);
+
 // ------------------- Topological Sort -------------------
 size_t *topological_sort(Genome_t *genome, size_t *outSize);
 
