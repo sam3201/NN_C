@@ -154,6 +154,63 @@ void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
   }
 }
 
+// Helper: toggle a random connection
+static void toggle_random_connection(Genome_t *genome) {
+  if (genome->numConnections == 0)
+    return;
+  Connection *c = genome->connections[rand() % genome->numConnections];
+  c->enabled = !c->enabled;
+}
+
+// Extended mutation
+void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
+                   long double weightPerturbAmount, long double addNodeRate,
+                   long double addConnectionRate,
+                   long double toggleConnectionRate,
+                   long double biasPerturbRate) {
+
+  // 1. Mutate weights
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    if ((rand() % 10000) / 10000.0L < weightPerturbRate) {
+      genome->connections[i]->weight +=
+          (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
+    } else {
+      genome->connections[i]->weight =
+          (((rand() % 20000) / 10000.0L) * 2.0L - 1.0L);
+    }
+  }
+
+  // 2. Mutate bias nodes
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    if (genome->nodes[i]->type == BIAS_NODE) {
+      if ((rand() % 10000) / 10000.0L < biasPerturbRate) {
+        genome->nodes[i]->value +=
+            (((rand() % 20000) / 10000.0L) - 1.0L) * weightPerturbAmount;
+      }
+    }
+  }
+
+  // 3. Add node
+  if ((rand() % 10000) / 10000.0L < addNodeRate && genome->numConnections > 0) {
+    GENOME_add_node(genome, rand() % genome->numConnections);
+  }
+
+  // 4. Add connection
+  if ((rand() % 10000) / 10000.0L < addConnectionRate) {
+    size_t from = rand() % genome->numNodes;
+    size_t to = rand() % genome->numNodes;
+    if (from != to) {
+      GENOME_add_connection(genome, from, to,
+                            ((rand() % 2000) / 1000.0L - 1.0L));
+    }
+  }
+
+  // 5. Toggle connection enable/disable
+  if ((rand() % 10000) / 10000.0L < toggleConnectionRate) {
+    toggle_random_connection(genome);
+  }
+}
+
 // ------------------- Crossover -------------------
 Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
