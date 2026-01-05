@@ -38,6 +38,16 @@ typedef struct {
   LayerNorm *norm1;
   FeedForward *feed_forward;
   LayerNorm *norm2;
+
+  // Intermediate caches for backprop
+  long double *attention_input;  // input to MHA
+  long double *attention_output; // output of MHA
+  long double *norm1_input;      // input to norm1 (after residual)
+  long double *norm1_output;     // output of norm1
+  long double *ff_input;         // input to feedforward
+  long double *ff_output;        // output of feedforward
+  long double *norm2_input;      // input to norm2 (after residual)
+  long double *norm2_output;     // output of norm2
 } TransformerLayer;
 
 // Complete transformer structure
