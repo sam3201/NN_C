@@ -252,6 +252,19 @@ long double *transformer_layer_forward(TransformerLayer *layer,
   return output;
 }
 
+long double *TRANSFORMER_forward(Transformer_t *transformer,
+                                 long double **input_sequence,
+                                 size_t seq_length) {
+  if (!transformer || !input_sequence)
+    return NULL;
+
+  long double *x = input_sequence[0]; // Assuming seq_length vectors
+  for (size_t l = 0; l < transformer->num_layers; l++) {
+    x = transformer_layer_forward(transformer->layers[l], x);
+  }
+  return x; // caller must free
+}
+
 // ----------------------
 // Backpropagation
 // ----------------------
