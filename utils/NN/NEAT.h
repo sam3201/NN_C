@@ -73,7 +73,7 @@ long double activate(long double x, ActivationFunctionType type);
 void GENOME_save(Genome_t *genome, const char *filename);
 Genome_t *GENOME_load(const char *filename);
 
-// Return innovation number, create if new
+// ------------------- Innovation Number -------------------
 size_t get_innovation_number(size_t from, size_t to);
 
 // ------------------- Topological Sort -------------------
