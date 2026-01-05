@@ -22,9 +22,6 @@ typedef struct {
   size_t innovation;
 } InnovationRecord;
 
-static InnovationRecord *innovationHistory = NULL;
-static size_t innovationCount = 0;
-
 // Node structure
 typedef struct Node {
   size_t id;
@@ -52,6 +49,9 @@ typedef struct Genome_t {
 
   long double fitness;
 } Genome_t;
+
+static InnovationRecord *innovationHistory = NULL;
+static size_t innovationCount = 0;
 
 // ------------------- Constructors / Destructors -------------------
 Genome_t *GENOME_init(size_t numInputs, size_t numOutputs);
