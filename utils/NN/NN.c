@@ -411,7 +411,9 @@ long double *NN_forward(NN_t *nn, long double inputs[]) {
         malloc((nn->numLayers) * sizeof(long double *));
     layer_outputs[0] = inputs;
     for (size_t i = 0; i < nn->numLayers - 1; i++) {
-      layer_outputs[i + 1] = NN_matmul(...);
+      layer_outputs[i + 1] =
+          NN_matmul(layer_outputs[i], nn->weights[i], nn->biases[i],
+                    nn->layers[i], nn->layers[i + 1]);
       for (size_t j = 0; j < nn->layers[i + 1]; j++)
         layer_outputs[i + 1][j] =
             nn->activationFunctions[i](layer_outputs[i + 1][j]);
