@@ -798,7 +798,6 @@ NN_t *GENOME_compile_to_NN(Genome_t *genome) {
   if (!genome)
     return NULL;
 
-  /* ---- determine layers by topological depth ---- */
   size_t topoSize;
   size_t *order = topological_sort(genome, &topoSize);
 
@@ -820,12 +819,10 @@ NN_t *GENOME_compile_to_NN(Genome_t *genome) {
     if (depth[i] > maxDepth)
       maxDepth = depth[i];
 
-  /* ---- count nodes per layer ---- */
   size_t *layerCounts = calloc(maxDepth + 1, sizeof(size_t));
   for (size_t i = 0; i < genome->numNodes; i++)
     layerCounts[depth[i]]++;
 
-  /* ---- build NN layer array ---- */
   size_t *layers = malloc((maxDepth + 2) * sizeof(size_t));
   ActivationFunctionType *acts =
       malloc((maxDepth + 1) * sizeof(ActivationFunctionType));
@@ -841,23 +838,33 @@ NN_t *GENOME_compile_to_NN(Genome_t *genome) {
 
   NN_t *nn = NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
 
-  /* ---- map genome connections → NN weights ---- */
+  size_t *nodeToIndex = calloc(genome->numNodes, sizeof(size_t));
+  size_t *cursor = calloc(maxDepth + 1, sizeof(size_t));
+
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    size_t d = depth[i];
+    nodeToIndex[i] = cursor[d]++;
+  }
+
   for (size_t i = 0; i < genome->numConnections; i++) {
     Connection *c = genome->connections[i];
     if (!c->enabled)
       continue;
 
-    size_t fromLayer = depth[c->from->id];
-    size_t toLayer = depth[c->to->id];
+    size_t l = depth[c->from->id];
+    size_t iIdx = nodeToIndex[c->from->id];
+    size_t oIdx = nodeToIndex[c->to->id];
 
-    if (toLayer == fromLayer + 1) {
-      nn->weights[fromLayer][c->to->id] = c->weight;
+    if (l + 1 <= maxDepth) {
+      nn->weights[l][iIdx * layers[l + 1] + oIdx] = c->weight;
     }
   }
 
   free(order);
   free(depth);
   free(layerCounts);
+  free(nodeToIndex);
+  free(cursor);
   free(layers);
   free(acts);
   free(ders);
