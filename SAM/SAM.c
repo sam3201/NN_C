@@ -393,7 +393,7 @@ PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat) {
   metrics.fitness = 0.0L;
 
   // Calculate metrics based on NEAT performance
-  if (neat && neat->pop->genomes->num_nodes > 0) {
+  if (neat && neat->pop->genomes.num_nodes > 0) {
   }
   // Calculate average fitness
   long double total_fitness = 0.0L;
