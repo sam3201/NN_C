@@ -389,30 +389,91 @@ long double *NN_matmul(long double inputs[], long double weights[],
 }
 
 // Forward Propagation Functions
-long double *NN_forward(NN_t *nn, long double inputs[]) {
-  if (!nn || !inputs) {
-    fprintf(stderr, "NN_forward: NULL input parameters\n");
+// Forward propagation (stores activations for backprop)
+long double **NN_forward_full(NN_t *nn, long double inputs[]) {
+  if (!nn || !inputs)
     return NULL;
-  }
 
-  long double *current = inputs;
-  long double *next = NULL;
+  long double **activations =
+      (long double **)malloc(nn->numLayers * sizeof(long double *));
+  if (!activations)
+    return NULL;
 
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    next = NN_matmul(current, nn->weights[i], nn->biases[i], nn->layers[i],
-                     nn->layers[i + 1]);
+  // Input layer
+  activations[0] = (long double *)malloc(nn->layers[0] * sizeof(long double));
+  memcpy(activations[0], inputs, nn->layers[0] * sizeof(long double));
 
-    // Apply activation function
-    for (size_t j = 0; j < nn->layers[i + 1]; j++) {
-      next[j] = nn->activationFunctions[i](next[j]);
+  for (size_t l = 1; l < nn->numLayers; l++) {
+    size_t curr_size = nn->layers[l];
+    size_t prev_size = nn->layers[l - 1];
+
+    activations[l] = (long double *)malloc(curr_size * sizeof(long double));
+    for (size_t j = 0; j < curr_size; j++) {
+      long double sum = nn->biases[l - 1][j];
+      for (size_t k = 0; k < prev_size; k++)
+        sum += nn->weights[l - 1][k * curr_size + j] * activations[l - 1][k];
+      // Apply activation function (except for input layer)
+      if (l < nn->numLayers - 1)
+        activations[l][j] = nn->activationFunctions[l - 1](sum);
+      else
+        activations[l][j] = sum; // output raw for loss
     }
-
-    if (i > 0)
-      free(current);
-    current = next;
   }
 
-  return current;
+  return activations;
+}
+
+// Backpropagation (standard)
+void NN_backprop_full(NN_t *nn, long double **activations,
+                      long double y_true[]) {
+  size_t L = nn->numLayers;
+  long double **deltas =
+      (long double **)malloc((L - 1) * sizeof(long double *));
+
+  // Compute output layer delta
+  size_t out_size = nn->layers[L - 1];
+  deltas[L - 2] = (long double *)malloc(out_size * sizeof(long double));
+  for (size_t j = 0; j < out_size; j++) {
+    long double y_pred = activations[L - 1][j];
+    deltas[L - 2][j] = nn->lossDerivative(y_true[j], y_pred);
+    if (nn->activationDerivatives[L - 2])
+      deltas[L - 2][j] *= nn->activationDerivatives[L - 2](y_pred);
+  }
+
+  // Backpropagate through hidden layers
+  for (size_t l = L - 2; l-- > 0;) {
+    size_t curr_size = nn->layers[l + 1];
+    size_t next_size = nn->layers[l + 2];
+    deltas[l] = (long double *)malloc(curr_size * sizeof(long double));
+
+    for (size_t i = 0; i < curr_size; i++) {
+      long double sum = 0.0L;
+      for (size_t j = 0; j < next_size; j++)
+        sum += nn->weights[l + 1][i * next_size + j] * deltas[l + 1][j];
+      deltas[l][i] = sum * nn->activationDerivatives[l](activations[l + 1][i]);
+    }
+  }
+
+  // Compute gradients and store in weights_v and biases_v
+  for (size_t l = 0; l < L - 1; l++) {
+    size_t curr_size = nn->layers[l];
+    size_t next_size = nn->layers[l + 1];
+
+    for (size_t j = 0; j < next_size; j++) {
+      nn->biases_v[l][j] = deltas[l][j];
+      for (size_t i = 0; i < curr_size; i++)
+        nn->weights_v[l][i * next_size + j] = deltas[l][j] * activations[l][i];
+    }
+  }
+
+  // Apply optimizer
+  if (nn->optimizer)
+    nn->optimizer(nn);
+
+  // Free deltas
+  for (size_t l = 0; l < L - 1; l++)
+    free(deltas[l]);
+  free(deltas);
 }
 
 // Loss calculation function
