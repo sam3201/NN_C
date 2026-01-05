@@ -222,7 +222,7 @@ int SAM_save(SAM_t *sam, const char *filename) {
   }
 
   // Save transformer
-  int result = TRANSFORMER_save(sam->transformer, file);
+  int result = TRANSFORMER_save(sam->transformer, filename);
   if (result == 0) {
     fclose(file);
     return 0;
