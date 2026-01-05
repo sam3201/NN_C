@@ -326,29 +326,24 @@ void adam(NN_t *nn) {
 
 void nag(NN_t *nn) {
   const long double momentum = 0.9L;
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t current_layer = nn->layers[i];
-    size_t next_layer = nn->layers[i + 1];
-
-    for (size_t j = 0; j < current_layer * next_layer; j++) {
-      long double prev_velocity = nn->weights_v[i][j];
-      nn->weights_v[i][j] = momentum * nn->weights_v[i][j] -
-                            nn->learningRate * nn->weights_v[i][j];
-      nn->weights[i][j] +=
-          -momentum * prev_velocity + (1 + momentum) * nn->weights_v[i][j];
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
+    for (size_t j = 0; j < in_size * out_size; j++) {
+      long double prev_v = nn->weights_v[l][j];
+      nn->weights_v[l][j] = momentum * nn->weights_v[l][j] -
+                            nn->learningRate * nn->weights_v[l][j];
+      nn->weights[l][j] +=
+          -momentum * prev_v + (1 + momentum) * nn->weights_v[l][j];
     }
-
-    for (size_t j = 0; j < next_layer; j++) {
-      long double prev_velocity = nn->biases_v[i][j];
-      nn->biases_v[i][j] =
-          momentum * nn->biases_v[i][j] - nn->learningRate * nn->biases_v[i][j];
-      nn->biases[i][j] +=
-          -momentum * prev_velocity + (1 + momentum) * nn->biases_v[i][j];
+    for (size_t j = 0; j < out_size; j++) {
+      long double prev_v = nn->biases_v[l][j];
+      nn->biases_v[l][j] =
+          momentum * nn->biases_v[l][j] - nn->learningRate * nn->biases_v[l][j];
+      nn->biases[l][j] +=
+          -momentum * prev_v + (1 + momentum) * nn->biases_v[l][j];
     }
   }
 }
-
 // Matrix Multiplication Function
 long double *NN_matmul(long double inputs[], long double weights[],
                        long double biases[], size_t input_size,
