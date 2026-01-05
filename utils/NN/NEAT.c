@@ -387,6 +387,7 @@ size_t assign_species(Population *pop) {
 }
 
 // ------------------- Next Generation -------------------
+// ------------------- Next Generation -------------------
 void POPULATION_evolve(Population *pop) {
   if (!pop)
     return;
@@ -414,28 +415,25 @@ void POPULATION_evolve(Population *pop) {
         GENOME_crossover(pop->genomes[i], pop->genomes[i]); // self-copy
   }
 
-  // 4. Fill remaining with crossover + mutation
+  // 4. Fill remaining with crossover + extended mutation
   for (size_t i = eliteCount; i < pop->size; i++) {
     size_t p1 = rand() % eliteCount;
     size_t p2 = rand() % eliteCount;
     Genome_t *child = GENOME_crossover(pop->genomes[p1], pop->genomes[p2]);
-    GENOME_mutate_weights(child, 0.8L, 0.2L);           // adjust rates
-    if (rand() % 10 < 3 && child->numConnections > 0) { // add node 30% chance
-      GENOME_add_node(child, rand() % child->numConnections);
-    }
-    if (rand() % 10 < 5) { // add connection 50% chance
-      size_t from = rand() % child->numNodes;
-      size_t to = rand() % child->numNodes;
-      if (from != to)
-        GENOME_add_connection(child, from, to,
-                              ((rand() % 2000) / 1000.0L - 1.0L));
-    }
+
+    // Extended mutation parameters:
+    // weightPerturbRate, weightPerturbAmount,
+    // addNodeRate, addConnectionRate,
+    // toggleConnectionRate, biasPerturbRate
+    GENOME_mutate(child, 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L);
+
     nextGen[i] = child;
   }
 
   // 5. Destroy old population genomes
-  for (size_t i = 0; i < pop->size; i++)
+  for (size_t i = 0; i < pop->size; i++) {
     GENOME_destroy(pop->genomes[i]);
+  }
 
   free(pop->genomes);
   pop->genomes = nextGen;
