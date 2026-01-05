@@ -28,7 +28,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
   while (layers[lastLayer] == 0)
     lastLayer++;
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
-  genome->numNodes = numInputs + layers[numInputs] + 2; // initial + bias
+  genome->numNodes = numInputs + lastLayer + 1;
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
 
   size_t idx = 0;
