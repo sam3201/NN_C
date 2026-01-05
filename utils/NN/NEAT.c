@@ -9,11 +9,48 @@ long double activate(long double x, ActivationFunctionType type) {
   case TANH:
     return tanhl(x);
   case RELU:
-    return x > 0 ? x : 0;
+    return x > 0.0L ? x : 0.0L;
   case LINEAR:
     return x;
   default:
     return x;
+  }
+}
+
+// ------------------- Activation Derivative -------------------
+long double activate_derivative(long double x, ActivationFunctionType type) {
+  switch (type) {
+  case SIGMOID: {
+    long double y = 1.0L / (1.0L + expl(-x));
+    return y * (1.0L - y); // derivative: σ(x) * (1 - σ(x))
+  }
+  case TANH: {
+    long double y = tanhl(x);
+    return 1.0L - y * y; // derivative: 1 - tanh^2(x)
+  }
+  case RELU:
+    return x > 0.0L ? 1.0L : 0.0L;
+  case LINEAR:
+    return 1.0L;
+  default:
+    return 1.0L;
+  }
+}
+
+// Optional: helper to map ActivationFunctionType to derivative enum
+ActivationDerivativeType
+get_derivative_from_activation(ActivationFunctionType type) {
+  switch (type) {
+  case SIGMOID:
+    return SIGMOID_DERIV;
+  case TANH:
+    return TANH_DERIV;
+  case RELU:
+    return RELU_DERIV;
+  case LINEAR:
+    return LINEAR_DERIV;
+  default:
+    return LINEAR_DERIV;
   }
 }
 
