@@ -441,7 +441,7 @@ void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
 // ----------------------
 // Save transformer to file (weights + structure)
 // ----------------------
-int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
+int TRANSFORMER_save(Transformer_t *transformer, const char *file) {
   if (!transformer || !file)
     return 0;
 
