@@ -829,7 +829,7 @@ get_activation_function_from_func(ActivationFunction func) {
     if (ACTIVATION_FUNCTIONS[i] == func)
       return (ActivationFunctionType)i;
   }
-  return ACTIVATION_TYPE_COUNT; // invalid
+  return ACTIVATION_TYPE_COUNT;
 }
 
 // Type Getters from Function Pointers
