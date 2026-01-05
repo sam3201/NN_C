@@ -2,56 +2,66 @@
 #define TRANSFORMER_H
 
 #include "NN.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// Multi-head attention structures
+// Multi-head attention
 typedef struct {
   size_t model_dim;
   size_t num_heads;
   size_t head_dim;
+
   NN_t *Q_proj;
   NN_t *K_proj;
   NN_t *V_proj;
   NN_t *O_proj;
+
+  // Cached for backprop
+  long double *Q_cache;
+  long double *K_cache;
+  long double *V_cache;
+  long double *scores_cache;
+  size_t seq_length;
 } MultiHeadAttention;
 
-// Layer normalization structure
+// Layer normalization
 typedef struct {
   size_t dim;
   long double epsilon;
   NN_t *norm_network;
+
+  long double *input_cache; // cached input for backprop
 } LayerNorm;
 
-// Feed-forward network structure
+// Feed-forward network
 typedef struct {
   size_t input_dim;
   size_t hidden_dim;
   NN_t *network;
+
+  long double *input_cache; // cached input for backprop
 } FeedForward;
 
-// Complete transformer layer structure
+// Transformer layer
 typedef struct {
   size_t model_dim;
   size_t seq_length;
+
   MultiHeadAttention *attention;
   LayerNorm *norm1;
   FeedForward *feed_forward;
   LayerNorm *norm2;
 
-  // Intermediate caches for backprop
-  long double *attention_input;  // input to MHA
-  long double *attention_output; // output of MHA
-  long double *norm1_input;      // input to norm1 (after residual)
-  long double *norm1_output;     // output of norm1
-  long double *ff_input;         // input to feedforward
-  long double *ff_output;        // output of feedforward
-  long double *norm2_input;      // input to norm2 (after residual)
-  long double *norm2_output;     // output of norm2
+  // Cached intermediate states
+  long double *attention_input;
+  long double *norm1_input;
+  long double *ff_input;
+  long double *norm2_input;
 } TransformerLayer;
 
-// Complete transformer structure
-typedef struct Transformer_t {
+// Complete Transformer
+typedef struct {
   size_t model_dim;
   size_t num_heads;
   size_t num_layers;
@@ -64,35 +74,41 @@ FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim);
 LayerNorm *create_layer_norm(size_t dim, long double epsilon);
 TransformerLayer *create_transformer_layer(size_t model_dim, size_t num_heads,
                                            size_t ff_dim);
-Transformer_t *TRANSFORMER_init(size_t input_dim, size_t num_heads);
+Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
+                                size_t num_layers);
 
-// Forward pass functions
+// Forward pass
 long double *transformer_mha_forward(MultiHeadAttention *mha,
                                      long double *input, size_t seq_length);
 long double *transformer_norm_forward(LayerNorm *ln, long double *input);
+long double *transformer_layer_forward(TransformerLayer *layer,
+                                       long double *input);
 long double *TRANSFORMER_forward(Transformer_t *transformer,
                                  long double **input_sequence,
                                  size_t seq_length);
 
-// Backpropagation functions
-void transformer_mha_backprop(MultiHeadAttention *mha, long double *input);
-
-void transformer_norm_backprop(LayerNorm *ln, long double *input);
+// Backpropagation
+void transformer_mha_backprop(MultiHeadAttention *mha,
+                              long double *grad_output);
+void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output);
+void transformer_feedforward_backprop(FeedForward *ff,
+                                      long double *grad_output);
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss);
 
+// Training
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
                        size_t seq_length, long double *target);
 
-// Memory management functions
+// Free memory
 void free_attention(MultiHeadAttention *mha);
 void free_feed_forward(FeedForward *ff);
 void free_layer_norm(LayerNorm *ln);
 void free_transformer_layer(TransformerLayer *layer);
 void TRANSFORMER_destroy(Transformer_t *transformer);
 
-// Serialization functions
+// Serialization
 int TRANSFORMER_save(Transformer_t *transformer, FILE *file);
 Transformer_t *TRANSFORMER_load(FILE *file);
 
