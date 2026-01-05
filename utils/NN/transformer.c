@@ -383,16 +383,15 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
   NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
 }
 
-void TRANSFORMER_backprop(TransformerLayer *layer, long double *input,
+void transformer_backprop(TransformerLayer *layer, long double *input,
                           long double *grad_output, long double *grad_input) {
   if (!layer || !input || !grad_output || !grad_input) {
     return;
   }
 
-  // Allocate temporary gradients
-  long double *grad_ff = malloc(layer->model_dim * sizeof(long double));
-  long double *grad_norm1 = malloc(layer->model_dim * sizeof(long double));
-  long double *grad_attn = malloc(layer->model_dim * sizeof(long double));
+  long double *grad_ff = calloc(layer->model_dim, sizeof(long double));
+  long double *grad_norm1 = calloc(layer->model_dim, sizeof(long double));
+  long double *grad_attn = calloc(layer->model_dim, sizeof(long double));
 
   if (!grad_ff || !grad_norm1 || !grad_attn) {
     free(grad_ff);
@@ -401,24 +400,22 @@ void TRANSFORMER_backprop(TransformerLayer *layer, long double *input,
     return;
   }
 
-  // Backpropagate through second normalization layer
+  /* norm2 backprop */
   transformer_norm_backprop(layer->norm2, input, grad_output, grad_ff);
 
-  // Backpropagate through feed-forward network
-  NN_backprop(layer->feed_forward->network, input, grad_ff[0], grad_norm1[0]);
+  /* feed-forward backprop */
+  NN_backprop(layer->feed_forward->network, input, grad_ff, grad_norm1);
 
-  // Backpropagate through first normalization layer
+  /* norm1 backprop */
   transformer_norm_backprop(layer->norm1, input, grad_norm1, grad_attn);
 
-  // Backpropagate through attention layer
+  /* attention backprop */
   transformer_mha_backprop(layer->attention, input, grad_attn, grad_input);
 
-  // Clean up
   free(grad_ff);
   free(grad_norm1);
   free(grad_attn);
 }
-
 // Memory management functions
 void free_attention(MultiHeadAttention *mha) {
   if (mha) {
