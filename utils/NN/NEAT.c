@@ -18,6 +18,59 @@ long double activate(long double x, ActivationFunctionType type) {
 }
 
 // ------------------- Genome_t ----------------------
+// Constructor for empty genome (used in crossover)
+Genome_t *GENOME_init_empty(size_t numInputs, size_t numOutputs) {
+  Genome_t *genome = malloc(sizeof(Genome_t));
+
+  genome->numNodes = 0;
+  genome->nodes = NULL;
+
+  genome->numConnections = 0;
+  genome->connections = NULL;
+
+  genome->nn = NULL; // Not needed for crossover
+  genome->fitness = 0.0L;
+
+  // Initialize input nodes
+  for (size_t i = 0; i < numInputs; i++) {
+    Node *n = malloc(sizeof(Node));
+    n->id = genome->numNodes;
+    n->type = INPUT_NODE;
+    n->actFunc = LINEAR;
+    n->value = 0.0L;
+
+    genome->nodes =
+        realloc(genome->nodes, (genome->numNodes + 1) * sizeof(Node *));
+    genome->nodes[genome->numNodes++] = n;
+  }
+
+  // Bias node
+  Node *bias = malloc(sizeof(Node));
+  bias->id = genome->numNodes;
+  bias->type = BIAS_NODE;
+  bias->actFunc = LINEAR;
+  bias->value = 1.0L;
+
+  genome->nodes =
+      realloc(genome->nodes, (genome->numNodes + 1) * sizeof(Node *));
+  genome->nodes[genome->numNodes++] = bias;
+
+  // Output nodes
+  for (size_t i = 0; i < numOutputs; i++) {
+    Node *n = malloc(sizeof(Node));
+    n->id = genome->numNodes;
+    n->type = OUTPUT_NODE;
+    n->actFunc = SIGMOID;
+    n->value = 0.0L;
+
+    genome->nodes =
+        realloc(genome->nodes, (genome->numNodes + 1) * sizeof(Node *));
+    genome->nodes[genome->numNodes++] = n;
+  }
+
+  return genome;
+}
+
 Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
                       ActivationDerivativeType *actDerivs,
                       LossFunctionType lossFunc, LossDerivativeType lossDeriv,
