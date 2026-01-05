@@ -37,23 +37,6 @@ long double activate_derivative(long double x, ActivationFunctionType type) {
   }
 }
 
-// Optional: helper to map ActivationFunctionType to derivative enum
-ActivationDerivativeType
-get_derivative_from_activation(ActivationFunctionType type) {
-  switch (type) {
-  case SIGMOID:
-    return SIGMOID_DERIV;
-  case TANH:
-    return TANH_DERIV;
-  case RELU:
-    return RELU_DERIV;
-  case LINEAR:
-    return LINEAR_DERIV;
-  default:
-    return LINEAR_DERIV;
-  }
-}
-
 // ------------------- Genome_t ----------------------
 // Constructor for empty genome (used in crossover)
 Genome_t *GENOME_init_empty(size_t numInputs, size_t numOutputs) {
