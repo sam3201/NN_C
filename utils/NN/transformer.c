@@ -310,6 +310,11 @@ void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output) {
   }
 }
 
+void transformer_feedforward_backprop(FeedForward *ff,
+                                      long double *grad_output) {
+  NN_backprop(ff->network, grad_output);
+}
+
 long double **transformer_layer_forward(TransformerLayer *layer,
                                         long double **input,
                                         size_t seq_length) {
