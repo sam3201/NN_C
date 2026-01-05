@@ -24,7 +24,7 @@ typedef struct {
 typedef struct Node {
   size_t id;
   NodeType type;
-  ActivationFunctionType actFunc;
+  NN_t *NN;
   long double value; // current activation
 } Node;
 
