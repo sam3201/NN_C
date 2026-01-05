@@ -45,13 +45,13 @@ typedef struct Genome_t {
 
 // ------------------- Constructors / Destructors -------------------
 Genome_t *GENOME_init(size_t numInputs, size_t numOutputs);
-void Genome_destroy(Genome_t *genome);
+void GENOME_destroy(Genome_t *genome);
 
 // ------------------- NEAT Operators -------------------
-void Genome_add_node(Genome_t *genome, size_t connectionIndex);
-void Genome_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
+void GENOME_add_node(Genome_t *genome, size_t connectionIndex);
+void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight);
-void Genome_mutate_weights(Genome_t *genome, long double perturbRate,
+void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount);
 Genome_t *Genome_crossover(Genome_t *parent1, Genome_t *parent2);
 
