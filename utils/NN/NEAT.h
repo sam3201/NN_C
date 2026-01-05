@@ -53,6 +53,12 @@ typedef struct {
   size_t size;
 } Population;
 
+typedef struct {
+  Population *pop;
+  size_t input_dims;
+  size_t output_dims;
+} NEAT_t;
+
 static InnovationRecord *innovationHistory = NULL;
 static size_t innovationCount = 0;
 
