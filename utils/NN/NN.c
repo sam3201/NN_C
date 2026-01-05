@@ -832,6 +832,15 @@ get_activation_function_from_func(ActivationFunction func) {
   return ACTIVATION_TYPE_COUNT;
 }
 
+ActivationDerivativeType
+get_activation_derivative_from_func(ActivationDerivative func) {
+  for (int i = 0; i < ACTIVATION_DERIVATIVE_TYPE_COUNT; i++) {
+    if (ACTIVATION_DERIVATIVES[i] == func)
+      return (ActivationDerivativeType)i;
+  }
+  return ACTIVATION_DERIVATIVE_TYPE_COUNT; // invalid
+}
+
 // Type Getters from Function Pointers
 LossFunctionType get_loss_function_from_func(LossFunction func) {
   for (int i = 0; i < LOSS_TYPE_COUNT; i++) {
