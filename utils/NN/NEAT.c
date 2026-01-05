@@ -849,7 +849,7 @@ NN_t *GENOME_compile_to_NN(Genome_t *genome) {
     size_t toLayer = depth[c->to->id];
 
     if (toLayer == fromLayer + 1) {
-      nn->weights[fromLayer][c->from->id][c->to->id] = c->weight;
+      nn->weights[fromLayer][c->to->id] = c->weight;
     }
   }
 
