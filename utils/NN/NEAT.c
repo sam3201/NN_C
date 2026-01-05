@@ -449,7 +449,7 @@ void POPULATION_evolve(Population *pop) {
     // weightPerturbRate, weightPerturbAmount,
     // addNodeRate, addConnectionRate,
     // toggleConnectionRate, biasPerturbRate
-    GENOME_mutate(child, 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L);
+    GENOME_mutate(child, 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
 
     nextGen[i] = child;
   }
