@@ -82,13 +82,16 @@ typedef struct NN_t {
   size_t numLayers; // Number of layers
   size_t *layers;   // Array of layer sizes
 
-  long double **weights;   // Weight matrices
-  long double **biases;    // Bias vectors
-  long double **weights_v; // Velocity / m for optimizers
-  long double **biases_v;  // Velocity / v for optimizers
+  long double **weights; // Weight matrices
+  long double **biases;  // Bias vectors
 
-  long double **weights_grad; // alias for weights_v (clarity)
-  long double **biases_grad;
+  long double **weights_grad; // dL/dW
+  long double **biases_grad;  // dL/db
+
+  long double **opt_m_w; // Adam / momentum m
+  long double **opt_v_w; // Adam / RMSProp v
+  long double **opt_m_b;
+  long double **opt_v_b;
 
   long double **opt_m_w; // Adam / momentum m
   long double **opt_v_w; // Adam / RMSProp v
