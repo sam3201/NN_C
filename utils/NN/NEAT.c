@@ -117,7 +117,7 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
   c->to = genome->nodes[toNode];
   c->weight = weight;
   c->enabled = true;
-  c->innovation = genome->numConnections; // simple innovation
+  c->innovation = get_innovation_number(fromNode, toNode);
   genome->connections[genome->numConnections++] = c;
 }
 
