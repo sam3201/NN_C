@@ -122,6 +122,11 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
       fprintf(stderr,
               "Failed to allocate memory for weights or biases at layer %zu\n",
               i);
+      nn->opt_m_w = malloc((nn->numLayers - 1) * sizeof(long double *));
+      nn->opt_v_w = malloc((nn->numLayers - 1) * sizeof(long double *));
+      nn->opt_m_b = malloc((nn->numLayers - 1) * sizeof(long double *));
+      nn->opt_v_b = malloc((nn->numLayers - 1) * sizeof(long double *));
+
       NN_destroy(nn);
       return NULL;
     }
