@@ -424,8 +424,7 @@ long double **NN_forward_full(NN_t *nn, long double inputs[]) {
 }
 
 // Backpropagation (standard)
-void NN_backprop_full(NN_t *nn, long double **activations,
-                      long double y_true[]) {
+void NN_backprop(NN_t *nn, long double **activations, long double y_true[]) {
   size_t L = nn->numLayers;
   long double **deltas =
       (long double **)malloc((L - 1) * sizeof(long double *));
