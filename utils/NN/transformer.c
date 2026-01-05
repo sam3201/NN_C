@@ -586,6 +586,7 @@ void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
   free(output);
   free(grad_output);
 }
+
 // Transformer save
 int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
   if (!transformer || !file)
