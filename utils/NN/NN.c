@@ -823,6 +823,15 @@ RegularizationType get_regularization_type(const char *str) {
   return -1;
 }
 
+ActivationFunctionType
+get_activation_function_from_func(ActivationFunction func) {
+  for (int i = 0; i < ACTIVATION_TYPE_COUNT; i++) {
+    if (ACTIVATION_FUNCTIONS[i] == func)
+      return (ActivationFunctionType)i;
+  }
+  return ACTIVATION_TYPE_COUNT; // invalid
+}
+
 // Type Getters from Function Pointers
 LossFunctionType get_loss_function_from_func(LossFunction func) {
   for (int i = 0; i < LOSS_TYPE_COUNT; i++) {
