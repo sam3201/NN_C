@@ -68,8 +68,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
                       ActivationDerivativeType *actDerivs,
                       LossFunctionType lossFunc, LossDerivativeType lossDeriv,
                       RegularizationType reg, OptimizerType opt,
-                      long double learningRate, size_t numInputs,
-                      size_t numOutputs);
+                      long double learningRate, size_t numInputs, );
 void GENOME_destroy(Genome_t *genome);
 
 // ------------------- NEAT Operators -------------------
