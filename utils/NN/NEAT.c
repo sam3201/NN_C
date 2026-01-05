@@ -220,3 +220,43 @@ Genome *Genome_load(const char *filename) {
   fclose(f);
   return genome;
 }
+
+// Helper: returns an array of node indices in topological order
+size_t *topological_sort(Genome *genome, size_t *outSize) {
+  size_t *inDegree = calloc(genome->numNodes, sizeof(size_t));
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
+    if (c->enabled)
+      inDegree[c->to->id]++;
+  }
+
+  size_t *order = malloc(genome->numNodes * sizeof(size_t));
+  size_t idx = 0;
+
+  size_t *queue = malloc(genome->numNodes * sizeof(size_t));
+  size_t qstart = 0, qend = 0;
+
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    if (inDegree[i] == 0)
+      queue[qend++] = i;
+  }
+
+  while (qstart < qend) {
+    size_t n = queue[qstart++];
+    order[idx++] = n;
+
+    for (size_t i = 0; i < genome->numConnections; i++) {
+      Connection *c = genome->connections[i];
+      if (c->enabled && c->from->id == n) {
+        inDegree[c->to->id]--;
+        if (inDegree[c->to->id] == 0)
+          queue[qend++] = c->to->id;
+      }
+    }
+  }
+
+  free(queue);
+  free(inDegree);
+  *outSize = idx;
+  return order;
+}
