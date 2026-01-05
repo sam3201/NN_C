@@ -110,5 +110,6 @@ void TRANSFORMER_destroy(Transformer_t *transformer);
 
 // Serialization
 int TRANSFORMER_save(Transformer_t *t, FILE *f);
+Transformer_t *TRANSFORMER_load(FILE *f);
 
 #endif // TRANSFORMER_H
