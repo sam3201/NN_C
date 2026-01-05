@@ -64,12 +64,14 @@ static InnovationRecord *innovationHistory = NULL;
 static size_t innovationCount = 0;
 
 // ------------------- Constructors / Destructors -------------------
-size_t *layers, ActivationFunctionType *actFuncs,
-    ActivationDerivativeType *actDerivs, LossFunctionType lossFunc,
-    LossDerivativeType lossDeriv, RegularizationType reg, OptimizerType opt,
-    long double learningRate;
+Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
+                      ActivationDerivativeType *actDerivs,
+                      LossFunctionType lossFunc, LossDerivativeType lossDeriv,
+                      RegularizationType reg, OptimizerType opt,
+                      long double learningRate
 
-Genome_t *GENOME_init(, size_t numInputs, size_t numOutputs);
+                      ,
+                      size_t numInputs, size_t numOutputs);
 void GENOME_destroy(Genome_t *genome);
 
 // ------------------- NEAT Operators -------------------
