@@ -53,10 +53,10 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight);
 void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount);
-Genome_t *Genome_crossover(Genome_t *parent1, Genome_t *parent2);
+Genome_t *GENOME_crossover(Genome_t *parent1, Genome_t *parent2);
 
 // ------------------- Forward Propagation -------------------
-void Genome_forward(Genome_t *genome, long double *input, long double *output);
+void GENOME_forwward(Genome_t *genome, long double *input, long double *output);
 long double activate(long double x, ActivationFunctionType type);
 
 // ------------------- Serialization -------------------
