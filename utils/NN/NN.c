@@ -238,21 +238,12 @@ void NN_destroy(NN_t *nn) {
   // Free layers
   free(nn->layers);
 
-  // Free weights and biases
+  // Free weights and biases,
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
     free(nn->weights[i]);
     free(nn->biases[i]);
     free(nn->weights_v[i]);
     free(nn->biases_v[i]);
-  }
-
-  // Free weights and biases arrays
-  free(nn->weights);
-  free(nn->biases);
-  free(nn->weights_v);
-  free(nn->biases_v);
-
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
 
     size_t wcount = nn->layers[i] * nn->layers[i + 1];
     size_t bcount = nn->layers[i + 1];
@@ -261,6 +252,12 @@ void NN_destroy(NN_t *nn) {
     nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
     nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
   }
+
+  // Free weights and biases arrays
+  free(nn->weights);
+  free(nn->biases);
+  free(nn->weights_v);
+  free(nn->biases_v);
 
   // Free activation functions
   free(nn->activationFunctions);
