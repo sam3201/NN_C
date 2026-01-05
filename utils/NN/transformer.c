@@ -331,6 +331,56 @@ long double *transformer_forward(TransformerLayer *layer, long double *input) {
   return output;
 }
 
+void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output,
+                                    long double *input) {
+  if (!ln || !grad_output || !input)
+    return;
+
+  size_t D = ln->dim;
+
+  // Compute mean and variance (same as forward)
+  long double mean = 0;
+  for (size_t i = 0; i < D; i++)
+    mean += input[i];
+  mean /= D;
+
+  long double var = 0;
+  for (size_t i = 0; i < D; i++)
+    var += (input[i] - mean) * (input[i] - mean);
+  var /= D;
+
+  long double stddev = sqrt(var + ln->epsilon);
+
+  // Gradient w.r.t normalized input
+  long double *grad_norm = malloc(D * sizeof(long double));
+  for (size_t i = 0; i < D; i++)
+    grad_norm[i] = grad_output[i] / stddev;
+
+  // Gradient w.r.t variance
+  long double dvar = 0;
+  for (size_t i = 0; i < D; i++)
+    dvar += grad_output[i] * (input[i] - mean) * -0.5L /
+            ((var + ln->epsilon) * stddev);
+
+  // Gradient w.r.t mean
+  long double dmean = 0;
+  for (size_t i = 0; i < D; i++)
+    dmean +=
+        grad_output[i] * -1.0L / stddev + dvar * -2.0L * (input[i] - mean) / D;
+
+  // Gradient w.r.t input
+  long double *grad_input = malloc(D * sizeof(long double));
+  for (size_t i = 0; i < D; i++)
+    grad_input[i] =
+        grad_norm[i] + dvar * 2.0L * (input[i] - mean) / D + dmean / D;
+
+  // Backprop through affine network
+  NN_backprop(ln->norm_network, input, grad_input, 0.01L);
+
+  free(grad_norm);
+  free(grad_input);
+}
+
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
