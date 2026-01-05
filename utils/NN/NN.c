@@ -932,7 +932,8 @@ NN_t *NN_load(const char *filename) {
   nn->opt_m_b = malloc((nn->numLayers - 1) * sizeof(long double *));
   nn->opt_v_b = malloc((nn->numLayers - 1) * sizeof(long double *));
 
-  if (!nn->weights || !nn->biases || !nn->weights_v || !nn->biases_v) {
+  if (!nn->weights || !nn->biases || !nn->opt_m_w || !nn->opt_v_w ||
+      !nn->opt_m_b || !nn->opt_v_b) {
     NN_destroy(nn);
     fclose(file);
     return NULL;
