@@ -998,7 +998,7 @@ void softmax(long double *layer, size_t size) {
 
   long double sum = 0.0L;
   for (size_t i = 0; i < size; i++) {
-    layer[i] = expl(layer[i] - max); // subtract max for numerical stability
+    layer[i] = expl(layer[i] - max);
     sum += layer[i];
   }
 
