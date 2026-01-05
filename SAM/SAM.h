@@ -6,7 +6,6 @@
 #include <stdlib.h>
 
 // Forward declarations
-typedef struct Transformer_t Transformer_t;
 typedef struct NEAT_t NEAT_t;
 
 // Performance metrics structure
