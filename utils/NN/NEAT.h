@@ -105,6 +105,7 @@ void POPULATION_destroy(Population *pop);
 
 // ------------------- Innovation Number -------------------
 size_t get_innovation_number(size_t from, size_t to);
+void NEAT_reset_innovations();
 
 // ------------------- Compatability Distance -------------------
 long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
