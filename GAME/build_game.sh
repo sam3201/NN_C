@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# --- Install Raylib if missing ---
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
@@ -16,18 +17,22 @@ fi
 
 echo "Compiling game..."
 
+# --- Collect all source files ---
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
+NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
 SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 
-gcc -w game.c $MUZE_SRC $SAM_SRC ../SAM/SAM.c \
+# --- Compile and link ---
+gcc -w game.c $MUZE_SRC $NN_SRC $SAM_SRC \
     -I../utils/Raylib/src \
-    -I../utils/NN/MUZE \
-    -I../SAM/SAM \
-    -I../utils/NN/TRANSFORMER.c \
+    -I../utils/NN \
+    -I../SAM \
     -L../utils/Raylib/src -lraylib \
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
+    -arch arm64 \
     -o game
 
+# --- Run game if compilation succeeded ---
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
     ./game
@@ -36,6 +41,6 @@ else
     exit 1
 fi
 
-echo "Cleaning up..."
+# --- Optional cleanup ---
 rm game
 
