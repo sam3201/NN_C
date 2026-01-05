@@ -364,6 +364,52 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
 // ----------------------
 // Transformer forward and backprop
 // ----------------------
+long double **transformer_layer_forward(TransformerLayer *layer,
+                                        long double **input,
+                                        size_t seq_length) {
+  size_t D = layer->model_dim;
+
+  // Cache input for backprop
+  layer->attention_input = malloc(seq_length * D * sizeof(long double));
+  for (size_t t = 0; t < seq_length; t++)
+    memcpy(&layer->attention_input[t * D], input[t], D * sizeof(long double));
+
+  // ---- Multi-head attention ----
+  long double **att =
+      transformer_mha_forward(layer->attention, input, seq_length);
+
+  // ---- Residual + norm1 ----
+  long double **norm1_out = malloc(seq_length * sizeof(long double *));
+  for (size_t t = 0; t < seq_length; t++) {
+    for (size_t i = 0; i < D; i++)
+      att[t][i] += input[t][i];
+    norm1_out[t] = transformer_norm_forward(layer->norm1, att[t]);
+    free(att[t]);
+  }
+  free(att);
+
+  // ---- Feed-forward ----
+  long double **ff_out = malloc(seq_length * sizeof(long double *));
+  for (size_t t = 0; t < seq_length; t++) {
+    layer->feed_forward->input_cache = norm1_out[t];
+    ff_out[t] = NN_forward(layer->feed_forward->network, norm1_out[t]);
+  }
+
+  // ---- Residual + norm2 ----
+  long double **out = malloc(seq_length * sizeof(long double *));
+  for (size_t t = 0; t < seq_length; t++) {
+    for (size_t i = 0; i < D; i++)
+      ff_out[t][i] += norm1_out[t][i];
+    out[t] = transformer_norm_forward(layer->norm2, ff_out[t]);
+    free(ff_out[t]);
+    free(norm1_out[t]);
+  }
+
+  free(ff_out);
+  free(norm1_out);
+  return out;
+}
+
 long double **TRANSFORMER_forward(Transformer_t *transformer,
                                   long double **input_sequence,
                                   size_t seq_length) {
