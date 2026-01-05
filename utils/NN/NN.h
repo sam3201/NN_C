@@ -117,7 +117,7 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
 long double *NN_matmul(long double inputs[], long double weights[],
                        long double biases[], size_t input_size,
                        size_t output_size);
-long double *NN_forward(NN_t *nn, long double inputs[]);
+long double **NN_forward(NN_t *nn, long double inputs[]);
 long double NN_loss(NN_t *nn, long double y_true, long double y_predicted);
 void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
                  long double y_predicted);
