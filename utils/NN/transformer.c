@@ -401,7 +401,8 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
       grad_residual1[j] = grad_norm2_input[j];
 
     // LayerNorm1 backprop
-    layernorm_backprop(layer->norm1, grad_residual1, layer->norm1_input);
+    transformer_layernorm_backprop(layer->norm1, grad_residual1,
+                                   layer->norm1_input);
 
     // MHA backprop
     transformer_mha_backprop(layer->attention, grad_residual1,
