@@ -358,51 +358,37 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input) {
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
-  if (!transformer || !grad_loss)
+  if (!transformer || !input_sequence)
     return;
 
   size_t L = transformer->num_layers;
   size_t D = transformer->model_dim;
 
-  // Forward pass to compute intermediate activations for each layer
+  // Forward pass to compute intermediate activations
   long double **layer_inputs = malloc((L + 1) * sizeof(long double *));
   if (!layer_inputs)
     return;
 
   layer_inputs[0] = malloc(D * sizeof(long double));
-  if (!layer_inputs[0]) {
-    free(layer_inputs);
-    return;
-  }
   memcpy(layer_inputs[0], input_sequence[0], D * sizeof(long double));
 
   for (size_t i = 0; i < L; i++) {
     transformer->layers[i]->seq_length = seq_length;
     layer_inputs[i + 1] =
         transformer_forward(transformer->layers[i], layer_inputs[i]);
-    if (!layer_inputs[i + 1]) {
-      for (size_t j = 0; j <= i; j++)
-        free(layer_inputs[j]);
-      free(layer_inputs);
-      return;
-    }
   }
 
+  // Update weights for each layer
   for (size_t i = 0; i < L; i++) {
     TransformerLayer *layer = transformer->layers[i];
 
-    transformer_mha_backprop(layer->attention, layer_inputs[i], grad_loss,
-                             NULL);
-
-    transformer_norm_backprop(layer->norm1, layer_inputs[i], grad_loss, NULL);
-
-    NN_backprop(layer->feed_forward->network, layer_inputs[i], 0.0L,
-                grad_loss[0]);
-
-    transformer_norm_backprop(layer->norm2, layer_inputs[i + 1], grad_loss,
-                              NULL);
+    transformer_mha_backprop(layer->attention, layer_inputs[i]);
+    transformer_norm_backprop(layer->norm1, layer_inputs[i]);
+    NN_backprop(layer->feed_forward->network, layer_inputs[i], 0.0L, 0.0L);
+    transformer_norm_backprop(layer->norm2, layer_inputs[i + 1]);
   }
 
+  // Cleanup
   for (size_t i = 0; i <= L; i++)
     free(layer_inputs[i]);
   free(layer_inputs);
