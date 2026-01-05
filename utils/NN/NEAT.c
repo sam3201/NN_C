@@ -57,7 +57,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
 
   genome->numConnections = 0;
   genome->connections = NULL;
-  genome->nn = initial;
+  genome->nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, reg, opt, 
   genome->fitness = 0.0L;
 
   return genome;
