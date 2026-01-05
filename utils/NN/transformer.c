@@ -40,6 +40,97 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
   return mha;
 }
 
+// Free memory
+void free_attention(MultiHeadAttention *mha) {
+  if (!mha)
+    return;
+  if (mha->Q_proj)
+    NN_destroy(mha->Q_proj);
+  if (mha->K_proj)
+    NN_destroy(mha->K_proj);
+  if (mha->V_proj)
+    NN_destroy(mha->V_proj);
+  if (mha->O_proj)
+    NN_destroy(mha->O_proj);
+  if (mha->Q_cache)
+    free(mha->Q_cache);
+  if (mha->K_cache)
+    free(mha->K_cache);
+  if (mha->V_cache)
+    free(mha->V_cache);
+  if (mha->scores_cache)
+    free(mha->scores_cache);
+  free(mha);
+}
+
+void free_feed_forward(FeedForward *ff) {
+  if (!ff)
+    return;
+  if (ff->network)
+    NN_destroy(ff->network);
+  if (ff->input_cache)
+    free(ff->input_cache);
+  free(ff);
+}
+
+void free_layer_norm(LayerNorm *ln) {
+  if (!ln)
+    return;
+  if (ln->norm_network)
+    NN_destroy(ln->norm_network);
+  if (ln->input_cache)
+    free(ln->input_cache);
+  free(ln);
+}
+
+void free_transformer_layer(TransformerLayer *layer) {
+  if (!layer)
+    return;
+  free_attention(layer->attention);
+  free_layer_norm(layer->norm1);
+  free_feed_forward(layer->feed_forward);
+  free_layer_norm(layer->norm2);
+  if (layer->attention_input)
+    free(layer->attention_input);
+  if (layer->norm1_input)
+    free(layer->norm1_input);
+  if (layer->ff_input)
+    free(layer->ff_input);
+  if (layer->norm2_input)
+    free(layer->norm2_input);
+  free(layer);
+}
+
+void TRANSFORMER_destroy(Transformer_t *transformer) {
+  if (!transformer)
+    return;
+  for (size_t i = 0; i < transformer->num_layers; i++)
+    free_transformer_layer(transformer->layers[i]);
+  free(transformer->layers);
+  free(transformer);
+}
+
+// Training
+void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
+                       size_t seq_length, long double *target) {
+  if (!transformer || !input_sequence || !target)
+    return;
+
+  long double *output =
+      TRANSFORMER_forward(transformer, input_sequence, seq_length);
+  if (!output)
+    return;
+
+  long double *grad_loss = malloc(transformer->model_dim * sizeof(long double));
+  for (size_t i = 0; i < transformer->model_dim; i++)
+    grad_loss[i] = output[i] - target[i];
+
+  TRANSFORMER_backprop(transformer, input_sequence, seq_length, grad_loss);
+
+  free(output);
+  free(grad_loss);
+}
+
 FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim) {
   FeedForward *ff = malloc(sizeof(FeedForward));
   if (!ff)
