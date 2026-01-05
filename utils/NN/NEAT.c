@@ -121,7 +121,7 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
   genome->connections[genome->numConnections++] = c;
 }
 
-void Genome_add_node(Genome_t *genome, size_t connectionIndex) {
+void GENOME_add_node(Genome_t *genome, size_t connectionIndex) {
   if (connectionIndex >= genome->numConnections)
     return;
   Connection *c = genome->connections[connectionIndex];
@@ -137,8 +137,8 @@ void Genome_add_node(Genome_t *genome, size_t connectionIndex) {
       realloc(genome->nodes, (genome->numNodes + 1) * sizeof(Node *));
   genome->nodes[genome->numNodes++] = n;
 
-  Genome_add_connection(genome, c->from->id, n->id, 1.0L);
-  Genome_add_connection(genome, n->id, c->to->id, c->weight);
+  GENOME_add_connection(genome, c->from->id, n->id, 1.0L);
+  GENOME_add_connection(genome, n->id, c->to->id, c->weight);
 }
 
 void Genome_mutate_weights(Genome_t *genome, long double perturbRate,
