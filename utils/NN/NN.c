@@ -446,83 +446,60 @@ long double **NN_forward(NN_t *nn, long double inputs[]) {
 // Compute element-wise error at output
 // dL/dz = dL/dy * dy/dz
 void NN_backprop(NN_t *nn, long double inputs[], long double y_true[],
-                 long double y_pred[]) {
-  if (!nn || !inputs || !y_true || !y_pred)
+                 long double y_pred[], long double output_delta[]) {
+  if (!nn || !inputs)
     return;
 
-  // Allocate memory for layer deltas
-  long double **deltas =
-      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  if (!deltas)
-    return;
+  size_t L = nn->numLayers - 1; // number of weight layers
 
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    deltas[i] = (long double *)calloc(nn->layers[i + 1], sizeof(long double));
-    if (!deltas[i]) {
-      for (size_t j = 0; j < i; j++)
-        free(deltas[j]);
-      free(deltas);
-      return;
-    }
-  }
+  // Allocate deltas
+  long double **deltas = malloc(L * sizeof(long double *));
+  for (size_t l = 0; l < L; l++)
+    deltas[l] = calloc(nn->layers[l + 1], sizeof(long double));
 
   // Compute output layer delta
-  size_t last_idx = nn->numLayers - 2;
-  for (size_t j = 0; j < nn->layers[last_idx + 1]; j++) {
-    long double dL_dy = nn->lossDerivative(y_true[j], y_pred[j]);
-    deltas[last_idx][j] =
-        dL_dy * nn->activationDerivatives[last_idx](y_pred[j]);
+  if (output_delta) {
+    memcpy(deltas[L - 1], output_delta, nn->layers[L] * sizeof(long double));
+  } else if (y_true && y_pred) {
+    for (size_t j = 0; j < nn->layers[L]; j++) {
+      deltas[L - 1][j] = nn->lossDerivative(y_true[j], y_pred[j]) *
+                         nn->activationDerivatives[L - 1](y_pred[j]);
+    }
   }
 
-  // Backpropagate to hidden layers
-  for (size_t l = nn->numLayers - 2; l > 0; l--) {
-    size_t curr = nn->layers[l];
-    size_t next = nn->layers[l + 1];
-
-    for (size_t i = 0; i < curr; i++) {
+  // Backprop hidden layers
+  for (ssize_t l = L - 2; l >= 0; l--) {
+    for (size_t i = 0; i < nn->layers[l + 1]; i++) {
       long double sum = 0.0L;
-      for (size_t j = 0; j < next; j++) {
-        sum += nn->weights[l][i * next + j] * deltas[l][j];
-      }
-      deltas[l - 1][i] = sum * nn->activationDerivatives[l - 1](inputs[i]);
+      for (size_t j = 0; j < nn->layers[l + 2]; j++)
+        sum += nn->weights[l + 1][i * nn->layers[l + 2] + j] * deltas[l + 1][j];
+      deltas[l][i] =
+          sum * nn->activationDerivatives[l](y_pred ? y_pred[i] : inputs[i]);
     }
   }
 
-  // Compute gradients for weights and biases
+  // Compute gradients
   long double *prev_activation = inputs;
-  for (size_t l = 0; l < nn->numLayers - 1; l++) {
-    size_t in_size = nn->layers[l];
-    size_t out_size = nn->layers[l + 1];
-
-    for (size_t j = 0; j < out_size; j++) {
+  for (size_t l = 0; l < L; l++) {
+    for (size_t j = 0; j < nn->layers[l + 1]; j++) {
       nn->biases_v[l][j] = deltas[l][j];
-      for (size_t i = 0; i < in_size; i++) {
-        nn->weights_v[l][i * out_size + j] = prev_activation[i] * deltas[l][j];
-      }
+      for (size_t i = 0; i < nn->layers[l]; i++)
+        nn->weights_v[l][i * nn->layers[l + 1] + j] =
+            prev_activation[i] * deltas[l][j];
     }
 
-    // Prepare prev_activation for next layer
-    if (l < nn->numLayers - 2) {
-      long double *next_activation =
-          (long double *)malloc(nn->layers[l + 1] * sizeof(long double));
-      for (size_t i = 0; i < nn->layers[l + 1]; i++) {
-        next_activation[i] = nn->activationFunctions[l](prev_activation[i]);
-      }
-      if (l > 0)
-        free(prev_activation);
-      prev_activation = next_activation;
-    }
+    // Set prev_activation for next layer
+    if (l < L - 1)
+      prev_activation = y_pred; // or activations[l+1] if stored
   }
-  if (nn->numLayers > 2)
-    free(prev_activation);
 
-  // Apply optimizer update
+  // Apply optimizer
   if (nn->optimizer)
     nn->optimizer(nn);
 
   // Free deltas
-  for (size_t i = 0; i < nn->numLayers - 1; i++)
-    free(deltas[i]);
+  for (size_t l = 0; l < L; l++)
+    free(deltas[l]);
   free(deltas);
 }
 
