@@ -71,7 +71,7 @@ long double *transformer_mha_forward(MultiHeadAttention *mha,
                                      long double *input, size_t seq_length);
 long double *transformer_norm_forward(LayerNorm *ln, long double *input);
 long double *TRANSFORMER_forward(TransformerLayer *layer, long double *input);
-//
+
 // Backpropagation functions
 void transformer_mha_backprop(MultiHeadAttention *mha, long double *input);
 
