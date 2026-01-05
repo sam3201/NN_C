@@ -383,8 +383,9 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
   NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
 }
 
-void TRANSFORMER_backprop(TransformerLayer *layer, long double *input,
-                          long double *grad_output, long double *grad_input) {
+void TRANSFORMER__layer_backprop(TransformerLayer *layer, long double *input,
+                                 long double *grad_output,
+                                 long double *grad_input) {
   if (!layer || !input || !grad_output || !grad_input)
     return;
 
