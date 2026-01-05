@@ -54,7 +54,7 @@ SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
   sam->num_submodels = 1; // Fixed number of submodels for now
   sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
 
-  // Initialize each submodel with a proper population size (at least 10)
+  // Initialize each submodel with a proper population size (at least 1)
   unsigned int population_size = 1;
   for (size_t i = 0; i < sam->num_submodels; i++) {
     sam->submodels[i] = NEAT_init(input_dim, output_dim, population_size);
