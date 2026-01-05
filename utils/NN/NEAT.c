@@ -380,7 +380,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       get_activation_derivative_type(
           get_acvivation_function_from_type(actFuncs[1]))};
 
-  child->nn = NN_init(layers, actFuncs, NULL,
+  child->nn = NN_init(layers, actFuncs, actDerivs,
                       (LossFunctionType)rand() % LOSS_TYPE_COUNT,
                       (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
 
