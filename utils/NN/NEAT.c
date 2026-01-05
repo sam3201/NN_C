@@ -1,6 +1,38 @@
 #include "NEAT.h"
 #include <string.h>
 
+static bool creates_cycle(Genome_t *g, size_t from, size_t to) {
+  if (from == to)
+    return true;
+
+  bool *visited = calloc(g->numNodes, sizeof(bool));
+  size_t *stack = malloc(g->numNodes * sizeof(size_t));
+  size_t sp = 0;
+
+  stack[sp++] = to;
+
+  while (sp) {
+    size_t n = stack[--sp];
+    if (n == from) {
+      free(visited);
+      free(stack);
+      return true;
+    }
+
+    for (size_t i = 0; i < g->numConnections; i++) {
+      Connection *c = g->connections[i];
+      if (c->enabled && c->from->id == n && !visited[c->to->id]) {
+        visited[c->to->id] = true;
+        stack[sp++] = c->to->id;
+      }
+    }
+  }
+
+  free(visited);
+  free(stack);
+  return false;
+}
+
 // ------------------- Activation -------------------
 long double activate(long double x, ActivationFunctionType type) {
   switch (type) {
