@@ -964,10 +964,10 @@ NN_t *NN_load(const char *filename) {
     nn->weights[i] = (long double *)malloc(weights_size * sizeof(long double));
     nn->biases[i] =
         (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
-    nn->weights_v[i] =
-        (long double *)malloc(weights_size * sizeof(long double));
-    nn->biases_v[i] =
-        (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
+    nn->opt_m_w[i] = calloc(weights_size, sizeof(long double));
+    nn->opt_v_w[i] = calloc(weights_size, sizeof(long double));
+    nn->opt_m_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
+    nn->opt_v_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
 
     if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
         !nn->biases_v[i]) {
