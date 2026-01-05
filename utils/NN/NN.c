@@ -823,6 +823,7 @@ RegularizationType get_regularization_type(const char *str) {
   return -1;
 }
 
+// Type Getters from Function Pointers
 ActivationFunctionType
 get_activation_function_from_func(ActivationFunction func) {
   for (int i = 0; i < ACTIVATION_TYPE_COUNT; i++) {
@@ -841,7 +842,6 @@ get_activation_derivative_from_func(ActivationDerivative func) {
   return ACTIVATION_DERIVATIVE_TYPE_COUNT; // invalid
 }
 
-// Type Getters from Function Pointers
 LossFunctionType get_loss_function_from_func(LossFunction func) {
   for (int i = 0; i < LOSS_TYPE_COUNT; i++) {
     if (LOSS_FUNCTIONS[i] == func)
