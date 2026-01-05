@@ -294,7 +294,6 @@ long double **transformer_layer_forward(TransformerLayer *layer,
 
   return out;
 }
-
 // ----------------------
 // Transformer forward and backprop
 // ----------------------
