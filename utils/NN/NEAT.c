@@ -159,27 +159,49 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
   Genome_t *child = GENOME_init(0, 0);
-  // copy nodes
+
+  // Copy nodes (just take union of node IDs)
   for (size_t i = 0; i < p1->numNodes; i++) {
-    Node *n = (Node *)malloc(sizeof(Node));
+    Node *n = malloc(sizeof(Node));
     *n = *(p1->nodes[i]);
     child->nodes =
         realloc(child->nodes, (child->numNodes + 1) * sizeof(Node *));
     child->nodes[child->numNodes++] = n;
   }
-  // copy connections randomly
-  for (size_t i = 0; i < p1->numConnections; i++) {
-    Connection *c1 = p1->connections[i];
-    Connection *c2 = i < p2->numConnections ? p2->connections[i] : NULL;
-    Connection *c = (Connection *)malloc(sizeof(Connection));
-    if (c2 && rand() % 2)
-      *c = *c2;
-    else
-      *c = *c1;
+
+  // Merge connections using innovations
+  size_t i1 = 0, i2 = 0;
+  while (i1 < p1->numConnections || i2 < p2->numConnections) {
+    Connection *c = NULL;
+
+    if (i1 >= p1->numConnections)
+      c = p2->connections[i2++];
+    else if (i2 >= p2->numConnections)
+      c = p1->connections[i1++];
+    else {
+      Connection *conn1 = p1->connections[i1];
+      Connection *conn2 = p2->connections[i2];
+      if (conn1->innovation == conn2->innovation) {
+        c = rand() % 2 ? conn1 : conn2;
+        i1++;
+        i2++;
+      } else if (conn1->innovation < conn2->innovation) {
+        c = conn1;
+        i1++;
+      } else {
+        c = conn2;
+        i2++;
+      }
+    }
+
+    Connection *newC = malloc(sizeof(Connection));
+    *newC = *c;
+    newC->enabled = c->enabled; // keep disabled status
     child->connections = realloc(
         child->connections, (child->numConnections + 1) * sizeof(Connection *));
-    child->connections[child->numConnections++] = c;
+    child->connections[child->numConnections++] = newC;
   }
+
   return child;
 }
 
