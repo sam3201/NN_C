@@ -108,8 +108,12 @@ void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
 }
 
 // ------------------- Mutation -------------------
+// ------------------- Genome Add Connection -------------------
 void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight) {
+  if (fromNode >= genome->numNodes || toNode >= genome->numNodes)
+    return; // safety check
+
   genome->connections = realloc(
       genome->connections, (genome->numConnections + 1) * sizeof(Connection *));
   Connection *c = (Connection *)malloc(sizeof(Connection));
@@ -121,6 +125,7 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
   genome->connections[genome->numConnections++] = c;
 }
 
+// ------------------- Genome Add Node -------------------
 void GENOME_add_node(Genome_t *genome, size_t connectionIndex) {
   if (connectionIndex >= genome->numConnections)
     return;
@@ -139,6 +144,69 @@ void GENOME_add_node(Genome_t *genome, size_t connectionIndex) {
 
   GENOME_add_connection(genome, c->from->id, n->id, 1.0L);
   GENOME_add_connection(genome, n->id, c->to->id, c->weight);
+}
+
+// ------------------- Crossover -------------------
+Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
+  if (!p1 || !p2)
+    return NULL;
+
+  Genome_t *child = GENOME_init(0, 0);
+
+  // Copy nodes
+  for (size_t i = 0; i < p1->numNodes; i++) {
+    Node *n = malloc(sizeof(Node));
+    *n = *(p1->nodes[i]);
+    child->nodes =
+        realloc(child->nodes, (child->numNodes + 1) * sizeof(Node *));
+    child->nodes[child->numNodes++] = n;
+  }
+
+  // Merge connections using innovations
+  size_t i1 = 0, i2 = 0;
+  while (i1 < p1->numConnections || i2 < p2->numConnections) {
+    Connection *c = NULL;
+
+    if (i1 >= p1->numConnections)
+      c = p2->connections[i2++];
+    else if (i2 >= p2->numConnections)
+      c = p1->connections[i1++];
+    else {
+      Connection *conn1 = p1->connections[i1];
+      Connection *conn2 = p2->connections[i2];
+      if (conn1->innovation == conn2->innovation) {
+        c = rand() % 2 ? conn1 : conn2;
+        i1++;
+        i2++;
+      } else if (conn1->innovation < conn2->innovation) {
+        c = conn1;
+        i1++;
+      } else {
+        c = conn2;
+        i2++;
+      }
+    }
+
+    // Create new connection for child
+    Connection *newC = malloc(sizeof(Connection));
+    newC->weight = c->weight;
+    newC->enabled = c->enabled;
+    newC->innovation = c->innovation;
+
+    // REMAP POINTERS to child nodes by ID
+    if (c->from->id >= child->numNodes || c->to->id >= child->numNodes) {
+      free(newC);
+      continue; // safety check
+    }
+    newC->from = child->nodes[c->from->id];
+    newC->to = child->nodes[c->to->id];
+
+    child->connections = realloc(
+        child->connections, (child->numConnections + 1) * sizeof(Connection *));
+    child->connections[child->numConnections++] = newC;
+  }
+
+  return child;
 }
 
 void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
