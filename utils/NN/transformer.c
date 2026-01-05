@@ -388,7 +388,8 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
       grad_norm2_input[j] = grad[j];
 
     // LayerNorm2 backprop
-    layernorm_backprop(layer->norm2, grad_norm2_input, layer->norm2_input);
+    transformer_layernorm_backprop(layer->norm2, grad_norm2_input,
+                                   layer->norm2_input);
 
     // Gradient through feedforward + residual1
     NN_backprop(layer->feed_forward->network, layer->ff_input, grad_norm2_input,
