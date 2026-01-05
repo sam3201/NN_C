@@ -523,7 +523,7 @@ NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size) {
   neat->input_dims = input_dim;
   neat->output_dims = output_dim;
   neat->pop = POPULATION_init(pop_size, input_dim, output_dim);
-  srand(time(NULL)); // seed RNG
+  srand((unsigned int)time(NULL)); // seed RNG
   return neat;
 }
 
