@@ -70,7 +70,7 @@ void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
 Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2);
 
 // ------------------- Forward Propagation -------------------
-void GENOME_forwward(Genome_t *genome, long double *input, long double *output);
+void GENOME_forward(Genome_t *genome, long double *input, long double *output);
 long double activate(long double x, ActivationFunctionType type);
 
 // ------------------- Serialization -------------------
