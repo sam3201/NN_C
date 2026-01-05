@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#warning "TRANSFORMER_save/load are unsafe and disabled"
-
 // ----------------------
 // Creation functions
 // ----------------------
@@ -516,4 +514,36 @@ Transformer_t *TRANSFORMER_load(FILE *file) {
     transformer->layers[i] = layer;
   }
   return transformer;
+}
+
+int TRANSFORMER_save(Transformer_t *t, FILE *f) {
+  if (!t || !f)
+    return 0;
+
+  fwrite(&t->model_dim, sizeof(size_t), 1, f);
+  fwrite(&t->num_heads, sizeof(size_t), 1, f);
+  fwrite(&t->num_layers, sizeof(size_t), 1, f);
+
+  for (size_t l = 0; l < t->num_layers; l++) {
+    TransformerLayer *layer = t->layers[l];
+
+    // Layer metadata
+    fwrite(&layer->model_dim, sizeof(size_t), 1, f);
+    fwrite(&layer->seq_length, sizeof(size_t), 1, f);
+
+    // ---- Attention ----
+    NN_save_to_file(layer->attention->Q_proj, f);
+    NN_save_to_file(layer->attention->K_proj, f);
+    NN_save_to_file(layer->attention->V_proj, f);
+    NN_save_to_file(layer->attention->O_proj, f);
+
+    // ---- Feed Forward ----
+    NN_save_to_file(layer->feed_forward->network, f);
+
+    // ---- LayerNorms ----
+    NN_save_to_file(layer->norm1->norm_network, f);
+    NN_save_to_file(layer->norm2->norm_network, f);
+  }
+
+  return 1;
 }
