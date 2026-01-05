@@ -380,7 +380,16 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       actFunc1,
       actFunc2,
   };
-  (OptimizerType) rand() % OPTIMIZER_TYPE_COUNT
+
+  ActivationFunctionType actDeriv1 =
+      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT;
+  ActivationFunctionType actDeriv2 =
+      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT;
+  ActivationFunctionType actDerivs[2] = {
+      actDeriv1,
+      actDeriv2,
+  };
+  OptimizerType opt = (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT;
 };
 
 child->nn = NN_init(layers, actFuncs, actDerivs,
