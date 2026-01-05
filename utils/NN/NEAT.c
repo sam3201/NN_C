@@ -1,6 +1,22 @@
 #include "NEAT.h"
 #include <string.h>
 
+// ------------------- Activation -------------------
+long double activate(long double x, ActivationFunctionType type) {
+  switch (type) {
+  case SIGMOID:
+    return 1.0L / (1.0L + expl(-x));
+  case TANH:
+    return tanhl(x);
+  case RELU:
+    return x > 0 ? x : 0;
+  case LINEAR:
+    return x;
+  default:
+    return x;
+  }
+}
+
 // ------------------- Genome_t ----------------------
 // Constructor for empty genome (used in crossover)
 Genome_t *GENOME_init_empty(size_t numInputs, size_t numOutputs) {
@@ -141,7 +157,7 @@ void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
       }
     }
     if (n->type != INPUT_NODE && n->type != BIAS_NODE)
-      n->value = n->actFunc[j](n->value);
+      n->value = activate(n->value, n->actFunc);
   }
 
   free(order);
