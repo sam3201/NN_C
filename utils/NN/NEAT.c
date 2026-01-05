@@ -359,14 +359,14 @@ long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
       excess++;
       i1++;
     } else {
-      Connection *c1 = g1->connections[i1];
-      Connection *c2 = g2->connections[i2];
-      if (c1->innovation == c2->innovation) {
-        weightDiff += fabsl(c1->weight - c2->weight);
+      Connection *conn1 = g1->connections[i1];
+      Connection *conn2 = g2->connections[i2];
+      if (conn1->innovation == conn2->innovation) {
+        weightDiff += fabsl(conn1->weight - conn2->weight);
         matching++;
         i1++;
         i2++;
-      } else if (c1->innovation < c2->innovation) {
+      } else if (conn1->innovation < conn2->innovation) {
         disjoint++;
         i1++;
       } else {
