@@ -221,6 +221,21 @@ Genome_t *GENOME_load(const char *filename) {
   return genome;
 }
 
+// Return innovation number, create if new
+size_t get_innovation_number(size_t from, size_t to) {
+  for (size_t i = 0; i < innovationCount; i++) {
+    if (innovationHistory[i].from == from && innovationHistory[i].to == to)
+      return innovationHistory[i].innovation;
+  }
+  // New innovation
+  innovationHistory = realloc(innovationHistory,
+                              (innovationCount + 1) * sizeof(InnovationRecord));
+  innovationHistory[innovationCount].from = from;
+  innovationHistory[innovationCount].to = to;
+  innovationHistory[innovationCount].innovation = innovationCount;
+  return innovationCount++;
+}
+
 // Helper: returns an array of node indices in topological order
 size_t *topological_sort(Genome_t *genome, size_t *outSize) {
   size_t *inDegree = calloc(genome->numNodes, sizeof(size_t));
