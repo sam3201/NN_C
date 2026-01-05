@@ -22,7 +22,7 @@ echo "Compiling game..."
 
 NN_SRC=../utils/NN/NN.c 
 
-gcc -w game.c $NN_SRC $Raylib_SRC \
+gcc -w game.c $NN_SRC \
     -I../utils/Raylib/src \
     -I../utils/NN 
     -L../utils/Raylib/src -lraylib 
