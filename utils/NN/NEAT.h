@@ -63,4 +63,6 @@ long double activate(long double x, ActivationFunctionType type);
 void Genome_save(Genome *genome, const char *filename);
 Genome *Genome_load(const char *filename);
 
+size_t *topological_sort(Genome *genome, size_t *outSize);
+
 #endif // NEAT_H
