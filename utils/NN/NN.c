@@ -1043,6 +1043,12 @@ void softmax(long double *vec, size_t size) {
     vec[i] /= sum;
 }
 
+void softmax_derivative(long double *predicted, long double *one_hot,
+                        long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = predicted[i] - one_hot[i];
+}
+
 size_t argmax_index(long double *vec, size_t size) {
   size_t idx = 0;
   for (size_t i = 1; i < size; i++)
