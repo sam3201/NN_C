@@ -160,7 +160,6 @@ void argmax(long double *vec, size_t size);
 void softmax_derivative(long double *predicted, long double *one_hot,
                         long double *gradients, size_t size);
 long double *create_one_hot(size_t index, size_t size);
-size_t argmax_index(long double *vec, size_t size);
 void argmax(long double *vec, size_t size);
 void argmax_derivative(long double *predicted, long double *one_hot,
                        long double *gradients, size_t size);
