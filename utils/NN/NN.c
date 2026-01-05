@@ -495,48 +495,6 @@ long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
   return loss;
 }
 
-// Backward Propagation Functions
-void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
-                 long double y_predicted) {
-  if (!nn || !inputs) {
-    fprintf(stderr, "NN_backprop: NULL input parameters\n");
-    return;
-  }
-
-  // Calculate output layer error
-  long double error = NN_loss(nn, y_true, y_predicted);
-
-  // Backpropagate through layers
-  for (size_t i = nn->numLayers - 1; i > 0; i--) {
-    size_t current_layer = nn->layers[i];
-    size_t prev_layer = nn->layers[i - 1];
-
-    // Calculate gradients
-    for (size_t j = 0; j < current_layer; j++) {
-      if (!nn->activationDerivatives[i - 1]) {
-        fprintf(stderr, "Activation derivative is NULL for layer %zu\n", i - 1);
-        return;
-      }
-      long double delta = error * nn->activationDerivatives[i - 1](y_predicted);
-
-      // Update bias gradients
-      nn->biases_v[i - 1][j] = delta;
-
-      // Update weight gradients
-      for (size_t k = 0; k < prev_layer; k++) {
-        nn->weights_v[i - 1][k * current_layer + j] = delta * inputs[k];
-      }
-    }
-  }
-
-  // Apply optimizer
-  if (!nn->optimizer) {
-    fprintf(stderr, "Optimizer function is NULL\n");
-    return;
-  }
-  nn->optimizer(nn);
-}
-
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
   size_t last_layer_idx = nn->numLayers - 2;
   size_t out_size = nn->layers[nn->numLayers - 1];
