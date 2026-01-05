@@ -527,7 +527,6 @@ int TRANSFORMER_save(Transformer_t *t, const char *filename) {
 
   for (size_t l = 0; l < t->num_layers; l++) {
     TransformerLayer *layer = t->layers[l];
-
     // Layer metadata
     fwrite(&layer->model_dim, sizeof(size_t), 1, f);
     fwrite(&layer->seq_length, sizeof(size_t), 1, f);
