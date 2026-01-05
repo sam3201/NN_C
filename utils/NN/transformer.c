@@ -493,7 +493,7 @@ void TRANSFORMER_destroy(Transformer_t *transformer) {
 }
 
 // Transformer forward pass for sequence
-long double *transformer_forward(TransformerLayer *layer, long double *input) {
+long double *TRANSFORMER_forward(TransformerLayer *layer, long double *input) {
   if (!layer || !input)
     return NULL;
 
