@@ -24,7 +24,7 @@ gcc -w game.c $NN_SRC $MUZE_SRC $SAM_SRC \
     -I../utils/Raylib/src \
     -I../utils/NN/ \ 
     -I../utils/NN/MUZE/ \
-    -I../SAM \
+    -I../SAM/ \
     -L../utils/Raylib/src -lraylib 
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -arch arm64 \
