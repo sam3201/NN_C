@@ -268,22 +268,69 @@ void NN_destroy(NN_t *nn) {
 }
 
 // Optimizer Functions
-// ===================== Optimizer Functions =====================
+void adam(NN_t *nn) {
+  const long double beta1 = 0.9L;
+  const long double beta2 = 0.999L;
+  const long double eps = 1e-8L;
 
-// Stochastic Gradient Descent
-void sgd(NN_t *nn) {
   for (size_t l = 0; l < nn->numLayers - 1; l++) {
-    size_t in_size = nn->layers[l];
-    size_t out_size = nn->layers[l + 1];
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
 
-    for (size_t i = 0; i < in_size * out_size; i++)
-      nn->weights[l][i] -= nn->learningRate * nn->weights_v[l][i];
+    for (size_t i = 0; i < wcount; i++) {
+      nn->opt_m_w[l][i] =
+          beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
+      nn->opt_v_w[l][i] =
+          beta2 * nn->opt_v_w[l][i] +
+          (1 - beta2) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
 
-    for (size_t j = 0; j < out_size; j++)
-      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j];
+      long double m_hat = nn->opt_m_w[l][i] / (1 - powl(beta1, nn->t));
+      long double v_hat = nn->opt_v_w[l][i] / (1 - powl(beta2, nn->t));
+
+      nn->weights[l][i] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
+    }
+
+    for (size_t j = 0; j < bcount; j++) {
+      nn->opt_m_b[l][j] =
+          beta1 * nn->opt_m_b[l][j] + (1 - beta1) * nn->biases_grad[l][j];
+      nn->opt_v_b[l][j] =
+          beta2 * nn->opt_v_b[l][j] +
+          (1 - beta2) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
+
+      long double m_hat = nn->opt_m_b[l][j] / (1 - powl(beta1, nn->t));
+      long double v_hat = nn->opt_v_b[l][j] / (1 - powl(beta2, nn->t));
+
+      nn->biases[l][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
+    }
+  }
+
+  nn->t++;
+}
+
+void nag(NN_t *nn) {
+  const long double mu = 0.9L;
+
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+
+    for (size_t i = 0; i < wcount; i++) {
+      long double v_prev = nn->opt_m_w[l][i];
+      nn->opt_m_w[l][i] =
+          mu * nn->opt_m_w[l][i] - nn->learningRate * nn->weights_grad[l][i];
+      nn->weights[l][i] += -mu * v_prev + (1 + mu) * nn->opt_m_w[l][i];
+    }
+
+    for (size_t j = 0; j < bcount; j++) {
+      long double v_prev = nn->opt_m_b[l][j];
+      nn->opt_m_b[l][j] =
+          mu * nn->opt_m_b[l][j] - nn->learningRate * nn->biases_grad[l][j];
+      nn->biases[l][j] += -mu * v_prev + (1 + mu) * nn->opt_m_b[l][j];
+    }
   }
 }
 
+// Stochastic Gradient Descent
 // RMSProp
 void rmsprop(NN_t *nn) {
   const long double decay = 0.9L;
