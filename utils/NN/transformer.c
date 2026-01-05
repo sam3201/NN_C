@@ -432,57 +432,32 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
   size_t L = transformer->num_layers;
   size_t D = transformer->model_dim;
 
-  // Forward pass for caching (needed if not done yet)
+  // Forward pass to cache intermediate states
   long double *output =
       TRANSFORMER_forward(transformer, input_sequence, seq_length);
   if (!output)
     return;
 
-  // Initialize gradient from loss
   long double *grad = malloc(D * sizeof(long double));
-  if (!grad) {
-    free(output);
-    return;
-  }
   memcpy(grad, grad_loss, D * sizeof(long double));
 
-  // Backpropagate through layers in reverse
+  // Backprop through layers in reverse
   for (ssize_t i = L - 1; i >= 0; i--) {
     TransformerLayer *layer = transformer->layers[i];
     if (!layer)
       continue;
 
-    // Gradient w.r.t norm2 input (after residual2)
-    long double *grad_norm2_input = malloc(D * sizeof(long double));
-    for (size_t j = 0; j < D; j++)
-      grad_norm2_input[j] = grad[j];
+    // Grad w.r.t norm2 input (after residual2)
+    transformer_layernorm_backprop(layer->norm2, grad, layer->norm2_input);
 
-    // LayerNorm2 backprop
-    transformer_layernorm_backprop(layer->norm2, grad_norm2_input,
-                                   layer->norm2_input);
+    // Grad through feed-forward + residual1
+    NN_backprop(layer->feed_forward->network, layer->ff_input, grad, 0.01L);
 
-    // Gradient through feedforward + residual1
-    NN_backprop(layer->feed_forward->network, layer->ff_input, grad_norm2_input,
-                0.01L);
-
-    // Gradient w.r.t norm1 input (after residual1)
-    long double *grad_residual1 = malloc(D * sizeof(long double));
-    for (size_t j = 0; j < D; j++)
-      grad_residual1[j] = grad_norm2_input[j];
-
-    // LayerNorm1 backprop
-    transformer_layernorm_backprop(layer->norm1, grad_residual1,
-                                   layer->norm1_input);
+    // Grad w.r.t norm1 input (after residual1)
+    transformer_layernorm_backprop(layer->norm1, grad, layer->norm1_input);
 
     // MHA backprop
-    transformer_mha_backprop(layer->attention, grad_residual1,
-                             layer->attention_input);
-
-    // Gradient for previous layer
-    memcpy(grad, grad_residual1, D * sizeof(long double));
-
-    free(grad_norm2_input);
-    free(grad_residual1);
+    transformer_mha_backprop(layer->attention, grad, layer->attention_input);
   }
 
   free(grad);
