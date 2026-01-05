@@ -312,7 +312,7 @@ void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output) {
 
 void transformer_feedforward_backprop(FeedForward *ff,
                                       long double *grad_output) {
-  NN_backprop_custom_delta(ff->network, inputs, grad_output);
+  NN_backprop_custom_delta(ff->network, grad_output);
 }
 
 void transformer_mha_backprop(MultiHeadAttention *mha,
