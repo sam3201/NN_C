@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 // Forward declarations
-typedef struct NEAT_t NEAT_t;
+// typedef struct NEAT_t NEAT_t;
 
 // Performance metrics structure
 typedef struct PerformanceMetrics {
