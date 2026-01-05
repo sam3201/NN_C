@@ -1042,6 +1042,7 @@ void softmax(long double *vec, size_t size) {
   for (size_t i = 0; i < size; i++)
     vec[i] /= sum;
 }
+
 void argmax_vec(long double *layer, size_t size) {
   size_t max_idx = 0;
   long double max_val = layer[0];
