@@ -21,7 +21,7 @@ echo "Compiling game..."
 #SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 
 NN_SRC=../utils/NN/NN.c 
-Raylib_SRC=../utils/Raylib/raylib.c
+Raylib_SRC=../utils/Raylib/src/raylib.c
 
 gcc -w game.c $NN_SRC $Raylib_SRC \
     -I../utils/Raylib/src \
