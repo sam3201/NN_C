@@ -211,20 +211,7 @@ OptimizerType get_optimizer_from_func(OptimizerFunction func);
 RegularizationType get_regularization_from_func(RegularizationFunction func);
 
 ActivationDerivativeType
-get_derivative_from_activation(ActivationFunctionType type) {
-  switch (type) {
-  case SIGMOID:
-    return SIGMOID_DERIV;
-  case TANH:
-    return TANH_DERIV;
-  case RELU:
-    return RELU_DERIV;
-  case LINEAR:
-    return LINEAR_DERIV;
-  default:
-    return LINEAR_DERIV;
-  }
-}
+get_derivative_from_activation(ActivationFunctionType type);
 
 // Save / Load
 int NN_save(NN_t *nn, const char *filename);
