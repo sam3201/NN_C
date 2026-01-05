@@ -113,7 +113,7 @@ void SAM_train(SAM_t *sam, long double **input_sequence, size_t seq_length,
 
   // Train submodels
   for (size_t i = 0; i < sam->num_submodels; i++) {
-    NEAT_train(sam->submodels[i], input_sequence[0], target, );
+    NEAT_train(sam->submodels[i], input_sequence[0], target, 1);
   }
 }
 
