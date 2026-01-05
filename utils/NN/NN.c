@@ -864,8 +864,6 @@ int NN_save(NN_t *nn, const char *filename) {
     fwrite(nn->biases[i], sizeof(long double), nn->layers[i + 1], file);
 
     // Gradients
-    fwrite(nn->weights_v[i], sizeof(long double), weights_size, file);
-    fwrite(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file);
   }
 
   // Write optimizer state
