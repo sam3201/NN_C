@@ -407,740 +407,728 @@ long double *NN_forward(NN_t *nn, long double inputs[]) {
       next[j] = nn->activationFunctions[i](next[j]);
     }
 
-    long double **layer_outputs =
-        malloc((nn->numLayers) * sizeof(long double *));
-    layer_outputs[0] = inputs;
+    if (i > 0)
+      free(current);
+    current = next;
+  }
+
+  return current;
+}
+
+// Loss calculation function
+long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
+  if (!nn || !nn->loss)
+    return INFINITY;
+
+  // Calculate base loss
+  long double loss = nn->loss(y_true, y_predicted);
+
+  // Add regularization if configured
+  if (nn->regularization) {
     for (size_t i = 0; i < nn->numLayers - 1; i++) {
-      layer_outputs[i + 1] =
-          NN_matmul(layer_outputs[i], nn->weights[i], nn->biases[i],
-                    nn->layers[i], nn->layers[i + 1]);
-      for (size_t j = 0; j < nn->layers[i + 1]; j++)
-        layer_outputs[i + 1][j] =
-            nn->activationFunctions[i](layer_outputs[i + 1][j]);
-    }
-
-    return current;
-  }
-
-  // Loss calculation function
-  long double NN_loss(NN_t * nn, long double y_true, long double y_predicted) {
-    if (!nn || !nn->loss)
-      return INFINITY;
-
-    // Calculate base loss
-    long double loss = nn->loss(y_true, y_predicted);
-
-    // Add regularization if configured
-    if (nn->regularization) {
-      for (size_t i = 0; i < nn->numLayers - 1; i++) {
-        size_t weights_size = nn->layers[i] * nn->layers[i + 1];
-        for (size_t j = 0; j < weights_size; j++) {
-          loss += nn->regularization(nn->weights[i][j]);
-        }
+      size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+      for (size_t j = 0; j < weights_size; j++) {
+        loss += nn->regularization(nn->weights[i][j]);
       }
     }
-
-    return loss;
   }
 
-  // Backward Propagation Functions
-  void NN_backprop(NN_t * nn, long double inputs[], long double y_true,
-                   long double y_predicted) {
-    if (!nn || !inputs) {
-      fprintf(stderr, "NN_backprop: NULL input parameters\n");
-      return;
-    }
+  return loss;
+}
 
-    // Calculate output layer error
-    long double error = NN_loss(nn, y_true, y_predicted);
+// Backward Propagation Functions
+void NN_backprop(NN_t *nn, long double inputs[], long double y_true,
+                 long double y_predicted) {
+  if (!nn || !inputs) {
+    fprintf(stderr, "NN_backprop: NULL input parameters\n");
+    return;
+  }
 
-    // Backpropagate through layers
-    for (size_t i = nn->numLayers - 1; i > 0; i--) {
-      size_t current_layer = nn->layers[i];
-      size_t prev_layer = nn->layers[i - 1];
+  // Calculate output layer error
+  long double error = NN_loss(nn, y_true, y_predicted);
 
-      // Calculate gradients
-      for (size_t j = 0; j < current_layer; j++) {
-        if (!nn->activationDerivatives[i - 1]) {
-          fprintf(stderr, "Activation derivative is NULL for layer %zu\n",
-                  i - 1);
-          return;
-        }
-        long double delta =
-            error * nn->activationDerivatives[i - 1](y_predicted);
+  // Backpropagate through layers
+  for (size_t i = nn->numLayers - 1; i > 0; i--) {
+    size_t current_layer = nn->layers[i];
+    size_t prev_layer = nn->layers[i - 1];
 
-        // Update bias gradients
-        nn->biases_v[i - 1][j] = delta;
+    // Calculate gradients
+    for (size_t j = 0; j < current_layer; j++) {
+      if (!nn->activationDerivatives[i - 1]) {
+        fprintf(stderr, "Activation derivative is NULL for layer %zu\n", i - 1);
+        return;
+      }
+      long double delta = error * nn->activationDerivatives[i - 1](y_predicted);
 
-        // Update weight gradients
-        for (size_t k = 0; k < prev_layer; k++) {
-          nn->weights_v[i - 1][k * current_layer + j] = delta * inputs[k];
-        }
+      // Update bias gradients
+      nn->biases_v[i - 1][j] = delta;
+
+      // Update weight gradients
+      for (size_t k = 0; k < prev_layer; k++) {
+        nn->weights_v[i - 1][k * current_layer + j] = delta * inputs[k];
       }
     }
-
-    // Apply optimizer
-    if (!nn->optimizer) {
-      fprintf(stderr, "Optimizer function is NULL\n");
-      return;
-    }
-    nn->optimizer(nn);
   }
 
-  long double *NN_forward_softmax(NN_t * nn, long double inputs[]) {
-    size_t last_layer_idx = nn->numLayers - 2;
-    size_t out_size = nn->layers[nn->numLayers - 1];
+  // Apply optimizer
+  if (!nn->optimizer) {
+    fprintf(stderr, "Optimizer function is NULL\n");
+    return;
+  }
+  nn->optimizer(nn);
+}
 
-    long double *output = NN_matmul(inputs, nn->weights[last_layer_idx],
-                                    nn->biases[last_layer_idx],
-                                    nn->layers[last_layer_idx], out_size);
+long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
 
-    softmax(output, out_size);
-    return output;
+  long double *output =
+      NN_matmul(inputs, nn->weights[last_layer_idx], nn->biases[last_layer_idx],
+                nn->layers[last_layer_idx], out_size);
+
+  softmax(output, out_size);
+  return output;
+}
+
+void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
+                         long double y_pred[]) {
+  if (!nn || !y_true || !y_pred)
+    return;
+
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  long double *gradients =
+      (long double *)malloc(out_size * sizeof(long double));
+  if (!gradients)
+    return;
+
+  // Compute gradient for each output using the configured loss derivative
+  for (size_t i = 0; i < out_size; i++) {
+    gradients[i] = nn->lossDerivative(y_true[i], y_pred[i]);
   }
 
-  void NN_backprop_softmax(NN_t * nn, long double inputs[],
-                           long double y_true[], long double y_pred[]) {
-    if (!nn || !y_true || !y_pred)
-      return;
+  // Apply chain rule with softmax derivative
+  // Simplified: dL/dz = sum_j (dL/dy_j * dy_j/dz_i)
+  // For now, this uses the “vectorized CE trick” only if CE is used.
+  if (nn->loss == ce) {
+    for (size_t i = 0; i < out_size; i++)
+      gradients[i] = y_pred[i] - y_true[i]; // CE+softmax shortcut
+  } else {
+    // For other losses, multiply by softmax derivative if needed
+    long double sum = 0.0L;
+    for (size_t i = 0; i < out_size; i++)
+      sum += gradients[i] * y_pred[i]; // sum_j dL/dy_j * y_j
+    for (size_t i = 0; i < out_size; i++)
+      gradients[i] *= y_pred[i] - sum; // chain rule
+  }
 
-    size_t last_layer_idx = nn->numLayers - 2;
-    size_t out_size = nn->layers[nn->numLayers - 1];
-
-    long double *gradients =
-        (long double *)malloc(out_size * sizeof(long double));
-    if (!gradients)
-      return;
-
-    // Compute gradient for each output using the configured loss derivative
-    for (size_t i = 0; i < out_size; i++) {
-      gradients[i] = nn->lossDerivative(y_true[i], y_pred[i]);
+  // Propagate to weights and biases
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[last_layer_idx][j] = gradients[j];
+    for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
+      nn->weights_v[last_layer_idx][k * out_size + j] =
+          gradients[j] * inputs[k];
     }
+  }
 
-    // Apply chain rule with softmax derivative
-    // Simplified: dL/dz = sum_j (dL/dy_j * dy_j/dz_i)
-    // For now, this uses the “vectorized CE trick” only if CE is used.
-    if (nn->loss == ce) {
-      for (size_t i = 0; i < out_size; i++)
-        gradients[i] = y_pred[i] - y_true[i]; // CE+softmax shortcut
+  free(gradients);
+
+  if (nn->optimizer)
+    nn->optimizer(nn); // apply weight updates
+}
+
+// y_true: one-hot or label index
+// y_pred: raw outputs (logits or softmax probabilities)
+// lossDerivative: pointer to chosen loss derivative function
+void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
+                        long double y_pred[],
+                        long double (*lossDerivative)(long double,
+                                                      long double)) {
+  if (!nn || !y_true || !y_pred)
+    return;
+
+  size_t last_layer_idx = nn->numLayers - 2;
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  // Find predicted class index
+  size_t pred_idx = 0;
+  long double max_val = y_pred[0];
+  for (size_t i = 1; i < out_size; i++) {
+    if (y_pred[i] > max_val) {
+      max_val = y_pred[i];
+      pred_idx = i;
+    }
+  }
+
+  // Compute gradients for backprop (sparse: only for predicted class)
+  long double *gradients = (long double *)calloc(out_size, sizeof(long double));
+  if (!gradients)
+    return;
+
+  for (size_t i = 0; i < out_size; i++) {
+    if (i == pred_idx) {
+      gradients[i] = lossDerivative(y_true[i], y_pred[i]);
     } else {
-      // For other losses, multiply by softmax derivative if needed
-      long double sum = 0.0L;
-      for (size_t i = 0; i < out_size; i++)
-        sum += gradients[i] * y_pred[i]; // sum_j dL/dy_j * y_j
-      for (size_t i = 0; i < out_size; i++)
-        gradients[i] *= y_pred[i] - sum; // chain rule
-    }
-
-    // Propagate to weights and biases
-    for (size_t j = 0; j < out_size; j++) {
-      nn->biases_v[last_layer_idx][j] = gradients[j];
-      for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
-        nn->weights_v[last_layer_idx][k * out_size + j] =
-            gradients[j] * inputs[k];
-      }
-    }
-
-    free(gradients);
-
-    if (nn->optimizer)
-      nn->optimizer(nn); // apply weight updates
-  }
-
-  // y_true: one-hot or label index
-  // y_pred: raw outputs (logits or softmax probabilities)
-  // lossDerivative: pointer to chosen loss derivative function
-  void NN_backprop_argmax(
-      NN_t * nn, long double inputs[], long double y_true[],
-      long double y_pred[],
-      long double (*lossDerivative)(long double, long double)) {
-    if (!nn || !y_true || !y_pred)
-      return;
-
-    size_t last_layer_idx = nn->numLayers - 2;
-    size_t out_size = nn->layers[nn->numLayers - 1];
-
-    // Find predicted class index
-    size_t pred_idx = 0;
-    long double max_val = y_pred[0];
-    for (size_t i = 1; i < out_size; i++) {
-      if (y_pred[i] > max_val) {
-        max_val = y_pred[i];
-        pred_idx = i;
-      }
-    }
-
-    // Compute gradients for backprop (sparse: only for predicted class)
-    long double *gradients =
-        (long double *)calloc(out_size, sizeof(long double));
-    if (!gradients)
-      return;
-
-    for (size_t i = 0; i < out_size; i++) {
-      if (i == pred_idx) {
-        gradients[i] = lossDerivative(y_true[i], y_pred[i]);
-      } else {
-        gradients[i] = 0.0L; // non-max classes don’t contribute
-      }
-    }
-
-    // Update last layer weights and biases
-    for (size_t j = 0; j < out_size; j++) {
-      nn->biases_v[last_layer_idx][j] = gradients[j];
-      for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
-        nn->weights_v[last_layer_idx][k * out_size + j] =
-            gradients[j] * inputs[k];
-      }
-    }
-
-    free(gradients);
-
-    if (nn->optimizer)
-      nn->optimizer(nn); // apply updates
-  }
-
-  // Function Getters
-  ActivationFunction get_activation_function(ActivationFunctionType type) {
-    if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
-      return NULL;
-    return ACTIVATION_FUNCTIONS[type];
-  }
-
-  ActivationDerivative get_activation_derivative(
-      ActivationDerivativeType type) {
-    if (type < 0 || type >= ACTIVATION_DERIVATIVE_TYPE_COUNT)
-      return NULL;
-    return ACTIVATION_DERIVATIVES[type];
-  }
-
-  LossFunction get_loss_function(LossFunctionType type) {
-    if (type < 0 || type >= LOSS_TYPE_COUNT)
-      return NULL;
-    return LOSS_FUNCTIONS[type];
-  }
-
-  LossDerivative get_loss_derivative(LossDerivativeType type) {
-    if (type < 0 || type >= LOSS_DERIVATIVE_TYPE_COUNT)
-      return NULL;
-    return LOSS_DERIVATIVES[type];
-  }
-
-  RegularizationFunction get_regularization_function(RegularizationType type) {
-    if (type < 0 || type >= REGULARIZATION_TYPE_COUNT)
-      return NULL;
-    return REGULARIZATION_FUNCTIONS[type];
-  }
-
-  OptimizerFunction get_optimizer_function(OptimizerType type) {
-    if (type < 0 || type >= OPTIMIZER_TYPE_COUNT)
-      return NULL;
-    return OPTIMIZER_FUNCTIONS[type];
-  }
-
-  // Function to map activation function to its derivative
-  ActivationDerivativeType map_activation_to_derivative(
-      ActivationFunctionType actFunc) {
-    switch (actFunc) {
-    case SIGMOID:
-      return SIGMOID_DERIVATIVE;
-    case TANH:
-      return TANH_DERIVATIVE;
-    case RELU:
-      return RELU_DERIVATIVE;
-    case LINEAR:
-      return LINEAR_DERIVATIVE;
-    default:
-      fprintf(stderr, "Unhandled activation function type: %d\n", actFunc);
-      return ACTIVATION_DERIVATIVE_TYPE_COUNT; // Invalid value
+      gradients[i] = 0.0L; // non-max classes don’t contribute
     }
   }
 
-  // Function to map loss function to its derivative
-  LossDerivativeType map_loss_to_derivative(LossFunctionType lossFunc) {
-    switch (lossFunc) {
-    case MSE:
-      return MSE_DERIVATIVE;
-    case MAE:
-      return MAE_DERIVATIVE;
-    case HUBER:
-      return HUBER_DERIVATIVE;
-    case LL:
-      return LL_DERIVATIVE;
-    case CE:
-      return CE_DERIVATIVE;
-    default:
-      fprintf(stderr, "Unhandled loss function type: %d\n", lossFunc);
-      return LOSS_DERIVATIVE_TYPE_COUNT; // Invalid value
+  // Update last layer weights and biases
+  for (size_t j = 0; j < out_size; j++) {
+    nn->biases_v[last_layer_idx][j] = gradients[j];
+    for (size_t k = 0; k < nn->layers[last_layer_idx]; k++) {
+      nn->weights_v[last_layer_idx][k * out_size + j] =
+          gradients[j] * inputs[k];
     }
   }
 
-  // String Conversion Functions
-  const char *activation_to_string(ActivationFunctionType type) {
-    switch (type) {
-    case SIGMOID:
-      return "sigmoid";
-    case TANH:
-      return "tanh";
-    case RELU:
-      return "relu";
-    case LINEAR:
-      return "linear";
-    default:
-      return "unknown";
-    }
-  }
+  free(gradients);
 
-  const char *loss_to_string(LossFunctionType type) {
-    switch (type) {
-    case MSE:
-      return "mse";
-    case MAE:
-      return "mae";
-    case HUBER:
-      return "huber";
-    case LL:
-      return "log_loss";
-    case CE:
-      return "cross_entropy";
-    default:
-      return "unknown";
-    }
-  }
+  if (nn->optimizer)
+    nn->optimizer(nn); // apply updates
+}
 
-  const char *optimizer_to_string(OptimizerType type) {
-    switch (type) {
-    case SGD:
-      return "sgd";
-    case RMSPROP:
-      return "rmsprop";
-    case ADAGRAD:
-      return "adagrad";
-    case ADAM:
-      return "adam";
-    case NAG:
-      return "nag";
-    default:
-      return "unknown";
-    }
-  }
+// Function Getters
+ActivationFunction get_activation_function(ActivationFunctionType type) {
+  if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
+    return NULL;
+  return ACTIVATION_FUNCTIONS[type];
+}
 
-  const char *regularization_to_string(RegularizationType type) {
-    switch (type) {
-    case L1:
-      return "l1";
-    case L2:
-      return "l2";
-    default:
-      return "unknown";
-    }
-  }
+ActivationDerivative get_activation_derivative(ActivationDerivativeType type) {
+  if (type < 0 || type >= ACTIVATION_DERIVATIVE_TYPE_COUNT)
+    return NULL;
+  return ACTIVATION_DERIVATIVES[type];
+}
 
-  ActivationFunctionType get_activation_function_type(const char *str) {
-    if (!str)
-      return -1;
-    if (strcmp(str, "sigmoid") == 0)
-      return SIGMOID;
-    if (strcmp(str, "tanh") == 0)
-      return TANH;
-    if (strcmp(str, "relu") == 0)
-      return RELU;
-    if (strcmp(str, "linear") == 0)
-      return LINEAR;
+LossFunction get_loss_function(LossFunctionType type) {
+  if (type < 0 || type >= LOSS_TYPE_COUNT)
+    return NULL;
+  return LOSS_FUNCTIONS[type];
+}
+
+LossDerivative get_loss_derivative(LossDerivativeType type) {
+  if (type < 0 || type >= LOSS_DERIVATIVE_TYPE_COUNT)
+    return NULL;
+  return LOSS_DERIVATIVES[type];
+}
+
+RegularizationFunction get_regularization_function(RegularizationType type) {
+  if (type < 0 || type >= REGULARIZATION_TYPE_COUNT)
+    return NULL;
+  return REGULARIZATION_FUNCTIONS[type];
+}
+
+OptimizerFunction get_optimizer_function(OptimizerType type) {
+  if (type < 0 || type >= OPTIMIZER_TYPE_COUNT)
+    return NULL;
+  return OPTIMIZER_FUNCTIONS[type];
+}
+
+// Function to map activation function to its derivative
+ActivationDerivativeType
+map_activation_to_derivative(ActivationFunctionType actFunc) {
+  switch (actFunc) {
+  case SIGMOID:
+    return SIGMOID_DERIVATIVE;
+  case TANH:
+    return TANH_DERIVATIVE;
+  case RELU:
+    return RELU_DERIVATIVE;
+  case LINEAR:
+    return LINEAR_DERIVATIVE;
+  default:
+    fprintf(stderr, "Unhandled activation function type: %d\n", actFunc);
+    return ACTIVATION_DERIVATIVE_TYPE_COUNT; // Invalid value
+  }
+}
+
+// Function to map loss function to its derivative
+LossDerivativeType map_loss_to_derivative(LossFunctionType lossFunc) {
+  switch (lossFunc) {
+  case MSE:
+    return MSE_DERIVATIVE;
+  case MAE:
+    return MAE_DERIVATIVE;
+  case HUBER:
+    return HUBER_DERIVATIVE;
+  case LL:
+    return LL_DERIVATIVE;
+  case CE:
+    return CE_DERIVATIVE;
+  default:
+    fprintf(stderr, "Unhandled loss function type: %d\n", lossFunc);
+    return LOSS_DERIVATIVE_TYPE_COUNT; // Invalid value
+  }
+}
+
+// String Conversion Functions
+const char *activation_to_string(ActivationFunctionType type) {
+  switch (type) {
+  case SIGMOID:
+    return "sigmoid";
+  case TANH:
+    return "tanh";
+  case RELU:
+    return "relu";
+  case LINEAR:
+    return "linear";
+  default:
+    return "unknown";
+  }
+}
+
+const char *loss_to_string(LossFunctionType type) {
+  switch (type) {
+  case MSE:
+    return "mse";
+  case MAE:
+    return "mae";
+  case HUBER:
+    return "huber";
+  case LL:
+    return "log_loss";
+  case CE:
+    return "cross_entropy";
+  default:
+    return "unknown";
+  }
+}
+
+const char *optimizer_to_string(OptimizerType type) {
+  switch (type) {
+  case SGD:
+    return "sgd";
+  case RMSPROP:
+    return "rmsprop";
+  case ADAGRAD:
+    return "adagrad";
+  case ADAM:
+    return "adam";
+  case NAG:
+    return "nag";
+  default:
+    return "unknown";
+  }
+}
+
+const char *regularization_to_string(RegularizationType type) {
+  switch (type) {
+  case L1:
+    return "l1";
+  case L2:
+    return "l2";
+  default:
+    return "unknown";
+  }
+}
+
+ActivationFunctionType get_activation_function_type(const char *str) {
+  if (!str)
     return -1;
-  }
+  if (strcmp(str, "sigmoid") == 0)
+    return SIGMOID;
+  if (strcmp(str, "tanh") == 0)
+    return TANH;
+  if (strcmp(str, "relu") == 0)
+    return RELU;
+  if (strcmp(str, "linear") == 0)
+    return LINEAR;
+  return -1;
+}
 
-  LossFunctionType get_loss_function_type(const char *str) {
-    if (!str)
-      return -1;
-    if (strcmp(str, "mse") == 0)
-      return MSE;
-    if (strcmp(str, "mae") == 0)
-      return MAE;
-    if (strcmp(str, "huber") == 0)
-      return HUBER;
-    if (strcmp(str, "log_loss") == 0)
-      return LL;
-    if (strcmp(str, "cross_entropy") == 0)
-      return CE;
+LossFunctionType get_loss_function_type(const char *str) {
+  if (!str)
     return -1;
-  }
+  if (strcmp(str, "mse") == 0)
+    return MSE;
+  if (strcmp(str, "mae") == 0)
+    return MAE;
+  if (strcmp(str, "huber") == 0)
+    return HUBER;
+  if (strcmp(str, "log_loss") == 0)
+    return LL;
+  if (strcmp(str, "cross_entropy") == 0)
+    return CE;
+  return -1;
+}
 
-  OptimizerType get_optimizer_type(const char *str) {
-    if (!str)
-      return -1;
-    if (strcmp(str, "sgd") == 0)
-      return SGD;
-    if (strcmp(str, "rmsprop") == 0)
-      return RMSPROP;
-    if (strcmp(str, "adagrad") == 0)
-      return ADAGRAD;
-    if (strcmp(str, "adam") == 0)
-      return ADAM;
-    if (strcmp(str, "nag") == 0)
-      return NAG;
+OptimizerType get_optimizer_type(const char *str) {
+  if (!str)
     return -1;
-  }
+  if (strcmp(str, "sgd") == 0)
+    return SGD;
+  if (strcmp(str, "rmsprop") == 0)
+    return RMSPROP;
+  if (strcmp(str, "adagrad") == 0)
+    return ADAGRAD;
+  if (strcmp(str, "adam") == 0)
+    return ADAM;
+  if (strcmp(str, "nag") == 0)
+    return NAG;
+  return -1;
+}
 
-  RegularizationType get_regularization_type(const char *str) {
-    if (!str)
-      return -1;
-    if (strcmp(str, "l1") == 0)
-      return L1;
-    if (strcmp(str, "l2") == 0)
-      return L2;
+RegularizationType get_regularization_type(const char *str) {
+  if (!str)
     return -1;
-  }
+  if (strcmp(str, "l1") == 0)
+    return L1;
+  if (strcmp(str, "l2") == 0)
+    return L2;
+  return -1;
+}
 
-  // Type Getters from Function Pointers
-  LossFunctionType get_loss_function_from_func(LossFunction func) {
-    for (int i = 0; i < LOSS_TYPE_COUNT; i++) {
-      if (LOSS_FUNCTIONS[i] == func)
-        return i;
-    }
+// Type Getters from Function Pointers
+LossFunctionType get_loss_function_from_func(LossFunction func) {
+  for (int i = 0; i < LOSS_TYPE_COUNT; i++) {
+    if (LOSS_FUNCTIONS[i] == func)
+      return i;
+  }
+  return -1;
+}
+
+OptimizerType get_optimizer_from_func(OptimizerFunction func) {
+  for (int i = 0; i < OPTIMIZER_TYPE_COUNT; i++) {
+    if (OPTIMIZER_FUNCTIONS[i] == func)
+      return i;
+  }
+  return -1;
+}
+
+RegularizationType get_regularization_from_func(RegularizationFunction func) {
+  for (int i = 0; i < REGULARIZATION_TYPE_COUNT; i++) {
+    if (REGULARIZATION_FUNCTIONS[i] == func)
+      return i;
+  }
+  return -1;
+}
+
+int NN_save(NN_t *nn, const char *filename) {
+  FILE *file = fopen(filename, "wb");
+  if (!file)
     return -1;
+
+  // Write network structure
+  fwrite(&nn->numLayers, sizeof(size_t), 1, file);
+  fwrite(nn->layers, sizeof(size_t), nn->numLayers, file);
+
+  // Write weights, biases, gradients, and optimizer states
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+
+    // Weights and biases
+    fwrite(nn->weights[i], sizeof(long double), weights_size, file);
+    fwrite(nn->biases[i], sizeof(long double), nn->layers[i + 1], file);
+
+    // Gradients
+    fwrite(nn->weights_v[i], sizeof(long double), weights_size, file);
+    fwrite(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file);
   }
 
-  OptimizerType get_optimizer_from_func(OptimizerFunction func) {
-    for (int i = 0; i < OPTIMIZER_TYPE_COUNT; i++) {
-      if (OPTIMIZER_FUNCTIONS[i] == func)
-        return i;
-    }
-    return -1;
-  }
+  // Write optimizer state
+  fwrite(&nn->t, sizeof(unsigned int), 1, file);
+  fwrite(&nn->learningRate, sizeof(long double), 1, file);
 
-  RegularizationType get_regularization_from_func(RegularizationFunction func) {
-    for (int i = 0; i < REGULARIZATION_TYPE_COUNT; i++) {
-      if (REGULARIZATION_FUNCTIONS[i] == func)
-        return i;
-    }
-    return -1;
-  }
+  // Convert function pointers to types and save as strings
+  RegularizationType reg_type =
+      get_regularization_from_func(nn->regularization);
+  OptimizerType opt_type = get_optimizer_from_func(nn->optimizer);
 
-  int NN_save(NN_t * nn, const char *filename) {
-    FILE *file = fopen(filename, "wb");
-    if (!file)
-      return -1;
+  const char *reg_str = regularization_to_string(reg_type);
+  const char *opt_str = optimizer_to_string(opt_type);
 
-    // Write network structure
-    fwrite(&nn->numLayers, sizeof(size_t), 1, file);
-    fwrite(nn->layers, sizeof(size_t), nn->numLayers, file);
+  size_t reg_len = strlen(reg_str) + 1;
+  size_t opt_len = strlen(opt_str) + 1;
 
-    // Write weights, biases, gradients, and optimizer states
-    for (size_t i = 0; i < nn->numLayers - 1; i++) {
-      size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+  fwrite(&reg_len, sizeof(size_t), 1, file);
+  fwrite(&opt_len, sizeof(size_t), 1, file);
+  fwrite(reg_str, sizeof(char), reg_len, file);
+  fwrite(opt_str, sizeof(char), opt_len, file);
 
-      // Weights and biases
-      fwrite(nn->weights[i], sizeof(long double), weights_size, file);
-      fwrite(nn->biases[i], sizeof(long double), nn->layers[i + 1], file);
+  fclose(file);
+  return 0;
+}
 
-      // Gradients
-      fwrite(nn->weights_v[i], sizeof(long double), weights_size, file);
-      fwrite(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file);
-    }
+NN_t *NN_load(const char *filename) {
+  FILE *file = fopen(filename, "rb");
+  if (!file)
+    return NULL;
 
-    // Write optimizer state
-    fwrite(&nn->t, sizeof(unsigned int), 1, file);
-    fwrite(&nn->learningRate, sizeof(long double), 1, file);
-
-    // Convert function pointers to types and save as strings
-    RegularizationType reg_type =
-        get_regularization_from_func(nn->regularization);
-    OptimizerType opt_type = get_optimizer_from_func(nn->optimizer);
-
-    const char *reg_str = regularization_to_string(reg_type);
-    const char *opt_str = optimizer_to_string(opt_type);
-
-    size_t reg_len = strlen(reg_str) + 1;
-    size_t opt_len = strlen(opt_str) + 1;
-
-    fwrite(&reg_len, sizeof(size_t), 1, file);
-    fwrite(&opt_len, sizeof(size_t), 1, file);
-    fwrite(reg_str, sizeof(char), reg_len, file);
-    fwrite(opt_str, sizeof(char), opt_len, file);
-
+  NN_t *nn = (NN_t *)malloc(sizeof(NN_t));
+  if (!nn) {
     fclose(file);
-    return 0;
+    return NULL;
   }
 
-  NN_t *NN_load(const char *filename) {
-    FILE *file = fopen(filename, "rb");
-    if (!file)
-      return NULL;
+  // Read network structure
+  if (fread(&nn->numLayers, sizeof(size_t), 1, file) != 1) {
+    free(nn);
+    fclose(file);
+    return NULL;
+  }
 
-    NN_t *nn = (NN_t *)malloc(sizeof(NN_t));
-    if (!nn) {
-      fclose(file);
-      return NULL;
-    }
+  // Allocate and read layers array
+  nn->layers = (size_t *)malloc(nn->numLayers * sizeof(size_t));
+  if (!nn->layers ||
+      fread(nn->layers, sizeof(size_t), nn->numLayers, file) != nn->numLayers) {
+    free(nn->layers);
+    free(nn);
+    fclose(file);
+    return NULL;
+  }
 
-    // Read network structure
-    if (fread(&nn->numLayers, sizeof(size_t), 1, file) != 1) {
-      free(nn);
-      fclose(file);
-      return NULL;
-    }
+  // Allocate memory for all network components
+  nn->weights =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->biases =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->weights_v =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->biases_v =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
 
-    // Allocate and read layers array
-    nn->layers = (size_t *)malloc(nn->numLayers * sizeof(size_t));
-    if (!nn->layers || fread(nn->layers, sizeof(size_t), nn->numLayers, file) !=
-                           nn->numLayers) {
-      free(nn->layers);
-      free(nn);
-      fclose(file);
-      return NULL;
-    }
+  if (!nn->weights || !nn->biases || !nn->weights_v || !nn->biases_v) {
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
+  }
 
-    // Allocate memory for all network components
-    nn->weights =
-        (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-    nn->biases =
-        (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-    nn->weights_v =
-        (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-    nn->biases_v =
-        (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  // Allocate and initialize activation functions
+  nn->activationFunctions = (ActivationFunction *)malloc(
+      (nn->numLayers - 1) * sizeof(ActivationFunction));
+  if (!nn->activationFunctions) {
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
+  }
 
-    if (!nn->weights || !nn->biases || !nn->weights_v || !nn->biases_v) {
+  // Allocate and initialize activation derivatives
+  nn->activationDerivatives = (ActivationDerivative *)malloc(
+      (nn->numLayers - 1) * sizeof(ActivationDerivative));
+  if (!nn->activationDerivatives) {
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
+  }
+
+  // Read weights, biases, gradients and optimizer states
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+
+    // Allocate memory for each layer
+    nn->weights[i] = (long double *)malloc(weights_size * sizeof(long double));
+    nn->biases[i] =
+        (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
+    nn->weights_v[i] =
+        (long double *)malloc(weights_size * sizeof(long double));
+    nn->biases_v[i] =
+        (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
+
+    if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
+        !nn->biases_v[i]) {
       NN_destroy(nn);
       fclose(file);
       return NULL;
     }
 
-    // Allocate and initialize activation functions
-    nn->activationFunctions = (ActivationFunction *)malloc(
-        (nn->numLayers - 1) * sizeof(ActivationFunction));
-    if (!nn->activationFunctions) {
+    // Read the data
+    if (fread(nn->weights[i], sizeof(long double), weights_size, file) !=
+            weights_size ||
+        fread(nn->biases[i], sizeof(long double), nn->layers[i + 1], file) !=
+            nn->layers[i + 1] ||
+        fread(nn->weights_v[i], sizeof(long double), weights_size, file) !=
+            weights_size ||
+        fread(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file) !=
+            nn->layers[i + 1]) {
       NN_destroy(nn);
       fclose(file);
       return NULL;
     }
+  }
 
-    // Allocate and initialize activation derivatives
-    nn->activationDerivatives = (ActivationDerivative *)malloc(
-        (nn->numLayers - 1) * sizeof(ActivationDerivative));
-    if (!nn->activationDerivatives) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
+  // Read optimizer state
+  if (fread(&nn->t, sizeof(unsigned int), 1, file) != 1 ||
+      fread(&nn->learningRate, sizeof(long double), 1, file) != 1) {
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
+  }
 
-    // Read weights, biases, gradients and optimizer states
-    for (size_t i = 0; i < nn->numLayers - 1; i++) {
-      size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+  // Read string lengths
+  size_t reg_len, opt_len;
+  if (fread(&reg_len, sizeof(size_t), 1, file) != 1 ||
+      fread(&opt_len, sizeof(size_t), 1, file) != 1) {
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
+  }
 
-      // Allocate memory for each layer
-      nn->weights[i] =
-          (long double *)malloc(weights_size * sizeof(long double));
-      nn->biases[i] =
-          (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
-      nn->weights_v[i] =
-          (long double *)malloc(weights_size * sizeof(long double));
-      nn->biases_v[i] =
-          (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
+  // Read and convert strings back to function pointers
+  char *reg_str = (char *)malloc(reg_len);
+  char *opt_str = (char *)malloc(opt_len);
 
-      if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
-          !nn->biases_v[i]) {
-        NN_destroy(nn);
-        fclose(file);
-        return NULL;
-      }
-
-      // Read the data
-      if (fread(nn->weights[i], sizeof(long double), weights_size, file) !=
-              weights_size ||
-          fread(nn->biases[i], sizeof(long double), nn->layers[i + 1], file) !=
-              nn->layers[i + 1] ||
-          fread(nn->weights_v[i], sizeof(long double), weights_size, file) !=
-              weights_size ||
-          fread(nn->biases_v[i], sizeof(long double), nn->layers[i + 1],
-                file) != nn->layers[i + 1]) {
-        NN_destroy(nn);
-        fclose(file);
-        return NULL;
-      }
-    }
-
-    // Read optimizer state
-    if (fread(&nn->t, sizeof(unsigned int), 1, file) != 1 ||
-        fread(&nn->learningRate, sizeof(long double), 1, file) != 1) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
-
-    // Read string lengths
-    size_t reg_len, opt_len;
-    if (fread(&reg_len, sizeof(size_t), 1, file) != 1 ||
-        fread(&opt_len, sizeof(size_t), 1, file) != 1) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
-
-    // Read and convert strings back to function pointers
-    char *reg_str = (char *)malloc(reg_len);
-    char *opt_str = (char *)malloc(opt_len);
-
-    if (!reg_str || !opt_str) {
-      free(reg_str);
-      free(opt_str);
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
-
-    if (fread(reg_str, sizeof(char), reg_len, file) != reg_len ||
-        fread(opt_str, sizeof(char), opt_len, file) != opt_len) {
-      free(reg_str);
-      free(opt_str);
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
-
-    RegularizationType reg_type = get_regularization_type(reg_str);
-    OptimizerType opt_type = get_optimizer_type(opt_str);
-
-    nn->regularization = REGULARIZATION_FUNCTIONS[reg_type];
-    nn->optimizer = OPTIMIZER_FUNCTIONS[opt_type];
-
+  if (!reg_str || !opt_str) {
     free(reg_str);
     free(opt_str);
-
+    NN_destroy(nn);
     fclose(file);
-    return nn;
+    return NULL;
   }
 
-  // Activation Functions
-  long double sigmoid(long double x) { return 1.0L / (1.0L + expl(-x)); }
-
-  long double tanh_activation(long double x) { return tanhl(x); }
-
-  long double relu(long double x) { return x > 0 ? x : 0; }
-
-  long double linear(long double x) { return x; }
-
-  void softmax(long double *layer, size_t size) {
-    long double max = layer[0];
-    for (size_t i = 1; i < size; i++)
-      if (layer[i] > max)
-        max = layer[i];
-
-    long double sum = 0.0L;
-    for (size_t i = 0; i < size; i++) {
-      layer[i] = expl(layer[i] - max);
-      sum += layer[i];
-    }
-    for (size_t i = 0; i < size; i++)
-      layer[i] /= sum;
+  if (fread(reg_str, sizeof(char), reg_len, file) != reg_len ||
+      fread(opt_str, sizeof(char), opt_len, file) != opt_len) {
+    free(reg_str);
+    free(opt_str);
+    NN_destroy(nn);
+    fclose(file);
+    return NULL;
   }
 
-  void argmax_vec(long double *layer, size_t size) {
-    size_t max_idx = 0;
-    long double max_val = layer[0];
-    for (size_t i = 1; i < size; i++) {
-      if (layer[i] > max_val) {
-        max_val = layer[i];
-        max_idx = i;
-      }
-    }
-    for (size_t i = 0; i < size; i++)
-      layer[i] = (i == max_idx) ? 1.0L : 0.0L;
+  RegularizationType reg_type = get_regularization_type(reg_str);
+  OptimizerType opt_type = get_optimizer_type(opt_str);
+
+  nn->regularization = REGULARIZATION_FUNCTIONS[reg_type];
+  nn->optimizer = OPTIMIZER_FUNCTIONS[opt_type];
+
+  free(reg_str);
+  free(opt_str);
+
+  fclose(file);
+  return nn;
+}
+
+// Activation Functions
+long double sigmoid(long double x) { return 1.0L / (1.0L + expl(-x)); }
+
+long double tanh_activation(long double x) { return tanhl(x); }
+
+long double relu(long double x) { return x > 0 ? x : 0; }
+
+long double linear(long double x) { return x; }
+
+void softmax(long double *layer, size_t size) {
+  long double max = layer[0];
+  for (size_t i = 1; i < size; i++)
+    if (layer[i] > max)
+      max = layer[i];
+
+  long double sum = 0.0L;
+  for (size_t i = 0; i < size; i++) {
+    layer[i] = expl(layer[i] - max);
+    sum += layer[i];
   }
+  for (size_t i = 0; i < size; i++)
+    layer[i] /= sum;
+}
 
-  // Activation Derivatives
-  long double sigmoid_derivative(long double x) {
-    long double s = sigmoid(x);
-    return s * (1.0L - s);
-  }
-
-  long double tanh_derivative(long double x) {
-    long double t = tanhl(x);
-    return 1.0L - t * t;
-  }
-
-  long double relu_derivative(long double x) { return x > 0 ? 1.0L : 0.0L; }
-
-  long double linear_derivative(long double x) { return 1.0L; }
-
-  void softmax_derivative_vec(long double *predicted, long double *one_hot,
-                              long double *gradients, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-      gradients[i] = predicted[i] - one_hot[i];
+void argmax_vec(long double *layer, size_t size) {
+  size_t max_idx = 0;
+  long double max_val = layer[0];
+  for (size_t i = 1; i < size; i++) {
+    if (layer[i] > max_val) {
+      max_val = layer[i];
+      max_idx = i;
     }
   }
+  for (size_t i = 0; i < size; i++)
+    layer[i] = (i == max_idx) ? 1.0L : 0.0L;
+}
 
-  void argmax_derivative_vec(long double *predicted, long double *one_hot,
-                             long double *gradients, size_t size) {
-    for (size_t i = 0; i < size; i++)
-      gradients[i] = 0.0L;
+// Activation Derivatives
+long double sigmoid_derivative(long double x) {
+  long double s = sigmoid(x);
+  return s * (1.0L - s);
+}
+
+long double tanh_derivative(long double x) {
+  long double t = tanhl(x);
+  return 1.0L - t * t;
+}
+
+long double relu_derivative(long double x) { return x > 0 ? 1.0L : 0.0L; }
+
+long double linear_derivative(long double x) { return 1.0L; }
+
+void softmax_derivative_vec(long double *predicted, long double *one_hot,
+                            long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    gradients[i] = predicted[i] - one_hot[i];
   }
+}
 
-  // Loss Functions
-  long double mse(long double y_true, long double y_pred) {
-    long double diff = y_true - y_pred;
+void argmax_derivative_vec(long double *predicted, long double *one_hot,
+                           long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = 0.0L;
+}
+
+// Loss Functions
+long double mse(long double y_true, long double y_pred) {
+  long double diff = y_true - y_pred;
+  return 0.5L * diff * diff;
+}
+
+long double mae(long double y_true, long double y_pred) {
+  return fabsl(y_true - y_pred);
+}
+
+long double huber(long double y_true, long double y_pred) { // Huber Loss
+  const long double delta = 1.0L;
+  long double diff = fabsl(y_true - y_pred);
+  if (diff <= delta) {
     return 0.5L * diff * diff;
   }
+  return delta * diff - 0.5L * delta * delta;
+}
 
-  long double mae(long double y_true, long double y_pred) {
-    return fabsl(y_true - y_pred);
+long double ll(long double y_true, long double y_pred) { // Log Loss
+  const long double epsilon = 1e-15L;
+  y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
+  return -(y_true * logl(y_pred) + (1.0L - y_true) * logl(1.0L - y_pred));
+}
+
+long double ce(long double y_true, long double y_pred) { // Cross Entropy
+  const long double epsilon = 1e-15L;
+  y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
+  return -y_true * logl(y_pred);
+}
+
+// Loss Derivatives
+long double mse_derivative(long double y_true, long double y_pred) {
+  return y_pred - y_true;
+}
+
+long double mae_derivative(long double y_true, long double y_pred) {
+  return y_pred > y_true ? 1.0L : -1.0L;
+}
+
+long double huber_derivative(long double y_true,
+                             long double y_pred) { // Huber Loss Derivative
+  const long double delta = 1.0L;
+  long double diff = y_pred - y_true;
+  if (fabsl(diff) <= delta) {
+    return diff;
   }
+  return delta * (diff > 0 ? 1.0L : -1.0L);
+}
 
-  long double huber(long double y_true, long double y_pred) { // Huber Loss
-    const long double delta = 1.0L;
-    long double diff = fabsl(y_true - y_pred);
-    if (diff <= delta) {
-      return 0.5L * diff * diff;
-    }
-    return delta * diff - 0.5L * delta * delta;
-  }
+long double ll_derivative(long double y_true,
+                          long double y_pred) { // Log Loss Derivative
+  const long double epsilon = 1e-15L;
+  y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
+  return (y_pred - y_true) / (y_pred * (1.0L - y_pred));
+}
 
-  long double ll(long double y_true, long double y_pred) { // Log Loss
-    const long double epsilon = 1e-15L;
-    y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
-    return -(y_true * logl(y_pred) + (1.0L - y_true) * logl(1.0L - y_pred));
-  }
+long double ce_derivative(long double y_true,
+                          long double y_pred) { // Cross Entropy Derivative
+  const long double epsilon = 1e-15L;
+  y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
+  return -y_true / y_pred;
+}
 
-  long double ce(long double y_true, long double y_pred) { // Cross Entropy
-    const long double epsilon = 1e-15L;
-    y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
-    return -y_true * logl(y_pred);
-  }
+// Regularization Functions
+long double l1(long double weight) { return fabsl(weight); }
 
-  // Loss Derivatives
-  long double mse_derivative(long double y_true, long double y_pred) {
-    return y_pred - y_true;
-  }
-
-  long double mae_derivative(long double y_true, long double y_pred) {
-    return y_pred > y_true ? 1.0L : -1.0L;
-  }
-
-  long double huber_derivative(long double y_true,
-                               long double y_pred) { // Huber Loss Derivative
-    const long double delta = 1.0L;
-    long double diff = y_pred - y_true;
-    if (fabsl(diff) <= delta) {
-      return diff;
-    }
-    return delta * (diff > 0 ? 1.0L : -1.0L);
-  }
-
-  long double ll_derivative(long double y_true,
-                            long double y_pred) { // Log Loss Derivative
-    const long double epsilon = 1e-15L;
-    y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
-    return (y_pred - y_true) / (y_pred * (1.0L - y_pred));
-  }
-
-  long double ce_derivative(long double y_true,
-                            long double y_pred) { // Cross Entropy Derivative
-    const long double epsilon = 1e-15L;
-    y_pred = fmaxl(fminl(y_pred, 1.0L - epsilon), epsilon);
-    return -y_true / y_pred;
-  }
-
-  // Regularization Functions
-  long double l1(long double weight) { return fabsl(weight); }
-
-  long double l2(long double weight) { return 0.5L * weight * weight; }
+long double l2(long double weight) { return 0.5L * weight * weight; }
