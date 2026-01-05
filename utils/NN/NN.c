@@ -984,7 +984,7 @@ NN_t *NN_load(const char *filename) {
             nn->layers[i + 1] ||
         fread(nn->opt_m_w[i], sizeof(long double), weights_size, file) !=
             weights_size ||
-        fread(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file) !=
+        fread(nn->opt_m_b[i], sizeof(long double), nn->layers[i + 1], file) !=
             nn->layers[i + 1]) {
       NN_destroy(nn);
       fclose(file);
