@@ -873,6 +873,22 @@ int NN_save(NN_t *nn, const char *filename) {
     // Gradients
   }
 
+  // Save activation + derivative types
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    ActivationFunctionType act =
+        get_activation_function_type(activation_to_string(
+            get_activation_function_from_func(nn->activationFunctions[i])));
+
+    ActivationDerivativeType deriv = map_activation_to_derivative(act);
+
+    fwrite(&act, sizeof(ActivationFunctionType), 1, file);
+    fwrite(&deriv, sizeof(ActivationDerivativeType), 1, file);
+  }
+
+  // Save loss type
+  LossFunctionType loss_type = get_loss_function_from_func(nn->loss);
+  fwrite(&loss_type, sizeof(LossFunctionType), 1, file);
+
   // Write optimizer state
   fwrite(&nn->t, sizeof(unsigned int), 1, file);
   fwrite(&nn->learningRate, sizeof(long double), 1, file);
