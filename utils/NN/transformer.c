@@ -382,6 +382,23 @@ long double *transformer_layer_backprop(TransformerLayer *layer,
   return grad_residual;
 }
 
+long double **TRANSFORMER_backprop(Transformer_t *transformer,
+                                   long double **grad_output,
+                                   size_t seq_length) {
+  long double **grad = grad_output;
+
+  for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
+    TransformerLayer *layer = transformer->layers[l];
+    for (size_t t = 0; t < seq_length; t++) {
+      long double *g = transformer_layer_backprop(layer, grad[t]);
+      memcpy(grad[t], g, layer->model_dim * sizeof(long double));
+      free(g);
+    }
+  }
+
+  return grad;
+}
+
 // ----------------------
 // Transformer forward and backprop
 // ----------------------
