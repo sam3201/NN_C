@@ -1019,6 +1019,85 @@ NN_t *NN_load(const char *filename) {
   return nn;
 }
 
+// Activation Functions
+long double sigmoid(long double x) { return 1.0L / (1.0L + expl(-x)); }
+
+long double tanh_activation(long double x) { return tanhl(x); }
+
+long double relu(long double x) { return x > 0 ? x : 0; }
+
+long double linear(long double x) { return x; }
+
+void softmax(long double *vec, size_t size) {
+  long double max = vec[0];
+  for (size_t i = 1; i < size; i++)
+    if (vec[i] > max)
+      max = vec[i];
+
+  long double sum = 0.0L;
+  for (size_t i = 0; i < size; i++) {
+    vec[i] = expl(vec[i] - max); // stability
+    sum += vec[i];
+  }
+  for (size_t i = 0; i < size; i++)
+    vec[i] /= sum;
+}
+
+void argmax_vec(long double *layer, size_t size) {
+  size_t max_idx = 0;
+  long double max_val = layer[0];
+  for (size_t i = 1; i < size; i++) {
+    if (layer[i] > max_val) {
+      max_val = layer[i];
+      max_idx = i;
+    }
+  }
+  for (size_t i = 0; i < size; i++)
+    layer[i] = (i == max_idx) ? 1.0L : 0.0L;
+}
+
+// Activation Derivatives
+long double sigmoid_derivative(long double x) {
+  long double s = sigmoid(x);
+  return s * (1.0L - s);
+}
+
+long double tanh_derivative(long double x) {
+  long double t = tanhl(x);
+  return 1.0L - t * t;
+}
+
+long double relu_derivative(long double x) { return x > 0 ? 1.0L : 0.0L; }
+
+long double linear_derivative(long double x) { return 1.0L; }
+
+void softmax(long double *vec, size_t size) {
+  long double max = vec[0];
+  for (size_t i = 1; i < size; i++)
+    if (vec[i] > max)
+      max = vec[i];
+
+  long double sum = 0.0L;
+  for (size_t i = 0; i < size; i++) {
+    vec[i] = expl(vec[i] - max); // stability
+    sum += vec[i];
+  }
+  for (size_t i = 0; i < size; i++)
+    vec[i] /= sum;
+}
+
+void softmax_derivative(long double *predicted, long double *one_hot,
+                        long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = predicted[i] - one_hot[i];
+}
+
+void argmax_derivative_vec(long double *predicted, long double *one_hot,
+                           long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = 0.0L;
+}
+
 // Loss Functions
 long double mse(long double y_true, long double y_pred) {
   long double diff = y_true - y_pred;
