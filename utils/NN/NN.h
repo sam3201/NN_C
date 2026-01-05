@@ -87,6 +87,14 @@ typedef struct NN_t {
   long double **weights_v; // Velocity / m for optimizers
   long double **biases_v;  // Velocity / v for optimizers
 
+  long double **weights_grad; // alias for weights_v (clarity)
+  long double **biases_grad;
+
+  long double **opt_m_w; // Adam / momentum m
+  long double **opt_v_w; // Adam / RMSProp v
+  long double **opt_m_b;
+  long double **opt_v_b;
+
   long double learningRate; // Learning rate
   size_t t;                 // Time step for Adam
 
