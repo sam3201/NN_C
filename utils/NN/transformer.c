@@ -183,74 +183,79 @@ void TRANSFORMER_destroy(Transformer_t *transformer) {
 // ----------------------
 // Forward pass
 // ----------------------
-long double *transformer_mha_forward(MultiHeadAttention *mha,
-                                     long double *input, size_t seq_length) {
-  if (!mha || !input)
+long double **transformer_mha_forward(MultiHeadAttention *mha,
+                                      long double **input_seq,
+                                      size_t seq_length) {
+  if (!mha || !input_seq)
     return NULL;
+
   mha->seq_length = seq_length;
+  size_t D = mha->head_dim;
 
-  long double **Q = NN_forward(mha->Q_proj, input);
-  long double **K = NN_forward(mha->K_proj, input);
-  long double **V = NN_forward(mha->V_proj, input);
+  /* ---- Linear projections ---- */
+  long double **Q = NN_forward(mha->Q_proj, input_seq); // [S][D]
+  long double **K = NN_forward(mha->K_proj, input_seq);
+  long double **V = NN_forward(mha->V_proj, input_seq);
 
-  // Flatten outputs for caching
-  mha->Q_cache = malloc(seq_length * mha->head_dim * sizeof(long double));
-  mha->K_cache = malloc(seq_length * mha->head_dim * sizeof(long double));
-  mha->V_cache = malloc(seq_length * mha->head_dim * sizeof(long double));
+  /* ---- Cache projections ---- */
+  mha->Q_cache = malloc(seq_length * D * sizeof(long double));
+  mha->K_cache = malloc(seq_length * D * sizeof(long double));
+  mha->V_cache = malloc(seq_length * D * sizeof(long double));
+
   for (size_t i = 0; i < seq_length; i++)
-    for (size_t j = 0; j < mha->head_dim; j++) {
-      mha->Q_cache[i * mha->head_dim + j] = Q[i][j];
-      mha->K_cache[i * mha->head_dim + j] = K[i][j];
-      mha->V_cache[i * mha->head_dim + j] = V[i][j];
+    for (size_t j = 0; j < D; j++) {
+      mha->Q_cache[i * D + j] = Q[i][j];
+      mha->K_cache[i * D + j] = K[i][j];
+      mha->V_cache[i * D + j] = V[i][j];
     }
 
-  // Compute attention scores
-  long double *scores = malloc(seq_length * seq_length * sizeof(long double));
-  for (size_t i = 0; i < seq_length; i++) {
+  /* ---- Attention scores ---- */
+  long double *scores = calloc(seq_length * seq_length, sizeof(long double));
+
+  for (size_t i = 0; i < seq_length; i++)
     for (size_t j = 0; j < seq_length; j++) {
-      scores[i * seq_length + j] = 0;
-      for (size_t k = 0; k < mha->head_dim; k++)
-        scores[i * seq_length + j] += mha->Q_cache[i * mha->head_dim + k] *
-                                      mha->K_cache[j * mha->head_dim + k];
-      scores[i * seq_length + j] /= sqrt(mha->head_dim);
-    }
-  }
+      for (size_t k = 0; k < D; k++)
+        scores[i * seq_length + j] +=
+            mha->Q_cache[i * D + k] * mha->K_cache[j * D + k];
 
-  // Softmax
+      scores[i * seq_length + j] /= sqrtl((long double)D);
+    }
+
+  /* ---- Softmax ---- */
   for (size_t i = 0; i < seq_length; i++) {
-    long double max_val = scores[i * seq_length];
+    long double max = scores[i * seq_length];
     for (size_t j = 1; j < seq_length; j++)
-      if (scores[i * seq_length + j] > max_val)
-        max_val = scores[i * seq_length + j];
+      if (scores[i * seq_length + j] > max)
+        max = scores[i * seq_length + j];
+
     long double sum = 0;
     for (size_t j = 0; j < seq_length; j++) {
-      scores[i * seq_length + j] = expl(scores[i * seq_length + j] - max_val);
+      scores[i * seq_length + j] = expl(scores[i * seq_length + j] - max);
       sum += scores[i * seq_length + j];
     }
     for (size_t j = 0; j < seq_length; j++)
       scores[i * seq_length + j] /= sum;
   }
+
   mha->scores_cache = scores;
 
-  long double *att_out =
-      malloc(seq_length * mha->head_dim * sizeof(long double));
-  for (size_t i = 0; i < seq_length; i++)
-    for (size_t j = 0; j < mha->head_dim; j++) {
-      att_out[i * mha->head_dim + j] = 0;
+  /* ---- Weighted value sum ---- */
+  long double **att_out = malloc(seq_length * sizeof(long double *));
+  for (size_t i = 0; i < seq_length; i++) {
+    att_out[i] = calloc(D, sizeof(long double));
+    for (size_t j = 0; j < D; j++)
       for (size_t k = 0; k < seq_length; k++)
-        att_out[i * mha->head_dim + j] +=
-            scores[i * seq_length + k] * mha->V_cache[k * mha->head_dim + j];
-    }
+        att_out[i][j] += scores[i * seq_length + k] * mha->V_cache[k * D + j];
+  }
 
-  long double *final_out =
-      malloc(seq_length * mha->head_dim * sizeof(long double));
-  long double **O_out = NN_forward(mha->O_proj, att_out);
+  /* ---- Output projection ---- */
+  long double **out = NN_forward(mha->O_proj, att_out);
+
   for (size_t i = 0; i < seq_length; i++)
-    for (size_t j = 0; j < mha->head_dim; j++)
-      final_out[i * mha->head_dim + j] = O_out[i][j];
+    free(att_out[i]);
   free(att_out);
 
-  return final_out;
+  return out; // [seq_length][model_dim]
 }
 
 // ----------------------
