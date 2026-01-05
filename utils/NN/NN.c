@@ -926,10 +926,11 @@ NN_t *NN_load(const char *filename) {
       (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
   nn->biases =
       (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->weights_v =
-      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->biases_v =
-      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+
+  nn->opt_m_w = malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_v_w = malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_m_b = malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_v_b = malloc((nn->numLayers - 1) * sizeof(long double *));
 
   if (!nn->weights || !nn->biases || !nn->weights_v || !nn->biases_v) {
     NN_destroy(nn);
