@@ -633,6 +633,16 @@ size_t assign_species(Population *pop) {
       species[i] = numSpecies++;
     }
   }
+  for (size_t i = 0; i < pop->size; i++) {
+    size_t count = 0;
+    for (size_t j = 0; j < pop->size; j++)
+      if (species[i] == species[j])
+        count++;
+
+    if (count > 0)
+      pop->genomes[i]->fitness /= count;
+  }
+
   free(species);
   return numSpecies;
 }
