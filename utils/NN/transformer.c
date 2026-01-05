@@ -323,35 +323,6 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   long double *dV = calloc(T * D, sizeof(long double));
   long double *dScores = calloc(T * T, sizeof(long double));
 
-  long double **transformer_layer_forward(
-      TransformerLayer * layer, long double **input, size_t seq_length) {
-    // Cache input for backprop
-    layer->seq_length = seq_length;
-
-    // 1. MHA
-    long double **att =
-        transformer_mha_forward(layer->attention, input, seq_length);
-
-    // 2. Residual + norm1
-    for (size_t t = 0; t < seq_length; t++) {
-      for (size_t i = 0; i < layer->model_dim; i++)
-        att[t][i] += input[t][i];
-    }
-
-    // (optional) norm forward here
-
-    // 3. Feed-forward per token
-    long double **out = malloc(seq_length * sizeof(long double *));
-    for (size_t t = 0; t < seq_length; t++)
-      out[t] = NN_forward(layer->feed_forward->network, att[t]);
-
-    // free intermediate
-    for (size_t t = 0; t < seq_length; t++)
-      free(att[t]);
-    free(att);
-
-    return out;
-  }
   // ----------------------
   // Transformer forward and backprop
   // ----------------------
