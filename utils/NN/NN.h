@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define weights_grad weights_v
+#define biases_grad biases_v
+
 // Forward declaration
 typedef struct NN_t NN_t;
 
