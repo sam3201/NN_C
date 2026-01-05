@@ -402,7 +402,7 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
     if (!temp)
       break;
 
-    transformer_backprop(transformer->layers[i], input_sequence[0], grad_input,
+    TRANSFORMER_backprop(transformer->layers[i], input_sequence[0], grad_input,
                          temp);
 
     free(grad_input);
