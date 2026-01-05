@@ -121,7 +121,6 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
 
     nn->weights_grad[i] = calloc(wcount, sizeof(long double));
     nn->biases_grad[i] = calloc(bcount, sizeof(long double));
-
     nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
     nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
     nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
