@@ -556,8 +556,12 @@ Population *POPULATION_init(size_t popSize, size_t numInputs,
   Population *pop = malloc(sizeof(Population));
   pop->size = popSize;
   pop->genomes = malloc(popSize * sizeof(Genome_t *));
-  for (size_t i = 0; i < popSize; i++)
-    pop->genomes[i] = GENOME_init(numInputs, numOutputs);
+
+  for (size_t i = 0; i < popSize; i++) {
+    pop->genomes[i] = GENOME_init_empty(numInputs, numOutputs);
+    pop->genomes[i]->fitness = 0.0L;
+  }
+
   return pop;
 }
 
