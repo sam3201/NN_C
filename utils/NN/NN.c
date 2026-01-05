@@ -970,77 +970,78 @@ NN_t *NN_load(const char *filename) {
     nn->opt_m_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
     nn->opt_v_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
 
-    if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
-        !nn->biases_v[i]) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
+    if (!nn->weights[i] || !nn->biases[i] || !nn->opt_m_w[i] ||
+        !nn->opt_v_w[i] || !nn->opt_m_b[i] || !nn->opt_v_b[i]) {
     }
-
-    // Read the data
-    if (fread(nn->weights[i], sizeof(long double), weights_size, file) !=
-            weights_size ||
-        fread(nn->biases[i], sizeof(long double), nn->layers[i + 1], file) !=
-            nn->layers[i + 1] ||
-        fread(nn->weights_v[i], sizeof(long double), weights_size, file) !=
-            weights_size ||
-        fread(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file) !=
-            nn->layers[i + 1]) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
-  }
-
-  // Read optimizer state
-  if (fread(&nn->t, sizeof(unsigned int), 1, file) != 1 ||
-      fread(&nn->learningRate, sizeof(long double), 1, file) != 1) {
     NN_destroy(nn);
     fclose(file);
     return NULL;
   }
 
-  // Read string lengths
-  size_t reg_len, opt_len;
-  if (fread(&reg_len, sizeof(size_t), 1, file) != 1 ||
-      fread(&opt_len, sizeof(size_t), 1, file) != 1) {
+  // Read the data
+  if (fread(nn->weights[i], sizeof(long double), weights_size, file) !=
+          weights_size ||
+      fread(nn->biases[i], sizeof(long double), nn->layers[i + 1], file) !=
+          nn->layers[i + 1] ||
+      fread(nn->weights_v[i], sizeof(long double), weights_size, file) !=
+          weights_size ||
+      fread(nn->biases_v[i], sizeof(long double), nn->layers[i + 1], file) !=
+          nn->layers[i + 1]) {
     NN_destroy(nn);
     fclose(file);
     return NULL;
   }
+}
 
-  // Read and convert strings back to function pointers
-  char *reg_str = (char *)malloc(reg_len);
-  char *opt_str = (char *)malloc(opt_len);
+// Read optimizer state
+if (fread(&nn->t, sizeof(unsigned int), 1, file) != 1 ||
+    fread(&nn->learningRate, sizeof(long double), 1, file) != 1) {
+  NN_destroy(nn);
+  fclose(file);
+  return NULL;
+}
 
-  if (!reg_str || !opt_str) {
-    free(reg_str);
-    free(opt_str);
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
+// Read string lengths
+size_t reg_len, opt_len;
+if (fread(&reg_len, sizeof(size_t), 1, file) != 1 ||
+    fread(&opt_len, sizeof(size_t), 1, file) != 1) {
+  NN_destroy(nn);
+  fclose(file);
+  return NULL;
+}
 
-  if (fread(reg_str, sizeof(char), reg_len, file) != reg_len ||
-      fread(opt_str, sizeof(char), opt_len, file) != opt_len) {
-    free(reg_str);
-    free(opt_str);
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
+// Read and convert strings back to function pointers
+char *reg_str = (char *)malloc(reg_len);
+char *opt_str = (char *)malloc(opt_len);
 
-  RegularizationType reg_type = get_regularization_type(reg_str);
-  OptimizerType opt_type = get_optimizer_type(opt_str);
-
-  nn->regularization = REGULARIZATION_FUNCTIONS[reg_type];
-  nn->optimizer = OPTIMIZER_FUNCTIONS[opt_type];
-
+if (!reg_str || !opt_str) {
   free(reg_str);
   free(opt_str);
-
+  NN_destroy(nn);
   fclose(file);
-  return nn;
+  return NULL;
+}
+
+if (fread(reg_str, sizeof(char), reg_len, file) != reg_len ||
+    fread(opt_str, sizeof(char), opt_len, file) != opt_len) {
+  free(reg_str);
+  free(opt_str);
+  NN_destroy(nn);
+  fclose(file);
+  return NULL;
+}
+
+RegularizationType reg_type = get_regularization_type(reg_str);
+OptimizerType opt_type = get_optimizer_type(opt_str);
+
+nn->regularization = REGULARIZATION_FUNCTIONS[reg_type];
+nn->optimizer = OPTIMIZER_FUNCTIONS[opt_type];
+
+free(reg_str);
+free(opt_str);
+
+fclose(file);
+return nn;
 }
 
 // Activation Functions
