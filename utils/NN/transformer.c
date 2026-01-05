@@ -478,6 +478,7 @@ int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
 // Load transformer from file
 // ----------------------
 Transformer_t *TRANSFORMER_load(const char *filename) {
+  FILE *file = fopen(filename, "rb");
   if (!file)
     return NULL;
 
