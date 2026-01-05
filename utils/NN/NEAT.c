@@ -155,7 +155,7 @@ void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
 }
 
 // ------------------- Crossover -------------------
-Genome_t *Genome_crossover(Genome_t *p1, Genome_t *p2) {
+Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
   Genome_t *child = Genome_init(0, 0);
