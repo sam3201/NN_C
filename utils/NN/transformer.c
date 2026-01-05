@@ -372,46 +372,130 @@ void transformer_feedforward_backprop(FeedForward *ff,
 }
 
 // Transformer backprop through layers
-void TRANSFORMER_backprop(Transformer_t *transformer,
-                          long double **input_sequence, size_t seq_length,
-                          long double *grad_loss) {
-  if (!transformer || !input_sequence || !grad_loss)
+void TRANSFORMER_backprop(TransformerLayer **layers, size_t num_layers,
+                          long double *input, long double *grad_output) {
+  if (!layers || num_layers == 0 || !input || !grad_output) {
+    fprintf(stderr, "TRANSFORMER_backprop: NULL or invalid parameters\n");
     return;
-
-  size_t L = transformer->num_layers;
-  size_t D = transformer->model_dim;
-
-  // Forward pass to cache intermediate states
-  long double *output =
-      TRANSFORMER_forward(transformer, input_sequence, seq_length);
-  if (!output)
-    return;
-
-  // Start gradient from loss
-  long double *grad = malloc(D * sizeof(long double));
-  memcpy(grad, grad_loss, D * sizeof(long double));
-
-  // Backprop through layers in reverse
-  for (ssize_t i = L - 1; i >= 0; i--) {
-    TransformerLayer *layer = transformer->layers[i];
-    if (!layer)
-      continue;
-
-    // Norm2 backprop
-    transformer_layernorm_backprop(layer->norm2, grad);
-
-    // Feedforward backprop
-    transformer_feedforward_backprop(layer->feed_forward, grad);
-
-    // Norm1 backprop
-    transformer_layernorm_backprop(layer->norm1, grad);
-
-    // MHA backprop
-    transformer_mha_backprop(layer->attention, grad);
   }
 
-  free(grad);
-  free(output);
+  // Temporary arrays to hold layer inputs/gradients
+  long double **layer_inputs =
+      (long double **)malloc(num_layers * sizeof(long double *));
+  long double **layer_outputs =
+      (long double **)malloc(num_layers * sizeof(long double *));
+  long double *prev_input = input;
+
+  if (!layer_inputs || !layer_outputs) {
+    fprintf(stderr, "TRANSFORMER_backprop: failed to allocate temp arrays\n");
+    free(layer_inputs);
+    free(layer_outputs);
+    return;
+  }
+
+  // --- Forward pass to cache inputs/outputs ---
+  for (size_t l = 0; l < num_layers; l++) {
+    TransformerLayer *layer = layers[l];
+    size_t out_size = layer->output_size;
+
+    layer_inputs[l] =
+        (long double *)malloc(layer->input_size * sizeof(long double));
+    layer_outputs[l] = (long double *)malloc(out_size * sizeof(long double));
+    if (!layer_inputs[l] || !layer_outputs[l]) {
+      fprintf(stderr, "TRANSFORMER_backprop: malloc failure at layer %zu\n", l);
+      goto cleanup;
+    }
+
+    memcpy(layer_inputs[l], prev_input,
+           layer->input_size * sizeof(long double));
+
+    // Compute output (forward)
+    for (size_t j = 0; j < out_size; j++) {
+      long double sum = layer->biases[j];
+      for (size_t i = 0; i < layer->input_size; i++) {
+        sum += layer->weights[j * layer->input_size + i] * prev_input[i];
+      }
+      layer_outputs[l][j] = layer->activation(sum);
+      layer->output[j] = layer_outputs[l][j]; // store for derivative
+    }
+
+    prev_input = layer_outputs[l]; // input for next layer
+  }
+
+  // --- Backward pass ---
+  long double *grad_next = (long double *)malloc(
+      layers[num_layers - 1]->output_size * sizeof(long double));
+  if (!grad_next) {
+    fprintf(stderr, "TRANSFORMER_backprop: failed to allocate grad_next\n");
+    goto cleanup;
+  }
+  memcpy(grad_next, grad_output,
+         layers[num_layers - 1]->output_size * sizeof(long double));
+
+  for (ssize_t l = num_layers - 1; l >= 0; l--) {
+    TransformerLayer *layer = layers[l];
+    size_t in_size = layer->input_size;
+    size_t out_size = layer->output_size;
+
+    long double *delta = (long double *)malloc(out_size * sizeof(long double));
+    if (!delta) {
+      fprintf(stderr,
+              "TRANSFORMER_backprop: malloc failed for delta at layer %zd\n",
+              l);
+      free(grad_next);
+      goto cleanup;
+    }
+
+    // Compute delta = grad_next * activation_derivative(output)
+    for (size_t j = 0; j < out_size; j++) {
+      delta[j] = grad_next[j] * layer->activation_derivative(layer->output[j]);
+      layer->biases_grad[j] = delta[j];
+    }
+
+    // Compute weight gradients
+    for (size_t i = 0; i < in_size; i++) {
+      for (size_t j = 0; j < out_size; j++) {
+        layer->weights_grad[j * in_size + i] = delta[j] * layer_inputs[l][i];
+      }
+    }
+
+    // Compute gradient to propagate to previous layer
+    if (l > 0) {
+      free(grad_next);
+      grad_next =
+          (long double *)malloc(layer->input_size * sizeof(long double));
+      if (!grad_next) {
+        fprintf(
+            stderr,
+            "TRANSFORMER_backprop: malloc failed for grad_next at layer %zd\n",
+            l);
+        free(delta);
+        goto cleanup;
+      }
+
+      for (size_t i = 0; i < in_size; i++) {
+        grad_next[i] = 0.0L;
+        for (size_t j = 0; j < out_size; j++) {
+          grad_next[i] += layer->weights[j * in_size + i] * delta[j];
+        }
+      }
+    }
+
+    // Apply optimizer
+    if (layer->optimizer)
+      layer->optimizer(layer);
+
+    free(delta);
+  }
+
+cleanup:
+  for (size_t l = 0; l < num_layers; l++) {
+    free(layer_inputs[l]);
+    free(layer_outputs[l]);
+  }
+  free(layer_inputs);
+  free(layer_outputs);
+  free(grad_next);
 }
 
 // Training
