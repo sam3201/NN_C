@@ -564,7 +564,7 @@ long double *NN_forward(NN_t *nn, long double inputs[]) {
   return out;
 }
 
-long double **NN_forward(NN_t *nn, long double inputs[]) {
+long double **NN_forward_full(NN_t *nn, long double inputs[]) {
   if (!nn || !inputs)
     return NULL;
 
