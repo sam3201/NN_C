@@ -574,26 +574,18 @@ void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
   if (!output)
     return;
 
-  // Calculate loss (simplified - just compute gradient)
+  // Compute gradient w.r.t loss (simple MSE)
   long double *grad_output =
-      (long double *)malloc(transformer->model_dim * sizeof(long double));
-  if (!grad_output) {
-    free(output);
-    return;
-  }
-
-  // Compute gradient (output - target)
-  for (size_t i = 0; i < transformer->model_dim; i++) {
+      malloc(transformer->model_dim * sizeof(long double));
+  for (size_t i = 0; i < transformer->model_dim; i++)
     grad_output[i] = output[i] - target[i];
-  }
 
-  // Backpropagate
+  // Backprop through entire model
   TRANSFORMER_backprop(transformer, input_sequence, seq_length, grad_output);
 
-  free(grad_output);
   free(output);
+  free(grad_output);
 }
-
 // Transformer save
 int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
   if (!transformer || !file)
