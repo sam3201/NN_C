@@ -189,4 +189,65 @@ long double *transformer_mha_forward(MultiHeadAttention *mha,
 }
 
 // LayerNorm forward
-lo
+long double *transformer_norm_forward(LayerNorm *ln, long double *input) {
+  if (!ln || !input)
+    return NULL;
+
+  ln->input_cache = malloc(ln->dim * sizeof(long double));
+  memcpy(ln->input_cache, input, ln->dim * sizeof(long double));
+
+  long double mean = 0;
+  for (size_t i = 0; i < ln->dim; i++)
+    mean += input[i];
+  mean /= ln->dim;
+
+  long double var = 0;
+  for (size_t i = 0; i < ln->dim; i++)
+    var += (input[i] - mean) * (input[i] - mean);
+  var /= ln->dim;
+
+  long double *normalized = malloc(ln->dim * sizeof(long double));
+  for (size_t i = 0; i < ln->dim; i++)
+    normalized[i] = (input[i] - mean) / sqrt(var + ln->epsilon);
+
+  long double *output = NN_forward(ln->norm_network, normalized);
+  free(normalized);
+
+  return output;
+}
+
+// Transformer layer forward
+long double *transformer_layer_forward(TransformerLayer *layer,
+                                       long double *input) {
+  if (!layer || !input)
+    return NULL;
+
+  layer->attention_input = input;
+
+  // MHA + Add & Norm
+  long double *att_out =
+      transformer_mha_forward(layer->attention, input, layer->seq_length);
+  long double *res1 = malloc(layer->model_dim * sizeof(long double));
+  for (size_t i = 0; i < layer->model_dim; i++)
+    res1[i] = input[i] + att_out[i];
+  free(att_out);
+
+  layer->norm1_input = res1;
+  long double *norm1_out = transformer_norm_forward(layer->norm1, res1);
+
+  // Feed-forward + Add & Norm
+  layer->ff_input = norm1_out;
+  long double *ff_out = NN_forward(layer->feed_forward->network, norm1_out);
+  free(norm1_out);
+
+  long double *res2 = malloc(layer->model_dim * sizeof(long double));
+  for (size_t i = 0; i < layer->model_dim; i++)
+    res2[i] = layer->ff_input[i] + ff_out[i];
+  free(ff_out);
+
+  layer->norm2_input = res2;
+  long double *output = transformer_norm_forward(layer->norm2, res2);
+  free(res2);
+
+  return output;
+}
