@@ -1,4 +1,5 @@
 #include "TRANSFORMER.h"
+#include "NN.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
