@@ -23,6 +23,8 @@ static const RegularizationFunction REGULARIZATION_FUNCTIONS[] = {l1, l2};
 
 // Helper functions
 long double *create_one_hot(size_t index, size_t size) {
+  if (index >= size)
+    return NULL;
   long double *vec = calloc(size, sizeof(long double));
   if (!vec)
     return NULL;
