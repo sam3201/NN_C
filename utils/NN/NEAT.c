@@ -16,9 +16,9 @@ long double activate(long double x, ActivationFunctionType type) {
   }
 }
 
-// ------------------- Genome ----------------------
-Genome *Genome_init(size_t numInputs, size_t numOutputs) {
-  Genome *genome = (Genome *)malloc(sizeof(Genome));
+// ------------------- Genome_t ----------------------
+Genome_t *Genome_init(size_t numInputs, size_t numOutputs) {
+  Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   genome->numNodes = numInputs + numOutputs + 1; // bias
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
 
@@ -56,7 +56,7 @@ Genome *Genome_init(size_t numInputs, size_t numOutputs) {
   return genome;
 }
 
-void Genome_destroy(Genome *genome) {
+void Genome_destroy(Genome_t *genome) {
   if (!genome)
     return;
   for (size_t i = 0; i < genome->numNodes; i++)
@@ -71,7 +71,7 @@ void Genome_destroy(Genome *genome) {
 
 // ------------------- Forward Propagation (Topological) -------------------
 #include <string.h>
-void Genome_forward(Genome *genome, long double *input, long double *output) {
+void Genome_forward(Genome_t *genome, long double *input, long double *output) {
   for (size_t i = 0; i < genome->numNodes; i++) {
     if (genome->nodes[i]->type != BIAS_NODE)
       genome->nodes[i]->value = 0.0L;
@@ -108,7 +108,7 @@ void Genome_forward(Genome *genome, long double *input, long double *output) {
 }
 
 // ------------------- Mutation -------------------
-void Genome_add_connection(Genome *genome, size_t fromNode, size_t toNode,
+void Genome_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
                            long double weight) {
   genome->connections = realloc(
       genome->connections, (genome->numConnections + 1) * sizeof(Connection *));
@@ -121,7 +121,7 @@ void Genome_add_connection(Genome *genome, size_t fromNode, size_t toNode,
   genome->connections[genome->numConnections++] = c;
 }
 
-void Genome_add_node(Genome *genome, size_t connectionIndex) {
+void Genome_add_node(Genome_t *genome, size_t connectionIndex) {
   if (connectionIndex >= genome->numConnections)
     return;
   Connection *c = genome->connections[connectionIndex];
@@ -141,7 +141,7 @@ void Genome_add_node(Genome *genome, size_t connectionIndex) {
   Genome_add_connection(genome, n->id, c->to->id, c->weight);
 }
 
-void Genome_mutate_weights(Genome *genome, long double perturbRate,
+void Genome_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount) {
   for (size_t i = 0; i < genome->numConnections; i++) {
     if ((rand() % 10000) / 10000.0L < perturbRate) {
@@ -155,10 +155,10 @@ void Genome_mutate_weights(Genome *genome, long double perturbRate,
 }
 
 // ------------------- Crossover -------------------
-Genome *Genome_crossover(Genome *p1, Genome *p2) {
+Genome_t *Genome_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
-  Genome *child = Genome_init(0, 0);
+  Genome_t *child = Genome_init(0, 0);
   // copy nodes
   for (size_t i = 0; i < p1->numNodes; i++) {
     Node *n = (Node *)malloc(sizeof(Node));
@@ -184,7 +184,7 @@ Genome *Genome_crossover(Genome *p1, Genome *p2) {
 }
 
 // ------------------- Serialization -------------------
-void Genome_save(Genome *genome, const char *filename) {
+void Genome_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
   fwrite(&genome->numNodes, sizeof(size_t), 1, f);
   for (size_t i = 0; i < genome->numNodes; i++) {
@@ -198,11 +198,11 @@ void Genome_save(Genome *genome, const char *filename) {
   fclose(f);
 }
 
-Genome *Genome_load(const char *filename) {
+Genome_t *Genome_load(const char *filename) {
   FILE *f = fopen(filename, "rb");
   if (!f)
     return NULL;
-  Genome *genome = (Genome *)malloc(sizeof(Genome));
+  Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   fread(&genome->numNodes, sizeof(size_t), 1, f);
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
   for (size_t i = 0; i < genome->numNodes; i++) {
@@ -222,7 +222,7 @@ Genome *Genome_load(const char *filename) {
 }
 
 // Helper: returns an array of node indices in topological order
-size_t *topological_sort(Genome *genome, size_t *outSize) {
+size_t *topological_sort(Genome_t *genome, size_t *outSize) {
   size_t *inDegree = calloc(genome->numNodes, sizeof(size_t));
   for (size_t i = 0; i < genome->numConnections; i++) {
     Connection *c = genome->connections[i];
