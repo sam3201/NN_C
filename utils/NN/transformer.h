@@ -73,7 +73,7 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
                                long double *grad_output,
                                long double *grad_input);
 
-void TRANSFORMER_backprop(TransformerLayer *layer, long double *input,
+void TRANSFORMER_backprop(Transformer_t *model, long double *input,
                           long double *grad_output, long double *grad_input);
 
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
