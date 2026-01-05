@@ -27,7 +27,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   genome->nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, reg,
                        opt, learningRate);
-  genome->numNodes = numInputs + numOutputs + 1;
+  genome->numNodes = numInputs + genome->nn->numLayers + 1;
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
 
   size_t idx = 0;
