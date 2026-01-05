@@ -966,7 +966,7 @@ NN_t *NN_load(const char *filename) {
               nn->numLayers - 1, file);
     nn->activationDerivatives[i] =
         fread(nn->activationDerivatives[i], sizeof(ActivationDerivative),
-              nn->(numLayers - 1), file);
+              nn->numLayers - 1, file);
   }
   // Read weights, biases, gradients and optimizer states
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
