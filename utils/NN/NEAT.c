@@ -863,3 +863,9 @@ NN_t *GENOME_compile_to_NN(Genome_t *genome) {
   genome->nn = nn;
   return nn;
 }
+
+void NEAT_reset_innovations() {
+  free(innovationHistory);
+  innovationHistory = NULL;
+  innovationCount = 0;
+}
