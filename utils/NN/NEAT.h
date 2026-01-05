@@ -120,9 +120,9 @@ void NEAT_destroy(NEAT_t *neat);
 void NEAT_train(NEAT_t *neat, long double **inputs, long double **targets,
                 size_t numSamples);
 void NEAT_reset_innovations();
-size_t assign_species(Population *pop)
+size_t assign_species(Population *pop);
 
-    // ------------------- Topological Sort -------------------
-    size_t *topological_sort(Genome_t *genome, size_t *outSize);
+// ------------------- Topological Sort -------------------
+size_t *topological_sort(Genome_t *genome, size_t *outSize);
 
 #endif // NEAT_H
