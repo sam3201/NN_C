@@ -517,3 +517,18 @@ size_t *topological_sort(Genome_t *genome, size_t *outSize) {
   *outSize = idx;
   return order;
 }
+
+void NEAT_train(NEAT_t *neat, long double *input, long double *target) {
+  // Evaluate each genome
+  for (size_t i = 0; i < neat->pop->size; i++) {
+    long double output[neat->output_dims];
+    GENOME_forward(neat->pop->genomes[i], input, output);
+
+    // Simple fitness example: negative MSE
+    long double fitness = 0.0L;
+    for (size_t j = 0; j < neat->output_dims; j++)
+      fitness -= (output[j] - target[j]) * (output[j] - target[j]);
+    neat->pop->genomes[i]->fitness = fitness;
+  }
+  POPULATION_evolve(neat->pop);
+}
