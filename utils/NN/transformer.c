@@ -517,6 +517,7 @@ Transformer_t *TRANSFORMER_load(FILE *file) {
 }
 
 int TRANSFORMER_save(Transformer_t *t, const char *filename) {
+  FILE *f = fopen(filename, "wb");
   if (!t || !f)
     return 0;
 
