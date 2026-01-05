@@ -21,6 +21,15 @@ static const OptimizerFunction OPTIMIZER_FUNCTIONS[] = {sgd, rmsprop, adagrad,
 
 static const RegularizationFunction REGULARIZATION_FUNCTIONS[] = {l1, l2};
 
+// Helper functions
+long double *create_one_hot(size_t index, size_t size) {
+  long double *vec = calloc(size, sizeof(long double));
+  if (!vec)
+    return NULL;
+  vec[index] = 1.0L;
+  return vec;
+}
+
 NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
               ActivationDerivativeType *actDerivs, LossFunctionType lossFunc,
               LossDerivativeType lossDeriv, RegularizationType reg,
