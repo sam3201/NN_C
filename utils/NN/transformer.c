@@ -289,6 +289,27 @@ long double *transformer_norm_forward(LayerNorm *ln, long double *input) {
   return out;
 }
 
+void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output) {
+  size_t D = ln->dim;
+
+  long double mean = 0, var = 0;
+  for (size_t i = 0; i < D; i++)
+    mean += ln->input_cache[i];
+  mean /= D;
+
+  for (size_t i = 0; i < D; i++) {
+    long double d = ln->input_cache[i] - mean;
+    var += d * d;
+  }
+  var /= D;
+
+  long double inv_std = 1.0L / sqrtl(var + ln->epsilon);
+
+  for (size_t i = 0; i < D; i++) {
+    grad_output[i] *= inv_std;
+  }
+}
+
 long double **transformer_layer_forward(TransformerLayer *layer,
                                         long double **input,
                                         size_t seq_length) {
