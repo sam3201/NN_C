@@ -383,40 +383,33 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
   NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
 }
 
-void transformer_backprop(TransformerLayer *layer, long double *input,
-                          long double *grad_output, long double *grad_input) {
-  if (!layer || !input || !grad_output || !grad_input) {
+void TRANSFORMER_backward(Transformer_t *transformer,
+                          long double **input_sequence, size_t seq_length,
+                          long double *grad_output) {
+  if (!transformer || !input_sequence || !grad_output)
     return;
+
+  long double *grad_input =
+      malloc(transformer->model_dim * sizeof(long double));
+  if (!grad_input)
+    return;
+
+  memcpy(grad_input, grad_output, transformer->model_dim * sizeof(long double));
+
+  // Backprop through layers in reverse
+  for (int i = (int)transformer->num_layers - 1; i >= 0; i--) {
+    long double *temp = malloc(transformer->model_dim * sizeof(long double));
+    if (!temp)
+      break;
+
+    transformer_backprop(transformer->layers[i], input_sequence[0], grad_input,
+                         temp);
+
+    free(grad_input);
+    grad_input = temp;
   }
 
-  // Allocate temporary gradients
-  long double *grad_ff = malloc(layer->model_dim * sizeof(long double));
-  long double *grad_norm1 = malloc(layer->model_dim * sizeof(long double));
-  long double *grad_attn = malloc(layer->model_dim * sizeof(long double));
-
-  if (!grad_ff || !grad_norm1 || !grad_attn) {
-    free(grad_ff);
-    free(grad_norm1);
-    free(grad_attn);
-    return;
-  }
-
-  // Backpropagate through second normalization layer
-  transformer_norm_backprop(layer->norm2, input, grad_output, grad_ff);
-
-  // Backpropagate through feed-forward network
-  NN_backprop(layer->feed_forward->network, input, grad_ff[0], grad_norm1[0]);
-
-  // Backpropagate through first normalization layer
-  transformer_norm_backprop(layer->norm1, input, grad_norm1, grad_attn);
-
-  // Backpropagate through attention layer
-  transformer_mha_backprop(layer->attention, input, grad_attn, grad_input);
-
-  // Clean up
-  free(grad_ff);
-  free(grad_norm1);
-  free(grad_attn);
+  free(grad_input);
 }
 
 // Memory management functions
