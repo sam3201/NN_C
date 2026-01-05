@@ -158,7 +158,7 @@ void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
 Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
-  Genome_t *child = Genome_init(0, 0);
+  Genome_t *child = GENOME_init(0, 0);
   // copy nodes
   for (size_t i = 0; i < p1->numNodes; i++) {
     Node *n = (Node *)malloc(sizeof(Node));
