@@ -1057,6 +1057,13 @@ void argmax(long double *vec, size_t size) {
     vec[i] = (i == idx) ? 1.0L : 0.0L;
 }
 
+void argmax_derivative(long double *predicted, long double *one_hot,
+                       long double *gradients, size_t size) {
+  // identical to softmax for cross-entropy/one-hot
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = predicted[i] - one_hot[i];
+}
+
 // Activation Derivatives
 long double sigmoid_derivative(long double x) {
   long double s = sigmoid(x);
