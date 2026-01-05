@@ -392,9 +392,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 
   LossFunctionType loss = rand() % LOSS_TYPE_COUNT;
 
-  child->nn = NN_init(layers, actFuncs, actDerivs,
-                      (LossFunctionType)rand() % LOSS_TYPE_COUNT,
-                      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
+  child->nn = NN_init(layers, actFuncs, actDerivs, loss, opt, 0.01L);
 
   return child;
 }
