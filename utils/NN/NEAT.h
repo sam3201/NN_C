@@ -45,6 +45,7 @@ typedef struct Genome_t {
   size_t numConnections;
   Connection **connections;
 
+  NN_t *nn;
   long double fitness;
 } Genome_t;
 
