@@ -25,7 +25,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
                       long double learningRate, size_t numInputs) {
 
   size_t numOutputs = 0;
-  while (layers[numOutputs] == 0)
+  while (layers[numOutputs] != NULL)
     numOutputs++;
 
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
