@@ -477,7 +477,7 @@ void update_agent(Agent *a) {
   a->age++;
 
   int terminal = !a->alive;
-  tr->cortex->learn(tr->cortex->brain, reward, terminal);
+  // tr->cortex->learn(tr->cortex->brain, reward, terminal);
 }
 
 /* =======================
@@ -551,9 +551,11 @@ int main(void) {
     train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int t = 0; t < TRIBE_COUNT; t++) {
-        tribes[t].cortex->learn(tribes[t].cortex->brain,
+        /*
+          tribes[t].cortex->learn(tribes[t].cortex->brain,
                                 tribes[t].reward_accumulator,
                                 1 // terminal
+                                */
         );
 
         tribes[t].reward_accumulator = 0.0f;
