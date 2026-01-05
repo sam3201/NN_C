@@ -359,7 +359,6 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
 
-  // Count inputs/outputs
   size_t numInputs = 0, numOutputs = 0;
   for (size_t i = 0; i < p1->numNodes; i++) {
     if (p1->nodes[i]->type == INPUT_NODE)
@@ -370,70 +369,59 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 
   Genome_t *child = GENOME_init_empty(numInputs, numOutputs);
 
-  // Copy nodes from p1 (IDs preserved)
+  /* ---- copy ONLY hidden nodes ---- */
   for (size_t i = 0; i < p1->numNodes; i++) {
-    Node *n = malloc(sizeof(Node));
-    *n = *(p1->nodes[i]);
-    child->nodes =
-        realloc(child->nodes, (child->numNodes + 1) * sizeof(Node *));
-    child->nodes[child->numNodes++] = n;
+    if (p1->nodes[i]->type == HIDDEN_NODE) {
+      Node *n = malloc(sizeof(Node));
+      *n = *p1->nodes[i];
+      n->id = child->numNodes;
+
+      child->nodes =
+          realloc(child->nodes, (child->numNodes + 1) * sizeof(Node *));
+      child->nodes[child->numNodes++] = n;
+    }
   }
 
-  // Merge connections by innovation numbers
+  /* ---- merge connections by innovation ---- */
   size_t i1 = 0, i2 = 0;
   while (i1 < p1->numConnections || i2 < p2->numConnections) {
-    Connection *c = NULL;
+    Connection *src = NULL;
+
     if (i1 >= p1->numConnections)
-      c = p2->connections[i2++];
+      src = p2->connections[i2++];
     else if (i2 >= p2->numConnections)
-      c = p1->connections[i1++];
+      src = p1->connections[i1++];
     else {
-      Connection *conn1 = p1->connections[i1];
-      Connection *conn2 = p2->connections[i2];
-      if (conn1->innovation == conn2->innovation) {
-        c = rand() % 2 ? conn1 : conn2;
+      Connection *c1 = p1->connections[i1];
+      Connection *c2 = p2->connections[i2];
+      if (c1->innovation == c2->innovation) {
+        src = (rand() & 1) ? c1 : c2;
         i1++;
         i2++;
-      } else if (conn1->innovation < conn2->innovation) {
-        c = conn1;
+      } else if (c1->innovation < c2->innovation) {
+        src = c1;
         i1++;
       } else {
-        c = conn2;
+        src = c2;
         i2++;
       }
     }
 
-    // Skip if node IDs are invalid
-    if (c->from->id >= child->numNodes || c->to->id >= child->numNodes)
+    if (src->from->id >= child->numNodes || src->to->id >= child->numNodes)
       continue;
 
-    Connection *newC = malloc(sizeof(Connection));
-    *newC = *c; // copy all fields
-    newC->from = child->nodes[c->from->id];
-    newC->to = child->nodes[c->to->id];
+    Connection *c = malloc(sizeof(Connection));
+    *c = *src;
+    c->from = child->nodes[src->from->id];
+    c->to = child->nodes[src->to->id];
 
     child->connections = realloc(
         child->connections, (child->numConnections + 1) * sizeof(Connection *));
-    child->connections[child->numConnections++] = newC;
+    child->connections[child->numConnections++] = c;
   }
 
-  /*
-  // Build NN from nodes
-  size_t numLayers[2] = {numInputs, numOutputs};
-
-  // Take activation functions from child nodes for hidden/output layers
-  ActivationFunctionType actFuncs[2];
-  ActivationDerivativeType actDerivs[2];
-
-  for (size_t i = 0; i < 2; i++) {
-    size_t nodeIdx = (i == 0) ? numInputs : numInputs + 1; // simple guess
-    actFuncs[i] = child->nodes[nodeIdx]->actFunc;
-    actDerivs[i] = get_derivative_from_activation(actFuncs[i]);
-  }
-  */
-
+  child->fitness = 0.0L;
   child->nn = NULL;
-
   return child;
 }
 
