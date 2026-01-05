@@ -268,6 +268,34 @@ void NN_destroy(NN_t *nn) {
 }
 
 // Optimizer Functions
+void rmsprop(NN_t *nn) {
+  const long double decay = 0.9L;
+  const long double eps = 1e-8L;
+
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+
+    for (size_t i = 0; i < wcount; i++) {
+      nn->opt_v_w[l][i] =
+          decay * nn->opt_v_w[l][i] +
+          (1 - decay) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
+
+      nn->weights[l][i] -= nn->learningRate * nn->weights_grad[l][i] /
+                           (sqrtl(nn->opt_v_w[l][i]) + eps);
+    }
+
+    for (size_t j = 0; j < bcount; j++) {
+      nn->opt_v_b[l][j] =
+          decay * nn->opt_v_b[l][j] +
+          (1 - decay) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
+
+      nn->biases[l][j] -= nn->learningRate * nn->biases_grad[l][j] /
+                          (sqrtl(nn->opt_v_b[l][j]) + eps);
+    }
+  }
+}
+
 void adagrad(NN_t *nn) {
   const long double eps = 1e-8L;
 
