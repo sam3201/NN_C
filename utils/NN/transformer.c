@@ -323,6 +323,32 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   long double *dV = calloc(T * D, sizeof(long double));
   long double *dScores = calloc(T * T, sizeof(long double));
 
+  for (size_t t = 0; t < T; t++)
+    for (size_t k = 0; k < T; k++)
+      for (size_t j = 0; j < D; j++)
+        dScores[t * T + k] += grad_output[t * D + j] * mha->V_cache[k * D + j];
+
+  for (size_t t = 0; t < T; t++) {
+    for (size_t i = 0; i < T; i++) {
+      for (size_t j = 0; j < T; j++) {
+        long double s_i = mha->scores_cache[t * T + i];
+        long double s_j = mha->scores_cache[t * T + j];
+        long double delta = (i == j);
+        dScores[t * T + i] += dScores[t * T + j] * s_i * (delta - s_j);
+      }
+    }
+  }
+  long double *dQ = calloc(T * D, sizeof(long double));
+  long double *dK = calloc(T * D, sizeof(long double));
+
+  for (size_t t = 0; t < T; t++)
+    for (size_t k = 0; k < T; k++)
+      for (size_t j = 0; j < D; j++) {
+        long double g = dScores[t * T + k] / sqrtl(D);
+        dQ[t * D + j] += g * mha->K_cache[k * D + j];
+        dK[k * D + j] += g * mha->Q_cache[t * D + j];
+      }
+
   // ----------------------
   // Transformer forward and backprop
   // ----------------------
