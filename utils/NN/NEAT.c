@@ -372,8 +372,9 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   // Rebuild NN_t from node & connection structure
   size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
 
+  ActivationFunctionType actFunc1 = (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT, 
   ActivationFunctionType actFuncs[2] = {
-      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT,
+      (
       (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
 
   child->nn = NN_init(layers, actFuncs, actDerivs,
