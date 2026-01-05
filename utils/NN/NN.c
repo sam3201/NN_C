@@ -301,24 +301,35 @@ void adagrad(NN_t *nn) {
 }
 
 void adam(NN_t *nn) {
-  const long double beta1 = 0.9L, beta2 = 0.999L, eps = 1e-8L;
+  const long double beta1 = 0.9L;
+  const long double beta2 = 0.999L;
+  const long double epsilon = 1e-8L;
+
   for (size_t l = 0; l < nn->numLayers - 1; l++) {
-    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
-    for (size_t j = 0; j < in_size * out_size; j++) {
-      nn->weights_v[l][j] =
-          beta2 * nn->weights_v[l][j] +
-          (1 - beta2) * nn->weights_v[l][j] * nn->weights_v[l][j];
-      long double m_hat = nn->weights_v[l][j] / (1 - powl(beta1, nn->t));
-      long double v_hat = nn->weights_v[l][j] / (1 - powl(beta2, nn->t));
-      nn->weights[l][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
-    }
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
+
     for (size_t j = 0; j < out_size; j++) {
-      nn->biases_v[l][j] = beta2 * nn->biases_v[l][j] + (1 - beta2) *
-                                                            nn->biases_v[l][j] *
-                                                            nn->biases_v[l][j];
-      long double m_hat = nn->biases_v[l][j] / (1 - powl(beta1, nn->t));
-      long double v_hat = nn->biases_v[l][j] / (1 - powl(beta2, nn->t));
-      nn->biases[l][j] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
+      for (size_t i = 0; i < in_size; i++) {
+        // m and v per weight
+        long double *m = &nn->weights_v[l][i * out_size + j]; // momentum
+        long double *v = &nn->biases_v[l][j];                 // velocity
+
+        *m = beta1 * (*m) + (1 - beta1) * nn->weights[l][i * out_size + j];
+        *v = beta2 * (*v) + (1 - beta2) * nn->weights[l][i * out_size + j] *
+                                nn->weights[l][i * out_size + j];
+
+        long double m_hat = (*m) / (1 - powl(beta1, nn->t));
+        long double v_hat = (*v) / (1 - powl(beta2, nn->t));
+
+        nn->weights[l][i * out_size + j] -=
+            nn->learningRate * m_hat / (sqrtl(v_hat) + epsilon);
+      }
+
+      // Update bias separately
+      long double *m_b = &nn->biases_v[l][j];
+      *m_b = beta1 * (*m_b) + (1 - beta1) * nn->biases[l][j];
+      nn->biases[l][j] -= nn->learningRate * (*m_b);
     }
   }
   nn->t++;
