@@ -186,18 +186,19 @@ void TRANSFORMER_destroy(Transformer_t *transformer) {
 long double **transformer_mha_forward(MultiHeadAttention *mha,
                                       long double **input_seq,
                                       size_t seq_length) {
-  if (!mha || !input_seq)
-    return NULL;
-
   mha->seq_length = seq_length;
   size_t D = mha->head_dim;
 
-  /* ---- Linear projections ---- */
-  long double **Q = NN_forward(mha->Q_proj, input_seq); // [S][D]
-  long double **K = NN_forward(mha->K_proj, input_seq);
-  long double **V = NN_forward(mha->V_proj, input_seq);
+  long double **Q = malloc(seq_length * sizeof(long double *));
+  long double **K = malloc(seq_length * sizeof(long double *));
+  long double **V = malloc(seq_length * sizeof(long double *));
 
-  /* ---- Cache projections ---- */
+  for (size_t t = 0; t < seq_length; t++) {
+    Q[t] = NN_forward(mha->Q_proj, input_seq[t]);
+    K[t] = NN_forward(mha->K_proj, input_seq[t]);
+    V[t] = NN_forward(mha->V_proj, input_seq[t]);
+  }
+
   mha->Q_cache = malloc(seq_length * D * sizeof(long double));
   mha->K_cache = malloc(seq_length * D * sizeof(long double));
   mha->V_cache = malloc(seq_length * D * sizeof(long double));
@@ -209,7 +210,6 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
       mha->V_cache[i * D + j] = V[i][j];
     }
 
-  /* ---- Attention scores ---- */
   long double *scores = calloc(seq_length * seq_length, sizeof(long double));
 
   for (size_t i = 0; i < seq_length; i++)
@@ -217,11 +217,9 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
       for (size_t k = 0; k < D; k++)
         scores[i * seq_length + j] +=
             mha->Q_cache[i * D + k] * mha->K_cache[j * D + k];
-
-      scores[i * seq_length + j] /= sqrtl((long double)D);
+      scores[i * seq_length + j] /= sqrtl(D);
     }
 
-  /* ---- Softmax ---- */
   for (size_t i = 0; i < seq_length; i++) {
     long double max = scores[i * seq_length];
     for (size_t j = 1; j < seq_length; j++)
@@ -239,8 +237,8 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
 
   mha->scores_cache = scores;
 
-  /* ---- Weighted value sum ---- */
   long double **att_out = malloc(seq_length * sizeof(long double *));
+
   for (size_t i = 0; i < seq_length; i++) {
     att_out[i] = calloc(D, sizeof(long double));
     for (size_t j = 0; j < D; j++)
@@ -248,14 +246,22 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
         att_out[i][j] += scores[i * seq_length + k] * mha->V_cache[k * D + j];
   }
 
-  /* ---- Output projection ---- */
-  long double **out = NN_forward(mha->O_proj, att_out);
+  long double **out = malloc(seq_length * sizeof(long double *));
+  for (size_t t = 0; t < seq_length; t++)
+    out[t] = NN_forward(mha->O_proj, att_out[t]);
 
-  for (size_t i = 0; i < seq_length; i++)
-    free(att_out[i]);
+  for (size_t t = 0; t < seq_length; t++) {
+    free(att_out[t]);
+    free(Q[t]);
+    free(K[t]);
+    free(V[t]);
+  }
   free(att_out);
+  free(Q);
+  free(K);
+  free(V);
 
-  return out; // [seq_length][model_dim]
+  return out;
 }
 
 // ----------------------
