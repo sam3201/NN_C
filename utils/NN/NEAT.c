@@ -366,6 +366,36 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 }
 
 // ------------------- Serialization -------------------
+void GENOME_save_safe(Genome_t *genome, const char *filename) {
+  FILE *f = fopen(filename, "wb");
+  if (!f)
+    return;
+
+  fwrite(&genome->numNodes, sizeof(size_t), 1, f);
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    Node *n = genome->nodes[i];
+    fwrite(&n->id, sizeof(size_t), 1, f);
+    fwrite(&n->type, sizeof(NodeType), 1, f);
+    fwrite(&n->actFunc, sizeof(ActivationFunctionType), 1, f);
+    fwrite(&n->value, sizeof(long double), 1, f);
+  }
+
+  fwrite(&genome->numConnections, sizeof(size_t), 1, f);
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
+    size_t fromID = c->from->id;
+    size_t toID = c->to->id;
+    fwrite(&fromID, sizeof(size_t), 1, f);
+    fwrite(&toID, sizeof(size_t), 1, f);
+    fwrite(&c->weight, sizeof(long double), 1, f);
+    fwrite(&c->enabled, sizeof(bool), 1, f);
+    fwrite(&c->innovation, sizeof(size_t), 1, f);
+  }
+
+  fwrite(&genome->fitness, sizeof(long double), 1, f);
+  fclose(f);
+}
+
 void GENOME_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
   fwrite(&genome->numNodes, sizeof(size_t), 1, f);
