@@ -518,6 +518,22 @@ size_t *topological_sort(Genome_t *genome, size_t *outSize) {
   return order;
 }
 
+NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size) {
+  NEAT_t *neat = malloc(sizeof(NEAT_t));
+  neat->input_dims = input_dim;
+  neat->output_dims = output_dim;
+  neat->pop = POPULATION_init(pop_size, input_dim, output_dim);
+  srand(time(NULL)); // seed RNG
+  return neat;
+}
+
+void NEAT_destroy(NEAT_t *neat) {
+  if (!neat)
+    return;
+  POPULATION_destroy(neat->pop);
+  free(neat);
+}
+
 void NEAT_train(NEAT_t *neat, long double *input, long double *target) {
   // Evaluate each genome
   for (size_t i = 0; i < neat->pop->size; i++) {
