@@ -20,3 +20,10 @@ Create a population with a given size and number of input/output nodes:
 ```c
 Population *pop = POPULATION_init(popSize, numInputs, numOutputs);
 
+
+2. Evaluate Fitness
+
+Run your simulation/game for each genome and assign a fitness score:
+
+pop->genomes[i]->fitness = calculate_fitness(pop->genomes[i]);
+
