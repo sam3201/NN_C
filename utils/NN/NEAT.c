@@ -24,8 +24,8 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
                       RegularizationType reg, OptimizerType opt,
                       long double learningRate, size_t numInputs) {
 
-  size_t lastLayer = 0;
-  while (layers[lastLayer] == 0)
+  size_t numOutputs = 0;
+  while (layers[numOutputs] == 0)
     lastLayer++;
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   genome->numNodes = numInputs + lastLayer + 1;
