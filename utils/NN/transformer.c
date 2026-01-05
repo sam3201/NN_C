@@ -532,7 +532,7 @@ int TRANSFORMER_save(Transformer_t *t, FILE *f) {
     fwrite(&layer->seq_length, sizeof(size_t), 1, f);
 
     // ---- Attention ----
-    NN_save_to_file(layer->attention->Q_proj, f);
+    NN_save(layer->attention->Q_proj, f);
     NN_save_to_file(layer->attention->K_proj, f);
     NN_save_to_file(layer->attention->V_proj, f);
     NN_save_to_file(layer->attention->O_proj, f);
