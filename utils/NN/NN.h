@@ -114,7 +114,7 @@ NN_t *NN_init_random(size_t num_inputs, size_t num_outputs);
 void NN_destroy(NN_t *nn);
 
 // Forward propagation
-long double **NN_forward(NN_t *nn, long double inputs[]);
+long double *NN_forward(NN_t *nn, long double inputs[]);
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]);
 
 // Backpropagation
