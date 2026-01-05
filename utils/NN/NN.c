@@ -118,9 +118,6 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
     nn->biases[i] =
         (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
 
-    nn->weights_grad = malloc((nn->numLayers - 1) * sizeof(long double *));
-    nn->biases_grad = malloc((nn->numLayers - 1) * sizeof(long double *));
-
     size_t wcount = nn->layers[i] * nn->layers[i + 1];
     size_t bcount = nn->layers[i + 1];
 
