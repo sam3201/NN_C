@@ -513,7 +513,7 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
   // For now, this uses the “vectorized CE trick” only if CE is used.
   if (nn->loss == ce) {
     for (size_t i = 0; i < out_size; i++)
-      gradients[i] *= y_pred[i] - sum;
+      gradients[i] = y_pred[i] - y_true[i]; // CE+softmax shortcut
   } else {
     // For other losses, multiply by softmax derivative if needed
     long double sum = 0.0L;
