@@ -1,541 +1,624 @@
 #include "SAM.h"
+#include "../utils/NN/transformer.h"
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include "../utils/NN/transformer.h"
 
 // Helper function to initialize weights
-static void init_weights(SAM_t* sam) {
-    sam->weights = (long double***)malloc(sam->num_layers * sizeof(long double**));
-    for (size_t i = 0; i < sam->num_layers - 1; i++) {
-        sam->weights[i] = (long double**)malloc(sam->layer_sizes[i] * sizeof(long double*));
-        for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
-            sam->weights[i][j] = (long double*)malloc(sam->layer_sizes[i + 1] * sizeof(long double));
-            for (size_t k = 0; k < sam->layer_sizes[i + 1]; k++) {
-                sam->weights[i][j][k] = ((long double)rand() / RAND_MAX * 2.0L - 1.0L) * sqrtl(2.0L / sam->layer_sizes[i]);
-            }
-        }
+static void init_weights(SAM_t *sam) {
+  sam->weights =
+      (long double ***)malloc(sam->num_layers * sizeof(long double **));
+  for (size_t i = 0; i < sam->num_layers - 1; i++) {
+    sam->weights[i] =
+        (long double **)malloc(sam->layer_sizes[i] * sizeof(long double *));
+    for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
+      sam->weights[i][j] =
+          (long double *)malloc(sam->layer_sizes[i + 1] * sizeof(long double));
+      for (size_t k = 0; k < sam->layer_sizes[i + 1]; k++) {
+        sam->weights[i][j][k] = ((long double)rand() / RAND_MAX * 2.0L - 1.0L) *
+                                sqrtl(2.0L / sam->layer_sizes[i]);
+      }
     }
+  }
 }
 
 // Helper function to free weights
-static void free_weights(SAM_t* sam) {
-    for (size_t i = 0; i < sam->num_layers - 1; i++) {
-        for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
-            free(sam->weights[i][j]);
-        }
-        free(sam->weights[i]);
+static void free_weights(SAM_t *sam) {
+  for (size_t i = 0; i < sam->num_layers - 1; i++) {
+    for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
+      free(sam->weights[i][j]);
     }
-    free(sam->weights);
+    free(sam->weights[i]);
+  }
+  free(sam->weights);
 }
 
-SAM_t* SAM_init(size_t input_dim, size_t output_dim, size_t num_heads, size_t context_id) {
-    SAM_t* sam = (SAM_t*)malloc(sizeof(SAM_t));
-    if (!sam) return NULL;
+SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
+                size_t context_id) {
+  SAM_t *sam = (SAM_t *)malloc(sizeof(SAM_t));
+  if (!sam)
+    return NULL;
 
-    // Initialize dimensions
-    sam->num_layers = 3;  // Input, hidden, output
-    sam->layer_sizes = (size_t*)malloc(sam->num_layers * sizeof(size_t));
-    sam->layer_sizes[0] = input_dim;
-    sam->layer_sizes[1] = 256;  // Hidden layer size
-    sam->layer_sizes[2] = output_dim;
+  // Initialize dimensions
+  sam->num_layers = 3; // Input, hidden, output
+  sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
+  sam->layer_sizes[0] = input_dim;
+  sam->layer_sizes[1] = 256; // Hidden layer size
+  sam->layer_sizes[2] = output_dim;
 
-    // Initialize weights
-    init_weights(sam);
+  // Initialize weights
+  init_weights(sam);
 
-    // Initialize transformer and submodels
-    sam->transformer = TRANSFORMER_init(input_dim, num_heads);
-    sam->num_submodels = 5;  // Fixed number of submodels for now
-    sam->submodels = (NEAT_t**)malloc(sam->num_submodels * sizeof(NEAT_t*));
-    
-    // Initialize each submodel with a proper population size (at least 10)
-    unsigned int population_size = 10;
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        sam->submodels[i] = NEAT_init(input_dim, output_dim, population_size);
-        if (!sam->submodels[i]) {
-            // Cleanup on error
-            for (size_t j = 0; j < i; j++) {
-                if (sam->submodels[j]) {
-                    NEAT_destroy(sam->submodels[j]);
-                }
-            }
-            free(sam->submodels);
-            if (sam->transformer) {
-                TRANSFORMER_destroy(sam->transformer);
-            }
-            free_weights(sam);
-            free(sam->layer_sizes);
-            free(sam);
-            return NULL;
+  // Initialize transformer and submodels
+  sam->transformer = TRANSFORMER_init(input_dim, num_heads);
+  sam->num_submodels = 5; // Fixed number of submodels for now
+  sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
+
+  // Initialize each submodel with a proper population size (at least 10)
+  unsigned int population_size = 10;
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    sam->submodels[i] = NEAT_init(input_dim, output_dim, population_size);
+    if (!sam->submodels[i]) {
+      // Cleanup on error
+      for (size_t j = 0; j < i; j++) {
+        if (sam->submodels[j]) {
+          NEAT_destroy(sam->submodels[j]);
         }
-    }
-
-    sam->context = (long double)context_id;
-    return sam;
-}
-
-void SAM_destroy(SAM_t* sam) {
-    if (!sam) return;
-
-    // Free weights
-    free_weights(sam);
-    free(sam->layer_sizes);
-
-    // Free transformer
-    if (sam->transformer) {
+      }
+      free(sam->submodels);
+      if (sam->transformer) {
         TRANSFORMER_destroy(sam->transformer);
+      }
+      free_weights(sam);
+      free(sam->layer_sizes);
+      free(sam);
+      return NULL;
     }
+  }
 
-    // Free submodels
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        if (sam->submodels[i]) {
-            NEAT_destroy(sam->submodels[i]);
-        }
-    }
-    free(sam->submodels);
-    free(sam);
+  sam->context = (long double)context_id;
+  return sam;
 }
 
-void SAM_train(SAM_t* sam, long double** input_sequence, size_t seq_length, long double* target) {
-    if (!sam || !input_sequence || !target) return;
+void SAM_destroy(SAM_t *sam) {
+  if (!sam)
+    return;
 
-    // Train transformer
-    TRANSFORMER_train(sam->transformer, input_sequence, seq_length, target);
+  // Free weights
+  free_weights(sam);
+  free(sam->layer_sizes);
 
-    // Train submodels
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        NEAT_train(sam->submodels[i], input_sequence[0], target);
+  // Free transformer
+  if (sam->transformer) {
+    TRANSFORMER_destroy(sam->transformer);
+  }
+
+  // Free submodels
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (sam->submodels[i]) {
+      NEAT_destroy(sam->submodels[i]);
     }
+  }
+  free(sam->submodels);
+  free(sam);
 }
 
-void SAM_adapt_transfusion(SAM_t* sam, long double context, ProjectionMatrix* P, AdaptationParams* params) {
-    if (!sam || !P || !params) return;
+void SAM_train(SAM_t *sam, long double **input_sequence, size_t seq_length,
+               long double *target) {
+  if (!sam || !input_sequence || !target)
+    return;
 
-    // Calculate base gamma for first submodel
-    long double gamma = SAM_calculate_gamma(sam->context, 0);  // Base gamma for first submodel
+  // Train transformer
+  TRANSFORMER_train(sam->transformer, input_sequence, seq_length, target);
 
-    // Perform transfusion for each submodel
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        // Train submodel
-        SAM_train_submodel(sam->submodels[i], params->learning_rate_transfusion);
-
-        // Update projection matrix
-        for (size_t j = 0; j < P->rows; j++) {
-            for (size_t k = 0; k < P->cols; k++) {
-                P->matrix[j][k] *= gamma;
-            }
-        }
-    }
+  // Train submodels
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    NEAT_train(sam->submodels[i], input_sequence[0], target);
+  }
 }
 
-ProjectionMatrix* SAM_create_projection_matrix(SAM_t* sam, long double context) {
-    if (!sam) return NULL;
+void SAM_adapt_transfusion(SAM_t *sam, long double context, ProjectionMatrix *P,
+                           AdaptationParams *params) {
+  if (!sam || !P || !params)
+    return;
 
-    ProjectionMatrix* P = (ProjectionMatrix*)malloc(sizeof(ProjectionMatrix));
-    if (!P) return NULL;
+  // Calculate base gamma for first submodel
+  long double gamma =
+      SAM_calculate_gamma(sam->context, 0); // Base gamma for first submodel
 
-    // Initialize dimensions based on transformer architecture
-    P->rows = sam->layer_sizes[0];  // Input dimension
-    P->cols = sam->layer_sizes[sam->num_layers - 1];  // Output dimension
+  // Perform transfusion for each submodel
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    // Train submodel
+    SAM_train_submodel(sam->submodels[i], params->learning_rate_transfusion);
 
-    // Allocate matrix
-    P->matrix = (long double**)malloc(P->rows * sizeof(long double*));
-    for (size_t i = 0; i < P->rows; i++) {
-        P->matrix[i] = (long double*)malloc(P->cols * sizeof(long double));
-        for (size_t j = 0; j < P->cols; j++) {
-            // Initialize with scaled weights
-            P->matrix[i][j] = 1.0L / (context + 1.0L) * sam->weights[0][i][j];
-        }
+    // Update projection matrix
+    for (size_t j = 0; j < P->rows; j++) {
+      for (size_t k = 0; k < P->cols; k++) {
+        P->matrix[j][k] *= gamma;
+      }
     }
-
-    return P;
+  }
 }
 
-void SAM_update_transformer(SAM_t* sam, long double** G, long double learning_rate) {
-    if (!sam || !G) return;
+ProjectionMatrix *SAM_create_projection_matrix(SAM_t *sam,
+                                               long double context) {
+  if (!sam)
+    return NULL;
 
-    // Update weights
-    for (size_t i = 0; i < sam->layer_sizes[0]; i++) {
-        for (size_t j = 0; j < sam->layer_sizes[sam->num_layers - 1]; j++) {
-            sam->weights[0][i][j] += learning_rate * G[i][j];
-        }
+  ProjectionMatrix *P = (ProjectionMatrix *)malloc(sizeof(ProjectionMatrix));
+  if (!P)
+    return NULL;
+
+  // Initialize dimensions based on transformer architecture
+  P->rows = sam->layer_sizes[0];                   // Input dimension
+  P->cols = sam->layer_sizes[sam->num_layers - 1]; // Output dimension
+
+  // Allocate matrix
+  P->matrix = (long double **)malloc(P->rows * sizeof(long double *));
+  for (size_t i = 0; i < P->rows; i++) {
+    P->matrix[i] = (long double *)malloc(P->cols * sizeof(long double));
+    for (size_t j = 0; j < P->cols; j++) {
+      // Initialize with scaled weights
+      P->matrix[i][j] = 1.0L / (context + 1.0L) * sam->weights[0][i][j];
     }
+  }
+
+  return P;
+}
+
+void SAM_update_transformer(SAM_t *sam, long double **G,
+                            long double learning_rate) {
+  if (!sam || !G)
+    return;
+
+  // Update weights
+  for (size_t i = 0; i < sam->layer_sizes[0]; i++) {
+    for (size_t j = 0; j < sam->layer_sizes[sam->num_layers - 1]; j++) {
+      sam->weights[0][i][j] += learning_rate * G[i][j];
+    }
+  }
 }
 
 long double SAM_calculate_gamma(long double context, size_t submodel_index) {
-    // Calculate gamma based on context and submodel index
-    return 1.0L / (1.0L + fabsl(context - (long double)submodel_index));
+  // Calculate gamma based on context and submodel index
+  return 1.0L / (1.0L + fabsl(context - (long double)submodel_index));
 }
 
-long double SAM_calculate_beta(PerformanceMetrics* metrics, long double context) {
-    if (!metrics) return 0.0L;
-    
-    // Calculate beta based on performance metrics and context
-    return metrics->fitness / (1.0L + context);
+long double SAM_calculate_beta(PerformanceMetrics *metrics,
+                               long double context) {
+  if (!metrics)
+    return 0.0L;
+
+  // Calculate beta based on performance metrics and context
+  return metrics->fitness / (1.0L + context);
 }
 
-int SAM_save(SAM_t* sam, const char* filename) {
-    if (!sam || !filename) return 0;
+int SAM_save(SAM_t *sam, const char *filename) {
+  if (!sam || !filename)
+    return 0;
 
-    FILE* file = fopen(filename, "wb");
-    if (!file) return 0;
+  FILE *file = fopen(filename, "wb");
+  if (!file)
+    return 0;
 
-    // Save SAM parameters
-    if (fwrite(&sam->num_submodels, sizeof(size_t), 1, file) != 1 ||
-        fwrite(&sam->context, sizeof(long double), 1, file) != 1) {
-        fclose(file);
-        return 0;
-    }
-    
-    // Save layer configuration
-    if (fwrite(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
-        fclose(file);
-        return 0;
-    }
-    if (sam->layer_sizes && sam->num_layers > 0) {
-        if (fwrite(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) != sam->num_layers) {
-            fclose(file);
-            return 0;
-        }
-    }
-
-    // Save transformer
-    int result = TRANSFORMER_save(sam->transformer, file);
-    if (result == 0) {
-        fclose(file);
-        return 0;
-    }
-
-    // Note: NEAT submodels would need to be saved separately or we'd need
-    // a different API that accepts FILE* instead of filename
-    // For now, we save the structure but not the individual NEAT models
-    
+  // Save SAM parameters
+  if (fwrite(&sam->num_submodels, sizeof(size_t), 1, file) != 1 ||
+      fwrite(&sam->context, sizeof(long double), 1, file) != 1) {
     fclose(file);
-    return 1;
+    return 0;
+  }
+
+  // Save layer configuration
+  if (fwrite(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
+    fclose(file);
+    return 0;
+  }
+  if (sam->layer_sizes && sam->num_layers > 0) {
+    if (fwrite(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) !=
+        sam->num_layers) {
+      fclose(file);
+      return 0;
+    }
+  }
+
+  // Save transformer
+  int result = TRANSFORMER_save(sam->transformer, file);
+  if (result == 0) {
+    fclose(file);
+    return 0;
+  }
+
+  // Note: NEAT submodels would need to be saved separately or we'd need
+  // a different API that accepts FILE* instead of filename
+  // For now, we save the structure but not the individual NEAT models
+
+  fclose(file);
+  return 1;
 }
 
-SAM_t* SAM_load(const char* filename) {
-    if (!filename) return NULL;
+SAM_t *SAM_load(const char *filename) {
+  if (!filename)
+    return NULL;
 
-    FILE* file = fopen(filename, "rb");
-    if (!file) return NULL;
+  FILE *file = fopen(filename, "rb");
+  if (!file)
+    return NULL;
 
-    SAM_t* sam = (SAM_t*)malloc(sizeof(SAM_t));
-    if (!sam) {
-        fclose(file);
-        return NULL;
-    }
-    
-    // Initialize to zero
-    memset(sam, 0, sizeof(SAM_t));
-
-    // Load SAM parameters
-    if (fread(&sam->num_submodels, sizeof(size_t), 1, file) != 1) {
-        free(sam);
-        fclose(file);
-        return NULL;
-    }
-    if (fread(&sam->context, sizeof(long double), 1, file) != 1) {
-        free(sam);
-        fclose(file);
-        return NULL;
-    }
-    
-    // Load layer configuration
-    if (fread(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
-        free(sam);
-        fclose(file);
-        return NULL;
-    }
-    
-    if (sam->num_layers > 0 && sam->num_layers < 100) {  // Sanity check
-        sam->layer_sizes = (size_t*)malloc(sam->num_layers * sizeof(size_t));
-        if (!sam->layer_sizes) {
-            free(sam);
-            fclose(file);
-            return NULL;
-        }
-        if (fread(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) != sam->num_layers) {
-            free(sam->layer_sizes);
-            free(sam);
-            fclose(file);
-            return NULL;
-        }
-    } else {
-        // Default values if not saved (backward compatibility)
-        sam->num_layers = 3;
-        sam->layer_sizes = (size_t*)malloc(sam->num_layers * sizeof(size_t));
-        if (!sam->layer_sizes) {
-            free(sam);
-            fclose(file);
-            return NULL;
-        }
-        sam->layer_sizes[0] = 256;
-        sam->layer_sizes[1] = 256;
-        sam->layer_sizes[2] = 64;
-    }
-
-    // Load transformer
-    sam->transformer = TRANSFORMER_load(file);
-    if (!sam->transformer) {
-        free(sam->layer_sizes);
-        free(sam);
-        fclose(file);
-        return NULL;
-    }
-
-    // Load submodels
-    sam->submodels = (NEAT_t**)malloc(sam->num_submodels * sizeof(NEAT_t*));
-    if (!sam->submodels) {
-        TRANSFORMER_destroy(sam->transformer);
-        free(sam->layer_sizes);
-        free(sam);
-        fclose(file);
-        return NULL;
-    }
-
-    // Initialize submodels (NEAT_load expects filename, not FILE*, so we skip loading them)
-    // In a full implementation, we'd need a NEAT_load_from_file function
-    size_t input_dim = sam->layer_sizes[0];
-    size_t output_dim = sam->layer_sizes[sam->num_layers - 1];
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        sam->submodels[i] = NEAT_init(input_dim, output_dim, 100);
-        if (!sam->submodels[i]) {
-            // Cleanup on error
-            for (size_t j = 0; j < i; j++) {
-                NEAT_destroy(sam->submodels[j]);
-            }
-            free(sam->submodels);
-            TRANSFORMER_destroy(sam->transformer);
-            free(sam->layer_sizes);
-            free(sam);
-            fclose(file);
-            return NULL;
-        }
-        // Note: NEAT submodels are not loaded from file since NEAT_load expects a filename
-        // In a production system, we'd need a FILE*-based load function
-    }
-    
-    // Initialize weights (allocate but don't load - they'll be retrained)
-    init_weights(sam);
-
+  SAM_t *sam = (SAM_t *)malloc(sizeof(SAM_t));
+  if (!sam) {
     fclose(file);
-    return sam;
+    return NULL;
+  }
+
+  // Initialize to zero
+  memset(sam, 0, sizeof(SAM_t));
+
+  // Load SAM parameters
+  if (fread(&sam->num_submodels, sizeof(size_t), 1, file) != 1) {
+    free(sam);
+    fclose(file);
+    return NULL;
+  }
+  if (fread(&sam->context, sizeof(long double), 1, file) != 1) {
+    free(sam);
+    fclose(file);
+    return NULL;
+  }
+
+  // Load layer configuration
+  if (fread(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
+    free(sam);
+    fclose(file);
+    return NULL;
+  }
+
+  if (sam->num_layers > 0 && sam->num_layers < 100) { // Sanity check
+    sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
+    if (!sam->layer_sizes) {
+      free(sam);
+      fclose(file);
+      return NULL;
+    }
+    if (fread(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) !=
+        sam->num_layers) {
+      free(sam->layer_sizes);
+      free(sam);
+      fclose(file);
+      return NULL;
+    }
+  } else {
+    // Default values if not saved (backward compatibility)
+    sam->num_layers = 3;
+    sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
+    if (!sam->layer_sizes) {
+      free(sam);
+      fclose(file);
+      return NULL;
+    }
+    sam->layer_sizes[0] = 256;
+    sam->layer_sizes[1] = 256;
+    sam->layer_sizes[2] = 64;
+  }
+
+  // Load transformer
+  sam->transformer = TRANSFORMER_load(file);
+  if (!sam->transformer) {
+    free(sam->layer_sizes);
+    free(sam);
+    fclose(file);
+    return NULL;
+  }
+
+  // Load submodels
+  sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
+  if (!sam->submodels) {
+    TRANSFORMER_destroy(sam->transformer);
+    free(sam->layer_sizes);
+    free(sam);
+    fclose(file);
+    return NULL;
+  }
+
+  // Initialize submodels (NEAT_load expects filename, not FILE*, so we skip
+  // loading them) In a full implementation, we'd need a NEAT_load_from_file
+  // function
+  size_t input_dim = sam->layer_sizes[0];
+  size_t output_dim = sam->layer_sizes[sam->num_layers - 1];
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    sam->submodels[i] = NEAT_init(input_dim, output_dim, 100);
+    if (!sam->submodels[i]) {
+      // Cleanup on error
+      for (size_t j = 0; j < i; j++) {
+        NEAT_destroy(sam->submodels[j]);
+      }
+      free(sam->submodels);
+      TRANSFORMER_destroy(sam->transformer);
+      free(sam->layer_sizes);
+      free(sam);
+      fclose(file);
+      return NULL;
+    }
+    // Note: NEAT submodels are not loaded from file since NEAT_load expects a
+    // filename In a production system, we'd need a FILE*-based load function
+  }
+
+  // Initialize weights (allocate but don't load - they'll be retrained)
+  init_weights(sam);
+
+  fclose(file);
+  return sam;
 }
 
 // Matrix operations
-void SAM_matrix_multiply(long double** A, long double** B, long double** C,
-                        size_t m, size_t n, size_t p) {
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < p; j++) {
-            C[i][j] = 0.0L;
-            for (size_t k = 0; k < n; k++) {
-                C[i][j] += A[i][k] * B[k][j];
-            }
-        }
+void SAM_matrix_multiply(long double **A, long double **B, long double **C,
+                         size_t m, size_t n, size_t p) {
+  for (size_t i = 0; i < m; i++) {
+    for (size_t j = 0; j < p; j++) {
+      C[i][j] = 0.0L;
+      for (size_t k = 0; k < n; k++) {
+        C[i][j] += A[i][k] * B[k][j];
+      }
     }
+  }
 }
 
-void SAM_matrix_scale(long double** matrix, long double scalar,
-                     size_t rows, size_t cols) {
-    for (size_t i = 0; i < rows; i++) {
-        for (size_t j = 0; j < cols; j++) {
-            matrix[i][j] *= scalar;
-        }
+void SAM_matrix_scale(long double **matrix, long double scalar, size_t rows,
+                      size_t cols) {
+  for (size_t i = 0; i < rows; i++) {
+    for (size_t j = 0; j < cols; j++) {
+      matrix[i][j] *= scalar;
     }
+  }
 }
 
-void SAM_matrix_add(long double** A, long double** B, long double** C,
-                   size_t rows, size_t cols) {
-    for (size_t i = 0; i < rows; i++) {
-        for (size_t j = 0; j < cols; j++) {
-            C[i][j] = A[i][j] + B[i][j];
-        }
+void SAM_matrix_add(long double **A, long double **B, long double **C,
+                    size_t rows, size_t cols) {
+  for (size_t i = 0; i < rows; i++) {
+    for (size_t j = 0; j < cols; j++) {
+      C[i][j] = A[i][j] + B[i][j];
     }
+  }
 }
 
-void SAM_train_submodel(NEAT_t* neat, long double learning_rate) {
-    if (!neat) return;
-    // TODO: Implement submodel training
+void SAM_train_submodel(NEAT_t *neat, long double learning_rate) {
+  if (!neat)
+    return;
+  // TODO: Implement submodel training
 }
 
-PerformanceMetrics SAM_calculate_metrics(NEAT_t* neat) {
-    PerformanceMetrics metrics;
-    metrics.accuracy = 0.0L;
-    metrics.loss = 0.0L;
-    metrics.fitness = 0.0L;
+PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat) {
+  PerformanceMetrics metrics;
+  metrics.accuracy = 0.0L;
+  metrics.loss = 0.0L;
+  metrics.fitness = 0.0L;
 
-    // Calculate metrics based on NEAT performance
-    if (neat && neat->nodes) {
-        // Calculate average fitness
-        long double total_fitness = 0.0L;
-        unsigned int count = 0;
-        for (unsigned int i = 0; i < neat->num_nodes; i++) {
-            if (neat->nodes[i] && neat->nodes[i]->enabled) {
-                total_fitness += neat->nodes[i]->fitness;
-                count++;
-            }
-        }
-        if (count > 0) {
-            metrics.fitness = total_fitness / count;
-        }
+  // Calculate metrics based on NEAT performance
+  if (neat && neat->nodes) {
+    // Calculate average fitness
+    long double total_fitness = 0.0L;
+    unsigned int count = 0;
+    for (unsigned int i = 0; i < neat->num_nodes; i++) {
+      if (neat->nodes[i] && neat->nodes[i]->enabled) {
+        total_fitness += neat->nodes[i]->fitness;
+        count++;
+      }
     }
+    if (count > 0) {
+      metrics.fitness = total_fitness / count;
+    }
+  }
 
-    return metrics;
+  return metrics;
 }
 
 // SAM forward pass
-long double* SAM_forward(SAM_t* sam, long double** input_sequence, size_t seq_length) {
-    if (!sam || !input_sequence || seq_length == 0) return NULL;
-    
-    // Check if transformer is initialized
-    if (!sam->transformer) {
-        printf("Error: Transformer not initialized in SAM model\n");
-        return NULL;
-    }
-    
-    // Check if layer_sizes is valid
-    if (!sam->layer_sizes || sam->num_layers == 0) {
-        printf("Error: Invalid layer configuration in SAM model\n");
-        return NULL;
-    }
-    
-    // Check if input dimension matches transformer's expected dimension
-    // The transformer expects input_sequence[0] to have at least model_dim elements
-    if (sam->transformer->model_dim > sam->layer_sizes[0]) {
-        printf("Error: Transformer model_dim (%zu) > input layer size (%zu)\n", 
-               sam->transformer->model_dim, sam->layer_sizes[0]);
-        return NULL;
-    }
+long double *SAM_forward(SAM_t *sam, long double **input_sequence,
+                         size_t seq_length) {
+  if (!sam || !input_sequence || seq_length == 0)
+    return NULL;
 
-    // Forward pass through transformer
-    long double* transformer_output = TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-    if (!transformer_output) {
-        printf("Error: TRANSFORMER_forward returned NULL\n");
-        return NULL;
-    }
+  // Check if transformer is initialized
+  if (!sam->transformer) {
+    printf("Error: Transformer not initialized in SAM model\n");
+    return NULL;
+  }
 
-    // Use transformer output as final output
-    long double* output = (long double*)malloc(sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
-    if (!output) {
-        free(transformer_output);
-        return NULL;
-    }
+  // Check if layer_sizes is valid
+  if (!sam->layer_sizes || sam->num_layers == 0) {
+    printf("Error: Invalid layer configuration in SAM model\n");
+    return NULL;
+  }
 
-    // Copy transformer output (assuming dimensions match)
-    size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
-    if (copy_size > sam->layer_sizes[0]) copy_size = sam->layer_sizes[0];
-    memcpy(output, transformer_output, copy_size * sizeof(long double));
-    
-    // Pad or truncate if needed
-    for (size_t i = copy_size; i < sam->layer_sizes[sam->num_layers - 1]; i++) {
-        output[i] = 0.0L;
-    }
+  // Check if input dimension matches transformer's expected dimension
+  // The transformer expects input_sequence[0] to have at least model_dim
+  // elements
+  if (sam->transformer->model_dim > sam->layer_sizes[0]) {
+    printf("Error: Transformer model_dim (%zu) > input layer size (%zu)\n",
+           sam->transformer->model_dim, sam->layer_sizes[0]);
+    return NULL;
+  }
 
+  // Forward pass through transformer
+  long double *transformer_output =
+      TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
+  if (!transformer_output) {
+    printf("Error: TRANSFORMER_forward returned NULL\n");
+    return NULL;
+  }
+
+  // Use transformer output as final output
+  long double *output = (long double *)malloc(
+      sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
+  if (!output) {
     free(transformer_output);
-    return output;
+    return NULL;
+  }
+
+  // Copy transformer output (assuming dimensions match)
+  size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
+  if (copy_size > sam->layer_sizes[0])
+    copy_size = sam->layer_sizes[0];
+  memcpy(output, transformer_output, copy_size * sizeof(long double));
+
+  // Pad or truncate if needed
+  for (size_t i = copy_size; i < sam->layer_sizes[sam->num_layers - 1]; i++) {
+    output[i] = 0.0L;
+  }
+
+  free(transformer_output);
+  return output;
+}
+
+void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
+                  long double *grad_loss) {
+  if (!sam || !input_sequence || !grad_loss)
+    return;
+
+  // 1. Backprop through transformer
+  long double *grad_input_transformer =
+      (long double *)malloc(sizeof(long double) * sam->layer_sizes[0]);
+  if (!grad_input_transformer)
+    return;
+  TRANSFORMER_backprop(sam->transformer, input_sequence, seq_length, grad_loss,
+                       grad_input_transformer);
+
+  // 2. Backprop through top-level SAM weights if using fully connected layers
+  for (size_t i = 0; i < sam->num_layers - 1; i++) {
+    for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
+      for (size_t k = 0; k < sam->layer_sizes[i + 1]; k++) {
+        // Simple gradient descent update
+        sam->weights[i][j][k] -=
+            0.01L * grad_input_transformer[j]; // learning rate 0.01
+      }
+    }
+  }
+
+  // 3. Backprop through submodels (NEAT)
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (sam->submodels[i]) {
+      NEAT_backprop(sam->submodels[i], input_sequence[0],
+                    grad_input_transformer); // assuming NEAT_backprop exists
+    }
+  }
+
+  free(grad_input_transformer);
 }
 
 // SAM adaptation
-void SAM_adapt(SAM_t* sam, long double** input_sequence, size_t seq_length) {
-    if (!sam || !input_sequence) return;
+void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
+  if (!sam || !input_sequence)
+    return;
 
-    // Adapt submodels based on performance
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        if (sam->submodels[i]) {
-            // Train submodel with input
-            if (seq_length > 0 && input_sequence[0]) {
-                long double* target = (long double*)malloc(sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
-                if (target) {
-                    // Use transformer output as target for adaptation
-                    long double* transformer_out = TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-                    if (transformer_out) {
-                        size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
-                        if (copy_size > sam->layer_sizes[0]) copy_size = sam->layer_sizes[0];
-                        memcpy(target, transformer_out, copy_size * sizeof(long double));
-                        for (size_t j = copy_size; j < sam->layer_sizes[sam->num_layers - 1]; j++) {
-                            target[j] = 0.0L;
-                        }
-                        NEAT_train(sam->submodels[i], input_sequence[0], target);
-                        free(transformer_out);
-                    }
-                    free(target);
-                }
+  // Adapt submodels based on performance
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (sam->submodels[i]) {
+      // Train submodel with input
+      if (seq_length > 0 && input_sequence[0]) {
+        long double *target = (long double *)malloc(
+            sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
+        if (target) {
+          // Use transformer output as target for adaptation
+          long double *transformer_out =
+              TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
+          if (transformer_out) {
+            size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
+            if (copy_size > sam->layer_sizes[0])
+              copy_size = sam->layer_sizes[0];
+            memcpy(target, transformer_out, copy_size * sizeof(long double));
+            for (size_t j = copy_size;
+                 j < sam->layer_sizes[sam->num_layers - 1]; j++) {
+              target[j] = 0.0L;
             }
+            NEAT_train(sam->submodels[i], input_sequence[0], target);
+            free(transformer_out);
+          }
+          free(target);
         }
+      }
     }
+  }
 }
 
 // SAM generalization
-void SAM_generalize(SAM_t* sam) {
-    if (!sam) return;
+void SAM_generalize(SAM_t *sam) {
+  if (!sam)
+    return;
 
-    // Generalize by averaging submodel weights (simplified)
-    // This is a placeholder - actual generalization would be more complex
-    for (size_t i = 0; i < sam->num_submodels; i++) {
-        if (sam->submodels[i]) {
-            // Update fitness based on performance
-            PerformanceMetrics metrics = SAM_calculate_metrics(sam->submodels[i]);
-            if (sam->submodels[i]->nodes && sam->submodels[i]->num_nodes > 0) {
-                for (unsigned int j = 0; j < sam->submodels[i]->num_nodes; j++) {
-                    if (sam->submodels[i]->nodes[j]) {
-                        sam->submodels[i]->nodes[j]->fitness = metrics.fitness;
-                    }
-                }
-            }
+  // Generalize by averaging submodel weights (simplified)
+  // This is a placeholder - actual generalization would be more complex
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (sam->submodels[i]) {
+      // Update fitness based on performance
+      PerformanceMetrics metrics = SAM_calculate_metrics(sam->submodels[i]);
+      if (sam->submodels[i]->nodes && sam->submodels[i]->num_nodes > 0) {
+        for (unsigned int j = 0; j < sam->submodels[i]->num_nodes; j++) {
+          if (sam->submodels[i]->nodes[j]) {
+            sam->submodels[i]->nodes[j]->fitness = metrics.fitness;
+          }
         }
+      }
     }
+  }
 }
 
 // SAM transfusion
-void SAM_transfuse(SAM_t* sam) {
-    if (!sam) return;
+void SAM_transfuse(SAM_t *sam) {
+  if (!sam)
+    return;
 
-    // Transfuse knowledge between submodels
-    // This is a placeholder - actual transfusion would transfer weights/architecture
-    for (size_t i = 0; i < sam->num_submodels - 1; i++) {
-        if (sam->submodels[i] && sam->submodels[i + 1]) {
-            // Simple transfusion: evolve submodels
-            NEAT_evolve(sam->submodels[i]);
-        }
+  // Transfuse knowledge between submodels
+  // This is a placeholder - actual transfusion would transfer
+  // weights/architecture
+  for (size_t i = 0; i < sam->num_submodels - 1; i++) {
+    if (sam->submodels[i] && sam->submodels[i + 1]) {
+      // Simple transfusion: evolve submodels
+      NEAT_evolve(sam->submodels[i]);
     }
+  }
 }
 
 // SAM evaluate fitness
-long double SAM_evaluate_fitness(SAM_t* sam, long double* input, long double* target) {
-    if (!sam || !input || !target) return -INFINITY;
+long double SAM_evaluate_fitness(SAM_t *sam, long double *input,
+                                 long double *target) {
+  if (!sam || !input || !target)
+    return -INFINITY;
 
-    // Forward pass
-    long double** input_seq = (long double**)malloc(sizeof(long double*));
-    if (!input_seq) return -INFINITY;
-    input_seq[0] = input;
+  // Forward pass
+  long double **input_seq = (long double **)malloc(sizeof(long double *));
+  if (!input_seq)
+    return -INFINITY;
+  input_seq[0] = input;
 
-    long double* output = SAM_forward(sam, input_seq, 1);
-    free(input_seq);
-    
-    if (!output) return -INFINITY;
+  long double *output = SAM_forward(sam, input_seq, 1);
+  free(input_seq);
 
-    // Calculate MSE loss
-    long double loss = 0.0L;
-    size_t output_size = sam->layer_sizes[sam->num_layers - 1];
-    for (size_t i = 0; i < output_size; i++) {
-        long double diff = output[i] - target[i];
-        loss += diff * diff;
-    }
-    loss /= output_size;
+  if (!output)
+    return -INFINITY;
 
-    free(output);
-    return -loss;  // Negative because higher fitness is better
+  // Calculate MSE loss
+  long double loss = 0.0L;
+  size_t output_size = sam->layer_sizes[sam->num_layers - 1];
+  for (size_t i = 0; i < output_size; i++) {
+    long double diff = output[i] - target[i];
+    loss += diff * diff;
+  }
+  loss /= output_size;
+
+  free(output);
+  return -loss; // Negative because higher fitness is better
 }
 
 // SAM update context
-void SAM_update_context(SAM_t* sam, long double current_performance) {
-    if (!sam) return;
+void SAM_update_context(SAM_t *sam, long double current_performance) {
+  if (!sam)
+    return;
 
-    // Update context based on performance
-    sam->context = (sam->context + current_performance) / 2.0L;
-    
-    // Clamp context to reasonable range
-    if (sam->context < 0.0L) sam->context = 0.0L;
-    if (sam->context > 1.0L) sam->context = 1.0L;
+  // Update context based on performance
+  sam->context = (sam->context + current_performance) / 2.0L;
+
+  // Clamp context to reasonable range
+  if (sam->context < 0.0L)
+    sam->context = 0.0L;
+  if (sam->context > 1.0L)
+    sam->context = 1.0L;
 }
