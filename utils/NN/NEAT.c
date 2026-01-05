@@ -381,10 +381,8 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       actFunc2,
   };
 
-  ActivationFunctionType actDeriv1 =
-      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT;
-  ActivationFunctionType actDeriv2 =
-      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT;
+  ActivationFunctionType actDeriv1 = rand() % REGULARIZATION_TYPE_COUNT;
+  ActivationFunctionType actDeriv2 = rand() % REGULARIZATION_TYPE_COUNT;
   ActivationFunctionType actDerivs[2] = {
       actDeriv1,
       actDeriv2,
