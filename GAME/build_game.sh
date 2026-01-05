@@ -23,7 +23,7 @@ echo "Compiling game..."
 NN_SRC=../utils/NN/NN.c 
 Raylib_SRC=$(find ../utils/Raylib/src -name "*.c" | tr '\n' ' ')
 
-gcc -w game.c $NN_SRC \
+gcc -w game.c $NN_SRC $Raylib_SRC \
     -I../utils/Raylib/src \
     -I../utils/NN 
     -L../utils/Raylib/src -lraylib 
