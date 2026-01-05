@@ -375,7 +375,7 @@ void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output,
         grad_norm[i] + dvar * 2.0L * (input[i] - mean) / D + dmean / D;
 
   // Backprop through affine network
-  NN_backprop(ln->norm_network, input, *grad_input, 0.01L);
+  NN_backprop(ln->norm_network, input, grad_norm, *grad_input, 0.01L);
 
   free(grad_norm);
   free(grad_input);
