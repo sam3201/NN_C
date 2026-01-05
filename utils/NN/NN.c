@@ -1028,22 +1028,20 @@ long double relu(long double x) { return x > 0 ? x : 0; }
 
 long double linear(long double x) { return x; }
 
-void softmax(long double *layer, size_t size) {
-  long double max = layer[0];
+void softmax(long double *vec, size_t size) {
+  long double max = vec[0];
   for (size_t i = 1; i < size; i++)
-    if (layer[i] > max)
-      max = layer[i];
+    if (vec[i] > max)
+      max = vec[i];
 
   long double sum = 0.0L;
   for (size_t i = 0; i < size; i++) {
-    layer[i] = expl(layer[i] - max);
-    sum += layer[i];
+    vec[i] = expl(vec[i] - max); // stability
+    sum += vec[i];
   }
-
   for (size_t i = 0; i < size; i++)
-    layer[i] /= sum;
+    vec[i] /= sum;
 }
-
 void argmax_vec(long double *layer, size_t size) {
   size_t max_idx = 0;
   long double max_val = layer[0];
