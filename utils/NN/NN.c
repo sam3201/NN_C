@@ -238,7 +238,7 @@ void NN_destroy(NN_t *nn) {
   // Free layers
   free(nn->layers);
 
-  // Free weights and biases,
+  // Free weights and biases, momentum, and velocity
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
     free(nn->weights[i]);
     free(nn->biases[i]);
