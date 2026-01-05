@@ -1071,11 +1071,25 @@ long double relu_derivative(long double x) { return x > 0 ? 1.0L : 0.0L; }
 
 long double linear_derivative(long double x) { return 1.0L; }
 
-void softmax_derivative_vec(long double *predicted, long double *one_hot,
-                            long double *gradients, size_t size) {
+void softmax(long double *vec, size_t size) {
+  long double max = vec[0];
+  for (size_t i = 1; i < size; i++)
+    if (vec[i] > max)
+      max = vec[i];
+
+  long double sum = 0.0L;
   for (size_t i = 0; i < size; i++) {
-    gradients[i] = predicted[i] - one_hot[i];
+    vec[i] = expl(vec[i] - max); // stability
+    sum += vec[i];
   }
+  for (size_t i = 0; i < size; i++)
+    vec[i] /= sum;
+}
+
+void softmax_derivative(long double *predicted, long double *one_hot,
+                        long double *gradients, size_t size) {
+  for (size_t i = 0; i < size; i++)
+    gradients[i] = predicted[i] - one_hot[i];
 }
 
 void argmax_derivative_vec(long double *predicted, long double *one_hot,
