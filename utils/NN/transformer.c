@@ -533,16 +533,16 @@ int TRANSFORMER_save(Transformer_t *t, FILE *f) {
 
     // ---- Attention ----
     NN_save(layer->attention->Q_proj, f);
-    NN_save_to_file(layer->attention->K_proj, f);
-    NN_save_to_file(layer->attention->V_proj, f);
-    NN_save_to_file(layer->attention->O_proj, f);
+    NN_save(layer->attention->K_proj, f);
+    NN_save(layer->attention->V_proj, f);
+    NN_save(layer->attention->O_proj, f);
 
     // ---- Feed Forward ----
-    NN_save_to_file(layer->feed_forward->network, f);
+    NN_save(layer->feed_forward->network, f);
 
     // ---- LayerNorms ----
-    NN_save_to_file(layer->norm1->norm_network, f);
-    NN_save_to_file(layer->norm2->norm_network, f);
+    NN_save(layer->norm1->norm_network, f);
+    NN_save(layer->norm2->norm_network, f);
   }
 
   return 1;
