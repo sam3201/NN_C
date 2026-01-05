@@ -383,13 +383,6 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
   NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
 }
 
-void TRANSFORMER__layer_backprop(TransformerLayer *layer, long double *input,
-                                 long double *grad_output,
-                                 long double *grad_input) {
-  if (!layer || !input || !grad_output || !grad_input)
-    return;
-}
-
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
@@ -399,65 +392,54 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
   size_t L = transformer->num_layers;
   size_t D = transformer->model_dim;
 
-  // 1️⃣ Store layer inputs
+  // Forward pass to compute intermediate activations for each layer
   long double **layer_inputs = malloc((L + 1) * sizeof(long double *));
+  if (!layer_inputs)
+    return;
+
   layer_inputs[0] = malloc(D * sizeof(long double));
+  if (!layer_inputs[0]) {
+    free(layer_inputs);
+    return;
+  }
   memcpy(layer_inputs[0], input_sequence[0], D * sizeof(long double));
 
   for (size_t i = 0; i < L; i++) {
     transformer->layers[i]->seq_length = seq_length;
     layer_inputs[i + 1] =
         transformer_forward(transformer->layers[i], layer_inputs[i]);
+    if (!layer_inputs[i + 1]) {
+      for (size_t j = 0; j <= i; j++)
+        free(layer_inputs[j]);
+      free(layer_inputs);
+      return;
+    }
   }
 
-  // 2️⃣ Backprop
-  long double *grad = malloc(D * sizeof(long double));
-  memcpy(grad, grad_loss, D * sizeof(long double));
+  // Loop over each layer and update its NNs using the helper backprop
+  for (size_t i = 0; i < L; i++) {
+    TransformerLayer *layer = transformer->layers[i];
 
-  for (int i = (int)L - 1; i >= 0; i--) {
-    long double *next_grad = calloc(D, sizeof(long double));
+    // --- Multi-Head Attention ---
+    transformer_mha_backprop(layer->attention, layer_inputs[i], grad_loss,
+                             NULL); // grad_input not needed
 
-    free(grad);
-    grad = next_grad;
-  }
-  size_t d = transformer->model_dim;
+    // --- LayerNorm1 ---
+    transformer_norm_backprop(layer->norm1, layer_inputs[i], grad_loss, NULL);
 
-  long double *grad_ff = calloc(d, sizeof(long double));
-  long double *grad_norm1 = calloc(d, sizeof(long double));
-  long double *grad_attn = calloc(d, sizeof(long double));
+    // --- FeedForward ---
+    NN_backprop(layer->feed_forward->network, layer_inputs[i], 0.0L,
+                grad_loss[0]); // propagate scalar gradient
 
-  if (!grad_ff || !grad_norm1 || !grad_attn)
-    goto cleanup;
-
-  /* -------- norm2 (structural gradient) -------- */
-  transformer_norm_backprop(layer->norm2, input, grad_output, grad_ff);
-
-  /* -------- feed-forward (scalar-supervised NN) -------- */
-  for (size_t i = 0; i < d; i++) {
-    long double y_pred = grad_ff[i];
-    long double y_true = 0.0L; // zero-gradient target
-
-    NN_backprop(layer->feed_forward->network, input, y_true, y_pred);
-
-    grad_norm1[i] = y_pred;
+    // --- LayerNorm2 ---
+    transformer_norm_backprop(layer->norm2, layer_inputs[i + 1], grad_loss,
+                              NULL);
   }
 
-  /* -------- norm1 -------- */
-  transformer_norm_backprop(layer->norm1, input, grad_norm1, grad_attn);
-
-  /* -------- attention -------- */
-  transformer_mha_backprop(layer->attention, input, grad_attn, grad_input);
-
-cleanup:
-  free(grad_ff);
-  free(grad_norm1);
-  free(grad_attn);
-
-  // 3️⃣ Cleanup
+  // Cleanup
   for (size_t i = 0; i <= L; i++)
     free(layer_inputs[i]);
   free(layer_inputs);
-  free(grad);
 }
 
 void free_feed_forward(FeedForward *ff) {
