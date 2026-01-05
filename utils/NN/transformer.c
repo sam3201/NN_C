@@ -264,6 +264,139 @@ long double *TRANSFORMER_forward(Transformer_t *transformer,
   return x;
 }
 
+// ----------------------
+// MultiHeadAttention backprop
+// ----------------------
+long double *transformer_mha_backprop(MultiHeadAttention *mha,
+                                      long double *grad_output,
+                                      size_t seq_length) {
+  if (!mha || !grad_output)
+    return NULL;
+
+  size_t D = mha->head_dim;
+  long double *grad_att_out = malloc(seq_length * D * sizeof(long double));
+  memset(grad_att_out, 0, seq_length * D * sizeof(long double));
+
+  // Backprop through O_proj
+  long double **grad_O =
+      NN_backprop(mha->O_proj, grad_output); // returns long double **
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < D; j++)
+      grad_att_out[i * D + j] = grad_O[i][j];
+
+  // Backprop through attention scores: grad_att_out = dLoss/d(att_out)
+  long double *grad_scores =
+      malloc(seq_length * seq_length * sizeof(long double));
+  memset(grad_scores, 0, seq_length * seq_length * sizeof(long double));
+
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < seq_length; j++)
+      for (size_t k = 0; k < D; k++)
+        grad_scores[i * seq_length + j] +=
+            grad_att_out[i * D + k] * mha->V_cache[j * D + k];
+
+  // Backprop through softmax
+  for (size_t i = 0; i < seq_length; i++) {
+    long double *row = &mha->scores_cache[i * seq_length];
+    long double *grad_row = &grad_scores[i * seq_length];
+    long double sum = 0;
+    for (size_t j = 0; j < seq_length; j++)
+      sum += row[j] * grad_row[j];
+    for (size_t j = 0; j < seq_length; j++)
+      grad_row[j] = row[j] * (grad_row[j] - sum);
+  }
+
+  // Backprop through V_proj
+  long double *grad_V = malloc(seq_length * D * sizeof(long double));
+  memset(grad_V, 0, seq_length * D * sizeof(long double));
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < D; j++)
+      for (size_t k = 0; k < seq_length; k++)
+        grad_V[i * D + j] +=
+            mha->scores_cache[k * seq_length + i] * grad_att_out[k * D + j];
+
+  long double **grad_V_out = NN_backprop(mha->V_proj, grad_V);
+
+  // Backprop through Q_proj
+  long double *grad_Q = malloc(seq_length * D * sizeof(long double));
+  memset(grad_Q, 0, seq_length * D * sizeof(long double));
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < D; j++)
+      for (size_t k = 0; k < seq_length; k++)
+        grad_Q[i * D + j] +=
+            grad_scores[i * seq_length + k] * mha->K_cache[k * D + j];
+
+  long double **grad_Q_out = NN_backprop(mha->Q_proj, grad_Q);
+
+  // Backprop through K_proj
+  long double *grad_K = malloc(seq_length * D * sizeof(long double));
+  memset(grad_K, 0, seq_length * D * sizeof(long double));
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < D; j++)
+      for (size_t k = 0; k < seq_length; k++)
+        grad_K[i * D + j] +=
+            grad_scores[k * seq_length + i] * mha->Q_cache[k * D + j];
+
+  long double **grad_K_out = NN_backprop(mha->K_proj, grad_K);
+
+  // Sum gradients from Q, K, V paths
+  long double *grad_input = malloc(seq_length * D * sizeof(long double));
+  memset(grad_input, 0, seq_length * D * sizeof(long double));
+  for (size_t i = 0; i < seq_length; i++)
+    for (size_t j = 0; j < D; j++)
+      grad_input[i * D + j] =
+          grad_Q_out[i][j] + grad_K_out[i][j] + grad_V_out[i][j];
+
+  // Free temporary arrays
+  free(grad_att_out);
+  free(grad_scores);
+  free(grad_V);
+  free(grad_Q);
+  free(grad_K);
+
+  return grad_input;
+}
+
+// ----------------------
+// Transformer Layer backprop
+// ----------------------
+void transformer_layer_backprop(TransformerLayer *layer,
+                                long double *grad_output) {
+  if (!layer || !grad_output)
+    return;
+
+  // Backprop through second LayerNorm (Add & Norm2)
+  long double *grad_ff_out = layer_norm_backprop(layer->norm2, grad_output);
+
+  // Backprop through FeedForward
+  long double *grad_ff_input =
+      NN_backprop(layer->feed_forward->network, grad_ff_out);
+
+  // Backprop through first LayerNorm (Add & Norm1)
+  long double *grad_att_out = layer_norm_backprop(layer->norm1, grad_ff_input);
+
+  // Backprop through MHA
+  long double *grad_input = transformer_mha_backprop(
+      layer->attention, grad_att_out, layer->seq_length);
+
+  // Free intermediate grads
+  free(grad_ff_out);
+  free(grad_ff_input);
+  free(grad_att_out);
+
+  // grad_input is the final gradient w.r.t. the layer input
+  // Could be returned if stacking multiple layers
+}
+
+// ----------------------
+// Simple LayerNorm backprop helper
+// ----------------------
+long double *layer_norm_backprop(LayerNorm *ln, long double *grad_output) {
+  if (!ln || !grad_output)
+    return NULL;
+  return NN_backprop(ln->norm_network, grad_output);
+}
+
 // Backprop
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
