@@ -642,7 +642,6 @@ size_t assign_species(Population *pop) {
     if (count > 0)
       pop->genomes[i]->fitness /= count;
   }
-
   free(species);
   return numSpecies;
 }
