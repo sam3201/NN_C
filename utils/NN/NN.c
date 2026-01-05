@@ -437,7 +437,7 @@ long double NN_loss(NN_t *nn, long double y_true, long double y_predicted) {
   return loss;
 }
 
-// Forward Propagation Functions
+// Forward Propagation Functions //Caller owns buffer, must free() after use
 long double *NN_forward(NN_t *nn, long double inputs[]) {
   long double **acts = NN_forward_full(nn, inputs);
   long double *out = acts[nn->numLayers - 1];
