@@ -92,6 +92,8 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2);
 void GENOME_forward(Genome_t *genome, long double *input, long double *output);
 long double activate(long double x, ActivationFunctionType type);
 
+NN_t *GENOME_compile_to_NN(Genome_t *genome);
+
 // ------------------- Serialization -------------------
 void GENOME_save(Genome_t *genome, const char *filename);
 Genome_t *GENOME_load(const char *filename);
