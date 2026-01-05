@@ -93,9 +93,9 @@ void transformer_feedforward_backprop(FeedForward *ff,
                                       long double *grad_output);
 long double *transformer_layer_backprop(TransformerLayer *layer,
                                         long double *grad_output);
-void TRANSFORMER_backprop(Transformer_t *transformer,
-                          long double **input_sequence, size_t seq_length,
-                          long double *grad_loss);
+long double **TRANSFORMER_backprop(Transformer_t *transformer,
+                                   long double **grad_output,
+                                   size_t seq_length);
 
 // Training
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
