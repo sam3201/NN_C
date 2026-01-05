@@ -91,6 +91,8 @@ size_t get_innovation_number(size_t from, size_t to);
 long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
                                    long double c2, long double c3);
 
+void POPULATION_evolve(Population *pop);
+
 // ------------------- Topological Sort -------------------
 size_t *topological_sort(Genome_t *genome, size_t *outSize);
 
