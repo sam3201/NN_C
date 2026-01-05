@@ -23,10 +23,10 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
                       LossFunctionType lossFunc, LossDerivativeType lossDeriv,
                       RegularizationType reg, OptimizerType opt,
                       long double learningRate, size_t numInputs) {
+
   size_t lastLayer = 0;
   while (layers[lastLayer] == 0)
     lastLayer++;
-
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   genome->numNodes = numInputs + layers[numInputs] + 2; // initial + bias
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
