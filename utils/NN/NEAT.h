@@ -50,6 +50,11 @@ typedef struct Genome_t {
   long double fitness;
 } Genome_t;
 
+typedef struct {
+  Genome_t **genomes;
+  size_t size;
+} Population;
+
 static InnovationRecord *innovationHistory = NULL;
 static size_t innovationCount = 0;
 
