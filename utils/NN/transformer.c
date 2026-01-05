@@ -401,6 +401,9 @@ long double *layer_norm_backprop(LayerNorm *ln, long double *grad_output) {
 // ----------------------
 // Full Transformer backprop over a sequence
 // ----------------------
+// ----------------------
+// Full Transformer backprop over a sequence
+// ----------------------
 void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_loss) {
