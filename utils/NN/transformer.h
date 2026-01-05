@@ -72,8 +72,11 @@ void transformer_mha_backprop(MultiHeadAttention *mha, long double *input,
 void transformer_norm_backprop(LayerNorm *ln, long double *input,
                                long double *grad_output,
                                long double *grad_input);
-void transformer_backprop(TransformerLayer *layer, long double *input,
-                          long double *grad_output, long double *grad_input);
+
+void TRANSFORMER_backward(Transformer_t *transformer,
+                          long double **input_sequence, size_t seq_length,
+                          long double *grad_output);
+
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
                        size_t seq_length, long double *target);
 
