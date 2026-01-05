@@ -1,34 +1,36 @@
 #include "TRANSFORMER.h"
-#include "NN.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+// ----------------------
 // Creation functions
+// ----------------------
 MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
   MultiHeadAttention *mha = malloc(sizeof(MultiHeadAttention));
-  if (!mha) {
+  if (!mha)
     return NULL;
-  }
 
   mha->model_dim = model_dim;
   mha->num_heads = num_heads;
   mha->head_dim = model_dim / num_heads;
+  mha->seq_length = 0;
 
-  // Create projection networks
   size_t layers[] = {model_dim, mha->head_dim, 0};
-  ActivationFunctionType activations[] = {RELU, RELU};
-  ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
+  ActivationFunctionType acts[] = {RELU, RELU};
+  ActivationDerivativeType ders[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
 
-  mha->Q_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
-                        L1, SGD, 0.01L);
-  mha->K_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
-                        L1, SGD, 0.01L);
-  mha->V_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
-                        L1, SGD, 0.01L);
-  mha->O_proj = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
-                        L1, SGD, 0.01L);
+  mha->Q_proj =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  mha->K_proj =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  mha->V_proj =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  mha->O_proj =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+
+  mha->Q_cache = NULL;
+  mha->K_cache = NULL;
+  mha->V_cache = NULL;
+  mha->scores_cache = NULL;
 
   if (!mha->Q_proj || !mha->K_proj || !mha->V_proj || !mha->O_proj) {
     free_attention(mha);
@@ -40,20 +42,21 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
 
 FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim) {
   FeedForward *ff = malloc(sizeof(FeedForward));
-  if (!ff) {
+  if (!ff)
     return NULL;
-  }
 
   ff->input_dim = input_dim;
   ff->hidden_dim = hidden_dim;
 
   size_t layers[] = {input_dim, hidden_dim, input_dim, 0};
-  ActivationFunctionType activations[] = {RELU, RELU, RELU};
-  ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE,
-                                            RELU_DERIVATIVE};
+  ActivationFunctionType acts[] = {RELU, RELU, RELU};
+  ActivationDerivativeType ders[] = {RELU_DERIVATIVE, RELU_DERIVATIVE,
+                                     RELU_DERIVATIVE};
 
-  ff->network = NN_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
-                        L1, SGD, 0.01L);
+  ff->network =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  ff->input_cache = NULL;
+
   if (!ff->network) {
     free(ff);
     return NULL;
@@ -64,19 +67,20 @@ FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim) {
 
 LayerNorm *create_layer_norm(size_t dim, long double epsilon) {
   LayerNorm *ln = malloc(sizeof(LayerNorm));
-  if (!ln) {
+  if (!ln)
     return NULL;
-  }
 
   ln->dim = dim;
   ln->epsilon = epsilon;
 
   size_t layers[] = {dim, dim, 0};
-  ActivationFunctionType activations[] = {RELU, RELU};
-  ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
+  ActivationFunctionType acts[] = {RELU, RELU};
+  ActivationDerivativeType ders[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
 
-  ln->norm_network = NN_init(layers, activations, derivatives, MSE,
-                             MSE_DERIVATIVE, L1, SGD, 0.01L);
+  ln->norm_network =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  ln->input_cache = NULL;
+
   if (!ln->norm_network) {
     free(ln);
     return NULL;
@@ -88,86 +92,56 @@ LayerNorm *create_layer_norm(size_t dim, long double epsilon) {
 TransformerLayer *create_transformer_layer(size_t model_dim, size_t num_heads,
                                            size_t ff_dim) {
   TransformerLayer *layer = malloc(sizeof(TransformerLayer));
-  if (!layer) {
+  if (!layer)
     return NULL;
-  }
 
   layer->model_dim = model_dim;
-  layer->seq_length = 1; // Default to 1, can be changed during forward pass
+  layer->seq_length = 1;
 
-  // Create multi-head attention
   layer->attention = create_attention(model_dim, num_heads);
-  if (!layer->attention) {
-    free(layer);
-    return NULL;
-  }
-
-  // Create first layer norm
   layer->norm1 = create_layer_norm(model_dim, 1e-6L);
-  if (!layer->norm1) {
-    free_attention(layer->attention);
-    free(layer);
-    return NULL;
-  }
-
-  // Create feed-forward network
   layer->feed_forward = create_feed_forward(model_dim, ff_dim);
-  if (!layer->feed_forward) {
-    free_attention(layer->attention);
-    free_layer_norm(layer->norm1);
-    free(layer);
+  layer->norm2 = create_layer_norm(model_dim, 1e-6L);
+
+  if (!layer->attention || !layer->norm1 || !layer->feed_forward ||
+      !layer->norm2) {
+    free_transformer_layer(layer);
     return NULL;
   }
 
-  // Create second layer norm
-  layer->norm2 = create_layer_norm(model_dim, 1e-6L);
-  if (!layer->norm2) {
-    free_attention(layer->attention);
-    free_layer_norm(layer->norm1);
-    free_feed_forward(layer->feed_forward);
-    free(layer);
-    return NULL;
-  }
+  layer->attention_input = NULL;
+  layer->norm1_input = NULL;
+  layer->ff_input = NULL;
+  layer->norm2_input = NULL;
 
   return layer;
 }
 
-// Forward pass functions
+// ----------------------
+// Forward pass
+// ----------------------
 long double *transformer_mha_forward(MultiHeadAttention *mha,
                                      long double *input, size_t seq_length) {
-  if (!mha || !input || seq_length == 0) {
+  if (!mha || !input)
     return NULL;
-  }
 
-  // Project input to Q, K, V matrices
+  mha->seq_length = seq_length;
+
+  // Project input
   long double *Q = NN_forward(mha->Q_proj, input);
-  if (!Q) {
-    return NULL;
-  }
-
   long double *K = NN_forward(mha->K_proj, input);
-  if (!K) {
-    free(Q);
-    return NULL;
-  }
-
   long double *V = NN_forward(mha->V_proj, input);
-  if (!V) {
-    free(Q);
-    free(K);
-    return NULL;
-  }
 
-  // Calculate attention scores
+  // Cache
+  mha->Q_cache = Q;
+  mha->K_cache = K;
+  mha->V_cache = V;
+
   long double *scores = malloc(seq_length * seq_length * sizeof(long double));
-  if (!scores) {
-    free(Q);
-    free(K);
-    free(V);
+  if (!scores)
     return NULL;
-  }
 
-  // Calculate attention scores (Q * K^T / sqrt(d_k))
+  // Q*K^T / sqrt(dk)
   for (size_t i = 0; i < seq_length; i++) {
     for (size_t j = 0; j < seq_length; j++) {
       scores[i * seq_length + j] = 0;
@@ -179,532 +153,40 @@ long double *transformer_mha_forward(MultiHeadAttention *mha,
     }
   }
 
-  // Apply softmax
+  // Softmax
   for (size_t i = 0; i < seq_length; i++) {
-    // Find max for numerical stability
     long double max_val = scores[i * seq_length];
-    for (size_t j = 1; j < seq_length; j++) {
-      if (scores[i * seq_length + j] > max_val) {
+    for (size_t j = 1; j < seq_length; j++)
+      if (scores[i * seq_length + j] > max_val)
         max_val = scores[i * seq_length + j];
-      }
-    }
 
-    // Calculate exp and sum
     long double sum = 0;
     for (size_t j = 0; j < seq_length; j++) {
       scores[i * seq_length + j] = exp(scores[i * seq_length + j] - max_val);
       sum += scores[i * seq_length + j];
     }
-
-    // Normalize
-    for (size_t j = 0; j < seq_length; j++) {
+    for (size_t j = 0; j < seq_length; j++)
       scores[i * seq_length + j] /= sum;
-    }
   }
 
-  // Apply attention to values
-  long double *attention_output =
+  mha->scores_cache = scores;
+
+  // Attention output
+  long double *att_out =
       malloc(seq_length * mha->head_dim * sizeof(long double));
-  if (!attention_output) {
-    free(Q);
-    free(K);
-    free(V);
-    free(scores);
-    return NULL;
-  }
-
-  // Calculate attention output (scores * V)
-  for (size_t i = 0; i < seq_length; i++) {
+  for (size_t i = 0; i < seq_length; i++)
     for (size_t j = 0; j < mha->head_dim; j++) {
-      attention_output[i * mha->head_dim + j] = 0;
-      for (size_t k = 0; k < seq_length; k++) {
-        attention_output[i * mha->head_dim + j] +=
+      att_out[i * mha->head_dim + j] = 0;
+      for (size_t k = 0; k < seq_length; k++)
+        att_out[i * mha->head_dim + j] +=
             scores[i * seq_length + k] * V[k * mha->head_dim + j];
-      }
-    }
-  }
-
-  // Project output
-  long double *final_output = NN_forward(mha->O_proj, attention_output);
-
-  // Clean up
-  free(Q);
-  free(K);
-  free(V);
-  free(scores);
-  free(attention_output);
-
-  return final_output;
-}
-
-long double *transformer_norm_forward(LayerNorm *ln, long double *input) {
-  if (!ln || !input) {
-    return NULL;
-  }
-
-  // Calculate mean
-  long double mean = 0;
-  for (size_t i = 0; i < ln->dim; i++) {
-    mean += input[i];
-  }
-  mean /= ln->dim;
-
-  // Calculate variance
-  long double var = 0;
-  for (size_t i = 0; i < ln->dim; i++) {
-    var += (input[i] - mean) * (input[i] - mean);
-  }
-  var /= ln->dim;
-
-  // Normalize
-  long double *normalized = malloc(ln->dim * sizeof(long double));
-  if (!normalized) {
-    return NULL;
-  }
-
-  for (size_t i = 0; i < ln->dim; i++) {
-    normalized[i] = (input[i] - mean) / sqrt(var + ln->epsilon);
-  }
-
-  // Apply affine transformation
-  long double *output = NN_forward(ln->norm_network, normalized);
-  free(normalized);
-
-  return output;
-}
-
-long double *transformer_forward(TransformerLayer *layer, long double *input) {
-  if (!layer || !input) {
-    return NULL;
-  }
-
-  // Multi-head attention
-  long double *attention_output =
-      transformer_mha_forward(layer->attention, input, layer->seq_length);
-  if (!attention_output) {
-    return NULL;
-  }
-
-  // Add & Norm
-  long double *residual1 = malloc(layer->model_dim * sizeof(long double));
-  if (!residual1) {
-    free(attention_output);
-    return NULL;
-  }
-
-  for (size_t i = 0; i < layer->model_dim; i++) {
-    residual1[i] = input[i] + attention_output[i];
-  }
-  free(attention_output);
-
-  long double *norm1_output = transformer_norm_forward(layer->norm1, residual1);
-  free(residual1);
-  if (!norm1_output) {
-    return NULL;
-  }
-
-  // Feed forward
-  long double *ff_output =
-      NN_forward(layer->feed_forward->network, norm1_output);
-  if (!ff_output) {
-    free(norm1_output);
-    return NULL;
-  }
-
-  // Add & Norm
-  long double *residual2 = malloc(layer->model_dim * sizeof(long double));
-  if (!residual2) {
-    free(norm1_output);
-    free(ff_output);
-    return NULL;
-  }
-
-  for (size_t i = 0; i < layer->model_dim; i++) {
-    residual2[i] = norm1_output[i] + ff_output[i];
-  }
-  free(norm1_output);
-  free(ff_output);
-
-  long double *output = transformer_norm_forward(layer->norm2, residual2);
-  free(residual2);
-
-  return output;
-}
-
-void transformer_mha_backprop(MultiHeadAttention *mha, long double *grad_output,
-                              long double *input) {
-  if (!mha || !grad_output || !input)
-    return;
-
-  size_t D = mha->model_dim;
-  size_t H = mha->num_heads;
-  size_t head_dim = mha->head_dim;
-
-  // Step 1: Backprop through output projection
-  NN_backprop(mha->O_proj, NULL, grad_output,
-              0.01L); // grad_output used internally
-
-  // Step 2: Backprop through attention scores (softmax)
-  // For simplicity, assume scores and V cached in mha struct during forward
-  long double *scores = mha->cached_scores;
-  long double *V = mha->cached_V;
-
-  // Gradient w.r.t scores
-  long double *grad_scores = malloc(H * head_dim * sizeof(long double));
-  // (simplified: assume single head for now, extend to multiple heads as
-  // needed)
-  for (size_t i = 0; i < H * head_dim; i++)
-    grad_scores[i] = grad_output[i]; // chain rule via O_proj
-
-  // Softmax gradient
-  for (size_t i = 0; i < mha->seq_length; i++) {
-    long double sum = 0;
-    for (size_t j = 0; j < mha->seq_length; j++)
-      sum += grad_scores[j] * scores[j];
-    for (size_t j = 0; j < mha->seq_length; j++)
-      grad_scores[j] = scores[j] * (grad_scores[j] - sum);
-  }
-
-  // Step 3: Backprop through Q, K, V projections
-  NN_backprop(mha->Q_proj, input, grad_scores, 0.01L);
-  NN_backprop(mha->K_proj, input, grad_scores, 0.01L);
-  NN_backprop(mha->V_proj, V, grad_output, 0.01L);
-
-  free(grad_scores);
-}
-
-void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output,
-                                    long double *input) {
-  if (!ln || !grad_output || !input)
-    return;
-
-  size_t D = ln->dim;
-
-  // Compute mean and variance (same as forward)
-  long double mean = 0;
-  for (size_t i = 0; i < D; i++)
-    mean += input[i];
-  mean /= D;
-
-  long double var = 0;
-  for (size_t i = 0; i < D; i++)
-    var += (input[i] - mean) * (input[i] - mean);
-  var /= D;
-
-  long double stddev = sqrt(var + ln->epsilon);
-
-  // Gradient w.r.t normalized input
-  long double *grad_norm = malloc(D * sizeof(long double));
-  for (size_t i = 0; i < D; i++)
-    grad_norm[i] = grad_output[i] / stddev;
-
-  // Gradient w.r.t variance
-  long double dvar = 0;
-  for (size_t i = 0; i < D; i++)
-    dvar += grad_output[i] * (input[i] - mean) * -0.5L /
-            ((var + ln->epsilon) * stddev);
-
-  // Gradient w.r.t mean
-  long double dmean = 0;
-  for (size_t i = 0; i < D; i++)
-    dmean +=
-        grad_output[i] * -1.0L / stddev + dvar * -2.0L * (input[i] - mean) / D;
-
-  // Gradient w.r.t input
-  long double *grad_input = malloc(D * sizeof(long double));
-  for (size_t i = 0; i < D; i++)
-    grad_input[i] =
-        grad_norm[i] + dvar * 2.0L * (input[i] - mean) / D + dmean / D;
-
-  // Backprop through affine network
-  NN_backprop(ln->norm_network, input, *grad_input, 0.01L);
-
-  free(grad_norm);
-  free(grad_input);
-}
-
-void TRANSFORMER_backprop(Transformer_t *transformer,
-                          long double **input_sequence, size_t seq_length,
-                          long double *grad_loss) {
-  if (!transformer || !input_sequence || !grad_loss)
-    return;
-
-  size_t L = transformer->num_layers;
-  size_t D = transformer->model_dim;
-
-  // Forward pass to cache intermediate states
-  long double *output =
-      TRANSFORMER_forward(transformer, input_sequence, seq_length);
-  if (!output)
-    return;
-
-  long double *grad = malloc(D * sizeof(long double));
-  memcpy(grad, grad_loss, D * sizeof(long double));
-
-  // Backprop through layers in reverse
-  for (ssize_t i = L - 1; i >= 0; i--) {
-    TransformerLayer *layer = transformer->layers[i];
-    if (!layer)
-      continue;
-
-    // Grad w.r.t norm2 input (after residual2)
-    transformer_layernorm_backprop(layer->norm2, grad, layer->norm2_input);
-
-    // Grad through feed-forward + residual1
-    NN_backprop(layer->feed_forward->network, layer->ff_input, grad, 0.01L);
-
-    // Grad w.r.t norm1 input (after residual1)
-    transformer_layernorm_backprop(layer->norm1, grad, layer->norm1_input);
-
-    // MHA backprop
-    transformer_mha_backprop(layer->attention, grad, layer->attention_input);
-  }
-
-  free(grad);
-  free(output);
-}
-
-void free_feed_forward(FeedForward *ff) {
-  if (ff) {
-    if (ff->network)
-      NN_destroy(ff->network);
-    free(ff);
-  }
-}
-
-void free_layer_norm(LayerNorm *ln) {
-  if (ln) {
-    if (ln->norm_network)
-      NN_destroy(ln->norm_network);
-    free(ln);
-  }
-}
-
-void free_transformer_layer(TransformerLayer *layer) {
-  if (layer) {
-    if (layer->attention)
-      free_attention(layer->attention);
-    if (layer->norm1)
-      free_layer_norm(layer->norm1);
-    if (layer->feed_forward)
-      free_feed_forward(layer->feed_forward);
-    if (layer->norm2)
-      free_layer_norm(layer->norm2);
-    free(layer);
-  }
-}
-
-// Transformer initialization
-Transformer_t *TRANSFORMER_init(size_t input_dim, size_t num_heads) {
-  Transformer_t *transformer = (Transformer_t *)malloc(sizeof(Transformer_t));
-  if (!transformer)
-    return NULL;
-
-  transformer->model_dim = input_dim;
-  transformer->num_heads = num_heads;
-  transformer->num_layers = 2; // Default to 2 layers
-
-  // Allocate layers
-  transformer->layers = (TransformerLayer **)malloc(transformer->num_layers *
-                                                    sizeof(TransformerLayer *));
-  if (!transformer->layers) {
-    free(transformer);
-    return NULL;
-  }
-
-  // Create transformer layers
-  size_t ff_dim =
-      input_dim * 4; // Feed-forward dimension is typically 4x model_dim
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    transformer->layers[i] =
-        create_transformer_layer(input_dim, num_heads, ff_dim);
-    if (!transformer->layers[i]) {
-      // Cleanup on error
-      for (size_t j = 0; j < i; j++) {
-        free_transformer_layer(transformer->layers[j]);
-      }
-      free(transformer->layers);
-      free(transformer);
-      return NULL;
-    }
-  }
-
-  return transformer;
-}
-
-void free_attention(MultiHeadAttention *mha) {
-  if (!mha)
-    return;
-
-  if (mha->Q_proj)
-    NN_destroy(mha->Q_proj);
-  if (mha->K_proj)
-    NN_destroy(mha->K_proj);
-  if (mha->V_proj)
-    NN_destroy(mha->V_proj);
-  if (mha->O_proj)
-    NN_destroy(mha->O_proj);
-
-  free(mha);
-}
-
-// Transformer destruction
-void TRANSFORMER_destroy(Transformer_t *transformer) {
-  if (!transformer)
-    return;
-
-  if (transformer->layers) {
-    for (size_t i = 0; i < transformer->num_layers; i++) {
-      if (transformer->layers[i]) {
-        free_transformer_layer(transformer->layers[i]);
-      }
-    }
-    free(transformer->layers);
-  }
-  free(transformer);
-}
-
-// Transformer forward pass for sequence
-long double *TRANSFORMER_forward(Transformer_t *transformer,
-                                 long double **input_sequence,
-                                 size_t seq_length) {
-  if (!transformer || !input_sequence || seq_length == 0)
-    return NULL;
-
-  size_t L = transformer->num_layers;
-  size_t D = transformer->model_dim;
-
-  // Start with the first input in the sequence
-  long double *current = malloc(D * sizeof(long double));
-  if (!current)
-    return NULL;
-
-  memcpy(current, input_sequence[0], D * sizeof(long double));
-
-  // Process through all layers sequentially
-  for (size_t i = 0; i < L; i++) {
-    TransformerLayer *layer = transformer->layers[i];
-    if (!layer) {
-      free(current);
-      return NULL;
     }
 
-    // Set seq_length for this layer
-    layer->seq_length = seq_length;
+  long double *final_out = NN_forward(mha->O_proj, att_out);
+  free(att_out);
 
-    // Forward pass through the layer (stores caches internally)
-    long double *layer_output = transformer_forward(layer, current);
-    if (!layer_output) {
-      free(current);
-      return NULL;
-    }
-
-    free(current);
-    current = layer_output; // output becomes input for next layer
-  }
-
-  // Current now contains the model output
-  return current;
+  return final_out;
 }
 
-// Transformer training
-void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
-                       size_t seq_length, long double *target) {
-  if (!transformer || !input_sequence || !target)
-    return;
-
-  // Forward pass
-  long double *output =
-      TRANSFORMER_forward(transformer, input_sequence, seq_length);
-  if (!output)
-    return;
-
-  // Compute gradient w.r.t loss (simple MSE)
-  long double *grad_output =
-      malloc(transformer->model_dim * sizeof(long double));
-  for (size_t i = 0; i < transformer->model_dim; i++)
-    grad_output[i] = output[i] - target[i];
-
-  // Backprop through entire model
-  TRANSFORMER_backprop(transformer, input_sequence, seq_length, grad_output);
-
-  free(output);
-  free(grad_output);
-}
-
-// Transformer save
-int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
-  if (!transformer || !file)
-    return 0;
-
-  // Save transformer structure
-  fwrite(&transformer->model_dim, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_heads, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_layers, sizeof(size_t), 1, file);
-
-  // Save each layer (simplified - just save structure, not weights)
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    if (transformer->layers[i]) {
-      fwrite(&transformer->layers[i]->model_dim, sizeof(size_t), 1, file);
-      fwrite(&transformer->layers[i]->seq_length, sizeof(size_t), 1, file);
-    }
-  }
-
-  return 1;
-}
-
-// Transformer load
-Transformer_t *TRANSFORMER_load(FILE *file) {
-  if (!file)
-    return NULL;
-
-  Transformer_t *transformer = (Transformer_t *)malloc(sizeof(Transformer_t));
-  if (!transformer)
-    return NULL;
-
-  // Load transformer structure
-  if (fread(&transformer->model_dim, sizeof(size_t), 1, file) != 1 ||
-      fread(&transformer->num_heads, sizeof(size_t), 1, file) != 1 ||
-      fread(&transformer->num_layers, sizeof(size_t), 1, file) != 1) {
-    free(transformer);
-    return NULL;
-  }
-
-  // Allocate layers
-  transformer->layers = (TransformerLayer **)malloc(transformer->num_layers *
-                                                    sizeof(TransformerLayer *));
-  if (!transformer->layers) {
-    free(transformer);
-    return NULL;
-  }
-
-  // Load each layer (simplified - just recreate structure)
-  size_t ff_dim = transformer->model_dim * 4;
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    size_t model_dim, seq_length;
-    if (fread(&model_dim, sizeof(size_t), 1, file) != 1 ||
-        fread(&seq_length, sizeof(size_t), 1, file) != 1) {
-      // Cleanup on error
-      for (size_t j = 0; j < i; j++) {
-        free_transformer_layer(transformer->layers[j]);
-      }
-      free(transformer->layers);
-      free(transformer);
-      return NULL;
-    }
-    transformer->layers[i] =
-        create_transformer_layer(model_dim, transformer->num_heads, ff_dim);
-    if (!transformer->layers[i]) {
-      // Cleanup on error
-      for (size_t j = 0; j < i; j++) {
-        free_transformer_layer(transformer->layers[j]);
-      }
-      free(transformer->layers);
-      free(transformer);
-      return NULL;
-    }
-    transformer->layers[i]->seq_length = seq_length;
-  }
-
-  return transformer;
-}
+// LayerNorm forward
+lo
