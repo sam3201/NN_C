@@ -430,10 +430,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     actDerivs[i] = get_derivative_from_activation(actFuncs[i]);
   }
 
-  child->nn =
-      NN_init(numLayers, actFuncs, actDerivs, rand() % LOSS_TYPE_COUNT,
-              rand() % LOSS_TYPE_COUNT, rand() % REGULARIZATION_TYPE_COUNT,
-              rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
+  child->nn = NULL;
 
   return child;
 }
