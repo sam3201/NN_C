@@ -376,7 +376,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   int actFunc2 = rand() % ACTIVATION_TYPE_COUNT;
 
   ActivationFunctionType actFuncs[2] = {
-      (ActivationFunctionType)actFunc1,
+      (ActivationFunctionType)get_activation_function_from_func(actFunc1),
       (ActivationFunctionType)actFunc2,
   };
 
