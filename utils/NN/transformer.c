@@ -315,124 +315,131 @@ void transformer_feedforward_backprop(FeedForward *ff,
   NN_backprop(ff->network, grad_output);
 }
 
-long double **transformer_layer_forward(TransformerLayer *layer,
-                                        long double **input,
-                                        size_t seq_length) {
-  // Cache input for backprop
-  layer->seq_length = seq_length;
+void transformer_mha_backprop(MultiHeadAttention *mha,
+                              long double *grad_output) {
+  size_t T = mha->seq_length;
+  size_t D = mha->head_dim;
 
-  // 1. MHA
-  long double **att =
-      transformer_mha_forward(layer->attention, input, seq_length);
+  long double *dV = calloc(T * D, sizeof(long double));
+  long double *dScores = calloc(T * T, sizeof(long double));
 
-  // 2. Residual + norm1
-  for (size_t t = 0; t < seq_length; t++) {
-    for (size_t i = 0; i < layer->model_dim; i++)
-      att[t][i] += input[t][i];
+  long double **transformer_layer_forward(
+      TransformerLayer * layer, long double **input, size_t seq_length) {
+    // Cache input for backprop
+    layer->seq_length = seq_length;
+
+    // 1. MHA
+    long double **att =
+        transformer_mha_forward(layer->attention, input, seq_length);
+
+    // 2. Residual + norm1
+    for (size_t t = 0; t < seq_length; t++) {
+      for (size_t i = 0; i < layer->model_dim; i++)
+        att[t][i] += input[t][i];
+    }
+
+    // (optional) norm forward here
+
+    // 3. Feed-forward per token
+    long double **out = malloc(seq_length * sizeof(long double *));
+    for (size_t t = 0; t < seq_length; t++)
+      out[t] = NN_forward(layer->feed_forward->network, att[t]);
+
+    // free intermediate
+    for (size_t t = 0; t < seq_length; t++)
+      free(att[t]);
+    free(att);
+
+    return out;
+  }
+  // ----------------------
+  // Transformer forward and backprop
+  // ----------------------
+  long double **TRANSFORMER_forward(Transformer_t * transformer,
+                                    long double **input_sequence,
+                                    size_t seq_length) {
+    long double **x = input_sequence;
+
+    for (size_t l = 0; l < transformer->num_layers; l++) {
+      x = transformer_layer_forward(transformer->layers[l], x, seq_length);
+    }
+
+    return x;
   }
 
-  // (optional) norm forward here
-
-  // 3. Feed-forward per token
-  long double **out = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++)
-    out[t] = NN_forward(layer->feed_forward->network, att[t]);
-
-  // free intermediate
-  for (size_t t = 0; t < seq_length; t++)
-    free(att[t]);
-  free(att);
-
-  return out;
-}
-// ----------------------
-// Transformer forward and backprop
-// ----------------------
-long double **TRANSFORMER_forward(Transformer_t *transformer,
-                                  long double **input_sequence,
-                                  size_t seq_length) {
-  long double **x = input_sequence;
-
-  for (size_t l = 0; l < transformer->num_layers; l++) {
-    x = transformer_layer_forward(transformer->layers[l], x, seq_length);
+  // ----------------------
+  // Backprop
+  // ----------------------
+  long double *transformer_layer_backprop(TransformerLayer * layer,
+                                          long double *grad_output) {
+    // TEMP: pass-through gradient
+    long double *grad = malloc(layer->model_dim * sizeof(long double));
+    memcpy(grad, grad_output, layer->model_dim * sizeof(long double));
+    return grad;
   }
 
-  return x;
-}
+  long double **TRANSFORMER_backprop(Transformer_t * transformer,
+                                     long double **grad_output,
+                                     size_t seq_length) {
+    long double **grad = grad_output;
 
-// ----------------------
-// Backprop
-// ----------------------
-long double *transformer_layer_backprop(TransformerLayer *layer,
-                                        long double *grad_output) {
-  // TEMP: pass-through gradient
-  long double *grad = malloc(layer->model_dim * sizeof(long double));
-  memcpy(grad, grad_output, layer->model_dim * sizeof(long double));
-  return grad;
-}
+    for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
+      // TODO: real layer backprop
+      // For now, pass through
+      grad = grad;
+    }
 
-long double **TRANSFORMER_backprop(Transformer_t *transformer,
-                                   long double **grad_output,
-                                   size_t seq_length) {
-  long double **grad = grad_output;
-
-  for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
-    // TODO: real layer backprop
-    // For now, pass through
-    grad = grad;
+    return grad;
   }
 
-  return grad;
-}
-
-// ----------------------
-// Save/load transformer
-// ----------------------
-int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
-  if (!transformer || !file)
-    return 0;
-  fwrite(&transformer->model_dim, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_heads, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_layers, sizeof(size_t), 1, file);
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    TransformerLayer *layer = transformer->layers[i];
-    fwrite(&layer->model_dim, sizeof(size_t), 1, file);
-    fwrite(&layer->seq_length, sizeof(size_t), 1, file);
-    NN_save(layer->attention->Q_proj, "Q_proj.nn");
-    NN_save(layer->attention->K_proj, "K_proj.nn");
-    NN_save(layer->attention->V_proj, "V_proj.nn");
-    NN_save(layer->attention->O_proj, "O_proj.nn");
-    NN_save(layer->feed_forward->network, "ff.nn");
-    NN_save(layer->norm1->norm_network, "norm1.nn");
-    NN_save(layer->norm2->norm_network, "norm2.nn");
+  // ----------------------
+  // Save/load transformer
+  // ----------------------
+  int TRANSFORMER_save(Transformer_t * transformer, FILE * file) {
+    if (!transformer || !file)
+      return 0;
+    fwrite(&transformer->model_dim, sizeof(size_t), 1, file);
+    fwrite(&transformer->num_heads, sizeof(size_t), 1, file);
+    fwrite(&transformer->num_layers, sizeof(size_t), 1, file);
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+      TransformerLayer *layer = transformer->layers[i];
+      fwrite(&layer->model_dim, sizeof(size_t), 1, file);
+      fwrite(&layer->seq_length, sizeof(size_t), 1, file);
+      NN_save(layer->attention->Q_proj, "Q_proj.nn");
+      NN_save(layer->attention->K_proj, "K_proj.nn");
+      NN_save(layer->attention->V_proj, "V_proj.nn");
+      NN_save(layer->attention->O_proj, "O_proj.nn");
+      NN_save(layer->feed_forward->network, "ff.nn");
+      NN_save(layer->norm1->norm_network, "norm1.nn");
+      NN_save(layer->norm2->norm_network, "norm2.nn");
+    }
+    return 1;
   }
-  return 1;
-}
 
-Transformer_t *TRANSFORMER_load(FILE *file) {
-  if (!file)
-    return NULL;
-  Transformer_t *transformer = malloc(sizeof(Transformer_t));
-  fread(&transformer->model_dim, sizeof(size_t), 1, file);
-  fread(&transformer->num_heads, sizeof(size_t), 1, file);
-  fread(&transformer->num_layers, sizeof(size_t), 1, file);
-  transformer->layers =
-      malloc(transformer->num_layers * sizeof(TransformerLayer *));
-  size_t ff_dim = transformer->model_dim * 4;
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    TransformerLayer *layer = create_transformer_layer(
-        transformer->model_dim, transformer->num_heads, ff_dim);
-    fread(&layer->model_dim, sizeof(size_t), 1, file);
-    fread(&layer->seq_length, sizeof(size_t), 1, file);
-    // load NNs from file names
-    layer->attention->Q_proj = NN_load("Q_proj.nn");
-    layer->attention->K_proj = NN_load("K_proj.nn");
-    layer->attention->V_proj = NN_load("V_proj.nn");
-    layer->attention->O_proj = NN_load("O_proj.nn");
-    layer->feed_forward->network = NN_load("ff.nn");
-    layer->norm1->norm_network = NN_load("norm1.nn");
-    layer->norm2->norm_network = NN_load("norm2.nn");
-    transformer->layers[i] = layer;
+  Transformer_t *TRANSFORMER_load(FILE * file) {
+    if (!file)
+      return NULL;
+    Transformer_t *transformer = malloc(sizeof(Transformer_t));
+    fread(&transformer->model_dim, sizeof(size_t), 1, file);
+    fread(&transformer->num_heads, sizeof(size_t), 1, file);
+    fread(&transformer->num_layers, sizeof(size_t), 1, file);
+    transformer->layers =
+        malloc(transformer->num_layers * sizeof(TransformerLayer *));
+    size_t ff_dim = transformer->model_dim * 4;
+    for (size_t i = 0; i < transformer->num_layers; i++) {
+      TransformerLayer *layer = create_transformer_layer(
+          transformer->model_dim, transformer->num_heads, ff_dim);
+      fread(&layer->model_dim, sizeof(size_t), 1, file);
+      fread(&layer->seq_length, sizeof(size_t), 1, file);
+      // load NNs from file names
+      layer->attention->Q_proj = NN_load("Q_proj.nn");
+      layer->attention->K_proj = NN_load("K_proj.nn");
+      layer->attention->V_proj = NN_load("V_proj.nn");
+      layer->attention->O_proj = NN_load("O_proj.nn");
+      layer->feed_forward->network = NN_load("ff.nn");
+      layer->norm1->norm_network = NN_load("norm1.nn");
+      layer->norm2->norm_network = NN_load("norm2.nn");
+      transformer->layers[i] = layer;
+    }
+    return transformer;
   }
-  return transformer;
-}
