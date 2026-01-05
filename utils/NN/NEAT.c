@@ -372,17 +372,16 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   // Rebuild NN_t from node & connection structure
   size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
   ActivationFunctionType actFuncs[2] = {
-      (ActivationFunctionType)rand() % ACTIVATION_TYPE_COUNT,
-      (ActivationFunctionType)rand() % ACTIVATION_TYPE_COUNT};
+      (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT,
+      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
+  ActivationDerivativeType actDerivs[2] = {
+      get_activation_function_type(get_acvivation_function(actFuncs[0])), NULL};
 
-  (RegularizationType) rand() % REGULARIZATION_TYPE_COUNT,
-      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT
-};
-child->nn =
-    NN_init(layers, actFuncs, NULL, (LossFunctionType)rand() % LOSS_TYPE_COUNT,
-            (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
+  child->nn = NN_init(layers, actFuncs, NULL,
+                      (LossFunctionType)rand() % LOSS_TYPE_COUNT,
+                      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
 
-return child;
+  return child;
 }
 
 // ------------------- Serialization -------------------
