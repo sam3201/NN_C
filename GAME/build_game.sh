@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# --- Install Raylib if missing ---
 if [ ! -d "../utils/Raylib" ]; then
   echo "Raylib not found. Installing..."
   git clone https://github.com/raysan5/raylib.git ../utils/Raylib/
