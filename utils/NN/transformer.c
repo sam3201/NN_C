@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#warning "TRANSFORMER_save/load are unsafe and disabled"
+
 // ----------------------
 // Creation functions
 // ----------------------
