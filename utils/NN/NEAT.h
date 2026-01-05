@@ -60,8 +60,8 @@ void GENOME_forwward(Genome_t *genome, long double *input, long double *output);
 long double activate(long double x, ActivationFunctionType type);
 
 // ------------------- Serialization -------------------
-void Genome_save(Genome_t *genome, const char *filename);
-Genome_t *Genome_load(const char *filename);
+void GENOME_save(Genome_t *genome, const char *filename);
+Genome_t *GENOME_load(const char *filename);
 
 // ------------------- Topological Sort -------------------
 size_t *topological_sort(Genome_t *genome, size_t *outSize);
