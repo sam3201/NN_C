@@ -68,6 +68,7 @@ Genome_t *GENOME_init_empty(size_t numInputs, size_t numOutputs) {
     genome->nodes[genome->numNodes++] = n;
   }
 
+  genome->nn = NULL;
   return genome;
 }
 
