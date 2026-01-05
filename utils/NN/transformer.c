@@ -533,17 +533,17 @@ int TRANSFORMER_save(Transformer_t *t, const char *filename) {
     fwrite(&layer->seq_length, sizeof(size_t), 1, f);
 
     // ---- Attention ----
-    NN_save(layer->attention->Q_proj, f);
-    NN_save(layer->attention->K_proj, f);
-    NN_save(layer->attention->V_proj, f);
-    NN_save(layer->attention->O_proj, f);
+    NN_save(layer->attention->Q_proj, filename);
+    NN_save(layer->attention->K_proj, filename);
+    NN_save(layer->attention->V_proj, filename);
+    NN_save(layer->attention->O_proj, filename);
 
     // ---- Feed Forward ----
-    NN_save(layer->feed_forward->network, f);
+    NN_save(layer->feed_forward->network, filename);
 
     // ---- LayerNorms ----
-    NN_save(layer->norm1->norm_network, f);
-    NN_save(layer->norm2->norm_network, f);
+    NN_save(layer->norm1->norm_network, filename);
+    NN_save(layer->norm2->norm_network, filename);
   }
 
   return 1;
