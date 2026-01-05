@@ -332,7 +332,6 @@ long double *transformer_forward(TransformerLayer *layer, long double *input) {
 }
 
 // Backpropagation functions
-// --- Multi-Head Attention weight update only ---
 void transformer_mha_backprop(MultiHeadAttention *mha, long double *input) {
   if (!mha || !input)
     return;
@@ -346,7 +345,6 @@ void transformer_mha_backprop(MultiHeadAttention *mha, long double *input) {
   NN_backprop(mha->V_proj, input, 0.0L, 0.0L);
 }
 
-// --- LayerNorm weight update only ---
 void transformer_norm_backprop(LayerNorm *ln, long double *input) {
   if (!ln || !input)
     return;
