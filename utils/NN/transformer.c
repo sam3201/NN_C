@@ -352,9 +352,11 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
       }
 
   for (size_t t = 0; t < T; t++) {
-    NN_backprop(mha->Q_proj, &dQ[t * D]);
-    NN_backprop(mha->K_proj, &dK[t * D]);
-    NN_backprop(mha->V_proj, &dV[t * D]);
+    NN_backprop_custom_delta(mha->Q_proj, &mha->Q_cache[t * D], &dQ[t * D]);
+
+    NN_backprop_custom_delta(mha->K_proj, &mha->K_cache[t * D], &dK[t * D]);
+
+    NN_backprop_custom_delta(mha->V_proj, &mha->V_cache[t * D], &dV[t * D]);
   }
 
   free(dV);
