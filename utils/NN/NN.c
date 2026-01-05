@@ -870,15 +870,15 @@ ActivationDerivativeType
 get_derivative_from_activation(ActivationFunctionType type) {
   switch (type) {
   case SIGMOID:
-    return SIGMOID_DERIV;
+    return SIGMOID_DERIVATIVE;
   case TANH:
-    return TANH_DERIV;
+    return TANH_DERIVATIVE;
   case RELU:
-    return RELU_DERIV;
+    return RELU_DERIVATIVE;
   case LINEAR:
-    return LINEAR_DERIV;
+    return LINEAR_DERIVATIVE;
   default:
-    return LINEAR_DERIV;
+    return LINEAR_DERIVATIVE;
   }
 }
 
