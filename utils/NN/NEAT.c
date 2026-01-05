@@ -379,12 +379,8 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       (ActivationFunctionType)actFunc2,
   };
 
-  ActivationDerivativeType actDeriv1 = (ActivationDerivativeType)actFunc1;
-  ActivationDerivativeType actDeriv2 = (ActivationDerivativeType)actFunc2;
-  ActivationDerivativeType actDerivs[2] = {
-      actDeriv1,
-      actDeriv2,
-  };
+  ActivationDerivativeType actDerivs[2] = {(ActivationDerivativeType)actFunc1,
+                                           (ActivationDerivativeType)actFunc2};
 
   OptimizerType opt = rand() % OPTIMIZER_TYPE_COUNT;
 
