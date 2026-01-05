@@ -52,7 +52,7 @@ Genome_t *GENOME_init(size_t numInputs, size_t numOutputs) {
 
   genome->numConnections = 0;
   genome->connections = NULL;
-  genome->nn = NULL;
+  genome->nn = NN_init(genome->numNodes, genome->numConnections);
   genome->fitness = 0.0L;
 
   return genome;
