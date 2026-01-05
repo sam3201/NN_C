@@ -7,3 +7,6 @@ gcc game.c \
     -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -o game
 
+./game
+
+rm game
