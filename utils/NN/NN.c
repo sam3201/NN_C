@@ -523,13 +523,13 @@ void NN_backprop_softmax(NN_t *nn, long double inputs[], long double y_true[],
     return;
 
   size_t out_size = nn->layers[nn->numLayers - 1];
-  long double *delta = malloc(out_size * sizeof(long double));
-
+  long double *ce_delta = (long double *)malloc(out_size * sizeof(long double));
   for (size_t i = 0; i < out_size; i++)
-    delta[i] = y_pred[i] - y_true[i]; // standard CE+Softmax delta
+    ce_delta[i] = y_pred[i] - y_true[i]; // CE + softmax delta
 
-  NN_backprop(nn, inputs, y_true, y_pred, delta);
-  free(delta);
+  NN_backprop_custom_delta(nn, inputs, ce_delta);
+
+  free(ce_delta);
 }
 
 // y_true: one-hot or label index
