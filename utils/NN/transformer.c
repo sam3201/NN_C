@@ -450,9 +450,6 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
   for (int i = (int)L - 1; i >= 0; i--) {
     long double *next_grad = calloc(D, sizeof(long double));
 
-    TRANSFORMER_layer_backprop(transformer->layers[i], layer_inputs[i], grad,
-                               next_grad);
-
     free(grad);
     grad = next_grad;
   }
