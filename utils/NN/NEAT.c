@@ -307,7 +307,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
 
-  // Create empty genome with correct input/output count
+  // Count inputs/outputs
   size_t numInputs = 0, numOutputs = 0;
   for (size_t i = 0; i < p1->numNodes; i++) {
     if (p1->nodes[i]->type == INPUT_NODE)
@@ -315,9 +315,10 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     else if (p1->nodes[i]->type == OUTPUT_NODE)
       numOutputs++;
   }
+
   Genome_t *child = GENOME_init_empty(numInputs, numOutputs);
 
-  // Copy nodes from p1 (IDs are preserved)
+  // Copy nodes from p1 (IDs preserved)
   for (size_t i = 0; i < p1->numNodes; i++) {
     Node *n = malloc(sizeof(Node));
     *n = *(p1->nodes[i]);
@@ -326,11 +327,10 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     child->nodes[child->numNodes++] = n;
   }
 
-  // Merge connections using innovation numbers
+  // Merge connections by innovation numbers
   size_t i1 = 0, i2 = 0;
   while (i1 < p1->numConnections || i2 < p2->numConnections) {
     Connection *c = NULL;
-
     if (i1 >= p1->numConnections)
       c = p2->connections[i2++];
     else if (i2 >= p2->numConnections)
@@ -351,16 +351,12 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       }
     }
 
-    // Create connection for child
-    Connection *newC = malloc(sizeof(Connection));
-    newC->weight = c->weight;
-    newC->enabled = c->enabled;
-    newC->innovation = c->innovation;
-
-    if (c->from->id >= child->numNodes || c->to->id >= child->numNodes) {
-      free(newC);
+    // Skip if node IDs are invalid
+    if (c->from->id >= child->numNodes || c->to->id >= child->numNodes)
       continue;
-    }
+
+    Connection *newC = malloc(sizeof(Connection));
+    *newC = *c; // copy all fields
     newC->from = child->nodes[c->from->id];
     newC->to = child->nodes[c->to->id];
 
@@ -369,28 +365,23 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     child->connections[child->numConnections++] = newC;
   }
 
-  // Rebuild NN_t from node & connection structure
-  size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
+  // Build NN from nodes
+  size_t numLayers[2] = {numInputs, numOutputs};
 
-  int actFunc1 = rand() % ACTIVATION_TYPE_COUNT;
-  int actFunc2 = rand() % ACTIVATION_TYPE_COUNT;
+  // Take activation functions from child nodes for hidden/output layers
+  ActivationFunctionType actFuncs[2];
+  ActivationDerivativeType actDerivs[2];
 
-  ActivationFunctionType actFuncs[2] = {
-      get_activation_function_from_func(
-          get_activation_function((ActivationFunction)actFunc1)),
-      actFunc2,
-  };
+  for (size_t i = 0; i < 2; i++) {
+    size_t nodeIdx = (i == 0) ? numInputs : numInputs + 1; // simple guess
+    actFuncs[i] = child->nodes[nodeIdx]->actFunc;
+    actDerivs[i] = get_derivative_from_activation(actFuncs[i]);
+  }
 
-  ActivationDerivativeType actDerivs[2] = {(ActivationDerivativeType)actFunc1,
-                                           (ActivationDerivativeType)actFunc2};
-
-  OptimizerType opt = rand() % OPTIMIZER_TYPE_COUNT;
-
-  LossFunctionType loss = rand() % LOSS_TYPE_COUNT;
-
-  LossDerivativeType lossDeriv = (LossDerivativeType)loss;
-
-  child->nn = NN_init(layers, actFuncs, actDerivs, loss, lossDeriv, opt, 0.01L);
+  child->nn =
+      NN_init(numLayers, actFuncs, actDerivs, rand() % LOSS_TYPE_COUNT,
+              rand() % LOSS_TYPE_COUNT, rand() % REGULARIZATION_TYPE_COUNT,
+              rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
 
   return child;
 }
