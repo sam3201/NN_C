@@ -242,6 +242,7 @@ void NN_destroy(NN_t *nn) {
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
     free(nn->weights[i]);
     free(nn->biases[i]);
+    free(nn->biases_v[i]);
     free(nn->weights_v[i]);
     free(nn->biases_v[i]);
   }
