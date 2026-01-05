@@ -493,49 +493,46 @@ void TRANSFORMER_destroy(Transformer_t *transformer) {
 }
 
 // Transformer forward pass for sequence
-long double *TRANSFORMER_forward(TransformerLayer *layer, long double *input) {
-  if (!layer || !input)
+long double *TRANSFORMER_forward(Transformer_t *transformer,
+                                 long double **input_sequence,
+                                 size_t seq_length) {
+  if (!transformer || !input_sequence || seq_length == 0)
     return NULL;
 
-  layer->attention_input = malloc(layer->model_dim * sizeof(long double));
-  memcpy(layer->attention_input, input, layer->model_dim * sizeof(long double));
+  size_t L = transformer->num_layers;
+  size_t D = transformer->model_dim;
 
-  layer->attention_output =
-      transformer_mha_forward(layer->attention, input, layer->seq_length);
-  if (!layer->attention_output)
+  // Start with the first input in the sequence
+  long double *current = malloc(D * sizeof(long double));
+  if (!current)
     return NULL;
 
-  // Residual1
-  layer->norm1_input = malloc(layer->model_dim * sizeof(long double));
-  for (size_t i = 0; i < layer->model_dim; i++)
-    layer->norm1_input[i] = input[i] + layer->attention_output[i];
+  memcpy(current, input_sequence[0], D * sizeof(long double));
 
-  free(layer->attention_output);
-  layer->norm1_output =
-      transformer_norm_forward(layer->norm1, layer->norm1_input);
-  if (!layer->norm1_output)
-    return NULL;
+  // Process through all layers sequentially
+  for (size_t i = 0; i < L; i++) {
+    TransformerLayer *layer = transformer->layers[i];
+    if (!layer) {
+      free(current);
+      return NULL;
+    }
 
-  // FeedForward
-  layer->ff_input = malloc(layer->model_dim * sizeof(long double));
-  memcpy(layer->ff_input, layer->norm1_output,
-         layer->model_dim * sizeof(long double));
-  layer->ff_output = NN_forward(layer->feed_forward->network, layer->ff_input);
-  if (!layer->ff_output)
-    return NULL;
+    // Set seq_length for this layer
+    layer->seq_length = seq_length;
 
-  // Residual2
-  layer->norm2_input = malloc(layer->model_dim * sizeof(long double));
-  for (size_t i = 0; i < layer->model_dim; i++)
-    layer->norm2_input[i] = layer->norm1_output[i] + layer->ff_output[i];
+    // Forward pass through the layer (stores caches internally)
+    long double *layer_output = transformer_forward(layer, current);
+    if (!layer_output) {
+      free(current);
+      return NULL;
+    }
 
-  free(layer->ff_output);
-  layer->norm2_output =
-      transformer_norm_forward(layer->norm2, layer->norm2_input);
-  if (!layer->norm2_output)
-    return NULL;
+    free(current);
+    current = layer_output; // output becomes input for next layer
+  }
 
-  return layer->norm2_output;
+  // Current now contains the model output
+  return current;
 }
 
 // Transformer training
