@@ -117,6 +117,13 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
     nn->biases_v[i] =
         (long double *)calloc(nn->layers[i + 1], sizeof(long double));
 
+    size_t wcount = nn->layers[i] * nn->layers[i + 1];
+    size_t bcount = nn->layers[i + 1];
+
+    nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
+    nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
+    nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
+    nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
     if (!nn->weights[i] || !nn->biases[i] || !nn->weights_v[i] ||
         !nn->biases_v[i]) {
       fprintf(stderr,
@@ -125,13 +132,6 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
       NN_destroy(nn);
       return NULL;
     }
-    size_t wcount = nn->layers[i] * nn->layers[i + 1];
-    size_t bcount = nn->layers[i + 1];
-
-    nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
-    nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
-    nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
-    nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
   }
 
   // Initialize parameters
