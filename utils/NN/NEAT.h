@@ -81,22 +81,8 @@ Genome_t *GENOME_load(const char *filename);
 
 // ------------------- Population-------------------
 // Initialize population
-Population *POP_init(size_t popSize, size_t numInputs, size_t numOutputs) {
-  Population *pop = malloc(sizeof(Population));
-  pop->size = popSize;
-  pop->genomes = malloc(popSize * sizeof(Genome_t *));
-  for (size_t i = 0; i < popSize; i++)
-    pop->genomes[i] = GENOME_init(numInputs, numOutputs);
-  return pop;
-}
-
-// Free population
-void POP_destroy(Population *pop) {
-  for (size_t i = 0; i < pop->size; i++)
-    GENOME_destroy(pop->genomes[i]);
-  free(pop->genomes);
-  free(pop);
-}
+Population *POPULATION_init(size_t popSize, size_t numInputs,
+                            size_t numOutputs);
 
 // ------------------- Innovation Number -------------------
 size_t get_innovation_number(size_t from, size_t to);
