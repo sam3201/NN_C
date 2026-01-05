@@ -361,44 +361,6 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   free(dK);
 }
 
-long double *transformer_layer_backprop(TransformerLayer *layer,
-                                        long double *grad_output) {
-  size_t D = layer->model_dim;
-
-  // Feed-forward
-  transformer_feedforward_backprop(layer->feed_forward, grad_output);
-
-  // Residual path
-  long double *grad_residual = malloc(D * sizeof(long double));
-  memcpy(grad_residual, grad_output, D * sizeof(long double));
-
-  // Attention
-  transformer_mha_backprop(layer->attention, grad_output);
-
-  // Combine gradients
-  for (size_t i = 0; i < D; i++)
-    grad_residual[i] += grad_output[i];
-
-  return grad_residual;
-}
-
-long double **TRANSFORMER_backprop(Transformer_t *transformer,
-                                   long double **grad_output,
-                                   size_t seq_length) {
-  long double **grad = grad_output;
-
-  for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
-    TransformerLayer *layer = transformer->layers[l];
-    for (size_t t = 0; t < seq_length; t++) {
-      long double *g = transformer_layer_backprop(layer, grad[t]);
-      memcpy(grad[t], g, layer->model_dim * sizeof(long double));
-      free(g);
-    }
-  }
-
-  return grad;
-}
-
 // ----------------------
 // Transformer forward and backprop
 // ----------------------
