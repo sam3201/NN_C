@@ -301,7 +301,7 @@ SAM_t *SAM_load(const char *filename) {
   }
 
   // Load transformer
-  sam->transformer = TRANSFORMER_load(file);
+  sam->transformer = TRANSFORMER_load(filename);
   if (!sam->transformer) {
     free(sam->layer_sizes);
     free(sam);
