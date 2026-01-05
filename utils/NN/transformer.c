@@ -460,6 +460,22 @@ Transformer_t *TRANSFORMER_init(size_t input_dim, size_t num_heads) {
   return transformer;
 }
 
+void free_attention(MultiHeadAttention *mha) {
+  if (!mha)
+    return;
+
+  if (mha->Q_proj)
+    NN_destroy(mha->Q_proj);
+  if (mha->K_proj)
+    NN_destroy(mha->K_proj);
+  if (mha->V_proj)
+    NN_destroy(mha->V_proj);
+  if (mha->O_proj)
+    NN_destroy(mha->O_proj);
+
+  free(mha);
+}
+
 // Transformer destruction
 void TRANSFORMER_destroy(Transformer_t *transformer) {
   if (!transformer)
