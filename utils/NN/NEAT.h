@@ -1,6 +1,7 @@
 #ifndef NEAT_H
 #define NEAT_H
 
+#include "NN.h"
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
@@ -11,9 +12,6 @@
 
 // Node types
 typedef enum { INPUT_NODE, HIDDEN_NODE, OUTPUT_NODE, BIAS_NODE } NodeType;
-
-// Activation functions
-typedef enum { SIGMOID = 0, TANH, RELU, LINEAR } ActivationFunctionType;
 
 // Global innovation tracking
 typedef struct {
