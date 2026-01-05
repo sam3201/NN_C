@@ -376,6 +376,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT,
       (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
 
+  ActivationFunctionType actFuncs[2] = {TANH, RELU};
   ActivationDerivative *actDerivs[2] = {};
 
   child->nn = NN_init(layers, actFuncs, actDerivs,
