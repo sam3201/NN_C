@@ -377,14 +377,17 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   ActivationFunctionType actFunc2 =
       (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT;
   ActivationFunctionType actFuncs[2] = {
-      (
-      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
+      actFunc1,
+      actFunc2,
+  };
+  (OptimizerType) rand() % OPTIMIZER_TYPE_COUNT
+};
 
-  child->nn = NN_init(layers, actFuncs, actDerivs,
-                      (LossFunctionType)rand() % LOSS_TYPE_COUNT,
-                      (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
+child->nn = NN_init(layers, actFuncs, actDerivs,
+                    (LossFunctionType)rand() % LOSS_TYPE_COUNT,
+                    (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT, 0.01L);
 
-  return child;
+return child;
 }
 
 // ------------------- Serialization -------------------
