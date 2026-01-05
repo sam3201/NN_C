@@ -387,7 +387,10 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       actDeriv1,
       actDeriv2,
   };
+
   OptimizerType opt = rand() % OPTIMIZER_TYPE_COUNT;
+
+  LossFunctionType loss = rand() % LOSS_TYPE_COUNT;
 
   child->nn = NN_init(layers, actFuncs, actDerivs,
                       (LossFunctionType)rand() % LOSS_TYPE_COUNT,
