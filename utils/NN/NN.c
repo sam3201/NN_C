@@ -921,170 +921,97 @@ int NN_save(NN_t *nn, const char *filename) {
 }
 
 NN_t *NN_load(const char *filename) {
-  FILE *file = fopen(filename, "rb");
-  if (!file)
+  if (!filename)
     return NULL;
 
-  NN_t *nn = (NN_t *)malloc(sizeof(NN_t));
+  FILE *f = fopen(filename, "rb");
+  if (!f)
+    return NULL;
+
+  uint32_t magic;
+  fread(&magic, sizeof(uint32_t), 1, f);
+  if (magic != 0x4E4E3031) {
+    fclose(f);
+    return NULL;
+  }
+
+  NN_t *nn = calloc(1, sizeof(NN_t));
   if (!nn) {
-    fclose(file);
+    fclose(f);
     return NULL;
   }
 
-  // Read network structure
-  if (fread(&nn->numLayers, sizeof(size_t), 1, file) != 1) {
-    free(nn);
-    fclose(file);
-    return NULL;
-  }
+  fread(&nn->numLayers, sizeof(size_t), 1, f);
 
-  // Allocate and read layers array
-  nn->layers = (size_t *)malloc(nn->numLayers * sizeof(size_t));
-  if (!nn->layers ||
-      fread(nn->layers, sizeof(size_t), nn->numLayers, file) != nn->numLayers) {
-    free(nn->layers);
-    free(nn);
-    fclose(file);
-    return NULL;
-  }
+  nn->layers = malloc(nn->numLayers * sizeof(size_t));
+  fread(nn->layers, sizeof(size_t), nn->numLayers, f);
 
-  // Allocate memory for all network components
-  nn->weights =
-      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->biases =
-      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  fread(&nn->learningRate, sizeof(long double), 1, f);
+  fread(&nn->t, sizeof(size_t), 1, f);
 
-  nn->opt_m_w = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_w = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_m_b = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_b = malloc((nn->numLayers - 1) * sizeof(long double *));
+  // Activations
+  nn->activationFunctions =
+      malloc((nn->numLayers - 1) * sizeof(ActivationFunction));
+  nn->activationDerivatives =
+      malloc((nn->numLayers - 1) * sizeof(ActivationDerivative));
 
-  if (!nn->weights || !nn->biases || !nn->opt_m_w || !nn->opt_v_w ||
-      !nn->opt_m_b || !nn->opt_v_b) {
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  // Allocate and initialize activation functions
-  nn->activationFunctions = (ActivationFunction *)malloc(
-      (nn->numLayers - 1) * sizeof(ActivationFunction));
-  if (!nn->activationFunctions) {
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  // Allocate and initialize activation derivatives
-  nn->activationDerivatives = (ActivationDerivative *)malloc(
-      (nn->numLayers - 1) * sizeof(ActivationDerivative));
-  if (!nn->activationDerivatives) {
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  // Read activation + derivative types
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    ActivationFunctionType act;
-    ActivationDerivativeType deriv;
+    ActivationFunctionType a;
+    ActivationDerivativeType d;
+    fread(&a, sizeof(a), 1, f);
+    fread(&d, sizeof(d), 1, f);
 
-    fread(&act, sizeof(ActivationFunctionType), 1, file);
-    fread(&deriv, sizeof(ActivationDerivativeType), 1, file);
-
-    nn->activationFunctions[i] = get_activation_function(act);
-    nn->activationDerivatives[i] = get_activation_derivative(deriv);
+    nn->activationFunctions[i] = get_activation_function(a);
+    nn->activationDerivatives[i] = get_activation_derivative(d);
   }
 
-  // Read loss type
-  LossFunctionType loss_type;
-  fread(&loss_type, sizeof(LossFunctionType), 1, file);
-  nn->loss = get_loss_function(loss_type);
-  nn->lossDerivative = get_loss_derivative(map_loss_to_derivative(loss_type));
+  LossFunctionType loss;
+  OptimizerType opt;
+  RegularizationType reg;
 
-  // Read weights, biases, gradients and optimizer states
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t weights_size = nn->layers[i] * nn->layers[i + 1];
+  fread(&loss, sizeof(loss), 1, f);
+  fread(&opt, sizeof(opt), 1, f);
+  fread(&reg, sizeof(reg), 1, f);
 
-    // Allocate memory for each layer
-    nn->weights[i] = (long double *)malloc(weights_size * sizeof(long double));
-    nn->biases[i] =
-        (long double *)malloc(nn->layers[i + 1] * sizeof(long double));
-    nn->opt_m_w[i] = calloc(weights_size, sizeof(long double));
-    nn->opt_v_w[i] = calloc(weights_size, sizeof(long double));
-    nn->opt_m_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
-    nn->opt_v_b[i] = calloc(nn->layers[i + 1], sizeof(long double));
+  nn->loss = get_loss_function(loss);
+  nn->lossDerivative = get_loss_derivative(map_loss_to_derivative(loss));
+  nn->optimizer = get_optimizer_function(opt);
+  nn->regularization = get_regularization_function(reg);
 
-    if (!nn->weights[i] || !nn->biases[i] || !nn->opt_m_w[i] ||
-        !nn->opt_v_w[i] || !nn->opt_m_b[i] || !nn->opt_v_b[i]) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
+  // Allocate arrays
+  size_t L = nn->numLayers - 1;
+  nn->weights = malloc(L * sizeof(long double *));
+  nn->biases = malloc(L * sizeof(long double *));
+  nn->weights_grad = malloc(L * sizeof(long double *));
+  nn->biases_grad = malloc(L * sizeof(long double *));
+  nn->opt_m_w = malloc(L * sizeof(long double *));
+  nn->opt_v_w = malloc(L * sizeof(long double *));
+  nn->opt_m_b = malloc(L * sizeof(long double *));
+  nn->opt_v_b = malloc(L * sizeof(long double *));
 
-    // Read the data
-    if (fread(nn->weights[i], sizeof(long double), weights_size, file) !=
-            weights_size ||
-        fread(nn->biases[i], sizeof(long double), nn->layers[i + 1], file) !=
-            nn->layers[i + 1] ||
-        fread(nn->opt_m_w[i], sizeof(long double), weights_size, file) !=
-            weights_size ||
-        fread(nn->opt_m_b[i], sizeof(long double), nn->layers[i + 1], file) !=
-            nn->layers[i + 1]) {
-      NN_destroy(nn);
-      fclose(file);
-      return NULL;
-    }
+  for (size_t l = 0; l < L; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+
+    nn->weights[l] = malloc(wcount * sizeof(long double));
+    nn->biases[l] = malloc(bcount * sizeof(long double));
+    nn->weights_grad[l] = calloc(wcount, sizeof(long double));
+    nn->biases_grad[l] = calloc(bcount, sizeof(long double));
+
+    nn->opt_m_w[l] = malloc(wcount * sizeof(long double));
+    nn->opt_v_w[l] = malloc(wcount * sizeof(long double));
+    nn->opt_m_b[l] = malloc(bcount * sizeof(long double));
+    nn->opt_v_b[l] = malloc(bcount * sizeof(long double));
+
+    fread(nn->weights[l], sizeof(long double), wcount, f);
+    fread(nn->biases[l], sizeof(long double), bcount, f);
+    fread(nn->opt_m_w[l], sizeof(long double), wcount, f);
+    fread(nn->opt_v_w[l], sizeof(long double), wcount, f);
+    fread(nn->opt_m_b[l], sizeof(long double), bcount, f);
+    fread(nn->opt_v_b[l], sizeof(long double), bcount, f);
   }
 
-  // Read optimizer state
-  if (fread(&nn->t, sizeof(unsigned int), 1, file) != 1 ||
-      fread(&nn->learningRate, sizeof(long double), 1, file) != 1) {
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  // Read string lengths
-  size_t reg_len, opt_len;
-  if (fread(&reg_len, sizeof(size_t), 1, file) != 1 ||
-      fread(&opt_len, sizeof(size_t), 1, file) != 1) {
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  // Read and convert strings back to function pointers
-  char *reg_str = (char *)malloc(reg_len);
-  char *opt_str = (char *)malloc(opt_len);
-
-  if (!reg_str || !opt_str) {
-    free(reg_str);
-    free(opt_str);
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  if (fread(reg_str, sizeof(char), reg_len, file) != reg_len ||
-      fread(opt_str, sizeof(char), opt_len, file) != opt_len) {
-    free(reg_str);
-    free(opt_str);
-    NN_destroy(nn);
-    fclose(file);
-    return NULL;
-  }
-
-  RegularizationType reg_type = get_regularization_type(reg_str);
-  OptimizerType opt_type = get_optimizer_type(opt_str);
-
-  nn->regularization = REGULARIZATION_FUNCTIONS[reg_type];
-  nn->optimizer = OPTIMIZER_FUNCTIONS[opt_type];
-
-  free(reg_str);
-  free(opt_str);
-
-  fclose(file);
+  fclose(f);
   return nn;
 }
 
