@@ -375,6 +375,8 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       (RegularizationType)rand() % REGULARIZATION_TYPE_COUNT,
       (OptimizerType)rand() % OPTIMIZER_TYPE_COUNT};
 
+  ActivationDerivative *actDerivs[2] = {
+  get_activation_derivative(};
   ActivationDerivativeType actDerivs[2] = {}
 
                                           child->nn = NN_init(
