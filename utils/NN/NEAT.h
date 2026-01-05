@@ -67,6 +67,13 @@ void GENOME_add_connection(Genome_t *genome, size_t fromNode, size_t toNode,
 
 void GENOME_mutate_weights(Genome_t *genome, long double perturbRate,
                            long double perturbAmount);
+// ------------------- Extended Mutation -------------------
+void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
+                   long double weightPerturbAmount, long double addNodeRate,
+                   long double addConnectionRate,
+                   long double toggleConnectionRate,
+                   long double biasPerturbRate);
+
 Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2);
 
 // ------------------- Forward Propagation -------------------
