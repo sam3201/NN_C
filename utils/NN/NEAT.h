@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 // Node types
 typedef enum { INPUT_NODE, HIDDEN_NODE, OUTPUT_NODE, BIAS_NODE } NodeType;
@@ -41,11 +42,11 @@ typedef struct Genome {
   long double fitness;
 } Genome;
 
-// Forward declarations
+// ------------------- Constructors / Destructors -------------------
 Genome *Genome_init(size_t numInputs, size_t numOutputs);
 void Genome_destroy(Genome *genome);
 
-// NEAT operators
+// ------------------- NEAT Operators -------------------
 void Genome_add_node(Genome *genome, size_t connectionIndex);
 void Genome_add_connection(Genome *genome, size_t fromNode, size_t toNode,
                            long double weight);
@@ -53,13 +54,11 @@ void Genome_mutate_weights(Genome *genome, long double perturbRate,
                            long double perturbAmount);
 Genome *Genome_crossover(Genome *parent1, Genome *parent2);
 
-// Forward pass
+// ------------------- Forward Propagation -------------------
 void Genome_forward(Genome *genome, long double *input, long double *output);
-
-// Activation functions
 long double activate(long double x, ActivationFunctionType type);
 
-// Serialization
+// ------------------- Serialization -------------------
 void Genome_save(Genome *genome, const char *filename);
 Genome *Genome_load(const char *filename);
 
