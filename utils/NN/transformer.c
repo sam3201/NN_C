@@ -403,7 +403,8 @@ void TRANSFORMER_backprop(Transformer_t *transformer,
     layernorm_backprop(layer->norm1, grad_residual1, layer->norm1_input);
 
     // MHA backprop
-    mha_backprop(layer->attention, grad_residual1, layer->attention_input);
+    transformer_mha_backprop(layer->attention, grad_residual1,
+                             layer->attention_input);
 
     // Gradient for previous layer
     memcpy(grad, grad_residual1, D * sizeof(long double));
