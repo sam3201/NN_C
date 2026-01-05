@@ -977,13 +977,24 @@ NN_t *NN_load(const char *filename) {
     return NULL;
   }
 
-  // Read activation functions and derivatives
+  // Read activation + derivative types
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    nn->activationFunctions[i] =
-        fread(nn->activationFunctions[i], sizeof(ActivationFunction), 1, file);
-    nn->activationDerivatives[i] = fread(nn->activationDerivatives[i],
-                                         sizeof(ActivationDerivative), 1, file);
+    ActivationFunctionType act;
+    ActivationDerivativeType deriv;
+
+    fread(&act, sizeof(ActivationFunctionType), 1, file);
+    fread(&deriv, sizeof(ActivationDerivativeType), 1, file);
+
+    nn->activationFunctions[i] = get_activation_function(act);
+    nn->activationDerivatives[i] = get_activation_derivative(deriv);
   }
+
+  // Read loss type
+  LossFunctionType loss_type;
+  fread(&loss_type, sizeof(LossFunctionType), 1, file);
+  nn->loss = get_loss_function(loss_type);
+  nn->lossDerivative = get_loss_derivative(map_loss_to_derivative(loss_type));
+
   // Read weights, biases, gradients and optimizer states
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
     size_t weights_size = nn->layers[i] * nn->layers[i + 1];
