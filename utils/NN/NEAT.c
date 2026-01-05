@@ -759,3 +759,75 @@ void NEAT_train(NEAT_t *neat, long double **inputs, long double **targets,
   // Evolve population after evaluating all genomes
   POPULATION_evolve(pop);
 }
+
+NN_t *GENOME_compile_to_NN(Genome_t *genome) {
+  if (!genome)
+    return NULL;
+
+  /* ---- determine layers by topological depth ---- */
+  size_t topoSize;
+  size_t *order = topological_sort(genome, &topoSize);
+
+  size_t *depth = calloc(genome->numNodes, sizeof(size_t));
+
+  for (size_t i = 0; i < topoSize; i++) {
+    size_t u = order[i];
+    for (size_t j = 0; j < genome->numConnections; j++) {
+      Connection *c = genome->connections[j];
+      if (c->enabled && c->from->id == u) {
+        if (depth[c->to->id] < depth[u] + 1)
+          depth[c->to->id] = depth[u] + 1;
+      }
+    }
+  }
+
+  size_t maxDepth = 0;
+  for (size_t i = 0; i < genome->numNodes; i++)
+    if (depth[i] > maxDepth)
+      maxDepth = depth[i];
+
+  /* ---- count nodes per layer ---- */
+  size_t *layerCounts = calloc(maxDepth + 1, sizeof(size_t));
+  for (size_t i = 0; i < genome->numNodes; i++)
+    layerCounts[depth[i]]++;
+
+  /* ---- build NN layer array ---- */
+  size_t *layers = malloc((maxDepth + 2) * sizeof(size_t));
+  ActivationFunctionType *acts =
+      malloc((maxDepth + 1) * sizeof(ActivationFunctionType));
+  ActivationDerivativeType *ders =
+      malloc((maxDepth + 1) * sizeof(ActivationDerivativeType));
+
+  for (size_t i = 0; i <= maxDepth; i++) {
+    layers[i] = layerCounts[i];
+    acts[i] = RELU;
+    ders[i] = RELU_DERIVATIVE;
+  }
+  layers[maxDepth + 1] = 0;
+
+  NN_t *nn = NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+
+  /* ---- map genome connections → NN weights ---- */
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
+    if (!c->enabled)
+      continue;
+
+    size_t fromLayer = depth[c->from->id];
+    size_t toLayer = depth[c->to->id];
+
+    if (toLayer == fromLayer + 1) {
+      NN_set_weight(nn, fromLayer, c->from->id, c->to->id, c->weight);
+    }
+  }
+
+  free(order);
+  free(depth);
+  free(layerCounts);
+  free(layers);
+  free(acts);
+  free(ders);
+
+  genome->nn = nn;
+  return nn;
+}
