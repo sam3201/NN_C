@@ -438,20 +438,97 @@ long double **NN_forward(NN_t *nn, long double inputs[]) {
 // Compute element-wise error at output
 // dL/dz = dL/dy * dy/dz
 // Compute backpropagation using a precomputed delta for the output layer
-void softmax(long double *layer, size_t size) {
-  long double max = layer[0];
-  for (size_t i = 1; i < size; i++)
-    if (layer[i] > max)
-      max = layer[i];
+void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+                              long double *output_delta) {
+  if (!nn || !inputs || !output_delta)
+    return;
 
-  long double sum = 0.0L;
-  for (size_t i = 0; i < size; i++) {
-    layer[i] = expl(layer[i] - max); // subtract max for numerical stability
-    sum += layer[i];
+  size_t L = nn->numLayers;
+
+  // Forward pass to store pre-activation sums (z) for all layers
+  long double **z_values =
+      (long double **)malloc((L - 1) * sizeof(long double *));
+  long double **activations = (long double **)malloc(L * sizeof(long double *));
+  if (!z_values || !activations)
+    return;
+
+  // Input layer
+  activations[0] = (long double *)malloc(nn->layers[0] * sizeof(long double));
+  memcpy(activations[0], inputs, nn->layers[0] * sizeof(long double));
+
+  // Forward pass to compute z and activations
+  for (size_t l = 1; l < L; l++) {
+    size_t in_size = nn->layers[l - 1];
+    size_t out_size = nn->layers[l];
+
+    z_values[l - 1] = (long double *)malloc(out_size * sizeof(long double));
+    activations[l] = (long double *)malloc(out_size * sizeof(long double));
+
+    for (size_t j = 0; j < out_size; j++) {
+      long double sum = nn->biases[l - 1][j];
+      for (size_t i = 0; i < in_size; i++)
+        sum += nn->weights[l - 1][i * out_size + j] * activations[l - 1][i];
+      z_values[l - 1][j] = sum;
+
+      if (l < L - 1)
+        activations[l][j] = nn->activationFunctions[l - 1](sum);
+      else
+        activations[l][j] = sum; // raw output
+    }
   }
 
-  for (size_t i = 0; i < size; i++)
-    layer[i] /= sum;
+  // Allocate memory for deltas
+  long double **deltas =
+      (long double **)malloc((L - 1) * sizeof(long double *));
+  for (size_t l = 0; l < L - 1; l++)
+    deltas[l] = (long double *)calloc(nn->layers[l + 1], sizeof(long double));
+
+  // Set output layer delta
+  size_t last_idx = L - 2;
+  memcpy(deltas[last_idx], output_delta,
+         nn->layers[L - 1] * sizeof(long double));
+
+  // Backpropagate through hidden layers
+  for (size_t l = L - 2; l > 0; l--) {
+    size_t curr_size = nn->layers[l];
+    size_t next_size = nn->layers[l + 1];
+
+    for (size_t i = 0; i < curr_size; i++) {
+      long double sum = 0.0L;
+      for (size_t j = 0; j < next_size; j++) {
+        sum += nn->weights[l][i * next_size + j] * deltas[l][j];
+      }
+      deltas[l - 1][i] =
+          sum * nn->activationDerivatives[l - 1](z_values[l - 1][i]);
+    }
+  }
+
+  // Compute gradients for weights and biases
+  for (size_t l = 0; l < L - 1; l++) {
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
+
+    for (size_t j = 0; j < out_size; j++) {
+      nn->biases_v[l][j] = deltas[l][j];
+      for (size_t i = 0; i < in_size; i++)
+        nn->weights_v[l][i * out_size + j] = activations[l][i] * deltas[l][j];
+    }
+  }
+
+  // Apply optimizer update
+  if (nn->optimizer)
+    nn->optimizer(nn);
+
+  // Free memory
+  for (size_t l = 0; l < L - 1; l++) {
+    free(z_values[l]);
+    free(activations[l + 1]);
+    free(deltas[l]);
+  }
+  free(z_values);
+  free(activations[0]);
+  free(activations);
+  free(deltas);
 }
 
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
