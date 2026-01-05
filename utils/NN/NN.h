@@ -167,9 +167,7 @@ size_t argmax_index(long double *vec, size_t size) {
       idx = i;
   return idx;
 }
-
 void argmax(long double *vec, size_t size);
-
 void argmax_derivative(long double *predicted, long double *one_hot,
                        long double *gradients, size_t size);
 
