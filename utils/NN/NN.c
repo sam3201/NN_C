@@ -863,16 +863,17 @@ int NN_save(NN_t *nn, const char *filename) {
     fwrite(nn->weights[i], sizeof(long double), weights_size, file);
     fwrite(nn->biases[i], sizeof(long double), nn->layers[i + 1], file);
 
+    fwrite(nn->opt_m_w[i], sizeof(long double), weights_size, file);
+    fwrite(nn->opt_v_w[i], sizeof(long double), weights_size, file);
+    fwrite(nn->opt_m_b[i], sizeof(long double), nn->layers[i + 1], file);
+    fwrite(nn->opt_v_b[i], sizeof(long double), nn->layers[i + 1], file);
+
     // Gradients
   }
 
   // Write optimizer state
   fwrite(&nn->t, sizeof(unsigned int), 1, file);
   fwrite(&nn->learningRate, sizeof(long double), 1, file);
-  fwrite(nn->opt_m_w[i], sizeof(long double), weights_size, file);
-  fwrite(nn->opt_v_w[i], sizeof(long double), weights_size, file);
-  fwrite(nn->opt_m_b[i], sizeof(long double), nn->layers[i + 1], file);
-  fwrite(nn->opt_v_b[i], sizeof(long double), nn->layers[i + 1], file);
 
   // Convert function pointers to types and save as strings
   RegularizationType reg_type =
