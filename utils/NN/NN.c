@@ -71,9 +71,11 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
     return NULL;
   }
 
-  nn->weights_grad[i] = calloc(wcount, sizeof(long double));
-  nn->biases_grad[i] = calloc(bcount, sizeof(long double));
-
+  // Allocate and initialize weights and biases
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    nn->weights_grad[i] = calloc(wcount, sizeof(long double));
+    nn->biases_grad[i] = calloc(bcount, sizeof(long double));
+  }
   // Allocate and initialize activation functions
   nn->activationFunctions = (ActivationFunction *)malloc(
       (nn->numLayers - 1) * sizeof(ActivationFunction));
