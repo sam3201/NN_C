@@ -550,26 +550,8 @@ void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
     grad_output[i] = output[i] - target[i];
   }
 
-  // Backpropagate through layers (simplified)
-  long double *grad_input =
-      (long double *)malloc(transformer->model_dim * sizeof(long double));
-  if (grad_input) {
-    memcpy(grad_input, grad_output,
-           transformer->model_dim * sizeof(long double));
-
-    // Backpropagate through layers in reverse
-    for (int i = transformer->num_layers - 1; i >= 0; i--) {
-      long double *temp_grad =
-          (long double *)malloc(transformer->model_dim * sizeof(long double));
-      if (temp_grad) {
-        transformer_backprop(transformer->layers[i], input_sequence[0],
-                             grad_input, temp_grad);
-        free(grad_input);
-        grad_input = temp_grad;
-      }
-    }
-    free(grad_input);
-  }
+  // Backpropagate
+  TRANSFORMER_backprop(transformer, input_sequence, seq_length, grad_output);
 
   free(grad_output);
   free(output);
