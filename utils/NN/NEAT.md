@@ -84,23 +84,4 @@ GENOME_forward – test genomes on inputs
 
 GENOME_save / GENOME_load – serialize best genome
 
-Notes
-
-Mutation rates and probabilities can be adjusted in POPULATION_evolve.
-
-The system uses a simplified speciation method; for advanced NEAT behavior, you may implement dynamic thresholds and explicit species data.
-
-Forward propagation uses topological sort to handle arbitrary network structures.
-
-References
-
-NEAT: NeuroEvolution of Augmenting Topologies
- – Original paper by Kenneth O. Stanley
-
-
----
-
-If you want, I can **also add a small diagram showing the flow from population initialization → evaluation → evolution → next generation**, which makes the README visually easier to follow.  
-
-Do you want me to add that diagram?
 
