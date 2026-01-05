@@ -332,55 +332,27 @@ long double *transformer_forward(TransformerLayer *layer, long double *input) {
 }
 
 // Backpropagation functions
-void transformer_mha_backprop(MultiHeadAttention *mha, long double *input,
-                              long double *grad_output,
-                              long double *grad_input) {
-  if (!mha || !input || !grad_output || !grad_input) {
+// --- Multi-Head Attention weight update only ---
+void transformer_mha_backprop(MultiHeadAttention *mha, long double *input) {
+  if (!mha || !input)
     return;
-  }
 
-  // Backpropagate through output projection
-  NN_backprop(mha->O_proj, input, grad_output[0], grad_output[0]);
+  // Update output projection
+  NN_backprop(mha->O_proj, input, 0.0L, 0.0L);
 
-  // Backpropagate through Q, K, V projections
-  NN_backprop(mha->Q_proj, input, grad_output[0], grad_output[0]);
-  NN_backprop(mha->K_proj, input, grad_output[0], grad_output[0]);
-  NN_backprop(mha->V_proj, input, grad_output[0], grad_output[0]);
-
-  // Update gradients for input
-  for (size_t i = 0; i < mha->model_dim; i++) {
-    grad_input[i] = grad_output[i];
-  }
+  // Update Q, K, V projections
+  NN_backprop(mha->Q_proj, input, 0.0L, 0.0L);
+  NN_backprop(mha->K_proj, input, 0.0L, 0.0L);
+  NN_backprop(mha->V_proj, input, 0.0L, 0.0L);
 }
 
-void transformer_norm_backprop(LayerNorm *ln, long double *input,
-                               long double *grad_output,
-                               long double *grad_input) {
-  if (!ln || !input || !grad_output || !grad_input) {
+// --- LayerNorm weight update only ---
+void transformer_norm_backprop(LayerNorm *ln, long double *input) {
+  if (!ln || !input)
     return;
-  }
 
-  // Calculate mean of input
-  long double mean = 0;
-  for (size_t i = 0; i < ln->dim; i++) {
-    mean += input[i];
-  }
-  mean /= ln->dim;
-
-  // Calculate variance of input
-  long double var = 0;
-  for (size_t i = 0; i < ln->dim; i++) {
-    var += (input[i] - mean) * (input[i] - mean);
-  }
-  var /= ln->dim;
-
-  // Backpropagate through normalization
-  for (size_t i = 0; i < ln->dim; i++) {
-    grad_input[i] = grad_output[i] / sqrt(var + ln->epsilon);
-  }
-
-  // Backpropagate through learned transformation
-  NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
+  // Only update the internal affine NN of LayerNorm
+  NN_backprop(ln->norm_network, input, 0.0L, 0.0L);
 }
 
 void TRANSFORMER_backprop(Transformer_t *transformer,
