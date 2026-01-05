@@ -398,7 +398,7 @@ void TRANSFORMER_backprop(Transformer_t *model, long double *input,
     goto cleanup;
 
   /* -------- norm2 (structural gradient) -------- */
-  transformer_norm_backprop(layer->norm2, input, grad_output, grad_ff);
+  transformer_norm_backprop(model->norm2, input, grad_output, grad_ff);
 
   /* -------- feed-forward (scalar-supervised NN) -------- */
   for (size_t i = 0; i < d; i++) {
