@@ -1,3 +1,4 @@
+#include "../NN/NEAT.h"
 #define POP_SIZE 50
 #define INPUT_DIM 5
 #define OUTPUT_DIM 2
