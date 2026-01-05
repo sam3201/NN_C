@@ -746,6 +746,8 @@ size_t *topological_sort(Genome_t *genome, size_t *outSize) {
 }
 
 NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size) {
+  NEAT_reset_innovations();
+
   NEAT_t *neat = malloc(sizeof(NEAT_t));
   neat->input_dims = input_dim;
   neat->output_dims = output_dim;
