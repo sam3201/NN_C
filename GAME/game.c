@@ -398,7 +398,7 @@ int decide_action(Agent *a, ObsBuffer *obs) {
   mcts_result_free(&r);
   */
 
-  int action = 0;
+  int action = rand() % 4;
   return action;
 }
 
