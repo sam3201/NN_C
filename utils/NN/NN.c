@@ -344,6 +344,7 @@ void nag(NN_t *nn) {
     }
   }
 }
+
 // Matrix Multiplication Function
 long double *NN_matmul(long double inputs[], long double weights[],
                        long double biases[], size_t input_size,
