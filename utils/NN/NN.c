@@ -682,6 +682,21 @@ void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
   free(deltas);
 }
 
+void NN_backprop(NN_t *nn, long double inputs[], long double y_true[]) {
+  size_t out_size = nn->layers[nn->numLayers - 1];
+
+  long double *y_pred = NN_forward_softmax(nn, inputs);
+  long double *grad = calloc(out_size, sizeof(long double));
+
+  for (size_t i = 0; i < out_size; i++)
+    grad[i] = nn->lossDerivative(y_pred[i], y_true[i]);
+
+  NN_backprop_custom_delta(nn, inputs, grad);
+
+  free(grad);
+  free(y_pred);
+}
+
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]) {
   size_t last_layer_idx = nn->numLayers - 2;
   size_t out_size = nn->layers[nn->numLayers - 1];
