@@ -92,6 +92,9 @@ long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
                                    long double c2, long double c3);
 
 void POPULATION_evolve(Population *pop);
+size_t assign_species(Population *pop);
+long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
+                                   long double c2, long double c3);
 
 // ------------------- Topological Sort -------------------
 size_t *topological_sort(Genome_t *genome, size_t *outSize);
