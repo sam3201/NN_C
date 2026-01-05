@@ -385,7 +385,7 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
 
 void TRANSFORMER_backprop(Transformer_t *model, long double *input,
                           long double *grad_output, long double *grad_input) {
-  if (!layer || !input || !grad_output || !grad_input)
+  if (!model || !input || !grad_output || !grad_input)
     return;
 
   size_t d = layer->model_dim;
