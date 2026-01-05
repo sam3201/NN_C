@@ -73,36 +73,41 @@ void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
                    long double weightPerturbAmount, long double addNodeRate,
                    long double addConnectionRate,
                    long double toggleConnectionRate,
-                   long double biasPerturbRate);
+                   long double biasPerturbRate,
+                   long double actFuncMutateRate) // new
+{
 
-Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2);
+  Genome_t *GENOME_crossover(Genome_t * p1, Genome_t * p2);
 
-// ------------------- Forward Propagation -------------------
-void GENOME_forward(Genome_t *genome, long double *input, long double *output);
-long double activate(long double x, ActivationFunctionType type);
+  // ------------------- Forward Propagation -------------------
+  void GENOME_forward(Genome_t * genome, long double *input,
+                      long double *output);
+  long double activate(long double x, ActivationFunctionType type);
 
-// ------------------- Serialization -------------------
-void GENOME_save(Genome_t *genome, const char *filename);
-Genome_t *GENOME_load(const char *filename);
+  // ------------------- Serialization -------------------
+  void GENOME_save(Genome_t * genome, const char *filename);
+  Genome_t *GENOME_load(const char *filename);
 
-// ------------------- Population-------------------
-Population *POPULATION_init(size_t popSize, size_t numInputs,
-                            size_t numOutputs);
-void POPULATION_destroy(Population *pop);
+  // ------------------- Population-------------------
+  Population *POPULATION_init(size_t popSize, size_t numInputs,
+                              size_t numOutputs);
+  void POPULATION_destroy(Population * pop);
 
-// ------------------- Innovation Number -------------------
-size_t get_innovation_number(size_t from, size_t to);
+  // ------------------- Innovation Number -------------------
+  size_t get_innovation_number(size_t from, size_t to);
 
-// ------------------- Compatability Distance -------------------
-long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
-                                   long double c2, long double c3);
+  // ------------------- Compatability Distance -------------------
+  long double compatibility_distance(Genome_t * g1, Genome_t * g2,
+                                     long double c1, long double c2,
+                                     long double c3);
 
-void POPULATION_evolve(Population *pop);
-size_t assign_species(Population *pop);
-long double compatibility_distance(Genome_t *g1, Genome_t *g2, long double c1,
-                                   long double c2, long double c3);
+  void POPULATION_evolve(Population * pop);
+  size_t assign_species(Population * pop);
+  long double compatibility_distance(Genome_t * g1, Genome_t * g2,
+                                     long double c1, long double c2,
+                                     long double c3);
 
-// ------------------- Topological Sort -------------------
-size_t *topological_sort(Genome_t *genome, size_t *outSize);
+  // ------------------- Topological Sort -------------------
+  size_t *topological_sort(Genome_t * genome, size_t *outSize);
 
 #endif // NEAT_H
