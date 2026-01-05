@@ -80,7 +80,6 @@ void GENOME_save(Genome_t *genome, const char *filename);
 Genome_t *GENOME_load(const char *filename);
 
 // ------------------- Population-------------------
-// Initialize population
 Population *POPULATION_init(size_t popSize, size_t numInputs,
                             size_t numOutputs);
 
