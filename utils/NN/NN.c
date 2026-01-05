@@ -122,22 +122,17 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
       fprintf(stderr,
               "Failed to allocate memory for weights or biases at layer %zu\n",
               i);
-      size_t wcount = nn->layers[i] * nn->layers[i + 1];
-      size_t bcount = nn->layers[i + 1];
-
-      nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
-      nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
-      nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
-      nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
-
       NN_destroy(nn);
       return NULL;
     }
+    size_t wcount = nn->layers[i] * nn->layers[i + 1];
+    size_t bcount = nn->layers[i + 1];
+
+    nn->opt_m_w[i] = calloc(wcount, sizeof(long double));
+    nn->opt_v_w[i] = calloc(wcount, sizeof(long double));
+    nn->opt_m_b[i] = calloc(bcount, sizeof(long double));
+    nn->opt_v_b[i] = calloc(bcount, sizeof(long double));
   }
-  nn->opt_m_w = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_w = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_m_b = malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_b = malloc((nn->numLayers - 1) * sizeof(long double *));
 
   // Initialize parameters
   nn->learningRate = learningRate;
