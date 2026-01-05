@@ -141,7 +141,7 @@ void GENOME_forward(Genome_t *genome, long double *input, long double *output) {
       }
     }
     if (n->type != INPUT_NODE && n->type != BIAS_NODE)
-      n->value = n->actFunc(n->value);
+      n->value = n->actFunc[n->type](n->value);
   }
 
   free(order);
