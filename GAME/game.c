@@ -395,7 +395,6 @@ int decide_action(Agent *a, ObsBuffer *obs) {
   int action = r.chosen_action;
   mcts_result_free(&r);
 
-  int action = rand() % ACTION_COUNT;
   return action;
 }
 
@@ -433,10 +432,9 @@ void update_agent(Agent *a) {
   obs_init(&obs);
 
   encode_observation(a, c, &obs);
-  // MuCortex *cortex = &tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
+  MuCortex *cortex = &tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
 
-  // int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
-  int action = decide_action(a, &obs);
+  int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
 
   switch (action) {
   case ACTION_UP:
