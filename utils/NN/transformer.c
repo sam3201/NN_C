@@ -333,6 +333,7 @@ long double **TRANSFORMER_backprop(Transformer_t *transformer,
 
   return grad;
 }
+
 // ----------------------
 // Save/load transformer
 // ----------------------
