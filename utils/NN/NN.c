@@ -539,13 +539,13 @@ void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
                         long double y_pred[],
                         long double (*lossDerivative)(long double,
                                                       long double)) {
-  if (!nn || !y_true || !y_pred || !lossDerivative)
+  if (!nn || !y_true || !y_pred)
     return;
 
   size_t out_size = nn->layers[nn->numLayers - 1];
-  long double *delta = calloc(out_size, sizeof(long double));
 
-  // Only backprop for predicted class
+  // Sparse gradient only for predicted class
+  long double *gradients = (long double *)calloc(out_size, sizeof(long double));
   size_t pred_idx = 0;
   long double max_val = y_pred[0];
   for (size_t i = 1; i < out_size; i++) {
@@ -554,10 +554,10 @@ void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
       pred_idx = i;
     }
   }
-  delta[pred_idx] = lossDerivative(y_true[pred_idx], y_pred[pred_idx]);
+  gradients[pred_idx] = lossDerivative(y_true[pred_idx], y_pred[pred_idx]);
 
-  NN_backprop(nn, inputs, y_true, y_pred, delta);
-  free(delta);
+  NN_backprop_custom_delta(nn, inputs, gradients);
+  free(gradients);
 }
 
 // Function Getters
