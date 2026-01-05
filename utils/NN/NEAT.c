@@ -17,7 +17,7 @@ long double activate(long double x, ActivationFunctionType type) {
 }
 
 // ------------------- Genome_t ----------------------
-Genome_t *Genome_init(size_t numInputs, size_t numOutputs) {
+Genome_t *GENOME_init(size_t numInputs, size_t numOutputs) {
   Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
   genome->numNodes = numInputs + numOutputs + 1; // bias
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
