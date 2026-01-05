@@ -307,9 +307,17 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   if (!p1 || !p2)
     return NULL;
 
-  Genome_t *child = GENOME_init_empty(p1->numNodes - 1, 1);
+  // Create empty genome with correct input/output count
+  size_t numInputs = 0, numOutputs = 0;
+  for (size_t i = 0; i < p1->numNodes; i++) {
+    if (p1->nodes[i]->type == INPUT_NODE)
+      numInputs++;
+    else if (p1->nodes[i]->type == OUTPUT_NODE)
+      numOutputs++;
+  }
+  Genome_t *child = GENOME_init_empty(numInputs, numOutputs);
 
-  // Copy nodes
+  // Copy nodes from p1 (IDs are preserved)
   for (size_t i = 0; i < p1->numNodes; i++) {
     Node *n = malloc(sizeof(Node));
     *n = *(p1->nodes[i]);
@@ -318,7 +326,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
     child->nodes[child->numNodes++] = n;
   }
 
-  // Merge connections using innovations
+  // Merge connections using innovation numbers
   size_t i1 = 0, i2 = 0;
   while (i1 < p1->numConnections || i2 < p2->numConnections) {
     Connection *c = NULL;
@@ -343,16 +351,15 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
       }
     }
 
-    // Create new connection for child
+    // Create connection for child
     Connection *newC = malloc(sizeof(Connection));
     newC->weight = c->weight;
     newC->enabled = c->enabled;
     newC->innovation = c->innovation;
 
-    // REMAP POINTERS to child nodes by ID
     if (c->from->id >= child->numNodes || c->to->id >= child->numNodes) {
       free(newC);
-      continue; // safety check
+      continue;
     }
     newC->from = child->nodes[c->from->id];
     newC->to = child->nodes[c->to->id];
@@ -361,6 +368,11 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
         child->connections, (child->numConnections + 1) * sizeof(Connection *));
     child->connections[child->numConnections++] = newC;
   }
+
+  // Rebuild NN_t from node & connection structure
+  size_t layers[2] = {numInputs, numOutputs}; // simple input->output NN
+  ActivationFunctionType actFuncs[2] = {LINEAR, SIGMOID};
+  child->nn = NN_init(layers, actFuncs, NULL, MSE, NULL, NONE, SGD, 0.01L);
 
   return child;
 }
