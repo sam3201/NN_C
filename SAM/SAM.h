@@ -53,6 +53,10 @@ void SAM_train(SAM_t *sam, long double **input_sequence, size_t seq_length,
                long double *target);
 long double *SAM_forward(SAM_t *sam, long double **input_sequence,
                          size_t seq_length);
+// Backpropagate through entire SAM model
+void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
+                  long double *grad_loss);
+
 void SAM_update_context(SAM_t *sam, long double current_performance);
 
 // Adaptation functions
