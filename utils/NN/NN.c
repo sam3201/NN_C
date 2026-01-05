@@ -243,32 +243,39 @@ void NN_destroy(NN_t *nn) {
 }
 
 // Optimizer Functions
+// ===================== Optimizer Functions =====================
+
+// Stochastic Gradient Descent
 void sgd(NN_t *nn) {
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t current_layer = nn->layers[i];
-    size_t next_layer = nn->layers[i + 1];
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
 
-    for (size_t j = 0; j < current_layer * next_layer; j++) {
-      nn->weights[i][j] -= nn->learningRate * nn->weights_v[i][j];
-    }
+    for (size_t i = 0; i < in_size * out_size; i++)
+      nn->weights[l][i] -= nn->learningRate * nn->weights_v[l][i];
 
-    for (size_t j = 0; j < next_layer; j++) {
-      nn->biases[i][j] -= nn->learningRate * nn->biases_v[i][j];
-    }
+    for (size_t j = 0; j < out_size; j++)
+      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j];
   }
 }
 
+// RMSProp
 void rmsprop(NN_t *nn) {
-  const long double decay = 0.9L, eps = 1e-8L;
+  const long double decay = 0.9L;
+  const long double eps = 1e-8L;
+
   for (size_t l = 0; l < nn->numLayers - 1; l++) {
-    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
-    for (size_t j = 0; j < in_size * out_size; j++) {
-      nn->weights_v[l][j] =
-          decay * nn->weights_v[l][j] +
-          (1 - decay) * nn->weights_v[l][j] * nn->weights_v[l][j];
-      nn->weights[l][j] -= nn->learningRate * nn->weights_v[l][j] /
-                           (sqrtl(nn->weights_v[l][j]) + eps);
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
+
+    for (size_t i = 0; i < in_size * out_size; i++) {
+      nn->weights_v[l][i] =
+          decay * nn->weights_v[l][i] +
+          (1 - decay) * nn->weights_v[l][i] * nn->weights_v[l][i];
+      nn->weights[l][i] -= nn->learningRate * nn->weights_v[l][i] /
+                           (sqrtl(nn->weights_v[l][i]) + eps);
     }
+
     for (size_t j = 0; j < out_size; j++) {
       nn->biases_v[l][j] = decay * nn->biases_v[l][j] + (1 - decay) *
                                                             nn->biases_v[l][j] *
@@ -279,27 +286,29 @@ void rmsprop(NN_t *nn) {
   }
 }
 
+// Adagrad
 void adagrad(NN_t *nn) {
-  const long double epsilon = 1e-8L;
+  const long double eps = 1e-8L;
 
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    size_t current_layer = nn->layers[i];
-    size_t next_layer = nn->layers[i + 1];
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
 
-    for (size_t j = 0; j < current_layer * next_layer; j++) {
-      nn->weights_v[i][j] += nn->weights_v[i][j] * nn->weights_v[i][j];
-      nn->weights[i][j] -= nn->learningRate * nn->weights_v[i][j] /
-                           (sqrtl(nn->weights_v[i][j]) + epsilon);
+    for (size_t i = 0; i < in_size * out_size; i++) {
+      nn->weights_v[l][i] += nn->weights_v[l][i] * nn->weights_v[l][i];
+      nn->weights[l][i] -= nn->learningRate * nn->weights_v[l][i] /
+                           (sqrtl(nn->weights_v[l][i]) + eps);
     }
 
-    for (size_t j = 0; j < next_layer; j++) {
-      nn->biases_v[i][j] += nn->biases_v[i][j] * nn->biases_v[i][j];
-      nn->biases[i][j] -= nn->learningRate * nn->biases_v[i][j] /
-                          (sqrtl(nn->biases_v[i][j]) + epsilon);
+    for (size_t j = 0; j < out_size; j++) {
+      nn->biases_v[l][j] += nn->biases_v[l][j] * nn->biases_v[l][j];
+      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j] /
+                          (sqrtl(nn->biases_v[l][j]) + eps);
     }
   }
 }
 
+// Adam
 void adam(NN_t *nn) {
   const long double beta1 = 0.9L;
   const long double beta2 = 0.999L;
@@ -309,42 +318,48 @@ void adam(NN_t *nn) {
     size_t in_size = nn->layers[l];
     size_t out_size = nn->layers[l + 1];
 
+    // Allocate temporary arrays for m and v if not already in NN struct
+    // Here we assume weights_v = m, biases_v = v (can be changed to separate
+    // arrays)
+    for (size_t i = 0; i < in_size * out_size; i++) {
+      long double grad = nn->weights_v[l][i]; // precomputed gradient
+      nn->weights_v[l][i] =
+          beta1 * nn->weights_v[l][i] + (1 - beta1) * grad; // m
+      long double v = beta2 * nn->biases_v[l][i % out_size] +
+                      (1 - beta2) * grad * grad; // v (reuse bias array)
+      long double m_hat = nn->weights_v[l][i] / (1 - powl(beta1, nn->t));
+      long double v_hat = v / (1 - powl(beta2, nn->t));
+      nn->weights[l][i] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
+      nn->biases_v[l][i % out_size] = v; // save v back for next step
+    }
+
     for (size_t j = 0; j < out_size; j++) {
-      for (size_t i = 0; i < in_size; i++) {
-        size_t idx = i * out_size + j; // ✅ safe integer index
-
-        // First and second moment updates
-        nn->weights_v[l][idx] =
-            beta1 * nn->weights_v[l][idx] + (1 - beta1) * nn->weights[l][idx];
-        nn->biases_v[l][j] =
-            beta2 * nn->biases_v[l][j] +
-            (1 - beta2) * nn->weights[l][idx] * nn->weights[l][idx];
-
-        long double m_hat = nn->weights_v[l][idx] / (1 - powl(beta1, nn->t));
-        long double v_hat = nn->biases_v[l][j] / (1 - powl(beta2, nn->t));
-
-        // Weight update
-        nn->weights[l][idx] -= nn->learningRate * m_hat / (sqrtl(v_hat) + eps);
-      }
-
-      // Bias update
-      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j];
+      long double grad = nn->biases_v[l][j]; // precomputed gradient for bias
+      nn->biases_v[l][j] = beta1 * nn->biases_v[l][j] + (1 - beta1) * grad; // m
+      nn->biases[l][j] -= nn->learningRate * nn->biases_v[l][j] /
+                          (sqrtl(nn->biases_v[l][j]) + eps);
     }
   }
+
   nn->t++;
 }
 
+// Nesterov Accelerated Gradient
 void nag(NN_t *nn) {
   const long double momentum = 0.9L;
+
   for (size_t l = 0; l < nn->numLayers - 1; l++) {
-    size_t in_size = nn->layers[l], out_size = nn->layers[l + 1];
-    for (size_t j = 0; j < in_size * out_size; j++) {
-      long double prev_v = nn->weights_v[l][j];
-      nn->weights_v[l][j] = momentum * nn->weights_v[l][j] -
-                            nn->learningRate * nn->weights_v[l][j];
-      nn->weights[l][j] +=
-          -momentum * prev_v + (1 + momentum) * nn->weights_v[l][j];
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
+
+    for (size_t i = 0; i < in_size * out_size; i++) {
+      long double prev_v = nn->weights_v[l][i];
+      nn->weights_v[l][i] = momentum * nn->weights_v[l][i] -
+                            nn->learningRate * nn->weights_v[l][i];
+      nn->weights[l][i] +=
+          -momentum * prev_v + (1 + momentum) * nn->weights_v[l][i];
     }
+
     for (size_t j = 0; j < out_size; j++) {
       long double prev_v = nn->biases_v[l][j];
       nn->biases_v[l][j] =
