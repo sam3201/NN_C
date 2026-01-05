@@ -383,7 +383,7 @@ void transformer_norm_backprop(LayerNorm *ln, long double *input,
   NN_backprop(ln->norm_network, input, grad_output[0], grad_input[0]);
 }
 
-void TRANSFORMER_backward(Transformer_t *transformer,
+void TRANSFORMER_backprop(Transformer_t *transformer,
                           long double **input_sequence, size_t seq_length,
                           long double *grad_output) {
   if (!transformer || !input_sequence || !grad_output)
