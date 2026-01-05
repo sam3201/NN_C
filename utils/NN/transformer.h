@@ -70,50 +70,6 @@ Transformer_t *TRANSFORMER_init(size_t input_dim, size_t num_heads);
 long double *transformer_mha_forward(MultiHeadAttention *mha,
                                      long double *input, size_t seq_length);
 long double *transformer_norm_forward(LayerNorm *ln, long double *input);
-long double *transformer_forward(TransformerLayer *layer, long double *input) {
-  if (!layer || !input)
-    return NULL;
-
-  layer->attention_input = malloc(layer->model_dim * sizeof(long double));
-  memcpy(layer->attention_input, input, layer->model_dim * sizeof(long double));
-
-  layer->attention_output =
-      transformer_mha_forward(layer->attention, input, layer->seq_length);
-  if (!layer->attention_output)
-    return NULL;
-
-  // Residual1
-  layer->norm1_input = malloc(layer->model_dim * sizeof(long double));
-  for (size_t i = 0; i < layer->model_dim; i++)
-    layer->norm1_input[i] = input[i] + layer->attention_output[i];
-
-  free(layer->attention_output);
-  layer->norm1_output =
-      transformer_norm_forward(layer->norm1, layer->norm1_input);
-  if (!layer->norm1_output)
-    return NULL;
-
-  // FeedForward
-  layer->ff_input = malloc(layer->model_dim * sizeof(long double));
-  memcpy(layer->ff_input, layer->norm1_output,
-         layer->model_dim * sizeof(long double));
-  layer->ff_output = NN_forward(layer->feed_forward->network, layer->ff_input);
-  if (!layer->ff_output)
-    return NULL;
-
-  // Residual2
-  layer->norm2_input = malloc(layer->model_dim * sizeof(long double));
-  for (size_t i = 0; i < layer->model_dim; i++)
-    layer->norm2_input[i] = layer->norm1_output[i] + layer->ff_output[i];
-
-  free(layer->ff_output);
-  layer->norm2_output =
-      transformer_norm_forward(layer->norm2, layer->norm2_input);
-  if (!layer->norm2_output)
-    return NULL;
-
-  return layer->norm2_output;
-}
 
 // Backpropagation functions
 void transformer_mha_backprop(MultiHeadAttention *mha, long double *input);
