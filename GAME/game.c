@@ -306,9 +306,9 @@ void init_tribes(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
   float spacing = 24.0f;
 
-  // MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
-  //                .latent_dim = 64,
-  //              .action_count = ACTION_COUNT};
+  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
+                  .latent_dim = 64,
+                  .action_count = ACTION_COUNT};
 
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
