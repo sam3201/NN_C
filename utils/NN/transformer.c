@@ -302,10 +302,11 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
                                   size_t seq_length) {
   long double **x = input_sequence;
 
-  for (size_t l = 0; l < transformer->num_layers; l++)
-    x = transformer_layer_forward(transformer->layers[l], input_sequence);
+  for (size_t l = 0; l < transformer->num_layers; l++) {
+    x = transformer_layer_forward(transformer->layers[l], x, seq_length);
+  }
 
-  return x; // [seq][model_dim]
+  return x;
 }
 
 // ----------------------
