@@ -866,6 +866,22 @@ RegularizationType get_regularization_from_func(RegularizationFunction func) {
   return -1;
 }
 
+ActivationDerivativeType
+get_derivative_from_activation(ActivationFunctionType type) {
+  switch (type) {
+  case SIGMOID:
+    return SIGMOID_DERIV;
+  case TANH:
+    return TANH_DERIV;
+  case RELU:
+    return RELU_DERIV;
+  case LINEAR:
+    return LINEAR_DERIV;
+  default:
+    return LINEAR_DERIV;
+  }
+}
+
 int NN_save(NN_t *nn, const char *filename) {
   if (!nn || !filename)
     return -1;
