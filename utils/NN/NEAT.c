@@ -534,17 +534,33 @@ void NEAT_destroy(NEAT_t *neat) {
   free(neat);
 }
 
-void NEAT_train(NEAT_t *neat, long double *input, long double *target) {
-  // Evaluate each genome
-  for (size_t i = 0; i < neat->pop->size; i++) {
-    long double output[neat->output_dims];
-    GENOME_forward(neat->pop->genomes[i], input, output);
+void NEAT_train(NEAT_t *neat, long double **inputs, long double **targets,
+                size_t numSamples) {
+  if (!neat || !inputs || !targets)
+    return;
 
-    // Simple fitness example: negative MSE
+  Population *pop = neat->pop;
+  size_t inDims = neat->input_dims;
+  size_t outDims = neat->output_dims;
+
+  for (size_t i = 0; i < pop->size; i++) {
+    Genome_t *genome = pop->genomes[i];
     long double fitness = 0.0L;
-    for (size_t j = 0; j < neat->output_dims; j++)
-      fitness -= (output[j] - target[j]) * (output[j] - target[j]);
-    neat->pop->genomes[i]->fitness = fitness;
+
+    for (size_t s = 0; s < numSamples; s++) {
+      long double output[outDims];
+      GENOME_forward(genome, inputs[s], output);
+
+      // Compute negative MSE
+      for (size_t j = 0; j < outDims; j++) {
+        long double diff = output[j] - targets[s][j];
+        fitness -= diff * diff;
+      }
+    }
+
+    genome->fitness = fitness;
   }
-  POPULATION_evolve(neat->pop);
+
+  // Evolve population after evaluating all genomes
+  POPULATION_evolve(pop);
 }
