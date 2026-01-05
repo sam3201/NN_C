@@ -547,3 +547,49 @@ int TRANSFORMER_save(Transformer_t *t, FILE *f) {
 
   return 1;
 }
+
+Transformer_t *TRANSFORMER_load(FILE *f) {
+  if (!f)
+    return NULL;
+
+  Transformer_t *t = malloc(sizeof(Transformer_t));
+  if (!t)
+    return NULL;
+
+  fread(&t->model_dim, sizeof(size_t), 1, f);
+  fread(&t->num_heads, sizeof(size_t), 1, f);
+  fread(&t->num_layers, sizeof(size_t), 1, f);
+
+  t->layers = malloc(t->num_layers * sizeof(TransformerLayer *));
+  if (!t->layers) {
+    free(t);
+    return NULL;
+  }
+
+  size_t ff_dim = t->model_dim * 4;
+
+  for (size_t l = 0; l < t->num_layers; l++) {
+    TransformerLayer *layer =
+        create_transformer_layer(t->model_dim, t->num_heads, ff_dim);
+
+    fread(&layer->model_dim, sizeof(size_t), 1, f);
+    fread(&layer->seq_length, sizeof(size_t), 1, f);
+
+    // ---- Attention ----
+    layer->attention->Q_proj = NN_load_from_file(f);
+    layer->attention->K_proj = NN_load_from_file(f);
+    layer->attention->V_proj = NN_load_from_file(f);
+    layer->attention->O_proj = NN_load_from_file(f);
+
+    // ---- Feed Forward ----
+    layer->feed_forward->network = NN_load_from_file(f);
+
+    // ---- LayerNorms ----
+    layer->norm1->norm_network = NN_load_from_file(f);
+    layer->norm2->norm_network = NN_load_from_file(f);
+
+    t->layers[l] = layer;
+  }
+
+  return t;
+}
