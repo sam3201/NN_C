@@ -56,7 +56,7 @@ Genome_t *GENOME_init(size_t numInputs, size_t numOutputs) {
   return genome;
 }
 
-void Genome_destroy(Genome_t *genome) {
+void GENOME_destroy(Genome_t *genome) {
   if (!genome)
     return;
   for (size_t i = 0; i < genome->numNodes; i++)
