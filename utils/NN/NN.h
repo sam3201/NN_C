@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Aliases
 #define weights_grad weights_v
 #define biases_grad biases_v
 
