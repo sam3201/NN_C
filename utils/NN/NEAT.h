@@ -60,8 +60,8 @@ typedef struct {
   size_t output_dims;
 } NEAT_t;
 
-static InnovationRecord *innovationHistory = NULL;
-static size_t innovationCount = 0;
+static InnovationRecord *innovationHistory;
+static size_t innovationCount;
 
 // ------------------- Constructors / Destructors -------------------
 Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
