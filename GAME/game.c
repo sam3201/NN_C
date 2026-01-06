@@ -117,6 +117,16 @@ typedef struct {
 } Mob;
 
 typedef struct {
+  bool alive;
+  Vector2 pos; // WORLD pos
+  Vector2 vel;
+  float ttl;
+  int damage;
+} Projectile;
+
+static Projectile projectiles[MAX_PROJECTILES];
+
+typedef struct {
   int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
