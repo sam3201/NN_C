@@ -1604,10 +1604,15 @@ int main(void) {
     projectiles[i].alive = false;
 
   while (!WindowShouldClose()) {
+    float dt = GetFrameTime();
+
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
 
     update_player();
+    update_visible_world(dt);
+    update_projectiles(dt);
+
     for (int i = 0; i < MAX_AGENTS; i++)
       update_agent(&agents[i]);
 
@@ -1617,45 +1622,37 @@ int main(void) {
     draw_chunks();
     draw_resources();
     draw_mobs();
+    draw_projectiles();
 
-    /* Draw bases */
+    // bases
     for (int t = 0; t < TRIBE_COUNT; t++) {
-      Vector2 bp = Vector2Subtract(tribes[t].base.position, camera_pos);
-      bp = Vector2Scale(bp, WORLD_SCALE);
-      bp.x += SCREEN_WIDTH / 2;
-      bp.y += SCREEN_HEIGHT / 2;
-
+      Vector2 bp = world_to_screen(tribes[t].base.position);
       DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
                        tribes[t].color);
     }
 
-    /* Draw agents */
+    // agents
     for (int i = 0; i < MAX_AGENTS; i++) {
       if (!agents[i].alive)
         continue;
-
-      Vector2 p = Vector2Subtract(agents[i].position, camera_pos);
-      p = Vector2Scale(p, WORLD_SCALE);
-      p.x += SCREEN_WIDTH / 2;
-      p.y += SCREEN_HEIGHT / 2;
-
+      Vector2 ap = world_to_screen(agents[i].position);
       Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
-      draw_agent_detailed(&agents[i], p, tc);
-
-      /* Draw player */
-      Vector2 pp = Vector2Subtract(player.position, camera_pos);
-      pp = Vector2Scale(pp, WORLD_SCALE);
-      pp.x += SCREEN_WIDTH / 2;
-      pp.y += SCREEN_HEIGHT / 2;
-
-      draw_player(pp);
-
-      DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
-      /* Display FPS */
-      DrawText(TextFormat("FPS: %d", GetFPS()), 20, 40, 20, RAYWHITE);
-      EndDrawing();
+      draw_agent_detailed(&agents[i], ap, tc);
     }
 
-    CloseWindow();
-    return 0;
+    // player
+    Vector2 pp = world_to_screen(player.position);
+    draw_player(pp);
+
+    // UI + debug
+    draw_ui();
+    draw_hover_label();
+    DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
+
+    EndDrawing();
   }
+
+  CloseWindow();
+  return 0;
+}
