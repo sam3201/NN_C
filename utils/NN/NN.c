@@ -499,7 +499,9 @@ void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
       (long double **)malloc((L - 1) * sizeof(long double *));
   long double **activations = (long double **)malloc(L * sizeof(long double *));
   if (!z_values || !activations)
-    return;
+    free(z_values);
+  free(activations);
+  return;
 
   // Input layer
   activations[0] = (long double *)malloc(nn->layers[0] * sizeof(long double));
