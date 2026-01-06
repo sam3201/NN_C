@@ -269,17 +269,7 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
   size_t H = mha->num_heads;
   size_t Hd = mha->head_dim;
 
-  // free old caches if any
-  free(mha->X_cache);
-  mha->X_cache = NULL;
-  free(mha->Q_cache);
-  mha->Q_cache = NULL;
-  free(mha->K_cache);
-  mha->K_cache = NULL;
-  free(mha->V_cache);
-  mha->V_cache = NULL;
-  free(mha->scores_cache);
-  mha->scores_cache = NULL;
+  mha_clear_caches(mha);
 
   mha->X_cache = (long double *)malloc(T * D * sizeof(long double));
   mha->Q_cache = (long double *)malloc(T * D * sizeof(long double));
@@ -290,7 +280,6 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
       !mha->scores_cache)
     return NULL;
 
-  // compute projections
   for (size_t t = 0; t < T; t++) {
     memcpy(&mha->X_cache[t * D], input_seq[t], D * sizeof(long double));
 
@@ -340,7 +329,7 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
     }
   }
 
-  // output
+  // out[i] = concat over heads (A_h * V_h)
   long double **out = (long double **)malloc(T * sizeof(long double *));
   if (!out)
     return NULL;
