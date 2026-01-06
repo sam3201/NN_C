@@ -102,6 +102,9 @@ LayerNorm *create_layer_norm(size_t dim, long double epsilon) {
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
   ln->input_cache = NULL;
 
+  ln->mean_cache = NULL;
+  ln->var_cache = NULL;
+
   if (!ln->norm_network) {
     free(ln);
     return NULL;
