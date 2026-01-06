@@ -128,8 +128,6 @@ typedef struct {
   bool alive;
   float flash_timer;
   int agent_start;
-  int agent_count;
-
   SAM_t *sam;
   MuCortex *cortex;
   float reward_accumulator;
