@@ -838,7 +838,6 @@ map_activation_to_derivative(ActivationFunctionType actFunc) {
     return RELU_DERIVATIVE;
   case LINEAR:
     return LINEAR_DERIVATIVE;
-  case SOFTMAX:
   default:
     fprintf(stderr, "Unhandled activation function type: %d\n", actFunc);
     return ACTIVATION_DERIVATIVE_TYPE_COUNT; // Invalid value
