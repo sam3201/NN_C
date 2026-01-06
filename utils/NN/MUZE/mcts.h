@@ -3,10 +3,6 @@
 
 #include "muzero_model.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
   int num_simulations;
   float c_puct;
