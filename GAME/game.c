@@ -213,6 +213,29 @@ static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
     obs_push(o, 0.0f);
 }
 
+static inline Vector2 world_to_screen(Vector2 wp) {
+  Vector2 sp = Vector2Subtract(wp, camera_pos);
+  sp = Vector2Scale(sp, WORLD_SCALE);
+  sp.x += SCREEN_WIDTH / 2;
+  sp.y += SCREEN_HEIGHT / 2;
+  return sp;
+}
+
+static inline float px(float base) { return base * WORLD_SCALE * scale_size; }
+
+static void draw_health_bar(Vector2 sp, float w, float h, float t01,
+                            Color fill) {
+  // background
+  DrawRectangle((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)w, (int)h,
+                (Color){0, 0, 0, 160});
+  // fill
+  float fw = w * (t01 < 0 ? 0 : (t01 > 1 ? 1 : t01));
+  DrawRectangle((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)fw, (int)h, fill);
+  // outline
+  DrawRectangleLines((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)w, (int)h,
+                     (Color){0, 0, 0, 220});
+}
+
 /* =======================
    WORLD
 ======================= */
