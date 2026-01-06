@@ -87,41 +87,7 @@ static void free_seq(long double **seq, size_t T) {
 }
 
 Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
-                                size_t num_layers) {
-  if (model_dim == 0 || num_heads == 0 || num_layers == 0)
-    return NULL;
-  if (model_dim % num_heads != 0)
-    return NULL; // head_dim must be integer
-
-  Transformer_t *t = (Transformer_t *)calloc(1, sizeof(Transformer_t));
-  if (!t)
-    return NULL;
-
-  t->model_dim = model_dim;
-  t->num_heads = num_heads;
-  t->num_layers = num_layers;
-
-  t->layers =
-      (TransformerLayer **)calloc(num_layers, sizeof(TransformerLayer *));
-  if (!t->layers) {
-    free(t);
-    return NULL;
-  }
-
-  size_t ff_dim = model_dim * 4; // common default
-  for (size_t i = 0; i < num_layers; i++) {
-    t->layers[i] = create_transformer_layer(model_dim, num_heads, ff_dim);
-    if (!t->layers[i]) {
-      for (size_t j = 0; j < i; j++)
-        free_transformer_layer(t->layers[j]);
-      free(t->layers);
-      free(t);
-      return NULL;
-    }
-  }
-
-  return t;
-}
+                                size_t num_layers);
 
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
                        size_t seq_length, long double *target);
