@@ -1,5 +1,4 @@
 #include "muzero_model.h"
-#include "runtime.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
