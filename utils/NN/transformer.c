@@ -572,6 +572,38 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   long double *dK = (long double *)calloc(T * D, sizeof(long double));
   long double *dV = (long double *)calloc(T * D, sizeof(long double));
 
+  // Backprop through O_proj first: grad_output (post-proj) -> dConcat
+  // (pre-proj)
+  long double *dConcat = (long double *)calloc(T * D, sizeof(long double));
+  if (!dConcat)
+    return;
+
+  for (size_t t = 0; t < T; t++) {
+    // Recompute concat output y = attention(scores, V) using caches
+    long double *y = (long double *)calloc(D, sizeof(long double));
+    for (size_t h = 0; h < H; h++) {
+      long double *scores = &mha->scores_cache[h * T * T];
+      for (size_t k = 0; k < T; k++) {
+        long double a = scores[t * T + k];
+        for (size_t j = 0; j < Hd; j++) {
+          y[h * Hd + j] += a * mha->V_cache[k * D + h * Hd + j];
+        }
+      }
+    }
+
+    long double *dy =
+        NN_backprop_custom_delta_inputgrad(mha->O_proj, y, &grad_output[t * D]);
+
+    if (dy) {
+      memcpy(&dConcat[t * D], dy, D * sizeof(long double));
+      free(dy);
+    }
+    free(y);
+  }
+
+  // From here on, treat dConcat as your "grad_output" for attention core
+  long double *grad_in = dConcat;
+
   // per-head backprop through attention
   for (size_t h = 0; h < H; h++) {
     long double *scores = &mha->scores_cache[h * T * T];
