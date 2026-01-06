@@ -542,7 +542,7 @@ int main(void) {
         obs_init(&obs);
         encode_observation(ai, get_chunk(ai->position.x, ai->position.y), &obs);
         ai->cortex->learn(ai->cortex->brain, obs.data, obs.size,
-                          ai->reward_accumulator, 0);
+                          ai->reward_accumulator, 0.0f, 0);
         ai->reward_accumulator = 0.0f;
       }
       train_timer = 0;
