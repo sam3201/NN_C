@@ -43,11 +43,15 @@ MuModel *mu_model_create(const MuConfig *cfg) {
 void mu_model_free(MuModel *m) {
   if (!m)
     return;
+
+  // free runtime first (it may reference model cfg sizes)
+  if (m->runtime)
+    mu_runtime_free((MuRuntime *)m->runtime);
+
   free(m->repr_W);
   free(m->dyn_W);
   free(m->pred_W);
   free(m);
-  mu_runtime_free(m->runtime);
 }
 
 /* ------------------------
