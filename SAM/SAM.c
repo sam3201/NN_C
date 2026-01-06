@@ -431,9 +431,7 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   long double *pooled = (long double *)calloc(model_dim, sizeof(long double));
   if (!pooled) {
     for (size_t t = 0; t < seq_length; t++)
-      size_t model_dim = sam->layer_sizes[0]; // input_dim
-    pooled[j] += feat[t][j];
-
+      pooled[j] += feat[t][j];
     free(feat[t]);
     free(feat);
     return NULL;
