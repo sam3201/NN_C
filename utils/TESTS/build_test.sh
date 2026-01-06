@@ -1,5 +1,5 @@
 $MUZE_SRC (find ../NN/MUZE -name "*.c" -print)
-$NN_SRC (find . -name "*.c" -print)
+$NN_SRC (find . ../NN/ -name "*.c" -print)
 $SAM_SRC (find . -name "*.c" -print)
 
 gcc -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer \
