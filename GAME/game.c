@@ -382,7 +382,7 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
 }
 
 int decide_action(Agent *a, ObsBuffer *obs) {
-  MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
+  MuCortex *cortex = a->agent_id.cortex;
   muze_plan(cortex, obs->data, obs->size, ACTION_COUNT);
   return rand() % ACTION_COUNT;
 }
