@@ -1438,8 +1438,8 @@ void update_player(void) {
   player.health = fmaxf(0, player.health);
 
   // optional regen if you want:
-  // if (player.stamina < 100) player.stamina = fminf(100, player.stamina +
-  // 0.03f);
+  if (player.stamina < 100)
+    player.stamina = fminf(100, player.stamina + 0.03f);
 }
 
 static void update_visible_world(float dt) {
