@@ -414,7 +414,7 @@ void update_agent(Agent *a) {
     reward -= 0.001f;
   }
 
-  tr->reward_accumulator += reward;
+  a->reward_accumulator += reward;
 
   ObsBuffer obs;
   obs_init(&obs);
