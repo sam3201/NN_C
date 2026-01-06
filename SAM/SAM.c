@@ -220,6 +220,17 @@ int SAM_save(SAM_t *sam, const char *filename) {
     }
   }
 
+  // Save head weights (num_layers assumed 2 => one weight matrix)
+  size_t in_dim = sam->layer_sizes[0];
+  size_t out_dim = sam->layer_sizes[1];
+  for (size_t j = 0; j < in_dim; j++) {
+    if (fwrite(sam->weights[0][j], sizeof(long double), out_dim, file) !=
+        out_dim) {
+      fclose(file);
+      return 0;
+    }
+  }
+
   // Save transformer into the SAME file stream
   if (!TRANSFORMER_save(sam->transformer, file)) {
     fclose(file);
