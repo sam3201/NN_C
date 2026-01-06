@@ -15,6 +15,16 @@ static void print_obs(const float *obs, int n) {
   printf("]");
 }
 
+static void print_action(const float *action, int n) {
+  printf("[");
+  for (int i = 0; i < n; i++) {
+    printf("%.0f", action[i]);
+    if (i + 1 < n)
+      printf(" ");
+  }
+  printf("]");
+}
+
 int main(void) {
   srand(1);
 
