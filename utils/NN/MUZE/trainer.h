@@ -1,3 +1,5 @@
+#include "muzero.h
+
 typedef struct TrainerConfig {
   int batch_size;
   int train_steps;     // how many SGD steps per "train call"
