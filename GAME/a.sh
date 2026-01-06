@@ -85,6 +85,8 @@ lldb ./game
 status=$?
 
 echo "Game exited with status $status"
+rm -rf game.dSYM
+rm game
 exit "$status"
 
 
