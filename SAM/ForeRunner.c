@@ -9,7 +9,7 @@ ForeRunner_t *ForeRunner_init(size_t input_dim, size_t num_heads,
   if (!model)
     return NULL;
 
-  model->transformer = TRANSFORMER_init(input_dim, num_contents, num_heads);
+  model->transformer = TRANSFORMER_init(input_dim, num_heads, 1);
   if (!model->transformer) {
     free(model);
     return NULL;
