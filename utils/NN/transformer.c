@@ -105,6 +105,8 @@ LayerNorm *create_layer_norm(size_t dim, long double epsilon) {
   ln->mean_cache = NULL;
   ln->var_cache = NULL;
 
+  ln->cache_T = 0;
+
   if (!ln->norm_network) {
     free(ln);
     return NULL;
