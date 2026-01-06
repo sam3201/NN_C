@@ -81,11 +81,10 @@ CC="${CC:-clang}"
   -o game
 
 echo "Compilation successful! Running the game..."
-./game
+lldb ./game
 status=$?
 
 echo "Game exited with status $status"
-rm -f ./game
 exit "$status"
 
 
