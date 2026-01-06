@@ -434,49 +434,74 @@ void transformer_feedforward_backprop(FeedForward *ff,
 void transformer_mha_backprop(MultiHeadAttention *mha,
                               long double *grad_output) {
   size_t T = mha->seq_length;
-  size_t D = mha->head_dim;
+  size_t D = mha->model_dim;
+  size_t H = mha->num_heads;
+  size_t Hd = mha->head_dim;
 
-  long double *dV = calloc(T * D, sizeof(long double));
-  long double *dScores = calloc(T * T, sizeof(long double));
+  long double *dQ = (long double *)calloc(T * D, sizeof(long double));
+  long double *dK = (long double *)calloc(T * D, sizeof(long double));
+  long double *dV = (long double *)calloc(T * D, sizeof(long double));
 
-  for (size_t t = 0; t < T; t++)
-    for (size_t k = 0; k < T; k++)
-      for (size_t j = 0; j < D; j++)
-        dScores[t * T + k] += grad_output[t * D + j] * mha->V_cache[k * D + j];
+  // per-head backprop through attention
+  for (size_t h = 0; h < H; h++) {
+    long double *scores = &mha->scores_cache[h * T * T];
+    long double *dScores = (long double *)calloc(T * T, sizeof(long double));
+    if (!dScores)
+      continue;
 
-  for (size_t t = 0; t < T; t++) {
+    // dScores = grad * V
     for (size_t i = 0; i < T; i++) {
-      for (size_t j = 0; j < T; j++) {
-        long double s_i = mha->scores_cache[t * T + i];
-        long double s_j = mha->scores_cache[t * T + j];
-        long double delta = (i == j);
-        dScores[t * T + i] += dScores[t * T + j] * s_i * (delta - s_j);
+      for (size_t k = 0; k < T; k++) {
+        long double s = 0.0L;
+        for (size_t j = 0; j < Hd; j++) {
+          long double go = grad_output[i * D + h * Hd + j];
+          long double vv = mha->V_cache[k * D + h * Hd + j];
+          s += go * vv;
+          dV[k * D + h * Hd + j] += scores[i * T + k] * go;
+        }
+        dScores[i * T + k] = s;
       }
     }
-  }
-  long double *dQ = calloc(T * D, sizeof(long double));
-  long double *dK = calloc(T * D, sizeof(long double));
 
-  for (size_t t = 0; t < T; t++)
-    for (size_t k = 0; k < T; k++)
-      for (size_t j = 0; j < D; j++) {
-        long double g = dScores[t * T + k] / sqrtl(D);
-        dQ[t * D + j] += g * mha->K_cache[k * D + j];
-        dK[k * D + j] += g * mha->Q_cache[t * D + j];
+    // softmax Jacobian (row-wise)
+    for (size_t i = 0; i < T; i++) {
+      for (size_t a = 0; a < T; a++) {
+        long double sum = 0.0L;
+        for (size_t b = 0; b < T; b++) {
+          long double sa = scores[i * T + a];
+          long double sb = scores[i * T + b];
+          long double delta = (a == b) ? 1.0L : 0.0L;
+          sum += dScores[i * T + b] * sa * (delta - sb);
+        }
+        dScores[i * T + a] = sum;
       }
+    }
 
-  for (size_t t = 0; t < T; t++) {
-    NN_backprop_custom_delta(mha->Q_proj, &mha->Q_cache[t * D], &dQ[t * D]);
+    // dQ/dK from dScores
+    for (size_t i = 0; i < T; i++) {
+      for (size_t k = 0; k < T; k++) {
+        long double g = dScores[i * T + k] / sqrtl((long double)Hd);
+        for (size_t j = 0; j < Hd; j++) {
+          dQ[i * D + h * Hd + j] += g * mha->K_cache[k * D + h * Hd + j];
+          dK[k * D + h * Hd + j] += g * mha->Q_cache[i * D + h * Hd + j];
+        }
+      }
+    }
 
-    NN_backprop_custom_delta(mha->K_proj, &mha->K_cache[t * D], &dK[t * D]);
-
-    NN_backprop_custom_delta(mha->V_proj, &mha->V_cache[t * D], &dV[t * D]);
+    free(dScores);
   }
 
-  free(dV);
-  free(dScores);
+  // backprop into projection NNs (IMPORTANT: pass original X, not Q/K/V
+  // outputs)
+  for (size_t t = 0; t < T; t++) {
+    NN_backprop_custom_delta(mha->Q_proj, &mha->X_cache[t * D], &dQ[t * D]);
+    NN_backprop_custom_delta(mha->K_proj, &mha->X_cache[t * D], &dK[t * D]);
+    NN_backprop_custom_delta(mha->V_proj, &mha->X_cache[t * D], &dV[t * D]);
+  }
+
   free(dQ);
   free(dK);
+  free(dV);
 }
 
 // ----------------------
