@@ -1338,6 +1338,15 @@ void init_player(void) {
 }
 
 void update_player(void) {
+  float dt = GetFrameTime();
+
+  if (player_harvest_cd > 0)
+    player_harvest_cd -= dt;
+  if (player_attack_cd > 0)
+    player_attack_cd -= dt;
+  if (player_hurt_timer > 0)
+    player_hurt_timer -= dt;
+
   float speed = 0.6f;
 
   if (IsKeyDown(KEY_W))
@@ -1348,31 +1357,89 @@ void update_player(void) {
     player.position.x -= speed;
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
-  if (IsKeyDown(KEY_EQUAL)) {
+
+  if (IsKeyDown(KEY_EQUAL))
     WORLD_SCALE += 1.0f;
-  }
-  if (IsKeyDown(KEY_MINUS)) {
+  if (IsKeyDown(KEY_MINUS))
     WORLD_SCALE -= 1.0f;
-  }
-  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    int cx = (int)(player.position.x / CHUNK_SIZE);
-    int cy = (int)(player.position.y / CHUNK_SIZE);
-    Chunk *c = get_chunk(cx, cy);
+
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  // harvest (LMB)
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_harvest_cd <= 0.0f) {
+    player_harvest_cd = PLAYER_HARVEST_COOLDOWN;
+
+    Resource *best = NULL;
+    float bestD = 1e9f;
 
     for (int i = 0; i < c->resource_count; i++) {
       Resource *r = &c->resources[i];
-      Vector2 rp = {cx * CHUNK_SIZE + r->position.x,
-                    cy * CHUNK_SIZE + r->position.y};
+      if (r->health <= 0)
+        continue;
 
-      if (Vector2Distance(player.position, rp) < HARVEST_DISTANCE) {
-        r->health -= 25;
-        player.stamina -= 2;
-        break;
+      Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                             cy * CHUNK_SIZE + r->position.y};
+
+      float d = Vector2Distance(player.position, rw);
+      if (d < HARVEST_DISTANCE && d < bestD) {
+        bestD = d;
+        best = r;
+      }
+    }
+
+    if (best && player.stamina > 1.0f) {
+      best->health -= PLAYER_HARVEST_DAMAGE;
+      best->hit_timer = 0.14f;
+      best->break_flash = 0.06f;
+      player.stamina -= 2.0f;
+
+      if (best->health <= 0) {
+        give_drop(best->type);
+        best->health = 0;
       }
     }
   }
 
+  // attack mobs (RMB)
+  if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
+    player_attack_cd = PLAYER_ATTACK_COOLDOWN;
+
+    Mob *best = NULL;
+    float bestD = 1e9f;
+
+    for (int i = 0; i < MAX_MOBS; i++) {
+      Mob *m = &c->mobs[i];
+      if (m->health <= 0)
+        continue;
+
+      Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                             cy * CHUNK_SIZE + m->position.y};
+
+      float d = Vector2Distance(player.position, mw);
+      if (d < ATTACK_DISTANCE && d < bestD) {
+        bestD = d;
+        best = m;
+      }
+    }
+
+    if (best && player.stamina > 1.0f) {
+      best->health -= PLAYER_ATTACK_DAMAGE;
+      best->hurt_timer = 0.18f;
+      best->aggro_timer = 3.0f; // makes pig/sheep flee + hostiles aggro
+      player.stamina -= 1.5f;
+      if (best->health <= 0)
+        best->health = 0;
+    }
+  }
+
   player.stamina = fmaxf(0, player.stamina - 0.02f);
+  player.health = fmaxf(0, player.health);
+
+  // optional regen if you want:
+  // if (player.stamina < 100) player.stamina = fminf(100, player.stamina +
+  // 0.03f);
 }
 
 static void update_visible_world(float dt) {
