@@ -33,6 +33,11 @@
 
 Vector2 camera_pos;
 float WORLD_SCALE = 12.0f;
+// Visual scaling: at least +50%
+static float scale_size = 1.5f; // 1.5 = +50%
+// optional: you can tweak per-category
+static float RESOURCE_SCALE = 1.0f;
+static float MOB_SCALE = 1.0f;
 
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
