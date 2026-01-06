@@ -27,7 +27,7 @@ typedef struct {
   void (*predict)(MuModel *, const float *, float *, float *);
   void (*dynamics)(MuModel *, const float *, int, float *, float *);
 
-} MuModel_t;
+} MuModel;
 
 MuModel *mu_model_create(const MuConfig *cfg);
 void mu_model_free(MuModel *m);
