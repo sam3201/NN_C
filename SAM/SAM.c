@@ -612,8 +612,24 @@ void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
 
 // SAM generalization
 void SAM_generalize(SAM_t *sam) {
-  (void)sam;
-  /* TODO: compute metrics from Population / Genome fitness and generalize */
+  if (!sam)
+    return;
+
+  // Minimal: update context from submodel metrics (when you implement metrics)
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (!sam->submodels[i])
+      continue;
+    PerformanceMetrics m = SAM_calculate_metrics(sam->submodels[i]);
+    if (m.fitness != 0.0L) {
+      long double perf = m.fitness;
+      // squish to [0,1] roughly (safe clamp)
+      if (perf < 0.0L)
+        perf = 0.0L;
+      if (perf > 1.0L)
+        perf = 1.0L;
+      SAM_update_context(sam, perf);
+    }
+  }
 }
 
 // SAM transfusion
