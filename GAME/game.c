@@ -448,22 +448,149 @@ void draw_mobs(void) {
 
   for (int dx = -6; dx <= 6; dx++) {
     for (int dy = -6; dy <= 6; dy++) {
-      Chunk *c = get_chunk(pcx + dx, pcy + dy);
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
 
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
           continue;
 
-        Vector2 wp = {(pcx + dx) * CHUNK_SIZE + m->position.x,
-                      (pcy + dy) * CHUNK_SIZE + m->position.y};
+        Vector2 wp = {(float)(cx * CHUNK_SIZE) + m->position.x,
+                      (float)(cy * CHUNK_SIZE) + m->position.y};
+        Vector2 sp = world_to_screen(wp);
 
-        Vector2 sp = Vector2Subtract(wp, camera_pos);
-        sp = Vector2Scale(sp, WORLD_SCALE);
-        sp.x += SCREEN_WIDTH / 2;
-        sp.y += SCREEN_HEIGHT / 2;
+        float s = px(0.26f) * MOB_SCALE; // base mob radius
+        float hp01 = (float)m->health / 100.0f;
 
-        DrawCircleV(sp, WORLD_SCALE * 0.35f, mob_colors[m->type]);
+        // shadow
+        DrawEllipse((int)sp.x, (int)(sp.y + s * 0.85f), (int)(s * 1.2f),
+                    (int)(s * 0.40f), (Color){0, 0, 0, 80});
+
+        switch (m->type) {
+        case MOB_PIG: {
+          // body
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f,
+                      (Color){255, 160, 190, 255});
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
+                          (Color){0, 0, 0, 120});
+
+          // snout
+          DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.10f}, s * 0.28f,
+                      (Color){255, 120, 160, 255});
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.05f}, s * 0.06f,
+                      (Color){120, 60, 80, 255});
+          DrawCircleV((Vector2){sp.x + s * 0.50f, sp.y + s * 0.05f}, s * 0.06f,
+                      (Color){120, 60, 80, 255});
+
+          // ears
+          DrawTriangle((Vector2){sp.x - s * 0.30f, sp.y - s * 0.70f},
+                       (Vector2){sp.x - s * 0.55f, sp.y - s * 0.95f},
+                       (Vector2){sp.x - s * 0.10f, sp.y - s * 0.90f},
+                       (Color){255, 140, 175, 255});
+          DrawTriangle((Vector2){sp.x + s * 0.10f, sp.y - s * 0.70f},
+                       (Vector2){sp.x + s * 0.35f, sp.y - s * 0.95f},
+                       (Vector2){sp.x + s * 0.55f, sp.y - s * 0.85f},
+                       (Color){255, 140, 175, 255});
+
+          // eyes
+          DrawCircleV((Vector2){sp.x + s * 0.15f, sp.y - s * 0.15f}, s * 0.08f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x - s * 0.10f, sp.y - s * 0.15f}, s * 0.08f,
+                      BLACK);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){80, 220, 80, 255});
+        } break;
+
+        case MOB_SHEEP: {
+          // wool (cloudy)
+          Color wool = (Color){245, 245, 245, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.80f, wool);
+          DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y + s * 0.10f}, s * 0.55f,
+                      wool);
+          DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y + s * 0.10f}, s * 0.55f,
+                      wool);
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.80f,
+                          (Color){0, 0, 0, 90});
+
+          // face
+          DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.20f}, s * 0.35f,
+                      (Color){70, 70, 70, 255});
+          // eyes
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.06f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.03f,
+                      BLACK);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){80, 220, 80, 255});
+        } break;
+
+        case MOB_SKELETON: {
+          // skull
+          DrawCircleV((Vector2){sp.x, sp.y - s * 0.10f}, s * 0.65f,
+                      (Color){230, 230, 230, 255});
+          DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.10f), s * 0.65f,
+                          (Color){0, 0, 0, 140});
+
+          // jaw
+          DrawRectangle((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
+                        (int)(s * 0.80f), (int)(s * 0.25f),
+                        (Color){210, 210, 210, 255});
+          DrawRectangleLines((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
+                             (int)(s * 0.80f), (int)(s * 0.25f),
+                             (Color){0, 0, 0, 140});
+
+          // eyes
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.20f}, s * 0.12f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.20f}, s * 0.12f,
+                      BLACK);
+
+          // ribs
+          for (int k = 0; k < 4; k++) {
+            float yy = sp.y + s * (0.10f + 0.12f * k);
+            DrawLine((int)(sp.x - s * 0.35f), (int)yy, (int)(sp.x + s * 0.35f),
+                     (int)yy, (Color){0, 0, 0, 110});
+          }
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){220, 90, 90, 255});
+        } break;
+
+        case MOB_ZOMBIE: {
+          // body
+          Color body = (Color){80, 180, 80, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, body);
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
+                          (Color){0, 0, 0, 140});
+
+          // mouth
+          DrawRectangle((int)(sp.x - s * 0.25f), (int)(sp.y + s * 0.15f),
+                        (int)(s * 0.50f), (int)(s * 0.18f),
+                        (Color){120, 50, 50, 255});
+
+          // eyes
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f}, s * 0.10f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f}, s * 0.10f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f}, s * 0.05f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f}, s * 0.05f,
+                      BLACK);
+
+          // little "scar"
+          DrawLine((int)(sp.x + s * 0.40f), (int)(sp.y - s * 0.10f),
+                   (int)(sp.x + s * 0.55f), (int)(sp.y + s * 0.05f),
+                   (Color){30, 90, 30, 255});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){220, 90, 90, 255});
+        } break;
+        }
       }
     }
   }
