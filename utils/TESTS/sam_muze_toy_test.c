@@ -103,6 +103,7 @@ int main(void) {
 
   // cleanup
   SAM_MUZE_destroy(cortex);
+  SAM_destroy(sam);
 
   return 0;
 }
