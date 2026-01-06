@@ -560,16 +560,17 @@ long double **transformer_layer_forward(TransformerLayer *layer,
 
 long double **TRANSFORMER_forward(Transformer_t *transformer,
                                   long double **input_sequence,
-                                  size_t seq_length) {
+                                  size_t T) {
   long double **x = input_sequence;
 
   for (size_t l = 0; l < transformer->num_layers; l++) {
     long double **prev = x;
-    x = transformer_layer_forward(transformer->layers[l], prev, seq_length);
+    x = transformer_layer_forward(transformer->layers[l], prev, T);
 
-    // free intermediate outputs we created in earlier layers
     if (prev != input_sequence) {
-      free_seq(prev, seq_length);
+      // free intermediate sequences we allocated
+      for (size_t t = 0; t < T; t++) free(prev[t]);
+      free(prev);
     }
   }
   return x;
