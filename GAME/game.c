@@ -46,7 +46,7 @@ static float GOLD_SCALE = 1.25f;
 static float FOOD_SCALE = 1.20f;
 
 // mobs can also be bigger if you want
-static float MOB_SCALE = 10.15f;
+static float MOB_SCALE = 5.15f;
 
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
