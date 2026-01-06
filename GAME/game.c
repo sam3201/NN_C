@@ -636,8 +636,6 @@ int main(void) {
   init_agents();
   init_player();
 
-  int train_timer = 0;
-
   while (!WindowShouldClose()) {
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
