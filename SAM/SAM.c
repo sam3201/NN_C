@@ -486,7 +486,7 @@ void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
             sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
         if (target) {
           // Use transformer output as target for adaptation
-          long double *transformer_out =
+          long double **transformer_out =
               TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
           if (transformer_out) {
             size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
