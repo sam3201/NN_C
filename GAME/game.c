@@ -380,13 +380,7 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, 1.0f);                              // bias
 }
 
-int decide_action(Agent *a, ObsBuffer *obs) {
-  int action = 0;
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-  action = SAM_decide(tr->cortex, obs->buffer);
-
-  return action;
-}
+int decide_action(Agent *a, ObsBuffer *obs) { return action; }
 
 /* =======================
    AGENT UPDATE
