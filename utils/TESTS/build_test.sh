@@ -16,7 +16,7 @@ INCLUDES=(
 
 # ---- user input test entrypoint ---
 TEST_SRC=$1
-OUT=TEST_SRC.o
+OUT=$2
 
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
