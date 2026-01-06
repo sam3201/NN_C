@@ -73,18 +73,6 @@ static void softmaxf_inplace(float *x, size_t n) {
     x[i] /= sum;
 }
 
-static size_t argmaxf(const float *x, size_t n) {
-  size_t best = 0;
-  float bestv = x[0];
-  for (size_t i = 1; i < n; i++) {
-    if (x[i] > bestv) {
-      bestv = x[i];
-      best = i;
-    }
-  }
-  return best;
-}
-
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
                        long double ***latent_seq, size_t *seq_len) {
   SAMMuAdapter *ad = (SAMMuAdapter *)brain;
