@@ -257,6 +257,65 @@ static inline float clamp01(float x) {
   return x;
 }
 
+static inline float clampf(float v, float a, float b) {
+  return (v < a) ? a : (v > b) ? b : v;
+}
+
+static inline Vector2 clamp_local_to_chunk(Vector2 lp) {
+  lp.x = clampf(lp.x, 0.25f, (float)CHUNK_SIZE - 0.25f);
+  lp.y = clampf(lp.y, 0.25f, (float)CHUNK_SIZE - 0.25f);
+  return lp;
+}
+
+static void give_drop(ResourceType t) {
+  switch (t) {
+  case RES_TREE:
+    inv_wood += 1;
+    break;
+  case RES_ROCK:
+    inv_stone += 1;
+    break;
+  case RES_GOLD:
+    inv_gold += 1;
+    break;
+  case RES_FOOD:
+    inv_food += 1;
+    break;
+  default:
+    break;
+  }
+}
+
+static const char *res_name(ResourceType t) {
+  switch (t) {
+  case RES_TREE:
+    return "Tree";
+  case RES_ROCK:
+    return "Rock";
+  case RES_GOLD:
+    return "Gold";
+  case RES_FOOD:
+    return "Food";
+  default:
+    return "None";
+  }
+}
+
+static const char *mob_name(MobType t) {
+  switch (t) {
+  case MOB_PIG:
+    return "Pig";
+  case MOB_SHEEP:
+    return "Sheep";
+  case MOB_SKELETON:
+    return "Skeleton";
+  case MOB_ZOMBIE:
+    return "Zombie";
+  default:
+    return "Mob";
+  }
+}
+
 static inline float safe_norm(float v, float denom) {
   return v / (denom + 1e-6f);
 }
