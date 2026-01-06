@@ -605,6 +605,97 @@ void draw_mobs(void) {
   }
 }
 
+static void draw_player_chibi(Vector2 pp_screen) {
+  // Body sizing
+  float bodyR = WORLD_SCALE * 0.60f * scale_size; // bigger than before
+  float outlineR = bodyR * 1.02f;
+
+  // Colors (Kirby-ish but still readable)
+  Color outline = (Color){20, 20, 20, 180};
+  Color body = (Color){255, 220, 120, 255}; // your yellow but softer
+  Color blush = (Color){255, 140, 160, 170};
+  Color eyeW = RAYWHITE;
+  Color eyeB = (Color){35, 35, 35, 255};
+  Color shadow = (Color){0, 0, 0, 70};
+
+  // Soft shadow under player
+  DrawEllipse((int)pp_screen.x, (int)(pp_screen.y + bodyR * 0.85f),
+              (int)(bodyR * 1.35f), (int)(bodyR * 0.45f), shadow);
+
+  // Outline then body
+  DrawCircleV(pp_screen, outlineR, outline);
+  DrawCircleV(pp_screen, bodyR, body);
+
+  // Gentle highlight
+  DrawCircleV(
+      (Vector2){pp_screen.x - bodyR * 0.25f, pp_screen.y - bodyR * 0.25f},
+      bodyR * 0.18f, (Color){255, 255, 255, 120});
+
+  // Animated hands (two circles, half inside body, half outside)
+  // Use time so they “wiggle” around the body.
+  float t = (float)GetTime();
+  float handR = bodyR * 0.28f;
+  float handArm = bodyR * 0.78f; // distance from center
+  float wiggle = sinf(t * 6.0f) * (bodyR * 0.08f);
+
+  // left hand position (orbit + wiggle)
+  Vector2 hl = {pp_screen.x - handArm + wiggle,
+                pp_screen.y + sinf(t * 4.0f) * (bodyR * 0.12f)};
+
+  // right hand position (mirrored)
+  Vector2 hr = {pp_screen.x + handArm - wiggle,
+                pp_screen.y + sinf(t * 4.0f + 1.5f) * (bodyR * 0.12f)};
+
+  // hands (outline + fill) — overlap naturally “half inside body”
+  DrawCircleV(hl, handR * 1.02f, outline);
+  DrawCircleV(hl, handR, (Color){255, 210, 110, 255});
+
+  DrawCircleV(hr, handR * 1.02f, outline);
+  DrawCircleV(hr, handR, (Color){255, 210, 110, 255});
+
+  // Feet (simple chibi feet)
+  float footR = bodyR * 0.26f;
+  Vector2 fl = {pp_screen.x - bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+  Vector2 fr = {pp_screen.x + bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+
+  DrawCircleV(fl, footR * 1.02f, outline);
+  DrawCircleV(fr, footR * 1.02f, outline);
+  DrawCircleV(fl, footR, (Color){255, 160, 120, 255});
+  DrawCircleV(fr, footR, (Color){255, 160, 120, 255});
+
+  // Face (eyes + mouth + blush)
+  float eyeOffX = bodyR * 0.22f;
+  float eyeOffY = bodyR * 0.12f;
+  float eyeR = bodyR * 0.13f;
+
+  Vector2 eL = {pp_screen.x - eyeOffX, pp_screen.y - eyeOffY};
+  Vector2 eR = {pp_screen.x + eyeOffX, pp_screen.y - eyeOffY};
+
+  // white sclera
+  DrawCircleV(eL, eyeR * 1.05f, outline);
+  DrawCircleV(eR, eyeR * 1.05f, outline);
+  DrawCircleV(eL, eyeR, eyeW);
+  DrawCircleV(eR, eyeR, eyeW);
+
+  // pupils with tiny “blink” animation
+  float blink = (sinf(t * 2.5f) > 0.97f) ? 0.35f : 1.0f; // occasional squint
+  float pupR = eyeR * 0.45f;
+  DrawEllipse((int)eL.x, (int)eL.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+              eyeB);
+  DrawEllipse((int)eR.x, (int)eR.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+              eyeB);
+
+  // mouth
+  Vector2 mouth = {pp_screen.x, pp_screen.y + bodyR * 0.18f};
+  DrawCircleV(mouth, bodyR * 0.06f, (Color){120, 60, 60, 255});
+
+  // blush cheeks
+  Vector2 bl = {pp_screen.x - bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+  Vector2 br = {pp_screen.x + bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+  DrawCircleV(bl, bodyR * 0.10f, blush);
+  DrawCircleV(br, bodyR * 0.10f, blush);
+}
+
 /* =======================
    TRIBES & AGENTS
 ======================= */
