@@ -1,4 +1,5 @@
 #include "muzero_model.h"
+#include "replay_buffer.h"
 
 typedef struct TrainerConfig {
   int batch_size;
