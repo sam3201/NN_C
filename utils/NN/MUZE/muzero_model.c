@@ -124,8 +124,9 @@ void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
   if (m->dynamics) {
     m->dynamics(m, latent_in, action, latent_out, reward_out);
     return;
-  } else
+  } else {
     default_dynamics(m, latent_in, action, latent_out, reward_out);
+  }
 }
 
 void mu_model_predict(MuModel *m, const float *latent_in,
