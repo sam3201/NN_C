@@ -3,6 +3,7 @@
 
 #include "mcts.h"
 #include "muzero_model.h"
+#include <stdbool.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
