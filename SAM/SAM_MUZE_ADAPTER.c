@@ -201,26 +201,21 @@ static void sam_learn(void *brain, float reward, int terminal) {
   }
 
   if (terminal) {
+    ad->episode_counter++;
+
     SAM_generalize(ad->sam);
-    if (terminal) {
-      ad->episode_counter++;
 
-      SAM_generalize(ad->sam);
-
-      if (ad->episode_counter % 10 == 0) {
-        SAM_transfuse(ad->sam);
-      }
-
+    if (ad->episode_counter % 10 == 0) {
       SAM_transfuse(ad->sam);
-
-      if (ad->epsilon > ad->epsilon_min) {
-        ad->epsilon *= ad->epsilon_decay;
-        if (ad->epsilon < ad->epsilon_min)
-          ad->epsilon = ad->epsilon_min;
-      }
-
-      ad->has_last = 0;
     }
+
+    if (ad->epsilon > ad->epsilon_min) {
+      ad->epsilon *= ad->epsilon_decay;
+      if (ad->epsilon < ad->epsilon_min)
+        ad->epsilon = ad->epsilon_min;
+    }
+
+    ad->has_last = 0;
   }
 }
 
