@@ -38,6 +38,17 @@ static float scale_size = 1.5f; // 1.5 = +50%
 // optional: you can tweak per-category
 static float RESOURCE_SCALE = 1.0f;
 static float MOB_SCALE = 1.0f;
+// global “everything bigger” knob
+static float scale_size = 1.65f; // bigger overall (was 1.5)
+
+// per-resource tuning
+static float TREE_SCALE = 2.35f; // MUCH larger
+static float ROCK_SCALE = 1.35f;
+static float GOLD_SCALE = 1.25f;
+static float FOOD_SCALE = 1.20f;
+
+// mobs can also be bigger if you want
+static float MOB_SCALE = 1.15f;
 
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
