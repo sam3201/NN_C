@@ -4,7 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Helper function to initialize weights
+// Helper functions
+static void free_seq_ld(long double **seq, size_t T) {
+  if (!seq)
+    return;
+  for (size_t t = 0; t < T; t++)
+    free(seq[t]);
+  free(seq);
+}
 static void init_weights(SAM_t *sam) {
   sam->weights =
       (long double ***)malloc((sam->num_layers - 1) * sizeof(long double **));
