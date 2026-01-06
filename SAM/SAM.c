@@ -285,7 +285,7 @@ SAM_t *SAM_load(const char *filename) {
     return NULL;
   }
 
-  // ✅ Load transformer from the SAME file stream
+  // Load transformer from the SAME file stream
   sam->transformer = TRANSFORMER_load(file);
   if (!sam->transformer) {
     fclose(file);
