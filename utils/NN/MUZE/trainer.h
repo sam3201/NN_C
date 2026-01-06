@@ -7,5 +7,5 @@ typedef struct TrainerConfig {
   float lr;
 } TrainerConfig;
 
-void trainer_train_from_replay(Mu *model, ReplayBuffer *rb,
+void trainer_train_from_replay(*model, ReplayBuffer *rb,
                                const TrainerConfig *cfg);
