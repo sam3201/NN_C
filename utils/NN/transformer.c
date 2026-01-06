@@ -17,10 +17,10 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
   mha->head_dim = model_dim / num_heads;
   mha->seq_length = 0;
 
-  // projections produce full model_dim so we can slice heads
+  // Linear projection: model_dim -> model_dim
   size_t layers[] = {model_dim, model_dim, 0};
-  ActivationFunctionType acts[] = {RELU, RELU};
-  ActivationDerivativeType ders[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
+  ActivationFunctionType acts[] = {LINEAR};
+  ActivationDerivativeType ders[] = {LINEAR_DERIVATIVE};
 
   mha->Q_proj =
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
@@ -29,10 +29,7 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
   mha->V_proj =
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
 
-  mha->X_cache = NULL;
-  mha->Q_cache = NULL;
-  mha->K_cache = NULL;
-  mha->V_cache = NULL;
+  mha->X_cache = mha->Q_cache = mha->K_cache = mha->V_cache = NULL;
   mha->scores_cache = NULL;
 
   if (!mha->Q_proj || !mha->K_proj || !mha->V_proj) {
