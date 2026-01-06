@@ -123,8 +123,8 @@ LayerNorm *create_layer_norm(size_t dim, long double epsilon) {
   ln->epsilon = epsilon;
 
   size_t layers[] = {dim, dim, 0};
-  ActivationFunctionType acts[] = {RELU, RELU};
-  ActivationDerivativeType ders[] = {RELU_DERIVATIVE, RELU_DERIVATIVE};
+  ActivationFunctionType acts[] = {LINEAR};
+  ActivationDerivativeType ders[] = {LINEAR_DERIVATIVE};
 
   ln->norm_network =
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
