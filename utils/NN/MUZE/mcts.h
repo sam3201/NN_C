@@ -27,4 +27,3 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
 void mcts_result_free(MCTSResult *res);
 
 #endif
-#endif
