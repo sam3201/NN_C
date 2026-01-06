@@ -605,7 +605,7 @@ void draw_mobs(void) {
   }
 }
 
-static void draw_player_chibi(Vector2 pp_screen) {
+static void draw_player(Vector2 pp_screen) {
   // Body sizing
   float bodyR = WORLD_SCALE * 0.60f * scale_size; // bigger than before
   float outlineR = bodyR * 1.02f;
