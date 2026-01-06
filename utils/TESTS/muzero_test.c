@@ -1,91 +1,143 @@
-#include <math.h>
+#include "../../SAM/SAM.h"
+#include "../NN/MUZE/all.h"
+#include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> // usleep
 
-#include "../NN/MUZE/mcts.h"
-#include "../NN/MUZE/muzero_model.h"
-
-/*
-    This test verifies ALL functionality:
-    - MuModel creation
-    - Representation f(o) -> h
-    - Dynamics g(h,a) -> h', r
-    - Prediction h -> (policy logits, value)
-    - MCTS rollout
-*/
-
-/* Helper: print vector */
-static void print_vec(const char *name, const float *v, int n) {
-  printf("%s: [", name);
+static void curses_print_obs(int row, int col, const float *obs, int n) {
+  mvprintw(row, col, "obs=[");
+  int x = col + 5;
   for (int i = 0; i < n; i++) {
-    printf("%g", v[i]);
-    if (i + 1 < n)
-      printf(", ");
+    mvprintw(row, x, "%.0f", obs[i]);
+    x += 1;
+    if (i + 1 < n) {
+      mvprintw(row, x, " ");
+      x += 1;
+    }
   }
-  printf("]\n");
+  mvprintw(row, x, "]");
+}
+
+static void display_env_curses(int row, int col, const ToyEnvState *env,
+                               int goal_pos) {
+  for (int i = 0; i < env->size; i++) {
+    char ch = ' ';
+    if (i == env->pos)
+      ch = 'X';
+    else if (i == goal_pos)
+      ch = 'G';
+    mvaddch(row, col + i, ch);
+  }
 }
 
 int main(void) {
-  printf("==== MuZero TEST START ====\n");
+  srand(1);
 
-  /* 1) CONFIGURE THE MUZERO MODEL */
-  MuConfig cfg = {.obs_dim = 4, .latent_dim = 8, .action_count = 3};
+  ToyEnvState env = {.pos = 0, .size = 8};
+  size_t obs_dim = (size_t)env.size;
+  const int action_count = 2;
+  const int goal_pos = env.size - 1;
 
-  MuModel *model = mu_model_create(&cfg);
-  if (!model) {
-    printf("FATAL: mu_model_create failed.\n");
+  // ---- curses init (MUST be before curs_set) ----
+  initscr();
+  cbreak();
+  noecho();
+  curs_set(0);
+  keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE); // non-blocking getch (optional)
+  // timeout(0); // alternative
+
+  SAM_t *sam = SAM_init(obs_dim, (size_t)action_count, 2, 0);
+  if (!sam) {
+    endwin();
+    fprintf(stderr, "SAM_init failed\n");
     return 1;
   }
 
-  printf("Model created. obs_dim=%d latent_dim=%d action_count=%d\n",
-         cfg.obs_dim, cfg.latent_dim, cfg.action_count);
+  MuCortex *cortex = SAM_as_MUZE(sam);
+  if (!cortex) {
+    endwin();
+    fprintf(stderr, "SAM_as_MUZE failed\n");
+    SAM_destroy(sam);
+    return 1;
+  }
 
-  /* 2) TEST REPRESENTATION */
-  float obs[4] = {1.0f, 0.5f, -0.25f, 0.1f};
-  float latent[8];
+  const int episodes = 50;
+  const int max_steps = 128;
 
-  mu_model_repr(model, obs, latent);
-  print_vec("Representation latent", latent, cfg.latent_dim);
+  for (int ep = 0; ep < episodes; ep++) {
+    float obs[8]; // env.size=8; keep it explicit for curses demo safety
+    toy_env_reset(&env, obs);
 
-  /* 3) TEST PREDICTION */
-  float policy_logits[3];
-  float value;
+    float ep_return = 0.0f;
 
-  mu_model_predict(model, latent, policy_logits, &value);
-  print_vec("Policy logits", policy_logits, cfg.action_count);
-  printf("Value: %f\n", value);
+    for (int step = 0; step < max_steps; step++) {
+      // (optional) allow quitting with 'q'
+      int ch = getch();
+      if (ch == 'q' || ch == 'Q') {
+        SAM_MUZE_destroy(cortex);
+        SAM_destroy(sam);
+        endwin();
+        return 0;
+      }
 
-  /* 4) TEST DYNAMICS */
-  float latent2[8];
-  float reward;
+      int action = muze_plan(cortex, obs, obs_dim, (size_t)action_count);
 
-  mu_model_dynamics(model, latent, 1, latent2, &reward);
-  print_vec("Dynamics latent2", latent2, cfg.latent_dim);
-  printf("Reward: %f\n", reward);
+      float next_obs[8];
+      float env_reward = 0.0f;
+      int env_done = 0;
 
-  /* 5) TEST MCTS */
-  MCTSParams mp = {.num_simulations = 25,
-                   .c_puct = 1.25f,
-                   .max_depth = 10,
+      if (toy_env_step(&env, action, next_obs, &env_reward, &env_done) != 0) {
+        erase();
+        mvprintw(0, 0, "env_step error");
+        refresh();
+        break;
+      }
 
-                   .dirichlet_alpha = 0.3f,
-                   .dirichlet_eps = 0.25f,
+      // Use env outputs directly (cleaner)
+      float reward = env_reward;
+      int done = env_done;
 
-                   .temperature = 1.0f,
-                   .discount = 0.997f};
+      // Learn from the transition *before* overwriting obs
+      cortex->learn(cortex->brain, obs, obs_dim, action, reward, done);
 
-  printf("\n=== Running MCTS ===\n");
-  MCTSResult res = mcts_run(model, obs, &mp);
+      ep_return += reward;
+      memcpy(obs, next_obs, obs_dim * sizeof(float));
 
-  printf("MCTS chosen_action = %d\n", res.chosen_action);
-  print_vec("MCTS pi", res.pi, cfg.action_count);
+      // ---- draw ----
+      erase();
+      mvprintw(0, 0, "SAM MUZE ToyEnv  (press q to quit)");
+      mvprintw(1, 0,
+               "ep=%d/%d  step=%d/%d  action=%d  reward=%.1f  return=%.1f", ep,
+               episodes - 1, step, max_steps - 1, action, reward, ep_return);
 
-  mcts_result_free(&res);
+      mvprintw(3, 0, "world: ");
+      display_env_curses(3, 7, &env, goal_pos);
 
-  /* 6) CLEANUP */
-  mu_model_free(model);
+      mvprintw(5, 0, "pos=%d  goal=%d  done=%d", env.pos, goal_pos, done);
+      curses_print_obs(7, 0, obs, (int)obs_dim);
 
-  printf("==== MuZero TEST END ====\n");
+      refresh();
+
+      // control animation speed
+      usleep(80 * 1000); // 80ms per step
+
+      if (done)
+        break;
+    }
+
+    // episode summary pause
+    mvprintw(9, 0, "episode %d return=%.1f final_pos=%d   (continuing...)", ep,
+             ep_return, env.pos);
+    refresh();
+    usleep(250 * 1000);
+  }
+
+  SAM_MUZE_destroy(cortex);
+  SAM_destroy(sam);
+
+  endwin();
   return 0;
 }
