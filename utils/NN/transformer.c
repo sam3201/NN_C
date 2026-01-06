@@ -62,6 +62,18 @@ void free_attention(MultiHeadAttention *mha) {
   free(mha);
 }
 
+static int ff_prepare_cache(FeedForward *ff, size_t T) {
+  size_t D = ff->input_dim;
+  if (ff->cache_T != T) {
+    free(ff->input_cache);
+    ff->input_cache = (long double *)malloc(T * D * sizeof(long double));
+    if (!ff->input_cache)
+      return 0;
+    ff->cache_T = T;
+  }
+  return 1;
+}
+
 FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim) {
   FeedForward *ff = malloc(sizeof(FeedForward));
   if (!ff)
