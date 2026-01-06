@@ -296,7 +296,7 @@ SAM_t *SAM_load(const char *filename) {
   }
 
   sam->weights = NULL;
-  init_weights(sam); // <-- you already have this helper
+  init_weights(sam);
 
   // Allocate weights then load them
   size_t in_dim = sam->layer_sizes[0];
