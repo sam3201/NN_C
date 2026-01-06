@@ -3,6 +3,10 @@
 
 #include "muzero_model.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int num_simulations;
   float c_puct;
@@ -26,4 +30,7 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
 
 void mcts_result_free(MCTSResult *res);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
