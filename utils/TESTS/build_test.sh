@@ -1,4 +1,4 @@
-$MUZE_SRC (find ../NN/MUZE -name "*.c" -print)
+$MUZE_SRC (find ../NN/MUZE -name "*.c" -print) 
 $NN_SRC (find . ../NN/ -name "*.c" -print)
 $SAM_SRC (find ../../SAM/ -name "*.c" -print)
 
