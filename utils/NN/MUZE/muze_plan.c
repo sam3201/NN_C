@@ -31,7 +31,16 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
   }
 
   /* cleanup */
-  free_latent_seq(cortex->brain, latent_seq, seq_len);
+  if (cortex->free_latent_seq) {
+    cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
+  } else {
+    for (size_t i = 0; i < seq_len; i++)
+      free(latent_seq[i]);
+    free(latent_seq);
+  }
+
+  free(action_probs);
+  return best;
 
   free(action_probs);
   return best;
