@@ -41,6 +41,7 @@ typedef struct {
 } LayerNorm;
 
 // Feed-forward network
+// Feed-forward network
 typedef struct {
   size_t input_dim;
   size_t hidden_dim;
