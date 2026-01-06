@@ -151,6 +151,33 @@ Player player;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
 
+static inline float clamp01(float x) {
+  if (x < 0.0f)
+    return 0.0f;
+  if (x > 1.0f)
+    return 1.0f;
+  return x;
+}
+
+static inline float safe_norm(float v, float denom) {
+  return v / (denom + 1e-6f);
+}
+
+/* Ensure obs is exactly OBS_DIM:
+   - if fewer -> pad zeros
+   - if more  -> truncate
+*/
+static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
+  if (!o)
+    return;
+  if (o->size > target_dim) {
+    o->size = target_dim;
+    return;
+  }
+  while (o->size < target_dim)
+    obs_push(o, 0.0f);
+}
+
 /* =======================
    OBS BUFFER
  * ====================== */
