@@ -78,14 +78,7 @@ TransformerLayer *create_transformer_layer(size_t model_dim, size_t num_heads,
 // Init + Train (MISSING IN YOUR FILE)
 // ----------------------
 
-static void free_seq(long double **seq, size_t T) {
-  if (!seq)
-    return;
-  for (size_t t = 0; t < T; t++)
-    free(seq[t]);
-  free(seq);
-}
-
+static void free_seq(long double **seq, size_t T);
 Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
                                 size_t num_layers);
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
