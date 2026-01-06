@@ -554,8 +554,8 @@ int main(void) {
       bp.x += SCREEN_WIDTH / 2;
       bp.y += SCREEN_HEIGHT / 2;
 
-      DrawCircleLines(bp.x, bp.y, tribes[t].base.radius * WORLD_SCALE,
-                      tribes[t].color);
+      DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
+                       tribes[t].color);
     }
 
     /* Draw agents */
