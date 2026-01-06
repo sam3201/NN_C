@@ -55,6 +55,9 @@ int main(void) {
     printf("SAM_as_MUZE failed\n");
     return 1;
   }
+  cortex->use_mcts = 1;
+  cortex->mcts_model = /* your MuModel* */;
+  cortex->mcts_params.num_simulations = 100; /* tweak */
 
   /* Optional: slow down */
   const int delay_ms = 35;
