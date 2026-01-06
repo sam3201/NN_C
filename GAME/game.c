@@ -875,10 +875,6 @@ void update_player(void) {
   if (IsKeyDown(KEY_MINUS)) {
     WORLD_SCALE -= 0.1f;
   }
-  player.position.y -= speed;
-  if (IsKeyDown(KEY_E))
-    player.position.y += speed;
-
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
