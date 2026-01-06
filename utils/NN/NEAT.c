@@ -640,12 +640,11 @@ void POPULATION_evolve(Population *pop) {
 
   Genome_t **nextGen = malloc(pop->size * sizeof(Genome_t *));
 
-  if (pop->size < 2) {
-    return;
-  }
-
   for (size_t i = 0; i < eliteCount; i++) {
     nextGen[i] = GENOME_crossover(pop->genomes[i], pop->genomes[i]);
+    if (pop->size < 2) {
+      return;
+    }
   }
 
   for (size_t i = eliteCount; i < pop->size; i++) {
