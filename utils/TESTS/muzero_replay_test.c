@@ -124,8 +124,7 @@ int main(void) {
 
   // ---- train ----
   printf("Training from replay...\n");
-  timer_t t;
-  timer_start(&t);
+  time_t start = time(NULL);
   trainer_train_from_replay(model, rb, &tc);
 
   // ---- eval AFTER ----
