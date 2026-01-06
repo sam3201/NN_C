@@ -14,7 +14,8 @@ typedef struct {
                  float *action_probs, size_t action_count);
 
   void (*learn)(void *brain, float reward, int terminal);
-  void free_latent_seq(void *brain, long double **latent_seq, size_t seq_len);
+  void (*free_latent_seq)(void *brain, long double **latent_seq,
+                          size_t seq_len);
 
 } MuCortex;
 
