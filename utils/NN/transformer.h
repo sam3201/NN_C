@@ -82,7 +82,6 @@ FeedForward *create_feed_forward(size_t input_dim, size_t hidden_dim);
 LayerNorm *create_layer_norm(size_t dim, long double epsilon);
 TransformerLayer *create_transformer_layer(size_t model_dim, size_t num_heads,
                                            size_t ff_dim);
-static void free_seq(long double **seq, size_t T);
 Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
                                 size_t num_layers);
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
