@@ -21,6 +21,10 @@ typedef struct {
   int pred_W_count;
 
   void *runtime;
+  void (*repr)(MuModel *, const float *, float *);
+  void (*predict)(MuModel *, const float *, float *, float *);
+  void (*dynamics)(MuModel *, const float *, int, float *, float *);
+
 } MuModel;
 
 MuModel *mu_model_create(const MuConfig *cfg);
