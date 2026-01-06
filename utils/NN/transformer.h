@@ -15,13 +15,13 @@ typedef struct {
   NN_t *Q_proj;
   NN_t *K_proj;
   NN_t *V_proj;
-  NN_t *O_proj;
 
-  // Cached for backprop
-  long double *Q_cache;
-  long double *K_cache;
-  long double *V_cache;
-  long double *scores_cache;
+  // input cache for projections (what NN_backprop_custom_delta needs)
+  long double *X_cache;      // [T * D]
+  long double *Q_cache;      // [T * D]
+  long double *K_cache;      // [T * D]
+  long double *V_cache;      // [T * D]
+  long double *scores_cache; // [H * T * T]
   size_t seq_length;
 } MultiHeadAttention;
 
