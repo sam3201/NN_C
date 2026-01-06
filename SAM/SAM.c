@@ -401,57 +401,61 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
                          size_t seq_length) {
   if (!sam || !input_sequence || seq_length == 0)
     return NULL;
-
-  // Check if transformer is initialized
-  if (!sam->transformer) {
-    printf("Error: Transformer not initialized in SAM model\n");
+  if (!sam->transformer)
     return NULL;
-  }
 
-  // Check if layer_sizes is valid
-  if (!sam->layer_sizes || sam->num_layers == 0) {
-    printf("Error: Invalid layer configuration in SAM model\n");
-    return NULL;
-  }
-
-  // Check if input dimension matches transformer's expected dimension
-  // The transformer expects input_sequence[0] to have at least model_dim
-  // elements
-  if (sam->transformer->model_dim > sam->layer_sizes[0]) {
-    printf("Error: Transformer model_dim (%zu) > input layer size (%zu)\n",
-           sam->transformer->model_dim, sam->layer_sizes[0]);
-    return NULL;
-  }
-
-  // Forward pass through transformer
-  long double *transformer_output =
+  /* transformer outputs: seq_length x model_dim */
+  long double **feat =
       TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-  if (!transformer_output) {
-    printf("Error: TRANSFORMER_forward returned NULL\n");
+  if (!feat)
+    return NULL;
+
+  size_t model_dim = sam->layer_sizes[0];
+  size_t out_dim = sam->layer_sizes[1];
+
+  /* mean-pool over time into pooled[model_dim] */
+  long double *pooled = (long double *)calloc(model_dim, sizeof(long double));
+  if (!pooled) {
+    for (size_t t = 0; t < seq_length; t++)
+      free(feat[t]);
+    free(feat);
     return NULL;
   }
 
-  // Use transformer output as final output
-  long double *output = (long double *)malloc(
-      sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
-  if (!output) {
-    free(transformer_output);
+  for (size_t t = 0; t < seq_length; t++) {
+    for (size_t j = 0; j < model_dim; j++) {
+      pooled[j] += feat[t][j];
+    }
+  }
+  long double invT = 1.0L / (long double)seq_length;
+  for (size_t j = 0; j < model_dim; j++)
+    pooled[j] *= invT;
+
+  /* linear head: pooled(model_dim) -> out(out_dim) using weights[0][j][i] */
+  long double *out = (long double *)malloc(sizeof(long double) * out_dim);
+  if (!out) {
+    free(pooled);
+    for (size_t t = 0; t < seq_length; t++)
+      free(feat[t]);
+    free(feat);
     return NULL;
   }
 
-  // Copy transformer output (assuming dimensions match)
-  size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
-  if (copy_size > sam->layer_sizes[0])
-    copy_size = sam->layer_sizes[0];
-  memcpy(output, transformer_output, copy_size * sizeof(long double));
-
-  // Pad or truncate if needed
-  for (size_t i = copy_size; i < sam->layer_sizes[sam->num_layers - 1]; i++) {
-    output[i] = 0.0L;
+  for (size_t i = 0; i < out_dim; i++) {
+    long double sum = 0.0L;
+    for (size_t j = 0; j < model_dim; j++) {
+      sum += pooled[j] * sam->weights[0][j][i];
+    }
+    out[i] = sum; /* logits */
   }
 
-  free(transformer_output);
-  return output;
+  free(pooled);
+
+  for (size_t t = 0; t < seq_length; t++)
+    free(feat[t]);
+  free(feat);
+
+  return out;
 }
 
 void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
