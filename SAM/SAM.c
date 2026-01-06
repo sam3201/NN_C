@@ -1,5 +1,5 @@
 #include "SAM.h"
-#include "../utils/NN/transformer.h"
+#include "../utils/NN/TRANSFORMER.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
