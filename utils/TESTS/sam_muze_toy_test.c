@@ -42,22 +42,35 @@ int main() {
       break;
     }
 
-    // Tell SAM/MUZE about reward + terminal
-    cortex->learn(cortex->brain, reward, done);
-
-    memcpy(obs, next_obs, sizeof(obs));
-
-    printf("step=%d action=%d reward=%.3f pos=%d done=%d\n", step, action,
-           reward, env.pos, done);
-
-    if (done)
-      break;
+    /* ---------------------------
+       Reward shaping + terminal
+       Goal: reach env.size - 1
+       --------------------------- */
+    if (env.pos == (int)env.size - 1) {
+      reward = 1.0f;
+      done = 1;
+    } else {
+      // small penalty every step to encourage reaching the goal quickly
+      reward = -0.01f;
+    }
   }
 
-  // cleanup
-  free(cortex->brain);
-  free(cortex);
-  SAM_destroy(sam);
+  // Tell SAM/MUZE about reward + terminal
+  cortex->learn(cortex->brain, reward, done);
 
-  return 0;
+  memcpy(obs, next_obs, sizeof(obs));
+
+  printf("step=%d action=%d reward=%.3f pos=%d done=%d\n", step, action, reward,
+         env.pos, done);
+
+  if (done)
+    break;
+}
+
+// cleanup
+free(cortex->brain);
+free(cortex);
+SAM_destroy(sam);
+
+return 0;
 }
