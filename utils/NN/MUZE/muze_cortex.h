@@ -1,6 +1,8 @@
 #ifndef MUZE_CORTEX_H
 #define MUZE_CORTEX_H
 
+#include "mcts.h"
+#include "muzero_model.h"
 #include <stddef.h> // size_t
 
 #ifdef __cplusplus
