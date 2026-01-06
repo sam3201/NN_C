@@ -616,7 +616,7 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
       for (size_t k = 0; k < T; k++) {
         long double s = 0.0L;
         for (size_t j = 0; j < Hd; j++) {
-          long double go = grad_output[i * D + h * Hd + j];
+          long double go = grad_in[i * D + h * Hd + j];
           long double vv = mha->V_cache[k * D + h * Hd + j];
           s += go * vv;
           dV[k * D + h * Hd + j] += scores[i * T + k] * go;
