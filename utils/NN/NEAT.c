@@ -513,7 +513,7 @@ Genome_t *GENOME_clone(const Genome_t *src) {
   }
 
   g->fitness = src->fitness;
-  g->nn = NULL; // IMPORTANT: avoid accidental frees + NN mismatch issues
+  g->nn = NULL;
   return g;
 }
 
