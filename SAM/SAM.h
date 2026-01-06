@@ -8,7 +8,6 @@
 
 // Forward declarations
 typedef struct MuCortex MuCortex;
-
 // typedef struct NEAT_t NEAT_t;
 
 // Performance metrics structure
