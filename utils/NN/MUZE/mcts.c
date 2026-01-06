@@ -208,7 +208,8 @@ static void visits_to_pi(Node *root, float temperature, float *pi_out) {
   }
 }
 
-/* allocate node */ static Node *node_create(int action_count, int latent_dim) {
+/* allocate node */
+static Node *node_create(int action_count, int latent_dim) {
   Node *n = (Node *)calloc(1, sizeof(Node));
   if (!n)
     return NULL;
