@@ -11,8 +11,13 @@ typedef struct {
   int action_count;
 } MuConfig;
 
-typedef struct {
+/* forward declare */
+typedef struct MuModel MuModel;
+
+struct MuModel {
   MuConfig cfg;
+
+  /* optional learned weights (for the generic placeholder model) */
   float *repr_W;
   float *dyn_W;
   float *pred_W;
@@ -22,44 +27,40 @@ typedef struct {
 
   void *runtime;
 
-  void (*repr)(struct MuModel *, const float *, float *);
-  void (*predict)(struct MuModel *, const float *, float *, float *);
-  void (*dynamics)(struct MuModel *, const float *, int, float *, float *);
+  /* dispatch hooks (MuZero style) */
+  void (*repr)(MuModel *, const float *, float *);
+  void (*predict)(MuModel *, const float *, float *, float *);
+  void (*dynamics)(MuModel *, const float *, int, float *, float *);
+};
 
-} MuModel_t;
-
+/* creation / destruction */
 MuModel *mu_model_create(const MuConfig *cfg);
 void mu_model_free(MuModel *m);
 
+/* wrappers used by MCTS (these call m->repr/predict/dynamics if set) */
 void mu_model_repr(MuModel *m, const float *obs, float *latent_out);
 void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
                        float *latent_out, float *reward_out);
 void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out);
 
-// ---- batch helpers used by trainer.c ----
+/* ---- batch helpers used by trainer.c ---- */
 int muzero_model_obs_dim(MuModel *m);
 int muzero_model_action_count(MuModel *m);
 
-/* forward for a batch:
-   obs_batch: [B * obs_dim]
-   p_out:     [B * action_count]  (probabilities, softmaxed)
-   v_out:     [B]                 (tanh value)
-*/
 void muzero_model_forward_batch(MuModel *m, const float *obs_batch, int B,
                                 float *p_out, float *v_out);
 
-/* one SGD step on (obs, pi, z) targets
-   pi_batch: [B * action_count] (target distribution)
-   z_batch:  [B]                (target value)
-*/
 void muzero_model_train_batch(MuModel *m, const float *obs_batch,
                               const float *pi_batch, const float *z_batch,
                               int B, float lr);
+
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
 void mu_model_train(MuModel *m);
+
+/* ---- toy model (MuZero-style “real model” for the toy env) ---- */
 MuModel *mu_model_create_toy(int size, int action_count);
 void mu_model_free_toy(MuModel *m);
 
@@ -72,4 +73,5 @@ void mu_model_dynamics_toy(MuModel *m, const float *latent, int action,
 #ifdef __cplusplus
 }
 #endif
+
 #endif
