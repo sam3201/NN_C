@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static int argmax_policy_from_model(MuModel *m, const float *obs) {
   int A = m->cfg.action_count;
