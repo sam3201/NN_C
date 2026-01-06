@@ -124,54 +124,7 @@ Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
 }
 
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
-                       size_t seq_length, long double *target) {
-  if (!transformer || !input_sequence || seq_length == 0 || !target)
-    return;
-
-  // Forward
-  long double **out =
-      TRANSFORMER_forward(transformer, input_sequence, seq_length);
-  if (!out)
-    return;
-
-  size_t D = transformer->model_dim;
-
-  // Build gradient wrt output sequence: only train on LAST token vs target[D]
-  long double **grad =
-      (long double **)malloc(sizeof(long double *) * seq_length);
-  if (!grad) {
-    free_seq(out, seq_length);
-    return;
-  }
-
-  for (size_t t = 0; t < seq_length; t++) {
-    grad[t] = (long double *)calloc(D, sizeof(long double));
-    if (!grad[t]) {
-      for (size_t k = 0; k < t; k++)
-        free(grad[k]);
-      free(grad);
-      free_seq(out, seq_length);
-      return;
-    }
-  }
-
-  // dL/dy for MSE on last timestep: (2/D) * (y - target)
-  size_t last = seq_length - 1;
-  for (size_t i = 0; i < D; i++) {
-    long double diff = out[last][i] - target[i];
-    grad[last][i] = (2.0L / (long double)D) * diff;
-  }
-
-  // Backprop (in-place updates happen inside NN_backprop_custom_delta calls)
-  TRANSFORMER_backprop(transformer, grad, seq_length);
-
-  // Cleanup
-  for (size_t t = 0; t < seq_length; t++)
-    free(grad[t]);
-  free(grad);
-  free_seq(out, seq_length);
-}
-
+                       size_t seq_length, long double *target);
 // Forward pass
 long double *transformer_norm_forward(LayerNorm *ln, long double *input);
 long double **transformer_layer_forward(TransformerLayer *layer,
