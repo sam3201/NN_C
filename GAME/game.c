@@ -495,6 +495,11 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_finalize_fixed(obs, OBS_DIM);
 }
 
+int decide_action(Agent *a, ObsBuffer *obs) {
+  return muze_plan(a->cortex, obs->data, (size_t)obs->size,
+                   (size_t)ACTION_COUNT);
+}
+
 /* =======================
    AGENT UPDATE
 ======================= */
