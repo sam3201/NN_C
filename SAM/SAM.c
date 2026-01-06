@@ -49,8 +49,7 @@ SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
   init_weights(sam);
 
   size_t model_dim = sam->layer_sizes[0]; // input_dim
-  pooled[j] += feat[t][j];
-  sam->num_submodels = 1; // Fixed number of submodels for now
+  sam->num_submodels = 1;                 // Fixed number of submodels for now
   sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
 
   // Initialize each submodel with a proper population size (at least 1)
