@@ -363,7 +363,7 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   free(dK);
 }
 
-// Init + Train (MISSING IN YOUR FILE)
+// Init
 // ----------------------
 
 static void free_seq(long double **seq, size_t T) {
