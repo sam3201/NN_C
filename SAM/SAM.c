@@ -211,6 +211,7 @@ int SAM_save(SAM_t *sam, const char *filename) {
     fclose(file);
     return 0;
   }
+
   if (sam->layer_sizes && sam->num_layers > 0) {
     if (fwrite(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) !=
         sam->num_layers) {
@@ -219,16 +220,14 @@ int SAM_save(SAM_t *sam, const char *filename) {
     }
   }
 
-  // Save transformer
-  int result = TRANSFORMER_save(sam->transformer, filename);
-  if (result == 0) {
+  // ✅ Save transformer into the SAME file stream
+  if (!TRANSFORMER_save(sam->transformer, file)) {
     fclose(file);
     return 0;
   }
 
-  // Note: NEAT submodels would need to be saved separately or we'd need
-  // a different API that accepts FILE* instead of filename
-  // For now, we save the structure but not the individual NEAT models
+  // NOTE: NEAT submodels not saved here (filename-based API).
+  // We still save num_submodels + structure so SAM can be reconstructed.
 
   fclose(file);
   return 1;
