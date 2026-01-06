@@ -27,10 +27,28 @@ unsigned int ForeRunner_forward(ForeRunner_t *model,
   if (!model || !input_sequence || seq_length == 0)
     return NONE;
 
-  long double *logits =
+  long double **out =
       TRANSFORMER_forward(model->transformer, input_sequence, seq_length);
-  if (!logits)
+  if (!out)
     return NONE;
+
+  unsigned int C = model->num_contexts;
+  unsigned int best = 0;
+  long double bestv = out[seq_length - 1][0];
+
+  for (unsigned int i = 1; i < C; i++) {
+    if (out[seq_length - 1][i] > bestv) {
+      bestv = out[seq_length - 1][i];
+      best = i;
+    }
+  }
+
+  // free output sequence
+  for (size_t t = 0; t < seq_length; t++)
+    free(out[t]);
+  free(out);
+
+  return best;
 
   unsigned int C = model->num_contexts;
   if (C == 0) {
