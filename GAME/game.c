@@ -869,6 +869,10 @@ void update_player(void) {
     player.position.x -= speed;
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
+  if (IsKeyDown(KEY_PLUS))
+    player.position.y -= speed;
+  if (IsKeyDown(KEY_E))
+    player.position.y += speed;
 
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
