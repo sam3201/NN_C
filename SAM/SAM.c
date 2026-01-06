@@ -104,15 +104,22 @@ void SAM_destroy(SAM_t *sam) {
 
 void SAM_train(SAM_t *sam, long double **input_sequence, size_t seq_length,
                long double *target) {
-  if (!sam || !input_sequence || !target)
+  if (!sam || !input_sequence || seq_length == 0 || !target)
     return;
 
   // Train transformer
   TRANSFORMER_train(sam->transformer, input_sequence, seq_length, target);
 
-  // Train submodels
+  // Train submodels: wrap pointers as 1-sample batch
+  long double *in0 = input_sequence[0];
+  long double *t0 = target;
+
+  long double *inputs_arr[1] = {in0};
+  long double *targets_arr[1] = {t0};
+
   for (size_t i = 0; i < sam->num_submodels; i++) {
-    NEAT_train(sam->submodels[i], input_sequence[0], target, 1);
+    NEAT_train(sam->submodels[i], (long double **)inputs_arr,
+               (long double **)targets_arr, 1);
   }
 }
 
