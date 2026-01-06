@@ -489,65 +489,48 @@ void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
 
 // SAM adaptation
 void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
-  if (!sam || !input_sequence)
+  if (!sam || !input_sequence || seq_length == 0)
     return;
 
-  // Adapt submodels based on performance
+  size_t out_dim = sam->layer_sizes[sam->num_layers - 1];
+
   for (size_t i = 0; i < sam->num_submodels; i++) {
-    if (sam->submodels[i]) {
-      // Train submodel with input
-      if (seq_length > 0 && input_sequence[0]) {
-        long double *target = (long double *)malloc(
-            sam->layer_sizes[sam->num_layers - 1] * sizeof(long double));
-        if (target) {
-          // Use transformer output as target for adaptation
-          long double **transformer_out =
-              TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-          if (transformer_out) {
-            size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
-            if (copy_size > sam->layer_sizes[0])
-              copy_size = sam->layer_sizes[0];
-            long double **transformer_out = TRANSFORMER_forward(...);
-            if (transformer_out) {
-              long double *last = transformer_out[seq_length - 1];
-              size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
-              if (copy_size > sam->layer_sizes[0])
-                copy_size = sam->layer_sizes[0];
+    if (!sam->submodels[i])
+      continue;
 
-              memcpy(target, last, copy_size * sizeof(long double));
-              for (size_t j = copy_size;
-                   j < sam->layer_sizes[sam->num_layers - 1]; j++)
-                target[j] = 0.0L;
+    // Build a target from transformer last-step features (or pooled, later)
+    long double *target = (long double *)calloc(out_dim, sizeof(long double));
+    if (!target)
+      continue;
 
-              for (size_t t = 0; t < seq_length; t++)
-                free(transformer_out[t]);
-              free(transformer_out);
-            }
-            for (size_t j = copy_size;
-                 j < sam->layer_sizes[sam->num_layers - 1]; j++) {
-              target[j] = 0.0L;
-            }
-            long double *in0 = input_sequence[0];
-            long double *t0 = target;
+    long double **transformer_out =
+        TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
 
-            long double **inputs =
-                (long double **)malloc(sizeof(long double *));
-            long double **targets =
-                (long double **)malloc(sizeof(long double *));
-            if (inputs && targets) {
-              inputs[0] = in0;
-              targets[0] = t0;
-              NEAT_train(sam->submodels[i], inputs, targets, 1);
-            }
-            free(inputs);
-            free(targets);
+    if (transformer_out) {
+      // Use last timestep vector
+      long double *last = transformer_out[seq_length - 1];
 
-            free(transformer_out);
-          }
-          free(target);
-        }
-      }
+      size_t copy_size = out_dim;
+      if (copy_size > sam->layer_sizes[0])
+        copy_size = sam->layer_sizes[0];
+
+      memcpy(target, last, copy_size * sizeof(long double));
+
+      // free transformer_out properly
+      for (size_t t = 0; t < seq_length; t++)
+        free(transformer_out[t]);
+      free(transformer_out);
     }
+
+    // Train submodel with 1-sample batch (input = first obs)
+    long double *in0 = input_sequence[0];
+    long double *inputs_arr[1] = {in0};
+    long double *targets_arr[1] = {target};
+
+    NEAT_train(sam->submodels[i], (long double **)inputs_arr,
+               (long double **)targets_arr, 1);
+
+    free(target);
   }
 }
 
