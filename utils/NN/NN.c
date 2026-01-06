@@ -405,14 +405,14 @@ long double *NN_matmul(long double inputs[], long double weights[],
     return NULL;
   }
 
-  for (size_t i = 0; i < output_size; i++) {
-    output[i] = biases[i];
-
-    for (size_t j = 0; j < input_size; j++) {
-      long double weight = weights[i * input_size + j];
-      long double contribution = weight * inputs[j];
-      output[i] += contribution;
+  // weights layout is: weights[i * output_size + j]
+  // i = input index, j = output index
+  for (size_t j = 0; j < output_size; j++) {
+    long double sum = biases[j];
+    for (size_t i = 0; i < input_size; i++) {
+      sum += weights[i * output_size + j] * inputs[i];
     }
+    output[j] = sum;
   }
 
   return output;
