@@ -3,7 +3,7 @@
 
 #include "mcts.h"
 #include "muzero_model.h"
-#include <stddef.h> // size_t
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
