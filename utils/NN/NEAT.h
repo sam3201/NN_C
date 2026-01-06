@@ -89,7 +89,7 @@ void GENOME_mutate(Genome_t *genome, long double weightPerturbRate,
 Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2);
 
 // ------------------- Cloning -------------------
-Genome_t *GENOME_clone(Genome_t *src);
+Genome_t *GENOME_clone(const Genome_t *src);
 
 // ------------------- Forward Propagation -------------------
 void GENOME_forward(Genome_t *genome, long double *input, long double *output);
