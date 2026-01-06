@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 static void print_obs(const float *obs, int n) {
   printf("[");
   for (int i = 0; i < n; i++) {
