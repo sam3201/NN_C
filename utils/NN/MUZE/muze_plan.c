@@ -24,22 +24,6 @@ static int argmaxf(const float *x, size_t n) {
    Later, if you want "true MuZero latent", we'll wire model->repr to produce
    it.
 */
-static void latent_seq_to_latent_float(long double **latent_seq, size_t seq_len,
-                                       size_t obs_dim, float *latent_out,
-                                       size_t latent_dim) {
-  /* zero */
-  for (size_t i = 0; i < latent_dim; i++)
-    latent_out[i] = 0.0f;
-
-  if (!latent_seq || seq_len == 0 || !latent_seq[seq_len - 1])
-    return;
-
-  long double *last = latent_seq[seq_len - 1];
-  size_t n = obs_dim < latent_dim ? obs_dim : latent_dim;
-  for (size_t i = 0; i < n; i++)
-    latent_out[i] = (float)last[i];
-}
-
 int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
               size_t action_count) {
   if (!cortex || !cortex->encode || !obs)
