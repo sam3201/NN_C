@@ -28,6 +28,25 @@ typedef struct {
   int has_last;       // 0/1
 } SAMMuAdapter;
 
+static size_t argmaxf(const float *x, size_t n) {
+  size_t best = 0;
+  float bestv = x[0];
+  for (size_t i = 1; i < n; i++) {
+    if (x[i] > bestv) {
+      bestv = x[i];
+      best = i;
+    }
+  }
+  return best;
+}
+
+static void onehotf(float *x, size_t n, size_t k) {
+  for (size_t i = 0; i < n; i++)
+    x[i] = 0.0f;
+  if (k < n)
+    x[k] = 1.0f;
+}
+
 /* softmax for action logits -> probs */
 static void softmaxf_inplace(float *x, size_t n) {
   if (n == 0)
@@ -64,13 +83,6 @@ static size_t argmaxf(const float *x, size_t n) {
     }
   }
   return best;
-}
-
-static void onehotf(float *x, size_t n, size_t k) {
-  for (size_t i = 0; i < n; i++)
-    x[i] = 0.0f;
-  if (k < n)
-    x[k] = 1.0f;
 }
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
