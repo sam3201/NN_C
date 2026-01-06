@@ -380,7 +380,10 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, 1.0f);                              // bias
 }
 
-int decide_action(Agent *a, ObsBuffer *obs) { return action; }
+int decide_action(Agent *a, ObsBuffer *obs) {
+  MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
+  return muze_plan(cortex, obs->data, obs->size, ACTION_COUNT);
+}
 
 /* =======================
    AGENT UPDATE
