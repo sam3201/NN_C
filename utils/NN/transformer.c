@@ -395,6 +395,124 @@ static long double *layernorm_forward_token(LayerNorm *ln, const long double *x,
   return out;
 }
 
+static void softmax_row_backprop(const long double *s, long double *ds,
+                                 size_t T) {
+  // ds is dL/ds (softmax output). Convert to dL/dz (pre-softmax logits).
+  // dz_i = sum_j ds_j * s_i * (delta_ij - s_j)
+  long double *tmp = (long double *)calloc(T, sizeof(long double));
+  for (size_t i = 0; i < T; i++) {
+    long double sum = 0.0L;
+    for (size_t j = 0; j < T; j++) {
+      long double delta = (i == j) ? 1.0L : 0.0L;
+      sum += ds[j] * s[i] * (delta - s[j]);
+    }
+    tmp[i] = sum;
+  }
+  memcpy(ds, tmp, T * sizeof(long double));
+  free(tmp);
+}
+
+// Returns malloc'd dX flattened [T*D]. Caller frees.
+long double *transformer_mha_backprop_return_dx(MultiHeadAttention *mha,
+                                                const long double *dOut_flat) {
+  size_t T = mha->seq_length;
+  size_t D = mha->model_dim;
+  size_t H = mha->num_heads;
+  size_t Hd = mha->head_dim;
+
+  long double *dQ = (long double *)calloc(T * D, sizeof(long double));
+  long double *dK = (long double *)calloc(T * D, sizeof(long double));
+  long double *dV = (long double *)calloc(T * D, sizeof(long double));
+  long double *dX = (long double *)calloc(T * D, sizeof(long double));
+  if (!dQ || !dK || !dV || !dX) {
+    free(dQ);
+    free(dK);
+    free(dV);
+    free(dX);
+    return NULL;
+  }
+
+  for (size_t h = 0; h < H; h++) {
+    const long double *scores = &mha->scores_cache[h * T * T];
+    long double *dScores = (long double *)calloc(T * T, sizeof(long double));
+    if (!dScores)
+      continue;
+
+    // dScores = dOut * V , and accumulate dV
+    for (size_t i = 0; i < T; i++) {
+      for (size_t k = 0; k < T; k++) {
+        long double s = 0.0L;
+        for (size_t j = 0; j < Hd; j++) {
+          long double go = dOut_flat[i * D + h * Hd + j];
+          long double vv = mha->V_cache[k * D + h * Hd + j];
+          s += go * vv;
+          dV[k * D + h * Hd + j] += scores[i * T + k] * go;
+        }
+        dScores[i * T + k] = s;
+      }
+    }
+
+    // backprop through softmax rows
+    for (size_t i = 0; i < T; i++) {
+      long double *row_ds = &dScores[i * T];
+      long double row_s[1024]; // if T can exceed, remove stack usage
+      // safer heap for arbitrary T:
+      long double *srow = (long double *)malloc(T * sizeof(long double));
+      for (size_t j = 0; j < T; j++)
+        srow[j] = scores[i * T + j];
+      softmax_row_backprop(srow, row_ds, T);
+      free(srow);
+    }
+
+    // dQ/dK from dScores
+    for (size_t i = 0; i < T; i++) {
+      for (size_t k = 0; k < T; k++) {
+        long double g = dScores[i * T + k] / sqrtl((long double)Hd);
+        for (size_t j = 0; j < Hd; j++) {
+          dQ[i * D + h * Hd + j] += g * mha->K_cache[k * D + h * Hd + j];
+          dK[k * D + h * Hd + j] += g * mha->Q_cache[i * D + h * Hd + j];
+        }
+      }
+    }
+
+    free(dScores);
+  }
+
+  // Now backprop through the projection NNs and sum their input grads into dX.
+  for (size_t t = 0; t < T; t++) {
+    long double *dxt;
+
+    dxt = NN_backprop_custom_delta_inputgrad(mha->Q_proj, &mha->X_cache[t * D],
+                                             &dQ[t * D]);
+    if (dxt) {
+      for (size_t i = 0; i < D; i++)
+        dX[t * D + i] += dxt[i];
+      free(dxt);
+    }
+
+    dxt = NN_backprop_custom_delta_inputgrad(mha->K_proj, &mha->X_cache[t * D],
+                                             &dK[t * D]);
+    if (dxt) {
+      for (size_t i = 0; i < D; i++)
+        dX[t * D + i] += dxt[i];
+      free(dxt);
+    }
+
+    dxt = NN_backprop_custom_delta_inputgrad(mha->V_proj, &mha->X_cache[t * D],
+                                             &dV[t * D]);
+    if (dxt) {
+      for (size_t i = 0; i < D; i++)
+        dX[t * D + i] += dxt[i];
+      free(dxt);
+    }
+  }
+
+  free(dQ);
+  free(dK);
+  free(dV);
+  return dX; // caller frees
+}
+
 static void layernorm_backprop_token(LayerNorm *ln, long double *grad,
                                      size_t t) {
   size_t D = ln->dim;
