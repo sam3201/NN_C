@@ -307,10 +307,6 @@ void init_tribes(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
   float spacing = 24.0f;
 
-  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
-                  .latent_dim = 64,
-                  .action_count = ACTION_COUNT};
-
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
     tr->tribe_id = t;
@@ -323,6 +319,10 @@ void init_tribes(void) {
 }
 
 void init_agents(void) {
+  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
+                  .latent_dim = 64,
+                  .action_count = ACTION_COUNT};
+
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
     a->agent_id = i;
@@ -330,6 +330,12 @@ void init_agents(void) {
     a->health = a->stamina = 100;
     a->flash_timer = 0;
     a->age = 0;
+    a->agent_start = t * AGENT_PER_TRIBE;
+    a->agent_count = AGENT_PER_TRIBE;
+    a->reward_accumulator = 0.0f;
+
+    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
+    a->cortex = SAM_as_MUZE(a->sam);
 
     Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
     float ang = randf(0, 2 * PI);
