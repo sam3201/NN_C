@@ -29,29 +29,18 @@ static void softmaxf_inplace(float *x, size_t n) {
 }
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
-                       long double ***latent_seq_out, size_t *seq_len_out) {
+                       long double ***latent_seq, size_t *seq_len) {
   (void)brain;
 
-  if (!latent_seq_out || !seq_len_out || !obs || obs_dim == 0)
-    return;
-
-  long double *input = (long double *)malloc(sizeof(long double) * obs_dim);
-  if (!input)
-    return;
-
+  long double *input = malloc(sizeof(long double) * obs_dim);
   for (size_t i = 0; i < obs_dim; i++)
-    input[i] = (long double)obs[i];
+    input[i] = obs[i];
 
-  long double **seq = (long double **)malloc(sizeof(long double *));
-  if (!seq) {
-    free(input);
-    return;
-  }
-
+  long double **seq = malloc(sizeof(long double *));
   seq[0] = input;
 
-  *latent_seq_out = seq;
-  *seq_len_out = 1;
+  *latent_seq = seq; // CORRECT: writes back to caller
+  *seq_len = 1;
 }
 
 static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
