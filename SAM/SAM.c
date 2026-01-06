@@ -412,6 +412,14 @@ PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat) {
 }
 
 // SAM forward pass
+static void free_seq_ld(long double **seq, size_t T) {
+  if (!seq)
+    return;
+  for (size_t t = 0; t < T; t++)
+    free(seq[t]);
+  free(seq);
+}
+
 long double *SAM_forward(SAM_t *sam, long double **input_sequence,
                          size_t seq_length) {
   if (!sam || !input_sequence || seq_length == 0)
@@ -419,60 +427,44 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   if (!sam->transformer)
     return NULL;
 
-  /* transformer outputs: seq_length x model_dim */
   long double **feat =
       TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
   if (!feat)
     return NULL;
 
-  size_t model_dim = sam->layer_sizes[0];
-  size_t out_dim = sam->layer_sizes[1];
+  size_t D = sam->layer_sizes[0]; // model_dim
+  size_t O = sam->layer_sizes[1]; // out_dim
 
-  /* mean-pool over time into pooled[model_dim] */
-  long double *pooled = (long double *)calloc(model_dim, sizeof(long double));
+  long double *pooled = (long double *)calloc(D, sizeof(long double));
   if (!pooled) {
-    for (size_t t = 0; t < seq_length; t++)
-      size_t model_dim = sam->layer_sizes[0]; // input_dim
-    pooled[j] += feat[t][j];
-
-    free(feat[t]);
-    free(feat);
+    free_seq_ld(feat, seq_length);
     return NULL;
   }
 
   for (size_t t = 0; t < seq_length; t++) {
-    for (size_t j = 0; j < model_dim; j++) {
+    for (size_t j = 0; j < D; j++)
       pooled[j] += feat[t][j];
-    }
   }
   long double invT = 1.0L / (long double)seq_length;
-  for (size_t j = 0; j < model_dim; j++)
+  for (size_t j = 0; j < D; j++)
     pooled[j] *= invT;
 
-  /* linear head: pooled(model_dim) -> out(out_dim) using weights[0][j][i] */
-  long double *out = (long double *)malloc(sizeof(long double) * out_dim);
+  long double *out = (long double *)malloc(sizeof(long double) * O);
   if (!out) {
     free(pooled);
-    for (size_t t = 0; t < seq_length; t++)
-      free(feat[t]);
-    free(feat);
+    free_seq_ld(feat, seq_length);
     return NULL;
   }
 
-  for (size_t i = 0; i < out_dim; i++) {
+  for (size_t i = 0; i < O; i++) {
     long double sum = 0.0L;
-    for (size_t j = 0; j < model_dim; j++) {
+    for (size_t j = 0; j < D; j++)
       sum += pooled[j] * sam->weights[0][j][i];
-    }
-    out[i] = sum; /* logits */
+    out[i] = sum; // logits
   }
 
   free(pooled);
-
-  for (size_t t = 0; t < seq_length; t++)
-    free(feat[t]);
-  free(feat);
-
+  free_seq_ld(feat, seq_length);
   return out;
 }
 
