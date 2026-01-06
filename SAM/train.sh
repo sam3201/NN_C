@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile the SAM AGI training program
-gcc -o sam_agi sam_agi.c SAM.c ../utils/NN/NEAT.c ../utils/NN/NN.c ../utils/NN/TRANSFORMER.c -lm -Wall -Wextra
+gcc -o sam_agi ../sam_agi.c SAM.c ../utils/NN/NEAT.c ../utils/NN/NN.c ../utils/NN/TRANSFORMER.c -lm -Wall -Wextra
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"
