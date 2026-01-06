@@ -55,6 +55,14 @@ void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
 void mu_model_train(MuModel *m);
+MuModel *mu_model_create_toy(int size, int action_count);
+void mu_model_free_toy(MuModel *m);
+
+void mu_model_repr_toy(MuModel *m, const float *obs, float *latent_out);
+void mu_model_predict_toy(MuModel *m, const float *latent, float *policy_logits,
+                          float *value_out);
+void mu_model_dynamics_toy(MuModel *m, const float *latent, int action,
+                           float *latent2_out, float *reward_out);
 
 #ifdef __cplusplus
 }
