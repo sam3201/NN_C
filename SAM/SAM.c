@@ -48,7 +48,8 @@ SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
 
   init_weights(sam);
 
-  sam->transformer = TRANSFORMER_init(input_dim, num_heads, 1);
+  size_t transformer_layers = 1; // start simple; can increase later
+  sam->transformer = TRANSFORMER_init(input_dim, num_heads, transformer_layers);
   sam->num_submodels = 1; // Fixed number of submodels for now
   sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
 
