@@ -465,8 +465,10 @@ long double **TRANSFORMER_backprop(Transformer_t *transformer,
 }
 
 // ----------------------
-// Save/load transformer
+// Training
 
+// ----------------------
+// Save/load transformer
 // ----------------------
 int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
   if (!transformer || !file)
