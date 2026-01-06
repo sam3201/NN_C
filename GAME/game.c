@@ -31,43 +31,6 @@
 #define OBS_DIM 64
 #define TRAIN_INTERVAL 1
 
-Vector2 camera_pos;
-float WORLD_SCALE = 50.0f;
-// Visual scaling: at least +50%
-// optional: you can tweak per-category
-static float RESOURCE_SCALE = 10.0f;
-// global “everything bigger” knob
-static float scale_size = 1.65f; // bigger overall (was 1.5)
-
-// per-resource tuning
-static float TREE_SCALE = 2.35f; // MUCH larger
-static float ROCK_SCALE = 1.35f;
-static float GOLD_SCALE = 1.25f;
-static float FOOD_SCALE = 1.20f;
-
-// mobs can also be bigger if you want
-static float MOB_SCALE = 3.15f;
-
-Color biome_colors[] = {
-    (Color){40, 120, 40, 255},   // grass
-    (Color){140, 140, 140, 255}, // stone
-    (Color){200, 180, 80, 255},  // desert
-};
-
-Color mob_colors[] = {
-    PINK,     // pig
-    RAYWHITE, // sheep
-    DARKGRAY, // skeleton
-    GREEN     // zombie
-};
-
-Color resource_colors[] = {
-    DARKGREEN, // tree
-    GRAY,      // rock
-    GOLD,      // gold
-    RED        // food
-};
-
 /* =======================
    ENUMS
 ======================= */
@@ -164,6 +127,43 @@ Player player;
 
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
+
+Vector2 camera_pos;
+float WORLD_SCALE = 50.0f;
+// Visual scaling: at least +50%
+// optional: you can tweak per-category
+static float RESOURCE_SCALE = 10.0f;
+// global “everything bigger” knob
+static float scale_size = 1.65f; // bigger overall (was 1.5)
+
+// per-resource tuning
+static float TREE_SCALE = 2.35f; // MUCH larger
+static float ROCK_SCALE = 1.35f;
+static float GOLD_SCALE = 1.25f;
+static float FOOD_SCALE = 1.20f;
+
+// mobs can also be bigger if you want
+static float MOB_SCALE = 3.15f;
+
+Color biome_colors[] = {
+    (Color){40, 120, 40, 255},   // grass
+    (Color){140, 140, 140, 255}, // stone
+    (Color){200, 180, 80, 255},  // desert
+};
+
+Color mob_colors[] = {
+    PINK,     // pig
+    RAYWHITE, // sheep
+    DARKGRAY, // skeleton
+    GREEN     // zombie
+};
+
+Color resource_colors[] = {
+    DARKGREEN, // tree
+    GRAY,      // rock
+    GOLD,      // gold
+    RED        // food
+};
 
 /* =======================
    OBS BUFFER
