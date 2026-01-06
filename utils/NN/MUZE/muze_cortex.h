@@ -18,4 +18,5 @@ typedef struct {
 
 #endif
 
-MuCortex *SAM_as_MUZE(SAM_t *sam);
+void (*free_latent_seq)(void *brain, long double **latent_seq, size_t seq_len);
+uCortex *SAM_as_MUZE(SAM_t *sam);
