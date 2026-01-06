@@ -619,6 +619,7 @@ void POPULATION_evolve(Population *pop) {
   for (size_t i = 0; i < pop->size - 1; i++) {
     if (!pop->genomes[i]) {
       // If you have a way to create a blank genome, do it here.
+      pop->genomes[i] = GENOME_init_empty(0, 0);
       // Otherwise: bail out to avoid crashing.
       return;
       for (size_t j = i + 1; j < pop->size; j++) {
