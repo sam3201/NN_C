@@ -74,15 +74,7 @@ void free_attention(MultiHeadAttention *mha) {
     NN_destroy(mha->V_proj);
   if (mha->O_proj)
     NN_destroy(mha->O_proj);
-  if (mha->Q_cache)
-    free(mha->Q_cache);
-  if (mha->K_cache)
-    free(mha->K_cache);
-  if (mha->V_cache)
-    free(mha->V_cache);
-  if (mha->scores_cache)
-    free(mha->scores_cache);
-  free(mha);
+  mha_clear_caches(mha);
 }
 
 static int ff_prepare_cache(FeedForward *ff, size_t T) {
