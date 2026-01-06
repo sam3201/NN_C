@@ -433,6 +433,13 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
   return child;
 }
 
+Genome_t *GENOME_clone(Genome_t *g) {
+  Genome_t *c = malloc(sizeof(Genome_t));
+  *c = *g;
+  c->nn = NULL;
+  return c;
+}
+
 // ------------------- Serialization -------------------
 void GENOME_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
