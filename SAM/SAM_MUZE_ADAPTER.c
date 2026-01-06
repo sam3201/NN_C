@@ -18,6 +18,14 @@ typedef struct {
   long double *hist_data; /* hist_cap * obs_dim */
   long double **seq_ptrs; /* hist_cap pointers into hist_data */
 
+  /* last decision cache for REINFORCE update */
+  int has_last;
+  size_t last_action;
+  size_t last_action_count;
+  float *last_probs;           /* length last_action_count */
+  long double **last_seq_ptrs; /* points into hist_data (do not free) */
+  size_t last_seq_len;
+
   /* epsilon-greedy exploration */
   float epsilon;
   float epsilon_min;
@@ -47,6 +55,7 @@ static void onehotf(float *x, size_t n, size_t k) {
 static void softmaxf_inplace(float *x, size_t n) {
   if (n == 0)
     return;
+
   float maxv = x[0];
   for (size_t i = 1; i < n; i++)
     if (x[i] > maxv)
@@ -83,6 +92,8 @@ static void sam_encode(void *brain, float *obs, size_t obs_dim,
 
     free(ad->hist_data);
     free(ad->seq_ptrs);
+    ad->hist_data = NULL;
+    ad->seq_ptrs = NULL;
 
     ad->hist_data =
         (long double *)calloc(ad->hist_cap * ad->obs_dim, sizeof(long double));
@@ -92,6 +103,11 @@ static void sam_encode(void *brain, float *obs, size_t obs_dim,
       *seq_len = 0;
       return;
     }
+
+    /* previous cached seq pointers are invalid now */
+    ad->has_last = 0;
+    ad->last_seq_ptrs = NULL;
+    ad->last_seq_len = 0;
   }
 
   /* write obs into ring buffer */
@@ -125,7 +141,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   if (!logits)
     return;
 
-  // Copy logits into float buffer
+  /* Copy logits into float buffer */
   size_t sam_out_dim = ad->sam->layer_sizes[ad->sam->num_layers - 1];
   size_t n = action_count < sam_out_dim ? action_count : sam_out_dim;
 
@@ -134,6 +150,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   for (size_t i = n; i < action_count; i++)
     action_probs[i] = 0.0f;
 
+  /* logits -> probs */
   softmaxf_inplace(action_probs, action_count);
 
   /* epsilon-greedy: sometimes force uniform exploration */
@@ -144,24 +161,24 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
       action_probs[i] = u;
   }
 
-  free(out);
-
-  // Ensure ad->last_probs buffer exists
+  /* Ensure last_probs buffer exists */
   if (ad->last_action_count != action_count) {
     free(ad->last_probs);
     ad->last_probs = (float *)calloc(action_count, sizeof(float));
     ad->last_action_count = action_count;
   }
 
-  // Store last probs + last seq pointers/len
+  /* Store last probs + last seq pointers/len */
   if (ad->last_probs) {
     memcpy(ad->last_probs, action_probs, action_count * sizeof(float));
-    ad->last_seq_ptrs = latent_seq; // points into hist_data, do not free
+    ad->last_seq_ptrs = latent_seq; /* points into hist_data, do not free */
     ad->last_seq_len = seq_len;
     ad->has_last = 1;
+  } else {
+    ad->has_last = 0;
   }
 
-  // Force deterministic action so learn() knows which action happened
+  /* Pick action deterministically (MUZE will sample/argmax anyway; we force) */
   ad->last_action = argmaxf(action_probs, action_count);
   onehotf(action_probs, action_count, ad->last_action);
 
@@ -173,15 +190,14 @@ static void sam_learn(void *brain, float reward, int terminal) {
   if (!ad || !ad->sam)
     return;
 
+  /* keep context updated */
   SAM_update_context(ad->sam, (long double)reward);
 
-  // If we have a cached (state, action, probs), do REINFORCE-style update.
+  /* REINFORCE-style: grad_logits = reward * (p - onehot(a)) */
   if (ad->has_last && ad->last_probs && ad->last_seq_ptrs &&
       ad->last_seq_len > 0 && ad->last_action_count > 0) {
 
     size_t A = ad->last_action_count;
-
-    // grad_logits[i] = reward * (p[i] - 1(i==a))
     long double *grad = (long double *)calloc(A, sizeof(long double));
     if (grad) {
       for (size_t i = 0; i < A; i++) {
@@ -190,7 +206,7 @@ static void sam_learn(void *brain, float reward, int terminal) {
         grad[i] = (long double)reward * (p - oh);
       }
 
-      // Train SAM (head + transformer)
+      /* updates head + transformer */
       SAM_backprop(ad->sam, ad->last_seq_ptrs, ad->last_seq_len, grad);
 
       free(grad);
@@ -201,12 +217,15 @@ static void sam_learn(void *brain, float reward, int terminal) {
     SAM_generalize(ad->sam);
     SAM_transfuse(ad->sam);
 
-    /* decay exploration */
+    /* decay exploration per episode */
     if (ad->epsilon > ad->epsilon_min) {
       ad->epsilon *= ad->epsilon_decay;
       if (ad->epsilon < ad->epsilon_min)
         ad->epsilon = ad->epsilon_min;
     }
+
+    /* clear last to avoid “credit leakage” across episodes */
+    ad->has_last = 0;
   }
 }
 
@@ -241,16 +260,17 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   ad->hist_data = NULL;
   ad->seq_ptrs = NULL;
 
-  ad->last_seq_len = 0;
+  ad->has_last = 0;
+  ad->last_action = 0;
+  ad->last_action_count = 0;
+  ad->last_probs = NULL;
   ad->last_seq_ptrs = NULL;
+  ad->last_seq_len = 0;
+
   /* exploration defaults */
   ad->epsilon = 0.30f;       /* start exploring a lot */
   ad->epsilon_min = 0.02f;   /* keep a little exploration */
   ad->epsilon_decay = 0.95f; /* decay per episode */
-  ad->last_action_count = 0;
-  ad->last_probs = NULL;
-  ad->last_action = 0;
-  ad->has_last = 0;
 
   c->brain = ad;
   c->encode = sam_encode;
