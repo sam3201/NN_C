@@ -41,9 +41,4 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
 
   free(action_probs);
   return best;
-
-  free(action_probs);
-  return best;
-
-  return best;
 }
