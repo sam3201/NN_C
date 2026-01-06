@@ -202,6 +202,17 @@ static void sam_learn(void *brain, float reward, int terminal) {
 
   if (terminal) {
     SAM_generalize(ad->sam);
+    if (terminal) {
+      ad->episode_counter++;
+
+      SAM_generalize(ad->sam);
+
+      if (ad->episode_counter % 10 == 0) {
+        SAM_transfuse(ad->sam);
+      }
+
+      ...
+    }
     SAM_transfuse(ad->sam);
 
     if (ad->epsilon > ad->epsilon_min) {
