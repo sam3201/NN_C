@@ -102,9 +102,7 @@ int main(void) {
   }
 
   // cleanup
-  free(cortex->brain);
-  free(cortex);
-  SAM_destroy(sam);
+  SAM_MUZE_destroy(cortex);
 
   return 0;
 }
