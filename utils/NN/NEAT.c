@@ -642,211 +642,212 @@ void POPULATION_evolve(Population *pop) {
 
   if (pop->size < 2) {
     return;
-
-    for (size_t i = 0; i < eliteCount; i++) {
-      nextGen[i] = GENOME_crossover(pop->genomes[i], pop->genomes[i]);
-    }
-
-    for (size_t i = eliteCount; i < pop->size; i++) {
-      size_t p1 = rand() % eliteCount;
-      size_t p2 = rand() % eliteCount;
-      nextGen[i] = GENOME_crossover(pop->genomes[p1], pop->genomes[p2]);
-
-      GENOME_mutate(nextGen[i], 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
-    }
-
-    for (size_t i = 0; i < pop->size; i++)
-      GENOME_destroy(pop->genomes[i]);
-
-    free(pop->genomes);
-    pop->genomes = nextGen;
   }
 
-  // Return innovation number, create if new
-  size_t get_innovation_number(size_t from, size_t to) {
-    for (size_t i = 0; i < innovationCount; i++) {
-      if (innovationHistory[i].from == from && innovationHistory[i].to == to)
-        return innovationHistory[i].innovation;
-    }
-    // New innovation
-    innovationHistory = realloc(
-        innovationHistory, (innovationCount + 1) * sizeof(InnovationRecord));
-    innovationHistory[innovationCount].from = from;
-    innovationHistory[innovationCount].to = to;
-    innovationHistory[innovationCount].innovation = innovationCount;
-    return innovationCount++;
+  for (size_t i = 0; i < eliteCount; i++) {
+    nextGen[i] = GENOME_crossover(pop->genomes[i], pop->genomes[i]);
   }
 
-  // Helper: returns an array of node indices in topological order
-  size_t *topological_sort(Genome_t * genome, size_t *outSize) {
-    size_t *inDegree = calloc(genome->numNodes, sizeof(size_t));
-    for (size_t i = 0; i < genome->numConnections; i++) {
-      Connection *c = genome->connections[i];
-      if (c->enabled)
-        inDegree[c->to->id]++;
-    }
+  for (size_t i = eliteCount; i < pop->size; i++) {
+    size_t p1 = rand() % eliteCount;
+    size_t p2 = rand() % eliteCount;
+    nextGen[i] = GENOME_crossover(pop->genomes[p1], pop->genomes[p2]);
 
-    size_t *order = malloc(genome->numNodes * sizeof(size_t));
-    size_t idx = 0;
-
-    size_t *queue = malloc(genome->numNodes * sizeof(size_t));
-    size_t qstart = 0, qend = 0;
-
-    for (size_t i = 0; i < genome->numNodes; i++) {
-      if (inDegree[i] == 0)
-        queue[qend++] = i;
-    }
-
-    while (qstart < qend) {
-      size_t n = queue[qstart++];
-      order[idx++] = n;
-
-      for (size_t i = 0; i < genome->numConnections; i++) {
-        Connection *c = genome->connections[i];
-        if (c->enabled && c->from->id == n) {
-          inDegree[c->to->id]--;
-          if (inDegree[c->to->id] == 0)
-            queue[qend++] = c->to->id;
-        }
-      }
-    }
-
-    free(queue);
-    free(inDegree);
-    *outSize = idx;
-    return order;
+    GENOME_mutate(nextGen[i], 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
   }
 
-  NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size) {
-    NEAT_reset_innovations();
+  for (size_t i = 0; i < pop->size; i++)
+    GENOME_destroy(pop->genomes[i]);
 
-    NEAT_t *neat = malloc(sizeof(NEAT_t));
-    neat->input_dims = input_dim;
-    neat->output_dims = output_dim;
-    neat->pop = POPULATION_init(pop_size, input_dim, output_dim);
-    srand((unsigned int)time(NULL)); // seed RNG
-    return neat;
+  free(pop->genomes);
+  pop->genomes = nextGen;
+}
+
+// Return innovation number, create if new
+size_t get_innovation_number(size_t from, size_t to) {
+  for (size_t i = 0; i < innovationCount; i++) {
+    if (innovationHistory[i].from == from && innovationHistory[i].to == to)
+      return innovationHistory[i].innovation;
+  }
+  // New innovation
+  innovationHistory = realloc(innovationHistory,
+                              (innovationCount + 1) * sizeof(InnovationRecord));
+  innovationHistory[innovationCount].from = from;
+  innovationHistory[innovationCount].to = to;
+  innovationHistory[innovationCount].innovation = innovationCount;
+  return innovationCount++;
+}
+
+// Helper: returns an array of node indices in topological order
+size_t *topological_sort(Genome_t *genome, size_t *outSize) {
+  size_t *inDegree = calloc(genome->numNodes, sizeof(size_t));
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
+    if (c->enabled)
+      inDegree[c->to->id]++;
   }
 
-  void NEAT_destroy(NEAT_t * neat) {
-    if (!neat)
-      return;
-    POPULATION_destroy(neat->pop);
-    free(neat);
+  size_t *order = malloc(genome->numNodes * sizeof(size_t));
+  size_t idx = 0;
+
+  size_t *queue = malloc(genome->numNodes * sizeof(size_t));
+  size_t qstart = 0, qend = 0;
+
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    if (inDegree[i] == 0)
+      queue[qend++] = i;
   }
 
-  void NEAT_train(NEAT_t * neat, long double **inputs, long double **targets,
-                  size_t numSamples) {
-    if (!neat || !inputs || !targets)
-      return;
-
-    Population *pop = neat->pop;
-    size_t inDims = neat->input_dims;
-    size_t outDims = neat->output_dims;
-
-    for (size_t i = 0; i < pop->size; i++) {
-      Genome_t *genome = pop->genomes[i];
-      long double fitness = 0.0L;
-
-      for (size_t s = 0; s < numSamples; s++) {
-        long double output[outDims];
-        GENOME_forward(genome, inputs[s], output);
-
-        // Compute negative MSE
-        for (size_t j = 0; j < outDims; j++) {
-          long double diff = output[j] - targets[s][j];
-          fitness -= diff * diff;
-        }
-      }
-
-      genome->fitness = fitness;
-    }
-
-    // Evolve population after evaluating all genomes
-    POPULATION_evolve(pop);
-  }
-
-  NN_t *GENOME_compile_to_NN(Genome_t * genome) {
-    if (!genome)
-      return NULL;
-
-    size_t topoSize;
-    size_t *order = topological_sort(genome, &topoSize);
-
-    size_t *depth = calloc(genome->numNodes, sizeof(size_t));
-
-    for (size_t i = 0; i < topoSize; i++) {
-      size_t u = order[i];
-      for (size_t j = 0; j < genome->numConnections; j++) {
-        Connection *c = genome->connections[j];
-        if (c->enabled && c->from->id == u) {
-          if (depth[c->to->id] < depth[u] + 1)
-            depth[c->to->id] = depth[u] + 1;
-        }
-      }
-    }
-
-    size_t maxDepth = 0;
-    for (size_t i = 0; i < genome->numNodes; i++)
-      if (depth[i] > maxDepth)
-        maxDepth = depth[i];
-
-    size_t *layerCounts = calloc(maxDepth + 1, sizeof(size_t));
-    for (size_t i = 0; i < genome->numNodes; i++)
-      layerCounts[depth[i]]++;
-
-    size_t *layers = malloc((maxDepth + 2) * sizeof(size_t));
-    ActivationFunctionType *acts =
-        malloc((maxDepth + 1) * sizeof(ActivationFunctionType));
-    ActivationDerivativeType *ders =
-        malloc((maxDepth + 1) * sizeof(ActivationDerivativeType));
-
-    for (size_t i = 0; i <= maxDepth; i++) {
-      layers[i] = layerCounts[i];
-      acts[i] = RELU;
-      ders[i] = RELU_DERIVATIVE;
-    }
-    layers[maxDepth + 1] = 0;
-
-    NN_t *nn = NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
-
-    size_t *nodeToIndex = calloc(genome->numNodes, sizeof(size_t));
-    size_t *cursor = calloc(maxDepth + 1, sizeof(size_t));
-
-    for (size_t i = 0; i < genome->numNodes; i++) {
-      size_t d = depth[i];
-      nodeToIndex[i] = cursor[d]++;
-    }
+  while (qstart < qend) {
+    size_t n = queue[qstart++];
+    order[idx++] = n;
 
     for (size_t i = 0; i < genome->numConnections; i++) {
       Connection *c = genome->connections[i];
-      if (!c->enabled)
-        continue;
+      if (c->enabled && c->from->id == n) {
+        inDegree[c->to->id]--;
+        if (inDegree[c->to->id] == 0)
+          queue[qend++] = c->to->id;
+      }
+    }
+  }
 
-      size_t l = depth[c->from->id];
-      size_t iIdx = nodeToIndex[c->from->id];
-      size_t oIdx = nodeToIndex[c->to->id];
+  free(queue);
+  free(inDegree);
+  *outSize = idx;
+  return order;
+}
 
-      if (l + 1 <= maxDepth) {
-        nn->weights[l][iIdx * layers[l + 1] + oIdx] = c->weight;
+NEAT_t *NEAT_init(size_t input_dim, size_t output_dim, size_t pop_size) {
+  NEAT_reset_innovations();
+
+  NEAT_t *neat = malloc(sizeof(NEAT_t));
+  neat->input_dims = input_dim;
+  neat->output_dims = output_dim;
+  neat->pop = POPULATION_init(pop_size, input_dim, output_dim);
+  srand((unsigned int)time(NULL)); // seed RNG
+  return neat;
+}
+
+void NEAT_destroy(NEAT_t *neat) {
+  if (!neat)
+    return;
+  POPULATION_destroy(neat->pop);
+  free(neat);
+}
+
+void NEAT_train(NEAT_t *neat, long double **inputs, long double **targets,
+                size_t numSamples) {
+  if (!neat || !inputs || !targets)
+    return;
+
+  Population *pop = neat->pop;
+  size_t inDims = neat->input_dims;
+  size_t outDims = neat->output_dims;
+
+  for (size_t i = 0; i < pop->size; i++) {
+    Genome_t *genome = pop->genomes[i];
+    long double fitness = 0.0L;
+
+    for (size_t s = 0; s < numSamples; s++) {
+      long double output[outDims];
+      GENOME_forward(genome, inputs[s], output);
+
+      // Compute negative MSE
+      for (size_t j = 0; j < outDims; j++) {
+        long double diff = output[j] - targets[s][j];
+        fitness -= diff * diff;
       }
     }
 
-    free(order);
-    free(depth);
-    free(layerCounts);
-    free(nodeToIndex);
-    free(cursor);
-    free(layers);
-    free(acts);
-    free(ders);
-
-    genome->nn = nn;
-    return nn;
+    genome->fitness = fitness;
   }
 
-  void NEAT_reset_innovations() {
-    free(innovationHistory);
-    innovationHistory = NULL;
-    innovationCount = 0;
+  // Evolve population after evaluating all genomes
+  POPULATION_evolve(pop);
+}
+
+NN_t *GENOME_compile_to_NN(Genome_t *genome) {
+  if (!genome)
+    return NULL;
+
+  size_t topoSize;
+  size_t *order = topological_sort(genome, &topoSize);
+
+  size_t *depth = calloc(genome->numNodes, sizeof(size_t));
+
+  for (size_t i = 0; i < topoSize; i++) {
+    size_t u = order[i];
+    for (size_t j = 0; j < genome->numConnections; j++) {
+      Connection *c = genome->connections[j];
+      if (c->enabled && c->from->id == u) {
+        if (depth[c->to->id] < depth[u] + 1)
+          depth[c->to->id] = depth[u] + 1;
+      }
+    }
   }
+
+  size_t maxDepth = 0;
+  for (size_t i = 0; i < genome->numNodes; i++)
+    if (depth[i] > maxDepth)
+      maxDepth = depth[i];
+
+  size_t *layerCounts = calloc(maxDepth + 1, sizeof(size_t));
+  for (size_t i = 0; i < genome->numNodes; i++)
+    layerCounts[depth[i]]++;
+
+  size_t *layers = malloc((maxDepth + 2) * sizeof(size_t));
+  ActivationFunctionType *acts =
+      malloc((maxDepth + 1) * sizeof(ActivationFunctionType));
+  ActivationDerivativeType *ders =
+      malloc((maxDepth + 1) * sizeof(ActivationDerivativeType));
+
+  for (size_t i = 0; i <= maxDepth; i++) {
+    layers[i] = layerCounts[i];
+    acts[i] = RELU;
+    ders[i] = RELU_DERIVATIVE;
+  }
+  layers[maxDepth + 1] = 0;
+
+  NN_t *nn = NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+
+  size_t *nodeToIndex = calloc(genome->numNodes, sizeof(size_t));
+  size_t *cursor = calloc(maxDepth + 1, sizeof(size_t));
+
+  for (size_t i = 0; i < genome->numNodes; i++) {
+    size_t d = depth[i];
+    nodeToIndex[i] = cursor[d]++;
+  }
+
+  for (size_t i = 0; i < genome->numConnections; i++) {
+    Connection *c = genome->connections[i];
+    if (!c->enabled)
+      continue;
+
+    size_t l = depth[c->from->id];
+    size_t iIdx = nodeToIndex[c->from->id];
+    size_t oIdx = nodeToIndex[c->to->id];
+
+    if (l + 1 <= maxDepth) {
+      nn->weights[l][iIdx * layers[l + 1] + oIdx] = c->weight;
+    }
+  }
+
+  free(order);
+  free(depth);
+  free(layerCounts);
+  free(nodeToIndex);
+  free(cursor);
+  free(layers);
+  free(acts);
+  free(ders);
+
+  genome->nn = nn;
+  return nn;
+}
+
+void NEAT_reset_innovations() {
+  free(innovationHistory);
+  innovationHistory = NULL;
+  innovationCount = 0;
+}
