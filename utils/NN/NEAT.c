@@ -454,46 +454,67 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 Genome_t *GENOME_clone(const Genome_t *src) {
   if (!src)
     return NULL;
-  Genome_t *clone = (Genome_t *)malloc(sizeof(Genome_t));
-  clone->nn = NN_init(src->nn->layers, src->nn->actFuncs, src->nn->actDerivs,
-                      src->nn->lossFunc, src->nn->lossDeriv, src->nn->reg,
-                      src->nn->opt, src->nn->learningRate);
-  size_t numOutputs = layers[genome->nn->numLayers - 1];
-  genome->numNodes = numInputs + numOutputs + 1;
-  genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
 
-  size_t idx = 0;
-  for (size_t i = 0; i < numInputs; i++) {
-    genome->nodes[idx] = (Node *)malloc(sizeof(Node));
-    genome->nodes[idx]->id = idx;
-    genome->nodes[idx]->type = INPUT_NODE;
-    genome->nodes[idx]->actFunc = LINEAR;
-    genome->nodes[idx]->value = 0.0L;
-    idx++;
+  Genome_t *g = (Genome_t *)calloc(1, sizeof(Genome_t));
+  if (!g)
+    return NULL;
+
+  g->numNodes = src->numNodes;
+  g->nodes = (Node **)calloc(g->numNodes, sizeof(Node *));
+  if (!g->nodes) {
+    free(g);
+    return NULL;
   }
 
-  // bias node
-  genome->nodes[idx] = (Node *)malloc(sizeof(Node));
-  genome->nodes[idx]->id = idx;
-  genome->nodes[idx]->type = BIAS_NODE;
-  genome->nodes[idx]->actFunc = LINEAR;
-  genome->nodes[idx]->value = 1.0L;
-  idx++;
-
-  for (size_t i = 0; i < numOutputs; i++) {
-    genome->nodes[idx] = (Node *)malloc(sizeof(Node));
-    genome->nodes[idx]->id = idx;
-    genome->nodes[idx]->type = OUTPUT_NODE;
-    genome->nodes[idx]->actFunc = SIGMOID;
-    genome->nodes[idx]->value = 0.0L;
-    idx++;
+  for (size_t i = 0; i < g->numNodes; i++) {
+    if (!src->nodes[i])
+      continue;
+    g->nodes[i] = (Node *)malloc(sizeof(Node));
+    if (!g->nodes[i]) {
+      GENOME_destroy(g);
+      return NULL;
+    }
+    *g->nodes[i] = *src->nodes[i]; // copies id/type/actFunc/value
   }
 
-  genome->numConnections = 0;
-  genome->connections = NULL;
-  genome->fitness = 0.0L;
+  g->numConnections = src->numConnections;
+  g->connections =
+      (Connection **)calloc(g->numConnections, sizeof(Connection *));
+  if (!g->connections) {
+    GENOME_destroy(g);
+    return NULL;
+  }
 
-  return genome;
+  for (size_t i = 0; i < g->numConnections; i++) {
+    Connection *sc = src->connections[i];
+    if (!sc)
+      continue;
+
+    Connection *c = (Connection *)malloc(sizeof(Connection));
+    if (!c) {
+      GENOME_destroy(g);
+      return NULL;
+    }
+
+    *c = *sc; // copies innovation/weight/enabled + pointers (we fix next)
+
+    // rebind pointers into the clone's node array
+    size_t fid = sc->from ? sc->from->id : (size_t)-1;
+    size_t tid = sc->to ? sc->to->id : (size_t)-1;
+
+    c->from = (fid < g->numNodes) ? g->nodes[fid] : NULL;
+    c->to = (tid < g->numNodes) ? g->nodes[tid] : NULL;
+
+    // if invalid, disable so forward/toposort won't explode
+    if (!c->from || !c->to)
+      c->enabled = false;
+
+    g->connections[i] = c;
+  }
+
+  g->fitness = src->fitness;
+  g->nn = NULL; // IMPORTANT: avoid accidental frees + NN mismatch issues
+  return g;
 }
 
 // ------------------- Serialization -------------------
