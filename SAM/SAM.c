@@ -5,6 +5,22 @@
 #include <string.h>
 
 // Helper functions
+static long double **alloc_seq(size_t T, size_t D) {
+  long double **s = (long double **)calloc(T, sizeof(long double *));
+  if (!s)
+    return NULL;
+  for (size_t t = 0; t < T; t++) {
+    s[t] = (long double *)calloc(D, sizeof(long double));
+    if (!s[t]) {
+      for (size_t k = 0; k < t; k++)
+        free(s[k]);
+      free(s);
+      return NULL;
+    }
+  }
+  return s;
+}
+
 static void free_seq_ld(long double **seq, size_t T) {
   if (!seq)
     return;
@@ -466,22 +482,6 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   free(pooled);
   free_seq_ld(feat, seq_length);
   return out;
-}
-
-static long double **alloc_seq(size_t T, size_t D) {
-  long double **s = (long double **)calloc(T, sizeof(long double *));
-  if (!s)
-    return NULL;
-  for (size_t t = 0; t < T; t++) {
-    s[t] = (long double *)calloc(D, sizeof(long double));
-    if (!s[t]) {
-      for (size_t k = 0; k < t; k++)
-        free(s[k]);
-      free(s);
-      return NULL;
-    }
-  }
-  return s;
 }
 
 void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
