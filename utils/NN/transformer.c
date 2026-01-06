@@ -592,7 +592,7 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
     }
 
     long double *dy =
-        NN_backprop_custom_delta_inputgrad(mha->O_proj, y, &grad_output[t * D]);
+        NN_backprop_custom_delta_inputgrad(mha->O_proj, y, &grad_in[t * D]);
 
     if (dy) {
       memcpy(&dConcat[t * D], dy, D * sizeof(long double));
