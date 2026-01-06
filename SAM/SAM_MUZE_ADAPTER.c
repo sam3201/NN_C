@@ -26,6 +26,8 @@ typedef struct {
   long double **last_seq_ptrs; /* points into hist_data (do not free) */
   size_t last_seq_len;
 
+  int episode_counter;
+
   /* epsilon-greedy exploration */
   float epsilon;
   float epsilon_min;
