@@ -21,7 +21,7 @@ gcc -w game.c $MUZE_SRC \
     ../utils/NN/NEAT.c \
     ../utils/NN/TRANSFORMER.c \
     ../utils/NN/MUZE/MUZE.c \
-    ../utils/NN/SAM/SAM.c \
+    ../SAM/SAM.c \
     ../utils/NN/MEMORY/MEMORY.c \
     -I../utils/NN \
     -I../utils/NN/MEMORY \
