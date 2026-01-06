@@ -470,7 +470,29 @@ void draw_mobs(void) {
                       (float)(cy * CHUNK_SIZE) + m->position.y};
         Vector2 sp = world_to_screen(wp);
 
-        float s = px(0.26f) * MOB_SCALE; // base mob radius
+        float mul = 1.0f;
+        switch (r->type) {
+        case RES_TREE:
+          mul = TREE_SCALE;
+          break;
+        case RES_ROCK:
+          mul = ROCK_SCALE;
+          break;
+        case RES_GOLD:
+          mul = GOLD_SCALE;
+          break;
+        case RES_FOOD:
+          mul = FOOD_SCALE;
+          break;
+        default:
+          mul = 1.0f;
+          break;
+        }
+
+        // base size for “resource”
+        float s = px(0.20f) * mul; // <- scaled per type
+        float s2 = s * 1.2f;
+
         float hp01 = (float)m->health / 100.0f;
 
         // shadow
