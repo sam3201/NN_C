@@ -54,4 +54,5 @@ if [ $? -eq 0 ]; then
   rm game
 else
   echo "Game exited with an error."
+  exit 1
 fi
