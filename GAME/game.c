@@ -331,7 +331,7 @@ void init_agents(void) {
     a->flash_timer = 0;
     a->age = 0;
     a->agent_start = i * AGENT_PER_TRIBE;
-    a->agent_count = AGENT_PER_TRIBE;
+    a->agent_count = 1;
     a->reward_accumulator = 0.0f;
 
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
