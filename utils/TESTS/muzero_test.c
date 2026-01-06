@@ -56,7 +56,7 @@ int main(void) {
     return 1;
   }
   cortex->use_mcts = true;
-  cortex->mcts_model = /* your MuModel* */;
+  cortex->mcts_model = cortex->brain;
   cortex->mcts_params.num_simulations = 100; /* tweak */
 
   /* Optional: slow down */
