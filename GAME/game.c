@@ -716,6 +716,23 @@ void draw_mobs(void) {
         Vector2 wp = {(float)(cx * CHUNK_SIZE) + m->position.x,
                       (float)(cy * CHUNK_SIZE) + m->position.y};
         Vector2 sp = world_to_screen(wp);
+        float bob = sinf(GetTime() * 6.0f + (float)i) * (s * 0.05f);
+        sp.y += bob;
+
+        // hurt flash makes them brighter
+        Color tint = mob_colors[m->type];
+        if (m->hurt_timer > 0.0f)
+          tint = (Color){255, 255, 255, 255};
+
+        // lunge shifts toward player a bit (only visual)
+        if (m->lunge_timer > 0.0f) {
+          Vector2 toP = Vector2Subtract(player.position, wp);
+          float d = Vector2Length(toP);
+          Vector2 dir =
+              (d > 1e-3f) ? Vector2Scale(toP, 1.0f / d) : (Vector2){0, 0};
+          sp.x += dir.x * (s * 0.12f);
+          sp.y += dir.y * (s * 0.12f);
+        }
 
         float s = px(0.26f) * MOB_SCALE; // base mob radius
         float hp01 = (float)m->health / 100.0f;
