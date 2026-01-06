@@ -32,6 +32,25 @@ void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
 void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out);
 
+// ---- batch helpers used by trainer.c ----
+int muzero_model_obs_dim(MuModel *m);
+int muzero_model_action_count(MuModel *m);
+
+/* forward for a batch:
+   obs_batch: [B * obs_dim]
+   p_out:     [B * action_count]  (probabilities, softmaxed)
+   v_out:     [B]                 (tanh value)
+*/
+void muzero_model_forward_batch(MuModel *m, const float *obs_batch, int B,
+                                float *p_out, float *v_out);
+
+/* one SGD step on (obs, pi, z) targets
+   pi_batch: [B * action_count] (target distribution)
+   z_batch:  [B]                (target value)
+*/
+void muzero_model_train_batch(MuModel *m, const float *obs_batch,
+                              const float *pi_batch, const float *z_batch,
+                              int B, float lr);
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
