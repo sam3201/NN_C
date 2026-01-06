@@ -19,8 +19,10 @@ static void display_env(const ToyEnvState *env, const int goal_pos) {
   for (int i = 0; i < env->size; i++) {
     if (i == env->pos)
       printf("X");
+    else if (i == goal_pos)
+      printf("G");
     else
-      printf(".");
+      printf(" ");
   }
   printf("\n");
 }
