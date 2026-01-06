@@ -480,8 +480,8 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
 // ----------------------
 // Backprop
 // ----------------------
-long double **transformer_layer_backprop_seq(TransformerLayer *layer,
-                                             long double **grad_out, size_t T) {
+long double *transformer_layer_backprop(TransformerLayer *layer,
+                                        long double *grad_output) {
   size_t D = layer->model_dim;
 
   // ---- Norm2 ----
