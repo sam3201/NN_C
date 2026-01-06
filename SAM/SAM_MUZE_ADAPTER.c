@@ -182,6 +182,28 @@ static void sam_learn(void *brain, float reward, int terminal) {
 
   SAM_update_context(ad->sam, (long double)reward);
 
+  // If we have a cached (state, action, probs), do REINFORCE-style update.
+  if (ad->has_last && ad->last_probs && ad->last_seq_ptrs &&
+      ad->last_seq_len > 0 && ad->last_action_count > 0) {
+
+    size_t A = ad->last_action_count;
+
+    // grad_logits[i] = reward * (p[i] - 1(i==a))
+    long double *grad = (long double *)calloc(A, sizeof(long double));
+    if (grad) {
+      for (size_t i = 0; i < A; i++) {
+        long double p = (long double)ad->last_probs[i];
+        long double oh = (i == ad->last_action) ? 1.0L : 0.0L;
+        grad[i] = (long double)reward * (p - oh);
+      }
+
+      // Train SAM (head + transformer)
+      SAM_backprop(ad->sam, ad->last_seq_ptrs, ad->last_seq_len, grad);
+
+      free(grad);
+    }
+  }
+
   if (terminal) {
     SAM_generalize(ad->sam);
     SAM_transfuse(ad->sam);
