@@ -7,7 +7,7 @@
 // Helper function to initialize weights
 static void init_weights(SAM_t *sam) {
   sam->weights =
-      (long double ***)malloc(sam->num_layers * sizeof(long double **));
+      (long double ***)malloc((sam->num_layers - 1) * sizeof(long double **));
   for (size_t i = 0; i < sam->num_layers - 1; i++) {
     sam->weights[i] =
         (long double **)malloc(sam->layer_sizes[i] * sizeof(long double *));
