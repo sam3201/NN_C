@@ -500,7 +500,22 @@ void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
             size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
             if (copy_size > sam->layer_sizes[0])
               copy_size = sam->layer_sizes[0];
-            memcpy(target, transformer_out, copy_size * sizeof(long double));
+            long double **transformer_out = TRANSFORMER_forward(...);
+            if (transformer_out) {
+              long double *last = transformer_out[seq_length - 1];
+              size_t copy_size = sam->layer_sizes[sam->num_layers - 1];
+              if (copy_size > sam->layer_sizes[0])
+                copy_size = sam->layer_sizes[0];
+
+              memcpy(target, last, copy_size * sizeof(long double));
+              for (size_t j = copy_size;
+                   j < sam->layer_sizes[sam->num_layers - 1]; j++)
+                target[j] = 0.0L;
+
+              for (size_t t = 0; t < seq_length; t++)
+                free(transformer_out[t]);
+              free(transformer_out);
+            }
             for (size_t j = copy_size;
                  j < sam->layer_sizes[sam->num_layers - 1]; j++) {
               target[j] = 0.0L;
