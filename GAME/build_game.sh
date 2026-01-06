@@ -51,6 +51,7 @@ echo "Compilation successful! Running the game..."
 
 if [ $? -eq 0 ]; then
   echo "Game exited successfully."
+  rm game
 else
   echo "Game exited with an error."
 fi
