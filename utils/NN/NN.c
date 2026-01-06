@@ -815,13 +815,13 @@ LossDerivative get_loss_derivative(LossDerivativeType type) {
 }
 
 RegularizationFunction get_regularization_function(RegularizationType type) {
-  if (type < 0 || type >= REGULARIZATION_TYPE_COUNT)
+  if (type >= REGULARIZATION_TYPE_COUNT)
     return NULL;
   return REGULARIZATION_FUNCTIONS[type];
 }
 
 OptimizerFunction get_optimizer_function(OptimizerType type) {
-  if (type < 0 || type >= OPTIMIZER_TYPE_COUNT)
+  if (type >= OPTIMIZER_TYPE_COUNT)
     return NULL;
   return OPTIMIZER_FUNCTIONS[type];
 }
