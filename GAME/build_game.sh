@@ -15,9 +15,8 @@ if [ ! -f "../utils/Raylib/src/libraylib.a" ]; then
 fi
 
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
-SAM_SRC=$(find ../utils/NN/SAM -name "*.c" | tr '\n' ' ')
 
-gcc -w game.c $MUZE_SRC \
+gcc -w game.c $MUZE_SRC ../SAM.c \
     ../utils/NN/NN.c \
     ../utils/NN/NEAT.c \
     ../utils/NN/MEMORY/MEMORY.c \
