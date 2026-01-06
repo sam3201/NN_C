@@ -396,34 +396,33 @@ void update_agent(Agent *a) {
   int cy = (int)(a->position.y / CHUNK_SIZE);
   Chunk *c = get_chunk(cx, cy);
 
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+
   float reward = 0.0f;
 
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-  if (Vector2Length(Vector2Subtract(a->position, tr->base.position)) <
-      BASE_RADIUS) {
-    a->health = fminf(a->health + 0.5f, 100);
-    a->stamina = fminf(a->stamina + 0.5f, 100);
+  // living cost / base bonus
+  float dist_to_base =
+      Vector2Length(Vector2Subtract(a->position, tr->base.position));
+  if (dist_to_base < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100.0f);
+    a->stamina = fminf(a->stamina + 0.5f, 100.0f);
     reward += 0.01f;
   } else {
     a->stamina -= 0.05f;
     reward -= 0.001f;
   }
 
-  if (!a->alive) {
-    reward -= 1.0f;
-  }
-
-  tribes[a->agent_id / AGENT_PER_TRIBE].reward_accumulator += reward;
+  tr->reward_accumulator += reward;
 
   ObsBuffer obs;
   obs_init(&obs);
-
   encode_observation(a, c, &obs);
 
-  int action = decide_action(a, &obs);
+  // ✅ correct: pass MuCortex* into muze_plan
+  MuCortex *cortex = tr->cortex;
+  int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
 
-  obs_free(&obs);
-
+  // apply action
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
@@ -441,10 +440,11 @@ void update_agent(Agent *a) {
     break;
   }
 
-  float d = Vector2Distance(a->position, tr->base.position);
-  if (d < BASE_RADIUS) {
-    a->health = fminf(a->health + 0.5f, 100);
-    a->stamina = fminf(a->stamina + 0.5f, 100);
+  // post-move stamina drain / regen (optional, keep if you like it)
+  dist_to_base = Vector2Distance(a->position, tr->base.position);
+  if (dist_to_base < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100.0f);
+    a->stamina = fminf(a->stamina + 0.5f, 100.0f);
   } else {
     a->stamina -= 0.05f;
   }
@@ -452,15 +452,15 @@ void update_agent(Agent *a) {
   a->age++;
 
   int terminal = 0;
-  if (a->health <= 0 || a->stamina <= 0) {
+  if (a->health <= 0.0f || a->stamina <= 0.0f) {
     a->alive = false;
     terminal = 1;
+    reward -= 1.0f; // death penalty (now it actually happens)
   }
 
-  /* learning hook (adapter decides what to do) */
-  tr->cortex->learn(tr->cortex->brain, reward, terminal);
+  // ✅ ONLY learn through the cortex adapter (SAM brain)
+  cortex->learn(cortex->brain, reward, terminal);
 
-  /* always free obs */
   obs_free(&obs);
 }
 
