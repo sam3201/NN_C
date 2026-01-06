@@ -1,9 +1,11 @@
 #ifndef TOY_ENV_H
 #define TOY_ENV_H
 
+#include <cstddef>
+
 typedef struct {
   int pos;
-  int size;
+  size_t size;
 } ToyEnvState;
 
 typedef void (*env_reset_fn)(void *state, float *obs);
