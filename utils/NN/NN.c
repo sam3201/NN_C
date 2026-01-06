@@ -791,7 +791,7 @@ void NN_backprop_argmax(NN_t *nn, long double inputs[], long double y_true[],
 
 // Function Getters
 ActivationFunction get_activation_function(ActivationFunctionType type) {
-  if (type < 0 || type >= ACTIVATION_TYPE_COUNT)
+  if (type >= ACTIVATION_TYPE_COUNT)
     return NULL;
   return ACTIVATION_FUNCTIONS[type];
 }
