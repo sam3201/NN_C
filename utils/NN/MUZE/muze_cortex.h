@@ -16,7 +16,8 @@ typedef struct MuCortex {
   void (*policy)(void *brain, long double **latent_seq, size_t seq_len,
                  float *action_probs, size_t action_count);
 
-  void (*learn)(void *brain, float reward, int terminal);
+  void (*learn)(void *brain, const float *obs, size_t obs_dim, int action,
+                float reward, int terminal);
 
   void (*free_latent_seq)(void *brain, long double **latent_seq,
                           size_t seq_len);
