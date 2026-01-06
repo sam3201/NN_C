@@ -870,10 +870,10 @@ void update_player(void) {
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
   if (IsKeyDown(KEY_EQUAL)) {
-    WORLD_SCALE += 0.1f;
+    WORLD_SCALE += 1.0f;
   }
   if (IsKeyDown(KEY_MINUS)) {
-    WORLD_SCALE -= 0.1f;
+    WORLD_SCALE -= 1.0f;
   }
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
