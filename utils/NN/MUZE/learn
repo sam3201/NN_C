@@ -1,0 +1,7 @@
+muze_plan.c:17:3:  cortex->encode(cortex->brain, obs, obs_dim, &latent_seq, &seq_len);
+muze_plan.c:17:18:  cortex->encode(cortex->brain, obs, obs_dim, &latent_seq, &seq_len);
+muze_plan.c:20:3:  cortex->policy(cortex->brain, latent_seq, seq_len, action_probs,
+muze_plan.c:20:18:  cortex->policy(cortex->brain, latent_seq, seq_len, action_probs,
+muze_plan.c:34:7:  if (cortex->free_latent_seq) {
+muze_plan.c:35:5:    cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
+muze_plan.c:35:29:    cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
