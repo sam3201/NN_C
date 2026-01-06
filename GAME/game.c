@@ -473,11 +473,6 @@ void update_agent(Agent *a) {
 
   int terminal = !a->alive;
   tr->cortex->learn(tr->cortex->brain, reward, terminal);
-
-  a->age++;
-
-  int terminal = !a->alive;
-  tr->cortex->learn(tr->cortex->brain, reward, terminal);
 }
 
 /* =======================
