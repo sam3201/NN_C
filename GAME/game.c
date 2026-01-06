@@ -1437,7 +1437,7 @@ void update_player(void) {
   player.stamina = fmaxf(0, player.stamina - 0.02f);
   player.health = fmaxf(0, player.health);
 
-  // optional regen if you want:
+  // regen
   if (player.stamina < 100)
     player.stamina = fminf(100, player.stamina + 0.03f);
 }
