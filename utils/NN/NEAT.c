@@ -177,6 +177,7 @@ Genome_t *GENOME_init(size_t *layers, ActivationFunctionType *actFuncs,
 void GENOME_destroy(Genome_t *genome) {
   if (!genome)
     return;
+
   for (size_t i = 0; i < genome->numNodes; i++)
     free(genome->nodes[i]);
   free(genome->nodes);
