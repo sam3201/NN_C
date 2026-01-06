@@ -18,26 +18,26 @@ static int argmaxf(const float *x, size_t n) {
   return (int)best;
 }
 
-/* Convert latent_seq (seq_len x obs_dim long doubles) -> float
-   latent[latent_dim] For now: use the LAST observation in the sequence, and
-   copy as floats. If your MuModel expects a different encoding, swap this
-   function.
+/* Convert cortex latent_seq (seq_len x obs_dim long doubles) to float
+   latent[L]. Right now: take the LAST frame in the sequence and copy as floats.
+   This is enough to let you plug MCTS in and visualize it end-to-end.
+   Later, if you want "true MuZero latent", we'll wire model->repr to produce
+   it.
 */
-static void latent_seq_to_float_latent(long double **latent_seq, size_t seq_len,
-                                       size_t obs_dim, float *out_latent,
+static void latent_seq_to_latent_float(long double **latent_seq, size_t seq_len,
+                                       size_t obs_dim, float *latent_out,
                                        size_t latent_dim) {
-  /* zero init */
+  /* zero */
   for (size_t i = 0; i < latent_dim; i++)
-    out_latent[i] = 0.0f;
+    latent_out[i] = 0.0f;
 
   if (!latent_seq || seq_len == 0 || !latent_seq[seq_len - 1])
     return;
 
   long double *last = latent_seq[seq_len - 1];
-
   size_t n = obs_dim < latent_dim ? obs_dim : latent_dim;
   for (size_t i = 0; i < n; i++)
-    out_latent[i] = (float)last[i];
+    latent_out[i] = (float)last[i];
 }
 
 int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
@@ -49,50 +49,48 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
 
   long double **latent_seq = NULL;
   size_t seq_len = 0;
+
   cortex->encode(cortex->brain, obs, obs_dim, &latent_seq, &seq_len);
 
-  /* ------------------------------------------
-     Option A: Use MCTS (if enabled + model set)
-     ------------------------------------------ */
+  /* --- Option: MCTS --- */
   if (cortex->use_mcts && cortex->mcts_model) {
-    const int L = cortex->mcts_model->cfg.latent_dim;
+    size_t L = (size_t)cortex->mcts_model->cfg.latent_dim;
+    float *latent = (float *)malloc(sizeof(float) * L);
 
-    float *latent = (float *)malloc(sizeof(float) * (size_t)L);
     if (latent) {
-      latent_seq_to_float_latent(latent_seq, seq_len, obs_dim, latent,
-                                 (size_t)L);
+      latent_seq_to_latent_float(latent_seq, seq_len, obs_dim, latent, L);
 
-      /* Run MCTS directly on latent */
       MCTSResult r =
           mcts_run_latent(cortex->mcts_model, latent, &cortex->mcts_params);
+
       free(latent);
 
       if (cortex->free_latent_seq)
         cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
 
-      int chosen = r.chosen_action;
+      int a = r.chosen_action;
       mcts_result_free(&r);
-      return chosen;
+      return a;
     }
-    /* If latent alloc failed, fall through to policy */
+    /* if malloc failed, fall through to policy */
   }
 
-  /* ------------------------------------------
-     Option B: Policy -> argmax
-     ------------------------------------------ */
-  float *probs = (float *)calloc(action_count, sizeof(float));
-  if (!probs) {
+  /* --- Option: policy argmax --- */
+  float *action_probs = (float *)calloc(action_count, sizeof(float));
+  if (!action_probs) {
     if (cortex->free_latent_seq)
       cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
     return 0;
   }
 
-  cortex->policy(cortex->brain, latent_seq, seq_len, probs, action_count);
-  int action = argmaxf(probs, action_count);
+  cortex->policy(cortex->brain, latent_seq, seq_len, action_probs,
+                 action_count);
+
+  int best = argmaxf(action_probs, action_count);
 
   if (cortex->free_latent_seq)
     cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
 
-  free(probs);
-  return action;
+  free(action_probs);
+  return best;
 }
