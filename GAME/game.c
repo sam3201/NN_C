@@ -731,6 +731,70 @@ static void draw_player(Vector2 pp_screen) {
   DrawCircleV(br, bodyR * 0.10f, blush);
 }
 
+static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
+  float r = WORLD_SCALE * 0.22f * scale_size; // base agent size
+  float t = (float)GetTime();
+
+  Color outline = (Color){0, 0, 0, 140};
+  Color skin = (Color){235, 210, 190, 255};
+  Color cloth = tribeColor;
+
+  // tiny bob
+  float bob = sinf(t * 6.0f + (float)a->agent_id) * (r * 0.08f);
+  sp.y += bob;
+
+  // shadow
+  DrawEllipse((int)sp.x, (int)(sp.y + r * 1.15f), (int)(r * 1.5f),
+              (int)(r * 0.45f), (Color){0, 0, 0, 70});
+
+  // body (tunic)
+  DrawCircleV((Vector2){sp.x, sp.y + r * 0.40f}, r * 0.95f, cloth);
+  DrawCircleLines((int)sp.x, (int)(sp.y + r * 0.40f), r * 0.95f, outline);
+
+  // head
+  DrawCircleV((Vector2){sp.x, sp.y - r * 0.25f}, r * 0.85f, skin);
+  DrawCircleLines((int)sp.x, (int)(sp.y - r * 0.25f), r * 0.85f, outline);
+
+  // highlight
+  DrawCircleV((Vector2){sp.x - r * 0.25f, sp.y - r * 0.55f}, r * 0.20f,
+              (Color){255, 255, 255, 120});
+
+  // eyes
+  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
+              RAYWHITE);
+  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
+              RAYWHITE);
+  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
+  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
+
+  // headband (tribe marker)
+  DrawRectangle((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
+                (int)(r * 1.40f), (int)(r * 0.22f), tribeColor);
+  DrawRectangleLines((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
+                     (int)(r * 1.40f), (int)(r * 0.22f), outline);
+
+  // tiny “tool” (points based on a subtle idle direction)
+  // If you later store last action direction, plug it here.
+  float ang = sinf(t * 1.5f + a->agent_id) * 0.8f;
+  Vector2 toolDir = {cosf(ang), sinf(ang)};
+  Vector2 toolPos = {sp.x + toolDir.x * (r * 0.95f),
+                     sp.y + toolDir.y * (r * 0.95f)};
+
+  // handle
+  DrawLineEx(sp, toolPos, r * 0.14f, (Color){120, 80, 40, 255});
+  // head (axe/spear-ish)
+  DrawCircleV(toolPos, r * 0.20f, (Color){180, 180, 180, 255});
+  DrawCircleLines((int)toolPos.x, (int)toolPos.y, r * 0.20f, outline);
+
+  // small health/stamina pips
+  float hp01 = clamp01(a->health / 100.0f);
+  float st01 = clamp01(a->stamina / 100.0f);
+  draw_health_bar((Vector2){sp.x, sp.y - r * 1.35f}, r * 1.7f, r * 0.18f, hp01,
+                  (Color){80, 220, 80, 255});
+  draw_health_bar((Vector2){sp.x, sp.y - r * 1.10f}, r * 1.7f, r * 0.18f, st01,
+                  (Color){80, 160, 255, 255});
+}
+
 /* =======================
    TRIBES & AGENTS
 ======================= */
