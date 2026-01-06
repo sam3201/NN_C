@@ -42,7 +42,8 @@ typedef struct {
   size_t hidden_dim;
   NN_t *network;
 
-  long double *input_cache; // cached input for backprop
+  long double *input_cache; // [T * D]
+  size_t cache_T;
 } FeedForward;
 
 // Transformer layer
