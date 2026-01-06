@@ -59,6 +59,16 @@ int main(void) {
     printf("SAM_as_MUZE failed\n");
     return 1;
   }
+  cortex->use_mcts = true;
+  cortex->mcts_model = mu_model_create_toy((int)obs_dim, action_count);
+
+  cortex->mcts_params.num_simulations = 64;
+  cortex->mcts_params.max_depth = 16;
+  cortex->mcts_params.c_puct = 1.25f;
+  cortex->mcts_params.discount = 1.0f;
+  cortex->mcts_params.temperature = 0.0f;
+  cortex->mcts_params.dirichlet_alpha = 0.0f;
+  cortex->mcts_params.dirichlet_eps = 0.0f;
 
   const int episodes = 50;
   const int max_steps = 128;
