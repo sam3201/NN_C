@@ -154,10 +154,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   softmaxf_inplace(action_probs, action_count);
 
   /* epsilon-greedy exploration:
-     IMPORTANT: do NOT early-return.
-     We want last_probs cached so learn() can compute a valid policy gradient,
-     even on exploratory steps.
-  */
+   */
   float r = (float)rand() / (float)RAND_MAX;
   int exploring = (r < ad->epsilon);
 
