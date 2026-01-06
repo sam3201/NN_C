@@ -797,7 +797,7 @@ ActivationFunction get_activation_function(ActivationFunctionType type) {
 }
 
 ActivationDerivative get_activation_derivative(ActivationDerivativeType type) {
-  if (type < 0 || type >= ACTIVATION_DERIVATIVE_TYPE_COUNT)
+  if (type >= ACTIVATION_DERIVATIVE_TYPE_COUNT)
     return NULL;
   return ACTIVATION_DERIVATIVES[type];
 }
