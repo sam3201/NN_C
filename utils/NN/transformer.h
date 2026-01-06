@@ -45,6 +45,7 @@ typedef struct {
   size_t input_dim;
   size_t hidden_dim;
   NN_t *network;
+
   long double *input_cache; // [T * D]
   size_t cache_T;
 } FeedForward;
