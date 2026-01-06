@@ -3,7 +3,6 @@ set -euo pipefail
 
 CC=clang
 CFLAGS="-g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra"
-OUT="sam_muze_toy_test"
 
 # ---- include dirs ----
 INCLUDES=(
@@ -17,6 +16,7 @@ INCLUDES=(
 
 # ---- user input test entrypoint ---
 TEST_SRC=$1
+OUT=TEST_SRC.o
 
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
