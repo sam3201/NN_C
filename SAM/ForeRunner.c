@@ -1,4 +1,4 @@
-#include "ForeRunner.h"
+#include "FORERUNNER.h"
 #include "../utils/NN/TRANSFORMER.h"
 #include <math.h>
 
