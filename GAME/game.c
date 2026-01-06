@@ -433,7 +433,8 @@ void update_agent(Agent *a) {
 
   encode_observation(a, c, &obs);
 
-  int action = decide_action(a, &obs);
+  // action =
+
   obs_free(&obs);
 
   switch (action) {
