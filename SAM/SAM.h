@@ -2,7 +2,7 @@
 #define SAM_H
 
 #include "../utils/NN/NEAT.h"
-#include "../utils/NN/transformer.h"
+#include "../utils/NN/TRANSFORMER.h"
 #include <stdlib.h>
 
 // Forward declarations
