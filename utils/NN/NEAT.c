@@ -517,6 +517,8 @@ Genome_t *GENOME_load(const char *filename) {
   Genome_t *genome = malloc(sizeof(Genome_t));
   fread(&genome->numNodes, sizeof(size_t), 1, f);
 
+  genome->nn = NULL;
+
   genome->nodes = malloc(genome->numNodes * sizeof(Node *));
   for (size_t i = 0; i < genome->numNodes; i++) {
     Node *n = malloc(sizeof(Node));
