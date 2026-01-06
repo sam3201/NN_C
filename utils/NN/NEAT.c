@@ -633,6 +633,11 @@ void POPULATION_evolve(Population *pop) {
   }
 
   size_t eliteCount = pop->size / 5;
+  if (eliteCount < 2)
+    eliteCount = (pop->size >= 2) ? 2 : 1;
+  if (eliteCount > pop->size)
+    eliteCount = pop->size;
+
   Genome_t **nextGen = malloc(pop->size * sizeof(Genome_t *));
 
   for (size_t i = 0; i < eliteCount; i++) {
