@@ -171,6 +171,12 @@ static float FOOD_SCALE = 1.20f;
 // mobs can also be bigger if you want
 static float MOB_SCALE = 3.15f;
 
+static int inv_wood = 0, inv_stone = 0, inv_gold = 0, inv_food = 0;
+
+static float player_harvest_cd = 0.0f;
+static float player_attack_cd = 0.0f;
+static float player_hurt_timer = 0.0f;
+
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
     (Color){140, 140, 140, 255}, // stone
