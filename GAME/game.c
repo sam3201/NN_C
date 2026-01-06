@@ -28,6 +28,7 @@
 #define ATTACK_DISTANCE 1.0f
 #define ATTACK_DAMAGE 1
 
+#define OBS_DIM 64
 #define TRAIN_INTERVAL 1
 
 Vector2 camera_pos;
