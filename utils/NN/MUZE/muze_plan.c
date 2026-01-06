@@ -44,7 +44,6 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
               size_t action_count) {
   if (!cortex || !cortex->encode || !obs)
     return 0;
-  return 0;
   if (obs_dim == 0 || action_count == 0)
     return 0;
 
