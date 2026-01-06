@@ -137,21 +137,42 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
       action_count == 0)
     return;
 
-  long double *out = SAM_forward(ad->sam, latent_seq, seq_len);
-  if (!out)
+  long double *logits = SAM_forward(ad->sam, latent_seq, seq_len);
+  if (!logits)
     return;
 
-  /* SAM output dim should match action_count, but clamp just in case */
+  // Copy logits into float buffer
   size_t sam_out_dim = ad->sam->layer_sizes[ad->sam->num_layers - 1];
   size_t n = action_count < sam_out_dim ? action_count : sam_out_dim;
 
   for (size_t i = 0; i < n; i++)
-    action_probs[i] = (float)out[i];
+    action_probs[i] = (float)logits[i];
   for (size_t i = n; i < action_count; i++)
     action_probs[i] = 0.0f;
 
+  // Softmax -> probs
   softmaxf_inplace(action_probs, action_count);
-  free(out);
+
+  // Ensure ad->last_probs buffer exists
+  if (ad->last_action_count != action_count) {
+    free(ad->last_probs);
+    ad->last_probs = (float *)calloc(action_count, sizeof(float));
+    ad->last_action_count = action_count;
+  }
+
+  // Store last probs + last seq pointers/len
+  if (ad->last_probs) {
+    memcpy(ad->last_probs, action_probs, action_count * sizeof(float));
+    ad->last_seq_ptrs = latent_seq; // points into hist_data, do not free
+    ad->last_seq_len = seq_len;
+    ad->has_last = 1;
+  }
+
+  // Force deterministic action so learn() knows which action happened
+  ad->last_action = argmaxf(action_probs, action_count);
+  onehotf(action_probs, action_count, ad->last_action);
+
+  free(logits);
 }
 
 static void sam_learn(void *brain, float reward, int terminal) {
