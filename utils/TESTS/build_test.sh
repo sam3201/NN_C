@@ -4,6 +4,21 @@ set -euo pipefail
 CC=clang
 CFLAGS="-g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra"
 
+# ---- defaults ----
+DEFAULT_TEST="sam_muze_toy_test.c"
+DEFAULT_OUT="a.sh"
+
+# ---- user input (safe with -u) ----
+TEST_SRC="${1:-$DEFAULT_TEST}"
+OUT="${2:-$DEFAULT_OUT}"
+
+# ---- sanity checks ----
+if [ ! -f "$TEST_SRC" ]; then
+  echo "Error: test source '$TEST_SRC' not found"
+  echo "Usage: $0 [test.c] [output]"
+  exit 1
+fi
+
 # ---- include dirs ----
 INCLUDES=(
   -I../NN
@@ -14,34 +29,17 @@ INCLUDES=(
   -I../../sAM
 )
 
-# ---- user input test entrypoint ---
-TEST_SRC=$1
-OUT=$2
-
-if [ -z "$TEST_SRC" ]; then
-  echo "Usage: $0 <test.c> <out>"
-  exit 1
-fi
-
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
 NN_SRC=$(find ../NN -maxdepth 1 -type f -name "*.c" -print)
-
-# If your SAM directory is literally "sAM" (as shown), use that:
 SAM_SRC=$(find ../../sAM -type f -name "*.c" -print)
 
-# If you sometimes use ../../SAM instead, swap to this:
-# SAM_SRC=$(find ../../SAM -type f -name "*.c" -print)
-
 # ---- build ----
-echo "Building $OUT..."
-echo "Test: $TEST_SRC"
-echo "MUZE_SRC:"
-echo "$MUZE_SRC" | sed 's/^/  /'
-echo "NN_SRC:"
-echo "$NN_SRC" | sed 's/^/  /'
-echo "SAM_SRC:"
-echo "$SAM_SRC" | sed 's/^/  /'
+echo "======================================"
+echo "Building test"
+echo "  Test:   $TEST_SRC"
+echo "  Output: $OUT"
+echo "======================================"
 
 $CC $CFLAGS \
   "${INCLUDES[@]}" \
@@ -51,6 +49,7 @@ $CC $CFLAGS \
   $SAM_SRC \
   -lm -o "$OUT"
 
-echo "OK: ./$OUT"
+echo
+echo "Build OK ✅"
+echo "Run with: ./$OUT"
 
-rm "$OUT"
