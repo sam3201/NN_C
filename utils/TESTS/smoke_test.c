@@ -1,6 +1,6 @@
-#include "NEAT.h"
-#include "NN.h"
-#include "TRANSFORMER.h"
+#include "../NN/NEAT.h"
+#include "../NN/NN.h"
+#include "../NN/TRANSFORMER.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
