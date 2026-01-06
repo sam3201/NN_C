@@ -1162,7 +1162,6 @@ void update_agent(Agent *a) {
     break;
   }
 
-  // post-move stamina drain / regen (optional, keep if you like it)
   dist_to_base = Vector2Distance(a->position, tr->base.position);
   if (dist_to_base < BASE_RADIUS) {
     a->health = fminf(a->health + 0.5f, 100.0f);
