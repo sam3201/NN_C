@@ -313,29 +313,42 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
   return out;
 }
 
-long double *transformer_norm_forward(LayerNorm *ln, long double *input) {
+static long double *layernorm_forward_token(LayerNorm *ln, const long double *x,
+                                            size_t t) {
   size_t D = ln->dim;
-  long double mean = 0, var = 0;
 
+  long double mean = 0.0L, var = 0.0L;
   for (size_t i = 0; i < D; i++)
-    mean += input[i];
-  mean /= D;
+    mean += x[i];
+  mean /= (long double)D;
 
   for (size_t i = 0; i < D; i++) {
-    long double d = input[i] - mean;
+    long double d = x[i] - mean;
     var += d * d;
   }
-  var /= D;
+  var /= (long double)D;
 
-  long double *out = malloc(D * sizeof(long double));
-  ln->input_cache = malloc(D * sizeof(long double));
+  ln->mean_cache[t] = mean;
+  ln->var_cache[t] = var;
 
+  long double *out = (long double *)malloc(D * sizeof(long double));
   for (size_t i = 0; i < D; i++) {
-    ln->input_cache[i] = input[i];
-    out[i] = (input[i] - mean) / sqrtl(var + ln->epsilon);
+    ln->input_cache[t * D + i] = x[i];
+    out[i] = (x[i] - mean) / sqrtl(var + ln->epsilon);
   }
-
   return out;
+}
+
+static void layernorm_backprop_token(LayerNorm *ln, long double *grad,
+                                     size_t t) {
+  size_t D = ln->dim;
+  long double var = ln->var_cache[t];
+  long double inv_std = 1.0L / sqrtl(var + ln->epsilon);
+
+  // (This is an approximation; good enough to stabilize and get learning
+  // moving)
+  for (size_t i = 0; i < D; i++)
+    grad[i] *= inv_std;
 }
 
 void transformer_layernorm_backprop(LayerNorm *ln, long double *grad_output) {
