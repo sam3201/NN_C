@@ -97,7 +97,6 @@ int main(void) {
 
       // draw
       clear();
-      mvprintw(0, 0, "Toy MUZE+SAM Visualizer  (press q to quit)");
       mvprintw(1, 0, "ep=%d/%d  step=%d/%d  action=%d  reward=%.1f  done=%d",
                ep, episodes - 1, step, max_steps - 1, action, env_reward,
                env_done);
