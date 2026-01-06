@@ -6,6 +6,28 @@
 
 #define SAM_MUZE_HISTORY 8 /* tweak: 4, 8, 16... */
 
+typedef struct {
+  SAM_t *sam;
+
+  size_t obs_dim;
+
+  size_t hist_cap;
+  size_t hist_len;
+  size_t write_idx;
+
+  long double *hist_data;
+  long double **seq_ptrs;
+
+  // ---- training cache for REINFORCE-like update ----
+  size_t last_seq_len;
+  long double **last_seq_ptrs; // points into hist_data (do NOT free)
+
+  size_t last_action_count;
+  float *last_probs;  // malloc'd, length = last_action_count
+  size_t last_action; // argmax action we forced MUZE to take
+  int has_last;       // 0/1
+} SAMMuAdapter;
+
 /* softmax for action logits -> probs */
 static void softmaxf_inplace(float *x, size_t n) {
   if (n == 0)
@@ -31,20 +53,6 @@ static void softmaxf_inplace(float *x, size_t n) {
   for (size_t i = 0; i < n; i++)
     x[i] /= sum;
 }
-
-/* Adapter object that becomes cortex->brain */
-typedef struct {
-  SAM_t *sam;
-
-  size_t obs_dim;
-
-  size_t hist_cap;  /* SAM_MUZE_HISTORY */
-  size_t hist_len;  /* <= hist_cap */
-  size_t write_idx; /* ring index */
-
-  long double *hist_data; /* hist_cap * obs_dim */
-  long double **seq_ptrs; /* hist_cap pointers into hist_data */
-} SAMMuAdapter;
 
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
                        long double ***latent_seq, size_t *seq_len) {
