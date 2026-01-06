@@ -639,6 +639,7 @@ void POPULATION_evolve(Population *pop) {
     eliteCount = pop->size;
 
   Genome_t **nextGen = malloc(pop->size * sizeof(Genome_t *));
+
   if (pop->size < 2) {
     // nothing meaningful to crossover
     // optionally: GENOME_mutate(pop->genomes[0], ...)
