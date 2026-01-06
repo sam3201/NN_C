@@ -136,6 +136,54 @@ TransformerLayer *create_transformer_layer(size_t model_dim, size_t num_heads,
   return layer;
 }
 
+// Init
+// ----------------------
+
+static void free_seq(long double **seq, size_t T) {
+  if (!seq)
+    return;
+  for (size_t t = 0; t < T; t++)
+    free(seq[t]);
+  free(seq);
+}
+
+Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
+                                size_t num_layers) {
+  if (model_dim == 0 || num_heads == 0 || num_layers == 0)
+    return NULL;
+  if (model_dim % num_heads != 0)
+    return NULL; // head_dim must be integer
+
+  Transformer_t *t = (Transformer_t *)calloc(1, sizeof(Transformer_t));
+  if (!t)
+    return NULL;
+
+  t->model_dim = model_dim;
+  t->num_heads = num_heads;
+  t->num_layers = num_layers;
+
+  t->layers =
+      (TransformerLayer **)calloc(num_layers, sizeof(TransformerLayer *));
+  if (!t->layers) {
+    free(t);
+    return NULL;
+  }
+
+  size_t ff_dim = model_dim * 4; // common default
+  for (size_t i = 0; i < num_layers; i++) {
+    t->layers[i] = create_transformer_layer(model_dim, num_heads, ff_dim);
+    if (!t->layers[i]) {
+      for (size_t j = 0; j < i; j++)
+        free_transformer_layer(t->layers[j]);
+      free(t->layers);
+      free(t);
+      return NULL;
+    }
+  }
+
+  return t;
+}
+
 void free_feed_forward(FeedForward *ff) {
   if (!ff)
     return;
@@ -361,54 +409,6 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   free(dScores);
   free(dQ);
   free(dK);
-}
-
-// Init
-// ----------------------
-
-static void free_seq(long double **seq, size_t T) {
-  if (!seq)
-    return;
-  for (size_t t = 0; t < T; t++)
-    free(seq[t]);
-  free(seq);
-}
-
-Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
-                                size_t num_layers) {
-  if (model_dim == 0 || num_heads == 0 || num_layers == 0)
-    return NULL;
-  if (model_dim % num_heads != 0)
-    return NULL; // head_dim must be integer
-
-  Transformer_t *t = (Transformer_t *)calloc(1, sizeof(Transformer_t));
-  if (!t)
-    return NULL;
-
-  t->model_dim = model_dim;
-  t->num_heads = num_heads;
-  t->num_layers = num_layers;
-
-  t->layers =
-      (TransformerLayer **)calloc(num_layers, sizeof(TransformerLayer *));
-  if (!t->layers) {
-    free(t);
-    return NULL;
-  }
-
-  size_t ff_dim = model_dim * 4; // common default
-  for (size_t i = 0; i < num_layers; i++) {
-    t->layers[i] = create_transformer_layer(model_dim, num_heads, ff_dim);
-    if (!t->layers[i]) {
-      for (size_t j = 0; j < i; j++)
-        free_transformer_layer(t->layers[j]);
-      free(t->layers);
-      free(t);
-      return NULL;
-    }
-  }
-
-  return t;
 }
 
 // ----------------------
