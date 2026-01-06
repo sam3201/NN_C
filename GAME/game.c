@@ -716,6 +716,10 @@ void draw_mobs(void) {
         Vector2 wp = {(float)(cx * CHUNK_SIZE) + m->position.x,
                       (float)(cy * CHUNK_SIZE) + m->position.y};
         Vector2 sp = world_to_screen(wp);
+
+        float s = px(0.26f) * MOB_SCALE; // base mob radius
+        float hp01 = (float)m->health / 100.0f;
+
         float bob = sinf(GetTime() * 6.0f + (float)i) * (s * 0.05f);
         sp.y += bob;
 
@@ -733,9 +737,6 @@ void draw_mobs(void) {
           sp.x += dir.x * (s * 0.12f);
           sp.y += dir.y * (s * 0.12f);
         }
-
-        float s = px(0.26f) * MOB_SCALE; // base mob radius
-        float hp01 = (float)m->health / 100.0f;
 
         // shadow
         DrawEllipse((int)sp.x, (int)(sp.y + s * 0.85f), (int)(s * 1.2f),
