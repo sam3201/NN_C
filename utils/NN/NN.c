@@ -213,7 +213,7 @@ NN_t *NN_init_random(size_t num_inputs, size_t num_outputs) {
   }
 
   // Set random activation functions
-  for (size_t i = 0; i < total_layers; i++) {
+  for (size_t i = 0; i < total_layers - 1; i++) {
     act_funcs[i] = rand() % ACTIVATION_TYPE_COUNT;
     act_derivs[i] = map_activation_to_derivative(act_funcs[i]);
   }
