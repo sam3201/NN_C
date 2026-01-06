@@ -315,12 +315,6 @@ void init_tribes(void) {
     Tribe *tr = &tribes[t];
     tr->tribe_id = t;
     tr->color = colors[t % 4];
-    tr->agent_start = t * AGENT_PER_TRIBE;
-    tr->agent_count = AGENT_PER_TRIBE;
-    tr->reward_accumulator = 0.0f;
-
-    tr->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-    tr->cortex = SAM_as_MUZE(tr->sam);
     tr->base.position =
         (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
