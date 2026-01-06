@@ -468,102 +468,99 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   return out;
 }
 
+static long double **alloc_seq(size_t T, size_t D) {
+  long double **s = (long double **)calloc(T, sizeof(long double *));
+  if (!s)
+    return NULL;
+  for (size_t t = 0; t < T; t++) {
+    s[t] = (long double *)calloc(D, sizeof(long double));
+    if (!s[t]) {
+      for (size_t k = 0; k < t; k++)
+        free(s[k]);
+      free(s);
+      return NULL;
+    }
+  }
+  return s;
+}
+
 void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
                   long double *grad_loss) {
-  static long double **alloc_seq(size_t T, size_t D) {
-    long double **s = (long double **)calloc(T, sizeof(long double *));
-    if (!s)
-      return NULL;
-    for (size_t t = 0; t < T; t++) {
-      s[t] = (long double *)calloc(D, sizeof(long double));
-      if (!s[t]) {
-        for (size_t k = 0; k < t; k++)
-          free(s[k]);
-        free(s);
-        return NULL;
-      }
-    }
-    return s;
+  if (!sam || !sam->transformer || !input_sequence || seq_length == 0 ||
+      !grad_loss)
+    return;
+
+  // Forward transformer to get features
+  long double **feat =
+      TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
+  if (!feat)
+    return;
+
+  size_t D = sam->layer_sizes[0]; // model_dim
+  size_t O = sam->layer_sizes[1]; // out_dim
+
+  // Mean pool
+  long double *pooled = (long double *)calloc(D, sizeof(long double));
+  if (!pooled) {
+    free_seq_ld(feat, seq_length);
+    return;
+  }
+  for (size_t t = 0; t < seq_length; t++)
+    for (size_t j = 0; j < D; j++)
+      pooled[j] += feat[t][j];
+
+  long double invT = 1.0L / (long double)seq_length;
+  for (size_t j = 0; j < D; j++)
+    pooled[j] *= invT;
+
+  // Head learning rate (keep tiny; you can expose this later)
+  const long double lr = 0.01L;
+
+  // dPooled[j] = sum_i grad_loss[i] * W[j][i]
+  long double *dPooled = (long double *)calloc(D, sizeof(long double));
+  if (!dPooled) {
+    free(pooled);
+    free_seq_ld(feat, seq_length);
+    return;
   }
 
-  void SAM_backprop(SAM_t * sam, long double **input_sequence,
-                    size_t seq_length, long double *grad_loss) {
-    if (!sam || !sam->transformer || !input_sequence || seq_length == 0 ||
-        !grad_loss)
-      return;
+  for (size_t j = 0; j < D; j++) {
+    long double s = 0.0L;
+    for (size_t i = 0; i < O; i++)
+      s += grad_loss[i] * sam->weights[0][j][i];
+    dPooled[j] = s;
+  }
 
-    // Forward transformer to get features
-    long double **feat =
-        TRANSFORMER_forward(sam->transformer, input_sequence, seq_length);
-    if (!feat)
-      return;
-
-    size_t D = sam->layer_sizes[0]; // model_dim
-    size_t O = sam->layer_sizes[1]; // out_dim
-
-    // Mean pool
-    long double *pooled = (long double *)calloc(D, sizeof(long double));
-    if (!pooled) {
-      free_seq_ld(feat, seq_length);
-      return;
+  // Update head weights: W[j][i] -= lr * pooled[j] * grad_loss[i]
+  for (size_t j = 0; j < D; j++) {
+    for (size_t i = 0; i < O; i++) {
+      sam->weights[0][j][i] -= lr * pooled[j] * grad_loss[i];
     }
-    for (size_t t = 0; t < seq_length; t++)
-      for (size_t j = 0; j < D; j++)
-        pooled[j] += feat[t][j];
+  }
 
-    long double invT = 1.0L / (long double)seq_length;
-    for (size_t j = 0; j < D; j++)
-      pooled[j] *= invT;
-
-    // Head learning rate (keep tiny; you can expose this later)
-    const long double lr = 0.01L;
-
-    // dPooled[j] = sum_i grad_loss[i] * W[j][i]
-    long double *dPooled = (long double *)calloc(D, sizeof(long double));
-    if (!dPooled) {
-      free(pooled);
-      free_seq_ld(feat, seq_length);
-      return;
-    }
-
-    for (size_t j = 0; j < D; j++) {
-      long double s = 0.0L;
-      for (size_t i = 0; i < O; i++)
-        s += grad_loss[i] * sam->weights[0][j][i];
-      dPooled[j] = s;
-    }
-
-    // Update head weights: W[j][i] -= lr * pooled[j] * grad_loss[i]
-    for (size_t j = 0; j < D; j++) {
-      for (size_t i = 0; i < O; i++) {
-        sam->weights[0][j][i] -= lr * pooled[j] * grad_loss[i];
-      }
-    }
-
-    // Build transformer grad sequence: distribute pooled grad equally to tokens
-    long double **grad_seq = alloc_seq(seq_length, D);
-    if (!grad_seq) {
-      free(dPooled);
-      free(pooled);
-      free_seq_ld(feat, seq_length);
-      return;
-    }
-
-    long double scale = invT; // pooled = mean => each token contributes 1/T
-    for (size_t t = 0; t < seq_length; t++) {
-      for (size_t j = 0; j < D; j++)
-        grad_seq[t][j] = dPooled[j] * scale;
-    }
-
-    // Backprop through transformer
-    TRANSFORMER_backprop(sam->transformer, grad_seq, seq_length);
-
-    // Cleanup
-    free_seq_ld(grad_seq, seq_length);
+  // Build transformer grad sequence: distribute pooled grad equally to tokens
+  long double **grad_seq = alloc_seq(seq_length, D);
+  if (!grad_seq) {
     free(dPooled);
     free(pooled);
     free_seq_ld(feat, seq_length);
+    return;
   }
+
+  long double scale = invT; // pooled = mean => each token contributes 1/T
+  for (size_t t = 0; t < seq_length; t++) {
+    for (size_t j = 0; j < D; j++)
+      grad_seq[t][j] = dPooled[j] * scale;
+  }
+
+  // Backprop through transformer
+  TRANSFORMER_backprop(sam->transformer, grad_seq, seq_length);
+
+  // Cleanup
+  free_seq_ld(grad_seq, seq_length);
+  free(dPooled);
+  free(pooled);
+  free_seq_ld(feat, seq_length);
 }
 
 // SAM adaptation
