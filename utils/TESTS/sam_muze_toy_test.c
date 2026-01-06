@@ -24,6 +24,7 @@ static void display_env(const ToyEnvState *env) {
   }
   printf("\n");
 }
+
 int main(void) {
   srand(1);
 
