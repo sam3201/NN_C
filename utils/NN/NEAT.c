@@ -429,7 +429,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 }
 
 // ------------------- Serialization -------------------
-void GENOME_save_safe(Genome_t *genome, const char *filename) {
+void GENOME_save(Genome_t *genome, const char *filename) {
   FILE *f = fopen(filename, "wb");
   if (!f)
     return;
