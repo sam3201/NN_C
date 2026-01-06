@@ -1,3 +1,6 @@
+$MUZE_SRC (find . -name "*.c" -print)
+$NN_SRC (find . -name "*.c" -print)
+
 gcc -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer \
   -I../../SAM -I../NN -I../NN/MUZE -I../NN/MEMORY -I../NN/TOKENIZER -I../NN/TRANSFORMER \
   sam_muze_toy_test.c \
