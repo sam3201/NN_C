@@ -4,6 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Enable debug prints by compiling with -DMCTS_DEBUG */
+#ifdef MCTS_DEBUG
+#include <stdio.h>
+static void dbg_print_root(const char *tag, const struct Node *root) {
+  printf("\n[MCTS_DEBUG] %s\n", tag);
+  printf("  a |   P      N      Q      W\n");
+  for (int a = 0; a < root->action_count; a++) {
+    printf(" %2d | % .4f  %4d  % .4f  % .4f\n", a, root->P[a], root->N[a],
+           root->Q[a], root->W[a]);
+  }
+}
+#else
+#define dbg_print_root(tag, root) ((void)0)
+#endif
+
 /* -----------------------------
    Internal Node
 ----------------------------- */
