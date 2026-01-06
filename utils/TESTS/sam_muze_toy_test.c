@@ -31,6 +31,8 @@ int main() {
   toy_env_reset(&env, obs);
 
   for (int step = 0; step < 256; step++) {
+    if (step == 255)
+      done = 1;
     int action = muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
 
     float reward = 0.0f;
