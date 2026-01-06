@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CC=clang
-CFLAGS="-g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra"
+CFLAGS="-g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -lncurses"
 
 # ---- defaults ----
 DEFAULT_TEST="sam_muze_toy_test.c"
