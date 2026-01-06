@@ -279,7 +279,7 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   c->free_latent_seq = sam_free_latent_seq;
 
   /* Default: no MCTS unless user enables it */
-  c->use_mcts = 0;
+  c->use_mcts = false;
   c->mcts_model = NULL;
 
   /* Reasonable defaults (you can tweak) */
