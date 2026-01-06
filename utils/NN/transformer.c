@@ -5,6 +5,22 @@
 #include <string.h>
 
 // ----------------------
+// Helper functions
+// ----------------------
+static void mha_clear_caches(MultiHeadAttention *mha) {
+  free(mha->X_cache);
+  mha->X_cache = NULL;
+  free(mha->Q_cache);
+  mha->Q_cache = NULL;
+  free(mha->K_cache);
+  mha->K_cache = NULL;
+  free(mha->V_cache);
+  mha->V_cache = NULL;
+  free(mha->scores_cache);
+  mha->scores_cache = NULL;
+}
+
+// ----------------------
 // Creation functions
 // ----------------------
 MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
