@@ -17,8 +17,6 @@ typedef enum {
   TANH = 1,
   RELU = 2,
   LINEAR = 3,
-  SOFTMAX = 4,
-  ARGMAX = 5,
   ACTIVATION_TYPE_COUNT = 6
 } ActivationFunctionType;
 
