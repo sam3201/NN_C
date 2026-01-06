@@ -420,7 +420,7 @@ void update_agent(Agent *a) {
   obs_init(&obs);
   encode_observation(a, c, &obs);
 
-  // ✅ correct: pass MuCortex* into muze_plan
+  // correct: pass MuCortex* into muze_plan
   MuCortex *cortex = tr->cortex;
   int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
 
