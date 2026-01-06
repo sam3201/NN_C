@@ -278,6 +278,19 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   c->learn = sam_learn;
   c->free_latent_seq = sam_free_latent_seq;
 
+  /* Default: no MCTS unless user enables it */
+  c->use_mcts = 0;
+  c->mcts_model = NULL;
+
+  /* Reasonable defaults (you can tweak) */
+  c->mcts_params.num_simulations = 50;
+  c->mcts_params.c_puct = 1.25f;
+  c->mcts_params.max_depth = 16;
+  c->mcts_params.dirichlet_alpha = 0.3f;
+  c->mcts_params.dirichlet_eps = 0.25f;
+  c->mcts_params.temperature = 1.0f;
+  c->mcts_params.discount = 0.997f;
+
   return c;
 }
 
