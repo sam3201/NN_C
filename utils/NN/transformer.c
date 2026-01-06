@@ -568,51 +568,120 @@ void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
 // ----------------------
 // Save/load transformer
 // ----------------------
-int TRANSFORMER_save(Transformer_t *transformer, FILE *file) {
-  if (!transformer || !file)
+int TRANSFORMER_save(Transformer_t *t, FILE *file) {
+  if (!t || !file)
     return 0;
-  fwrite(&transformer->model_dim, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_heads, sizeof(size_t), 1, file);
-  fwrite(&transformer->num_layers, sizeof(size_t), 1, file);
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    TransformerLayer *layer = transformer->layers[i];
+
+  fwrite(&t->model_dim, sizeof(size_t), 1, file);
+  fwrite(&t->num_heads, sizeof(size_t), 1, file);
+  fwrite(&t->num_layers, sizeof(size_t), 1, file);
+
+  for (size_t i = 0; i < t->num_layers; i++) {
+    TransformerLayer *layer = t->layers[i];
+
     fwrite(&layer->model_dim, sizeof(size_t), 1, file);
     fwrite(&layer->seq_length, sizeof(size_t), 1, file);
-    NN_save(layer->attention->Q_proj, "Q_proj.nn");
-    NN_save(layer->attention->K_proj, "K_proj.nn");
-    NN_save(layer->attention->V_proj, "V_proj.nn");
-    NN_save(layer->attention->O_proj, "O_proj.nn");
-    NN_save(layer->feed_forward->network, "ff.nn");
-    NN_save(layer->norm1->norm_network, "norm1.nn");
-    NN_save(layer->norm2->norm_network, "norm2.nn");
+
+    // Save all NNs inline (single file, layer-safe)
+    if (NN_save_fp(layer->attention->Q_proj, file) != 0)
+      return 0;
+    if (NN_save_fp(layer->attention->K_proj, file) != 0)
+      return 0;
+    if (NN_save_fp(layer->attention->V_proj, file) != 0)
+      return 0;
+    if (NN_save_fp(layer->attention->O_proj, file) != 0)
+      return 0;
+
+    if (NN_save_fp(layer->feed_forward->network, file) != 0)
+      return 0;
+    if (NN_save_fp(layer->norm1->norm_network, file) != 0)
+      return 0;
+    if (NN_save_fp(layer->norm2->norm_network, file) != 0)
+      return 0;
   }
+
   return 1;
 }
 
 Transformer_t *TRANSFORMER_load(FILE *file) {
   if (!file)
     return NULL;
-  Transformer_t *transformer = malloc(sizeof(Transformer_t));
-  fread(&transformer->model_dim, sizeof(size_t), 1, file);
-  fread(&transformer->num_heads, sizeof(size_t), 1, file);
-  fread(&transformer->num_layers, sizeof(size_t), 1, file);
-  transformer->layers =
-      malloc(transformer->num_layers * sizeof(TransformerLayer *));
-  size_t ff_dim = transformer->model_dim * 4;
-  for (size_t i = 0; i < transformer->num_layers; i++) {
-    TransformerLayer *layer = create_transformer_layer(
-        transformer->model_dim, transformer->num_heads, ff_dim);
+
+  Transformer_t *t = calloc(1, sizeof(Transformer_t));
+  if (!t)
+    return NULL;
+
+  if (fread(&t->model_dim, sizeof(size_t), 1, file) != 1) {
+    free(t);
+    return NULL;
+  }
+  if (fread(&t->num_heads, sizeof(size_t), 1, file) != 1) {
+    free(t);
+    return NULL;
+  }
+  if (fread(&t->num_layers, sizeof(size_t), 1, file) != 1) {
+    free(t);
+    return NULL;
+  }
+
+  if (t->model_dim == 0 || t->num_heads == 0 || t->num_layers == 0) {
+    free(t);
+    return NULL;
+  }
+  if (t->model_dim % t->num_heads != 0) {
+    free(t);
+    return NULL;
+  }
+
+  t->layers = calloc(t->num_layers, sizeof(TransformerLayer *));
+  if (!t->layers) {
+    free(t);
+    return NULL;
+  }
+
+  size_t ff_dim = t->model_dim * 4;
+
+  for (size_t i = 0; i < t->num_layers; i++) {
+    TransformerLayer *layer =
+        create_transformer_layer(t->model_dim, t->num_heads, ff_dim);
+    if (!layer) {
+      TRANSFORMER_destroy(t);
+      return NULL;
+    }
+
+    // Read metadata (optional; you already know model_dim)
     fread(&layer->model_dim, sizeof(size_t), 1, file);
     fread(&layer->seq_length, sizeof(size_t), 1, file);
-    // load NNs from file names
-    layer->attention->Q_proj = NN_load("Q_proj.nn");
-    layer->attention->K_proj = NN_load("K_proj.nn");
-    layer->attention->V_proj = NN_load("V_proj.nn");
-    layer->attention->O_proj = NN_load("O_proj.nn");
-    layer->feed_forward->network = NN_load("ff.nn");
-    layer->norm1->norm_network = NN_load("norm1.nn");
-    layer->norm2->norm_network = NN_load("norm2.nn");
-    transformer->layers[i] = layer;
+
+    // ✅ Replace the NNs safely: free old ones first, then load from stream
+    NN_destroy(layer->attention->Q_proj);
+    NN_destroy(layer->attention->K_proj);
+    NN_destroy(layer->attention->V_proj);
+    NN_destroy(layer->attention->O_proj);
+    NN_destroy(layer->feed_forward->network);
+    NN_destroy(layer->norm1->norm_network);
+    NN_destroy(layer->norm2->norm_network);
+
+    layer->attention->Q_proj = NN_load_fp(file);
+    layer->attention->K_proj = NN_load_fp(file);
+    layer->attention->V_proj = NN_load_fp(file);
+    layer->attention->O_proj = NN_load_fp(file);
+
+    layer->feed_forward->network = NN_load_fp(file);
+    layer->norm1->norm_network = NN_load_fp(file);
+    layer->norm2->norm_network = NN_load_fp(file);
+
+    if (!layer->attention->Q_proj || !layer->attention->K_proj ||
+        !layer->attention->V_proj || !layer->attention->O_proj ||
+        !layer->feed_forward->network || !layer->norm1->norm_network ||
+        !layer->norm2->norm_network) {
+      free_transformer_layer(layer);
+      TRANSFORMER_destroy(t);
+      return NULL;
+    }
+
+    t->layers[i] = layer;
   }
-  return transformer;
+
+  return t;
 }
