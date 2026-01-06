@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+typedef struct MuModel MuModel;
+
 typedef struct {
   int obs_dim;
   int latent_dim;
