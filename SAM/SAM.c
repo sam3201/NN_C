@@ -12,6 +12,7 @@ static void free_seq_ld(long double **seq, size_t T) {
     free(seq[t]);
   free(seq);
 }
+
 static void init_weights(SAM_t *sam) {
   sam->weights =
       (long double ***)malloc((sam->num_layers - 1) * sizeof(long double **));
