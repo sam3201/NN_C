@@ -27,12 +27,15 @@ typedef struct {
 } MultiHeadAttention;
 
 // Layer normalization
+// Layer normalization
 typedef struct {
   size_t dim;
   long double epsilon;
   NN_t *norm_network;
 
+  // caches for forward/backprop
   long double *input_cache; // [T * D]
+  long double *mean_cache;  // [T]
   long double *var_cache;   // [T]
   size_t cache_T;
 } LayerNorm;
