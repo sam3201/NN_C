@@ -5,6 +5,10 @@
 #include <string.h>
 
 /* ------------------------
+   Helpers
+   ------------------------ */
+
+/* ------------------------
    Create model
    ------------------------ */
 MuModel *mu_model_create(const MuConfig *cfg) {
