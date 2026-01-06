@@ -463,12 +463,6 @@ void draw_resources(void) {
                       (float)(cy * CHUNK_SIZE) + r->position.y};
         Vector2 sp = world_to_screen(wp);
         // shake animation when hit
-        if (r->hit_timer > 0.0f) {
-          float k = r->hit_timer * 18.0f;
-          sp.x += sinf(GetTime() * 70.0f) * (s * 0.02f) * k;
-          sp.y += cosf(GetTime() * 55.0f) * (s * 0.02f) * k;
-        }
-
         float mul = 1.0f;
         switch (r->type) {
         case RES_TREE:
@@ -489,6 +483,13 @@ void draw_resources(void) {
         }
         float s = px(0.20f) * RESOURCE_SCALE * mul;
         float s2 = s * 1.2f;
+
+        // shake animation when hit
+        if (r->hit_timer > 0.0f) {
+          float k = r->hit_timer * 18.0f;
+          sp.x += sinf(GetTime() * 70.0f) * (s * 0.02f) * k;
+          sp.y += cosf(GetTime() * 55.0f) * (s * 0.02f) * k;
+        }
 
         // health tint
         float hp01 = (float)r->health / 100.0f;
