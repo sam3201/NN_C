@@ -10,4 +10,4 @@ gcc -g game.c $MUZE_SRC $SAM_SR \
 
 ./game
 
-rm gam
+rm game
