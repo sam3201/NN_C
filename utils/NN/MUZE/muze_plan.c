@@ -59,7 +59,6 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
   }
 
   /* --- Option: policy argmax --- */
-  /* --- Option: policy argmax --- */
   if (!cortex->policy) {
     if (cortex->free_latent_seq)
       cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
