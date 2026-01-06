@@ -411,15 +411,7 @@ PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat) {
   return metrics;
 }
 
-// SAM forward pass
-static void free_seq_ld(long double **seq, size_t T) {
-  if (!seq)
-    return;
-  for (size_t t = 0; t < T; t++)
-    free(seq[t]);
-  free(seq);
-}
-
+// SAM forward
 long double *SAM_forward(SAM_t *sam, long double **input_sequence,
                          size_t seq_length) {
   if (!sam || !input_sequence || seq_length == 0)
