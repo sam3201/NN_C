@@ -184,6 +184,7 @@ static void sam_learn(void *brain, const float *obs, size_t obs_dim, int action,
   SAMMuAdapter *ad = (SAMMuAdapter *)brain;
   if (!ad || !ad->sam)
     return;
+
   if (ad->has_last && (size_t)action != ad->last_action) {
     // If later you change policy() to sample instead of argmax,
     // this helps catch mismatches between executed action and cached action.
