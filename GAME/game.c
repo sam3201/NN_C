@@ -535,7 +535,6 @@ int main(void) {
       for (int a = 0; a < MAX_AGENTS; a++) {
         Agent *ai = &agents[a];
         ai.cortex->learn(ai.cortex->brain, ai.reward_accumulator, 0);
-
         tribes[t].reward_accumulator = 0.0f;
       }
       train_timer = 0;
