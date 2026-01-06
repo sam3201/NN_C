@@ -163,7 +163,5 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   c->encode = sam_encode;
   c->policy = sam_policy;
   c->learn = sam_learn;
-  free_latent_seq = sam_free_latent_seq;
-
   return c;
 }
