@@ -616,18 +616,19 @@ void POPULATION_evolve(Population *pop) {
 
   assign_species(pop);
 
-  for (size_t i = 0; i < pop->size - 1; i++) {
-    if (!pop->genomes[i]) {
-      // If you have a way to create a blank genome, do it here.
-      pop->genomes[i] = GENOME_init_empty(0, 0);
-      // Otherwise: bail out to avoid crashing.
-      return;
-      for (size_t j = i + 1; j < pop->size; j++) {
-        if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
-          Genome_t *tmp = pop->genomes[i];
-          pop->genomes[i] = pop->genomes[j];
-          pop->genomes[j] = tmp;
-        }
+  // sanity: no NULL genomes
+  for (size_t i = 0; i < pop->size; i++) {
+    if (!pop->genomes[i])
+      return; // or recreate properly (needs numInputs/numOutputs stored in pop)
+  }
+
+  // sort genomes by fitness desc (simple bubble sort)
+  for (size_t i = 0; i + 1 < pop->size; i++) {
+    for (size_t j = i + 1; j < pop->size; j++) {
+      if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
+        Genome_t *tmp = pop->genomes[i];
+        pop->genomes[i] = pop->genomes[j];
+        pop->genomes[j] = tmp;
       }
     }
   }
