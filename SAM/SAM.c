@@ -273,9 +273,7 @@ SAM_t *SAM_load(const char *filename) {
     return NULL;
   }
 
-  // Sanity: your SAM_init currently uses num_layers = 2
-  // We allow other values if they were saved, but we must allocate properly.
-  if (sam->num_layers == 0 || sam->num_layers > 100) {
+  if (sam->num_layers < 2 || sam->num_layers > 100) {
     fclose(file);
     free(sam);
     return NULL;
@@ -300,7 +298,17 @@ SAM_t *SAM_load(const char *filename) {
   init_weights(sam);
 
   size_t in_dim = sam->layer_sizes[0];
-  size_t out_dim = sam->layer_sizes[sam->num_layers - 1]; // == layer_sizes[1]
+  size_t out_dim = sam->layer_sizes[sam->num_layers - 1];
+
+  // NOTE: you currently only save/load weights[0] (linear head)
+  // This assumes num_layers == 2. If you expand later, you must serialize all
+  // layers.
+  if (sam->num_layers != 2) {
+    // For now, be strict to avoid silent wrong loads.
+    SAM_destroy(sam);
+    fclose(file);
+    return NULL;
+  }
 
   for (size_t j = 0; j < in_dim; j++) {
     if (fread(sam->weights[0][j], sizeof(long double), out_dim, file) !=
@@ -314,19 +322,16 @@ SAM_t *SAM_load(const char *filename) {
   // Load transformer from the SAME file stream
   sam->transformer = TRANSFORMER_load(file);
   if (!sam->transformer) {
+    SAM_destroy(sam);
     fclose(file);
-    free(sam->layer_sizes);
-    free(sam);
     return NULL;
   }
 
   // Allocate submodels array
   sam->submodels = (NEAT_t **)calloc(sam->num_submodels, sizeof(NEAT_t *));
   if (!sam->submodels) {
+    SAM_destroy(sam);
     fclose(file);
-    TRANSFORMER_destroy(sam->transformer);
-    free(sam->layer_sizes);
-    free(sam);
     return NULL;
   }
 
@@ -334,24 +339,15 @@ SAM_t *SAM_load(const char *filename) {
   size_t input_dim = sam->layer_sizes[0];
   size_t output_dim = sam->layer_sizes[sam->num_layers - 1];
 
-  // Keep your current behavior; just make it safe
   unsigned int population_size = 100;
   for (size_t i = 0; i < sam->num_submodels; i++) {
     sam->submodels[i] = NEAT_init(input_dim, output_dim, population_size);
     if (!sam->submodels[i]) {
-      for (size_t j = 0; j < i; j++)
-        NEAT_destroy(sam->submodels[j]);
-      free(sam->submodels);
-      TRANSFORMER_destroy(sam->transformer);
-      free(sam->layer_sizes);
-      free(sam);
+      SAM_destroy(sam);
       fclose(file);
       return NULL;
     }
   }
-
-  // Initialize weights (your current design: not loaded, re-randomized)
-  init_weights(sam);
 
   fclose(file);
   return sam;
