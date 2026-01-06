@@ -51,7 +51,6 @@ SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
 
   // Initialize transformer and submodels
   sam->transformer =
-      Transformer_t *
       TRANSFORMER_init(size_t model_dim, size_t num_heads, size_t num_layers);
 
   sam->num_submodels = 1; // Fixed number of submodels for now
