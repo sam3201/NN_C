@@ -112,6 +112,8 @@ void mu_model_repr(MuModel *m, const float *obs, float *latent_out) {
   if (m->repr) {
     m->repr(m, obs, latent_out);
     return;
+  } else {
+    default_repr(m, obs, latent_out);
   }
 }
 
