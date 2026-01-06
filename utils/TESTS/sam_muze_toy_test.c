@@ -31,13 +31,14 @@ int main() {
   toy_env_reset(&env, obs);
 
   for (int step = 0; step < 256; step++) {
-    if (step == 255)
-      done = 1;
     int action = muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
 
     float reward = 0.0f;
     int done = 0;
     float next_obs[obs_dim];
+
+    if (step == 255)
+      done = 1;
 
     if (toy_env_step(&env, action, next_obs, &reward, &done) != 0) {
       printf("env_step error\n");
