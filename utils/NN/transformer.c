@@ -476,6 +476,7 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
   }
   return x;
 }
+
 // ----------------------
 // Backprop
 // ----------------------
