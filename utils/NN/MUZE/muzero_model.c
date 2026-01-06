@@ -133,11 +133,6 @@ void mu_model_train(MuModel *m) {
   mu_runtime_train((MuRuntime *)m->runtime, m);
 }
 
-// ---- helpers for trainer ----
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
 int muzero_model_obs_dim(MuModel *m) { return m ? m->cfg.obs_dim : 0; }
 int muzero_model_action_count(MuModel *m) {
   return m ? m->cfg.action_count : 0;
