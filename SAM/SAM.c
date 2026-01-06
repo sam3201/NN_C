@@ -330,6 +330,7 @@ SAM_t *SAM_load(const char *filename) {
   fclose(file);
   return sam;
 }
+
 // Matrix operations
 void SAM_matrix_multiply(long double **A, long double **B, long double **C,
                          size_t m, size_t n, size_t p) {
