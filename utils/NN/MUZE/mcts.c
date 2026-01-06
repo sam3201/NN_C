@@ -443,21 +443,52 @@ MCTSResult mcts_run(MuModel *model, const float *obs,
         backup_with_discount(root, actions, rewards, depth + 1, leaf_value,
                              params->discount);
         break; // only break, don't free h_cur here } else { h_next =
-               // node->children[a]->latent; float r = 0.0f;
-               // mu_model_dynamics(model, h_cur, a, h_next, &r); rewards[depth]
-               // = r; node = node->children[a]; memcpy(h_cur, h_next,
-               // sizeof(float) * L); depth++; } } free(h_cur); // free exactly
-               // once } float *pi = (float *)malloc(sizeof(float) * A);
-               // visits_to_pi(root, params->temperature, pi); int best_a = 0;
-               // float best_q = -INFINITY; for (int a = 0; a < A; a++) { float
-               // q = (root->N[a] > 0) ? root->Q[a] : -INFINITY; if (q > best_q)
-               // { best_q = q; best_a = a; } } if (best_q == -INFINITY) { //
-               // all N==0 float best_p = -INFINITY; for (int a = 0; a < A; a++)
-               // if (root->P[a] > best_p) { best_p = root->P[a]; best_a = a; }
-               // } res.action_count = A; res.pi = pi; res.chosen_action =
-               // best_a; res.root_value = root_value; free(actions);
-               // free(rewards); node_free(root); return res; } void
-               // mcts_result_free(MCTSResult *res) { if (!res) return;
-               // free(res->pi); res->pi = NULL; res->action_count = 0;
-               // res->chosen_action = 0; res->root_value = 0.0f;
+        node->children[a]->latent;
+        float r = 0.0f;
+        mu_model_dynamics(model, h_cur, a, h_next, &r);
+        rewards[depth] = r;
+        node = node->children[a];
+        memcpy(h_cur, h_next, sizeof(float) * L);
+        depth++;
       }
+    }
+    free(h_cur); // free exactly
+    once
+  }
+  float *pi = (float *)malloc(sizeof(float) * A);
+  visits_to_pi(root, params->temperature, pi);
+  int best_a = 0;
+  float best_q = -INFINITY;
+  for (int a = 0; a < A; a++) {
+    float q = (root->N[a] > 0) ? root->Q[a] : -INFINITY;
+    if (q > best_q) {
+      best_q = q;
+      best_a = a;
+    }
+  }
+  if (best_q == -INFINITY) { //
+    all N == 0 float best_p = -INFINITY;
+    for (int a = 0; a < A; a++)
+      if (root->P[a] > best_p) {
+        best_p = root->P[a];
+        best_a = a;
+      }
+  }
+  res.action_count = A;
+  res.pi = pi;
+  res.chosen_action = best_a;
+  res.root_value = root_value;
+  free(actions);
+  free(rewards);
+  node_free(root);
+  return res;
+}
+void mcts_result_free(MCTSResult *res) {
+  if (!res)
+    return;
+  free(res->pi);
+  res->pi = NULL;
+  res->action_count = 0;
+  res->chosen_action = 0;
+  res->root_value = 0.0f;
+}
