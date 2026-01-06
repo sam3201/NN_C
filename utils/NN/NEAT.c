@@ -184,8 +184,10 @@ void GENOME_destroy(Genome_t *genome) {
   for (size_t i = 0; i < genome->numConnections; i++)
     free(genome->connections[i]);
   free(genome->connections);
+
   if (genome->nn)
     NN_destroy(genome->nn);
+
   free(genome);
 }
 
