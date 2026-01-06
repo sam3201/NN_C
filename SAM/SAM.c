@@ -296,6 +296,21 @@ SAM_t *SAM_load(const char *filename) {
     return NULL;
   }
 
+  // Allocate weights then load them
+  init_weights(sam);
+
+  size_t in_dim = sam->layer_sizes[0];
+  size_t out_dim = sam->layer_sizes[sam->num_layers - 1]; // == layer_sizes[1]
+
+  for (size_t j = 0; j < in_dim; j++) {
+    if (fread(sam->weights[0][j], sizeof(long double), out_dim, file) !=
+        out_dim) {
+      SAM_destroy(sam);
+      fclose(file);
+      return NULL;
+    }
+  }
+
   // Load transformer from the SAME file stream
   sam->transformer = TRANSFORMER_load(file);
   if (!sam->transformer) {
