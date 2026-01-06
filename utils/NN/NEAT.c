@@ -436,6 +436,45 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 Genome_t *GENOME_clone(const Genome_t *src) {
   if (!src)
     return NULL;
+  Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
+  genome->nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, reg,
+                       opt, learningRate);
+  size_t numOutputs = layers[genome->nn->numLayers - 1];
+  genome->numNodes = numInputs + numOutputs + 1;
+  genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
+
+  size_t idx = 0;
+  for (size_t i = 0; i < numInputs; i++) {
+    genome->nodes[idx] = (Node *)malloc(sizeof(Node));
+    genome->nodes[idx]->id = idx;
+    genome->nodes[idx]->type = INPUT_NODE;
+    genome->nodes[idx]->actFunc = LINEAR;
+    genome->nodes[idx]->value = 0.0L;
+    idx++;
+  }
+
+  // bias node
+  genome->nodes[idx] = (Node *)malloc(sizeof(Node));
+  genome->nodes[idx]->id = idx;
+  genome->nodes[idx]->type = BIAS_NODE;
+  genome->nodes[idx]->actFunc = LINEAR;
+  genome->nodes[idx]->value = 1.0L;
+  idx++;
+
+  for (size_t i = 0; i < numOutputs; i++) {
+    genome->nodes[idx] = (Node *)malloc(sizeof(Node));
+    genome->nodes[idx]->id = idx;
+    genome->nodes[idx]->type = OUTPUT_NODE;
+    genome->nodes[idx]->actFunc = SIGMOID;
+    genome->nodes[idx]->value = 0.0L;
+    idx++;
+  }
+
+  genome->numConnections = 0;
+  genome->connections = NULL;
+  genome->fitness = 0.0L;
+
+  return genome;
 }
 
 // ------------------- Serialization -------------------
