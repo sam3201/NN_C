@@ -22,19 +22,24 @@ static void onehot_set(float *x, int n, int k) {
     x[k] = 1.0f;
 }
 
-MuModel *mu_model_create_toy(int size /* e.g. 8 */, int action_count /*2*/) {
-  MuConfig cfg = {0};
-  cfg.obs_dim = size;
-  cfg.latent_dim = size;
-  cfg.action_count = action_count;
-
-  // You can reuse the normal allocator if it just stores cfg + buffers.
-  // If your existing mu_model_create allocates NN weights you don't want,
-  // make a dedicated minimal model struct or add a flag.
+MuModel *mu_model_create_toy(int size, int action_count) {
   MuModel *m = (MuModel *)calloc(1, sizeof(MuModel));
   if (!m)
     return NULL;
-  m->cfg = cfg;
+
+  m->cfg.obs_dim = size;
+  m->cfg.latent_dim = size;
+  m->cfg.action_count = action_count;
+
+  // no weights needed for the toy model
+  m->repr_W = m->dyn_W = m->pred_W = NULL;
+  m->repr_W_count = m->dyn_W_count = m->pred_W_count = 0;
+  m->runtime = NULL;
+
+  // plug in real MuZero functions
+  m->repr = mu_model_repr_toy;
+  m->predict = mu_model_predict_toy;
+  m->dynamics = mu_model_dynamics_toy;
 
   return m;
 }
