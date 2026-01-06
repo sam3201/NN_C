@@ -16,11 +16,11 @@ typedef struct {
   NN_t *K_proj;
   NN_t *V_proj;
 
-  long double *X_cache;      // [T * D]
-  long double *Q_cache;      // [T * D]
-  long double *K_cache;      // [T * D]
-  long double *V_cache;      // [T * D]
-  long double *scores_cache; // [H * T * T]
+  long double *X_cache;
+  long double *Q_cache;
+  long double *K_cache;
+  long double *V_cache;
+  long double *scores_cache;
   size_t seq_length;
 } MultiHeadAttention;
 
