@@ -102,63 +102,32 @@ void mu_model_free(MuModel *m) {
    (Dummy linear layer)
    ------------------------ */
 void mu_model_repr(MuModel *m, const float *obs, float *latent_out) {
-  int O = m->cfg.obs_dim;
-  int L = m->cfg.latent_dim;
-
-  for (int i = 0; i < L; i++) {
-    float sum = 0.f;
-    for (int j = 0; j < O; j++) {
-      sum += obs[j] * m->repr_W[i * O + j];
-    }
-    latent_out[i] = tanhf(sum);
-  }
+  if (!m || !obs || !latent_out)
+    return;
+  if (m->repr)
+    m->repr(m, obs, latent_out);
+  else
+    default_repr(m, obs, latent_out);
 }
 
-/* ------------------------
-   Dynamics function
-   latent + action → latent' + reward
-   ------------------------ */
 void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
                        float *latent_out, float *reward_out) {
-  int L = m->cfg.latent_dim;
-
-  /* simple deterministic dynamics */
-  for (int i = 0; i < L; i++) {
-    float sum = 0.f;
-    for (int j = 0; j < L; j++) {
-      sum += latent_in[j] * m->dyn_W[i * L + j];
-    }
-    sum += 0.1f * action;
-    latent_out[i] = tanhf(sum);
-  }
-
-  *reward_out = 0.01f * action; // placeholder
+  if (!m || !latent_in || !latent_out || !reward_out)
+    return;
+  if (m->dynamics)
+    m->dynamics(m, latent_in, action, latent_out, reward_out);
+  else
+    default_dynamics(m, latent_in, action, latent_out, reward_out);
 }
 
-/* ------------------------
-   Prediction function
-   latent → (policy_logits, value)
-   ------------------------ */
 void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out) {
-  int L = m->cfg.latent_dim;
-  int A = m->cfg.action_count;
-
-  /* policy */
-  for (int a = 0; a < A; a++) {
-    float sum = 0.f;
-    for (int j = 0; j < L; j++) {
-      sum += latent_in[j] * m->pred_W[a * L + j];
-    }
-    policy_logits_out[a] = sum;
-  }
-
-  /* value head */
-  float sum = 0.f;
-  for (int j = 0; j < L; j++) {
-    sum += latent_in[j] * m->pred_W[(A * L) + j];
-  }
-  *value_out = tanhf(sum);
+  if (!m || !latent_in || !policy_logits_out || !value_out)
+    return;
+  if (m->predict)
+    m->predict(m, latent_in, policy_logits_out, value_out);
+  else
+    default_predict(m, latent_in, policy_logits_out, value_out);
 }
 
 void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
