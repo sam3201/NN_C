@@ -22,9 +22,9 @@ typedef struct {
 
   void *runtime;
 
-  void (*repr)(MuModel *, const float *, float *);
-  void (*predict)(MuModel *, const float *, float *, float *);
-  void (*dynamics)(MuModel *, const float *, int, float *, float *);
+  void (*repr)(struct MuModel *, const float *, float *);
+  void (*predict)(struct MuModel *, const float *, float *, float *);
+  void (*dynamics)(struct MuModel *, const float *, int, float *, float *);
 
 } MuModel;
 
