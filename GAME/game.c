@@ -375,40 +375,124 @@ void init_agents(void) {
 void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
+  // --- self status ---
+  obs_push(obs, clamp01(a->health / 100.0f));
+  obs_push(obs, clamp01(a->stamina / 100.0f));
+
+  // --- base features ---
   Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
   float dbase = Vector2Length(to_base);
+  float base_dir_x = safe_norm(to_base.x, dbase);
+  float base_dir_y = safe_norm(to_base.y, dbase);
 
-  obs_push(obs, a->health / 100.0f);
-  obs_push(obs, a->stamina / 100.0f);
-  obs_push(obs, fminf(dbase / 64.0f, 1.0f));
-  obs_push(obs, to_base.x / (dbase + 1e-4f));
-  obs_push(obs, to_base.y / (dbase + 1e-4f));
+  obs_push(obs, clamp01(dbase / 64.0f));
+  obs_push(obs, base_dir_x);
+  obs_push(obs, base_dir_y);
+  obs_push(obs, (dbase < tr->base.radius) ? 1.0f : 0.0f); // in base
 
-  /* Resource density */
-  obs_push(obs, (float)c->resource_count / MAX_RESOURCES);
+  // --- chunk density ---
+  obs_push(obs, clamp01((float)c->resource_count / (float)MAX_RESOURCES));
 
-  /* Mean resource direction */
-  Vector2 mean = {0};
-  for (int i = 0; i < c->resource_count; i++) {
-    mean = Vector2Add(mean,
-                      Vector2Subtract(c->resources[i].position, a->position));
+  // --- nearest resource (by type) in VIEW CHUNK ONLY (fast) ---
+  // Features: for each resource type [tree, rock, gold, food]:
+  //   - nearest distance (normalized)
+  //   - nearest direction (x,y) normalized
+  //   - availability bit (1 if found)
+  const int R_TYPES = 4;
+  float best_d[R_TYPES];
+  Vector2 best_dir[R_TYPES];
+  int found[R_TYPES];
+
+  for (int t = 0; t < R_TYPES; t++) {
+    best_d[t] = 1e9f;
+    best_dir[t] = (Vector2){0, 0};
+    found[t] = 0;
   }
 
-  if (c->resource_count > 0)
-    mean = Vector2Scale(mean, 1.0f / c->resource_count);
+  // We need this chunk's world origin
+  // NOTE: c is the chunk agent is currently in, so:
+  int cx = (int)(a->position.x / CHUNK_SIZE);
+  int cy = (int)(a->position.y / CHUNK_SIZE);
+  Vector2 chunk_origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
-  float md = Vector2Length(mean);
-  obs_push(obs, mean.x / (md + 1e-4f));
-  obs_push(obs, mean.y / (md + 1e-4f));
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    int t = (int)r->type;
+    if (t < 0 || t >= R_TYPES)
+      continue;
 
-  obs_push(obs, dbase < BASE_RADIUS ? 1.0f : 0.0f); // in base
-  obs_push(obs, 1.0f);                              // bias
-}
+    // Convert resource local -> world
+    Vector2 r_world = Vector2Add(chunk_origin, r->position);
 
-int decide_action(Agent *a, ObsBuffer *obs) {
-  MuCortex *cortex = a->cortex;
-  muze_plan(cortex, obs->data, obs->size, ACTION_COUNT);
-  return rand() % ACTION_COUNT;
+    Vector2 dvec = Vector2Subtract(r_world, a->position);
+    float d = Vector2Length(dvec);
+
+    if (d < best_d[t]) {
+      best_d[t] = d;
+      best_dir[t] = dvec;
+      found[t] = 1;
+    }
+  }
+
+  for (int t = 0; t < R_TYPES; t++) {
+    if (!found[t]) {
+      obs_push(obs, 1.0f); // distance "far"
+      obs_push(obs, 0.0f); // dir x
+      obs_push(obs, 0.0f); // dir y
+      obs_push(obs, 0.0f); // found bit
+    } else {
+      float d = best_d[t];
+      Vector2 v = best_dir[t];
+      obs_push(obs, clamp01(d / 32.0f)); // normalize to something reasonable
+      obs_push(obs, safe_norm(v.x, d));
+      obs_push(obs, safe_norm(v.y, d));
+      obs_push(obs, 1.0f);
+    }
+  }
+
+  // --- nearest mob (any type) in this chunk ---
+  float best_mob_d = 1e9f;
+  Vector2 best_mob_dir = (Vector2){0, 0};
+  int mob_found = 0;
+  int mob_type = 0;
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 m_world = Vector2Add(chunk_origin, m->position);
+    Vector2 dvec = Vector2Subtract(m_world, a->position);
+    float d = Vector2Length(dvec);
+
+    if (d < best_mob_d) {
+      best_mob_d = d;
+      best_mob_dir = dvec;
+      mob_found = 1;
+      mob_type = (int)m->type;
+    }
+  }
+
+  if (!mob_found) {
+    obs_push(obs, 1.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+  } else {
+    obs_push(obs, clamp01(best_mob_d / 32.0f));
+    obs_push(obs, safe_norm(best_mob_dir.x, best_mob_d));
+    obs_push(obs, safe_norm(best_mob_dir.y, best_mob_d));
+    obs_push(obs, (float)mob_type / 3.0f); // 0..3 -> 0..1
+  }
+
+  // bias
+  obs_push(obs, 1.0f);
+
+  // final: enforce fixed-size vector
+  obs_finalize_fixed(obs, OBS_DIM);
 }
 
 /* =======================
