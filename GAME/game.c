@@ -345,6 +345,26 @@ void draw_resources(void) {
 
         float s = px(0.20f) * RESOURCE_SCALE; // base size
         float s2 = s * 1.2f;
+        float mul = 1.0f;
+        switch (r->type) {
+        case RES_TREE:
+          mul = TREE_SCALE;
+          break;
+        case RES_ROCK:
+          mul = ROCK_SCALE;
+          break;
+        case RES_GOLD:
+          mul = GOLD_SCALE;
+          break;
+        case RES_FOOD:
+          mul = FOOD_SCALE;
+          break;
+        default:
+          mul = 1.0f;
+          break;
+        }
+        float s = px(0.20f) * RESOURCE_SCALE * mul;
+        float s2 = s * 1.2f;
 
         // health tint
         float hp01 = (float)r->health / 100.0f;
