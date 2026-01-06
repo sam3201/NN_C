@@ -458,7 +458,7 @@ void update_agent(Agent *a) {
     reward -= 1.0f; // death penalty (now it actually happens)
   }
 
-  // ✅ ONLY learn through the cortex adapter (SAM brain)
+  // ONLY learn through the cortex adapter (SAM brain)
   cortex->learn(cortex->brain, reward, terminal);
 
   obs_free(&obs);
