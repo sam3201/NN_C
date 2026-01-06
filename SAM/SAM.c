@@ -424,7 +424,6 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   if (!feat)
     return NULL;
 
-  size_t model_dim = sam->layer_sizes[0];
   size_t out_dim = sam->layer_sizes[1];
 
   /* mean-pool over time into pooled[model_dim] */
