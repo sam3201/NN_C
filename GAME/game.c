@@ -1277,6 +1277,96 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   m->position = clamp_local_to_chunk(m->position);
 }
 
+static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
+  // timers
+  if (m->ai_timer > 0)
+    m->ai_timer -= dt;
+  if (m->aggro_timer > 0)
+    m->aggro_timer -= dt;
+  if (m->attack_cd > 0)
+    m->attack_cd -= dt;
+  if (m->hurt_timer > 0)
+    m->hurt_timer -= dt;
+  if (m->lunge_timer > 0)
+    m->lunge_timer -= dt;
+
+  // compute WORLD pos for decisions
+  Vector2 mw = Vector2Add(chunk_origin, m->position);
+
+  // only fully “aware” if player is in same chunk (keeps it simple & cheap)
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  int mcx = (int)(mw.x / CHUNK_SIZE);
+  int mcy = (int)(mw.y / CHUNK_SIZE);
+  bool player_same_chunk = (pcx == mcx && pcy == mcy);
+
+  Vector2 toP = Vector2Subtract(player.position, mw);
+  float dP = Vector2Length(toP);
+  Vector2 dirP = (dP > 1e-3f) ? Vector2Scale(toP, 1.0f / dP) : (Vector2){0, 0};
+
+  bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
+
+  // pick wander direction sometimes
+  if (m->ai_timer <= 0.0f) {
+    m->ai_timer = randf(0.35f, 1.25f);
+    float ang = randf(0, 2 * PI);
+    m->vel = (Vector2){cosf(ang), sinf(ang)};
+  }
+
+  float speed = MOB_SPEED_PASSIVE;
+
+  // PASSIVE: flee if close or angry
+  if (!hostile) {
+    bool scared = player_same_chunk && (dP < 4.0f || m->aggro_timer > 0.0f);
+    if (scared) {
+      speed = 0.95f;
+      m->vel = Vector2Scale(dirP, -1.0f); // run away
+    }
+  }
+
+  // HOSTILE: chase / skeleton kite + shoot
+  if (hostile && player_same_chunk) {
+    bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
+    if (aggro) {
+      speed = MOB_SPEED_HOSTILE;
+
+      if (m->type == MOB_ZOMBIE) {
+        // chase
+        m->vel = dirP;
+
+        // melee attack
+        if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
+          m->attack_cd = 0.8f;
+          m->lunge_timer = 0.18f;
+          player.health -= 6.0f;
+          player_hurt_timer = 0.18f;
+        }
+      } else if (m->type == MOB_SKELETON) {
+        // keep some distance
+        float desired = 6.0f;
+        if (dP < desired - 0.8f)
+          m->vel = Vector2Scale(dirP, -1.0f); // back up
+        else if (dP > desired + 1.2f)
+          m->vel = dirP; // approach
+        else
+          m->vel = Vector2Scale(m->vel, 0.5f); // drift
+
+        // shoot
+        if (dP < 12.0f && m->attack_cd <= 0.0f) {
+          m->attack_cd = 1.1f;
+          m->lunge_timer = 0.12f;
+          spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
+        }
+      }
+    }
+  }
+
+  // move (chunk-local)
+  Vector2 delta = Vector2Scale(m->vel, speed * dt);
+  m->position = Vector2Add(m->position, delta);
+  m->position = clamp_local_to_chunk(m->position);
+}
+
 /* =======================
    PLAYER
 ======================= */
