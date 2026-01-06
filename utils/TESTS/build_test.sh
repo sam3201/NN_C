@@ -53,3 +53,4 @@ $CC $CFLAGS \
 
 echo "OK: ./$OUT"
 
+rm "$OUT"
