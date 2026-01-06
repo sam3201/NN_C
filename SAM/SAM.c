@@ -220,7 +220,7 @@ int SAM_save(SAM_t *sam, const char *filename) {
     }
   }
 
-  // ✅ Save transformer into the SAME file stream
+  // Save transformer into the SAME file stream
   if (!TRANSFORMER_save(sam->transformer, file)) {
     fclose(file);
     return 0;
