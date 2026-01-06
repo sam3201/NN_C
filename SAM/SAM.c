@@ -531,14 +531,9 @@ void SAM_generalize(SAM_t *sam) {
 void SAM_transfuse(SAM_t *sam) {
   if (!sam)
     return;
-
-  // Transfuse knowledge between submodels
-  // This is a placeholder - actual transfusion would transfer
-  // weights/architecture
-  for (size_t i = 0; i < sam->num_submodels - 1; i++) {
-    if (sam->submodels[i] && sam->submodels[i + 1]) {
-      // Simple transfusion: evolve submodels
-      NEAT_evolve(sam->submodels[i]);
+  for (size_t i = 0; i < sam->num_submodels; i++) {
+    if (sam->submodels[i] && sam->submodels[i]->pop) {
+      POPULATION_evolve(sam->submodels[i]->pop);
     }
   }
 }
