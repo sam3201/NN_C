@@ -29,8 +29,9 @@ unsigned int ForeRunner_forward(ForeRunner_t *model,
                                 unsigned int seq_length);
 
 // Backpropagation function
-void ForeRunner_backprop(ForeRunner_t *model, long double **input_sequence,
-                         unsigned int seq_length, long double *grad_loss);
+long double **TRANSFORMER_backprop(Transformer_t *transformer,
+                                   long double **grad_output,
+                                   size_t seq_length);
 
 // Destroy the ForeRunner model
 void ForeRunner_destroy(ForeRunner_t *model);
