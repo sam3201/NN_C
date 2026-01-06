@@ -1584,6 +1584,53 @@ static void update_visible_world(float dt) {
   }
 }
 
+static void draw_hover_label(void) {
+  // find nearest in current chunk within a small radius
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  const char *label = NULL;
+  float bestD = 1e9f;
+
+  // resources
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                           cy * CHUNK_SIZE + r->position.y};
+    float d = Vector2Distance(player.position, rw);
+    if (d < 2.2f && d < bestD) {
+      bestD = d;
+      label = res_name(r->type);
+    }
+  }
+
+  // mobs (prefer mobs if close)
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                           cy * CHUNK_SIZE + m->position.y};
+    float d = Vector2Distance(player.position, mw);
+    if (d < 2.6f && d < bestD) {
+      bestD = d;
+      label = mob_name(m->type);
+    }
+  }
+
+  if (label) {
+    Vector2 mp = GetMousePosition();
+    DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 120, 22,
+                  (Color){0, 0, 0, 140});
+    DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 120, 22,
+                       (Color){0, 0, 0, 220});
+    DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
+  }
+}
+
 /* =======================
    MAIN
 ======================= */
