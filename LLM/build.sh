@@ -4,7 +4,7 @@
 # Simple approach: compile raylib sources directly
 
 CC="gcc"
-CFLAGS="-Wall -O2 -std=c99 -g"
+CFLAGS="-Wall -O2 -std=c99"
 INCLUDES="-I../utils/Raylib/src -I../utils/Raylib/src/external/glfw/include -I../SAM -I../utils/NN"
 DEFINES="-DPLATFORM_DESKTOP -D_GLFW_COCOA"
 
