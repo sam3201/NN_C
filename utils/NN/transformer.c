@@ -318,6 +318,25 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
   return out;
 }
 
+static int layernorm_prepare_cache(LayerNorm *ln, size_t T) {
+  size_t D = ln->dim;
+
+  if (ln->cache_T != T) {
+    free(ln->input_cache);
+    free(ln->mean_cache);
+    free(ln->var_cache);
+
+    ln->input_cache = (long double *)malloc(T * D * sizeof(long double));
+    ln->mean_cache = (long double *)malloc(T * sizeof(long double));
+    ln->var_cache = (long double *)malloc(T * sizeof(long double));
+    if (!ln->input_cache || !ln->mean_cache || !ln->var_cache)
+      return 0;
+
+    ln->cache_T = T;
+  }
+  return 1;
+}
+
 static long double *layernorm_forward_token(LayerNorm *ln, const long double *x,
                                             size_t t) {
   size_t D = ln->dim;
