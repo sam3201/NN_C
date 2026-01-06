@@ -23,7 +23,7 @@ typedef struct MuCortex {
 
   void (*free_latent_seq)(void *brain, long double **latent_seq,
                           size_t seq_len);
-  int use_mcts;           /* 0 = argmax(policy), 1 = MCTS */
+  bool use_mcts;          /* 0 = argmax(policy), 1 = MCTS */
   MuModel *mcts_model;    /* required if use_mcts=1 */
   MCTSParams mcts_params; /* params used by MCTS */
 
