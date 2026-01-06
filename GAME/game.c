@@ -1147,24 +1147,23 @@ int main(void) {
       p.x += SCREEN_WIDTH / 2;
       p.y += SCREEN_HEIGHT / 2;
 
-      DrawCircleV(p, WORLD_SCALE * 0.3f,
-                  tribes[agents[i].agent_id / AGENT_PER_TRIBE].color);
+      Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
+      draw_agent_detailed(&agents[i], p, tc);
+
+      /* Draw player */
+      Vector2 pp = Vector2Subtract(player.position, camera_pos);
+      pp = Vector2Scale(pp, WORLD_SCALE);
+      pp.x += SCREEN_WIDTH / 2;
+      pp.y += SCREEN_HEIGHT / 2;
+
+      draw_player(pp);
+
+      DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
+      /* Display FPS */
+      DrawText(TextFormat("FPS: %d", GetFPS()), 20, 40, 20, RAYWHITE);
+      EndDrawing();
     }
 
-    /* Draw player */
-    Vector2 pp = Vector2Subtract(player.position, camera_pos);
-    pp = Vector2Scale(pp, WORLD_SCALE);
-    pp.x += SCREEN_WIDTH / 2;
-    pp.y += SCREEN_HEIGHT / 2;
-
-    draw_player(pp);
-
-    DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
-    /* Display FPS */
-    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 40, 20, RAYWHITE);
-    EndDrawing();
+    CloseWindow();
+    return 0;
   }
-
-  CloseWindow();
-  return 0;
-}
