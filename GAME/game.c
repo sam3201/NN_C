@@ -535,8 +535,8 @@ int main(void) {
       for (int a = 0; a < MAX_AGENTS; a++) {
 
         Agent *ai = &agents[a];
-        int cx = (int)(a->position.x / CHUNK_SIZE);
-        int cy = (int)(a->position.y / CHUNK_SIZE);
+        int cx = (int)(ai->position.x / CHUNK_SIZE);
+        int cy = (int)(ai->position.y / CHUNK_SIZE);
         Chunk *c = get_chunk(cx, cy);
         ObsBuffer obs;
         obs_init(&obs);
