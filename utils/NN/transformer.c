@@ -508,48 +508,53 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
 // Transformer forward and backprop
 // ----------------------
 long double **transformer_layer_forward(TransformerLayer *layer,
-                                        long double **input,
-                                        size_t seq_length) {
+                                        long double **input, size_t T) {
   size_t D = layer->model_dim;
 
-  // Cache input for backprop
-  layer->attention_input = malloc(seq_length * D * sizeof(long double));
-  for (size_t t = 0; t < seq_length; t++)
-    memcpy(&layer->attention_input[t * D], input[t], D * sizeof(long double));
+  // Attention
+  long double **att = transformer_mha_forward(layer->attention, input, T);
+  if (!att)
+    return NULL;
 
-  // ---- Multi-head attention ----
-  long double **att =
-      transformer_mha_forward(layer->attention, input, seq_length);
+  // Residual + norm1
+  if (!layernorm_prepare_cache(layer->norm1, T))
+    return NULL;
 
-  // ---- Residual + norm1 ----
-  long double **norm1_out = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++) {
+  long double **norm1_out = (long double **)malloc(T * sizeof(long double *));
+  for (size_t t = 0; t < T; t++) {
     for (size_t i = 0; i < D; i++)
       att[t][i] += input[t][i];
-    norm1_out[t] = transformer_norm_forward(layer->norm1, att[t]);
+    norm1_out[t] = layernorm_forward_token(layer->norm1, att[t], t);
     free(att[t]);
   }
   free(att);
 
-  // ---- Feed-forward ----
-  long double **ff_out = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++) {
-    layer->feed_forward->input_cache = norm1_out[t];
+  // Feedforward
+  if (!ff_prepare_cache(layer->feed_forward, T))
+    return NULL;
+
+  long double **ff_out = (long double **)malloc(T * sizeof(long double *));
+  for (size_t t = 0; t < T; t++) {
+    memcpy(&layer->feed_forward->input_cache[t * D], norm1_out[t],
+           D * sizeof(long double));
     ff_out[t] = NN_forward(layer->feed_forward->network, norm1_out[t]);
   }
 
-  // ---- Residual + norm2 ----
-  long double **out = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++) {
+  // Residual + norm2
+  if (!layernorm_prepare_cache(layer->norm2, T))
+    return NULL;
+
+  long double **out = (long double **)malloc(T * sizeof(long double *));
+  for (size_t t = 0; t < T; t++) {
     for (size_t i = 0; i < D; i++)
       ff_out[t][i] += norm1_out[t][i];
-    out[t] = transformer_norm_forward(layer->norm2, ff_out[t]);
+    out[t] = layernorm_forward_token(layer->norm2, ff_out[t], t);
     free(ff_out[t]);
     free(norm1_out[t]);
   }
-
   free(ff_out);
   free(norm1_out);
+
   return out;
 }
 
