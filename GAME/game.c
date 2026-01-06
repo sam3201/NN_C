@@ -433,6 +433,9 @@ void update_agent(Agent *a) {
 
   encode_observation(a, c, &obs);
 
+  int action = decide_action(a, &obs);
+  obs_free(&obs);
+
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
