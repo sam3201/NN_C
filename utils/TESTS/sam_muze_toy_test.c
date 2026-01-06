@@ -18,7 +18,7 @@ int main(void) {
   srand(1);
 
   ToyEnvState env = {.pos = 0, .size = 8};
-  const int obs_dim = env.size;
+  size_t obs_dim = env.size;
   const int action_count = 2;
   const int goal_pos = env.size - 1;
 
