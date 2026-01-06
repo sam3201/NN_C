@@ -18,6 +18,11 @@ INCLUDES=(
 TEST_SRC=$1
 OUT=$2
 
+if [ -z "$TEST_SRC" ]; then
+  echo "Usage: $0 <test.c> <out>"
+  exit 1
+fi
+
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
 NN_SRC=$(find ../NN -maxdepth 1 -type f -name "*.c" -print)
