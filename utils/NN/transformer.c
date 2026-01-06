@@ -250,82 +250,100 @@ void TRANSFORMER_destroy(Transformer_t *transformer) {
 // Forward pass
 // ----------------------
 long double **transformer_mha_forward(MultiHeadAttention *mha,
-                                      long double **input_seq,
-                                      size_t seq_length) {
-  mha->seq_length = seq_length;
-  size_t D = mha->head_dim;
+                                      long double **input_seq, size_t T) {
+  mha->seq_length = T;
+  size_t D = mha->model_dim;
+  size_t H = mha->num_heads;
+  size_t Hd = mha->head_dim;
 
-  long double **Q = malloc(seq_length * sizeof(long double *));
-  long double **K = malloc(seq_length * sizeof(long double *));
-  long double **V = malloc(seq_length * sizeof(long double *));
+  // free old caches if any
+  free(mha->X_cache);
+  mha->X_cache = NULL;
+  free(mha->Q_cache);
+  mha->Q_cache = NULL;
+  free(mha->K_cache);
+  mha->K_cache = NULL;
+  free(mha->V_cache);
+  mha->V_cache = NULL;
+  free(mha->scores_cache);
+  mha->scores_cache = NULL;
 
-  for (size_t t = 0; t < seq_length; t++) {
-    Q[t] = NN_forward(mha->Q_proj, input_seq[t]);
-    K[t] = NN_forward(mha->K_proj, input_seq[t]);
-    V[t] = NN_forward(mha->V_proj, input_seq[t]);
+  mha->X_cache = (long double *)malloc(T * D * sizeof(long double));
+  mha->Q_cache = (long double *)malloc(T * D * sizeof(long double));
+  mha->K_cache = (long double *)malloc(T * D * sizeof(long double));
+  mha->V_cache = (long double *)malloc(T * D * sizeof(long double));
+  mha->scores_cache = (long double *)calloc(H * T * T, sizeof(long double));
+  if (!mha->X_cache || !mha->Q_cache || !mha->K_cache || !mha->V_cache ||
+      !mha->scores_cache)
+    return NULL;
+
+  // compute projections
+  for (size_t t = 0; t < T; t++) {
+    memcpy(&mha->X_cache[t * D], input_seq[t], D * sizeof(long double));
+
+    long double *Q = NN_forward(mha->Q_proj, input_seq[t]);
+    long double *K = NN_forward(mha->K_proj, input_seq[t]);
+    long double *V = NN_forward(mha->V_proj, input_seq[t]);
+
+    memcpy(&mha->Q_cache[t * D], Q, D * sizeof(long double));
+    memcpy(&mha->K_cache[t * D], K, D * sizeof(long double));
+    memcpy(&mha->V_cache[t * D], V, D * sizeof(long double));
+
+    free(Q);
+    free(K);
+    free(V);
   }
 
-  mha->Q_cache = malloc(seq_length * D * sizeof(long double));
-  mha->K_cache = malloc(seq_length * D * sizeof(long double));
-  mha->V_cache = malloc(seq_length * D * sizeof(long double));
+  // scores per head
+  for (size_t h = 0; h < H; h++) {
+    long double *scores = &mha->scores_cache[h * T * T];
 
-  for (size_t i = 0; i < seq_length; i++)
-    for (size_t j = 0; j < D; j++) {
-      mha->Q_cache[i * D + j] = Q[i][j];
-      mha->K_cache[i * D + j] = K[i][j];
-      mha->V_cache[i * D + j] = V[i][j];
+    for (size_t i = 0; i < T; i++) {
+      for (size_t j = 0; j < T; j++) {
+        long double s = 0.0L;
+        for (size_t k = 0; k < Hd; k++) {
+          size_t qi = i * D + h * Hd + k;
+          size_t kj = j * D + h * Hd + k;
+          s += mha->Q_cache[qi] * mha->K_cache[kj];
+        }
+        scores[i * T + j] = s / sqrtl((long double)Hd);
+      }
     }
 
-  long double *scores = calloc(seq_length * seq_length, sizeof(long double));
+    // softmax row-wise
+    for (size_t i = 0; i < T; i++) {
+      long double mx = scores[i * T];
+      for (size_t j = 1; j < T; j++)
+        if (scores[i * T + j] > mx)
+          mx = scores[i * T + j];
 
-  for (size_t i = 0; i < seq_length; i++)
-    for (size_t j = 0; j < seq_length; j++) {
-      for (size_t k = 0; k < D; k++)
-        scores[i * seq_length + j] +=
-            mha->Q_cache[i * D + k] * mha->K_cache[j * D + k];
-      scores[i * seq_length + j] /= sqrtl(D);
+      long double sum = 0.0L;
+      for (size_t j = 0; j < T; j++) {
+        scores[i * T + j] = expl(scores[i * T + j] - mx);
+        sum += scores[i * T + j];
+      }
+      for (size_t j = 0; j < T; j++)
+        scores[i * T + j] /= sum;
     }
+  }
 
-  for (size_t i = 0; i < seq_length; i++) {
-    long double max = scores[i * seq_length];
-    for (size_t j = 1; j < seq_length; j++)
-      if (scores[i * seq_length + j] > max)
-        max = scores[i * seq_length + j];
+  // output
+  long double **out = (long double **)malloc(T * sizeof(long double *));
+  if (!out)
+    return NULL;
 
-    long double sum = 0;
-    for (size_t j = 0; j < seq_length; j++) {
-      scores[i * seq_length + j] = expl(scores[i * seq_length + j] - max);
-      sum += scores[i * seq_length + j];
+  for (size_t i = 0; i < T; i++) {
+    out[i] = (long double *)calloc(D, sizeof(long double));
+    for (size_t h = 0; h < H; h++) {
+      long double *scores = &mha->scores_cache[h * T * T];
+      for (size_t k = 0; k < T; k++) {
+        long double a = scores[i * T + k];
+        for (size_t j = 0; j < Hd; j++) {
+          out[i][h * Hd + j] += a * mha->V_cache[k * D + h * Hd + j];
+        }
+      }
     }
-    for (size_t j = 0; j < seq_length; j++)
-      scores[i * seq_length + j] /= sum;
   }
-
-  mha->scores_cache = scores;
-
-  long double **att_out = malloc(seq_length * sizeof(long double *));
-
-  for (size_t i = 0; i < seq_length; i++) {
-    att_out[i] = calloc(D, sizeof(long double));
-    for (size_t j = 0; j < D; j++)
-      for (size_t k = 0; k < seq_length; k++)
-        att_out[i][j] += scores[i * seq_length + k] * mha->V_cache[k * D + j];
-  }
-
-  long double **out = malloc(seq_length * sizeof(long double *));
-  for (size_t t = 0; t < seq_length; t++)
-    out[t] = NN_forward(mha->O_proj, att_out[t]);
-
-  for (size_t t = 0; t < seq_length; t++) {
-    free(att_out[t]);
-    free(Q[t]);
-    free(K[t]);
-    free(V[t]);
-  }
-  free(att_out);
-  free(Q);
-  free(K);
-  free(V);
 
   return out;
 }
