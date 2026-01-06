@@ -534,7 +534,8 @@ int main(void) {
     if (train_timer >= TRAIN_INTERVAL) {
       for (int a = 0; a < MAX_AGENTS; a++) {
         Agent *ai = &agents[a];
-        ai->cortex->learn(ai->cortex->brain, ai->reward_accumulator, 0);
+        ai->cortex->learn(ai->cortex->brain, ai->obs.data, ai->obs.size,
+                          ai->action, ai->reward_accumulator, 0);
         ai->reward_accumulator = 0.0f;
       }
       train_timer = 0;
