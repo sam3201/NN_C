@@ -153,7 +153,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   /* logits -> probs */
   softmaxf_inplace(action_probs, action_count);
 
-  /* epsilon-greedy exploration */
+  /* epsilon-greedy: sometimes force uniform exploration */
   float r = (float)rand() / (float)RAND_MAX;
   if (r < ad->epsilon) {
     ad->last_action = (size_t)(rand() % (int)action_count);
