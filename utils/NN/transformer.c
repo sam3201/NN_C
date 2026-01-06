@@ -466,12 +466,16 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
   long double **x = input_sequence;
 
   for (size_t l = 0; l < transformer->num_layers; l++) {
-    x = transformer_layer_forward(transformer->layers[l], x, seq_length);
-  }
+    long double **prev = x;
+    x = transformer_layer_forward(transformer->layers[l], prev, seq_length);
 
+    // free intermediate outputs we created in earlier layers
+    if (prev != input_sequence) {
+      free_seq(prev, seq_length);
+    }
+  }
   return x;
 }
-
 // ----------------------
 // Backprop
 // ----------------------
