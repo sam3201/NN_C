@@ -49,25 +49,6 @@ unsigned int ForeRunner_forward(ForeRunner_t *model,
   free(out);
 
   return best;
-
-  unsigned int C = model->num_contexts;
-  if (C == 0) {
-    free(logits);
-    return NONE;
-  }
-
-  /* argmax over first C outputs */
-  unsigned int best = 0;
-  long double bestv = logits[0];
-  for (unsigned int i = 1; i < C; i++) {
-    if (logits[i] > bestv) {
-      bestv = logits[i];
-      best = i;
-    }
-  }
-
-  free(logits);
-  return best;
 }
 
 // Backpropagation function with gradient computation
