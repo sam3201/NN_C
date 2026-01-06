@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-typedef struct MuModel MuModel;
-
 typedef struct {
   int obs_dim;
   int latent_dim;
@@ -23,9 +21,6 @@ typedef struct {
   int pred_W_count;
 
   void *runtime;
-  void (*repr)(MuModel *, const float *, float *);
-  void (*predict)(MuModel *, const float *, float *, float *);
-  void (*dynamics)(MuModel *, const float *, int, float *, float *);
 
 } MuModel;
 
