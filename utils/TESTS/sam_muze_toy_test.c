@@ -30,7 +30,7 @@ int main() {
   float obs[obs_dim];
   toy_env_reset(&env, obs);
 
-  for (int step = 0; step < 64; step++) {
+  for (int step = 0; step < 256; step++) {
     int action = muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
 
     float reward = 0.0f;
