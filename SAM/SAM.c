@@ -152,7 +152,6 @@ void SAM_adapt_transfusion(SAM_t *sam, long double context, ProjectionMatrix *P,
                            AdaptationParams *params) {
   if (!sam || !P || !params)
     return;
-  void(context);
 
   // Calculate base gamma for first submodel
   long double gamma =
