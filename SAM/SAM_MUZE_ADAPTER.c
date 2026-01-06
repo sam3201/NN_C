@@ -147,17 +147,12 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   softmaxf_inplace(action_probs, action_count);
 
   float r = (float)rand() / (float)RAND_MAX;
-  int exploring = (r < ad->epsilon);
+  float u = 1.0f / (float)action_count;
+  for (size_t i = 0; i < action_count; i++)
+    action_probs[i] = (1.0f - ad->epsilon) * action_probs[i] + ad->epsilon * u;
 
-  if (exploring) {
-    float u = 1.0f / (float)action_count;
-    for (size_t i = 0; i < action_count; i++)
-      action_probs[i] = u;
-
-    ad->last_action = (size_t)(rand() % (int)action_count);
-  } else {
-    ad->last_action = argmaxf(action_probs, action_count);
-  }
+  ad->last_action = argmaxf(action_probs, action_count);
+  /* OR sample randomly if you implement sampling */
 
   if (ad->last_action_count != action_count) {
     free(ad->last_probs);
