@@ -48,6 +48,11 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
   mha->O_proj =
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
 
+  if (!mha->Q_proj || !mha->K_proj || !mha->V_proj || !mha->O_proj) {
+    free_attention(mha);
+    return NULL;
+  }
+
   mha->X_cache = mha->Q_cache = mha->K_cache = mha->V_cache = NULL;
   mha->scores_cache = NULL;
 
