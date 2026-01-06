@@ -531,22 +531,6 @@ int main(void) {
       update_agent(&agents[i]);
 
     train_timer++;
-    if (train_timer >= TRAIN_INTERVAL) {
-      for (int a = 0; a < MAX_AGENTS; a++) {
-
-        Agent *ai = &agents[a];
-        int cx = (int)(ai->position.x / CHUNK_SIZE);
-        int cy = (int)(ai->position.y / CHUNK_SIZE);
-        Chunk *c = get_chunk(cx, cy);
-        ObsBuffer obs;
-        obs_init(&obs);
-        encode_observation(ai, get_chunk(ai->position.x, ai->position.y), &obs);
-        ai->cortex->learn(ai->cortex->brain, obs.data, obs.size,
-                          ai->reward_accumulator, 0.0f, 0);
-        ai->reward_accumulator = 0.0f;
-      }
-      train_timer = 0;
-    }
 
     BeginDrawing();
     ClearBackground((Color){20, 20, 20, 255});
