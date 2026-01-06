@@ -533,8 +533,9 @@ int main(void) {
     train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int a = 0; a < MAX_AGENTS; a++) {
-        tribes[t].cortex->learn(tribes[t].cortex->brain,
-                                tribes[t].reward_accumulator, 0);
+        Agent *a = &agents[a];
+        agents[a].cortex->learn(.cortex->brain, tribes[t].reward_accumulator,
+                                0);
 
         tribes[t].reward_accumulator = 0.0f;
       }
