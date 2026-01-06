@@ -725,7 +725,12 @@ void POPULATION_evolve(Population *pop) {
   if (eliteCount > pop->size)
     eliteCount = pop->size;
 
-  Genome_t **nextGen = malloc(pop->size * sizeof(Genome_t *));
+  Genome_t **nextGen = (Genome_t **)calloc(pop->size, sizeof(Genome_t *));
+  if (!nextGen)
+    return;
+
+  // ... fill nextGen ...
+  // on failure: destroy any nextGen[k] that were created, free(nextGen), return
 
   for (size_t i = 0; i < eliteCount; i++) {
     nextGen[i] = GENOME_clone(pop->genomes[i]);
