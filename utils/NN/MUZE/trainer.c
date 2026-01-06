@@ -23,7 +23,7 @@ static float cross_entropy(const float *pi_target, const float *p_pred, int A) {
   return loss;
 }
 
-void trainer_train_from_replay(MuZeroModel *model, ReplayBuffer *rb,
+void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
                                const TrainerConfig *cfg) {
   if (!model || !rb || !cfg)
     return;
