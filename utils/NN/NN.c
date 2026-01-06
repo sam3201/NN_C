@@ -583,6 +583,161 @@ void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
   free(deltas);
 }
 
+long double *NN_backprop_custom_delta_inputgrad(NN_t *nn, long double inputs[],
+                                                long double *output_delta) {
+  if (!nn || !inputs || !output_delta)
+    return NULL;
+
+  size_t L = nn->numLayers;
+
+  long double **z_values =
+      (long double **)malloc((L - 1) * sizeof(long double *));
+  long double **activations = (long double **)malloc(L * sizeof(long double *));
+  if (!z_values || !activations) {
+    free(z_values);
+    free(activations);
+    return NULL;
+  }
+
+  // Input layer activations
+  activations[0] = (long double *)malloc(nn->layers[0] * sizeof(long double));
+  if (!activations[0]) {
+    free(z_values);
+    free(activations);
+    return NULL;
+  }
+  memcpy(activations[0], inputs, nn->layers[0] * sizeof(long double));
+
+  // Forward: compute z + activations
+  for (size_t l = 1; l < L; l++) {
+    size_t in_size = nn->layers[l - 1];
+    size_t out_size = nn->layers[l];
+
+    z_values[l - 1] = (long double *)malloc(out_size * sizeof(long double));
+    activations[l] = (long double *)malloc(out_size * sizeof(long double));
+    if (!z_values[l - 1] || !activations[l]) {
+      // cleanup partial
+      for (size_t k = 0; k < l; k++) {
+        free(activations[k]);
+        if (k < l - 1)
+          free(z_values[k]);
+      }
+      free(z_values);
+      free(activations);
+      return NULL;
+    }
+
+    for (size_t j = 0; j < out_size; j++) {
+      long double sum = nn->biases[l - 1][j];
+      for (size_t i = 0; i < in_size; i++)
+        sum += nn->weights[l - 1][i * out_size + j] * activations[l - 1][i];
+
+      z_values[l - 1][j] = sum;
+
+      if (l < L - 1)
+        activations[l][j] = nn->activationFunctions[l - 1](sum);
+      else
+        activations[l][j] = sum; // raw output
+    }
+  }
+
+  // Deltas for each layer output (excluding input)
+  long double **deltas =
+      (long double **)malloc((L - 1) * sizeof(long double *));
+  if (!deltas) {
+    for (size_t l = 0; l < L; l++)
+      free(activations[l]);
+    for (size_t l = 0; l < L - 1; l++)
+      free(z_values[l]);
+    free(z_values);
+    free(activations);
+    return NULL;
+  }
+
+  for (size_t l = 0; l < L - 1; l++) {
+    deltas[l] = (long double *)calloc(nn->layers[l + 1], sizeof(long double));
+    if (!deltas[l]) {
+      for (size_t k = 0; k < l; k++)
+        free(deltas[k]);
+      free(deltas);
+      for (size_t k = 0; k < L; k++)
+        free(activations[k]);
+      for (size_t k = 0; k < L - 1; k++)
+        free(z_values[k]);
+      free(z_values);
+      free(activations);
+      return NULL;
+    }
+  }
+
+  // Output delta
+  size_t last_idx = L - 2;
+  memcpy(deltas[last_idx], output_delta,
+         nn->layers[L - 1] * sizeof(long double));
+
+  // Backprop hidden layers
+  for (size_t l = L - 2; l > 0; l--) {
+    size_t curr_size = nn->layers[l];
+    size_t next_size = nn->layers[l + 1];
+
+    for (size_t i = 0; i < curr_size; i++) {
+      long double sum = 0.0L;
+      for (size_t j = 0; j < next_size; j++) {
+        sum += nn->weights[l][i * next_size + j] * deltas[l][j];
+      }
+      deltas[l - 1][i] =
+          sum * nn->activationDerivatives[l - 1](z_values[l - 1][i]);
+    }
+  }
+
+  // --- compute dL/dInputs BEFORE optimizer step ---
+  size_t in0 = nn->layers[0];
+  size_t out0 = nn->layers[1];
+  long double *grad_input = (long double *)calloc(in0, sizeof(long double));
+  if (!grad_input) {
+    // still update weights then cleanup
+  } else {
+    // dX[i] = sum_j W0[i,j] * delta0[j]
+    for (size_t i = 0; i < in0; i++) {
+      long double s = 0.0L;
+      for (size_t j = 0; j < out0; j++) {
+        s += nn->weights[0][i * out0 + j] * deltas[0][j];
+      }
+      grad_input[i] = s;
+    }
+  }
+
+  // Gradients for weights/biases
+  for (size_t l = 0; l < L - 1; l++) {
+    size_t in_size = nn->layers[l];
+    size_t out_size = nn->layers[l + 1];
+
+    for (size_t j = 0; j < out_size; j++) {
+      nn->biases_grad[l][j] = deltas[l][j];
+      for (size_t i = 0; i < in_size; i++) {
+        nn->weights_grad[l][i * out_size + j] =
+            activations[l][i] * deltas[l][j];
+      }
+    }
+  }
+
+  if (nn->optimizer)
+    nn->optimizer(nn);
+
+  // Cleanup
+  for (size_t l = 0; l < L - 1; l++) {
+    free(z_values[l]);
+    free(activations[l + 1]);
+    free(deltas[l]);
+  }
+  free(z_values);
+  free(activations[0]);
+  free(activations);
+  free(deltas);
+
+  return grad_input; // caller frees
+}
+
 void NN_backprop(NN_t *nn, long double inputs[], long double y_true[]) {
   size_t out_size = nn->layers[nn->numLayers - 1];
 
