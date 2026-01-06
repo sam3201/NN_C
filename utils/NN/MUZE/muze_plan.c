@@ -58,7 +58,7 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
     float *latent = (float *)malloc(sizeof(float) * L);
 
     if (latent) {
-      latent_seq_to_latent_float(latent_seq, seq_len, obs_dim, latent, L);
+      mu_model_repr(cortex->mcts_model, obs, latent);
 
       MCTSResult r =
           mcts_run_latent(cortex->mcts_model, latent, &cortex->mcts_params);
