@@ -3,17 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct ReplayBuffer {
-  size_t capacity;
-  size_t size;
-  size_t write_idx;
-  int obs_dim;
-  int action_count;
-  float *obs_buf; /* capacity * obs_dim */
-  float *pi_buf;  /* capacity * action_count */
-  float *z_buf;   /* capacity */
-};
-
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count) {
   ReplayBuffer *rb = (ReplayBuffer *)malloc(sizeof(ReplayBuffer));
   if (!rb)
