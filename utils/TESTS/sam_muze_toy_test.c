@@ -96,6 +96,9 @@ int main(void) {
     }
 
     printf("episode %d return=%.1f final_pos=%d\n", ep, ep_return, env.pos);
+
+    display_env(&env, goal_pos);
+    refresh();
   }
 
   SAM_MUZE_destroy(cortex);
