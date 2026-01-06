@@ -30,7 +30,10 @@ typedef struct {
   long double epsilon;
   NN_t *norm_network;
 
-  long double *input_cache; // cached input for backprop
+  long double *input_cache; // [T * D]
+  long double *mean_cache;  // [T]
+  long double *var_cache;   // [T]
+  size_t cache_T;
 } LayerNorm;
 
 // Feed-forward network
