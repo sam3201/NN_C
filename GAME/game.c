@@ -434,7 +434,7 @@ void update_agent(Agent *a) {
   encode_observation(a, c, &obs);
 
   MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
-  int action = decide_action(a, &obs);
+  int action = muze_plan(cortex->brain, obs.data, obs.size, 0.0f);
 
   switch (action) {
   case ACTION_UP:
