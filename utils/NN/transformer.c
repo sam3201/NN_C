@@ -72,6 +72,8 @@ void free_attention(MultiHeadAttention *mha) {
     NN_destroy(mha->K_proj);
   if (mha->V_proj)
     NN_destroy(mha->V_proj);
+  if (mha->O_proj)
+    NN_destroy(mha->O_proj);
   if (mha->Q_cache)
     free(mha->Q_cache);
   if (mha->K_cache)
