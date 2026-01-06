@@ -650,7 +650,6 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
       }
     }
 
-    free(dConcat);
     free(dScores);
   }
 
@@ -665,6 +664,7 @@ void transformer_mha_backprop(MultiHeadAttention *mha,
   free(dQ);
   free(dK);
   free(dV);
+  free(dConcat);
 }
 
 // ----------------------
