@@ -377,7 +377,6 @@ MCTSResult mcts_run(MuModel *model, const float *obs,
 
   mu_model_repr(model, obs, root->latent);
   float root_value = expand_node(root, model);
-  dbg_print_root("after expand(root)", root);
 
   if (params->dirichlet_alpha > 0.0f && params->dirichlet_eps > 0.0f)
     add_dirichlet_noise(root, params->dirichlet_alpha, params->dirichlet_eps);
