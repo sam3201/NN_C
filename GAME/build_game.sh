@@ -58,6 +58,5 @@ gcc -w \
 echo "Compilation successful! Running the game..."
 ./game
 
-# Only remove if you really want it removed every run:
-# rm -f game
+rm -f game
 
