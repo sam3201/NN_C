@@ -15,8 +15,8 @@ INCLUDES=(
   -I../../sAM
 )
 
-# ---- explicit test entrypoint ----
-TEST_SRC="sam_muze_toy_test.c"
+# ---- user input test entrypoint ---
+TEST_SRC=$1
 
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
