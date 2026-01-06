@@ -55,11 +55,12 @@ unsigned int ForeRunner_forward(ForeRunner_t *model,
 // Backpropagation function with gradient computation
 void ForeRunner_backprop(ForeRunner_t *model, long double **input_sequence,
                          unsigned int seq_length, long double *grad_loss) {
-  if (!model || !grad_loss)
-    return;
-
-  TRANSFORMER_backprop(model->transformer, input_sequence, seq_length,
-                       grad_loss);
+  (void)model;
+  (void)input_sequence;
+  (void)seq_length;
+  (void)grad_loss;
+  /* TODO: build grad_output[seq_length][model_dim] and call
+   * TRANSFORMER_backprop */
 }
 
 // Destroy the ForeRunner model
