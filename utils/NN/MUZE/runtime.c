@@ -63,8 +63,15 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
 
 void mu_runtime_train(MuRuntime *rt, MuModel *model) {
-  if (rb_size(rt->rb) < 32)
+  if (!rt || !model)
     return;
 
-  /* Placeholder training hook */
+  TrainerConfig cfg = {
+      .batch_size = 32,
+      .train_steps = 200,    // how many minibatches per call
+      .min_replay_size = 64, // warmup
+      .lr = 0.05f            // start kinda high for toy env; tune later
+  };
+
+  trainer_train_from_replay(model, rt->rb, &cfg);
 }
