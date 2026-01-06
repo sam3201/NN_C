@@ -1,4 +1,5 @@
 #include "muzero_model.h"
+#include "replay_buffer.h"
 #include "runtime.h"
 #include <math.h>
 #include <stdlib.h>
@@ -78,6 +79,10 @@ MuModel *mu_model_create(const MuConfig *cfg) {
     m->pred_W[i] = 0.01f;
 
   m->runtime = mu_runtime_create(m, 0.95f);
+
+  m->repr = NULL;
+  m->dynamics = NULL;
+  m->predict = NULL;
 
   return m;
 }
