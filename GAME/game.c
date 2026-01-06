@@ -533,11 +533,11 @@ int main(void) {
     train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int a = 0; a < MAX_AGENTS; a++) {
+
+        Agent *ai = &agents[a];
         int cx = (int)(a->position.x / CHUNK_SIZE);
         int cy = (int)(a->position.y / CHUNK_SIZE);
         Chunk *c = get_chunk(cx, cy);
-
-        Agent *ai = &agents[a];
         ObsBuffer obs;
         obs_init(&obs);
         encode_observation(ai, get_chunk(ai->position.x, ai->position.y), &obs);
