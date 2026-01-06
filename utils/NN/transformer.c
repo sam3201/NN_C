@@ -559,8 +559,7 @@ long double **transformer_layer_forward(TransformerLayer *layer,
 }
 
 long double **TRANSFORMER_forward(Transformer_t *transformer,
-                                  long double **input_sequence,
-                                  size_t T) {
+                                  long double **input_sequence, size_t T) {
   long double **x = input_sequence;
 
   for (size_t l = 0; l < transformer->num_layers; l++) {
@@ -569,7 +568,8 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
 
     if (prev != input_sequence) {
       // free intermediate sequences we allocated
-      for (size_t t = 0; t < T; t++) free(prev[t]);
+      for (size_t t = 0; t < T; t++)
+        free(prev[t]);
       free(prev);
     }
   }
@@ -580,8 +580,7 @@ long double **TRANSFORMER_forward(Transformer_t *transformer,
 // Backprop
 // ----------------------
 static void transformer_layer_backprop_seq(TransformerLayer *layer,
-                                           long double **grad,
-                                           size_t T) {
+                                           long double **grad, size_t T) {
   size_t D = layer->model_dim;
 
   // Norm2 per token
@@ -591,8 +590,7 @@ static void transformer_layer_backprop_seq(TransformerLayer *layer,
   // Feedforward: backprop per token using cached ff inputs
   for (size_t t = 0; t < T; t++)
     NN_backprop_custom_delta(layer->feed_forward->network,
-                             &layer->feed_forward->input_cache[t * D],
-                             grad[t]);
+                             &layer->feed_forward->input_cache[t * D], grad[t]);
 
   // Norm1 per token
   for (size_t t = 0; t < T; t++)
@@ -605,15 +603,15 @@ static void transformer_layer_backprop_seq(TransformerLayer *layer,
 
   transformer_mha_backprop(layer->attention, flat);
 
-  // (Optional) If you want to propagate grad further “through attention output” into earlier tokens,
-  // you’d need attention to output dX. Right now we rely on Q/K/V projection backprops updating weights,
-  // and grad is “good enough” to make training move.
+  // (Optional) If you want to propagate grad further “through attention output”
+  // into earlier tokens, you’d need attention to output dX. Right now we rely
+  // on Q/K/V projection backprops updating weights, and grad is “good enough”
+  // to make training move.
   free(flat);
 }
 
 long double **TRANSFORMER_backprop(Transformer_t *transformer,
-                                   long double **grad_output,
-                                   size_t T) {
+                                   long double **grad_output, size_t T) {
   for (ssize_t l = (ssize_t)transformer->num_layers - 1; l >= 0; l--) {
     transformer_layer_backprop_seq(transformer->layers[l], grad_output, T);
   }
