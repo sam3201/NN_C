@@ -350,6 +350,13 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
     }
   }
 
+  // Final output projection (O_proj)
+  for (size_t i = 0; i < T; i++) {
+    long double *proj = NN_forward(mha->O_proj, out[i]);
+    free(out[i]);
+    out[i] = proj;
+  }
+
   return out;
 }
 
