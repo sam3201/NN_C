@@ -1053,6 +1053,12 @@ int main(void) {
     }
 
     /* Draw player */
+    /* Draw player */
+    Vector2 pp = Vector2Subtract(player.position, camera_pos);
+    pp = Vector2Scale(pp, WORLD_SCALE);
+    pp.x += SCREEN_WIDTH / 2;
+    pp.y += SCREEN_HEIGHT / 2;
+
     draw_player(pp);
 
     DrawCircleV(pp, WORLD_SCALE * 0.45f, YELLOW);
