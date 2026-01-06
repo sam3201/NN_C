@@ -211,17 +211,16 @@ static void sam_learn(void *brain, float reward, int terminal) {
         SAM_transfuse(ad->sam);
       }
 
-      ...
-    }
-    SAM_transfuse(ad->sam);
+      SAM_transfuse(ad->sam);
 
-    if (ad->epsilon > ad->epsilon_min) {
-      ad->epsilon *= ad->epsilon_decay;
-      if (ad->epsilon < ad->epsilon_min)
-        ad->epsilon = ad->epsilon_min;
-    }
+      if (ad->epsilon > ad->epsilon_min) {
+        ad->epsilon *= ad->epsilon_decay;
+        if (ad->epsilon < ad->epsilon_min)
+          ad->epsilon = ad->epsilon_min;
+      }
 
-    ad->has_last = 0;
+      ad->has_last = 0;
+    }
   }
 }
 
