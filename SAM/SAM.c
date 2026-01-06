@@ -497,7 +497,21 @@ void SAM_adapt(SAM_t *sam, long double **input_sequence, size_t seq_length) {
                  j < sam->layer_sizes[sam->num_layers - 1]; j++) {
               target[j] = 0.0L;
             }
-            NEAT_train(sam->submodels[i], input_sequence[0], target);
+            long double *in0 = input_sequence[0];
+            long double *t0 = target;
+
+            long double **inputs =
+                (long double **)malloc(sizeof(long double *));
+            long double **targets =
+                (long double **)malloc(sizeof(long double *));
+            if (inputs && targets) {
+              inputs[0] = in0;
+              targets[0] = t0;
+              NEAT_train(sam->submodels[i], inputs, targets, 1);
+            }
+            free(inputs);
+            free(targets);
+
             free(transformer_out);
           }
           free(target);
