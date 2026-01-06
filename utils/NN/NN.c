@@ -809,7 +809,7 @@ LossFunction get_loss_function(LossFunctionType type) {
 }
 
 LossDerivative get_loss_derivative(LossDerivativeType type) {
-  if (type < 0 || type >= LOSS_DERIVATIVE_TYPE_COUNT)
+  if (type >= LOSS_DERIVATIVE_TYPE_COUNT)
     return NULL;
   return LOSS_DERIVATIVES[type];
 }
