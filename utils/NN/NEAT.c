@@ -660,7 +660,6 @@ void POPULATION_evolve(Population *pop) {
       continue;
     }
     nextGen[i] = GENOME_crossover(g1, g2);
-
     GENOME_mutate(nextGen[i], 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
   }
 
