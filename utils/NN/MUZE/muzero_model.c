@@ -129,6 +129,11 @@ void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out) {
   if (!m || !latent_in || !policy_logits_out || !value_out)
     return;
+  if (m->predict) {
+    m->predict(m, latent_in, policy_logits_out, value_out);
+    return;
+  }
+
   if (m->predict)
     m->predict(m, latent_in, policy_logits_out, value_out);
   else
