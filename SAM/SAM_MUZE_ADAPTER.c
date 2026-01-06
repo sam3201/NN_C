@@ -262,6 +262,8 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   ad->last_seq_ptrs = NULL;
   ad->last_seq_len = 0;
 
+  ad->episode_counter = 0;
+
   ad->epsilon = 0.30f;
   ad->epsilon_min = 0.02f;
   ad->epsilon_decay = 0.95f;
