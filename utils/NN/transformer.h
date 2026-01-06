@@ -88,7 +88,6 @@ static void free_seq(long double **seq, size_t T) {
 
 Transformer_t *TRANSFORMER_init(size_t model_dim, size_t num_heads,
                                 size_t num_layers);
-
 void TRANSFORMER_train(Transformer_t *transformer, long double **input_sequence,
                        size_t seq_length, long double *target);
 // Forward pass
