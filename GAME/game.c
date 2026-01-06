@@ -1324,19 +1324,6 @@ void update_player(void) {
   player.stamina = fmaxf(0, player.stamina - 0.02f);
 }
 
-static void draw_projectiles(void) {
-  for (int i = 0; i < MAX_PROJECTILES; i++) {
-    Projectile *p = &projectiles[i];
-    if (!p->alive)
-      continue;
-
-    Vector2 sp = world_to_screen(p->pos);
-    float r = WORLD_SCALE * 0.07f * scale_size;
-    DrawCircleV(sp, r, (Color){220, 220, 220, 255});
-    DrawCircleLines((int)sp.x, (int)sp.y, r, (Color){0, 0, 0, 160});
-  }
-}
-
 /* =======================
    MAIN
 ======================= */
