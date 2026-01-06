@@ -330,7 +330,7 @@ void init_agents(void) {
     a->health = a->stamina = 100;
     a->flash_timer = 0;
     a->age = 0;
-    a->agent_start = t * AGENT_PER_TRIBE;
+    a->agent_start = i * AGENT_PER_TRIBE;
     a->agent_count = AGENT_PER_TRIBE;
     a->reward_accumulator = 0.0f;
 
