@@ -536,7 +536,9 @@ int main(void) {
         Agent *ai = &agents[a];
         ObsBuffer obs;
         obs_init(&obs);
-        encode_observation(ai, ai->cortex->chunk, &obs);
+        encode_observation(
+            ai, get_chunk(ai->position.x, ai->position.y),
+            &obs); // TODO: use agent's position instead of chunkchunk, &obs);
         ai->cortex->learn(ai->cortex->brain, obs.data, ai->obs.size, ai->action,
                           ai->reward_accumulator, 0);
         ai->reward_accumulator = 0.0f;
