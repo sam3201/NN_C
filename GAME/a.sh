@@ -1,12 +1,15 @@
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
-SAM_SRC=$(find ../utils/NN/SAM -name "*.c" | tr '\n' ' ')
+MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
+NN_SRC=$(find ../utils/NN -name "*.c" | tr '\n' ' ')
+SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 
-gcc -g game.c $MUZE_SRC $SAM_SR \
-    -I../utils/NN/MUZE/ -I../utils/NN/ -I../utils/NN/SAM/ \
-    -I../utils/Raylib/src \
-    -L../utils/Raylib/src -lraylib \
-    -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
-    -o game
+gcc -w game.c $NN_SRC $MUZE_SRC $SAM_SRC \
+  -I../utils/NN -I../utils/NN/MUZE -I../SAM -I../utils/Raylib/src \
+  -L../utils/Raylib/src -lraylib \
+  -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
+  -arch arm64 \
+  -o game
+
 
 ./game
 
