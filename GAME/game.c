@@ -1053,7 +1053,7 @@ int main(void) {
     }
 
     /* Draw player */
-    draw_player(pp_screen);
+    draw_player(pp);
 
     DrawCircleV(pp, WORLD_SCALE * 0.45f, YELLOW);
 
