@@ -466,8 +466,8 @@ void update_agent(Agent *a) {
     mu_model_end_episode(tr->cortex->brain, -1.0f);
   } else {
     mu_model_step(tr->cortex->brain, obs.data, action, reward);
-    obs_free(&obs);
   }
+  obs_free(&obs);
 
   a->age++;
 
