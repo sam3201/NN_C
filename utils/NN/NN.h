@@ -119,6 +119,10 @@ long double *NN_forward(NN_t *nn, long double inputs[]);
 long double *NN_forward_softmax(NN_t *nn, long double inputs[]);
 
 // Backpropagation
+// Backprop using precomputed output delta, and ALSO return dL/dInputs.
+// Caller owns returned buffer and must free().
+long double *NN_backprop_custom_delta_inputgrad(NN_t *nn, long double inputs[],
+                                                long double *output_delta);
 void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
                               long double *output_delta);
 void NN_backprop(NN_t *nn, long double inputs[], long double y_true[]);
