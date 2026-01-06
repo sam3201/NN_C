@@ -803,7 +803,7 @@ ActivationDerivative get_activation_derivative(ActivationDerivativeType type) {
 }
 
 LossFunction get_loss_function(LossFunctionType type) {
-  if (type < 0 || type >= LOSS_TYPE_COUNT)
+  if (type >= LOSS_TYPE_COUNT)
     return NULL;
   return LOSS_FUNCTIONS[type];
 }
