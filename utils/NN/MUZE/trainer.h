@@ -1,4 +1,3 @@
-// MUZE/trainer.h
 #ifndef MUZE_TRAINER_H
 #define MUZE_TRAINER_H
 
@@ -11,7 +10,7 @@ extern "C" {
 
 typedef struct TrainerConfig {
   int batch_size;
-  int train_steps;     // how many SGD steps per call
+  int train_steps;     // SGD steps per call
   int min_replay_size; // warmup threshold
   float lr;
 } TrainerConfig;
