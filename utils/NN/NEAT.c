@@ -437,8 +437,9 @@ Genome_t *GENOME_clone(const Genome_t *src) {
   if (!src)
     return NULL;
   Genome_t *clone = (Genome_t *)malloc(sizeof(Genome_t));
-  genome->nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, reg,
-                       opt, learningRate);
+  clone->nn = NN_init(src->nn->layers, src->nn->actFuncs, src->nn->actDerivs,
+                      src->nn->lossFunc, src->nn->lossDeriv, src->nn->reg,
+                      src->nn->opt, src->nn->learningRate);
   size_t numOutputs = layers[genome->nn->numLayers - 1];
   genome->numNodes = numInputs + numOutputs + 1;
   genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
