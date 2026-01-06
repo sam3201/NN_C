@@ -461,18 +461,19 @@ void update_agent(Agent *a) {
     a->stamina -= 0.05f;
   }
 
-  if (a->health <= 0 || a->stamina <= 0) {
-    a->alive = false;
-    mu_model_end_episode(tr->cortex->brain, -1.0f);
-  } else {
-    mu_model_step(tr->cortex->brain, obs.data, action, reward);
-    obs_free(&obs);
-  }
-
   a->age++;
 
-  int terminal = !a->alive;
+  int terminal = 0;
+  if (a->health <= 0 || a->stamina <= 0) {
+    a->alive = false;
+    terminal = 1;
+  }
+
+  /* learning hook (adapter decides what to do) */
   tr->cortex->learn(tr->cortex->brain, reward, terminal);
+
+  /* always free obs */
+  obs_free(&obs);
 }
 
 /* =======================
