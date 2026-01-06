@@ -4,8 +4,8 @@
 #include <string.h>
 
 // Lookup tables for functions
-static const ActivationFunction ACTIVATION_FUNCTIONS[] = {sigmoid, tanh, relu,
-                                                          linear};
+static const ActivationFunction ACTIVATION_FUNCTIONS[] = {
+    sigmoid, tanh_activation, relu, linear};
 
 static const ActivationDerivative ACTIVATION_DERIVATIVES[] = {
     sigmoid_derivative, tanh_derivative, relu_derivative, linear_derivative};
