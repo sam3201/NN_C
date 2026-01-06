@@ -7,6 +7,20 @@
 #include <string.h>
 #include <unistd.h> // usleep
 
+static void display_env_curses(const ToyEnvState *env, int goal_pos) {
+  clear();
+  for (int i = 0; i < env->size; i++) {
+    if (i == env->pos)
+      addch('X');
+    else if (i == goal_pos)
+      addch('G');
+    else
+      addch('.');
+  }
+  addch('\n');
+  refresh();
+}
+
 static void draw_env(int row, const ToyEnvState *env, int goal_pos) {
   // Track
   for (int i = 0; i < (int)env->size; i++) {
