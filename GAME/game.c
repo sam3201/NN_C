@@ -433,7 +433,7 @@ void update_agent(Agent *a) {
 
   encode_observation(a, c, &obs);
 
-  // action =
+  MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
 
   obs_free(&obs);
 
