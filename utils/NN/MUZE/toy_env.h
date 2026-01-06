@@ -1,7 +1,7 @@
 #ifndef TOY_ENV_H
 #define TOY_ENV_H
 
-#include <cstddef>
+#include <stddef.h>
 
 typedef struct {
   int pos;
