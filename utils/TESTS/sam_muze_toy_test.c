@@ -1,4 +1,4 @@
-// sam_muze_toy_test.c (drop-in replacement)
+// sam_muze_toy_test.c
 
 #include "../../SAM/SAM.h"
 #include "../NN/MUZE/all.h"
