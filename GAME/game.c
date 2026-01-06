@@ -690,7 +690,7 @@ void draw_resources(void) {
         default:
           // fallback
           fprintf(stderr, "Unknown resource type: %d\n", r->type);
-
+          exit(1);
           break;
         }
       }
