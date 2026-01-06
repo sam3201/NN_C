@@ -302,7 +302,7 @@ void draw_mobs(void) {
 /* =======================
    TRIBES & AGENTS
 ======================= */
-void init_tribes(void) {
+void tribe_init(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
   float spacing = 24.0f;
 
