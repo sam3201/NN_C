@@ -702,13 +702,14 @@ void POPULATION_evolve(Population *pop) {
 
   assign_species(pop);
 
-  // sanity: no NULL genomes
+  // sanity: no NULL genomes (if any are NULL, bail safely)
   for (size_t i = 0; i < pop->size; i++) {
-    if (!pop->genomes[i])
-      return; // or recreate properly (needs numInputs/numOutputs stored in pop)
+    if (!pop->genomes[i]) {
+      return;
+    }
   }
 
-  // sort genomes by fitness desc (simple bubble sort)
+  // sort genomes by fitness desc (simple selection/bubble style)
   for (size_t i = 0; i + 1 < pop->size; i++) {
     for (size_t j = i + 1; j < pop->size; j++) {
       if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
@@ -729,35 +730,65 @@ void POPULATION_evolve(Population *pop) {
   if (!nextGen)
     return;
 
-  // ... fill nextGen ...
-  // on failure: destroy any nextGen[k] that were created, free(nextGen), return
+// helper: clean up partial nextGen on any failure
+#define CLEANUP_AND_RETURN()                                                   \
+  do {                                                                         \
+    for (size_t k = 0; k < pop->size; k++) {                                   \
+      if (nextGen[k])                                                          \
+        GENOME_destroy(nextGen[k]);                                            \
+    }                                                                          \
+    free(nextGen);                                                             \
+    return;                                                                    \
+  } while (0)
 
+  // 1) Elites: clone exactly (more stable than crossover-with-self)
   for (size_t i = 0; i < eliteCount; i++) {
     nextGen[i] = GENOME_clone(pop->genomes[i]);
     if (!nextGen[i])
-      return;
+      CLEANUP_AND_RETURN();
   }
 
+  // 2) Rest: crossover + mutate (with safe fallbacks)
   for (size_t i = eliteCount; i < pop->size; i++) {
     size_t p1 = rand() % eliteCount;
     size_t p2 = rand() % eliteCount;
+
     Genome_t *g1 = pop->genomes[p1];
     Genome_t *g2 = pop->genomes[p2];
+
+    // fallback: if anything weird, just clone best genome
     if (!g1 || !g2) {
-      nextGen[i] = GENOME_crossover(pop->genomes[0], pop->genomes[0]);
+      nextGen[i] = GENOME_clone(pop->genomes[0]);
       if (!nextGen[i])
-        return;
+        CLEANUP_AND_RETURN();
       continue;
     }
+
     nextGen[i] = GENOME_crossover(g1, g2);
-    GENOME_mutate(nextGen[i], 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
+
+    // if crossover failed (or produced NULL), fall back to cloning best
+    if (!nextGen[i]) {
+      nextGen[i] = GENOME_clone(pop->genomes[0]);
+      if (!nextGen[i])
+        CLEANUP_AND_RETURN();
+      continue;
+    }
+
+    GENOME_mutate(nextGen[i], 0.8L, 0.2L, // weight perturb rate/amount
+                  0.3L, 0.5L,             // add node / add connection
+                  0.1L,                   // toggle connection
+                  0.05L,                  // bias perturb
+                  0.05L);                 // activation mutate
   }
 
-  for (size_t i = 0; i < pop->size; i++)
+  // 3) Replace population
+  for (size_t i = 0; i < pop->size; i++) {
     GENOME_destroy(pop->genomes[i]);
-
+  }
   free(pop->genomes);
   pop->genomes = nextGen;
+
+#undef CLEANUP_AND_RETURN
 }
 
 // Return innovation number, create if new
