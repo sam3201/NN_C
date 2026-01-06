@@ -869,7 +869,18 @@ void update_player(void) {
     player.position.x -= speed;
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
-  if (IsKeyDown(KEY_PLUS))
+  if (IsKeyDown(KEY_PLUS)) {
+    WORLD_SCALE += 0.1f;
+  }
+  if (IsKeyDown(KEY_MINUS)) {
+    WORLD_SCALE -= 0.1f;
+  }
+  if (IsKeyDown(KEY_Q))
+    player.position.x -= speed;
+  if (IsKeyDown(KEY_E))
+    player.position.x += speed;
+  if (IsKeyDown(KEY_Q))
+
     player.position.y -= speed;
   if (IsKeyDown(KEY_E))
     player.position.y += speed;
