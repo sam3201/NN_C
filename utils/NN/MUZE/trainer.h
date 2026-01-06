@@ -1,4 +1,4 @@
-#include "muzero.h
+#include "muzero_model.h
 
 typedef struct TrainerConfig {
   int batch_size;
