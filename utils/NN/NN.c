@@ -1031,6 +1031,229 @@ NN_t *NN_load(const char *filename) {
   return nn;
 }
 
+int NN_save_fp(NN_t *nn, FILE *f) {
+  if (!nn || !f)
+    return -1;
+
+  uint32_t magic = 0x4E4E3031; // "NN01"
+  if (fwrite(&magic, sizeof(uint32_t), 1, f) != 1)
+    return -1;
+
+  if (fwrite(&nn->numLayers, sizeof(size_t), 1, f) != 1)
+    return -1;
+  if (fwrite(nn->layers, sizeof(size_t), nn->numLayers, f) != nn->numLayers)
+    return -1;
+
+  if (fwrite(&nn->learningRate, sizeof(long double), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->t, sizeof(size_t), 1, f) != 1)
+    return -1;
+
+  // Activation enums
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    ActivationFunctionType a =
+        get_activation_function_from_func(nn->activationFunctions[i]);
+    ActivationDerivativeType d =
+        get_activation_derivative_from_func(nn->activationDerivatives[i]);
+    if (fwrite(&a, sizeof(a), 1, f) != 1)
+      return -1;
+    if (fwrite(&d, sizeof(d), 1, f) != 1)
+      return -1;
+  }
+
+  LossFunctionType loss = get_loss_function_from_func(nn->loss);
+  OptimizerType opt = get_optimizer_from_func(nn->optimizer);
+  RegularizationType reg = get_regularization_from_func(nn->regularization);
+
+  if (fwrite(&loss, sizeof(loss), 1, f) != 1)
+    return -1;
+  if (fwrite(&opt, sizeof(opt), 1, f) != 1)
+    return -1;
+  if (fwrite(&reg, sizeof(reg), 1, f) != 1)
+    return -1;
+
+  // Layer data
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+
+    if (fwrite(nn->weights[l], sizeof(long double), wcount, f) != wcount)
+      return -1;
+    if (fwrite(nn->biases[l], sizeof(long double), bcount, f) != bcount)
+      return -1;
+
+    if (fwrite(nn->opt_m_w[l], sizeof(long double), wcount, f) != wcount)
+      return -1;
+    if (fwrite(nn->opt_v_w[l], sizeof(long double), wcount, f) != wcount)
+      return -1;
+    if (fwrite(nn->opt_m_b[l], sizeof(long double), bcount, f) != bcount)
+      return -1;
+    if (fwrite(nn->opt_v_b[l], sizeof(long double), bcount, f) != bcount)
+      return -1;
+  }
+
+  return 0;
+}
+
+NN_t *NN_load_fp(FILE *f) {
+  if (!f)
+    return NULL;
+
+  uint32_t magic;
+  if (fread(&magic, sizeof(uint32_t), 1, f) != 1)
+    return NULL;
+  if (magic != 0x4E4E3031)
+    return NULL;
+
+  NN_t *nn = calloc(1, sizeof(NN_t));
+  if (!nn)
+    return NULL;
+
+  if (fread(&nn->numLayers, sizeof(size_t), 1, f) != 1) {
+    free(nn);
+    return NULL;
+  }
+  if (nn->numLayers == 0 || nn->numLayers > 256) {
+    free(nn);
+    return NULL;
+  }
+
+  nn->layers = malloc(nn->numLayers * sizeof(size_t));
+  if (!nn->layers) {
+    free(nn);
+    return NULL;
+  }
+
+  if (fread(nn->layers, sizeof(size_t), nn->numLayers, f) != nn->numLayers) {
+    free(nn->layers);
+    free(nn);
+    return NULL;
+  }
+
+  if (fread(&nn->learningRate, sizeof(long double), 1, f) != 1) {
+    NN_destroy(nn);
+    return NULL;
+  }
+  if (fread(&nn->t, sizeof(size_t), 1, f) != 1) {
+    NN_destroy(nn);
+    return NULL;
+  }
+
+  nn->activationFunctions =
+      malloc((nn->numLayers - 1) * sizeof(ActivationFunction));
+  nn->activationDerivatives =
+      malloc((nn->numLayers - 1) * sizeof(ActivationDerivative));
+  if (!nn->activationFunctions || !nn->activationDerivatives) {
+    NN_destroy(nn);
+    return NULL;
+  }
+
+  for (size_t i = 0; i < nn->numLayers - 1; i++) {
+    ActivationFunctionType a;
+    ActivationDerivativeType d;
+    if (fread(&a, sizeof(a), 1, f) != 1) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(&d, sizeof(d), 1, f) != 1) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    nn->activationFunctions[i] = get_activation_function(a);
+    nn->activationDerivatives[i] = get_activation_derivative(d);
+    if (!nn->activationFunctions[i] || !nn->activationDerivatives[i]) {
+      NN_destroy(nn);
+      return NULL;
+    }
+  }
+
+  LossFunctionType loss;
+  OptimizerType opt;
+  RegularizationType reg;
+
+  if (fread(&loss, sizeof(loss), 1, f) != 1) {
+    NN_destroy(nn);
+    return NULL;
+  }
+  if (fread(&opt, sizeof(opt), 1, f) != 1) {
+    NN_destroy(nn);
+    return NULL;
+  }
+  if (fread(&reg, sizeof(reg), 1, f) != 1) {
+    NN_destroy(nn);
+    return NULL;
+  }
+
+  nn->loss = get_loss_function(loss);
+  nn->lossDerivative = get_loss_derivative(map_loss_to_derivative(loss));
+  nn->optimizer = get_optimizer_function(opt);
+  nn->regularization = get_regularization_function(reg);
+
+  size_t L = nn->numLayers - 1;
+  nn->weights = malloc(L * sizeof(long double *));
+  nn->biases = malloc(L * sizeof(long double *));
+  nn->weights_grad = malloc(L * sizeof(long double *));
+  nn->biases_grad = malloc(L * sizeof(long double *));
+  nn->opt_m_w = malloc(L * sizeof(long double *));
+  nn->opt_v_w = malloc(L * sizeof(long double *));
+  nn->opt_m_b = malloc(L * sizeof(long double *));
+  nn->opt_v_b = malloc(L * sizeof(long double *));
+  if (!nn->weights || !nn->biases || !nn->weights_grad || !nn->biases_grad ||
+      !nn->opt_m_w || !nn->opt_v_w || !nn->opt_m_b || !nn->opt_v_b) {
+    NN_destroy(nn);
+    return NULL;
+  }
+
+  for (size_t l = 0; l < L; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+
+    nn->weights[l] = malloc(wcount * sizeof(long double));
+    nn->biases[l] = malloc(bcount * sizeof(long double));
+    nn->weights_grad[l] = calloc(wcount, sizeof(long double));
+    nn->biases_grad[l] = calloc(bcount, sizeof(long double));
+
+    nn->opt_m_w[l] = malloc(wcount * sizeof(long double));
+    nn->opt_v_w[l] = malloc(wcount * sizeof(long double));
+    nn->opt_m_b[l] = malloc(bcount * sizeof(long double));
+    nn->opt_v_b[l] = malloc(bcount * sizeof(long double));
+
+    if (!nn->weights[l] || !nn->biases[l] || !nn->weights_grad[l] ||
+        !nn->biases_grad[l] || !nn->opt_m_w[l] || !nn->opt_v_w[l] ||
+        !nn->opt_m_b[l] || !nn->opt_v_b[l]) {
+      NN_destroy(nn);
+      return NULL;
+    }
+
+    if (fread(nn->weights[l], sizeof(long double), wcount, f) != wcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(nn->biases[l], sizeof(long double), bcount, f) != bcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(nn->opt_m_w[l], sizeof(long double), wcount, f) != wcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(nn->opt_v_w[l], sizeof(long double), wcount, f) != wcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(nn->opt_m_b[l], sizeof(long double), bcount, f) != bcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+    if (fread(nn->opt_v_b[l], sizeof(long double), bcount, f) != bcount) {
+      NN_destroy(nn);
+      return NULL;
+    }
+  }
+
+  return nn;
+}
+
 // Activation Functions
 long double sigmoid(long double x) { return 1.0L / (1.0L + expl(-x)); }
 
