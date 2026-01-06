@@ -40,17 +40,15 @@ SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
     return NULL;
 
   // Initialize dimensions
-  sam->num_layers = 3; // Input, hidden, output
+  sam->num_layers = 2; // pooled transformer vec -> output
   sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
-  sam->layer_sizes[0] = input_dim;
-  sam->layer_sizes[1] = 256; // Hidden layer size
-  sam->layer_sizes[2] = output_dim;
+  sam->layer_sizes[0] = input_dim;  // model_dim
+  sam->layer_sizes[1] = output_dim; // action logits
 
-  // Initialize weights
   init_weights(sam);
 
-  // Initialize transformer and submodels
-  sam->transformer = TRANSFORMER_init(input_dim, num_heads, output_dim);
+  /* transformer: model_dim=input_dim */
+  sam->transformer = TRANSFORMER_init(input_dim, num_heads, 1);
   sam->num_submodels = 1; // Fixed number of submodels for now
   sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
 
