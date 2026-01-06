@@ -163,7 +163,7 @@ void train_word_prediction(TransformerLayer *layer, Vocabulary *vocab,
       encode_word(vocab->words[i + 1], target, MODEL_DIM);
 
       // Forward pass
-      long double *output = transformer_forward(layer, input);
+      long double *output = TRANSFORMER_forward(transformer, input);
       if (!output)
         continue;
 
@@ -452,7 +452,7 @@ void test_word_prediction() {
       encode_word(train_data->targets[i], target, MODEL_DIM);
 
       // Forward pass
-      long double *output = transformer_forward(layer, input);
+      long double *output = transformer_layer_forward(layer, input, );
       if (!output) {
         free(input);
         free(target);
