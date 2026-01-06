@@ -1375,6 +1375,39 @@ void update_player(void) {
   player.stamina = fmaxf(0, player.stamina - 0.02f);
 }
 
+static void update_visible_world(float dt) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+
+      Vector2 chunk_origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+      // resources animation decay
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->hit_timer > 0)
+          r->hit_timer -= dt;
+        if (r->break_flash > 0)
+          r->break_flash -= dt;
+      }
+
+      // mobs AI
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        update_mob_ai(m, chunk_origin, dt);
+      }
+    }
+  }
+}
+
 /* =======================
    MAIN
 ======================= */
