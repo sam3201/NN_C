@@ -13,6 +13,7 @@
 #include "runtime.h"
 #include "selfplay.h"
 #include "toy_env.h"
+#include "toy_model.h"
 #include "trainer.h"
 #include "util.h"
 
