@@ -573,6 +573,27 @@ void draw_resources(void) {
 
           draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
                           s * 0.18f, hp01, (Color){180, 180, 180, 255});
+          // cracks (more cracks when low hp)
+          if (r->health > 0) {
+            float hp01 = (float)r->health / 100.0f;
+            int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
+            for (int k = 0; k < cracks; k++) {
+              float a = (float)k / (float)(cracks + 1) * PI;
+              DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
+                       (int)(sp.y - sinf(a) * s * 0.25f),
+                       (int)(sp.x + cosf(a) * s * 0.18f),
+                       (int)(sp.y + sinf(a) * s * 0.22f),
+                       (Color){0, 0, 0, 120});
+            }
+          }
+          // break flash overlay
+          if (r->break_flash > 0.0f) {
+            DrawCircleV((Vector2){sp.x, sp.y}, s * 0.35f,
+                        (Color){255, 255, 255,
+                                (unsigned char)(120 * clamp01(r->break_flash *
+                                                              20.0f))});
+          }
+
         } break;
 
         case RES_GOLD: {
