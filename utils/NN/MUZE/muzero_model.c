@@ -109,10 +109,10 @@ void mu_model_free(MuModel *m) {
 void mu_model_repr(MuModel *m, const float *obs, float *latent_out) {
   if (!m)
     return;
-  if (m->repr)
+  if (m->repr) {
     m->repr(m, obs, latent_out);
-  else
-    default_repr(m, obs, latent_out);
+    return;
+  }
 }
 
 void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
