@@ -305,22 +305,138 @@ void draw_resources(void) {
 
   for (int dx = -6; dx <= 6; dx++) {
     for (int dy = -6; dy <= 6; dy++) {
-      Chunk *c = get_chunk(pcx + dx, pcy + dy);
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
 
       for (int i = 0; i < c->resource_count; i++) {
         Resource *r = &c->resources[i];
         if (r->health <= 0)
           continue;
 
-        Vector2 wp = {(pcx + dx) * CHUNK_SIZE + r->position.x,
-                      (pcy + dy) * CHUNK_SIZE + r->position.y};
+        Vector2 wp = {(float)(cx * CHUNK_SIZE) + r->position.x,
+                      (float)(cy * CHUNK_SIZE) + r->position.y};
+        Vector2 sp = world_to_screen(wp);
 
-        Vector2 sp = Vector2Subtract(wp, camera_pos);
-        sp = Vector2Scale(sp, WORLD_SCALE);
-        sp.x += SCREEN_WIDTH / 2;
-        sp.y += SCREEN_HEIGHT / 2;
+        float s = px(0.20f) * RESOURCE_SCALE; // base size
+        float s2 = s * 1.2f;
 
-        DrawCircleV(sp, WORLD_SCALE * 0.25f, resource_colors[r->type]);
+        // health tint
+        float hp01 = (float)r->health / 100.0f;
+
+        switch (r->type) {
+        case RES_TREE: {
+          // shadow
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.65f), (int)(s * 0.9f),
+                      (int)(s * 0.35f), (Color){0, 0, 0, 70});
+
+          // trunk
+          DrawRectangle((int)(sp.x - s * 0.18f), (int)(sp.y - s * 0.20f),
+                        (int)(s * 0.36f), (int)(s * 0.65f),
+                        (Color){120, 80, 40, 255});
+          DrawRectangleLines((int)(sp.x - s * 0.18f), (int)(sp.y - s * 0.20f),
+                             (int)(s * 0.36f), (int)(s * 0.65f),
+                             (Color){0, 0, 0, 150});
+
+          // canopy (3 blobs)
+          Color leaf = (Color){30, (unsigned char)(140 + 60 * hp01), 30, 255};
+          DrawCircleV((Vector2){sp.x, sp.y - s * 0.55f}, s * 0.55f, leaf);
+          DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y - s * 0.35f}, s * 0.45f,
+                      leaf);
+          DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y - s * 0.35f}, s * 0.45f,
+                      leaf);
+          DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.55f), s * 0.55f,
+                          (Color){0, 0, 0, 110});
+
+          // small fruit dots
+          DrawCircleV((Vector2){sp.x - s * 0.18f, sp.y - s * 0.55f}, s * 0.06f,
+                      RED);
+          DrawCircleV((Vector2){sp.x + s * 0.22f, sp.y - s * 0.40f}, s * 0.06f,
+                      RED);
+
+          // health bar
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.2f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){60, 220, 60, 255});
+        } break;
+
+        case RES_ROCK: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // rock: polygon-ish using circles + outlines
+          Color rock = (Color){120, 120, 120, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, rock);
+          DrawCircleV((Vector2){sp.x - s * 0.35f, sp.y + s * 0.05f}, s * 0.40f,
+                      rock);
+          DrawCircleV((Vector2){sp.x + s * 0.35f, sp.y + s * 0.10f}, s * 0.45f,
+                      rock);
+
+          // highlight
+          DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.18f}, s * 0.18f,
+                      (Color){200, 200, 200, 160});
+
+          // outline
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 120});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){180, 180, 180, 255});
+        } break;
+
+        case RES_GOLD: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // nugget: bright + rim + sparkle
+          Color gold = (Color){240, 210, 70, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, gold);
+          DrawCircleV((Vector2){sp.x - s * 0.28f, sp.y + s * 0.08f}, s * 0.38f,
+                      gold);
+          DrawCircleV((Vector2){sp.x + s * 0.30f, sp.y + s * 0.10f}, s * 0.40f,
+                      gold);
+
+          DrawCircleV((Vector2){sp.x - s * 0.12f, sp.y - s * 0.18f}, s * 0.14f,
+                      (Color){255, 255, 255, 160});
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 140});
+
+          // sparkle
+          DrawLine((int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.55f),
+                   (int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.75f), RAYWHITE);
+          DrawLine((int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.55f),
+                   (int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.75f), RAYWHITE);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){240, 210, 70, 255});
+        } break;
+
+        case RES_FOOD: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // berry/fruit: red body + green leaf
+          Color fruit = (Color){220, 60, 60, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, fruit);
+          DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.15f}, s * 0.18f,
+                      (Color){255, 255, 255, 120});
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 130});
+
+          // leaf
+          DrawTriangle((Vector2){sp.x, sp.y - s * 0.55f},
+                       (Vector2){sp.x - s * 0.25f, sp.y - s * 0.75f},
+                       (Vector2){sp.x + s * 0.25f, sp.y - s * 0.75f},
+                       (Color){40, 180, 60, 255});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){220, 60, 60, 255});
+        } break;
+
+        default:
+          // fallback
+          DrawCircleV(sp, s * 0.5f, resource_colors[r->type]);
+          break;
+        }
       }
     }
   }
