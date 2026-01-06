@@ -48,3 +48,9 @@ gcc -w game.c $NN_SRC $MUZE_SRC $SAM_SRC \
 echo "Compilation successful! Running the game..."
 ./game
 
+
+if [ $? -eq 0 ]; then
+  echo "Game exited successfully."
+else
+  echo "Game exited with an error."
+fi
