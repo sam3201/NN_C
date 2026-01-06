@@ -420,10 +420,8 @@ void update_agent(Agent *a) {
   obs_init(&obs);
   encode_observation(a, c, &obs);
 
-  // MuCortex *cortex = tr->cortex;
-  // int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
-
-  int action = decide_action(a, &obs);
+  MuCortex *cortex = tr->cortex;
+  int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
 
   // apply action
   switch (action) {
