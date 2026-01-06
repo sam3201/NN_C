@@ -459,7 +459,7 @@ void GENOME_save(Genome_t *genome, const char *filename) {
   fclose(f);
 }
 
-Genome_t *GENOME_load_safe(const char *filename) {
+Genome_t *GENOME_load(const char *filename) {
   FILE *f = fopen(filename, "rb");
   if (!f)
     return NULL;
