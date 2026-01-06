@@ -243,6 +243,10 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
 
   ad->last_seq_len = 0;
   ad->last_seq_ptrs = NULL;
+  /* exploration defaults */
+  ad->epsilon = 0.30f;       /* start exploring a lot */
+  ad->epsilon_min = 0.02f;   /* keep a little exploration */
+  ad->epsilon_decay = 0.95f; /* decay per episode */
   ad->last_action_count = 0;
   ad->last_probs = NULL;
   ad->last_action = 0;
