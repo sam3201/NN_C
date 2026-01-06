@@ -92,4 +92,7 @@ SAM_t *SAM_load(const char *filename);
 void SAM_train_submodel(NEAT_t *neat, long double learning_rate);
 PerformanceMetrics SAM_calculate_metrics(NEAT_t *neat);
 
+MuCortex *SAM_as_MUZE(SAM_t *sam);
+void SAM_MUZE_destroy(MuCortex *cortex);
+
 #endif // SAM_H

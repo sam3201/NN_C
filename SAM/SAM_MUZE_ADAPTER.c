@@ -153,13 +153,25 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
   /* logits -> probs */
   softmaxf_inplace(action_probs, action_count);
 
-  /* epsilon-greedy: sometimes force uniform exploration */
+  /* epsilon-greedy exploration:
+     IMPORTANT: do NOT early-return.
+     We want last_probs cached so learn() can compute a valid policy gradient,
+     even on exploratory steps.
+  */
   float r = (float)rand() / (float)RAND_MAX;
-  if (r < ad->epsilon) {
+  int exploring = (r < ad->epsilon);
+
+  if (exploring) {
+    /* treat policy as uniform for gradient bookkeeping */
+    float u = 1.0f / (float)action_count;
+    for (size_t i = 0; i < action_count; i++)
+      action_probs[i] = u;
+
+    /* pick a random action */
     ad->last_action = (size_t)(rand() % (int)action_count);
-    onehotf(action_probs, action_count, ad->last_action);
-    free(logits);
-    return;
+  } else {
+    /* greedy action from policy */
+    ad->last_action = argmaxf(action_probs, action_count);
   }
 
   /* Ensure last_probs buffer exists */
@@ -179,8 +191,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
     ad->has_last = 0;
   }
 
-  /* Pick action deterministically (MUZE will sample/argmax anyway; we force) */
-  ad->last_action = argmaxf(action_probs, action_count);
+  /* Output deterministic one-hot action to MUZE */
   onehotf(action_probs, action_count, ad->last_action);
 
   free(logits);
@@ -191,7 +202,6 @@ static void sam_learn(void *brain, float reward, int terminal) {
   if (!ad || !ad->sam)
     return;
 
-  /* keep context updated */
   SAM_update_context(ad->sam, (long double)reward);
 
   /* REINFORCE-style: grad_logits = reward * (p - onehot(a)) */
@@ -207,9 +217,7 @@ static void sam_learn(void *brain, float reward, int terminal) {
         grad[i] = (long double)reward * (p - oh);
       }
 
-      /* updates head + transformer */
       SAM_backprop(ad->sam, ad->last_seq_ptrs, ad->last_seq_len, grad);
-
       free(grad);
     }
   }
@@ -225,7 +233,6 @@ static void sam_learn(void *brain, float reward, int terminal) {
         ad->epsilon = ad->epsilon_min;
     }
 
-    /* clear last to avoid “credit leakage” across episodes */
     ad->has_last = 0;
   }
 }
@@ -236,7 +243,6 @@ static void sam_free_latent_seq(void *brain, long double **latent_seq,
   (void)brain;
   (void)latent_seq;
   (void)seq_len;
-  /* no-op */
 }
 
 MuCortex *SAM_as_MUZE(SAM_t *sam) {
@@ -254,7 +260,7 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   }
 
   ad->sam = sam;
-  ad->obs_dim = 0; /* set on first encode() */
+  ad->obs_dim = 0;
   ad->hist_cap = SAM_MUZE_HISTORY;
   ad->hist_len = 0;
   ad->write_idx = 0;
@@ -268,10 +274,9 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   ad->last_seq_ptrs = NULL;
   ad->last_seq_len = 0;
 
-  /* exploration defaults */
-  ad->epsilon = 0.30f;       /* start exploring a lot */
-  ad->epsilon_min = 0.02f;   /* keep a little exploration */
-  ad->epsilon_decay = 0.95f; /* decay per episode */
+  ad->epsilon = 0.30f;
+  ad->epsilon_min = 0.02f;
+  ad->epsilon_decay = 0.95f;
 
   c->brain = ad;
   c->encode = sam_encode;
@@ -280,4 +285,22 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   c->free_latent_seq = sam_free_latent_seq;
 
   return c;
+}
+
+/* -----------------------------------------------------------
+   NEW: destroy helper
+   ----------------------------------------------------------- */
+void SAM_MUZE_destroy(MuCortex *cortex) {
+  if (!cortex)
+    return;
+
+  SAMMuAdapter *ad = (SAMMuAdapter *)cortex->brain;
+  if (ad) {
+    free(ad->hist_data);
+    free(ad->seq_ptrs);
+    free(ad->last_probs);
+    free(ad);
+  }
+
+  free(cortex);
 }
