@@ -241,6 +241,13 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   ad->hist_data = NULL;
   ad->seq_ptrs = NULL;
 
+  ad->last_seq_len = 0;
+  ad->last_seq_ptrs = NULL;
+  ad->last_action_count = 0;
+  ad->last_probs = NULL;
+  ad->last_action = 0;
+  ad->has_last = 0;
+
   c->brain = ad;
   c->encode = sam_encode;
   c->policy = sam_policy;
