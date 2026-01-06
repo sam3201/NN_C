@@ -48,7 +48,6 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
       cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
     return 0;
   }
-
   if (obs_dim == 0 || action_count == 0)
     return 0;
 
