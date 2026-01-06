@@ -177,7 +177,6 @@ float TILE_SIZE;
 Vector2 camera_pos;
 float WORLD_SCALE = 50.0f;
 // Visual scaling: at least +50%
-// optional: you can tweak per-category
 static float RESOURCE_SCALE = 10.0f;
 // global “everything bigger” knob
 static float scale_size = 1.65f; // bigger overall (was 1.5)
