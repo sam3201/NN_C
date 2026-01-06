@@ -5,17 +5,24 @@ InnovationRecord *innovationHistory = NULL;
 size_t innovationCount = 0;
 
 static bool creates_cycle(Genome_t *g, size_t from, size_t to) {
+  if (!g)
+    return true;
+  if (from >= g->numNodes || to >= g->numNodes)
+    return true;
   if (from == to)
     return true;
 
-  size_t tid = c->to->id;
-  if (tid < g->numNodes && c->enabled && c->from->id == n && !visited[tid]) {
-    bool *visited = calloc(g->numNodes, sizeof(bool));
-    size_t *stack = malloc(g->numNodes * sizeof(size_t));
-    size_t sp = 0;
+  bool *visited = (bool *)calloc(g->numNodes, sizeof(bool));
+  size_t *stack = (size_t *)malloc(g->numNodes * sizeof(size_t));
+  if (!visited || !stack) {
+    free(visited);
+    free(stack);
+    return true; // fail closed
   }
 
+  size_t sp = 0;
   stack[sp++] = to;
+  visited[to] = true;
 
   while (sp) {
     size_t n = stack[--sp];
@@ -27,9 +34,17 @@ static bool creates_cycle(Genome_t *g, size_t from, size_t to) {
 
     for (size_t i = 0; i < g->numConnections; i++) {
       Connection *c = g->connections[i];
-      if (c->enabled && c->from->id == n && !visited[c->to->id]) {
-        visited[c->to->id] = true;
-        stack[sp++] = c->to->id;
+      if (!c || !c->enabled || !c->from || !c->to)
+        continue;
+
+      size_t fid = c->from->id;
+      size_t tid = c->to->id;
+      if (fid >= g->numNodes || tid >= g->numNodes)
+        continue;
+
+      if (fid == n && !visited[tid]) {
+        visited[tid] = true;
+        stack[sp++] = tid;
       }
     }
   }
