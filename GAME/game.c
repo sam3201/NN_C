@@ -40,7 +40,7 @@ static float RESOURCE_SCALE = 1.0f;
 static float scale_size = 1.65f; // bigger overall (was 1.5)
 
 // per-resource tuning
-static float TREE_SCALE = 5.0f; // MUCH larger
+static float TREE_SCALE = 50.0f; // MUCH larger
 static float ROCK_SCALE = 1.35f;
 static float GOLD_SCALE = 1.25f;
 static float FOOD_SCALE = 1.20f;
