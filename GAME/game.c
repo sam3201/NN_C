@@ -211,6 +211,22 @@ static inline float safe_norm(float v, float denom) {
    - if fewer -> pad zeros
    - if more  -> truncate
 */
+
+static inline float wrap_angle(float a) {
+  while (a > PI)
+    a -= 2.0f * PI;
+  while (a < -PI)
+    a += 2.0f * PI;
+  return a;
+}
+
+static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+static inline float lerp_angle(float a, float b, float t) {
+  float d = wrap_angle(b - a);
+  return a + d * t;
+}
+
 static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
   if (!o)
     return;
