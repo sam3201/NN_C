@@ -4,7 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main() {
+static void print_obs(const float *obs, int n) {
+  printf("[");
+  for (int i = 0; i < n; i++) {
+    printf("%.0f", obs[i]);
+    if (i + 1 < n)
+      printf(" ");
+  }
+  printf("]");
+}
+
+int main(void) {
   srand(1);
 
   // Toy env: 1D position one-hot observation of size N
@@ -12,7 +22,10 @@ int main() {
   const int obs_dim = env.size;
   const int action_count = 2; // left/right
 
-  // SAM: model_dim must match obs_dim for now (since you feed obs directly)
+  // Goal: reach far right
+  const int goal_pos = env.size - 1;
+
+  // SAM: model_dim must match obs_dim for now
   SAM_t *sam = SAM_init((size_t)obs_dim, (size_t)action_count, /*num_heads=*/2,
                         /*context_id=*/0);
   if (!sam) {
@@ -27,53 +40,71 @@ int main() {
     return 1;
   }
 
-  float obs[obs_dim];
-  toy_env_reset(&env, obs);
+  const int episodes = 50;
+  const int max_steps_per_ep = 128;
 
-  for (int step = 0; step < 256; step++) {
-    int action = muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
+  for (int ep = 0; ep < episodes; ep++) {
+    float obs[obs_dim];
+    toy_env_reset(&env, obs);
 
-    float reward = 0.0f;
+    float ep_return = 0.0f;
     int done = 0;
-    float next_obs[obs_dim];
 
-    if (step == 255)
-      done = 1;
+    for (int step = 0; step < max_steps_per_ep; step++) {
+      int action =
+          muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
 
-    if (toy_env_step(&env, action, next_obs, &reward, &done) != 0) {
-      printf("env_step error\n");
-      break;
+      float next_obs[obs_dim];
+      float reward_from_env = 0.0f;
+      int done_from_env = 0;
+
+      if (toy_env_step(&env, action, next_obs, &reward_from_env,
+                       &done_from_env) != 0) {
+        printf("env_step error\n");
+        done = 1;
+      }
+
+      // ---------------------------
+      // Sparse reward + terminal
+      // Reward only when reaching goal
+      // ---------------------------
+      float reward = 0.0f;
+      if (env.pos == goal_pos) {
+        reward = 1.0f;
+        done = 1;
+      } else if (step == max_steps_per_ep - 1) {
+        // timeout terminal (no reward)
+        done = 1;
+      } else {
+        done = 0;
+      }
+
+      // Tell SAM/MUZE about reward + terminal
+      cortex->learn(cortex->brain, reward, done);
+
+      ep_return += reward;
+
+      memcpy(obs, next_obs, sizeof(obs));
+
+      // Debug print occasionally
+      if ((ep < 5) || (ep % 10 == 0 && step < 20) || done) {
+        printf("ep=%d step=%d action=%d reward=%.3f pos=%d done=%d obs=", ep,
+               step, action, reward, env.pos, done);
+        print_obs(obs, obs_dim);
+        printf("\n");
+      }
+
+      if (done)
+        break;
     }
 
-    /* ---------------------------
-       Reward shaping + terminal
-       Goal: reach env.size - 1
-       --------------------------- */
-    if (env.pos == (int)env.size - 1) {
-      reward = 1.0f;
-      done = 1;
-    } else {
-      // small penalty every step to encourage reaching the goal quickly
-      reward = -0.01f;
-    }
+    printf("episode %d return=%.3f final_pos=%d\n", ep, ep_return, env.pos);
   }
 
-  // Tell SAM/MUZE about reward + terminal
-  cortex->learn(cortex->brain, reward, done);
+  // cleanup
+  free(cortex->brain);
+  free(cortex);
+  SAM_destroy(sam);
 
-  memcpy(obs, next_obs, sizeof(obs));
-
-  printf("step=%d action=%d reward=%.3f pos=%d done=%d\n", step, action, reward,
-         env.pos, done);
-
-  if (done)
-    break;
-}
-
-// cleanup
-free(cortex->brain);
-free(cortex);
-SAM_destroy(sam);
-
-return 0;
+  return 0;
 }
