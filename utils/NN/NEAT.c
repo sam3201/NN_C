@@ -617,11 +617,16 @@ void POPULATION_evolve(Population *pop) {
   assign_species(pop);
 
   for (size_t i = 0; i < pop->size - 1; i++) {
-    for (size_t j = i + 1; j < pop->size; j++) {
-      if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
-        Genome_t *tmp = pop->genomes[i];
-        pop->genomes[i] = pop->genomes[j];
-        pop->genomes[j] = tmp;
+    if (!pop->genomes[i]) {
+      // If you have a way to create a blank genome, do it here.
+      // Otherwise: bail out to avoid crashing.
+      return;
+      for (size_t j = i + 1; j < pop->size; j++) {
+        if (pop->genomes[j]->fitness > pop->genomes[i]->fitness) {
+          Genome_t *tmp = pop->genomes[i];
+          pop->genomes[i] = pop->genomes[j];
+          pop->genomes[j] = tmp;
+        }
       }
     }
   }
