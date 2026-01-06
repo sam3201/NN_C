@@ -340,6 +340,8 @@ Chunk *get_chunk(int cx, int cy) {
         (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
     c->resources[i].health = 100;
     c->resources[i].visited = false;
+    c->resources[i].hit_timer = 0.0f;
+    c->resources[i].break_flash = 0.0f;
   }
 
   for (int i = 0; i < MAX_MOBS; i++) {
