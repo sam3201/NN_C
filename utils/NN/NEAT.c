@@ -610,9 +610,9 @@ size_t assign_species(Population *pop) {
 
 // ------------------- Next Generation -------------------
 void POPULATION_evolve(Population *pop) {
-  if (!pop)
+  if (!pop || pop->size == 0 || !pop->genomes) {
     return;
-
+  }
   assign_species(pop);
 
   for (size_t i = 0; i < pop->size - 1; i++) {
