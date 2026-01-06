@@ -42,15 +42,10 @@ static void latent_seq_to_latent_float(long double **latent_seq, size_t seq_len,
 
 int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
               size_t action_count) {
-
+  if (!cortex || !cortex->encode || !obs)
+    return 0;
   if (obs_dim == 0 || action_count == 0)
     return 0;
-  /* --- Option: policy argmax --- */
-  if (!cortex->policy) {
-    if (cortex->free_latent_seq)
-      cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
-    return 0;
-  }
 
   long double **latent_seq = NULL;
   size_t seq_len = 0;
