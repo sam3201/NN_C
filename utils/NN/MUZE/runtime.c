@@ -67,12 +67,13 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
   if (!rt || !model)
     return;
 
-  TrainerConfig cfg = {
+  // you can tune these defaults later
+  TrainerConfig tc = {
       .batch_size = 32,
-      .train_steps = 200,    // how many minibatches per call
-      .min_replay_size = 64, // warmup
-      .lr = 0.05f            // start kinda high for toy env; tune later
+      .train_steps = 200, // smaller per call; call more often
+      .min_replay_size = 128,
+      .lr = 0.05f,
   };
 
-  trainer_train_from_replay(model, rt->rb, &cfg);
+  trainer_train_from_replay(model, rt->rb, &tc);
 }
