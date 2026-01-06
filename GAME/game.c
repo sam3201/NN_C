@@ -433,8 +433,6 @@ void update_agent(Agent *a) {
 
   encode_observation(a, c, &obs);
 
-  MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
-
   switch (action) {
   case ACTION_UP:
     a->position.y -= 0.5f;
