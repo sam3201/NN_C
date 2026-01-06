@@ -504,43 +504,6 @@ Genome_t *GENOME_load_safe(const char *filename) {
   return genome;
 }
 
-void GENOME_save(Genome_t *genome, const char *filename) {
-  FILE *f = fopen(filename, "wb");
-  fwrite(&genome->numNodes, sizeof(size_t), 1, f);
-  for (size_t i = 0; i < genome->numNodes; i++) {
-    fwrite(genome->nodes[i], sizeof(Node), 1, f);
-  }
-  fwrite(&genome->numConnections, sizeof(size_t), 1, f);
-  for (size_t i = 0; i < genome->numConnections; i++) {
-    fwrite(genome->connections[i], sizeof(Connection), 1, f);
-  }
-  fwrite(&genome->fitness, sizeof(long double), 1, f);
-  fclose(f);
-}
-
-Genome_t *GENOME_load(const char *filename) {
-  FILE *f = fopen(filename, "rb");
-  if (!f)
-    return NULL;
-  Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
-  fread(&genome->numNodes, sizeof(size_t), 1, f);
-  genome->nodes = (Node **)malloc(genome->numNodes * sizeof(Node *));
-  for (size_t i = 0; i < genome->numNodes; i++) {
-    genome->nodes[i] = (Node *)malloc(sizeof(Node));
-    fread(genome->nodes[i], sizeof(Node), 1, f);
-  }
-  fread(&genome->numConnections, sizeof(size_t), 1, f);
-  genome->connections =
-      (Connection **)malloc(genome->numConnections * sizeof(Connection *));
-  for (size_t i = 0; i < genome->numConnections; i++) {
-    genome->connections[i] = (Connection *)malloc(sizeof(Connection));
-    fread(genome->connections[i], sizeof(Connection), 1, f);
-  }
-  fread(&genome->fitness, sizeof(long double), 1, f);
-  fclose(f);
-  return genome;
-}
-
 // Initialize population
 Population *POPULATION_init(size_t popSize, size_t numInputs,
                             size_t numOutputs) {
