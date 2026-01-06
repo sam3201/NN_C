@@ -533,6 +533,10 @@ int main(void) {
     train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int a = 0; a < MAX_AGENTS; a++) {
+        int cx = (int)(a->position.x / CHUNK_SIZE);
+        int cy = (int)(a->position.y / CHUNK_SIZE);
+        Chunk *c = get_chunk(cx, cy);
+
         Agent *ai = &agents[a];
         ObsBuffer obs;
         obs_init(&obs);
