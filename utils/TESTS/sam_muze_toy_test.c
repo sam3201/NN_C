@@ -134,5 +134,8 @@ int main(void) {
   SAM_MUZE_destroy(cortex);
   SAM_destroy(sam);
   endwin();
+  mu_model_free_toy(cortex->mcts_model);
+  cortex->mcts_model = NULL;
+
   return 0;
 }
