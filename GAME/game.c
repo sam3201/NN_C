@@ -689,7 +689,8 @@ void draw_resources(void) {
 
         default:
           // fallback
-          DrawCircleV(sp, s * 0.5f, resource_colors[r->type]);
+          fprintf(stderr, "Unknown resource type: %d\n", r->type);
+
           break;
         }
       }
