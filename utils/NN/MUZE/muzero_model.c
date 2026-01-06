@@ -133,11 +133,6 @@ void mu_model_predict(MuModel *m, const float *latent_in,
     m->predict(m, latent_in, policy_logits_out, value_out);
     return;
   }
-
-  if (m->predict)
-    m->predict(m, latent_in, policy_logits_out, value_out);
-  else
-    default_predict(m, latent_in, policy_logits_out, value_out);
 }
 
 void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
