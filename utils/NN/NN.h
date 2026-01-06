@@ -17,7 +17,7 @@ typedef enum {
   TANH = 1,
   RELU = 2,
   LINEAR = 3,
-  ACTIVATION_TYPE_COUNT = 6
+  ACTIVATION_TYPE_COUNT = 4
 } ActivationFunctionType;
 
 // Activation derivative types
