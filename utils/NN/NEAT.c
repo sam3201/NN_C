@@ -436,7 +436,7 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 Genome_t *GENOME_clone(const Genome_t *src) {
   if (!src)
     return NULL;
-  Genome_t *genome = (Genome_t *)malloc(sizeof(Genome_t));
+  Genome_t *clone = (Genome_t *)malloc(sizeof(Genome_t));
   genome->nn = NN_init(layers, actFuncs, actDerivs, lossFunc, lossDeriv, reg,
                        opt, learningRate);
   size_t numOutputs = layers[genome->nn->numLayers - 1];
