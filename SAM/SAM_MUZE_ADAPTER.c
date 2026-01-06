@@ -200,6 +200,13 @@ static void sam_learn(void *brain, float reward, int terminal) {
   if (terminal) {
     SAM_generalize(ad->sam);
     SAM_transfuse(ad->sam);
+
+    /* decay exploration */
+    if (ad->epsilon > ad->epsilon_min) {
+      ad->epsilon *= ad->epsilon_decay;
+      if (ad->epsilon < ad->epsilon_min)
+        ad->epsilon = ad->epsilon_min;
+    }
   }
 }
 
