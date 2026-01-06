@@ -733,7 +733,7 @@ static void transformer_layer_backprop_seq(TransformerLayer *layer,
 
 long double **TRANSFORMER_backprop(Transformer_t *transformer,
                                    long double **grad_output, size_t T) {
-  for (size_t l = (size_t)transformer->num_layers - 1; l >= 0; l--) {
+  for (size_t l = transformer->num_layers; l-- > 0;) {
     transformer_layer_backprop_seq(transformer->layers[l], grad_output, T);
   }
   return grad_output;
