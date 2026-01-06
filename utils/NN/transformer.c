@@ -612,14 +612,9 @@ static void transformer_layer_backprop_seq(TransformerLayer *layer,
 
 long double **TRANSFORMER_backprop(Transformer_t *transformer,
                                    long double **grad_output,
-                                   size_t seq_length) {
-  for (ssize_t l = transformer->num_layers - 1; l >= 0; l--) {
-    TransformerLayer *layer = transformer->layers[l];
-    for (size_t t = 0; t < seq_length; t++) {
-      long double *g = transformer_layer_backprop(layer, grad_output[t]);
-      memcpy(grad_output[t], g, layer->model_dim * sizeof(long double));
-      free(g);
-    }
+                                   size_t T) {
+  for (ssize_t l = (ssize_t)transformer->num_layers - 1; l >= 0; l--) {
+    transformer_layer_backprop_seq(transformer->layers[l], grad_output, T);
   }
   return grad_output;
 }
