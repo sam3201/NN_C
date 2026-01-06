@@ -178,6 +178,8 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
 
 static void sam_learn(void *brain, const float *obs, size_t obs_dim, int action,
                       float reward, int terminal) {
+  (void)obs;
+  (void)obs_dim;
 
   SAMMuAdapter *ad = (SAMMuAdapter *)brain;
   if (!ad || !ad->sam)
