@@ -698,10 +698,9 @@ void POPULATION_evolve(Population *pop) {
     Genome_t *g1 = pop->genomes[p1];
     Genome_t *g2 = pop->genomes[p2];
     if (!g1 || !g2) {
-      // fallback: clone best genome instead of crashing
-      // nextGen[i] = GENOME_clone(pop->genomes[0]);
-      // or if you don't have clone: nextGen[i] =
-      // GENOME_crossover(pop->genomes[0], pop->genomes[0]);
+      nextGen[i] = GENOME_crossover(pop->genomes[0], pop->genomes[0]);
+      if (!nextGen[i])
+        return;
       continue;
     }
     nextGen[i] = GENOME_crossover(g1, g2);
