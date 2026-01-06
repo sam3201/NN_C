@@ -31,6 +31,7 @@ static void free_weights(SAM_t *sam) {
     free(sam->weights[i]);
   }
   free(sam->weights);
+  sam->weights = NULL;
 }
 
 SAM_t *SAM_init(size_t input_dim, size_t output_dim, size_t num_heads,
