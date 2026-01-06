@@ -121,20 +121,18 @@ void mu_model_dynamics(MuModel *m, const float *latent_in, int action,
                        float *latent_out, float *reward_out) {
   if (!m || !latent_in || !latent_out || !reward_out)
     return;
-  if (m->predict) {
-    m->predict(m, latent_in, policy_logits_out, value_out);
-    return;
-  }
 }
 
 void mu_model_predict(MuModel *m, const float *latent_in,
                       float *policy_logits_out, float *value_out) {
-  if (!m || !latent_in || !policy_logits_out || !value_out)
+  if (!m)
     return;
   if (m->predict) {
     m->predict(m, latent_in, policy_logits_out, value_out);
     return;
   }
+  return;
+}
 }
 
 void mu_model_step(MuModel *m, const float *obs, int action, float reward) {
