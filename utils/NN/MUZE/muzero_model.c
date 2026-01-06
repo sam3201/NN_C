@@ -7,6 +7,47 @@
 /* ------------------------
    Helpers
    ------------------------ */
+static void default_repr(MuModel *m, const float *obs, float *latent_out) {
+  int O = m->cfg.obs_dim;
+  int L = m->cfg.latent_dim;
+  for (int i = 0; i < L; i++) {
+    float sum = 0.f;
+    for (int j = 0; j < O; j++)
+      sum += obs[j] * m->repr_W[i * O + j];
+    latent_out[i] = tanhf(sum);
+  }
+}
+
+static void default_dynamics(MuModel *m, const float *latent_in, int action,
+                             float *latent_out, float *reward_out) {
+  int L = m->cfg.latent_dim;
+  for (int i = 0; i < L; i++) {
+    float sum = 0.f;
+    for (int j = 0; j < L; j++)
+      sum += latent_in[j] * m->dyn_W[i * L + j];
+    sum += 0.1f * action;
+    latent_out[i] = tanhf(sum);
+  }
+  *reward_out = 0.01f * action;
+}
+
+static void default_predict(MuModel *m, const float *latent_in,
+                            float *policy_logits_out, float *value_out) {
+  int L = m->cfg.latent_dim;
+  int A = m->cfg.action_count;
+
+  for (int a = 0; a < A; a++) {
+    float sum = 0.f;
+    for (int j = 0; j < L; j++)
+      sum += latent_in[j] * m->pred_W[a * L + j];
+    policy_logits_out[a] = sum;
+  }
+
+  float sum = 0.f;
+  for (int j = 0; j < L; j++)
+    sum += latent_in[j] * m->pred_W[(A * L) + j];
+  *value_out = tanhf(sum);
+}
 
 /* ------------------------
    Create model
