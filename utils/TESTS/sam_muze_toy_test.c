@@ -60,7 +60,7 @@ int main(void) {
       float reward = (env.pos == goal_pos) ? 1.0f : 0.0f;
       int done = (env.pos == goal_pos) ? 1 : 0;
 
-      cortex->learn(cortex->brain, obs, (size_t)obs_dim, action, reward, done);
+      cortex->learn(cortex->brain, obs, obs_dim, action, reward, done);
 
       ep_return += reward;
       memcpy(obs, next_obs, sizeof(obs));
