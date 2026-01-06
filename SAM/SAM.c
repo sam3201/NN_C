@@ -460,37 +460,16 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
 
 void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
                   long double *grad_loss) {
-  if (!sam || !input_sequence || !grad_loss)
-    return;
-
-  // 1. Backprop through transformer
-  long double *grad_input_transformer =
-      (long double *)malloc(sizeof(long double) * sam->layer_sizes[0]);
-  if (!grad_input_transformer)
-    return;
-  TRANSFORMER_backprop(sam->transformer, input_sequence, seq_length, grad_loss,
-                       grad_input_transformer);
-
-  // 2. Backprop through top-level SAM weights if using fully connected layers
-  for (size_t i = 0; i < sam->num_layers - 1; i++) {
-    for (size_t j = 0; j < sam->layer_sizes[i]; j++) {
-      for (size_t k = 0; k < sam->layer_sizes[i + 1]; k++) {
-        // Simple gradient descent update
-        sam->weights[i][j][k] -=
-            0.01L * grad_input_transformer[j]; // learning rate 0.01
-      }
-    }
-  }
-
-  // 3. Backprop through submodels (NEAT)
-  for (size_t i = 0; i < sam->num_submodels; i++) {
-    if (sam->submodels[i]) {
-      NEAT_backprop(sam->submodels[i], input_sequence[0],
-                    grad_input_transformer); // assuming NEAT_backprop exists
-    }
-  }
-
-  free(grad_input_transformer);
+  (void)sam;
+  (void)input_sequence;
+  (void)seq_length;
+  (void)grad_loss;
+  /* TODO: implement proper gradient flow:
+     - forward caches
+     - build grad_output sequence for transformer
+     - call TRANSFORMER_backprop(transformer, grad_seq, seq_len)
+     - update head weights
+  */
 }
 
 // SAM adaptation
