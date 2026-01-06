@@ -452,7 +452,7 @@ MCTSResult mcts_run(MuModel *model, const float *obs,
         depth++;
       }
     }
-    free(h_cur); // free exactly
+    free(h_cur); // free exactly once
   }
   float *pi = (float *)malloc(sizeof(float) * A);
   visits_to_pi(root, params->temperature, pi);
