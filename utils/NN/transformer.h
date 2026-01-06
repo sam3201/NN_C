@@ -27,22 +27,14 @@ typedef struct {
 
 // Layer normalization
 typedef struct {
-  size_t model_dim;
-  size_t num_heads;
-  size_t head_dim;
+  size_t dim;
+  long double epsilon;
+  NN_t *norm_network;
 
-  NN_t *Q_proj;
-  NN_t *K_proj;
-  NN_t *V_proj;
-
-  // caches for backprop
-  long double *X_cache;      // [T * D]
-  long double *Q_cache;      // [T * D]
-  long double *K_cache;      // [T * D]
-  long double *V_cache;      // [T * D]
-  long double *scores_cache; // [H * T * T]
-  size_t seq_length;
-} MultiHeadAttention;
+  long double *input_cache; // [T * D]
+  long double *var_cache;   // [T]
+  size_t cache_T;
+} LayerNorm;
 
 // Feed-forward network
 typedef struct {
