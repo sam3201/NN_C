@@ -349,6 +349,12 @@ Chunk *get_chunk(int cx, int cy) {
     c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
     c->mobs[i].health = 100;
     c->mobs[i].visited = false;
+    c->mobs[i].vel = (Vector2){0, 0};
+    c->mobs[i].ai_timer = randf(0.2f, 1.2f);
+    c->mobs[i].aggro_timer = 0.0f;
+    c->mobs[i].attack_cd = randf(0.2f, 1.0f);
+    c->mobs[i].hurt_timer = 0.0f;
+    c->mobs[i].lunge_timer = 0.0f;
   }
 
   return c;
