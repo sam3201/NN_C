@@ -16,7 +16,6 @@ typedef struct {
   NN_t *K_proj;
   NN_t *V_proj;
 
-  // input cache for projections (what NN_backprop_custom_delta needs)
   long double *X_cache;      // [T * D]
   long double *Q_cache;      // [T * D]
   long double *K_cache;      // [T * D]
