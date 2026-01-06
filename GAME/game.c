@@ -1095,8 +1095,6 @@ int main(void) {
 
     draw_player(pp);
 
-    DrawCircleV(pp, WORLD_SCALE * 0.45f, YELLOW);
-
     DrawText("MUZE Tribal Simulation", 20, 20, 20, RAYWHITE);
     /* Display FPS */
     DrawText(TextFormat("FPS: %d", GetFPS()), 20, 40, 20, RAYWHITE);
