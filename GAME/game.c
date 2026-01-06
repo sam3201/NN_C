@@ -541,7 +541,7 @@ int main(void) {
         ObsBuffer obs;
         obs_init(&obs);
         encode_observation(ai, get_chunk(ai->position.x, ai->position.y), &obs);
-        ai->cortex->learn(ai->cortex->brain, obs.data, ai->obs.size, ai->action,
+        ai->cortex->learn(ai->cortex->brain, obs.data, obs.size, 0,
                           ai->reward_accumulator, 0);
         ai->reward_accumulator = 0.0f;
       }
