@@ -457,7 +457,7 @@ void update_agent(Agent *a) {
   }
 
   // ONLY learn through the cortex adapter (SAM brain)
-  cortex->learn(cortex->brain, reward, terminal);
+  cortex->learn(cortex->brain, obs.data, obs.size, action, reward, terminal);
 
   obs_free(&obs);
 }
