@@ -652,7 +652,7 @@ void POPULATION_evolve(Population *pop) {
     size_t p2 = rand() % eliteCount;
     Genome_t *g1 = pop->genomes[p1];
     Genome_t *g2 = pop->genomes[p2];
-    nextGen[i] = GENOME_crossover(pop->genomes[p1], pop->genomes[p2]);
+    nextGen[i] = GENOME_crossover(g1, g2);
 
     GENOME_mutate(nextGen[i], 0.8L, 0.2L, 0.3L, 0.5L, 0.1L, 0.05L, 0.05L);
   }
