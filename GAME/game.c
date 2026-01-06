@@ -119,12 +119,6 @@ typedef struct {
   int tribe_id;
   Color color;
   Base base;
-  int agent_start;
-  int agent_count;
-
-  SAM_t *sam;
-  MuCortex *cortex;
-  float reward_accumulator;
 } Tribe;
 
 typedef struct {
@@ -133,6 +127,12 @@ typedef struct {
   int agent_id;
   bool alive;
   float flash_timer;
+  int agent_start;
+  int agent_count;
+
+  SAM_t *sam;
+  MuCortex *cortex;
+  float reward_accumulator;
   int age;
 } Agent;
 
