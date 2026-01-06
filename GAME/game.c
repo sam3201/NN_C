@@ -343,8 +343,6 @@ void draw_resources(void) {
                       (float)(cy * CHUNK_SIZE) + r->position.y};
         Vector2 sp = world_to_screen(wp);
 
-        float s = px(0.20f) * RESOURCE_SCALE; // base size
-        float s2 = s * 1.2f;
         float mul = 1.0f;
         switch (r->type) {
         case RES_TREE:
