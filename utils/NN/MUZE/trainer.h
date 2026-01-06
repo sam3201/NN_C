@@ -1,4 +1,4 @@
-#include "muzero_model.h
+#include "muzero_model.h"
 
 typedef struct TrainerConfig {
   int batch_size;
@@ -7,5 +7,5 @@ typedef struct TrainerConfig {
   float lr;
 } TrainerConfig;
 
-void trainer_train_from_replay(*model, ReplayBuffer *rb,
+void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
                                const TrainerConfig *cfg);
