@@ -15,6 +15,7 @@ typedef struct {
   NN_t *Q_proj;
   NN_t *K_proj;
   NN_t *V_proj;
+  NN_t *O_proj;
 
   // caches for backprop
   long double *X_cache;      // [T * D]
