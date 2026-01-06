@@ -1,10 +1,13 @@
 #ifndef MUZE_CORTEX_H
 #define MUZE_CORTEX_H
 
-#include "../../../SAM/SAM.h"
-#include <stdio.h>
+#include <stddef.h> // size_t
 
-typedef struct {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct MuCortex {
   void *brain;
 
   void (*encode)(void *brain, float *obs, size_t obs_dim,
@@ -14,11 +17,13 @@ typedef struct {
                  float *action_probs, size_t action_count);
 
   void (*learn)(void *brain, float reward, int terminal);
+
   void (*free_latent_seq)(void *brain, long double **latent_seq,
                           size_t seq_len);
-
 } MuCortex;
 
+#ifdef __cplusplus
+}
 #endif
 
-MuCortex *SAM_as_MUZE(SAM_t *sam);
+#endif // MUZE_CORTEX_H
