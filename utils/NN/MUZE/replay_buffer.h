@@ -18,8 +18,6 @@ struct ReplayBuffer {
   float *z_buf;   /* capacity */
 };
 
-typedef struct ReplayBuffer ReplayBuffer;
-
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
 void rb_free(ReplayBuffer *rb);
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
