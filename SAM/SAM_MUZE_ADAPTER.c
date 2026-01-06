@@ -39,7 +39,7 @@ static void sam_encode(void *brain, float *obs, size_t obs_dim,
   long double **seq = malloc(sizeof(long double *));
   seq[0] = input;
 
-  *latent_seq = seq; // CORRECT: writes back to caller
+  *latent_seq = seq;
   *seq_len = 1;
 }
 
