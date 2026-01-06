@@ -1,6 +1,7 @@
 #ifndef SAM_H
 #define SAM_H
 
+#include "../utils/NN/MUZE/all.h"
 #include "../utils/NN/NEAT.h"
 #include "../utils/NN/TRANSFORMER.h"
 #include <stdlib.h>
