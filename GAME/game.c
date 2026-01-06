@@ -654,7 +654,7 @@ static void draw_player(Vector2 pp_screen) {
   DrawCircleV(hr, handR, (Color){255, 210, 110, 255});
 
   // Feet (simple chibi feet)
-  float footR = bodyR * 0.26;
+  float footR = bodyR * 0.26f;
   Vector2 fl = {pp_screen.x - bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
   Vector2 fr = {pp_screen.x + bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
 
