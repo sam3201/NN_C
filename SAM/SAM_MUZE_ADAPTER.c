@@ -11,21 +11,17 @@ typedef struct {
 
   size_t obs_dim;
 
-  size_t hist_cap;
-  size_t hist_len;
-  size_t write_idx;
+  size_t hist_cap;  /* SAM_MUZE_HISTORY */
+  size_t hist_len;  /* <= hist_cap */
+  size_t write_idx; /* ring index */
 
-  long double *hist_data;
-  long double **seq_ptrs;
+  long double *hist_data; /* hist_cap * obs_dim */
+  long double **seq_ptrs; /* hist_cap pointers into hist_data */
 
-  // ---- training cache for REINFORCE-like update ----
-  size_t last_seq_len;
-  long double **last_seq_ptrs; // points into hist_data (do NOT free)
-
-  size_t last_action_count;
-  float *last_probs;  // malloc'd, length = last_action_count
-  size_t last_action; // argmax action we forced MUZE to take
-  int has_last;       // 0/1
+  /* epsilon-greedy exploration */
+  float epsilon;
+  float epsilon_min;
+  float epsilon_decay;
 } SAMMuAdapter;
 
 static size_t argmaxf(const float *x, size_t n) {
