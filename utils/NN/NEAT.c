@@ -434,10 +434,8 @@ Genome_t *GENOME_crossover(Genome_t *p1, Genome_t *p2) {
 }
 
 Genome_t *GENOME_clone(const Genome_t *src) {
-  Genome_t *c = malloc(sizeof(Genome_t));
-  *c = *g;
-  c->nn = NULL;
-  return c;
+  if (!src)
+    return NULL;
 }
 
 // ------------------- Serialization -------------------
