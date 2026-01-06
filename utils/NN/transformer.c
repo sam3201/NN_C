@@ -45,6 +45,8 @@ MultiHeadAttention *create_attention(size_t model_dim, size_t num_heads) {
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
   mha->V_proj =
       NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
+  mha->O_proj =
+      NN_init(layers, acts, ders, MSE, MSE_DERIVATIVE, L1, SGD, 0.01L);
 
   mha->X_cache = mha->Q_cache = mha->K_cache = mha->V_cache = NULL;
   mha->scores_cache = NULL;
