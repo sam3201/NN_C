@@ -126,6 +126,8 @@ int main(void) {
   printf("Training from replay...\n");
   time_t start = time(NULL);
   trainer_train_from_replay(model, rb, &tc);
+  time_t end = time(NULL);
+  printf("Training took %ld seconds\n", end - start);
 
   // ---- eval AFTER ----
   float after = eval_success_rate(model, 100, 128);
