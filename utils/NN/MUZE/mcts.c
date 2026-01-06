@@ -459,4 +459,5 @@ MCTSResult mcts_run(MuModel *model, const float *obs,
                // free(rewards); node_free(root); return res; } void
                // mcts_result_free(MCTSResult *res) { if (!res) return;
                // free(res->pi); res->pi = NULL; res->action_count = 0;
-               // res->chosen_action = 0; res->root_value = 0.0f; }
+               // res->chosen_action = 0; res->root_value = 0.0f;
+      }
