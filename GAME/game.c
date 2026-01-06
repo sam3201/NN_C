@@ -1584,6 +1584,43 @@ static void update_visible_world(float dt) {
   }
 }
 
+static void draw_ui(void) {
+  // panel
+  DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
+  DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
+
+  // bars
+  float hp01 = clamp01(player.health / 100.0f);
+  float st01 = clamp01(player.stamina / 100.0f);
+
+  DrawText("Player", 24, 20, 18, RAYWHITE);
+  DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);
+  DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
+
+  // bar visuals
+  DrawRectangle(120, 46, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 46, (int)(160 * hp01), 12, (Color){80, 220, 80, 255});
+  DrawRectangleLines(120, 46, 160, 12, (Color){0, 0, 0, 200});
+
+  DrawRectangle(120, 66, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 66, (int)(160 * st01), 12, (Color){80, 160, 255, 255});
+  DrawRectangleLines(120, 66, 160, 12, (Color){0, 0, 0, 200});
+
+  // inventory
+  DrawText(TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), 24, 90, 16,
+           RAYWHITE);
+  DrawText(TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), 24, 110, 16,
+           RAYWHITE);
+
+  // crosshair
+  Vector2 m = GetMousePosition();
+  DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
+  DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
+           (Color){0, 0, 0, 200});
+  DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
+           (Color){0, 0, 0, 200});
+}
+
 static void draw_hover_label(void) {
   // find nearest in current chunk within a small radius
   int cx = (int)(player.position.x / CHUNK_SIZE);
