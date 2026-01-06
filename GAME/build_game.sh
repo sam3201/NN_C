@@ -21,7 +21,8 @@ NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
 SAM_SRC=$(find ../SAM -name "*.c" | tr '\n' ' ')
 
 gcc -w game.c $NN_SRC $MUZE_SRC $SAM_SRC \
-    -I../utils/NN/MUZE/ -I../utils/NN/ -I../utils/NN/SAM/ -I../utils/Raylib/src/ \
+-I../utils/NN/ 
+    -I../utils/NN/MUZE/ -I../utils/NN/SAM/ \
     -L../utils/Raylib/src -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
     -arch arm64 \
     -o game
