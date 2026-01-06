@@ -5,7 +5,7 @@
 #include <string.h>
 
 /* Enable debug prints by compiling with -DMCTS_DEBUG */
-#ifndef MCTS_DEBUG
+#ifdef MCTS_DEBUG
 #include <stdio.h>
 static void dbg_print_root(const char *tag, const struct Node *root) {
   printf("\n[MCTS_DEBUG] %s\n", tag);
