@@ -91,17 +91,29 @@ typedef struct {
 } ObsBuffer;
 
 typedef struct {
-  Vector2 position;
+  Vector2 position; // LOCAL pos inside chunk
   ResourceType type;
   int health;
   bool visited;
+
+  // animation
+  float hit_timer;   // shake
+  float break_flash; // white flash
 } Resource;
 
 typedef struct {
-  Vector2 position;
+  Vector2 position; // LOCAL pos inside chunk
   MobType type;
   int health;
   bool visited;
+
+  // AI / motion (chunk-local)
+  Vector2 vel;
+  float ai_timer;    // when to pick new wander dir
+  float aggro_timer; // stays angry after being hit
+  float attack_cd;
+  float hurt_timer;  // flash
+  float lunge_timer; // attack anim
 } Mob;
 
 typedef struct {
