@@ -1,56 +1,62 @@
 #include "../../SAM/SAM.h"
 #include "../NN/MUZE/all.h"
+
 #include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> // usleep
 
-static void print_obs(const float *obs, int n) {
-  printf("[");
-  for (int i = 0; i < n; i++) {
-    printf("%.0f", obs[i]);
-    if (i + 1 < n)
-      printf(" ");
+static void draw_env(int row, const ToyEnvState *env, int goal_pos) {
+  // Track
+  for (int i = 0; i < (int)env->size; i++) {
+    chtype ch = ' ';
+    if (i == goal_pos)
+      ch = 'G';
+    if (i == env->pos)
+      ch = 'X';
+    mvaddch(row, i, ch);
   }
-  printf("]");
 }
 
-static void display_env(const ToyEnvState *env, const int goal_pos) {
-  for (int i = 0; i < env->size; i++) {
-    if (i == env->pos)
-      printf("X");
-    else if (i == goal_pos)
-      printf("G");
-    else
-      printf(" ");
+static void draw_obs(int row, int col, const float *obs, int n) {
+  mvprintw(row, col, "obs=[");
+  for (int i = 0; i < n; i++) {
+    printw("%.0f", obs[i]);
+    if (i + 1 < n)
+      printw(" ");
   }
-  printf("\n");
+  printw("]");
 }
 
 int main(void) {
   srand(1);
 
-  ToyEnvState env = {.pos = 0, .size = 8};
-  size_t obs_dim = env.size;
-  const int action_count = 2;
-  const int goal_pos = env.size - 1;
-
-  curs_set(0);
+  // --- init curses ---
   initscr();
   cbreak();
   noecho();
   curs_set(0);
+  keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE);
 
-  SAM_t *sam = SAM_init((size_t)obs_dim, (size_t)action_count, 2, 0);
+  ToyEnvState env = {.pos = 0, .size = 8};
+  const size_t obs_dim = env.size;
+  const int action_count = 2;
+  const int goal_pos = (int)env.size - 1;
+
+  SAM_t *sam = SAM_init(obs_dim, (size_t)action_count, 2, 0);
   if (!sam) {
+    endwin();
     printf("SAM_init failed\n");
     return 1;
   }
 
   MuCortex *cortex = SAM_as_MUZE(sam);
   if (!cortex) {
-    printf("SAM_as_MUZE failed\n");
     SAM_destroy(sam);
+    endwin();
+    printf("SAM_as_MUZE failed\n");
     return 1;
   }
 
@@ -58,50 +64,66 @@ int main(void) {
   const int max_steps = 128;
 
   for (int ep = 0; ep < episodes; ep++) {
-    float obs[obs_dim];
+    float obs[8]; // env.size == 8 here; if you change env.size, adjust
     toy_env_reset(&env, obs);
 
     float ep_return = 0.0f;
 
     for (int step = 0; step < max_steps; step++) {
-      int action =
-          muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count);
+      // allow quitting
+      int key = getch();
+      if (key == 'q' || key == 'Q') {
+        SAM_MUZE_destroy(cortex);
+        SAM_destroy(sam);
+        endwin();
+        return 0;
+      }
 
-      float next_obs[obs_dim];
+      int action = muze_plan(cortex, obs, obs_dim, (size_t)action_count);
+
+      float next_obs[8];
       float env_reward = 0.0f;
       int env_done = 0;
 
       if (toy_env_step(&env, action, next_obs, &env_reward, &env_done) != 0) {
-        printf("env_step error\n");
         break;
       }
 
-      float reward = (env.pos == goal_pos) ? 1.0f : 0.0f;
-      int done = (env.pos == goal_pos) ? 1 : 0;
+      // learn uses env-provided reward/done
+      cortex->learn(cortex->brain, obs, obs_dim, action, env_reward, env_done);
 
-      cortex->learn(cortex->brain, obs, obs_dim, action, reward, done);
+      ep_return += env_reward;
+      memcpy(obs, next_obs, sizeof(next_obs));
 
-      ep_return += reward;
-      memcpy(obs, next_obs, sizeof(obs));
+      // draw
+      clear();
+      mvprintw(0, 0, "Toy MUZE+SAM Visualizer  (press q to quit)");
+      mvprintw(1, 0, "ep=%d/%d  step=%d/%d  action=%d  reward=%.1f  done=%d",
+               ep, episodes - 1, step, max_steps - 1, action, env_reward,
+               env_done);
+      mvprintw(2, 0, "pos=%d  goal=%d  return=%.1f", env.pos, goal_pos,
+               ep_return);
 
-      if (ep < 3 || done) {
-        printf("ep=%d step=%d action=%d reward=%.1f pos=%d done=%d obs=", ep,
-               step, action, reward, env.pos, done);
-        print_obs(obs, obs_dim);
-        printf("\n");
-      }
+      draw_env(4, &env, goal_pos);
+      draw_obs(6, 0, obs, (int)obs_dim);
 
-      if (done)
+      refresh();
+      usleep(60 * 1000); // 60ms
+
+      if (env_done)
         break;
     }
 
-    printf("episode %d return=%.1f final_pos=%d\n", ep, ep_return, env.pos);
-
-    display_env(&env, goal_pos);
-    refresh();
+    // episode summary pause
+    mvprintw(8, 0, "episode %d return=%.1f final_pos=%d  (press any key)", ep,
+             ep_return, env.pos);
+    nodelay(stdscr, FALSE);
+    getch();
+    nodelay(stdscr, TRUE);
   }
 
   SAM_MUZE_destroy(cortex);
   SAM_destroy(sam);
+  endwin();
   return 0;
 }
