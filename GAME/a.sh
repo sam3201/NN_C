@@ -85,6 +85,7 @@ lldb ./game
 status=$?
 
 echo "Game exited with status $status"
+echo "Cleaning up..."
 rm -rf game.dSYM
 rm game
 exit "$status"
