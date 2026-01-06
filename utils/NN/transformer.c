@@ -653,7 +653,7 @@ Transformer_t *TRANSFORMER_load(FILE *file) {
     fread(&layer->model_dim, sizeof(size_t), 1, file);
     fread(&layer->seq_length, sizeof(size_t), 1, file);
 
-    // ✅ Replace the NNs safely: free old ones first, then load from stream
+    // Replace the NNs safely: free old ones first, then load from stream
     NN_destroy(layer->attention->Q_proj);
     NN_destroy(layer->attention->K_proj);
     NN_destroy(layer->attention->V_proj);
