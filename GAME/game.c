@@ -646,8 +646,8 @@ int main(void) {
     for (int i = 0; i < MAX_AGENTS; i++)
       update_agent(&agents[i]);
 
-    train_timer++;
     /*
+    train_timer++;
     if (train_timer >= TRAIN_INTERVAL) {
       for (int a = 0; a < MAX_AGENTS; a++) {
 
