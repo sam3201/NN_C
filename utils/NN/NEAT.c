@@ -1,6 +1,9 @@
 #include "NEAT.h"
 #include <string.h>
 
+InnovationRecord *innovationHistory = NULL;
+size_t innovationCount = 0;
+
 static bool creates_cycle(Genome_t *g, size_t from, size_t to) {
   if (from == to)
     return true;
