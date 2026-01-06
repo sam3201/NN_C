@@ -434,6 +434,7 @@ void update_agent(Agent *a) {
   encode_observation(a, c, &obs);
 
   MuCortex *cortex = tribes[a->agent_id / AGENT_PER_TRIBE].cortex;
+  int action = muze_plan(cortexobs.data);
 
   obs_free(&obs);
 
