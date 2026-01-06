@@ -32,7 +32,7 @@
 #define TRAIN_INTERVAL 1
 
 Vector2 camera_pos;
-float WORLD_SCALE = 12.0f;
+float WORLD_SCALE = 18.0f;
 // Visual scaling: at least +50%
 static float scale_size = 1.5f; // 1.5 = +50%
 // optional: you can tweak per-category
