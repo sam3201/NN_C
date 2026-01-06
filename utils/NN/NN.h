@@ -217,4 +217,7 @@ get_derivative_from_activation(ActivationFunctionType type);
 int NN_save(NN_t *nn, const char *filename);
 NN_t *NN_load(const char *filename);
 
+int NN_save_fp(NN_t *nn, FILE *f);
+NN_t *NN_load_fp(FILE *f);
+
 #endif // NN_H
