@@ -431,46 +431,46 @@ long double *SAM_forward(SAM_t *sam, long double **input_sequence,
   long double *pooled = (long double *)calloc(model_dim, sizeof(long double));
   if (!pooled) {
     for (size_t t = 0; t < seq_length; t++)
-      pooled[j] += feat[t][j];
-    free(feat[t]);
-    free(feat);
-    return NULL;
   }
+  free(feat[t]);
+  free(feat);
+  return NULL;
+}
 
-  for (size_t t = 0; t < seq_length; t++) {
-    for (size_t j = 0; j < model_dim; j++) {
-      pooled[j] += feat[t][j];
-    }
+for (size_t t = 0; t < seq_length; t++) {
+  for (size_t j = 0; j < model_dim; j++) {
+    pooled[j] += feat[t][j];
   }
-  long double invT = 1.0L / (long double)seq_length;
-  for (size_t j = 0; j < model_dim; j++)
-    pooled[j] *= invT;
+}
+long double invT = 1.0L / (long double)seq_length;
+for (size_t j = 0; j < model_dim; j++)
+  pooled[j] *= invT;
 
-  /* linear head: pooled(model_dim) -> out(out_dim) using weights[0][j][i] */
-  long double *out = (long double *)malloc(sizeof(long double) * out_dim);
-  if (!out) {
-    free(pooled);
-    for (size_t t = 0; t < seq_length; t++)
-      free(feat[t]);
-    free(feat);
-    return NULL;
-  }
-
-  for (size_t i = 0; i < out_dim; i++) {
-    long double sum = 0.0L;
-    for (size_t j = 0; j < model_dim; j++) {
-      sum += pooled[j] * sam->weights[0][j][i];
-    }
-    out[i] = sum; /* logits */
-  }
-
+/* linear head: pooled(model_dim) -> out(out_dim) using weights[0][j][i] */
+long double *out = (long double *)malloc(sizeof(long double) * out_dim);
+if (!out) {
   free(pooled);
-
   for (size_t t = 0; t < seq_length; t++)
     free(feat[t]);
   free(feat);
+  return NULL;
+}
 
-  return out;
+for (size_t i = 0; i < out_dim; i++) {
+  long double sum = 0.0L;
+  for (size_t j = 0; j < model_dim; j++) {
+    sum += pooled[j] * sam->weights[0][j][i];
+  }
+  out[i] = sum; /* logits */
+}
+
+free(pooled);
+
+for (size_t t = 0; t < seq_length; t++)
+  free(feat[t]);
+free(feat);
+
+return out;
 }
 
 void SAM_backprop(SAM_t *sam, long double **input_sequence, size_t seq_length,
