@@ -35,6 +35,12 @@ int main(void) {
   const int action_count = 2;
   const int goal_pos = env.size - 1;
 
+  curs_set(0);
+  initscr();
+  cbreak();
+  noecho();
+  curs_set(0);
+
   SAM_t *sam = SAM_init((size_t)obs_dim, (size_t)action_count, 2, 0);
   if (!sam) {
     printf("SAM_init failed\n");
