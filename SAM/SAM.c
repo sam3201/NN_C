@@ -241,93 +241,80 @@ SAM_t *SAM_load(const char *filename) {
   if (!file)
     return NULL;
 
-  SAM_t *sam = (SAM_t *)malloc(sizeof(SAM_t));
+  SAM_t *sam = (SAM_t *)calloc(1, sizeof(SAM_t));
   if (!sam) {
     fclose(file);
     return NULL;
   }
 
-  // Initialize to zero
-  memset(sam, 0, sizeof(SAM_t));
-
   // Load SAM parameters
-  if (fread(&sam->num_submodels, sizeof(size_t), 1, file) != 1) {
-    free(sam);
+  if (fread(&sam->num_submodels, sizeof(size_t), 1, file) != 1 ||
+      fread(&sam->context, sizeof(long double), 1, file) != 1) {
     fclose(file);
-    return NULL;
-  }
-  if (fread(&sam->context, sizeof(long double), 1, file) != 1) {
     free(sam);
-    fclose(file);
     return NULL;
   }
 
   // Load layer configuration
   if (fread(&sam->num_layers, sizeof(size_t), 1, file) != 1) {
-    free(sam);
     fclose(file);
+    free(sam);
     return NULL;
   }
 
-  if (sam->num_layers > 0 && sam->num_layers < 100) { // Sanity check
-    sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
-    if (!sam->layer_sizes) {
-      free(sam);
-      fclose(file);
-      return NULL;
-    }
-    if (fread(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) !=
-        sam->num_layers) {
-      free(sam->layer_sizes);
-      free(sam);
-      fclose(file);
-      return NULL;
-    }
-  } else {
-    // Default values if not saved (backward compatibility)
-    sam->num_layers = 3;
-    sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
-    if (!sam->layer_sizes) {
-      free(sam);
-      fclose(file);
-      return NULL;
-    }
-    sam->layer_sizes[0] = 256;
-    sam->layer_sizes[1] = 256;
-    sam->layer_sizes[2] = 64;
+  // Sanity: your SAM_init currently uses num_layers = 2
+  // We allow other values if they were saved, but we must allocate properly.
+  if (sam->num_layers == 0 || sam->num_layers > 100) {
+    fclose(file);
+    free(sam);
+    return NULL;
   }
 
-  // Load transformer
-  sam->transformer = TRANSFORMER_load(filename);
-  if (!sam->transformer) {
+  sam->layer_sizes = (size_t *)malloc(sam->num_layers * sizeof(size_t));
+  if (!sam->layer_sizes) {
+    fclose(file);
+    free(sam);
+    return NULL;
+  }
+
+  if (fread(sam->layer_sizes, sizeof(size_t), sam->num_layers, file) !=
+      sam->num_layers) {
+    fclose(file);
     free(sam->layer_sizes);
     free(sam);
-    fclose(file);
     return NULL;
   }
 
-  // Load submodels
-  sam->submodels = (NEAT_t **)malloc(sam->num_submodels * sizeof(NEAT_t *));
+  // ✅ Load transformer from the SAME file stream
+  sam->transformer = TRANSFORMER_load(file);
+  if (!sam->transformer) {
+    fclose(file);
+    free(sam->layer_sizes);
+    free(sam);
+    return NULL;
+  }
+
+  // Allocate submodels array
+  sam->submodels = (NEAT_t **)calloc(sam->num_submodels, sizeof(NEAT_t *));
   if (!sam->submodels) {
+    fclose(file);
     TRANSFORMER_destroy(sam->transformer);
     free(sam->layer_sizes);
     free(sam);
-    fclose(file);
     return NULL;
   }
 
-  // Initialize submodels (NEAT_load expects filename, not FILE*, so we skip
-  // loading them) In a full implementation, we'd need a NEAT_load_from_file
-  // function
+  // Recreate NEAT submodels (not loaded from file yet)
   size_t input_dim = sam->layer_sizes[0];
   size_t output_dim = sam->layer_sizes[sam->num_layers - 1];
+
+  // Keep your current behavior; just make it safe
+  unsigned int population_size = 100;
   for (size_t i = 0; i < sam->num_submodels; i++) {
-    sam->submodels[i] = NEAT_init(input_dim, output_dim, 100);
+    sam->submodels[i] = NEAT_init(input_dim, output_dim, population_size);
     if (!sam->submodels[i]) {
-      // Cleanup on error
-      for (size_t j = 0; j < i; j++) {
+      for (size_t j = 0; j < i; j++)
         NEAT_destroy(sam->submodels[j]);
-      }
       free(sam->submodels);
       TRANSFORMER_destroy(sam->transformer);
       free(sam->layer_sizes);
@@ -335,17 +322,14 @@ SAM_t *SAM_load(const char *filename) {
       fclose(file);
       return NULL;
     }
-    // Note: NEAT submodels are not loaded from file since NEAT_load expects a
-    // filename In a production system, we'd need a FILE*-based load function
   }
 
-  // Initialize weights (allocate but don't load - they'll be retrained)
+  // Initialize weights (your current design: not loaded, re-randomized)
   init_weights(sam);
 
   fclose(file);
   return sam;
 }
-
 // Matrix operations
 void SAM_matrix_multiply(long double **A, long double **B, long double **C,
                          size_t m, size_t n, size_t p) {
