@@ -957,6 +957,12 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   if ((r->type == RES_ROCK || r->type == RES_GOLD) && tr->has_pickaxe)
     cost *= 0.78f;
 
+  if (a->stamina < cost) {
+    pthread_rwlock_unlock(&c->lock);
+    *reward += R_HARVEST_NO_STAMINA;
+    return 0;
+  }
+
   a->harvest_cd = agent_harvest_cooldown();
   a->stamina -= cost;
 
