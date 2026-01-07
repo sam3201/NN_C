@@ -1034,7 +1034,16 @@ Chunk *get_chunk(int cx, int cy) {
 
   // Seed a smaller starting population with spacing
   int seed_count = 6; // tweak (try 4..8)
-  float minD = 2.8f;  // tweak for your MOB_SCALE
+  float minD = 2.6f;
+  ... for (int tries = 0; tries < 35; tries++) {
+    p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
+                  randf(0.8f, CHUNK_SIZE - 0.8f)};
+    if (!mob_too_close_local(c, p, minD)) {
+      placed = 1;
+      break;
+    }
+  }
+
   int night = is_night_cached;
 
   for (int k = 0; k < seed_count; k++) {
