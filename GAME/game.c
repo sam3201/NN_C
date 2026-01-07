@@ -2878,74 +2878,128 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
     }
   }
 
-  // HOSTILE: chase / skeleton kite + shoot
   if (hostile) {
     speed = MOB_SPEED_HOSTILE;
 
-    bool aggroP = player_same_chunk &&
-                  ((dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f));
+    int mcx2 = (int)(mw.x / CHUNK_SIZE);
+    int mcy2 = (int)(mw.y / CHUNK_SIZE);
 
-    if (aggroP) {
-      // your existing zombie/skeleton vs player logic (keep as-is)
-      // ...
+    float dA = 1e9f;
+    Agent *targetA = nearest_agent_in_chunk(mcx2, mcy2, mw, &dA);
+
+    // decide best target in THIS chunk: player (if present) or agent
+    bool player_here = player_same_chunk;
+    bool agent_here = (targetA != NULL);
+
+    Vector2 targetPos = player.position;
+    float targetD = dP;
+
+    if (agent_here && (!player_here || dA < dP)) {
+      targetPos = targetA->position;
+      targetD = dA;
+    }
+
+    Vector2 toT = Vector2Subtract(targetPos, mw);
+    float dT = Vector2Length(toT);
+    Vector2 dirT =
+        (dT > 1e-3f) ? Vector2Scale(toT, 1.0f / dT) : (Vector2){0, 0};
+
+    bool aggroT = (dT < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
+
+    if (aggroT) {
+      if (m->type == MOB_ZOMBIE) {
+        m->vel = dirT;
+
+        if (dT < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
+          m->attack_cd = 0.8f;
+          m->lunge_timer = 0.18f;
+
+          if (agent_here && (!player_here || targetA == targetA) &&
+              (targetA &&
+               Vector2Distance(targetA->position, mw) < MOB_ATTACK_RANGE)) {
+            targetA->health -= 6.0f;
+            targetA->flash_timer = 0.18f;
+          } else if (player_here) {
+            player.health -= 6.0f;
+            player_hurt_timer = 0.18f;
+          }
+        }
+      } else if (m->type == MOB_SKELETON) {
+        float desired = 6.0f;
+        if (dT < desired - 0.8f)
+          m->vel = Vector2Scale(dirT, -1.0f);
+        else if (dT > desired + 1.2f)
+          m->vel = dirT;
+        else
+          m->vel = Vector2Scale(m->vel, 0.5f);
+
+        if (dT < 12.0f && m->attack_cd <= 0.0f) {
+          m->attack_cd = 1.1f;
+          m->lunge_timer = 0.12f;
+
+          // shoot at chosen target
+          spawn_projectile(mw, dirT, 9.0f, 2.0f, 8);
+        }
+      }
     } else if (is_night_cached) {
-      // raid behavior: march toward nearest base even if player not around
+      // keep your existing raid-to-base behavior
       m->vel = dirB;
-
-      // if inside base -> damage it
       for (int t = 0; t < TRIBE_COUNT; t++) {
-        Tribe *tr = &tribes[t];
-        float db = Vector2Distance(mw, tr->base.position);
-        if (db < tr->base.radius + 0.8f) {
+        Tribe *trb = &tribes[t];
+        float db = Vector2Distance(mw, trb->base.position);
+        if (db < trb->base.radius + 0.8f) {
           if (m->attack_cd <= 0.0f) {
             m->attack_cd = 0.85f;
             m->lunge_timer = 0.12f;
-            tr->integrity = fmaxf(0.0f, tr->integrity - 5.0f);
+            trb->integrity = fmaxf(0.0f, trb->integrity - 5.0f);
             cam_shake = fmaxf(cam_shake, 0.12f);
           }
         }
       }
     }
-    if (player_same_chunk) {
-      bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
-      if (aggro) {
-        speed = MOB_SPEED_HOSTILE;
+  }
 
-        if (m->type == MOB_ZOMBIE) {
-          // chase
-          m->vel = dirP;
+  // HOSTILE: chase / skeleton kite + shoot
+  if (player_same_chunk) {
+    bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
+    if (aggro) {
+      speed = MOB_SPEED_HOSTILE;
 
-          // melee attack
-          if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
-            m->attack_cd = 0.8f;
-            m->lunge_timer = 0.18f;
-            player.health -= 6.0f;
-            player_hurt_timer = 0.18f;
-          }
-        } else if (m->type == MOB_SKELETON) {
-          // keep some distance
-          float desired = 6.0f;
-          if (dP < desired - 0.8f)
-            m->vel = Vector2Scale(dirP, -1.0f); // back up
-          else if (dP > desired + 1.2f)
-            m->vel = dirP; // approach
-          else
-            m->vel = Vector2Scale(m->vel, 0.5f); // drift
+      if (m->type == MOB_ZOMBIE) {
+        // chase
+        m->vel = dirP;
 
-          // shoot
-          if (dP < 12.0f && m->attack_cd <= 0.0f) {
-            m->attack_cd = 1.1f;
-            m->lunge_timer = 0.12f;
-            spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
-          }
+        // melee attack
+        if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
+          m->attack_cd = 0.8f;
+          m->lunge_timer = 0.18f;
+          player.health -= 6.0f;
+          player_hurt_timer = 0.18f;
+        }
+      } else if (m->type == MOB_SKELETON) {
+        // keep some distance
+        float desired = 6.0f;
+        if (dP < desired - 0.8f)
+          m->vel = Vector2Scale(dirP, -1.0f); // back up
+        else if (dP > desired + 1.2f)
+          m->vel = dirP; // approach
+        else
+          m->vel = Vector2Scale(m->vel, 0.5f); // drift
+
+        // shoot
+        if (dP < 12.0f && m->attack_cd <= 0.0f) {
+          m->attack_cd = 1.1f;
+          m->lunge_timer = 0.12f;
+          spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
         }
       }
     }
   }
-  // move (chunk-local)
-  Vector2 delta = Vector2Scale(m->vel, speed * dt);
-  m->position = Vector2Add(m->position, delta);
-  m->position = clamp_local_to_chunk(m->position);
+}
+// move (chunk-local)
+Vector2 delta = Vector2Scale(m->vel, speed *dt);
+m->position = Vector2Add(m->position, delta);
+m->position = clamp_local_to_chunk(m->position);
 }
 
 static void draw_crafting_ui(void) {
