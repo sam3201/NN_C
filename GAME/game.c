@@ -2658,21 +2658,10 @@ void update_agent(Agent *a) {
   } break;
 
   case ACTION_FIRE: {
-    int tcx, tcy;
-    float td;
-    Vector2 tpos;
-    if (agent_find_nearest_hostile_mob(a, &tcx, &tcy, &td, &tpos)) {
-      Chunk *tc = get_chunk(tcx, tcy);
-      pthread_rwlock_wrlock(&tc->lock);
-      agent_try_fire_in_chunk(a, tr, tc, tcx, tcy, &reward);
-      pthread_rwlock_unlock(&tc->lock);
-    } else {
-      pthread_rwlock_wrlock(&c->lock);
-      agent_try_fire_in_chunk(a, tr, c, cx, cy, &reward);
-      pthread_rwlock_unlock(&c->lock);
-    }
+    pthread_rwlock_wrlock(&c->lock);
+    agent_try_fire_in_chunk(a, tr, c, cx, cy, &reward);
+    pthread_rwlock_unlock(&c->lock);
   } break;
-
   case ACTION_EAT:
     agent_try_eat(a, &reward);
     break;
