@@ -685,13 +685,16 @@ static inline int mob_is_alive(const Mob *m) { return m->health > 0; }
 static int mob_too_close_local(const Chunk *c, Vector2 p, float minD) {
   for (int i = 0; i < MAX_MOBS; i++) {
     const Mob *m = &c->mobs[i];
-    if (!mob_is_alive(m)) continue;
-    if (Vector2Distance(m->position, p) < minD) return 1;
+    if (!mob_is_alive(m))
+      continue;
+    if (Vector2Distance(m->position, p) < minD)
+      return 1;
   }
   return 0;
 }
 
-static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos, float minD) {
+static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos,
+                                      float minD) {
   // checks this chunk + neighbors (prevents edge-stacking across chunk borders)
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
@@ -699,18 +702,20 @@ static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos, float mi
       int ncy = cy + dy;
       Chunk *c = get_chunk(ncx, ncy);
 
-      Vector2 origin = (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
+      Vector2 origin =
+          (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
-        if (!mob_is_alive(m)) continue;
+        if (!mob_is_alive(m))
+          continue;
         Vector2 mw = Vector2Add(origin, m->position);
-        if (Vector2Distance(mw, worldPos) < minD) return 1;
+        if (Vector2Distance(mw, worldPos) < minD)
+          return 1;
       }
     }
   }
   return 0;
 }
-
 
 static int chunk_alive_mobs(Chunk *c) {
   int n = 0;
