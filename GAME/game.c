@@ -2281,12 +2281,18 @@ static void draw_hover_label(void) {
 
   if (label) {
     Vector2 mp = GetMousePosition();
-    DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 120, 22,
+    DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
                   (Color){0, 0, 0, 140});
-    DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 120, 22,
+    DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 160, 22,
                        (Color){0, 0, 0, 220});
-    DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
+    if (hp >= 0) {
+      DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22, (int)mp.y + 13,
+               16, RAYWHITE);
+    } else {
+      DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
+    }
   }
+}
 }
 
 static void draw_minimap(void) {
