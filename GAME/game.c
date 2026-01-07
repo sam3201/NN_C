@@ -3510,6 +3510,8 @@ int main(void) {
     update_daynight(dt);
     collect_nearby_pickups();
 
+    update_visible_world(dt);
+
     g_dt = dt;
     run_agent_jobs();
 
