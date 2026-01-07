@@ -563,18 +563,18 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     return;
   }
 
-  if (!tr->has_sword && tr->stone >= 4 && tr->gold >= 2) {
+  if (!a->has_sword && tr->stone >= 4 && tr->gold >= 2) {
     tr->stone -= 4;
     tr->gold -= 2;
-    tr->has_sword = true;
+    a->has_sword = true;
     *reward += 0.12f;
     return;
   }
 
-  if (!tr->has_armor && tr->stone >= 5 && tr->gold >= 2) {
+  if (!a->has_armor && tr->stone >= 5 && tr->gold >= 2) {
     tr->stone -= 5;
     tr->gold -= 2;
-    tr->has_armor = true;
+    a->has_armor = true;
     *reward += 0.10f;
     return;
   }
