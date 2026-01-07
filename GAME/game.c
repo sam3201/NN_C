@@ -1571,6 +1571,9 @@ void init_agents(void) {
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
 
+    a->tribe_id = i / AGENT_PER_TRIBE;
+    a->tribe = &tribes[a->tribe_id];
+
     Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
     float ang = randf(0, 2 * PI);
     float d = randf(2, tr->base.radius - 1);
