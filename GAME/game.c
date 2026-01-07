@@ -152,6 +152,7 @@ typedef struct {
   int tribe_id;
   Color color;
   Base base;
+  float integrity; // 0..base_health
 } Tribe;
 
 typedef struct {
