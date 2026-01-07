@@ -1,4 +1,4 @@
-#include "sam_muze_bridge.h"
+#include "SAM_MUZE_BRIDGE.h"
 #include "../utils/NN/MUZE/all.h"
 #include "SAM.h"
 #include <math.h>
