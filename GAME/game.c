@@ -797,33 +797,6 @@ static void agent_try_fire_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
   Vector2 origin =
       (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
-  // prefer nearest hostile mob
-  Mob *best = NULL;
-  float bestD = 1e9f;
-
-  for (int pass = 0; pass < 2; pass++) {
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &c->mobs[i];
-      if (m->health <= 0)
-        continue;
-
-      if (pass == 0 && !mob_is_hostile(m->type))
-        continue;
-
-      Vector2 mw = Vector2Add(origin, m->position);
-      float d = Vector2Distance(a->position, mw);
-      if (d < bestD && d < 14.0f) {
-        bestD = d;
-        best = m;
-      }
-    }
-    if (best)
-      break;
-  }
-
-  if (!best)
-    return;
-
   Vector2 targetW = Vector2Add(origin, best->position);
   Vector2 dir = Vector2Subtract(targetW, a->position);
 
