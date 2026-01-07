@@ -10,8 +10,6 @@
 extern "C" {
 #endif
 
-// muze_cortex.h
-
 typedef struct MuCortex {
   void *brain;
 
@@ -31,7 +29,6 @@ typedef struct MuCortex {
   MuModel *mcts_model;    /* required if use_mcts=1 */
   MCTSParams mcts_params; /* params used by MCTS */
 
-  /* --- NEW: non-MCTS exploration controls --- */
   float policy_epsilon;     /* epsilon-greedy on top of policy sampling */
   float policy_temperature; /* >= 0; 1 = normal, <1 sharper, >1 flatter */
 } MuCortex;
