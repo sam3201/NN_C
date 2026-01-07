@@ -739,6 +739,20 @@ static MobType pick_spawn_type(int night, int biome) {
   }
 }
 
+static void init_mob(Mob *m, MobType type, Vector2 local_pos, int make_angry) {
+  m->type = type;
+  m->position = clamp_local_to_chunk(local_pos);
+
+  m->health = 100;
+  m->visited = false;
+  m->vel = (Vector2){0, 0};
+  m->ai_timer = randf(0.2f, 1.2f);
+  m->aggro_timer = make_angry ? 2.0f : 0.0f;
+  m->attack_cd = randf(0.2f, 1.0f);
+  m->hurt_timer = 0.0f;
+  m->lunge_timer = 0.0f;
+}
+
 static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   c->mob_spawn_timer -= dt;
   if (c->mob_spawn_timer > 0.0f)
