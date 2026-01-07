@@ -73,6 +73,8 @@
 #define R_EAT_WASTE (-0.040f) // ate when already basically full
 #define R_EAT_NO_FOOD (-0.010f)
 
+#define R_WANDER_PENALTY -0.0008f;
+
 #define R_DEATH (-1.000f)
 
 #define OBS_DIM 64
@@ -2827,7 +2829,7 @@ void update_agent(Agent *a) {
   if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
     agent_set_facing_from(moveDir, a);
     if (moveDir.x != 0.0f || moveDir.y != 0.0f)
-      reward += -0.0008f;
+      reward +=
   }
 
   // --- survival shaping ---
