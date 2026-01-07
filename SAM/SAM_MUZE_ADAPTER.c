@@ -90,16 +90,6 @@ static size_t sample_from_probs(const float *p, size_t n) {
   return n ? (n - 1) : 0;
 }
 
-...
-
-    // after you computed action_probs and applied epsilon-mix:
-    if (((float)rand() / (float)RAND_MAX) < ad->epsilon) {
-  ad->last_action = (size_t)(rand() % (int)action_count);
-}
-else {
-  ad->last_action = sample_from_probs(action_probs, action_count);
-}
-
 static void sam_encode(void *brain, float *obs, size_t obs_dim,
                        long double ***latent_seq, size_t *seq_len) {
   SAMMuAdapter *ad = (SAMMuAdapter *)brain;
