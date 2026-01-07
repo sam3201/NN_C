@@ -137,6 +137,8 @@ typedef struct {
   Mob mobs[MAX_MOBS];
   bool generated;
   float mob_spawn_timer;
+
+  p_thread_rwlock rwlock;
 } Chunk;
 
 typedef struct {
