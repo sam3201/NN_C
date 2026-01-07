@@ -700,7 +700,7 @@ void draw_resources(void) {
 
 void draw_mobs(void) {
   // small helpers (local to this function)
-  auto Color lerp_color(Color a, Color b, float t) {
+  Color lerp_color(Color a, Color b, float t) {
     t = clamp01(t);
     Color out;
     out.r = (unsigned char)(a.r + (b.r - a.r) * t);
