@@ -2220,6 +2220,12 @@ void update_agent(Agent *a) {
     break;
   case ACTION_EAT:
     break;
+  /*
+  case ACTION_SLEEP:
+    break;
+  case ACTION_SPAWN:
+    break;
+    */
   case ACTION_NONE:
     break;
   default:
