@@ -2284,16 +2284,31 @@ static void draw_agent(const Agent *a, Vector2 sp, Color tribeColor) {
 
   // tiny “tool” (points based on a subtle idle direction)
   // If you later store last action direction, plug it here.
-  float ang = sinf(t * 1.5f + a->agent_id) * 0.35f; // fallback wobble
-  if (a->intent_has_pos && a->intent_kind != INTENT_NONE) {
-    // Convert target world -> screen direction
-    // NOTE: "sp" is already screen-space for the agent.
-    Vector2 targetS = world_to_screen(a->intent_pos);
-    Vector2 toT = Vector2Subtract(targetS, sp);
-    if (Vector2Length(toT) > 1e-3f) {
-      ang = atan2f(toT.y, toT.x);
-    }
+  float ang = 0.0f;
+  switch (a->last_action) {
+  case ACTION_UP:
+    ang = -PI / 2;
+    break;
+  case ACTION_DOWN:
+    ang = PI / 2;
+    break;
+  case ACTION_LEFT:
+    ang = PI;
+    break;
+  case ACTION_RIGHT:
+    ang = 0.0f;
+    break;
+  case ACTION_ATTACK:
+  case ACTION_HARVEST:
+  case ACTION_FIRE:
+    // small idle wobble for “doing stuff”
+    ang = sinf(t * 6.0f + (float)a->agent_id) * 0.35f;
+    break;
+  default:
+    ang = sinf(t * 1.5f + (float)a->agent_id) * 0.25f;
+    break;
   }
+
   Vector2 toolDir = {cosf(ang), sinf(ang)};
   Vector2 toolPos = {sp.x + toolDir.x * (r * 0.95f),
                      sp.y + toolDir.y * (r * 0.95f)};
