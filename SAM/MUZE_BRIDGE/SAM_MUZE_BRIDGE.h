@@ -1,6 +1,6 @@
 #pragma once
+#include "../../SAM/SAM.h"
 #include "../../utils/NN/MUZE/muze_cortex.h" // or wherever MuCortex is declared
-#include "../SAM/SAM.h"
 
 #ifdef __cplusplus
 extern "C" {
