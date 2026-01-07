@@ -132,7 +132,7 @@ typedef struct {
   int damage;
 } Projectile;
 
-struct Chunk {
+typedef struct Chunk {
   int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
@@ -142,7 +142,7 @@ struct Chunk {
   float mob_spawn_timer;
 
   pthread_rwlock_t lock;
-};
+} Chunk;
 
 typedef struct {
   Vector2 position;
