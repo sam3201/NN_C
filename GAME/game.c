@@ -3508,6 +3508,7 @@ int main(void) {
     update_visible_world(dt);
     update_projectiles(dt);
     update_daynight(dt);
+    collect_nearby_pickups();
 
     g_dt = dt;
     run_agent_jobs();
