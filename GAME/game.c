@@ -1186,7 +1186,7 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
     int ccx = (int)(cand.x / CHUNK_SIZE);
     int ccy = (int)(cand.y / CHUNK_SIZE);
 
-    if (!world_pos_blocked_nearby(ccx, ccy, cand, rad)) {
+    if (!world_pos_blocked_nearby(ccx, ccy, cand, rad, -999999, -999999)) {
       chosen = cand;
       found = 1;
       break;
