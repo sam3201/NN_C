@@ -85,6 +85,8 @@ typedef enum {
   ACTION_COUNT
 } ActionType;
 
+typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
+
 /* =======================
    STRUCTS
 ======================= */
