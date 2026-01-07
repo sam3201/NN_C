@@ -327,3 +327,46 @@ void SAM_MUZE_destroy(MuCortex *cortex) {
   }
   free(cortex);
 }
+
+#include "sam_muze_adapter.h"
+#include <stdlib.h>
+#include <string.h>
+
+// The adapter stores function pointers MUZE will call.
+typedef struct {
+  SAM_t *sam;
+  MuCortex cortex; // must match MUZE expectations
+} SAMMuAdapter;
+
+static int adapter_plan(void *brain, const float *obs, size_t obs_dim,
+                        size_t action_count) {
+  SAMMuAdapter *a = (SAMMuAdapter *)brain;
+  // call whatever SAM uses to pick actions
+  return SAM_choose_action(a->sam, obs, obs_dim, (int)action_count);
+}
+
+static void adapter_learn(void *brain, const float *obs, size_t obs_dim,
+                          int action, float reward, int terminal) {
+  SAMMuAdapter *a = (SAMMuAdapter *)brain;
+  SAM_learn(a->sam, obs, obs_dim, action, reward, terminal);
+}
+
+MuCortex *SAM_as_MUZE(SAM_t *sam) {
+  SAMMuAdapter *a = (SAMMuAdapter *)calloc(1, sizeof(*a));
+  if (!a)
+    return NULL;
+
+  a->sam = sam;
+  a->cortex.brain = a;           // MUZE calls cortex->plan/learn with brain
+  a->cortex.plan = adapter_plan; // or whatever MUZE names it
+  a->cortex.learn = adapter_learn;
+
+  return &a->cortex;
+}
+
+void SAM_as_MUZE_destroy(MuCortex *cortex) {
+  if (!cortex)
+    return;
+  SAMMuAdapter *a = (SAMMuAdapter *)cortex->brain;
+  free(a);
+}
