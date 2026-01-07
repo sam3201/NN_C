@@ -890,17 +890,49 @@ Chunk *get_chunk(int cx, int cy) {
     for (int j = 0; j < CHUNK_SIZE; j++)
       c->terrain[i][j] = c->biome_type;
 
-  c->resource_count = 8;
-  for (int i = 0; i < c->resource_count; i++) {
-    c->resources[i].type = rand() % 4;
-    c->resources[i].position =
-        (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
-    c->resources[i].health = 100;
-    c->resources[i].visited = false;
-    c->resources[i].hit_timer = 0.0f;
-    c->resources[i].break_flash = 0.0f;
-  }
+  // ---------- RESOURCES (spacing-aware) ----------
+  c->resource_count = 0;
 
+  int desired = 12; // try 10..20 (your world is dense; keep reasonable)
+  for (int k = 0; k < desired && c->resource_count < MAX_RESOURCES; k++) {
+
+    ResourceType rt = (ResourceType)(rand() % 4);
+    float rad = res_radius_world(rt);
+
+    int cx0 = cx; // NOTE: get_chunk params are (cx, cy) from caller
+    int cy0 = cy;
+
+    // IMPORTANT: when called from get_chunk(cx,cy), cx/cy exist in that scope.
+    // If your compiler complains, see note below.
+
+    int placed = 0;
+    Vector2 local = {0};
+
+    for (int tries = 0; tries < 80; tries++) {
+      // keep away from chunk edges slightly
+      local = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
+                        randf(0.9f, CHUNK_SIZE - 0.9f)};
+
+      Vector2 worldPos = (Vector2){(float)(cx0 * CHUNK_SIZE) + local.x,
+                                   (float)(cy0 * CHUNK_SIZE) + local.y};
+
+      if (!world_pos_blocked_nearby(cx0, cy0, worldPos, rad)) {
+        placed = 1;
+        break;
+      }
+    }
+
+    if (!placed)
+      continue;
+
+    Resource *r = &c->resources[c->resource_count++];
+    r->type = rt;
+    r->position = clamp_local_to_chunk(local);
+    r->health = 100;
+    r->visited = false;
+    r->hit_timer = 0.0f;
+    r->break_flash = 0.0f;
+  }
   c->mob_spawn_timer = randf(1.0f, 3.0f);
   for (int i = 0; i < MAX_MOBS; i++)
     c->mobs[i].health = 0;
