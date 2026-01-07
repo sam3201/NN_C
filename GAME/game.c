@@ -797,24 +797,45 @@ static void agent_try_fire_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
   Vector2 origin =
       (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
-  // prefer nearest hostile mob
-  Mob *best = NULL;
-  float bestD = 1e9f;
+  const float maxRange = 14.0f;
+  const float cone = 0.70f; // widen/narrow as you like
+  const float cosMin = cosf(cone);
 
+  Mob *best = NULL;
+  float bestScore = -1e9f;
+  Vector2 bestWorld = (Vector2){0};
+
+  // Two passes: hostiles first, then anything
   for (int pass = 0; pass < 2; pass++) {
     for (int i = 0; i < MAX_MOBS; i++) {
       Mob *m = &c->mobs[i];
       if (m->health <= 0)
         continue;
 
-      if (pass == 0 && !mob_is_hostile(m->type))
+      bool hostile = mob_is_hostile(m->type);
+      if (pass == 0 && !hostile)
         continue;
 
       Vector2 mw = Vector2Add(origin, m->position);
-      float d = Vector2Distance(a->position, mw);
-      if (d < bestD && d < 14.0f) {
-        bestD = d;
+      Vector2 to = Vector2Subtract(mw, a->position);
+      float d = Vector2Length(to);
+      if (d < 1e-3f || d > maxRange)
+        continue;
+
+      Vector2 dir = Vector2Scale(to, 1.0f / d);
+
+      // Cone check: must be roughly in front
+      float dot = Vector2DotProduct(dir, a->facing);
+      if (dot < cosMin)
+        continue;
+
+      // Score: prefer closer + more centered + hostiles
+      float score = (1.0f - d / maxRange) + dot + (hostile ? 0.35f : 0.0f);
+
+      if (score > bestScore) {
+        bestScore = score;
         best = m;
+        bestWorld = mw;
       }
     }
     if (best)
@@ -824,9 +845,7 @@ static void agent_try_fire_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
   if (!best)
     return;
 
-  Vector2 targetW = Vector2Add(origin, best->position);
-  Vector2 dir = Vector2Subtract(targetW, a->position);
-
+  Vector2 dir = Vector2Subtract(bestWorld, a->position);
   if (Vector2Length(dir) < 1e-3f)
     return;
 
