@@ -1819,7 +1819,8 @@ static void update_visible_world(float dt) {
       int cy = pcy + dy;
       Chunk *c = get_chunk(cx, cy);
 
-      pthread_mutex_lock(&c->lock);
+      pthread_rwlock(&c->lock);
+
       Vector2 chunk_origin =
           (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
