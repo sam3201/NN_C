@@ -2200,12 +2200,13 @@ void update_player(void) {
     pthread_rwlock_unlock(&c->lock);
   }
 
-  player.stamina = fmaxf(0, player.stamina - STAMINA_DRAIN_RATE);
-  player.health = fmaxf(0, player.health);
+  // stamina drain/regen should be time-based
+  player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
 
-  // regen
-  if (player.stamina < 100)
-    player.stamina = fminf(100, player.stamina + STAMINA_REGEN_RATE);
+  if (player.stamina < 100.0f)
+    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+
+  player.health = fmaxf(0.0f, player.health);
 }
 
 static void despawn_hostiles_if_day(Chunk *c) {
