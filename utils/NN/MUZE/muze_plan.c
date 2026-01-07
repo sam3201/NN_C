@@ -1,11 +1,5 @@
 #include "muze_plan.h"
 #include "mcts.h"
-#include <stdlib.h>
-#include <string.h>
-
-// muze_plan.c
-#include "mcts.h"
-#include "muze_plan.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
