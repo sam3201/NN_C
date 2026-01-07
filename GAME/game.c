@@ -215,6 +215,7 @@ static float player_hurt_timer = 0.0f;
 bool has_axe = false;
 bool has_pickaxe = false;
 bool has_sword = false;
+static int crafting_open = 0;
 
 static Projectile projectiles[MAX_PROJECTILES];
 
