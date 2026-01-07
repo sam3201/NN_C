@@ -3379,6 +3379,19 @@ static void draw_hurt_vignette(void) {
 
  * ======================= */
 
+static void start_workers(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_quit = 0;
+  job_active = 0;
+  job_next_agent = 0;
+  job_done_workers = 0;
+  pthread_mutex_unlock(&job_mtx);
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_create(&workers[i], NULL, agent_worker, NULL);
+  }
+}
+
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
   job_next_agent = 0;
