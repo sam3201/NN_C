@@ -75,6 +75,7 @@ typedef enum {
   ACTION_ATTACK,
   ACTION_FIRE,
   ACTION_HARVEST,
+  ACTION_NONE,
   ACTION_COUNT
 } ActionType;
 
@@ -2210,7 +2211,7 @@ void update_agent(Agent *a) {
   case ACTION_RIGHT:
     a->position.x += 0.5f;
     break;
-  case ACTION_FIRE:
+  case ACTION_ case ACTION_FIRE:
     spawn_projectile(a->position, a->direction, 10.0f, 10.0f, 1);
     break;
   default:
