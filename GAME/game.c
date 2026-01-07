@@ -547,7 +547,7 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
   }
 
   // ---- Priority 1: tools (one-time tribe unlocks) ----
-  if (!tr->has_axe && tr->wood >= 3 && tr->stone >= 2) {
+  if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
     tr->wood -= 3;
     tr->stone -= 2;
     tr->has_axe = true;
