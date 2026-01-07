@@ -18,7 +18,7 @@
 #define MAX_MOBS 16
 
 #define TRIBE_COUNT 2
-#define AGENT_PER_TRIBE 2
+#define AGENT_PER_TRIBE 8
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
 #define BASE_RADIUS 8
