@@ -75,8 +75,9 @@ typedef enum {
 
 typedef enum {
   INTENT_NONE = 0,
-  INTENT_ATTACK = 1,
-  INTENT_HARVEST = 2
+  INTENT_ATTACK,
+  INTENT_HARVEST,
+  INTENT_COUNT
 } IntentType;
 
 typedef enum {
