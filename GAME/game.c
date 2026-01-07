@@ -765,7 +765,14 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   for (int tries = 0; tries < 35; tries++) {
     p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
                   randf(0.8f, CHUNK_SIZE - 0.8f)};
-    if (!mob_too_close_local(c, p, minD)) {
+
+    float rad =
+        mob_radius_world(mt); // you need mt earlier; easiest is pick mt first
+
+    Vector2 worldPos = (Vector2){(float)(cx * CHUNK_SIZE) + p.x,
+                                 (float)(cy * CHUNK_SIZE) + p.y};
+
+    if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
       placed = 1;
       break;
     }
