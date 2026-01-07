@@ -16,7 +16,7 @@
 #define CHUNK_SIZE 32
 
 #define MAX_RESOURCES 512
-#define MAX_MOBS 256
+#define MAX_MOBS 64
 
 #define TRIBE_COUNT 2
 #define AGENT_PER_TRIBE 8
