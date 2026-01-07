@@ -227,12 +227,6 @@ typedef struct {
 
   int wood, stone, gold, food;
   int shards, arrows;
-
-  // ---- crafted unlocks (tribe-wide, used by agents) ----
-  bool has_axe;
-  bool has_pickaxe;
-  bool has_sword;
-  bool has_armor;
 } Tribe;
 
 typedef struct Agent {
