@@ -266,95 +266,63 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
     free(c);
     return NULL;
   }
+  SAMMuAdapter *a = (SAMMuAdapter *)calloc(1, sizeof(*a));
+  if (!a)
+    return NULL;
 
-#include "sam_muze_adapter.h"
-#include <stdlib.h>
-#include <string.h>
+  a->sam = sam;
+  a->cortex.brain = a;           // MUZE calls cortex->plan/learn with brain
+  a->cortex.plan = adapter_plan; // or whatever MUZE names it
+  a->cortex.learn = adapter_learn;
 
-  // The adapter stores function pointers MUZE will call.
-  typedef struct {
-    SAM_t *sam;
-    MuCortex cortex; // must match MUZE expectations
-  } SAMMuAdapter;
+  return &a->cortex;
+}
 
-  static int adapter_plan(void *brain, const float *obs, size_t obs_dim,
-                          size_t action_count) {
-    SAMMuAdapter *a = (SAMMuAdapter *)brain;
-    // call whatever SAM uses to pick actions
-    return SAM_choose_action(a->sam, obs, obs_dim, (int)action_count);
-  }
+ad->sam = sam;
 
-  static void adapter_learn(void *brain, const float *obs, size_t obs_dim,
-                            int action, float reward, int terminal) {
-    SAMMuAdapter *a = (SAMMuAdapter *)brain;
-    SAM_learn(a->sam, obs, obs_dim, action, reward, terminal);
-  }
+ad->obs_dim = 0;
+ad->hist_cap = SAM_MUZE_HISTORY;
+ad->hist_len = 0;
+ad->write_idx = 0;
 
-  MuCortex *SAM_as_MUZE(SAM_t * sam) {
-    SAMMuAdapter *a = (SAMMuAdapter *)calloc(1, sizeof(*a));
-    if (!a)
-      return NULL;
+ad->hist_data = NULL;
+ad->seq_ptrs = NULL;
 
-    a->sam = sam;
-    a->cortex.brain = a;           // MUZE calls cortex->plan/learn with brain
-    a->cortex.plan = adapter_plan; // or whatever MUZE names it
-    a->cortex.learn = adapter_learn;
+ad->has_last = 0;
+ad->last_action = 0;
+ad->last_action_count = 0;
+ad->last_probs = NULL;
+ad->last_seq_ptrs = NULL;
+ad->last_seq_len = 0;
 
-    return &a->cortex;
-  }
+ad->episode_counter = 0;
 
-  void SAM_as_MUZE_free(MuCortex * cortex) {
-    if (!cortex)
-      return;
-    SAMMuAdapter *a = (SAMMuAdapter *)cortex->brain;
-    free(a);
-  }
+ad->epsilon = 0.30f;
+ad->epsilon_min = 0.02f;
+ad->epsilon_decay = 0.95f;
 
-  ad->sam = sam;
+ad->reward_baseline = 0.0f;
 
-  ad->obs_dim = 0;
-  ad->hist_cap = SAM_MUZE_HISTORY;
-  ad->hist_len = 0;
-  ad->write_idx = 0;
+c->brain = ad;
+c->encode = sam_encode;
+c->policy = sam_policy;
+c->learn = sam_learn;
+c->free_latent_seq = sam_free_latent_seq;
 
-  ad->hist_data = NULL;
-  ad->seq_ptrs = NULL;
+/* Default: no MCTS unless you enable it */
+c->use_mcts = false;
+c->mcts_model = NULL;
 
-  ad->has_last = 0;
-  ad->last_action = 0;
-  ad->last_action_count = 0;
-  ad->last_probs = NULL;
-  ad->last_seq_ptrs = NULL;
-  ad->last_seq_len = 0;
+/* Defaults */
+c->mcts_params.num_simulations = 50;
+c->mcts_params.c_puct = 1.25f;
+c->mcts_params.max_depth = 16;
+c->mcts_params.dirichlet_alpha = 0.3f;
+c->mcts_params.dirichlet_eps = 0.25f;
+c->mcts_params.temperature = 1.0f;
+c->mcts_params.discount = 0.997f;
 
-  ad->episode_counter = 0;
-
-  ad->epsilon = 0.30f;
-  ad->epsilon_min = 0.02f;
-  ad->epsilon_decay = 0.95f;
-
-  ad->reward_baseline = 0.0f;
-
-  c->brain = ad;
-  c->encode = sam_encode;
-  c->policy = sam_policy;
-  c->learn = sam_learn;
-  c->free_latent_seq = sam_free_latent_seq;
-
-  /* Default: no MCTS unless you enable it */
-  c->use_mcts = false;
-  c->mcts_model = NULL;
-
-  /* Defaults */
-  c->mcts_params.num_simulations = 50;
-  c->mcts_params.c_puct = 1.25f;
-  c->mcts_params.max_depth = 16;
-  c->mcts_params.dirichlet_alpha = 0.3f;
-  c->mcts_params.dirichlet_eps = 0.25f;
-  c->mcts_params.temperature = 1.0f;
-  c->mcts_params.discount = 0.997f;
-
-  return c;
+return c;
 }
 
 void SAM_MUZE_destroy(MuCortex *cortex) {
