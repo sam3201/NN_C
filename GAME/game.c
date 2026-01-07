@@ -2644,41 +2644,11 @@ void update_agent(Agent *a) {
     break;
 
   case ACTION_ATTACK: {
-    // refresh targeting sometimes (prevents jitter + target spam)
-    if (a->intent_refresh_cd <= 0.0f || a->intent_kind != INTENT_ATTACK ||
-        !a->intent_has_pos) {
-      agent_set_attack_intent(a);
-      a->intent_refresh_cd = 0.20f; // retarget 5x/sec max
-    }
-
-    if (!a->intent_has_pos)
-      break;
-
-    // move toward the target position like mouse-to-move
-    float stop = agent_attack_range() * 0.85f;
-    agent_move_toward(a, a->intent_pos, stop);
-
-    // if in range, do the real hit (in the correct chunk)
-    float d = Vector2Distance(a->position, a->intent_pos);
-    if (d <= agent_attack_range()) {
-      int tcx = a->intent_chunk_x;
-      int tcy = a->intent_chunk_y;
-
-      Chunk *tc = get_chunk(tcx, tcy);
-      pthread_rwlock_wrlock(&tc->lock);
-
-      // important: try_attack_in_chunk finds nearest mob in that chunk anyway,
-      // so even if the mob moved slightly, it still works.
-      agent_try_attack_in_chunk(a, tr, tc, tcx, tcy, &reward);
-
-      pthread_rwlock_unlock(&tc->lock);
-
-      // If cooldown started, we actually swung; optionally clear intent to
-      // reduce “stutter”
-      if (a->attack_cd > 0.0f) {
-        a->intent_refresh_cd = 0.10f;
-      }
-    }
+    // No targeting. No intent. No movement assist.
+    // Just attempt an attack in the agent's CURRENT chunk.
+    pthread_rwlock_wrlock(&c->lock);
+    agent_try_attack_in_chunk(a, tr, c, cx, cy, &reward);
+    pthread_rwlock_unlock(&c->lock);
   } break;
 
   case ACTION_HARVEST: {
