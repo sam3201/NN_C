@@ -81,6 +81,21 @@ typedef enum {
 } IntentType;
 
 typedef enum {
+  HIT_NONE = 0,
+  HIT_RESOURCE = 1,
+  HIT_MOB = 2,
+  HIT_BASE = 3
+} HitKind;
+
+typedef struct {
+  HitKind kind;
+  float t;         // distance along ray (world units)
+  int cx, cy;      // chunk coords of hit
+  int index;       // resource index OR mob index OR tribe index
+  Vector2 hit_pos; // world-space hit point
+} RayHit;
+
+typedef enum {
   ACTION_UP = 0,
   ACTION_DOWN,
   ACTION_LEFT,
