@@ -12,7 +12,7 @@ MuCortex *SAM_as_MUZE(SAM_t *sam);
 
 // Free only the cortex wrapper (not the SAM brain), unless you choose
 // otherwise.
-void SAM_as_MUZE_free(MuCortex *cortex);
+void SAM_as_MUZE_destroy(MuCortex *cortex);
 
 #ifdef __cplusplus
 }
