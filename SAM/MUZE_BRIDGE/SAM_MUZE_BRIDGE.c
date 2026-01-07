@@ -268,7 +268,7 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   }
 
   ad->sam = sam;
-  ad->cortex.brain = a;
+  ad->cortex.brain = ad;
   ad->cortex.plan = adapter_plan;
   ad->cortex.learn = adapter_learn;
 
