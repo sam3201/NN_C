@@ -1856,6 +1856,11 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   // compute WORLD pos for decisions
   Vector2 mw = Vector2Add(chunk_origin, m->position);
 
+  Vector2 basePos = nearest_base_pos(mw);
+  Vector2 toB = Vector2Subtract(basePos, mw);
+  float dB = Vector2Length(toB);
+  Vector2 dirB = (dB > 1e-3f) ? Vector2Scale(toB, 1.0f / dB) : (Vector2){0, 0};
+
   // only fully “aware” if player is in same chunk (keeps it simple & cheap)
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
