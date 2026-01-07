@@ -51,6 +51,30 @@
 
 #define MAX_PROJECTILES 64
 
+// =======================
+// REWARD SHAPING
+// =======================
+#define R_SURVIVE_PER_TICK (0.0005f)
+
+#define R_ATTACK_HIT (0.015f)
+#define R_ATTACK_KILL (0.180f)
+#define R_ATTACK_WASTE (-0.020f) // attack when nothing hit
+
+#define R_HARVEST_HIT (0.008f)
+#define R_HARVEST_BREAK (0.060f)
+#define R_HARVEST_WASTE (-0.015f)      // harvest when nothing hit
+#define R_HARVEST_NO_STAMINA (-0.006f) // tried to harvest but couldn't afford
+
+#define R_FIRE_HIT (0.020f)
+#define R_FIRE_WASTE (-0.030f) // fired and had no mob in ray
+#define R_FIRE_NO_AMMO (-0.010f)
+
+#define R_EAT_GOOD (0.120f)
+#define R_EAT_WASTE (-0.040f) // ate when already basically full
+#define R_EAT_NO_FOOD (-0.010f)
+
+#define R_DEATH (-1.000f)
+
 #define OBS_DIM 64
 #define TRAIN_INTERVAL 1
 
