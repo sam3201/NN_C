@@ -2521,47 +2521,6 @@ static inline int mob_is_hostile(MobType t) {
   return (t == MOB_ZOMBIE || t == MOB_SKELETON);
 }
 
-static void agent_try_move(Agent *a, Vector2 dir) {
-  // dir is expected to be -1/0/1 style
-  float dt = g_dt;
-  float spd = agent_move_speed();
-
-  float len = Vector2Length(dir);
-  if (len < 1e-6f)
-    return;
-  dir = Vector2Scale(dir, 1.0f / len);
-
-  Vector2 old = a->position;
-  Vector2 next = Vector2Add(a->position, Vector2Scale(dir, spd * dt));
-
-  // simple blocked test (uses generated chunks + locks safely)
-  int cx = (int)(next.x / CHUNK_SIZE);
-  int cy = (int)(next.y / CHUNK_SIZE);
-
-  if (world_pos_blocked_nearby(cx, cy, next, agent_radius_world(), -999999,
-                               -999999)) {
-    // try a tiny slide in x or y
-    Vector2 tryX = (Vector2){next.x, old.y};
-    Vector2 tryY = (Vector2){old.x, next.y};
-
-    int cxX = (int)(tryX.x / CHUNK_SIZE);
-    int cyX = (int)(tryX.y / CHUNK_SIZE);
-    int cxY = (int)(tryY.x / CHUNK_SIZE);
-    int cyY = (int)(tryY.y / CHUNK_SIZE);
-
-    if (!world_pos_blocked_nearby(cxX, cyX, tryX, agent_radius_world(), -999999,
-                                  -999999))
-      a->position = tryX;
-    else if (!world_pos_blocked_nearby(cxY, cyY, tryY, agent_radius_world(),
-                                       -999999, -999999))
-      a->position = tryY;
-    else
-      a->position = old;
-  } else {
-    a->position = next;
-  }
-}
-
 void update_agent(Agent *a) {
   if (!a->alive)
     return;
