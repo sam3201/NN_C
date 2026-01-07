@@ -2881,6 +2881,10 @@ void update_agent(Agent *a) {
     agent_try_harvest_forward(a, tr, &reward);
     break;
 
+  case ACTION_CRAFT:
+    agent_try_craft(a, tr, &reward);
+    break;
+
   case ACTION_FIRE:
     agent_try_fire_forward(a, tr, &reward);
     break;
