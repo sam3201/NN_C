@@ -2129,6 +2129,7 @@ void update_player(void) {
     }
   }
 
+  /*
   if (best && player.stamina > 1.0f) {
     best->health -= PLAYER_HARVEST_DAMAGE;
     best->hit_timer = 0.14f;
@@ -2141,45 +2142,45 @@ void update_player(void) {
     }
   }
 }
+*/
+  // attack mobs (RMB)
+  if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
+    player_attack_cd = PLAYER_ATTACK_COOLDOWN;
 
-// attack mobs (RMB)
-if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
-  player_attack_cd = PLAYER_ATTACK_COOLDOWN;
+    Mob *best = NULL;
+    float bestD = 1e9f;
 
-  Mob *best = NULL;
-  float bestD = 1e9f;
+    for (int i = 0; i < MAX_MOBS; i++) {
+      Mob *m = &c->mobs[i];
+      if (m->health <= 0)
+        continue;
 
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
+      Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                             cy * CHUNK_SIZE + m->position.y};
 
-    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
-                           cy * CHUNK_SIZE + m->position.y};
+      float d = Vector2Distance(player.position, mw);
+      if (d < ATTACK_DISTANCE && d < bestD) {
+        bestD = d;
+        best = m;
+      }
+    }
 
-    float d = Vector2Distance(player.position, mw);
-    if (d < ATTACK_DISTANCE && d < bestD) {
-      bestD = d;
-      best = m;
+    if (best && player.stamina > 1.0f) {
+      best->health -= PLAYER_ATTACK_DAMAGE;
+      best->hurt_timer = 0.18f;
+      best->aggro_timer = 3.0f; // makes pig/sheep flee + hostiles aggro
+      player.stamina -= 1.5f;
+      if (best->health <= 0)
+        best->health = 0;
     }
   }
 
-  if (best && player.stamina > 1.0f) {
-    best->health -= PLAYER_ATTACK_DAMAGE;
-    best->hurt_timer = 0.18f;
-    best->aggro_timer = 3.0f; // makes pig/sheep flee + hostiles aggro
-    player.stamina -= 1.5f;
-    if (best->health <= 0)
-      best->health = 0;
-  }
-}
+  player.stamina = fmaxf(0, player.stamina - 0.02f);
+  player.health = fmaxf(0, player.health);
 
-player.stamina = fmaxf(0, player.stamina - 0.02f);
-player.health = fmaxf(0, player.health);
-
-// regen
-if (player.stamina < 100)
-  player.stamina = fminf(100, player.stamina + 0.03f);
+  // regen
+  if (player.stamina < 100)
+    player.stamina = fminf(100, player.stamina + 0.03f);
 }
 
 static void despawn_hostiles_if_day(Chunk *c) {
