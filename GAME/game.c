@@ -218,7 +218,7 @@ bool has_sword = false;
 
 static Projectile projectiles[MAX_PROJECTILES];
 
-bool Recipe recipes[] = {
+static bool Recipe recipes[] = {
     {"Axe (Wood+Stone)", 3, 2, 0, 0, &has_axe},
     {"Pickaxe (Wood+Stone)", 3, 3, 0, 0, &has_pickaxe},
     {"Sword (Stone+Gold)", 0, 4, 2, 0, &has_sword},
