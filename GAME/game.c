@@ -778,17 +778,29 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
     return;
 
   Mob *m = &c->mobs[slot];
-  m->type = pick_spawn_type(night, c->biome_type);
-  m->position =
-      (Vector2){randf(0.5f, CHUNK_SIZE - 0.5f), randf(0.5f, CHUNK_SIZE - 0.5f)};
-  m->health = 100;
-  m->visited = false;
-  m->vel = (Vector2){0, 0};
-  m->ai_timer = randf(0.2f, 1.2f);
-  m->aggro_timer = 0.0f;
-  m->attack_cd = randf(0.2f, 1.0f);
-  m->hurt_timer = 0.0f;
-  m->lunge_timer = 0.0f;
+  MobType mt = pick_spawn_type(night, c->biome_type);
+
+  // spacing: larger mobs -> larger min distance
+  float minD = 2.6f; // tweak: 2.2–3.5 feels good
+  Vector2 p = {0};
+  int placed = 0;
+
+  for (int tries = 0; tries < 35; tries++) {
+    p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
+                  randf(0.8f, CHUNK_SIZE - 0.8f)};
+    if (!mob_too_close_local(c, p, minD)) {
+      placed = 1;
+      break;
+    }
+  }
+
+  if (!placed) {
+    // fallback (still float, but no spacing guarantee)
+    p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
+                  randf(0.8f, CHUNK_SIZE - 0.8f)};
+  }
+
+  init_mob(m, mt, p, /*make_angry=*/0);
 }
 
 static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
