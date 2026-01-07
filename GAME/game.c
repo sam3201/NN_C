@@ -162,7 +162,11 @@ typedef struct {
   int tribe_id;
   Color color;
   Base base;
-  float integrity; // 0..base_health
+  float integrity; // 0..100
+
+  // --- tribe stockpiles (agents contribute here) ---
+  int wood, stone, gold, food;
+  int shards, arrows;
 } Tribe;
 
 typedef struct {
