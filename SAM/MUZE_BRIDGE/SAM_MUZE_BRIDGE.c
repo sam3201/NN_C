@@ -1,6 +1,6 @@
 #include "SAM_MUZE_BRIDGE.h"
 #include "../../utils/NN/MUZE/all.h"
-#include "SAM.h"
+#include "../SAM.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
