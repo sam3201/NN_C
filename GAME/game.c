@@ -875,48 +875,53 @@ static void player_try_harvest_resource_in_chunk(Chunk *c, int cx, int cy) {
   }
 }
 
-// ---------- RESOURCES (spacing-aware) ----------
-c->resource_count = 0;
+// ------------------- SPACING / COLLISION -------------------
 
-int desired = 12; // try 10..20 (your world is dense; keep reasonable)
-for (int k = 0; k < desired && c->resource_count < MAX_RESOURCES; k++) {
+// Tuned in WORLD UNITS (not pixels). Increase if you still see overlaps.
+static inline float res_radius_world(ResourceType t) {
+  switch (t) {
+  case RES_TREE:
+    return 1.35f; // big canopy
+  case RES_ROCK:
+    return 1.05f;
+  case RES_GOLD:
+    return 1.00f;
+  case RES_FOOD:
+    return 0.90f;
+  default:
+    return 1.00f;
+  }
+}
 
-  ResourceType rt = (ResourceType)(rand() % 4);
-  float rad = res_radius_world(rt);
+static inline float mob_radius_world(MobType t) {
+  (void)t;
+  // You made mobs visually huge; keep a generous world radius.
+  // If you still see overlaps, bump to 1.35f or 1.5f.
+  return 1.25f;
+}
 
-  int cx0 = cx; // NOTE: get_chunk params are (cx, cy) from caller
-  int cy0 = cy;
+static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos,
+                                      float minD) {
+  // checks this chunk + neighbors (prevents edge-stacking across chunk borders)
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+      int ncx = cx + dx;
+      int ncy = cy + dy;
+      Chunk *c = get_chunk(ncx, ncy);
 
-  // IMPORTANT: when called from get_chunk(cx,cy), cx/cy exist in that scope.
-  // If your compiler complains, see note below.
-
-  int placed = 0;
-  Vector2 local = {0};
-
-  for (int tries = 0; tries < 80; tries++) {
-    // keep away from chunk edges slightly
-    local = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
-                      randf(0.9f, CHUNK_SIZE - 0.9f)};
-
-    Vector2 worldPos = (Vector2){(float)(cx0 * CHUNK_SIZE) + local.x,
-                                 (float)(cy0 * CHUNK_SIZE) + local.y};
-
-    if (!world_pos_blocked_nearby(cx0, cy0, worldPos, rad)) {
-      placed = 1;
-      break;
+      Vector2 origin =
+          (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (!mob_is_alive(m))
+          continue;
+        Vector2 mw = Vector2Add(origin, m->position);
+        if (Vector2Distance(mw, worldPos) < minD)
+          return 1;
+      }
     }
   }
-
-  if (!placed)
-    continue;
-
-  Resource *r = &c->resources[c->resource_count++];
-  r->type = rt;
-  r->position = clamp_local_to_chunk(local);
-  r->health = 100;
-  r->visited = false;
-  r->hit_timer = 0.0f;
-  r->break_flash = 0.0f;
+  return 0;
 }
 
 Chunk *get_chunk(int cx, int cy) {
