@@ -904,17 +904,38 @@ Chunk *get_chunk(int cx, int cy) {
   for (int i = 0; i < MAX_MOBS; i++)
     c->mobs[i].health = 0;
 
-  for (int i = 0; i < MAX_MOBS; i++) {
-    c->mobs[i].type = rand() % 4;
-    c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
-    c->mobs[i].health = 100;
-    c->mobs[i].visited = false;
-    c->mobs[i].vel = (Vector2){0, 0};
-    c->mobs[i].ai_timer = randf(0.2f, 1.2f);
-    c->mobs[i].aggro_timer = 0.0f;
-    c->mobs[i].attack_cd = randf(0.2f, 1.0f);
-    c->mobs[i].hurt_timer = 0.0f;
-    c->mobs[i].lunge_timer = 0.0f;
+  for (int i = 0; i < MAX_MOBS; i++)
+    c->mobs[i].health = 0;
+
+  // Seed a smaller starting population with spacing
+  int seed_count = 6; // tweak (try 4..8)
+  float minD = 2.8f;  // tweak for your MOB_SCALE
+  int night = is_night_cached;
+
+  for (int k = 0; k < seed_count; k++) {
+    int slot = find_free_mob_slot(c);
+    if (slot < 0)
+      break;
+
+    Vector2 p = {0};
+    int placed = 0;
+
+    for (int tries = 0; tries < 45; tries++) {
+      p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
+                    randf(0.8f, CHUNK_SIZE - 0.8f)};
+      if (!mob_too_close_local(c, p, minD)) {
+        placed = 1;
+        break;
+      }
+    }
+
+    if (!placed) {
+      p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
+                    randf(0.8f, CHUNK_SIZE - 0.8f)};
+    }
+
+    MobType mt = pick_spawn_type(night, c->biome_type);
+    init_mob(&c->mobs[slot], mt, p, /*make_angry=*/0);
   }
 
   return c;
