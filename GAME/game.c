@@ -248,6 +248,25 @@ bool has_axe = false;
 bool has_pickaxe = false;
 bool has_sword = false;
 
+static Pickup pickups[MAX_PICKUPS];
+
+static int inv_shards = 0;
+static int inv_arrows = 0;
+
+// smooth zoom
+static float target_world_scale = 50.0f;
+
+// camera shake
+static float cam_shake = 0.0f;
+
+// store last hand positions (screen space) for cooldown rings
+static Vector2 g_handL = {0}, g_handR = {0};
+
+// raid
+static float raid_timer = 0.0f;
+static float raid_interval = 4.5f; // seconds between mini-waves at night
+static int was_night = 0;
+
 static Projectile projectiles[MAX_PROJECTILES];
 
 static Recipe recipes[] = {
