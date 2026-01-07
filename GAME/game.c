@@ -1681,6 +1681,9 @@ void update_player(void) {
   if (IsKeyDown(KEY_MINUS))
     WORLD_SCALE -= 1.0f;
 
+  if (isKeyDown(KEY_SPACE)) {
+  }
+
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
   Chunk *c = get_chunk(cx, cy);
