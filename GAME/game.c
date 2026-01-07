@@ -2635,6 +2635,7 @@ void update_agent(Agent *a) {
   // --- execute ---
   float reward = 0.0f;
 
+  IntType action_type = (IntType)action;
   Vector2 moveDir = {0, 0};
   switch (action) {
   case ACTION_UP:
