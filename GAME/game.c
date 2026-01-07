@@ -704,6 +704,33 @@ static MobType pick_spawn_type(int night, int biome) {
   }
 }
 
+static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
+  int cx = (int)(world_pos.x / CHUNK_SIZE);
+  int cy = (int)(world_pos.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  int slot = find_free_mob_slot(c);
+  if (slot < 0)
+    return;
+
+  Mob *m = &c->mobs[slot];
+  m->type = type;
+
+  Vector2 origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+  m->position = Vector2Subtract(world_pos, origin);
+  m->position = clamp_local_to_chunk(m->position);
+
+  m->health = 100;
+  m->visited = false;
+  m->vel = (Vector2){0, 0};
+  m->ai_timer = randf(0.2f, 1.2f);
+  m->aggro_timer = 2.0f;
+  m->attack_cd = randf(0.2f, 1.0f);
+  m->hurt_timer = 0.0f;
+  m->lunge_timer = 0.0f;
+}
+
 static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   c->mob_spawn_timer -= dt;
   if (c->mob_spawn_timer > 0.0f)
