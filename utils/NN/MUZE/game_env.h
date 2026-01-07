@@ -23,5 +23,7 @@ typedef int (*env_step_fn)(ObsState *obs_state, int action, float *reward,
 GameEnv *game_env_init(GameEnv *game_env, env_reset_fn reset_fn,
                        env_step_fn step_fn);
 
+void game_env_destroy(GameEnv *game_env);
+
 void game_env_reset(ObsState *obs_state);
 int game_env_step(ObsState *obs_state, int action, float *reward, int *done);
