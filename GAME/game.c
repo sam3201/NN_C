@@ -395,6 +395,8 @@ static void draw_daynight_overlay(void) {
   DrawText(TextFormat("Time: %0.2f", time_of_day), 20, 235, 18, RAYWHITE);
 }
 
+static inline float px(float base) { return base * WORLD_SCALE * scale_size; }
+
 static inline float player_attack_range(void) {
   // sword gives a bit more reach
   return ATTACK_DISTANCE + (has_sword ? 0.55f : 0.0f);
@@ -671,8 +673,6 @@ static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
   while (o->size < target_dim)
     obs_push(o, 0.0f);
 }
-
-static inline float px(float base) { return base * WORLD_SCALE * scale_size; }
 
 static void draw_health_bar(Vector2 sp, float w, float h, float t01,
                             Color fill) {
