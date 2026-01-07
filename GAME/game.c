@@ -74,6 +74,7 @@ typedef enum {
   ACTION_RIGHT,
   ACTION_ATTACK,
   ACTION_HARVEST,
+  ACTION_MINE,
   ACTION_COUNT
 } ActionType;
 
