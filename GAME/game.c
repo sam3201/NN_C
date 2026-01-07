@@ -1635,10 +1635,19 @@ static void draw_player(Vector2 pp_screen) {
 
   // little “finger nub” pointing toward mouse from each hand
   float nubR = handR * 0.28f;
-  Vector2 hl_nub = {hl.x + cosf(aimAng) * (handR * 0.65f),
-                    hl.y + sinf(aimAng) * (handR * 0.65f)};
-  Vector2 hr_nub = {hr.x + cosf(aimAng) * (handR * 0.65f),
-                    hr.y + sinf(aimAng) * (handR * 0.65f)};
+  Vector2 toMouseL = Vector2Subtract(mouse, hl);
+  Vector2 toMouseR = Vector2Subtract(mouse, hr);
+
+  Vector2 dirL = Vector2Normalize(toMouseL);
+  Vector2 dirR = Vector2Normalize(toMouseR);
+
+  if (Vector2Length(toMouseL) < 1e-3f)
+    dirL = aimDir;
+  if (Vector2Length(toMouseR) < 1e-3f)
+    dirR = aimDir;
+
+  Vector2 hl_nub = Vector2Add(hl, Vector2Scale(dirL, handR * 0.65f));
+  Vector2 hr_nub = Vector2Add(hr, Vector2Scale(dirR, handR * 0.65f));
 
   // draw hands (outline + fill)
   Color handFill = (Color){255, 210, 110, 255};
