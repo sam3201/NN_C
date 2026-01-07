@@ -2844,7 +2844,6 @@ void update_agent(Agent *a) {
   a->reward_accumulator += reward;
   a->age++;
 
-  agent_try_move(a, moveDir);
   a->last_action = action;
 }
 
