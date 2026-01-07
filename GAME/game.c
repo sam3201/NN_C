@@ -280,6 +280,7 @@ static float cam_shake = 0.0f;
 
 // store last hand positions (screen space) for cooldown rings
 static Vector2 g_handL = {0}, g_handR = {0};
+static float g_dt = 1.0f / 60.0f;
 
 // raid
 static float raid_timer = 0.0f;
