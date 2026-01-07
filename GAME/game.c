@@ -2462,6 +2462,20 @@ static void draw_hurt_vignette(void) {
    THREAD
 
  * ======================= */
+
+static void run_agent_jobs(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_next_agent = 0;
+  job_done_workers = 0;
+  job_active = 1;
+  pthread_cond_broadcast(&job_cv);
+
+  while (job_active) {
+    pthread_cond_wait(&done_cv, &job_mtx);
+  }
+  pthread_mutex_unlock(&job_mtx);
+}
+
 static void *agent_worker(void *arg) {
   (void)arg;
 
