@@ -2260,6 +2260,7 @@ static void draw_hover_label(void) {
     if (d < 2.2f && d < bestD) {
       bestD = d;
       label = res_name(r->type);
+      hp = r->health;
     }
   }
 
