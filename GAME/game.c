@@ -2690,7 +2690,7 @@ void update_agent(Agent *a) {
 
   case ACTION_HARVEST: {
     pthread_rwlock_wrlock(&c->lock);
-    agent_try_harvest_in_chunk(a, tr, c, cx, cy, &reward);
+    agent_try_harvest_cone(a, tr, c, cx, cy, &reward);
     pthread_rwlock_unlock(&c->lock);
   } break;
 
