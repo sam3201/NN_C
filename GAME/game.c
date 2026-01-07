@@ -2553,6 +2553,7 @@ void update_player(void) {
       spent_stamina_this_frame = true;
     }
   }
+
   // --- stamina regen (time-based, only when not spending this frame) ---
   if (!spent_stamina_this_frame && player.stamina < 100.0f) {
     player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
