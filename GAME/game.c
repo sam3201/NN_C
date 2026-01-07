@@ -909,7 +909,8 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
   spawn_projectile(a->position, rd, 13.0f, 1.65f, 10);
 
   // optional reward shaping — remove if you want:
-  // if (hit.kind == HIT_MOB) *reward += 0.01f;
+  if (hit.kind == HIT_MOB)
+    *reward += 0.01f;
 }
 
 static void agent_try_eat(Agent *a, float *reward) {
