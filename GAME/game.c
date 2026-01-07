@@ -426,6 +426,8 @@ Chunk *get_chunk(int cx, int cy) {
   c->generated = true;
   c->biome_type = (abs(cx) + abs(cy)) % 3;
 
+  c->mob_spawn_timer = 0.0f;
+
   for (int i = 0; i < CHUNK_SIZE; i++)
     for (int j = 0; j < CHUNK_SIZE; j++)
       c->terrain[i][j] = c->biome_type;
