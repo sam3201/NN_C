@@ -2008,6 +2008,8 @@ void init_tribes(void) {
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
     tr->base.radius = BASE_RADIUS;
     tr->integrity = 100.0f;
+    tr->wood = tr->stone = tr->gold = tr->food = 0;
+    tr->shards = tr->arrows = 0;
   }
 }
 
