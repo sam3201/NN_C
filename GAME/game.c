@@ -698,29 +698,28 @@ void draw_resources(void) {
   }
 }
 
-static inline Color lerp_color(Color a, Color b, float t) {
-  t = clamp01(t);
-  Color out;
-  out.r = (unsigned char)(a.r + (b.r - a.r) * t);
-  out.g = (unsigned char)(a.g + (b.g - a.g) * t);
-  out.b = (unsigned char)(a.b + (b.b - a.b) * t);
-  out.a = (unsigned char)(a.a + (b.a - a.a) * t);
-  return out;
-}
-
-// small helpers (local to this function)
-static inline Color mul_color(Color a, Color b, float t) {
-  // multiply blend toward (a*b) by amount t
-  t = clamp01(t);
-  Color m;
-  m.r = (unsigned char)((a.r * b.r) / 255);
-  m.g = (unsigned char)((a.g * b.g) / 255);
-  m.b = (unsigned char)((a.b * b.b) / 255);
-  m.a = a.a;
-  return lerp_color(a, m, t);
-}
-
 void draw_mobs(void) {
+  // small helpers (local to this function)
+  static inline Color lerp_color(Color a, Color b, float t) {
+    t = clamp01(t);
+    Color out;
+    out.r = (unsigned char)(a.r + (b.r - a.r) * t);
+    out.g = (unsigned char)(a.g + (b.g - a.g) * t);
+    out.b = (unsigned char)(a.b + (b.b - a.b) * t);
+    out.a = (unsigned char)(a.a + (b.a - a.a) * t);
+    return out;
+  }
+
+  static inline Color mul_color(Color a, Color b, float t) {
+    // multiply blend toward (a*b) by amount t
+    t = clamp01(t);
+    Color m;
+    m.r = (unsigned char)((a.r * b.r) / 255);
+    m.g = (unsigned char)((a.g * b.g) / 255);
+    m.b = (unsigned char)((a.b * b.b) / 255);
+    m.a = a.a;
+    return lerp_color(a, m, t);
+  }
 
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
