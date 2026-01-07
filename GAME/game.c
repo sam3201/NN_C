@@ -2434,6 +2434,12 @@ int main(void) {
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
 
+    if (cam_shake > 0.0f) {
+      cam_shake -= dt;
+      float mag = cam_shake * 0.65f;
+      camera_pos.x += randf(-mag, mag);
+      camera_pos.y += randf(-mag, mag);
+    }
     WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
 
     update_player();
