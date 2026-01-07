@@ -2001,6 +2001,9 @@ void init_tribes(void) {
 
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
+    tr->wood = tr->stone = tr->gold = tr->food = 0;
+    tr->shards = tr->arrows = 0;
+
     tr->tribe_id = t;
     tr->color = colors[t % 4];
     tr->base.position =
@@ -2008,8 +2011,6 @@ void init_tribes(void) {
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
     tr->base.radius = BASE_RADIUS;
     tr->integrity = 100.0f;
-    tr->wood = tr->stone = tr->gold = tr->food = 0;
-    tr->shards = tr->arrows = 0;
   }
 }
 
