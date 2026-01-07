@@ -2829,7 +2829,7 @@ void update_agent(Agent *a) {
   if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
     agent_set_facing_from(moveDir, a);
     if (moveDir.x != 0.0f || moveDir.y != 0.0f)
-      reward +=
+      reward += R_WANDER_PENALTY;
   }
 
   // --- survival shaping ---
