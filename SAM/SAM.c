@@ -689,3 +689,10 @@ void SAM_update_context(SAM_t *sam, long double current_performance) {
   if (sam->context > 1.0L)
     sam->context = 1.0L;
 }
+
+void SAM_project(SAM_t *sam, long double **source_data, size_t data_length) {
+  (void)sam;
+  (void)source_data;
+  (void)data_length;
+  // TODO: transformer → submodel projection
+}
