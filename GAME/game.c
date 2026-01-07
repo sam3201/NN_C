@@ -2653,55 +2653,56 @@ void update_agent(Agent *a) {
     moveDir.x = 1;
     moveDir.y = 0;
     break;
-    agent_try_move(a, moveDir);
-
-  case ACTION_ATTACK: {
-    // No targeting. No intent. No movement assist.
-    // Just attempt an attack in the agent's CURRENT chunk.
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_attack_in_chunk(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
-
-  case ACTION_HARVEST: {
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_harvest_in_chunk(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
-
-  case ACTION_FIRE: {
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_fire_in_chunk(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
-
-  case ACTION_EAT:
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_eat(a, &reward);
-    pthread_rwlock_unlock(&c->lock);
-    break;
-
-    /*
-  case ACTION_NONE:
-    */
-  default:
-    // Optional: keep or remove. This is still “hand holding”.
-    // If you want pure MuZero, delete this line.
-    // tribe_try_repair_base(tr, &reward);
-    break;
   }
+  agent_try_move(a, moveDir);
 
-  // --- survival shaping ---
-  if (a->health <= 0.0f) {
-    a->health = 0.0f;
-    a->alive = false;
-    reward -= 1.0f;
-  } else {
-    reward += 0.0005f;
-  }
+case ACTION_ATTACK: {
+  // No targeting. No intent. No movement assist.
+  // Just attempt an attack in the agent's CURRENT chunk.
+  pthread_rwlock_wrlock(&c->lock);
+  agent_try_attack_in_chunk(a, tr, c, cx, cy, &reward);
+  pthread_rwlock_unlock(&c->lock);
+} break;
 
-  a->reward_accumulator += reward;
-  a->age++;
+case ACTION_HARVEST: {
+  pthread_rwlock_wrlock(&c->lock);
+  agent_try_harvest_in_chunk(a, tr, c, cx, cy, &reward);
+  pthread_rwlock_unlock(&c->lock);
+} break;
+
+case ACTION_FIRE: {
+  pthread_rwlock_wrlock(&c->lock);
+  agent_try_fire_in_chunk(a, tr, c, cx, cy, &reward);
+  pthread_rwlock_unlock(&c->lock);
+} break;
+
+case ACTION_EAT:
+  pthread_rwlock_wrlock(&c->lock);
+  agent_try_eat(a, &reward);
+  pthread_rwlock_unlock(&c->lock);
+  break;
+
+  /*
+case ACTION_NONE:
+  */
+default:
+  // Optional: keep or remove. This is still “hand holding”.
+  // If you want pure MuZero, delete this line.
+  // tribe_try_repair_base(tr, &reward);
+  break;
+}
+
+// --- survival shaping ---
+if (a->health <= 0.0f) {
+  a->health = 0.0f;
+  a->alive = false;
+  reward -= 1.0f;
+} else {
+  reward += 0.0005f;
+}
+
+a->reward_accumulator += reward;
+a->age++;
 }
 
 static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
