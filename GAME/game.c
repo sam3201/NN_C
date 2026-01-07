@@ -2212,7 +2212,7 @@ void update_player(void) {
     }
   }
 
-  player.stamina = fmaxf(0, player.stamina - STAMINA_DRAIN_RATE * dt);
+  player.stamina = fmaxf(0, player.stamina - STAMINA_DRAIN_RATE);
   player.health = fmaxf(0, player.health);
 
   // regen
