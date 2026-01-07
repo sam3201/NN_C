@@ -2558,121 +2558,18 @@ void update_agent(Agent *a) {
   if (a->flash_timer > 0.0f)
     a->flash_timer -= dt;
 
-  // --- base healing zone (HEAL_AT_BASE behavior) ---
+  // --- passive environment dynamics (NOT policy overrides) ---
   float dBase = Vector2Distance(a->position, tr->base.position);
   bool in_base = (dBase < tr->base.radius + 0.35f);
 
   if (in_base) {
-    // faster regen when inside base
     a->health = fminf(100.0f, a->health + 10.0f * dt);
     a->stamina = fminf(100.0f, a->stamina + 24.0f * dt);
   } else {
-    // normal stamina regen
     a->stamina = fminf(100.0f, a->stamina + (STAMINA_REGEN_RATE * 0.55f) * dt);
   }
 
-  // --- sense hostiles across nearby chunks (for FLEE/GUARD) ---
-  int hx = 0, hy = 0;
-  float hdist = 1e9f;
-  Vector2 hpos = {0};
-  int hostile_found =
-      agent_find_nearest_hostile_mob(a, &hx, &hy, &hdist, &hpos);
-
-  // --- macro policy (maps into existing primitives; no action-space change)
-  // ---
-  MacroAction macro = MACRO_NONE;
-
-  // if very low health: go home; if home, heal
-  if (a->health < 35.0f) {
-    macro = in_base ? MACRO_HEAL_AT_BASE : MACRO_RETURN_TO_BASE;
-  }
-
-  // flee if a hostile is too close
-  if (macro == MACRO_NONE && hostile_found && hdist < 5.25f) {
-    macro = MACRO_FLEE;
-  }
-
-  // guard base if hostile exists near-ish and we are not dying
-  float base_threat_dist =
-      hostile_found ? Vector2Distance(hpos, tr->base.position) : 1e9f;
-  if (macro == MACRO_NONE && hostile_found && base_threat_dist < 14.0f) {
-    macro = MACRO_GUARD_BASE;
-  }
-
-  // mild patrol if idle near base and no threat
-  if (macro == MACRO_NONE && !hostile_found && dBase < 12.0f) {
-    // light chance to patrol instead of standing still
-    if ((rand() % 100) < 40)
-      macro = MACRO_PATROL;
-  }
-
-  // emergency eat override (still uses existing ACTION_EAT)
-  if (a->inv_food > 0 && (a->health < 70.0f || a->stamina < 35.0f)) {
-    // eat if not under immediate melee threat
-    if (!(hostile_found && hdist < 3.25f)) {
-      float rwd = 0.0f;
-      agent_try_eat(a, &rwd);
-      a->reward_accumulator += rwd;
-      a->last_action = ACTION_EAT;
-    }
-  }
-
-  // --- macro execution (movement/attack using existing ACTION_* behaviors) ---
-  if (macro != MACRO_NONE) {
-    if (macro == MACRO_HEAL_AT_BASE) {
-      // nothing else required; regen handled above
-      a->last_action = ACTION_NONE;
-      a->age++;
-      return;
-    }
-
-    if (macro == MACRO_RETURN_TO_BASE) {
-      Vector2 dir = Vector2Subtract(tr->base.position, a->position);
-      agent_try_move(a, dir);
-      a->last_action = ACTION_UP; // (icon shows “move”; any move enum is fine)
-      a->age++;
-      return;
-    }
-
-    if (macro == MACRO_FLEE) {
-      Vector2 dir = Vector2Subtract(a->position, hpos); // away
-      agent_try_move(a, dir);
-      a->last_action = ACTION_UP;
-      a->age++;
-      return;
-    }
-
-    if (macro == MACRO_GUARD_BASE) {
-      // move toward the hostile; if close enough, try to attack in its chunk
-      Vector2 dir = Vector2Subtract(hpos, a->position);
-
-      if (hdist <= agent_attack_range() + 0.25f) {
-        Chunk *c = get_chunk(hx, hy);
-        float rwd = 0.0f;
-        pthread_rwlock_wrlock(&c->lock);
-        agent_try_attack_in_chunk(a, tr, c, hx, hy, &rwd);
-        pthread_rwlock_unlock(&c->lock);
-        a->reward_accumulator += rwd;
-        a->last_action = ACTION_ATTACK;
-      } else {
-        agent_try_move(a, dir);
-        a->last_action = ACTION_UP;
-      }
-
-      a->age++;
-      return;
-    }
-
-    if (macro == MACRO_PATROL) {
-      Vector2 dir = agent_patrol_dir(a->position, tr->base.position);
-      agent_try_move(a, dir);
-      a->last_action = ACTION_UP;
-      a->age++;
-      return;
-    }
-  }
-
-  // --- RL decision (existing action space) ---
+  // --- build observation ---
   int cx = (int)(a->position.x / CHUNK_SIZE);
   int cy = (int)(a->position.y / CHUNK_SIZE);
   Chunk *c = get_chunk(cx, cy);
@@ -2680,19 +2577,19 @@ void update_agent(Agent *a) {
   ObsBuffer obs;
   obs_init(&obs);
 
-  // encode uses chunk data -> read lock
   pthread_rwlock_rdlock(&c->lock);
   encode_observation(a, c, &obs);
   pthread_rwlock_unlock(&c->lock);
 
+  // --- MuZero chooses action ---
   int action = decide_action(a, &obs);
   obs_free(&obs);
 
   a->last_action = action;
 
+  // --- execute ---
   float reward = 0.0f;
 
-  // --- execute chosen action ---
   switch (action) {
   case ACTION_UP:
     agent_try_move(a, (Vector2){0, -1});
@@ -2708,7 +2605,8 @@ void update_agent(Agent *a) {
     break;
 
   case ACTION_ATTACK: {
-    // Attack can pick targets across nearby chunks now.
+    // If you want “attack can reach across nearby chunks”, do it only here,
+    // as an EFFECT of choosing ACTION_ATTACK (not a macro).
     int tcx, tcy;
     float td;
     Vector2 tpos;
@@ -2718,7 +2616,6 @@ void update_agent(Agent *a) {
       agent_try_attack_in_chunk(a, tr, tc, tcx, tcy, &reward);
       pthread_rwlock_unlock(&tc->lock);
     } else {
-      // fallback: try local chunk (may hit passive mobs)
       pthread_rwlock_wrlock(&c->lock);
       agent_try_attack_in_chunk(a, tr, c, cx, cy, &reward);
       pthread_rwlock_unlock(&c->lock);
@@ -2726,7 +2623,6 @@ void update_agent(Agent *a) {
   } break;
 
   case ACTION_HARVEST: {
-    // Harvest across nearby chunks now.
     int rcx, rcy;
     float rd;
     Vector2 rpos;
@@ -2743,7 +2639,6 @@ void update_agent(Agent *a) {
   } break;
 
   case ACTION_FIRE: {
-    // Fire across nearby chunks (prefers hostiles).
     int tcx, tcy;
     float td;
     Vector2 tpos;
@@ -2765,8 +2660,9 @@ void update_agent(Agent *a) {
 
   case ACTION_NONE:
   default:
-    // small incentive to repair when safe and idle
-    tribe_try_repair_base(tr, &reward);
+    // Optional: keep or remove. This is still “hand holding”.
+    // If you want pure MuZero, delete this line.
+    // tribe_try_repair_base(tr, &reward);
     break;
   }
 
@@ -2776,7 +2672,7 @@ void update_agent(Agent *a) {
     a->alive = false;
     reward -= 1.0f;
   } else {
-    reward += 0.0005f; // tiny alive reward
+    reward += 0.0005f;
   }
 
   a->reward_accumulator += reward;
