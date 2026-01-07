@@ -2219,6 +2219,7 @@ void update_agent(Agent *a) {
   case ACTION_HARVEST:
     break;
   case ACTION_EAT:
+    break;
   case ACTION_NONE:
     break;
   default:
