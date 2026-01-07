@@ -2,7 +2,6 @@
 #include "mcts.h"
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
 /* ---------- helpers ---------- */
 
