@@ -165,12 +165,14 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
 
   softmaxf_inplace(action_probs, action_count);
 
-  /* epsilon-greedy (real exploration) */
+  /*
+  // epsilon-greedy (real exploration)
   if (((float)rand() / (float)RAND_MAX) < ad->epsilon) {
     ad->last_action = (size_t)(rand() % (int)action_count);
   } else {
     ad->last_action = sample_from_probs(action_probs, action_count);
   }
+  */
 
   /* cache probs for REINFORCE */
   if (ad->last_action_count != action_count) {
