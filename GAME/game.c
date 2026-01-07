@@ -1002,6 +1002,35 @@ void draw_chunks(void) {
 static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
   int cx = (int)(world_pos.x / CHUNK_SIZE);
   int cy = (int)(world_pos.y / CHUNK_SIZE);
+
+  // spacing in WORLD units
+  float minD = 2.8f;
+
+  Vector2 chosen = world_pos;
+  int found = 0;
+
+  for (int tries = 0; tries < 20; tries++) {
+    Vector2 cand = world_pos;
+    cand.x += randf(-1.2f, 1.2f);
+    cand.y += randf(-1.2f, 1.2f);
+
+    int ccx = (int)(cand.x / CHUNK_SIZE);
+    int ccy = (int)(cand.y / CHUNK_SIZE);
+
+    if (!mob_too_close_world_nearby(ccx, ccy, cand, minD)) {
+      chosen = cand;
+      cx = ccx;
+      cy = ccy;
+      found = 1;
+      break;
+    }
+  }
+
+  if (!found) {
+    // still spawn, just no guarantee
+    chosen = world_pos;
+  }
+
   Chunk *c = get_chunk(cx, cy);
 
   int slot = find_free_mob_slot(c);
@@ -1009,21 +1038,11 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
     return;
 
   Mob *m = &c->mobs[slot];
-  m->type = type;
-
   Vector2 origin =
       (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-  m->position = Vector2Subtract(world_pos, origin);
-  m->position = clamp_local_to_chunk(m->position);
+  Vector2 local = Vector2Subtract(chosen, origin);
 
-  m->health = 100;
-  m->visited = false;
-  m->vel = (Vector2){0, 0};
-  m->ai_timer = randf(0.2f, 1.2f);
-  m->aggro_timer = 2.0f;
-  m->attack_cd = randf(0.2f, 1.0f);
-  m->hurt_timer = 0.0f;
-  m->lunge_timer = 0.0f;
+  init_mob(m, type, local, /*make_angry=*/1);
 }
 
 static void despawn_hostiles_if_day(Chunk *c) {
