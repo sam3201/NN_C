@@ -2268,7 +2268,7 @@ static void draw_player(Vector2 pp_screen) {
   g_handR = hr;
 }
 
-static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
+static void draw_agent(const Agent *a, Vector2 sp, Color tribeColor) {
   float r = WORLD_SCALE * 0.60 * scale_size; // base agent size
   float t = (float)GetTime();
 
@@ -3489,7 +3489,7 @@ int main(void) {
         continue;
       Vector2 ap = world_to_screen(agents[i].position);
       Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
-      draw_agent_detailed(&agents[i], ap, tc);
+      draw_agent(&agents[i], ap, tc);
     }
 
     // player
