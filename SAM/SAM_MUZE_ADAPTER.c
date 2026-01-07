@@ -28,7 +28,7 @@ typedef struct {
 
   int episode_counter;
 
-  float_reward_baseline;
+  float reward_baseline;
 
   /* epsilon-greedy exploration */
   float epsilon;
