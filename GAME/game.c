@@ -1834,11 +1834,11 @@ int main(void) {
     // UI + debug
     draw_ui();
     draw_hover_label();
+    draw_hover_label();
+    draw_daynight_overlay(); // AFTER world draw, before EndDrawing
+
     DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
     DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
-
-    draw_hover_label();
-    draw_daynight_overlay();
 
     EndDrawing();
   }
