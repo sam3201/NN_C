@@ -1740,6 +1740,7 @@ static void update_visible_world(float dt) {
         if (r->break_flash > 0)
           r->break_flash -= dt;
       }
+
       // mobs
       try_spawn_mobs_in_chunk(c, cx, cy, dt);
 
