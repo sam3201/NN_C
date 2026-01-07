@@ -2144,38 +2144,59 @@ void update_player(void) {
 }
 */
 
-  // attack mobs (RMB)
-  if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
-    player_attack_cd = PLAYER_ATTACK_COOLDOWN;
+  // harvest (LMB) - trees/food, and mine rocks/gold (tool-aware)
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_harvest_cd <= 0.0f) {
 
-    Mob *best = NULL;
+    Resource *best = NULL;
     float bestD = 1e9f;
 
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &c->mobs[i];
-      if (m->health <= 0)
+    for (int i = 0; i < c->resource_count; i++) {
+      Resource *r = &c->resources[i];
+      if (r->health <= 0)
         continue;
 
-      Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
-                             cy * CHUNK_SIZE + m->position.y};
+      Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                             cy * CHUNK_SIZE + r->position.y};
 
-      float d = Vector2Distance(player.position, mw);
-      if (d < ATTACK_DISTANCE && d < bestD) {
+      float d = Vector2Distance(player.position, rw);
+      if (d < HARVEST_DISTANCE && d < bestD) {
         bestD = d;
-        best = m;
+        best = r;
       }
     }
 
-    if (best && player.stamina > 1.0f) {
-      best->health -= PLAYER_ATTACK_DAMAGE;
-      best->hurt_timer = 0.18f;
-      best->aggro_timer = 3.0f; // makes pig/sheep flee + hostiles aggro
-      player.stamina -= 1.5f;
-      if (best->health <= 0)
-        best->health = 0;
+    if (best) {
+      float cd = player_resource_cooldown(best->type);
+      float cost = player_resource_stamina_cost(best->type);
+      int dmg = player_resource_damage(best->type);
+
+      if (player.stamina > cost) {
+        player_harvest_cd = cd;
+
+        best->health -= dmg;
+        best->hit_timer = 0.14f;
+        best->break_flash = 0.06f;
+
+        player.stamina -= cost;
+
+        // mining feels heavier
+        if (best->type == RES_ROCK || best->type == RES_GOLD) {
+          cam_shake = fmaxf(cam_shake, 0.08f);
+        }
+
+        if (best->health <= 0) {
+          // resource becomes a pickup (feels nicer than instant inventory)
+          Vector2 dropPos = (Vector2){cx * CHUNK_SIZE + best->position.x,
+                                      cy * CHUNK_SIZE + best->position.y};
+          if (best->type == RES_TREE)
+            spawn_pickup(PICK_SHARD, dropPos, 0); // no-op, just example
+          give_drop(best->type); // keep your existing direct add OR swap to
+                                 // pickups if you want
+          best->health = 0;
+        }
+      }
     }
   }
-
   player.stamina = fmaxf(0, player.stamina - 0.02f);
   player.health = fmaxf(0, player.health);
 
