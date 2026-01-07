@@ -2664,7 +2664,11 @@ void update_agent(Agent *a) {
   } break;
 
   case ACTION_EAT:
+    pthread_rwlock_wrlock(&c->lock);
+
     agent_try_eat(a, &reward);
+
+    pthread_rwlock_unlock(&c->lock);
     break;
 
     /*
