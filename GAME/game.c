@@ -2783,6 +2783,49 @@ void update_agent(Agent *a) {
   a->age++;
 }
 
+static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
+  Agent *best = NULL;
+  float bestD = 1e9f;
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    if (!a->alive)
+      continue;
+    int acx = (int)(a->position.x / CHUNK_SIZE);
+    int acy = (int)(a->position.y / CHUNK_SIZE);
+    if (acx != cx || acy != cy)
+      continue;
+    float d = Vector2Distance(mw, a->position);
+    if (d < bestD) {
+      bestD = d;
+      best = a;
+    }
+  }
+  if (outD)
+    *outD = bestD;
+  return best;
+}
+static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
+  Agent *best = NULL;
+  float bestD = 1e9f;
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    if (!a->alive)
+      continue;
+    int acx = (int)(a->position.x / CHUNK_SIZE);
+    int acy = (int)(a->position.y / CHUNK_SIZE);
+    if (acx != cx || acy != cy)
+      continue;
+    float d = Vector2Distance(mw, a->position);
+    if (d < bestD) {
+      bestD = d;
+      best = a;
+    }
+  }
+  if (outD)
+    *outD = bestD;
+  return best;
+}
+
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   // timers
   if (m->ai_timer > 0)
