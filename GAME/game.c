@@ -174,6 +174,15 @@ typedef struct {
 } Player;
 
 typedef struct {
+  bool alive;
+  Vector2 pos; // WORLD pos
+  PickupType type;
+  int amount;
+  float ttl;
+  float bob_t;
+} Pickup;
+
+typedef struct {
   const char *name;
   int wood, stone, gold, food;
   int *unlock_flag; // set to 1 on craft
