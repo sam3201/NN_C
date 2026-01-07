@@ -2715,10 +2715,14 @@ void update_agent(Agent *a) {
     // tribe_try_repair_base(tr, &reward);
     break;
   }
+
   agent_try_move(a, moveDir);
   a->last_action = action;
-  // if (moveDir.x != 0 || moveDir.y != 0)
-  a->facing = moveDir;
+
+  // Only update facing if we actually moved
+  if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
+    agent_set_facing_from(moveDir, a);
+  }
 
   // --- survival shaping ---
   if (a->health <= 0.0f) {
