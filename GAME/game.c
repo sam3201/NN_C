@@ -1189,28 +1189,6 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   float range = player_attack_range();
   int dmg = player_attack_damage();
 
-  // Find nearest mob in this chunk
-  Mob *best = NULL;
-  float bestD = 1e9f;
-
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-
-    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
-                           cy * CHUNK_SIZE + m->position.y};
-
-    float d = Vector2Distance(player.position, mw);
-    if (d < range && d < bestD) {
-      bestD = d;
-      best = m;
-    }
-  }
-
-  if (!best)
-    return;
-
   // Attack!
   player_attack_cd = player_attack_cooldown();
   best->health -= dmg;
