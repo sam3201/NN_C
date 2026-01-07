@@ -2635,6 +2635,7 @@ void update_agent(Agent *a) {
   // --- execute ---
   float reward = 0.0f;
 
+  Vector2 moveDir = (Vector2){0, 0};
   switch (action) {
   case ACTION_UP:
     agent_try_move(a, (Vector2){0, -1});
