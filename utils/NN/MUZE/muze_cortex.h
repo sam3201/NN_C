@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+// muze_cortex.h
+
 typedef struct MuCortex {
   void *brain;
 
@@ -24,10 +26,14 @@ typedef struct MuCortex {
 
   void (*free_latent_seq)(void *brain, long double **latent_seq,
                           size_t seq_len);
-  bool use_mcts;          /* false = argmax(policy), true = MCTS */
+
+  bool use_mcts;          /* false = use policy sampler, true = MCTS */
   MuModel *mcts_model;    /* required if use_mcts=1 */
   MCTSParams mcts_params; /* params used by MCTS */
 
+  /* --- NEW: non-MCTS exploration controls --- */
+  float policy_epsilon;     /* epsilon-greedy on top of policy sampling */
+  float policy_temperature; /* >= 0; 1 = normal, <1 sharper, >1 flatter */
 } MuCortex;
 
 #ifdef __cplusplus
