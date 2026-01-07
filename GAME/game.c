@@ -84,6 +84,7 @@ typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
 // ----- prototypes (so C doesn't need ordering) -----
 typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
+typedef struct Agent Agent;
 
 static inline float res_radius_world(ResourceType t);
 static inline float mob_radius_world(MobType t);
