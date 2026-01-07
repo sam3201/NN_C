@@ -4,7 +4,7 @@
 typedef struct {
   size_t obs_size;
   float *obs;
-} ObsState;
+} GameState;
 
 typedef struct {
   // episode counters
