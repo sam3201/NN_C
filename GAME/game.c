@@ -1532,6 +1532,40 @@ static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
                   (Color){80, 220, 80, 255});
   draw_health_bar((Vector2){sp.x, sp.y - r * 1.10f}, r * 1.7f, r * 0.18f, st01,
                   (Color){80, 160, 255, 255});
+
+  // --- intent icon above head ---
+  Vector2 icon = (Vector2){sp.x, sp.y - r * 1.55f};
+  Color ic = (Color){0, 0, 0, 180};
+  DrawCircleV(icon, r * 0.35f, (Color){255, 255, 255, 200});
+  DrawCircleLines((int)icon.x, (int)icon.y, r * 0.35f, ic);
+
+  switch (a->last_action) {
+  case ACTION_ATTACK: {
+    // sword-ish line
+    DrawLineEx((Vector2){icon.x - r * 0.10f, icon.y + r * 0.14f},
+               (Vector2){icon.x + r * 0.14f, icon.y - r * 0.14f}, r * 0.10f,
+               (Color){120, 120, 120, 255});
+    DrawCircleV((Vector2){icon.x + r * 0.16f, icon.y - r * 0.16f}, r * 0.10f,
+                (Color){200, 200, 200, 255});
+  } break;
+
+  case ACTION_HARVEST: {
+    // pickaxe-ish
+    DrawLineEx((Vector2){icon.x - r * 0.16f, icon.y - r * 0.05f},
+               (Vector2){icon.x + r * 0.16f, icon.y + r * 0.12f}, r * 0.10f,
+               (Color){120, 80, 40, 255});
+    DrawCircleV((Vector2){icon.x + r * 0.18f, icon.y + r * 0.14f}, r * 0.10f,
+                (Color){180, 180, 180, 255});
+  } break;
+
+  default: {
+    // move: little arrow
+    DrawTriangle((Vector2){icon.x, icon.y - r * 0.16f},
+                 (Vector2){icon.x - r * 0.14f, icon.y + r * 0.12f},
+                 (Vector2){icon.x + r * 0.14f, icon.y + r * 0.12f},
+                 (Color){60, 60, 60, 255});
+  } break;
+  }
 }
 
 /* =======================
