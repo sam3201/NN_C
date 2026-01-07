@@ -2434,6 +2434,8 @@ int main(void) {
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
 
+    WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
+
     update_player();
     update_visible_world(dt);
     update_projectiles(dt);
