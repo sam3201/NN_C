@@ -1646,6 +1646,26 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   m->position = clamp_local_to_chunk(m->position);
 }
 
+static void draw_crafting_ui(void) {
+  if (!crafting_open)
+    return;
+
+  int x = 14, y = 260, w = 360, h = 28 + recipe_count * 22;
+  DrawRectangle(x, y, w, h, (Color){0, 0, 0, 120});
+  DrawRectangleLines(x, y, w, h, (Color){0, 0, 0, 220});
+  DrawText("Crafting (TAB)", x + 10, y + 6, 18, RAYWHITE);
+
+  for (int i = 0; i < recipe_count; i++) {
+    Recipe *r = &recipes[i];
+    Color c = can_afford(r) ? RAYWHITE : (Color){180, 180, 180, 255};
+
+    DrawText(TextFormat("%d) %s  [W%d S%d G%d F%d]%s", i + 1, r->name, r->wood,
+                        r->stone, r->gold, r->food,
+                        (r->unlock_flag && *r->unlock_flag) ? " (OWNED)" : ""),
+             x + 10, y + 30 + i * 20, 16, c);
+  }
+}
+
 /* =======================
    PLAYER
 ======================= */
