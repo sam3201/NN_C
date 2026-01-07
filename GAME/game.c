@@ -2520,6 +2520,7 @@ int main(void) {
     draw_crafting_ui();
     draw_hover_label();
     draw_daynight_overlay(); // AFTER world draw, before EndDrawing
+    draw_hurt_vignette();
 
     DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
     DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
