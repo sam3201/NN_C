@@ -187,7 +187,7 @@ static void sam_policy(void *brain, long double **latent_seq, size_t seq_len,
     ad->has_last = 0;
   }
 
-  onehotf(action_probs, action_count, ad->last_action);
+  // onehotf(action_probs, action_count, ad->last_action);
 
   free(logits);
 }
