@@ -132,7 +132,7 @@ typedef struct {
   int damage;
 } Projectile;
 
-typedef struct {
+struct {
   int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
   Resource resources[MAX_RESOURCES];
