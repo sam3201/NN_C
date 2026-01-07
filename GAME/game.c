@@ -899,108 +899,56 @@ Chunk *get_chunk(int cx, int cy) {
   cy = wrap(cy);
 
   Chunk *c = &world[cx][cy];
+
+  // Fast path (already generated)
+  if (ensure_generated) {
+  } // <-- remove this line if it appears; it's just a safety note
   if (c->generated)
     return c;
 
-  c->generated = true;
-  c->biome_type = (abs(cx) + abs(cy)) % 3;
+  // Thread-safe generation: only ONE thread generates a chunk.
+  pthread_rwlock_wrlock(&c->lock);
 
-  for (int i = 0; i < CHUNK_SIZE; i++)
-    for (int j = 0; j < CHUNK_SIZE; j++)
-      c->terrain[i][j] = c->biome_type;
-
-  // ---------- RESOURCES (spacing-aware) ----------
-  c->resource_count = 0;
-
-  int desired = 12; // try 10..20 (your world is dense; keep reasonable)
-  for (int k = 0; k < desired && c->resource_count < MAX_RESOURCES; k++) {
-
-    ResourceType rt = (ResourceType)(rand() % 4);
-    float rad = res_radius_world(rt);
-
-    int cx0 = cx; // NOTE: get_chunk params are (cx, cy) from caller
-    int cy0 = cy;
-
-    // IMPORTANT: when called from get_chunk(cx,cy), cx/cy exist in that scope.
-    // If your compiler complains, see note below.
-
-    int placed = 0;
-    Vector2 local = {0};
-
-    for (int tries = 0; tries < 80; tries++) {
-      // keep away from chunk edges slightly
-      local = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
-                        randf(0.9f, CHUNK_SIZE - 0.9f)};
-
-      Vector2 worldPos = (Vector2){(float)(cx0 * CHUNK_SIZE) + local.x,
-                                   (float)(cy0 * CHUNK_SIZE) + local.y};
-
-      if (!world_pos_blocked_nearby(cx0, cy0, worldPos, rad)) {
-        placed = 1;
-        break;
-      }
-    }
-
-    if (!placed)
-      continue;
-
-    Resource *r = &c->resources[c->resource_count++];
-    r->type = rt;
-    r->position = clamp_local_to_chunk(local);
-    r->health = 100;
-    r->visited = false;
-    r->hit_timer = 0.0f;
-    r->break_flash = 0.0f;
+  // Another thread may have generated it while we waited.
+  if (c->generated) {
+    pthread_rwlock_unlock(&c->lock);
+    return c;
   }
 
-  c->mob_spawn_timer = randf(1.0f, 3.0f);
-  for (int i = 0; i < MAX_MOBS; i++)
-    c->mobs[i].health = 0;
+  // --------- GENERATE ONCE ----------
+  c->generated = true;
 
-  for (int i = 0; i < MAX_MOBS; i++)
-    c->mobs[i].health = 0;
+  // biome
+  c->biome_type = (abs(cx) + abs(cy)) % 3;
 
-  // Seed a smaller starting population with spacing
-  int seed_count = 6; // tweak (try 4..8)
-  float minD = 2.6f;
-  int night = is_night_cached;
-
-  for (int k = 0; k < seed_count; k++) {
-    int slot = find_free_mob_slot(c);
-    if (slot < 0)
-      break;
-
-    Vector2 p = {0};
-    int placed = 0;
-
-    if (!placed) {
-      p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
-                    randf(0.8f, CHUNK_SIZE - 0.8f)};
+  // terrain fill
+  for (int i = 0; i < CHUNK_SIZE; i++) {
+    for (int j = 0; j < CHUNK_SIZE; j++) {
+      c->terrain[i][j] = c->biome_type;
     }
+  }
 
-    MobType mt = pick_spawn_type(night, c->biome_type);
-    init_mob(&c->mobs[slot], mt, p, /*make_angry=*/0);
+  // resources
+  c->resource_count = 0;
+  {
+    const int desired = 12; // density
+    for (int k = 0; k < desired && c->resource_count < MAX_RESOURCES; k++) {
+      ResourceType rt = (ResourceType)(rand() % 4);
+      float rad = res_radius_world(rt);
 
-    int seed_count = 6;
-    int night = is_night_cached;
-
-    for (int k = 0; k < seed_count; k++) {
-      int slot = find_free_mob_slot(c);
-      if (slot < 0)
-        break;
-
-      MobType mt = pick_spawn_type(night, c->biome_type);
-      float rad = mob_radius_world(mt);
-
-      Vector2 p = {0};
       int placed = 0;
+      Vector2 local = {0};
 
-      for (int tries = 0; tries < 55; tries++) {
-        p = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
-                      randf(0.9f, CHUNK_SIZE - 0.9f)};
+      for (int tries = 0; tries < 80; tries++) {
+        local = (Vector2){
+            randf(0.9f, (float)CHUNK_SIZE - 0.9f),
+            randf(0.9f, (float)CHUNK_SIZE - 0.9f),
+        };
 
-        Vector2 worldPos = (Vector2){(float)(cx * CHUNK_SIZE) + p.x,
-                                     (float)(cy * CHUNK_SIZE) + p.y};
+        Vector2 worldPos = (Vector2){
+            (float)(cx * CHUNK_SIZE) + local.x,
+            (float)(cy * CHUNK_SIZE) + local.y,
+        };
 
         if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
           placed = 1;
@@ -1011,10 +959,72 @@ Chunk *get_chunk(int cx, int cy) {
       if (!placed)
         continue;
 
-      init_mob(&c->mobs[slot], mt, p, 0);
+      Resource *r = &c->resources[c->resource_count++];
+      r->type = rt;
+      r->position = clamp_local_to_chunk(local);
+      r->health = 100;
+      r->visited = false;
+      r->hit_timer = 0.0f;
+      r->break_flash = 0.0f;
     }
   }
 
+  // mobs init (ONLY ONCE)
+  for (int i = 0; i < MAX_MOBS; i++) {
+    c->mobs[i].health = 0;
+    c->mobs[i].visited = false;
+    c->mobs[i].vel = (Vector2){0, 0};
+    c->mobs[i].ai_timer = 0.0f;
+    c->mobs[i].aggro_timer = 0.0f;
+    c->mobs[i].attack_cd = 0.0f;
+    c->mobs[i].hurt_timer = 0.0f;
+    c->mobs[i].lunge_timer = 0.0f;
+  }
+
+  // spawn timer
+  c->mob_spawn_timer = randf(1.0f, 3.0f);
+
+  // seed mobs (ONE loop, spacing-aware)
+  {
+    const int seed_count = 6; // tweak 4..8
+    int night = is_night_cached;
+
+    for (int k = 0; k < seed_count; k++) {
+      int slot = find_free_mob_slot(c);
+      if (slot < 0)
+        break;
+
+      MobType mt = pick_spawn_type(night, c->biome_type);
+      float rad = mob_radius_world(mt);
+
+      int placed = 0;
+      Vector2 p = {0};
+
+      for (int tries = 0; tries < 55; tries++) {
+        p = (Vector2){
+            randf(0.9f, (float)CHUNK_SIZE - 0.9f),
+            randf(0.9f, (float)CHUNK_SIZE - 0.9f),
+        };
+
+        Vector2 worldPos = (Vector2){
+            (float)(cx * CHUNK_SIZE) + p.x,
+            (float)(cy * CHUNK_SIZE) + p.y,
+        };
+
+        if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
+          placed = 1;
+          break;
+        }
+      }
+
+      if (!placed)
+        continue;
+
+      init_mob(&c->mobs[slot], mt, p, /*make_angry=*/0);
+    }
+  }
+
+  pthread_rwlock_unlock(&c->lock);
   return c;
 }
 
