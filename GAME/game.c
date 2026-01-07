@@ -784,7 +784,7 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
     Vector2 worldPos = (Vector2){(float)(cx * CHUNK_SIZE) + p.x,
                                  (float)(cy * CHUNK_SIZE) + p.y};
 
-    if (!world_pos_blocked_nearby(cx, cy, worldPos, rad, cx, cy)) {
+    if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
       placed = 1;
       break;
     }
