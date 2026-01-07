@@ -284,6 +284,13 @@ Color resource_colors[] = {
    THREAD
 
  * ======================= */
+for (int i = 0; i < MAX_AGENTS; i++) {
+  if (!agents[i].alive)
+    continue;
+  int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+  int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+  (void)get_chunk(acx, acy);
+}
 
 /* =======================
    OBS BUFFER
