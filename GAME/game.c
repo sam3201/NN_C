@@ -793,7 +793,7 @@ static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
     m->lunge_timer = 0.10f;
 
     // optional: keep tiny sparse reward, or delete these completely
-    // *reward += 0.01f;
+    *reward += 0.01f;
 
     if (m->health <= 0) {
       Vector2 mw = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
