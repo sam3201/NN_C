@@ -1675,6 +1675,7 @@ void update_player(void) {
     player.position.x -= speed;
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
+
   if (isKeyDown(KEY_TAB)) {
     crafting_open = !crafting_open;
     if (crafting_open) {
