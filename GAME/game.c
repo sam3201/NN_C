@@ -3548,7 +3548,7 @@ int main(void) {
     update_pickups(dt);
 
     BeginDrawing();
-    ClearBackground((Color){20, 20, 20, 255});
+    ClearBackground(BLACK);
 
     draw_chunks();
     draw_resources();
