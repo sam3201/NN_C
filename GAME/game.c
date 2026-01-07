@@ -746,7 +746,9 @@ void draw_mobs(void) {
         case MOB_PIG: {
           // body
           DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f,
-                      (Color){255, 160, 190, 255});
+                      (m->hurt_timer > 0.0f) ? (Color){255, 200, 210, 255}
+                                             : (Color){255, 160, 190, 255});
+
           DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
                           (Color){0, 0, 0, 120});
 
