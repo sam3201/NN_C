@@ -331,16 +331,6 @@ void SAM_MUZE_destroy(MuCortex *cortex) {
   free(cortex);
 }
 
-#include "sam_muze_adapter.h"
-#include <stdlib.h>
-#include <string.h>
-
-// The adapter stores function pointers MUZE will call.
-typedef struct {
-  SAM_t *sam;
-  MuCortex cortex; // must match MUZE expectations
-} SAMMuAdapter;
-
 static int adapter_plan(void *brain, const float *obs, size_t obs_dim,
                         size_t action_count) {
   SAMMuAdapter *a = (SAMMuAdapter *)brain;
