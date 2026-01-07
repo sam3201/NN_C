@@ -1650,29 +1650,7 @@ void update_player(void) {
 
   // harvest (LMB)
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_harvest_cd <= 0.0f) {
-    if (best && player.stamina > 1.0f) {
-      int is_mine = (best->type == RES_ROCK || best->type == RES_GOLD);
-
-      if (is_mine) {
-        // mining profile
-        player_harvest_cd = PLAYER_MINE_COOLDOWN;
-        best->health -= PLAYER_MINE_DAMAGE;
-        player.stamina -= PLAYER_MINE_STAMINA_COST;
-      } else {
-        // harvesting profile
-        player_harvest_cd = PLAYER_HARVEST_COOLDOWN;
-        best->health -= PLAYER_HARVEST_DAMAGE;
-        player.stamina -= 2.0f;
-      }
-
-      best->hit_timer = 0.14f;
-      best->break_flash = 0.06f;
-
-      if (best->health <= 0) {
-        give_drop(best->type);
-        best->health = 0;
-      }
-    }
+    player_harvest_cd = PLAYER_HARVEST_COOLDOWN;
 
     Resource *best = NULL;
     float bestD = 1e9f;
