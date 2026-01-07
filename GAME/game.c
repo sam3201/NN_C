@@ -3,6 +3,7 @@
 #include "../utils/Raylib/src/raylib.h"
 #include "../utils/Raylib/src/raymath.h"
 #include <math.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
