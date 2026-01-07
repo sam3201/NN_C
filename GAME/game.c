@@ -2650,7 +2650,8 @@ void update_agent(Agent *a) {
     moveDir.y = 0;
     break;
   case ACTION_RIGHT:
-    agent_try_move(a, (Vector2){1, 0});
+    moveDir.x = 1;
+    moveDir.y = 0;
     break;
 
   case ACTION_ATTACK: {
