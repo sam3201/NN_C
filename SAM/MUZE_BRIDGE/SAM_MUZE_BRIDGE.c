@@ -266,59 +266,55 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
     free(c);
     return NULL;
   }
-  a->sam = sam;
-  a->cortex.brain = a;           // MUZE calls cortex->plan/learn with brain
-  a->cortex.plan = adapter_plan; // or whatever MUZE names it
+
+  ad->sam = sam;
+  a->cortex.brain = a;
+  a->cortex.plan = adapter_plan;
   a->cortex.learn = adapter_learn;
 
-  return &a->cortex;
-}
+  ad->obs_dim = 0;
+  ad->hist_cap = SAM_MUZE_HISTORY;
+  ad->hist_len = 0;
+  ad->write_idx = 0;
 
-ad->sam = sam;
+  ad->hist_data = NULL;
+  ad->seq_ptrs = NULL;
 
-ad->obs_dim = 0;
-ad->hist_cap = SAM_MUZE_HISTORY;
-ad->hist_len = 0;
-ad->write_idx = 0;
+  ad->has_last = 0;
+  ad->last_action = 0;
+  ad->last_action_count = 0;
+  ad->last_probs = NULL;
+  ad->last_seq_ptrs = NULL;
+  ad->last_seq_len = 0;
 
-ad->hist_data = NULL;
-ad->seq_ptrs = NULL;
+  ad->episode_counter = 0;
 
-ad->has_last = 0;
-ad->last_action = 0;
-ad->last_action_count = 0;
-ad->last_probs = NULL;
-ad->last_seq_ptrs = NULL;
-ad->last_seq_len = 0;
+  ad->epsilon = 0.30f;
+  ad->epsilon_min = 0.02f;
+  ad->epsilon_decay = 0.95f;
 
-ad->episode_counter = 0;
+  ad->reward_baseline = 0.0f;
 
-ad->epsilon = 0.30f;
-ad->epsilon_min = 0.02f;
-ad->epsilon_decay = 0.95f;
+  c->brain = ad;
+  c->encode = sam_encode;
+  c->policy = sam_policy;
+  c->learn = sam_learn;
+  c->free_latent_seq = sam_free_latent_seq;
 
-ad->reward_baseline = 0.0f;
+  /* Default: no MCTS unless you enable it */
+  c->use_mcts = false;
+  c->mcts_model = NULL;
 
-c->brain = ad;
-c->encode = sam_encode;
-c->policy = sam_policy;
-c->learn = sam_learn;
-c->free_latent_seq = sam_free_latent_seq;
+  /* Defaults */
+  c->mcts_params.num_simulations = 50;
+  c->mcts_params.c_puct = 1.25f;
+  c->mcts_params.max_depth = 16;
+  c->mcts_params.dirichlet_alpha = 0.3f;
+  c->mcts_params.dirichlet_eps = 0.25f;
+  c->mcts_params.temperature = 1.0f;
+  c->mcts_params.discount = 0.997f;
 
-/* Default: no MCTS unless you enable it */
-c->use_mcts = false;
-c->mcts_model = NULL;
-
-/* Defaults */
-c->mcts_params.num_simulations = 50;
-c->mcts_params.c_puct = 1.25f;
-c->mcts_params.max_depth = 16;
-c->mcts_params.dirichlet_alpha = 0.3f;
-c->mcts_params.dirichlet_eps = 0.25f;
-c->mcts_params.temperature = 1.0f;
-c->mcts_params.discount = 0.997f;
-
-return c;
+  return c;
 }
 
 void SAM_MUZE_destroy(MuCortex *cortex) {
