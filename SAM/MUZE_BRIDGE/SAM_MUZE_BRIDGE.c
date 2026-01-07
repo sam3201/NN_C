@@ -266,10 +266,6 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
     free(c);
     return NULL;
   }
-  SAMMuAdapter *a = (SAMMuAdapter *)calloc(1, sizeof(*a));
-  if (!a)
-    return NULL;
-
   a->sam = sam;
   a->cortex.brain = a;           // MUZE calls cortex->plan/learn with brain
   a->cortex.plan = adapter_plan; // or whatever MUZE names it
