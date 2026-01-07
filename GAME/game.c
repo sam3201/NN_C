@@ -2692,6 +2692,8 @@ void update_agent(Agent *a) {
   a->last_action = action;
   if (moveDir.x != 0 || moveDir.y != 0)
     a->facing = moveDir;
+  else
+    a->facing = a->last_move_dir;
 
   // --- survival shaping ---
   if (a->health <= 0.0f) {
