@@ -2558,8 +2558,6 @@ void update_agent(Agent *a) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
 
   // --- timers ---
-  if (a->intent_refresh_cd > 0.0f)
-    a->intent_refresh_cd -= dt;
   if (a->attack_cd > 0.0f)
     a->attack_cd -= dt;
   if (a->harvest_cd > 0.0f)
