@@ -3476,6 +3476,8 @@ int main(void) {
   init_agents();
   init_player();
 
+  start_workers();
+
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
       pthread_rwlock_init(&world[x][y].lock, NULL);
@@ -3484,8 +3486,6 @@ int main(void) {
       world[x][y].mob_spawn_timer = 0.0f;
     }
   }
-
-  start_workers();
 
   for (int i = 0; i < MAX_PROJECTILES; i++)
     projectiles[i].alive = false;
