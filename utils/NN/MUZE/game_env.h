@@ -16,15 +16,15 @@ typedef struct {
 
 } GameEnv;
 
-typedef void (*env_reset_fn)(GameState *obs_state);
-typedef int (*env_step_fn)(GameState *obs_state, int action, float *reward,
-                           int *done);
+typedef void (*gameenv_reset_fn)(GameState *obs_state);
+typedef int (*gameenv_step_fn)(GameState *obs_state, int action, float *reward,
+                               int *done);
 
 GameState *game_state_init(GameState *game_state, size_t obs_size);
 void game_state_destroy(GameState *game_state);
 
-GameEnv *game_env_init(GameEnv *game_env, env_reset_fn reset_fn,
-                       env_step_fn step_fn);
+GameEnv *game_env_init(GameEnv *game_env, gameenv_reset_fn reset_fn,
+                       gameenv_step_fn step_fn);
 void game_env_destroy(GameEnv *game_env);
 void game_env_reset(GameState *obs_state);
 int game_env_step(GameState *obs_state, int action, float *reward, int *done);
