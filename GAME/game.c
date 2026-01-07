@@ -186,6 +186,7 @@ typedef struct {
 
 typedef struct Agent {
   Vector2 position;
+  Vector2 facing;
   float health, stamina;
   int agent_id;
   bool alive;
