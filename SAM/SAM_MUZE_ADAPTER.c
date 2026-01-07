@@ -287,6 +287,8 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
 
   ad->episode_counter = 0;
 
+  ad->reward_baseline = 0.0f;
+
   ad->epsilon = 0.30f;
   ad->epsilon_min = 0.02f;
   ad->epsilon_decay = 0.95f;
