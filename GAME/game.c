@@ -131,6 +131,7 @@ typedef struct {
   int resource_count;
   Mob mobs[MAX_MOBS];
   bool generated;
+  float mob_spawn_timer;
 } Chunk;
 
 typedef struct {
