@@ -331,23 +331,3 @@ void SAM_MUZE_destroy(MuCortex *cortex) {
   }
   free(cortex);
 }
-
-static int adapter_plan(void *brain, const float *obs, size_t obs_dim,
-                        size_t action_count) {
-  SAMMuAdapter *a = (SAMMuAdapter *)brain;
-  // call whatever SAM uses to pick actions
-  return SAM_choose_action(a->sam, obs, obs_dim, (int)action_count);
-}
-
-static void adapter_learn(void *brain, const float *obs, size_t obs_dim,
-                          int action, float reward, int terminal) {
-  SAMMuAdapter *a = (SAMMuAdapter *)brain;
-  SAM_learn(a->sam, obs, obs_dim, action, reward, terminal);
-}
-
-void SAM_as_MUZE_destroy(MuCortex *cortex) {
-  if (!cortex)
-    return;
-  SAMMuAdapter *a = (SAMMuAdapter *)cortex->brain;
-  free(a);
-}
