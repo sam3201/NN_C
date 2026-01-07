@@ -1,5 +1,4 @@
-// MUZE/all.h
-
+#pragma once
 #ifndef MUZE_ALL_H
 #define MUZE_ALL_H
 
@@ -17,4 +16,4 @@
 #include "trainer.h"
 #include "util.h"
 
-#endif // MUZE_ALL_H
+#endif
