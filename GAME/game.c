@@ -893,6 +893,24 @@ static inline float res_radius_world(ResourceType t) {
   }
 }
 
+// ------------------- SPACING / COLLISION -------------------
+
+// Tuned in WORLD UNITS (not pixels). Increase if you still see overlaps.
+static inline float res_radius_world(ResourceType t) {
+  switch (t) {
+  case RES_TREE:
+    return 1.35f; // big canopy
+  case RES_ROCK:
+    return 1.05f;
+  case RES_GOLD:
+    return 1.00f;
+  case RES_FOOD:
+    return 0.90f;
+  default:
+    return 1.00f;
+  }
+}
+
 static inline float mob_radius_world(MobType t) {
   (void)t;
   // You made mobs visually huge; keep a generous world radius.
@@ -900,9 +918,12 @@ static inline float mob_radius_world(MobType t) {
   return 1.25f;
 }
 
-static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos,
-                                      float minD) {
-  // checks this chunk + neighbors (prevents edge-stacking across chunk borders)
+// Checks THIS chunk + 8 neighbors for overlap against BOTH mobs and resources.
+static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
+                                    float radius) {
+  const float PAD = 0.18f; // extra spacing "air gap"
+  float r = radius + PAD;
+
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
       int ncx = cx + dx;
@@ -911,16 +932,37 @@ static int mob_too_close_world_nearby(int cx, int cy, Vector2 worldPos,
 
       Vector2 origin =
           (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
+
+      // resources
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *rr = &c->resources[i];
+        if (rr->health <= 0)
+          continue;
+
+        Vector2 rw = Vector2Add(origin, rr->position);
+        float rr_rad = res_radius_world(rr->type) + PAD;
+
+        if (Vector2Distance(rw, worldPos) < (r + rr_rad)) {
+          return 1;
+        }
+      }
+
+      // mobs
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
-        if (!mob_is_alive(m))
+        if (m->health <= 0)
           continue;
+
         Vector2 mw = Vector2Add(origin, m->position);
-        if (Vector2Distance(mw, worldPos) < minD)
+        float mrad = mob_radius_world(m->type) + PAD;
+
+        if (Vector2Distance(mw, worldPos) < (r + mrad)) {
           return 1;
+        }
       }
     }
   }
+
   return 0;
 }
 
