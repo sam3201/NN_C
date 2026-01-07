@@ -2282,6 +2282,78 @@ static void draw_hover_label(void) {
     DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
   }
 }
+
+static void draw_minimap(void) {
+  int x = 310, y = 14; // top row, to the right of your panel
+  int size = 160;
+
+  DrawRectangle(x, y, size, size, (Color){0, 0, 0, 110});
+  DrawRectangleLines(x, y, size, size, (Color){0, 0, 0, 220});
+
+  // sample area around player (world units)
+  float radius = 28.0f;
+  int cells = 40; // 40x40 grid
+  float cell = (float)size / (float)cells;
+
+  for (int gy = 0; gy < cells; gy++) {
+    for (int gx = 0; gx < cells; gx++) {
+      float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
+      float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
+
+      Vector2 wp = (Vector2){player.position.x + nx * radius,
+                             player.position.y + ny * radius};
+
+      int cx = (int)(wp.x / CHUNK_SIZE);
+      int cy = (int)(wp.y / CHUNK_SIZE);
+      Chunk *c = get_chunk(cx, cy);
+
+      Color bc = Fade(biome_colors[c->biome_type], 0.85f);
+      DrawRectangle((int)(x + gx * cell), (int)(y + gy * cell),
+                    (int)ceilf(cell), (int)ceilf(cell), bc);
+    }
+  }
+
+  // bases
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
+    if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+      continue;
+    float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+    float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+    DrawCircle((int)(x + pxm), (int)(y + pym), 3, tribes[t].color);
+  }
+
+  // mobs (nearby)
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  for (int dx = -2; dx <= 2; dx++) {
+    for (int dy = -2; dy <= 2; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        Vector2 mw = Vector2Add(origin, m->position);
+        Vector2 d = Vector2Subtract(mw, player.position);
+        if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+          continue;
+
+        float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+        float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+        DrawPixel((int)(x + pxm), (int)(y + pym), (Color){240, 80, 80, 255});
+      }
+    }
+  }
+
+  // player dot
+  DrawCircle(x + size / 2, y + size / 2, 3, RAYWHITE);
+  DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
+}
+
 /* =======================
    THREAD
 
