@@ -220,7 +220,8 @@ static void sam_learn(void *brain, const float *obs, size_t obs_dim, int action,
       for (size_t i = 0; i < A; i++) {
         long double p = (long double)ad->last_probs[i];
         long double oh = (i == ad->last_action) ? 1.0L : 0.0L;
-        grad[i] = (long double)reward * (p - oh);
+        long double adv = (long double)(reward - ad->reward_baseline);
+        grad[i] = adv * (p - oh);
       }
 
       SAM_backprop(ad->sam, ad->last_seq_ptrs, ad->last_seq_len, grad);
