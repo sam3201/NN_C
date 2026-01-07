@@ -2638,13 +2638,16 @@ void update_agent(Agent *a) {
   Vector2 moveDir = {0, 0};
   switch (action) {
   case ACTION_UP:
-    agent_try_move(a, (Vector2){0, -1});
+    moveDir.x = 0;
+    moveDir.y = -1;
     break;
   case ACTION_DOWN:
-    agent_try_move(a, (Vector2){0, 1});
+    moveDir.x = 0;
+    moveDir.y = 1;
     break;
   case ACTION_LEFT:
-    agent_try_move(a, (Vector2){-1, 0});
+    moveDir.x = -1;
+    moveDir.y = 0;
     break;
   case ACTION_RIGHT:
     agent_try_move(a, (Vector2){1, 0});
