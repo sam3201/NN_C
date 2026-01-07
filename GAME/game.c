@@ -2572,41 +2572,6 @@ int decide_action(Agent *a, ObsBuffer *obs) {
                    (size_t)ACTION_COUNT);
 }
 
-static void agent_set_attack_intent(Agent *a) {
-  int tcx, tcy;
-  float td;
-  Vector2 tpos;
-
-  if (agent_find_nearest_hostile_mob(a, &tcx, &tcy, &td, &tpos)) {
-    a->intent_kind = INTENT_ATTACK;
-    a->intent_has_pos = 1;
-    a->intent_pos = tpos; // WORLD pos of mob (or nearest hostile)
-    a->intent_chunk_x = tcx;
-    a->intent_chunk_y = tcy;
-  } else {
-    // fallback: “no target”
-    a->intent_kind = INTENT_NONE;
-    a->intent_has_pos = 0;
-  }
-}
-
-static void agent_set_harvest_intent(Agent *a) {
-  int rcx, rcy;
-  float rd;
-  Vector2 rpos;
-
-  if (agent_find_nearest_resource_any(a, &rcx, &rcy, &rd, &rpos)) {
-    a->intent_kind = INTENT_HARVEST;
-    a->intent_has_pos = 1;
-    a->intent_pos = rpos; // WORLD pos of resource
-    a->intent_chunk_x = rcx;
-    a->intent_chunk_y = rcy;
-  } else {
-    a->intent_kind = INTENT_NONE;
-    a->intent_has_pos = 0;
-  }
-}
-
 /* =======================
    AGENT UPDATE
 ======================= */
