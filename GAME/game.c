@@ -2239,6 +2239,8 @@ static void draw_ui(void) {
 }
 
 static void draw_hover_label(void) {
+  int hp = -1;
+
   // find nearest in current chunk within a small radius
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
