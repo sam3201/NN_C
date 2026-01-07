@@ -3449,6 +3449,17 @@ static void start_workers(void) {
   }
 }
 
+static void stop_workers(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_quit = 1;
+  pthread_cond_broadcast(&job_cv);
+  pthread_mutex_unlock(&job_mtx);
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_join(workers[i], NULL);
+  }
+}
+
 /* =======================
    MAIN
 ======================= */
