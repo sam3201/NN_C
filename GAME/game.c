@@ -1687,6 +1687,7 @@ void update_player(void) {
       }
     }
   }
+
   if (IsKeyDown(KEY_EQUAL))
     WORLD_SCALE += 1.0f;
   if (IsKeyDown(KEY_MINUS))
