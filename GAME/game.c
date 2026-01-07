@@ -2833,6 +2833,11 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
       }
     }
   }
+  // --- apply movement (chunk-local) ---
+  Vector2 delta = Vector2Scale(m->vel, speed * dt);
+  m->position = Vector2Add(m->position, delta);
+  m->position = clamp_local_to_chunk(m->position);
+}
 }
 
 static void draw_crafting_ui(void) {
