@@ -198,7 +198,6 @@ typedef struct Agent {
   int last_action;
 
   // ---- “mouse-to-move” style intent targeting ----
-  float intent_refresh_cd; // prevents retargeting every frame
 
   float attack_cd;
   float harvest_cd;
