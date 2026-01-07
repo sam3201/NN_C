@@ -164,7 +164,6 @@ typedef struct {
   Base base;
   float integrity; // 0..100
 
-  // --- tribe stockpiles (agents contribute here) ---
   int wood, stone, gold, food;
   int shards, arrows;
 } Tribe;
