@@ -948,7 +948,7 @@ Chunk *get_chunk(int cx, int cy) {
             (float)(cy * CHUNK_SIZE) + local.y,
         };
 
-        if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
+        if (!world_pos_blocked_nearby(cx, cy, worldPos, rad, cx, cy)) {
           placed = 1;
           break;
         }
