@@ -2197,6 +2197,7 @@ void update_player(void) {
       }
     }
   }
+
   player.stamina = fmaxf(0, player.stamina - 0.02f);
   player.health = fmaxf(0, player.health);
 
