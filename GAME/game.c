@@ -753,6 +753,101 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   m->lunge_timer = 0.0f;
 }
 
+static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
+  if (player_attack_cd > 0.0f)
+    return;
+
+  float range = player_attack_range();
+  int dmg = player_attack_damage();
+
+  // Find nearest mob in this chunk
+  Mob *best = NULL;
+  float bestD = 1e9f;
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                           cy * CHUNK_SIZE + m->position.y};
+
+    float d = Vector2Distance(player.position, mw);
+    if (d < range && d < bestD) {
+      bestD = d;
+      best = m;
+    }
+  }
+
+  if (!best)
+    return;
+
+  // Attack!
+  player_attack_cd = player_attack_cooldown();
+  best->health -= dmg;
+
+  best->hurt_timer = 0.18f;
+  best->aggro_timer = 3.0f;  // make it angry
+  best->lunge_timer = 0.10f; // small visual kick
+  cam_shake = fmaxf(cam_shake, 0.10f);
+
+  if (best->health <= 0) {
+    Vector2 mob_world_pos = (Vector2){cx * CHUNK_SIZE + best->position.x,
+                                      cy * CHUNK_SIZE + best->position.y};
+    on_mob_killed(best->type, mob_world_pos);
+    best->health = 0;
+  }
+}
+
+static void player_try_harvest_resource_in_chunk(Chunk *c, int cx, int cy) {
+  if (player_harvest_cd > 0.0f)
+    return;
+
+  Resource *best = NULL;
+  float bestD = 1e9f;
+
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+
+    Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                           cy * CHUNK_SIZE + r->position.y};
+
+    float d = Vector2Distance(player.position, rw);
+    if (d < HARVEST_DISTANCE && d < bestD) {
+      bestD = d;
+      best = r;
+    }
+  }
+
+  if (!best)
+    return;
+
+  float cd = player_resource_cooldown(best->type);
+  float cost = player_resource_stamina_cost(best->type);
+  int dmg = player_resource_damage(best->type);
+
+  if (player.stamina <= cost)
+    return;
+
+  player_harvest_cd = cd;
+  player.stamina -= cost;
+
+  best->health -= dmg;
+  best->hit_timer = 0.14f;
+  best->break_flash = 0.06f;
+
+  if (best->type == RES_ROCK || best->type == RES_GOLD) {
+    cam_shake = fmaxf(cam_shake, 0.08f);
+  }
+
+  if (best->health <= 0) {
+    give_drop(best->type);
+    best->health = 0;
+  }
+}
+
 Chunk *get_chunk(int cx, int cy) {
   cx = wrap(cx);
   cy = wrap(cy);
