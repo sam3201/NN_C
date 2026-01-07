@@ -2785,63 +2785,60 @@ void update_agent(Agent *a) {
   Vector2 moveDir = {0, 0};
   switch (action) {
   case ACTION_UP:
-    moveDir.x = 0;
-    moveDir.y = -1;
+    moveDir = (Vector2){0, -1};
     break;
   case ACTION_DOWN:
-    moveDir.x = 0;
-    moveDir.y = 1;
+    moveDir = (Vector2){0, 1};
     break;
   case ACTION_LEFT:
-    moveDir.x = -1;
-    moveDir.y = 0;
+    moveDir = (Vector2){-1, 0};
     break;
   case ACTION_RIGHT:
-    moveDir.x = 1;
-    moveDir.y = 0;
+    moveDir = (Vector2){1, 0};
     break;
-  case ACTION_ATTACK: {
-    // No targeting. No intent. No movement assist.
-    // Just attempt an attack in the agent's CURRENT chunk.
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_attack_cone(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
 
-  case ACTION_HARVEST: {
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_harvest_cone(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
+  case ACTION_ATTACK:
+    // No targeting assist. Attack in facing direction.
+    agent_try_attack_forward(a, tr, &reward);
+    break;
+
+  case ACTION_HARVEST:
+    agent_try_harvest_forward(a, tr, &reward);
+    break;
+
+  case ACTION_FIRE:
+    agent_try_fire_forward(a, tr, &reward);
+    break;
 
   case ACTION_EAT:
-    pthread_rwlock_wrlock(&c->lock);
     agent_try_eat(a, &reward);
-    pthread_rwlock_unlock(&c->lock);
     break;
 
-    /*
-  case ACTION_CRAFT:
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_craft(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-    break;
-*/
-  case ACTION_FIRE: {
-    pthread_rwlock_wrlock(&c->lock);
-    agent_try_fire_cone(a, tr, c, cx, cy, &reward);
-    pthread_rwlock_unlock(&c->lock);
-  } break;
-
-    /*
-  case ACTION_NONE:
-    */
   default:
-    // Optional: keep or remove. This is still “hand holding”.
-    // If you want pure MuZero, delete this line.
-    // tribe_try_repair_base(tr, &reward);
+    // If they do nothing, you can optionally punish "doing nothing"
+    // reward += -0.002f;
     break;
   }
+
+  // Movement
+  agent_try_move(a, moveDir);
+
+  // Facing updates only when moved
+  if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
+    agent_set_facing_from(moveDir, a);
+  }
+
+  // --- survival shaping ---
+  if (a->health <= 0.0f) {
+    a->health = 0.0f;
+    a->alive = false;
+    reward += R_DEATH;
+  } else {
+    reward += R_SURVIVE_PER_TICK;
+  }
+
+  a->reward_accumulator += reward;
+  a->age++;
 
   agent_try_move(a, moveDir);
   a->last_action = action;
