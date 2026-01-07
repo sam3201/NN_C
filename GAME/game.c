@@ -703,16 +703,19 @@ static int agent_try_attack_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
   return 1;
 }
 
-static void agent_try_harvest_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
-                                       int cy, float *reward) {
+static int agent_try_harvest_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
+                                  float *reward) {
   if (a->harvest_cd > 0.0f)
-    return;
-
-  Resource *best = NULL;
-  float bestD = 1e9f;
+    return 0;
 
   Vector2 origin =
       (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+  const float range = HARVEST_DISTANCE;
+  const float cosMin = cosf(0.75f);
+
+  Resource *best = NULL;
+  float bestScore = -1e9f;
 
   for (int i = 0; i < c->resource_count; i++) {
     Resource *r = &c->resources[i];
@@ -720,19 +723,29 @@ static void agent_try_harvest_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
       continue;
 
     Vector2 rw = Vector2Add(origin, r->position);
-    float d = Vector2Distance(a->position, rw);
-    if (d < HARVEST_DISTANCE && d < bestD) {
-      bestD = d;
+    Vector2 to = Vector2Subtract(rw, a->position);
+    float d = Vector2Length(to);
+    if (d > range || d < 1e-3f)
+      continue;
+
+    Vector2 dir = Vector2Scale(to, 1.0f / d);
+    float dot = Vector2DotProduct(dir, a->facing);
+    if (dot < cosMin)
+      continue;
+
+    float score = (1.0f - d / range) + dot;
+    if (score > bestScore) {
+      bestScore = score;
       best = r;
     }
   }
 
   if (!best)
-    return;
+    return 0;
 
   float cost = agent_harvest_cost(best->type);
   if (a->stamina < cost)
-    return;
+    return 0;
 
   a->harvest_cd = agent_harvest_cooldown();
   a->stamina -= cost;
@@ -746,8 +759,6 @@ static void agent_try_harvest_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
 
   if (best->health <= 0) {
     best->health = 0;
-
-    // deposit to tribe / agent
     switch (best->type) {
     case RES_TREE:
       tr->wood += 1;
@@ -770,6 +781,8 @@ static void agent_try_harvest_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
       break;
     }
   }
+
+  return 1;
 }
 
 static void agent_try_fire_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
