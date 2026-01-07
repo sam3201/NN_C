@@ -2842,23 +2842,6 @@ void update_agent(Agent *a) {
 
   agent_try_move(a, moveDir);
   a->last_action = action;
-
-  // Only update facing if we actually moved
-  if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
-    agent_set_facing_from(moveDir, a);
-  }
-
-  // --- survival shaping ---
-  if (a->health <= 0.0f) {
-    a->health = 0.0f;
-    a->alive = false;
-    reward -= 1.0f;
-  } else {
-    reward += 0.0005f;
-  }
-
-  a->reward_accumulator += reward;
-  a->age++;
 }
 
 static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
