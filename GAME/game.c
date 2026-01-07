@@ -415,6 +415,66 @@ static void draw_health_bar(Vector2 sp, float w, float h, float t01,
 /* =======================
    WORLD
 ======================= */
+static int chunk_alive_mobs(Chunk *c) {
+  int n = 0;
+  for (int i = 0; i < MAX_MOBS; i++)
+    if (c->mobs[i].health > 0)
+      n++;
+  return n;
+}
+
+static int find_free_mob_slot(Chunk *c) {
+  for (int i = 0; i < MAX_MOBS; i++)
+    if (c->mobs[i].health <= 0)
+      return i;
+  return -1;
+}
+
+static MobType pick_spawn_type(int night, int biome) {
+  // Simple rule: day = mostly passive, night = mostly hostile
+  if (!night) {
+    return (rand() % 2 == 0) ? MOB_PIG : MOB_SHEEP;
+  } else {
+    // night hostiles; biome can bias
+    if (biome == 2)
+      return MOB_SKELETON; // desert -> more skeletons
+    return (rand() % 2 == 0) ? MOB_ZOMBIE : MOB_SKELETON;
+  }
+}
+
+static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
+  c->mob_spawn_timer -= dt;
+  if (c->mob_spawn_timer > 0.0f)
+    return;
+
+  c->mob_spawn_timer = randf(1.5f, 4.0f);
+
+  int night = is_night_cached;
+
+  // cap populations differently for day/night
+  int cap = night ? 10 : 6;
+  if (chunk_alive_mobs(c) >= cap)
+    return;
+
+  // spawn 1 mob
+  int slot = find_free_mob_slot(c);
+  if (slot < 0)
+    return;
+
+  Mob *m = &c->mobs[slot];
+  m->type = pick_spawn_type(night, c->biome_type);
+  m->position =
+      (Vector2){randf(0.5f, CHUNK_SIZE - 0.5f), randf(0.5f, CHUNK_SIZE - 0.5f)};
+  m->health = 100;
+  m->visited = false;
+  m->vel = (Vector2){0, 0};
+  m->ai_timer = randf(0.2f, 1.2f);
+  m->aggro_timer = 0.0f;
+  m->attack_cd = randf(0.2f, 1.0f);
+  m->hurt_timer = 0.0f;
+  m->lunge_timer = 0.0f;
+}
+
 Chunk *get_chunk(int cx, int cy) {
   cx = wrap(cx);
   cy = wrap(cy);
