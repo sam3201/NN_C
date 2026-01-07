@@ -222,6 +222,7 @@ static Recipe recipes[] = {
     {"Axe (Wood+Stone)", 3, 2, 0, 0, &has_axe},
     {"Pickaxe (Wood+Stone)", 3, 3, 0, 0, &has_pickaxe},
     {"Sword (Stone+Gold)", 0, 4, 2, 0, &has_sword},
+    {"Armor (Stone+Gold)", 0, 5, 2, 0, NULL},
 
 };
 static int recipe_count = sizeof(recipes) / sizeof(recipes[0]);
