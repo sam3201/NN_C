@@ -198,6 +198,13 @@ typedef struct Agent {
   int last_action;
 
   // ---- “mouse-to-move” style intent targeting ----
+  // ---- “mouse-to-move” style intent targeting ----
+  Vector2 intent_pos;     // WORLD pos target (optional)
+  int intent_has_pos;     // 0/1
+  IntentType intent_kind; // INTENT_*
+  int intent_chunk_x;
+  int intent_chunk_y;
+  float intent_refresh_cd;
 
   float attack_cd;
   float harvest_cd;
