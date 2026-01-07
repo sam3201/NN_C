@@ -208,7 +208,7 @@ static float player_hurt_timer = 0.0f;
 
 bool has_axe = false;
 bool has_pickaxe = false;
-static int has_sword = false;
+bool has_sword = false;
 
 static Projectile projectiles[MAX_PROJECTILES];
 
