@@ -31,9 +31,9 @@ typedef struct {
    is user-provided and env callbacks operate on it.
 */
 void selfplay_run(MuModel *model, void *env_state,
-                  selfplay_env_reset_fn env_reset, env_step_fn env_step,
-                  MCTSParams *mcts_params, SelfPlayParams *sp_params,
-                  ReplayBuffer *rb);
+                  selfplay_env_reset_fn env_reset,
+                  selfplay_env_step_fn env_step, MCTSParams *mcts_params,
+                  SelfPlayParams *sp_params, ReplayBuffer *rb);
 
 #ifdef __cplusplus
 }
