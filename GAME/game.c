@@ -2028,6 +2028,14 @@ void init_agents(void) {
     a->agent_start = i;
     a->reward_accumulator = 0.0f;
 
+    a->attack_cd = 0.0f;
+    a->harvest_cd = 0.0f;
+    a->fire_cd = 0.0f;
+
+    a->inv_food = 0;
+    a->inv_arrows = 0;
+    a->inv_shards = 0;
+
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
 
