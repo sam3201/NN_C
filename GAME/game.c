@@ -3336,7 +3336,6 @@ int main(void) {
     update_projectiles(dt);
     update_daynight(dt);
 
-    float dt = GetFrameTime();
     g_dt = dt;
     run_agent_jobs();
 
