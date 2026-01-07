@@ -2528,20 +2528,23 @@ int main(void) {
   init_agents();
   init_player();
 
-  for (int i = 0; i < WORKER_COUNT; i++) {
-    pthread_create(&workers[i], NULL, agent_worker, NULL);
-  }
-
+  // ✅ 1) init ALL chunk locks BEFORE starting worker threads
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
       pthread_rwlock_init(&world[x][y].lock, NULL);
       world[x][y].generated = false;
+      // (optional but safe) world[x][y].resource_count = 0;
+      // (optional) world[x][y].mob_spawn_timer = 0.0f;
     }
+  }
+
+  // ✅ 2) now start workers
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_create(&workers[i], NULL, agent_worker, NULL);
   }
 
   for (int i = 0; i < MAX_PROJECTILES; i++)
     projectiles[i].alive = false;
-
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
 
