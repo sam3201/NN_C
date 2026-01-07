@@ -1846,6 +1846,7 @@ static void update_visible_world(float dt) {
       }
     }
   }
+  pthread_rwlock_unlock(&c->lock);
 }
 
 static void draw_ui(void) {
