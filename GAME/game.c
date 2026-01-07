@@ -757,7 +757,7 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   MobType mt = pick_spawn_type(night, c->biome_type);
 
   // spacing: larger mobs -> larger min distance
-  float minD = 2.6f; // tweak: 2.2–3.5 feels good
+  float minD = 3.2; // tweak: 2.2–3.5 feels good
   Vector2 p = {0};
   int placed = 0;
 
