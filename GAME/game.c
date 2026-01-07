@@ -171,7 +171,7 @@ typedef struct {
   int shards, arrows;
 } Tribe;
 
-typedef struct {
+typedef struct Agent {
   Vector2 position;
   float health, stamina;
   int agent_id;
