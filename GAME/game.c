@@ -2662,6 +2662,7 @@ void update_agent(Agent *a) {
     agent_try_fire_in_chunk(a, tr, c, cx, cy, &reward);
     pthread_rwlock_unlock(&c->lock);
   } break;
+
   case ACTION_EAT:
     agent_try_eat(a, &reward);
     break;
