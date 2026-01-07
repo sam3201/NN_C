@@ -2143,6 +2143,7 @@ void update_player(void) {
   }
 }
 */
+
   // attack mobs (RMB)
   if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
     player_attack_cd = PLAYER_ATTACK_COOLDOWN;
