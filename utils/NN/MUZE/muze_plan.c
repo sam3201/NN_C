@@ -57,14 +57,16 @@ static void apply_temperature_to_probs(float *p, size_t n, float temperature) {
 static size_t sample_from_probs(const float *p, size_t n) {
   if (!p || n == 0)
     return 0;
+
   float r = (float)rand() / (float)RAND_MAX;
   float c = 0.0f;
-  for (size_t i = 0; i < n; i++) {
+
+  for (size_t i = 0; i + 1 < n; i++) { // stop at n-2
     c += p[i];
     if (r <= c)
       return i;
   }
-  return n - 1;
+  return n - 1; // last bucket gets remainder
 }
 
 static size_t rand_uniform_index(size_t n) {
