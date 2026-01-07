@@ -11,19 +11,8 @@ typedef struct {
   size_t step_i;
   size_t max_steps;
 
-  // copy of agent-like state (keep only what training needs)
-  float x, y;
-  float health, stamina;
-
-  // base info (for reward / navigation)
-  float base_x, base_y;
-  float base_r;
-  float base_integrity;
-
-  float nearest_res_d[4];
-  float nearest_res_dx[4];
-  float nearest_res_dy[4];
-  float nearest_res_alive[4];
+  // game state
+  ObsState obs_state;
 
   float nearest_mob_d, nearest_mob_dx, nearest_mob_dy, nearest_mob_type;
 } GameEnvState;
