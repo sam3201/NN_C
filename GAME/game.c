@@ -1616,20 +1616,22 @@ static void draw_player(Vector2 pp_screen) {
   float t = (float)GetTime();
 
   float handR = bodyR * 0.28f;
-  float handArm = bodyR * 0.88f; // distance from center
-  float wiggle = sinf(t * 7.0f) * (bodyR * 0.06f);
+  float handArm = bodyR * 0.90f; // distance from center
 
-  // hands placed around aim direction, slightly offset up/down
-  float spread = 0.55f; // angular separation between hands
-  float angL = aimAng - spread;
-  float angR = aimAng + spread;
+  // slight breathing wiggle
+  float wiggle = sinf(t * 7.0f) * (bodyR * 0.04f);
 
-  // orbit positions (around body) + slight wiggle
-  Vector2 hl = {pp_screen.x + cosf(angL) * (handArm + wiggle),
-                pp_screen.y + sinf(angL) * (handArm + wiggle)};
-  Vector2 hr = {pp_screen.x + cosf(angR) * (handArm - wiggle),
-                pp_screen.y + sinf(angR) * (handArm - wiggle)};
+  // Perpendicular offset so hands sit "around" the aim line
+  Vector2 aimDir = (Vector2){cosf(aimAng), sinf(aimAng)};
+  Vector2 perp = (Vector2){-aimDir.y, aimDir.x};
 
+  // LEFT HAND: EXACTLY on aim direction (this fixes your “left hand angle”)
+  Vector2 hl = Vector2Add(pp_screen, Vector2Scale(aimDir, handArm + wiggle));
+
+  // RIGHT HAND: slightly behind + offset sideways so you can see both hands
+  Vector2 hr = pp_screen;
+  hr = Vector2Add(hr, Vector2Scale(aimDir, (handArm - bodyR * 0.12f) - wiggle));
+  hr = Vector2Add(hr, Vector2Scale(perp, bodyR * 0.22f));
   // little “finger nub” pointing toward mouse from each hand
   float nubR = handR * 0.28f;
   Vector2 hl_nub = {hl.x + cosf(aimAng) * (handR * 0.65f),
