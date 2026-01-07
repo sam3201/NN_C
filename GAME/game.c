@@ -1892,6 +1892,7 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
     }
   }
 
+  // HOSTILE: chase / skeleton kite + shoot
   if (hostile) {
     speed = MOB_SPEED_HOSTILE;
 
@@ -1919,7 +1920,6 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
         }
       }
     }
-    // HOSTILE: chase / skeleton kite + shoot
     if (player_same_chunk) {
       bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
       if (aggro) {
