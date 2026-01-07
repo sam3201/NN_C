@@ -128,6 +128,7 @@ static void spawn_raid_wave(void);
 static void spawn_mob_at_world(MobType type, Vector2 world_pos);
 // --- agent update (was deleted) ---
 void update_agent(Agent *a);
+static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 
 /* =======================
    STRUCTS
