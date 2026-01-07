@@ -79,16 +79,6 @@ typedef enum {
 
 typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
-// ----- prototypes (so C doesn't need ordering) -----
-typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
-
-static inline float res_radius_world(ResourceType t);
-static inline float mob_radius_world(MobType t);
-static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
-                                    float radius);
-
-Chunk *get_chunk(int cx, int cy);
-
 /* =======================
    STRUCTS
 ======================= */
@@ -191,6 +181,16 @@ typedef struct {
   int wood, stone, gold, food;
   int *unlock_flag; // set to 1 on craft
 } Recipe;
+//
+// ----- prototypes (so C doesn't need ordering) -----
+typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
+
+static inline float res_radius_world(ResourceType t);
+static inline float mob_radius_world(MobType t);
+static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
+                                    float radius);
+
+Chunk *get_chunk(int cx, int cy);
 
 /* =======================
    GLOBAL STATE
