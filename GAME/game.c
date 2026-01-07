@@ -2245,46 +2245,6 @@ static void draw_player(Vector2 pp_screen) {
 }
 
 static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
-  float r = WORLD_SCALE * 0.22f * scale_size; // base agent size
-  float t = (float)GetTime();
-
-  Color outline = (Color){0, 0, 0, 140};
-  Color skin = (Color){235, 210, 190, 255};
-  Color cloth = tribeColor;
-
-  // tiny bob
-  float bob = sinf(t * 6.0f + (float)a->agent_id) * (r * 0.08f);
-  sp.y += bob;
-
-  // shadow
-  DrawEllipse((int)sp.x, (int)(sp.y + r * 1.15f), (int)(r * 1.5f),
-              (int)(r * 0.45f), (Color){0, 0, 0, 70});
-
-  // body (tunic)
-  DrawCircleV((Vector2){sp.x, sp.y + r * 0.40f}, r * 0.95f, cloth);
-  DrawCircleLines((int)sp.x, (int)(sp.y + r * 0.40f), r * 0.95f, outline);
-
-  // head
-  DrawCircleV((Vector2){sp.x, sp.y - r * 0.25f}, r * 0.85f, skin);
-  DrawCircleLines((int)sp.x, (int)(sp.y - r * 0.25f), r * 0.85f, outline);
-
-  // highlight
-  DrawCircleV((Vector2){sp.x - r * 0.25f, sp.y - r * 0.55f}, r * 0.20f,
-              (Color){255, 255, 255, 120});
-
-  // eyes
-  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
-              RAYWHITE);
-  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
-              RAYWHITE);
-  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
-  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
-
-  // headband (tribe marker)
-  DrawRectangle((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
-                (int)(r * 1.40f), (int)(r * 0.22f), tribeColor);
-  DrawRectangleLines((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
-                     (int)(r * 1.40f), (int)(r * 0.22f), outline);
 
   // tiny “tool” (points based on a subtle idle direction)
   // If you later store last action direction, plug it here.
