@@ -1758,6 +1758,20 @@ static void update_visible_world(float dt) {
       // mobs
       try_spawn_mobs_in_chunk(c, cx, cy, dt);
 
+      static void despawn_hostiles_if_day(Chunk * c) {
+        if (is_night_cached)
+          return;
+        for (int i = 0; i < MAX_MOBS; i++) {
+          Mob *m = &c->mobs[i];
+          if (m->health <= 0)
+            continue;
+          if (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON) {
+            // simple: remove them
+            m->health = 0;
+          }
+        }
+      }
+
       // mobs AI
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
