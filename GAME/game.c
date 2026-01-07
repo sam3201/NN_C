@@ -656,21 +656,6 @@ static void agent_gain_loot_for_mob_kill(Agent *a, Tribe *tr, MobType t) {
   }
 }
 
-typedef enum {
-  HIT_NONE = 0,
-  HIT_RESOURCE = 1,
-  HIT_MOB = 2,
-  HIT_BASE = 3
-} HitKind;
-
-typedef struct {
-  HitKind kind;
-  float t;         // distance along ray (world units)
-  int cx, cy;      // chunk coords of hit
-  int index;       // resource index OR mob index OR tribe index
-  Vector2 hit_pos; // world-space hit point
-} RayHit;
-
 static inline int ray_circle_intersect(Vector2 ro, Vector2 rd, Vector2 c,
                                        float r, float *out_t) {
   // rd must be normalized
