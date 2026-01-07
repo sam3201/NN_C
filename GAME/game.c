@@ -2498,6 +2498,7 @@ int main(void) {
 
     // UI + debug
     draw_ui();
+    draw_minimap();
     draw_crafting_ui();
     draw_hover_label();
     draw_daynight_overlay(); // AFTER world draw, before EndDrawing
