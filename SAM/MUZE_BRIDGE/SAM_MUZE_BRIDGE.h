@@ -1,22 +1,19 @@
-#ifndef SAM_MUZE_BRIDGE_H
-#define SAM_MUZE_BRIDGE_H
-
 #pragma once
-#include "../utils/NN/MUZE/muze_cortex.h"
-#include "SAM.h"
+#include "../SAM/SAM.h"
+#include "../utils/NN/MUZE/muze_cortex.h" // or wherever MuCortex is declared
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Creates a MUZE cortex wrapper around SAM. Caller owns returned MuCortex*. */
+// Create a MuCortex wrapper around a SAM brain.
+// Returned MuCortex owns no SAM memory unless you decide it does.
 MuCortex *SAM_as_MUZE(SAM_t *sam);
 
-/* Frees cortex created by SAM_as_MUZE(). */
-void SAM_MUZE_destroy(MuCortex *cortex);
+// Free only the cortex wrapper (not the SAM brain), unless you choose
+// otherwise.
+void SAM_as_MUZE_free(MuCortex *cortex);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif // SAM_MUZE_BRIDGE_H
