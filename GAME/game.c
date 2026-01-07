@@ -86,7 +86,6 @@ static inline float res_radius_world(ResourceType t);
 static inline float mob_radius_world(MobType t);
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius);
-
 Chunk *get_chunk(int cx, int cy);
 
 /* =======================
