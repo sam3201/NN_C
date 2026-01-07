@@ -2714,18 +2714,6 @@ static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
   return best;
 }
 
-static void agent_move_toward(Agent *a, Vector2 targetW, float stop_dist) {
-  Vector2 d = Vector2Subtract(targetW, a->position);
-  float len = Vector2Length(d);
-  if (len <= stop_dist)
-    return;
-
-  Vector2 dir = (len > 1e-6f) ? Vector2Scale(d, 1.0f / len) : (Vector2){0, 0};
-
-  // reuse your collision-aware move
-  agent_try_move(a, dir);
-}
-
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   // timers
   if (m->ai_timer > 0)
