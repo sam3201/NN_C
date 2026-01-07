@@ -2403,6 +2403,13 @@ void init_agents(void) {
     a->agent_start = i;
     a->reward_accumulator = 0.0f;
 
+    a->intent_pos = (Vector2){0, 0};
+    a->intent_has_pos = 0;
+    a->intent_kind = INTENT_NONE;
+    a->intent_chunk_x = 0;
+    a->intent_chunk_y = 0;
+    a->intent_refresh_cd = 0.0f;
+
     a->attack_cd = 0.0f;
     a->harvest_cd = 0.0f;
     a->fire_cd = 0.0f;
