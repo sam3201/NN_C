@@ -2217,7 +2217,7 @@ void update_player(void) {
 
   // regen
   if (player.stamina < 100)
-    player.stamina = fminf(100, player.stamina + 0.03f);
+    player.stamina = fminf(100, player.stamina + STAMINA_REGEN_RATE);
 }
 
 static void despawn_hostiles_if_day(Chunk *c) {
