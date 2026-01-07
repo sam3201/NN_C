@@ -138,7 +138,7 @@ typedef struct {
   bool generated;
   float mob_spawn_timer;
 
-  pthread_rwlock_t rwlock;
+  pthread_rwlock_t lcck;
 } Chunk;
 
 typedef struct {
