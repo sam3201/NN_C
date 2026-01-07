@@ -87,6 +87,12 @@ static inline float mob_radius_world(MobType t);
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius);
 Chunk *get_chunk(int cx, int cy);
+// raids / day-night mob maintenance
+static void despawn_hostiles_if_day(Chunk *c);
+static void spawn_raid_wave(void);
+
+// you already define this later, but spawn_raid_wave will use it:
+static void spawn_mob_at_world(MobType type, Vector2 world_pos);
 
 /* =======================
    STRUCTS
