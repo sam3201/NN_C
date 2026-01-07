@@ -65,7 +65,14 @@ typedef enum {
   RES_NONE
 } ResourceType;
 
-typedef enum { MOB_PIG = 0, MOB_SHEEP, MOB_SKELETON, MOB_ZOMBIE } MobType;
+typedef enum {
+  MOB_PIG = 0,
+  MOB_SHEEP,
+  MOB_SKELETON,
+  MOB_ZOMBIE,
+  MOB_NONE,
+  MOB_COUNT
+} MobType;
 
 typedef enum {
   INTENT_NONE = 0,
