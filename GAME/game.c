@@ -2524,7 +2524,7 @@ void update_player(void) {
 
   // RMB = harvest/mine resources (this spends stamina inside
   // player_try_harvest...)
-  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
     float before = player.stamina;
 
     pthread_rwlock_wrlock(&c->lock);
