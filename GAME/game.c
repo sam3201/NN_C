@@ -2833,43 +2833,6 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
       }
     }
   }
-
-  // HOSTILE: chase / skeleton kite + shoot
-  if (player_same_chunk) {
-    bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
-    if (aggro) {
-      speed = MOB_SPEED_HOSTILE;
-
-      if (m->type == MOB_ZOMBIE) {
-        // chase
-        m->vel = dirP;
-
-        // melee attack
-        if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
-          m->attack_cd = 0.8f;
-          m->lunge_timer = 0.18f;
-          player.health -= 6.0f;
-          player_hurt_timer = 0.18f;
-        }
-      } else if (m->type == MOB_SKELETON) {
-        // keep some distance
-        float desired = 6.0f;
-        if (dP < desired - 0.8f)
-          m->vel = Vector2Scale(dirP, -1.0f); // back up
-        else if (dP > desired + 1.2f)
-          m->vel = dirP; // approach
-        else
-          m->vel = Vector2Scale(m->vel, 0.5f); // drift
-
-        // shoot
-        if (dP < 12.0f && m->attack_cd <= 0.0f) {
-          m->attack_cd = 1.1f;
-          m->lunge_timer = 0.12f;
-          spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
-        }
-      }
-    }
-  }
 }
 
 static void draw_crafting_ui(void) {
