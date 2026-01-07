@@ -359,6 +359,142 @@ static inline void obs_free(ObsBuffer *o) {
   o->data = NULL;
   o->size = o->capacity = 0;
 }
+
+#define AGENT_SCAN_CHUNK_RADIUS 2 // can see 2 chunks out (5x5)
+#define AGENT_MAX_SCAN_DIST 24.0f
+
+typedef enum {
+  MACRO_NONE = 0,
+  MACRO_RETURN_TO_BASE,
+  MACRO_PATROL,
+  MACRO_GUARD_BASE,
+  MACRO_FLEE,
+  MACRO_HEAL_AT_BASE,
+} MacroAction;
+
+static int agent_find_nearest_hostile_mob(Agent *a, int *out_cx, int *out_cy,
+                                          float *out_dist, Vector2 *out_posW) {
+  int acx = (int)(a->position.x / CHUNK_SIZE);
+  int acy = (int)(a->position.y / CHUNK_SIZE);
+
+  float bestD = 1e9f;
+  int bestCX = acx, bestCY = acy;
+  Vector2 bestW = (Vector2){0, 0};
+  int found = 0;
+
+  for (int dx = -AGENT_SCAN_CHUNK_RADIUS; dx <= AGENT_SCAN_CHUNK_RADIUS; dx++) {
+    for (int dy = -AGENT_SCAN_CHUNK_RADIUS; dy <= AGENT_SCAN_CHUNK_RADIUS;
+         dy++) {
+      int cx = acx + dx;
+      int cy = acy + dy;
+      Chunk *c = get_chunk(cx, cy);
+
+      pthread_rwlock_rdlock(&c->lock);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        if (!mob_is_hostile(m->type))
+          continue;
+
+        Vector2 mw = Vector2Add(origin, m->position);
+        float d = Vector2Distance(a->position, mw);
+        if (d < bestD && d <= AGENT_MAX_SCAN_DIST) {
+          bestD = d;
+          bestCX = cx;
+          bestCY = cy;
+          bestW = mw;
+          found = 1;
+        }
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  if (!found)
+    return 0;
+  if (out_cx)
+    *out_cx = bestCX;
+  if (out_cy)
+    *out_cy = bestCY;
+  if (out_dist)
+    *out_dist = bestD;
+  if (out_posW)
+    *out_posW = bestW;
+  return 1;
+}
+
+static int agent_find_nearest_resource_any(Agent *a, int *out_cx, int *out_cy,
+                                           float *out_dist, Vector2 *out_posW) {
+  int acx = (int)(a->position.x / CHUNK_SIZE);
+  int acy = (int)(a->position.y / CHUNK_SIZE);
+
+  float bestD = 1e9f;
+  int bestCX = acx, bestCY = acy;
+  Vector2 bestW = (Vector2){0, 0};
+  int found = 0;
+
+  for (int dx = -AGENT_SCAN_CHUNK_RADIUS; dx <= AGENT_SCAN_CHUNK_RADIUS; dx++) {
+    for (int dy = -AGENT_SCAN_CHUNK_RADIUS; dy <= AGENT_SCAN_CHUNK_RADIUS;
+         dy++) {
+      int cx = acx + dx;
+      int cy = acy + dy;
+      Chunk *c = get_chunk(cx, cy);
+
+      pthread_rwlock_rdlock(&c->lock);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+
+        Vector2 rw = Vector2Add(origin, r->position);
+        float d = Vector2Distance(a->position, rw);
+        if (d < bestD && d <= AGENT_MAX_SCAN_DIST) {
+          bestD = d;
+          bestCX = cx;
+          bestCY = cy;
+          bestW = rw;
+          found = 1;
+        }
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  if (!found)
+    return 0;
+  if (out_cx)
+    *out_cx = bestCX;
+  if (out_cy)
+    *out_cy = bestCY;
+  if (out_dist)
+    *out_dist = bestD;
+  if (out_posW)
+    *out_posW = bestW;
+  return 1;
+}
+
+static Vector2 agent_patrol_dir(Vector2 agentPos, Vector2 basePos) {
+  Vector2 toB = Vector2Subtract(basePos, agentPos);
+  float d = Vector2Length(toB);
+  if (d < 1e-3f)
+    d = 1e-3f;
+  Vector2 dir = Vector2Scale(toB, 1.0f / d);
+  // tangent direction around base
+  Vector2 tan = (Vector2){-dir.y, dir.x};
+  // slight bias to keep a ring instead of drifting away
+  Vector2 bias = Vector2Scale(dir, -0.25f);
+  return Vector2Add(tan, bias);
+}
+
 /* =======================
    HELPERS
 ======================= */
