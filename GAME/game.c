@@ -1678,11 +1678,11 @@ void update_player(void) {
 
   if (isKeyDown(KEY_TAB)) {
     crafting_open = !crafting_open;
-    if (crafting_open) {
-      for (int i = 0; i < recipe_count && i < 9; i++) {
-        if (IsKeyPressed((KeyboardKey)(KEY_ONE + i))) {
-          craft(&recipes[i]);
-        }
+  }
+  if (crafting_open) {
+    for (int i = 0; i < recipe_count && i < 9; i++) {
+      if (IsKeyPressed((KeyboardKey)(KEY_ONE + i))) {
+        craft(&recipes[i]);
       }
     }
   }
