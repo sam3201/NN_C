@@ -8,7 +8,7 @@ typedef struct {
 
 typedef struct {
   // episode counters
-  int step_i;
+  size_t step_i;
   size_t max_steps;
 
   // copy of agent-like state (keep only what training needs)
