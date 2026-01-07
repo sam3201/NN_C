@@ -180,7 +180,7 @@ typedef struct {
 /* =======================
    GLOBAL STATE
 ======================= */
-#define WORKER_COUNT 4
+#define WORKER_COUNT 8
 
 static pthread_t workers[WORKER_COUNT];
 static pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
