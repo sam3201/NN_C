@@ -876,7 +876,7 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
       break;
     }
 
-    // *reward += 0.03f;
+    *reward += 0.03f;
   }
 
   pthread_rwlock_unlock(&c->lock);
