@@ -1922,6 +1922,12 @@ static inline Color mul_color(Color a, Color b, float t) {
   return lerp_color(a, m, t);
 }
 
+static inline void agent_set_facing_from(Vector2 v, Agent *a) {
+  float len = Vector2Length(v);
+  if (len > 1e-3f)
+    a->facing = Vector2Scale(v, 1.0f / len);
+}
+
 void draw_mobs(void) {
 
   int pcx = (int)(player.position.x / CHUNK_SIZE);
