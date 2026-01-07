@@ -2065,6 +2065,20 @@ void update_player(void) {
     }
   }
 
+  // shoot arrow (F) if you have ammo
+  if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
+    Vector2 mouse = GetMousePosition();
+    Vector2 pp = world_to_screen(player.position);
+    Vector2 aim = Vector2Subtract(mouse, pp);
+
+    // convert screen aim dir to world dir approximately
+    Vector2 dir = Vector2Normalize(aim);
+    inv_arrows--;
+
+    spawn_projectile(player.position, dir, 14.0f, 1.8f,
+                     12 + (has_sword ? 4 : 0));
+  }
+
   if (IsKeyDown(KEY_EQUAL))
     target_world_scale += 60.0f * GetFrameTime();
   if (IsKeyDown(KEY_MINUS))
