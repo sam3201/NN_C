@@ -1843,8 +1843,8 @@ static void update_visible_world(float dt) {
         if (m->health <= 0)
           continue;
         update_mob_ai(m, chunk_origin, dt);
-        pthread_rwlock_unlock(&c->lock);
       }
+      pthread_rwlock_unlock(&c->lock);
     }
   }
 }
