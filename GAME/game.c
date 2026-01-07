@@ -67,7 +67,11 @@ typedef enum {
 
 typedef enum { MOB_PIG = 0, MOB_SHEEP, MOB_SKELETON, MOB_ZOMBIE } MobType;
 
-enum { INTENT_NONE = 0, INTENT_ATTACK = 1, INTENT_HARVEST = 2 };
+typedef enum {
+  INTENT_NONE = 0,
+  INTENT_ATTACK = 1,
+  INTENT_HARVEST = 2
+} IntentType;
 
 typedef enum {
   ACTION_UP = 0,
