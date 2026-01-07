@@ -427,6 +427,8 @@ Chunk *get_chunk(int cx, int cy) {
   c->biome_type = (abs(cx) + abs(cy)) % 3;
 
   c->mob_spawn_timer = randf(1.0f, 3.0f);
+  for (int i = 0; i < MAX_MOBS; i++)
+    c->mobs[i].health = 0;
 
   for (int i = 0; i < CHUNK_SIZE; i++)
     for (int j = 0; j < CHUNK_SIZE; j++)
