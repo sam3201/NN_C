@@ -441,7 +441,6 @@ Chunk *get_chunk(int cx, int cy) {
     c->resources[i].break_flash = 0.0f;
   }
 
-  c->mob_spawn_timer = randf(1.0f, 3.0f);
   for (int i = 0; i < MAX_MOBS; i++) {
     c->mobs[i].type = rand() % 4;
     c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
