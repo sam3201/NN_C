@@ -873,8 +873,8 @@ static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
   if (Vector2Length(rd) < 1e-3f)
     rd = (Vector2){1, 0};
 
-  float range = agent_attack_range();
-  int dmg = agent_attack_damage();
+  float range = agent_attack_range() + (tr->has_sword ? 0.45f : 0.0f);
+  int dmg = agent_attack_damage() + (tr->has_sword ? 10 : 0);
 
   RayHit hit = raycast_world_objects(ro, rd, range);
 
