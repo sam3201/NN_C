@@ -710,7 +710,7 @@ void draw_mobs(void) {
     return out;
   }
 
-  auto Color mul_color(Color a, Color b, float t) {
+  Color mul_color(Color a, Color b, float t) {
     // multiply blend toward (a*b) by amount t
     t = clamp01(t);
     Color m;
