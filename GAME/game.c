@@ -2843,8 +2843,6 @@ void update_agent(Agent *a) {
 
   a->reward_accumulator += reward;
   a->age++;
-
-  a->last_action = action;
 }
 
 static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
