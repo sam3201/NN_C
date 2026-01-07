@@ -785,8 +785,8 @@ static int agent_try_harvest_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
   return 1;
 }
 
-static void agent_try_fire_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
-                                    int cy, float *reward) {
+static void agent_try_fire_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
+                                float *reward) {
   (void)tr;
 
   if (a->fire_cd > 0.0f)
