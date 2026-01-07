@@ -2120,43 +2120,55 @@ void init_player(void) {
 void update_player(void) {
   float dt = GetFrameTime();
 
-  if (player_harvest_cd > 0)
+  // --- cooldown timers ---
+  if (player_harvest_cd > 0.0f)
     player_harvest_cd -= dt;
-  if (player_attack_cd > 0)
+  if (player_attack_cd > 0.0f)
     player_attack_cd -= dt;
-  if (player_hurt_timer > 0)
+  if (player_hurt_timer > 0.0f)
     player_hurt_timer -= dt;
 
-  float speed = 0.6f;
+  // --- movement (time-based feels better) ---
+  float speed = 0.6f; // world units per frame-ish
+  // If you want true time-based movement, use: float move = speed * (dt
+  // * 60.0f);
+  float move = speed;
 
   if (IsKeyDown(KEY_W))
-    player.position.y -= speed;
+    player.position.y -= move;
   if (IsKeyDown(KEY_S))
-    player.position.y += speed;
+    player.position.y += move;
   if (IsKeyDown(KEY_A))
-    player.position.x -= speed;
+    player.position.x -= move;
   if (IsKeyDown(KEY_D))
-    player.position.x += speed;
+    player.position.x += move;
 
+  // --- crafting toggle ---
   if (IsKeyPressed(KEY_TAB)) {
     crafting_open = !crafting_open;
   }
 
+  // --- crafting input (1..9) only when crafting menu is open ---
   if (crafting_open) {
     for (int i = 0; i < recipe_count && i < 9; i++) {
-      if (IsKeyPressed((KeyboardKey)(KEY_ONE + i))) {
+      // top-row number keys
+      bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
+
+      // keypad number keys (optional but nice)
+      pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
+
+      if (pressed) {
         craft(&recipes[i]);
       }
     }
   }
 
-  // shoot arrow (F) if you have ammo
+  // --- shoot arrow (F) if you have ammo ---
   if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
     Vector2 mouse = GetMousePosition();
     Vector2 pp = world_to_screen(player.position);
     Vector2 aim = Vector2Subtract(mouse, pp);
 
-    // convert screen aim dir to world dir approximately
     Vector2 dir = Vector2Normalize(aim);
     inv_arrows--;
 
@@ -2164,50 +2176,53 @@ void update_player(void) {
                      12 + (has_sword ? 4 : 0));
   }
 
+  // --- zoom controls ---
   if (IsKeyDown(KEY_EQUAL))
-    target_world_scale += 60.0f * GetFrameTime();
+    target_world_scale += 60.0f * dt;
   if (IsKeyDown(KEY_MINUS))
-    target_world_scale -= 60.0f * GetFrameTime();
+    target_world_scale -= 60.0f * dt;
   target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
 
+  // --- current chunk ---
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
   Chunk *c = get_chunk(cx, cy);
 
-  // --- Interactions (LMB attack, RMB harvest/mine) ---
+  // --- Interactions ---
+  // IMPORTANT: only regen stamina when NOT spending it this frame
+  bool spent_stamina_this_frame = false;
+
+  // LMB = attack mobs
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
     pthread_rwlock_wrlock(&c->lock);
     player_try_attack_mob_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
+    // (attacks currently don't cost stamina in your code)
   }
 
+  // RMB = harvest/mine resources (this spends stamina inside
+  // player_try_harvest...)
   if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
+    float before = player.stamina;
+
     pthread_rwlock_wrlock(&c->lock);
     player_try_harvest_resource_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
-  }
 
-  // stamina drain/regen should be time-based
-  player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
-
-  if (player.stamina < 100.0f)
-    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
-
-  player.health = fmaxf(0.0f, player.health);
-}
-
-static void despawn_hostiles_if_day(Chunk *c) {
-  if (is_night_cached)
-    return;
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-    if (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON) {
-      // simple: remove them
-      m->health = 0;
+    // if harvest actually happened, stamina decreased
+    if (player.stamina < before - 0.0001f) {
+      spent_stamina_this_frame = true;
     }
   }
+
+  // --- stamina regen (time-based, only when not spending this frame) ---
+  if (!spent_stamina_this_frame && player.stamina < 100.0f) {
+    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+  }
+
+  // clamp health
+  if (player.health < 0.0f)
+    player.health = 0.0f;
 }
 
 static void update_visible_world(float dt) {
