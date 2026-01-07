@@ -762,6 +762,156 @@ static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
   return best;
 }
 
+static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
+  (void)tr;
+
+  if (a->attack_cd > 0.0f)
+    return 0;
+
+  Vector2 ro = a->position;
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  float range = agent_attack_range();
+  int dmg = agent_attack_damage();
+
+  RayHit hit = raycast_world_objects(ro, rd, range);
+  if (hit.kind != HIT_MOB)
+    return 0;
+
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
+
+  Mob *m = &c->mobs[hit.index];
+  if (m->health > 0) {
+    a->attack_cd = agent_attack_cooldown();
+
+    m->health -= dmg;
+    m->hurt_timer = 0.18f;
+    m->aggro_timer = 3.0f;
+    m->lunge_timer = 0.10f;
+
+    // optional: keep tiny sparse reward, or delete these completely
+    // *reward += 0.01f;
+
+    if (m->health <= 0) {
+      Vector2 mw = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                             hit.cy * CHUNK_SIZE + m->position.y};
+      on_mob_killed(m->type, mw);
+      m->health = 0;
+      agent_gain_loot_for_mob_kill(a, tr, m->type);
+      // *reward += 0.10f;
+    }
+
+    pthread_rwlock_unlock(&c->lock);
+    return 1;
+  }
+
+  pthread_rwlock_unlock(&c->lock);
+  return 0;
+}
+
+static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
+  if (a->harvest_cd > 0.0f)
+    return 0;
+
+  Vector2 ro = a->position;
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  float range = HARVEST_DISTANCE;
+
+  RayHit hit = raycast_world_objects(ro, rd, range);
+  if (hit.kind != HIT_RESOURCE)
+    return 0;
+
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
+
+  Resource *r = &c->resources[hit.index];
+  if (r->health <= 0) {
+    pthread_rwlock_unlock(&c->lock);
+    return 0;
+  }
+
+  float cost = agent_harvest_cost(r->type);
+  if (a->stamina < cost) {
+    pthread_rwlock_unlock(&c->lock);
+    return 0;
+  }
+
+  a->harvest_cd = agent_harvest_cooldown();
+  a->stamina -= cost;
+
+  int dmg = agent_harvest_damage(r->type);
+  r->health -= dmg;
+  r->hit_timer = 0.14f;
+  r->break_flash = 0.06f;
+
+  // optional: remove reward shaping entirely if you want
+  // *reward += 0.005f;
+
+  if (r->health <= 0) {
+    r->health = 0;
+
+    // drop to tribe + agent inventory (same as your previous logic)
+    switch (r->type) {
+    case RES_TREE:
+      tr->wood += 1;
+      break;
+    case RES_ROCK:
+      tr->stone += 1;
+      break;
+    case RES_GOLD:
+      tr->gold += 1;
+      break;
+    case RES_FOOD:
+      a->inv_food += 1;
+      tr->food += 1;
+      break;
+    default:
+      break;
+    }
+
+    // *reward += 0.03f;
+  }
+
+  pthread_rwlock_unlock(&c->lock);
+  return 1;
+}
+
+static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
+  (void)tr;
+
+  if (a->fire_cd > 0.0f)
+    return;
+  if (a->inv_arrows <= 0)
+    return;
+
+  Vector2 ro = a->position;
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  const float maxRange = 14.0f;
+
+  // If you want true “shoot blind”, skip raycast and just spawn projectile
+  // forward. But to avoid wasting arrows into nothingness, keep raycast ONLY to
+  // decide if it hits.
+  RayHit hit = raycast_world_objects(ro, rd, maxRange);
+
+  a->inv_arrows--;
+  a->fire_cd = agent_fire_cooldown();
+
+  // Always fire straight ahead (no target locking)
+  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10);
+
+  // optional reward shaping — remove if you want:
+  // if (hit.kind == HIT_MOB) *reward += 0.01f;
+}
+
 static void agent_try_eat(Agent *a, float *reward) {
   if (a->inv_food <= 0)
     return;
