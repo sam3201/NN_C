@@ -1681,7 +1681,7 @@ void update_player(void) {
   if (IsKeyDown(KEY_MINUS))
     WORLD_SCALE -= 1.0f;
 
-  if (isKeyDOwn(KEY_TAB) {
+  if (isKeyDown(KEY_TAB) {
       }
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
