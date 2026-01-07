@@ -897,7 +897,7 @@ Chunk *get_chunk(int cx, int cy) {
   cy = wrap(cy);
 
   Chunk *c = &world[cx][cy];
-  if (c.generated)
+  if (c->generated)
     return c;
 
   c->generated = true;
