@@ -395,6 +395,55 @@ static void draw_daynight_overlay(void) {
   DrawText(TextFormat("Time: %0.2f", time_of_day), 20, 235, 18, RAYWHITE);
 }
 
+static inline float player_attack_range(void) {
+  // sword gives a bit more reach
+  return ATTACK_DISTANCE + (has_sword ? 0.55f : 0.0f);
+}
+
+static inline int player_attack_damage(void) {
+  return PLAYER_ATTACK_DAMAGE + (has_sword ? 10 : 0);
+}
+
+static inline float player_attack_cooldown(void) {
+  return PLAYER_ATTACK_COOLDOWN * (has_sword ? 0.88f : 1.0f);
+}
+
+static inline int player_resource_damage(ResourceType t) {
+  // tree prefers axe
+  if (t == RES_TREE)
+    return PLAYER_HARVEST_DAMAGE + (has_axe ? 18 : 0);
+
+  // rocks/gold prefer pickaxe
+  if (t == RES_ROCK || t == RES_GOLD)
+    return PLAYER_MINE_DAMAGE + (has_pickaxe ? 16 : 0);
+
+  // food is “harvestable”
+  if (t == RES_FOOD)
+    return PLAYER_HARVEST_DAMAGE;
+
+  return PLAYER_HARVEST_DAMAGE;
+}
+
+static inline float player_resource_cooldown(ResourceType t) {
+  if (t == RES_TREE)
+    return PLAYER_HARVEST_COOLDOWN * (has_axe ? 0.75f : 1.0f);
+  if (t == RES_ROCK || t == RES_GOLD)
+    return PLAYER_MINE_COOLDOWN * (has_pickaxe ? 0.78f : 1.0f);
+  if (t == RES_FOOD)
+    return PLAYER_HARVEST_COOLDOWN;
+  return PLAYER_HARVEST_COOLDOWN;
+}
+
+static inline float player_resource_stamina_cost(ResourceType t) {
+  if (t == RES_ROCK || t == RES_GOLD)
+    return PLAYER_MINE_STAMINA_COST * (has_pickaxe ? 0.80f : 1.0f);
+  if (t == RES_TREE)
+    return 2.0f * (has_axe ? 0.85f : 1.0f);
+  if (t == RES_FOOD)
+    return 1.5f;
+  return 2.0f;
+}
+
 static void give_drop(ResourceType t) {
   switch (t) {
   case RES_TREE:
