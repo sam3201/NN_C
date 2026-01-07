@@ -539,7 +539,7 @@ static inline int agent_in_base(const Agent *a, const Tribe *tr) {
   return (d < tr->base.radius + 0.35f);
 }
 
-static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
+static void agent_try_craft(Agent *a, float *reward) {
   if (!agent_in_base(a, tr)) {
     // discourage crafting outside base
     *reward += -0.006f;
