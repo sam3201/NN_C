@@ -2319,6 +2319,19 @@ static void draw_ui(void) {
            (Color){80, 160, 255, 220});
   DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
            (Color){255, 140, 80, 220});
+
+  DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
+           130, 16, RAYWHITE);
+
+  // base integrity
+  int y0 = 150;
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float v = clamp01(tribes[t].integrity / 100.0f);
+    DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16, tribes[t].color);
+    DrawRectangle(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 140});
+    DrawRectangle(90, y0 + 4 + t * 22, (int)(140 * v), 10, tribes[t].color);
+    DrawRectangleLines(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
+  }
 }
 
 static void draw_hover_label(void) {
