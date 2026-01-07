@@ -2413,6 +2413,7 @@ void init_agents(void) {
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
     a->agent_id = i;
+    a->facing = (Vector2){1, 0};
     a->alive = true;
     a->health = a->stamina = 100;
     a->flash_timer = 0;
