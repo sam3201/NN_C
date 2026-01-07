@@ -1676,13 +1676,13 @@ void update_player(void) {
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
 
-  if (isKeyDown(KEY_TAB)) {
-  }
-
   if (IsKeyDown(KEY_EQUAL))
     WORLD_SCALE += 1.0f;
   if (IsKeyDown(KEY_MINUS))
     WORLD_SCALE -= 1.0f;
+
+  if (isKeyDOwn(KEY_TAB) {
+      }
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
