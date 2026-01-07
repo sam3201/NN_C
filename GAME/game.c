@@ -70,7 +70,6 @@ typedef enum {
   MOB_SHEEP,
   MOB_SKELETON,
   MOB_ZOMBIE,
-  MOB_NONE,
   MOB_COUNT
 } MobType;
 
