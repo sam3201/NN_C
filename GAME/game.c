@@ -24,7 +24,7 @@
 
 #define BASE_RADIUS 8
 
-#define HARVEST_DISTANCE 1.0f
+#define HARVEST_DISTANCE 5.0f
 #define HARVEST_AMOUNT 1
 #define ATTACK_DISTANCE 1.0f
 #define ATTACK_DAMAGE 1
