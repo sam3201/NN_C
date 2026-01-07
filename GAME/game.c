@@ -1489,6 +1489,7 @@ void init_tribes(void) {
         (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
     tr->base.radius = BASE_RADIUS;
+    tr->integrity = tr->base.radius;
   }
 }
 
