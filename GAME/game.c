@@ -1892,6 +1892,34 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
     }
   }
 
+  if (hostile) {
+    speed = MOB_SPEED_HOSTILE;
+
+    bool aggroP = player_same_chunk &&
+                  ((dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f));
+
+    if (aggroP) {
+      // your existing zombie/skeleton vs player logic (keep as-is)
+      // ...
+    } else if (is_night_cached) {
+      // raid behavior: march toward nearest base even if player not around
+      m->vel = dirB;
+
+      // if inside base -> damage it
+      for (int t = 0; t < TRIBE_COUNT; t++) {
+        Tribe *tr = &tribes[t];
+        float db = Vector2Distance(mw, tr->base.position);
+        if (db < tr->base.radius + 0.8f) {
+          if (m->attack_cd <= 0.0f) {
+            m->attack_cd = 0.85f;
+            m->lunge_timer = 0.12f;
+            tr->integrity = fmaxf(0.0f, tr->integrity - 5.0f);
+            cam_shake = fmaxf(cam_shake, 0.12f);
+          }
+        }
+      }
+    }
+  }
   // HOSTILE: chase / skeleton kite + shoot
   if (hostile && player_same_chunk) {
     bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
