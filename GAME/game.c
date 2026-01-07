@@ -2245,7 +2245,7 @@ static void draw_player(Vector2 pp_screen) {
 }
 
 static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
-  float r = WORLD_SCALE * 0.22f * scale_size; // base agent size
+  float r = WORLD_SCALE * 0.60 * scale_size; // base agent size
   float t = (float)GetTime();
 
   Color outline = (Color){0, 0, 0, 140};
