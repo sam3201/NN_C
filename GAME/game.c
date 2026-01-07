@@ -1063,8 +1063,14 @@ static inline float mob_radius_world(MobType t) {
 // ---- Spacing test: is "worldPos" too close to ANY resource/mob nearby? ----
 // IMPORTANT: we do NOT call get_chunk() here (avoids recursive generation).
 // We only check chunks that are already generated.
+// ---- Spacing test: is "worldPos" too close to ANY resource/mob nearby? ----
+// IMPORTANT:
+// - Does NOT call get_chunk() (no recursive generation)
+// - Safely reads generated chunks by taking a read lock
+// - If the caller already holds the lock for (self_cx,self_cy), pass those so
+//   we DON'T try to lock it again (avoids deadlock).
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
-                                    float radius) {
+                                    float radius, int self_cx, int self_cy) {
   const float padding = 0.25f; // extra spacing so things don't touch
 
   for (int dx = -1; dx <= 1; dx++) {
@@ -1076,6 +1082,19 @@ static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
       Chunk *c = &world[ncx][ncy];
       if (!c->generated)
         continue;
+
+      // Avoid deadlock: if caller already holds this chunk's lock, don't lock
+      // it again.
+      bool is_self = (ncx == wrap(self_cx) && ncy == wrap(self_cy));
+
+      if (!is_self) {
+        pthread_rwlock_rdlock(&c->lock);
+        // chunk could have been toggled while we waited (rare, but safe)
+        if (!c->generated) {
+          pthread_rwlock_unlock(&c->lock);
+          continue;
+        }
+      }
 
       Vector2 origin =
           (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
@@ -1089,8 +1108,11 @@ static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
         Vector2 r_world = Vector2Add(origin, r->position);
         float rr = res_radius_world(r->type);
 
-        if (Vector2Distance(worldPos, r_world) < (radius + rr + padding))
+        if (Vector2Distance(worldPos, r_world) < (radius + rr + padding)) {
+          if (!is_self)
+            pthread_rwlock_unlock(&c->lock);
           return 1;
+        }
       }
 
       // check mobs
@@ -1102,8 +1124,15 @@ static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
         Vector2 m_world = Vector2Add(origin, m->position);
         float mr = mob_radius_world(m->type);
 
-        if (Vector2Distance(worldPos, m_world) < (radius + mr + padding))
+        if (Vector2Distance(worldPos, m_world) < (radius + mr + padding)) {
+          if (!is_self)
+            pthread_rwlock_unlock(&c->lock);
           return 1;
+        }
+      }
+
+      if (!is_self) {
+        pthread_rwlock_unlock(&c->lock);
       }
     }
   }
