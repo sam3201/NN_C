@@ -847,6 +847,82 @@ static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
   return 0;
 }
 
+static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
+  if (a->harvest_cd > 0.0f) {
+    *reward += R_HARVEST_WASTE * 0.25f;
+    return 0;
+  }
+
+  Vector2 ro = a->position;
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  float range = HARVEST_DISTANCE;
+
+  RayHit hit = raycast_world_objects(ro, rd, range);
+  if (hit.kind != HIT_RESOURCE) {
+    // wasted harvest swing
+    a->harvest_cd = agent_harvest_cooldown() * 0.35f; // small whiff cooldown
+    *reward += R_HARVEST_WASTE;
+    return 0;
+  }
+
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
+
+  Resource *r = &c->resources[hit.index];
+  if (r->health <= 0) {
+    pthread_rwlock_unlock(&c->lock);
+    *reward += R_HARVEST_WASTE * 0.5f;
+    return 0;
+  }
+
+  float cost = agent_harvest_cost(r->type);
+  if (a->stamina < cost) {
+    pthread_rwlock_unlock(&c->lock);
+    *reward += R_HARVEST_NO_STAMINA;
+    return 0;
+  }
+
+  a->harvest_cd = agent_harvest_cooldown();
+  a->stamina -= cost;
+
+  int dmg = agent_harvest_damage(r->type);
+  r->health -= dmg;
+  r->hit_timer = 0.14f;
+  r->break_flash = 0.06f;
+
+  *reward += R_HARVEST_HIT;
+
+  if (r->health <= 0) {
+    r->health = 0;
+
+    switch (r->type) {
+    case RES_TREE:
+      tr->wood += 1;
+      break;
+    case RES_ROCK:
+      tr->stone += 1;
+      break;
+    case RES_GOLD:
+      tr->gold += 1;
+      break;
+    case RES_FOOD:
+      a->inv_food += 1;
+      tr->food += 1;
+      break;
+    default:
+      break;
+    }
+
+    *reward += R_HARVEST_BREAK;
+  }
+
+  pthread_rwlock_unlock(&c->lock);
+  return 1;
+}
+
 static void agent_try_eat(Agent *a, float *reward) {
   if (a->inv_food <= 0)
     return;
