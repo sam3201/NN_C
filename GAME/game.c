@@ -174,29 +174,6 @@ typedef struct {
   int *unlock_flag; // set to 1 on craft
 } Recipe;
 
-static Recipe recipes[] = {
-    {"Axe (Wood+Stone)", 3, 2, 0, 0, &has_axe},
-    {"Pickaxe (Wood+Stone)", 3, 3, 0, 0, &has_pickaxe},
-    {"Sword (Stone+Gold)", 0, 4, 2, 0, &has_sword},
-};
-static int recipe_count = sizeof(recipes) / sizeof(recipes[0]);
-
-static int can_afford(const Recipe *r) {
-  return inv_wood >= r->wood && inv_stone >= r->stone && inv_gold >= r->gold &&
-         inv_food >= r->food;
-}
-
-static void craft(const Recipe *r) {
-  if (!can_afford(r))
-    return;
-  inv_wood -= r->wood;
-  inv_stone -= r->stone;
-  inv_gold -= r->gold;
-  inv_food -= r->food;
-  if (r->unlock_flag)
-    *r->unlock_flag = 1;
-}
-
 /* =======================
    GLOBAL STATE
 ======================= */
