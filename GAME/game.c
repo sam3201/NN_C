@@ -1756,6 +1756,7 @@ static void update_visible_world(float dt) {
       }
 
       // mobs
+      despawn_hostiles_if_day(c);
       try_spawn_mobs_in_chunk(c, cx, cy, dt);
 
       // mobs AI
