@@ -2654,7 +2654,7 @@ void update_agent(Agent *a) {
     moveDir.y = 0;
     break;
 
-    agent_try_move(a, moveDir, tr, c, cx, cy, &reward);
+    agent_try_move(a, moveDir);
 
   case ACTION_ATTACK: {
     // No targeting. No intent. No movement assist.
