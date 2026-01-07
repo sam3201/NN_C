@@ -212,7 +212,7 @@ static float player_harvest_cd = 0.0f;
 static float player_attack_cd = 0.0f;
 static float player_hurt_timer = 0.0f;
 
-bool crafting_open = 0;
+bool crafting_open = false;
 
 bool has_axe = false;
 bool has_pickaxe = false;
