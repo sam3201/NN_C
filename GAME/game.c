@@ -901,7 +901,7 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
   // If you want true “shoot blind”, skip raycast and just spawn projectile
   // forward. But to avoid wasting arrows into nothingness, keep raycast ONLY to
   // decide if it hits.
-  RayHit hit = raycast_world_objects(ro, rd, maxRange);
+  // RayHit hit = raycast_world_objects(ro, rd, maxRange);
 
   a->inv_arrows--;
   a->fire_cd = agent_fire_cooldown();
