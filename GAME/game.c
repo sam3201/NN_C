@@ -2452,10 +2452,10 @@ static void draw_ui(void) {
   float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
 
   float rr = 12.0f;
-  DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
-           (Color){80, 160, 255, 220});
-  DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
+  DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
            (Color){255, 140, 80, 220});
+  DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
+           (Color){80, 160, 255, 220});
 
   DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
            130, 16, RAYWHITE);
