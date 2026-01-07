@@ -166,6 +166,7 @@ typedef struct {
   MuCortex *cortex;
   float reward_accumulator;
   int age;
+  int last_action;
 } Agent;
 
 typedef struct {
