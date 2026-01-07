@@ -20,8 +20,6 @@ typedef void (*env_reset_fn)(GameState *obs_state);
 typedef int (*env_step_fn)(GameState *obs_state, int action, float *reward,
                            int *done);
 
-int game_env_step(GameState *obs_state, int action, float *reward, int *done);
-
 GameEnv *game_env_init(GameEnv *game_env, env_reset_fn reset_fn,
                        env_step_fn step_fn);
 void game_env_destroy(GameEnv *game_env);
