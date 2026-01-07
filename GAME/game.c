@@ -1033,11 +1033,7 @@ void draw_chunks(void) {
 }
 
 static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
-  int cx = (int)(world_pos.x / CHUNK_SIZE);
-  int cy = (int)(world_pos.y / CHUNK_SIZE);
-
-  // spacing in WORLD units
-  float minD = 2.8f;
+  float rad = mob_radius_world(type);
 
   Vector2 chosen = world_pos;
   int found = 0;
@@ -1050,1807 +1046,1746 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
     int ccx = (int)(cand.x / CHUNK_SIZE);
     int ccy = (int)(cand.y / CHUNK_SIZE);
 
-    float rad = mob_radius_world(type);
     if (!world_pos_blocked_nearby(ccx, ccy, cand, rad)) {
+      chosen = cand;
+      found = 1;
+      break;
+    }
+  }
 
-      if (!found) {
-        // still spawn, just no guarantee
-        chosen = world_pos;
-      }
+  // if we didn't find a clean spot, just use the original (fallback)
+  if (!found)
+    chosen = world_pos;
 
+  int cx = (int)(chosen.x / CHUNK_SIZE);
+  int cy = (int)(chosen.y / CHUNK_SIZE);
+
+  Chunk *c = get_chunk(cx, cy);
+  int slot = find_free_mob_slot(c);
+  if (slot < 0)
+    return;
+
+  Vector2 origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+  Vector2 local = Vector2Subtract(chosen, origin);
+
+  init_mob(&c->mobs[slot], type, local, /*make_angry=*/1);
+}
+
+void draw_resources(void) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
       Chunk *c = get_chunk(cx, cy);
 
-      int slot = find_free_mob_slot(c);
-      if (slot < 0)
-        return;
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
 
-      Mob *m = &c->mobs[slot];
-      Vector2 origin =
-          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-      Vector2 local = Vector2Subtract(chosen, origin);
+        Vector2 wp = {(float)(cx * CHUNK_SIZE) + r->position.x,
+                      (float)(cy * CHUNK_SIZE) + r->position.y};
+        Vector2 sp = world_to_screen(wp);
+        // shake animation when hit
+        float mul = 1.0f;
+        switch (r->type) {
+        case RES_TREE:
+          mul = TREE_SCALE;
+          break;
+        case RES_ROCK:
+          mul = ROCK_SCALE;
+          break;
+        case RES_GOLD:
+          mul = GOLD_SCALE;
+          break;
+        case RES_FOOD:
+          mul = FOOD_SCALE;
+          break;
+        default:
+          mul = 1.0f;
+          break;
+        }
+        float s = px(0.20f) * RESOURCE_SCALE * mul;
+        float s2 = s * 1.2f;
 
-      init_mob(m, type, local, /*make_angry=*/1);
+        // shake animation when hit
+        if (r->hit_timer > 0.0f) {
+          float k = r->hit_timer * 18.0f;
+          sp.x += sinf(GetTime() * 70.0f) * (s * 0.02f) * k;
+          sp.y += cosf(GetTime() * 55.0f) * (s * 0.02f) * k;
+        }
+
+        // health tint
+        float hp01 = (float)r->health / 100.0f;
+
+        switch (r->type) {
+        case RES_TREE: {
+          // shadow
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.65f), (int)(s * 0.9f),
+                      (int)(s * 0.35f), (Color){0, 0, 0, 70});
+
+          // trunk
+          DrawRectangle((int)(sp.x - s * 0.18f), (int)(sp.y - s * 0.20f),
+                        (int)(s * 0.36f), (int)(s * 0.65f),
+                        (Color){120, 80, 40, 255});
+          DrawRectangleLines((int)(sp.x - s * 0.18f), (int)(sp.y - s * 0.20f),
+                             (int)(s * 0.36f), (int)(s * 0.65f),
+                             (Color){0, 0, 0, 150});
+
+          // canopy (3 blobs)
+          Color leaf = (Color){30, (unsigned char)(140 + 60 * hp01), 30, 255};
+          DrawCircleV((Vector2){sp.x, sp.y - s * 0.55f}, s * 0.55f, leaf);
+          DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y - s * 0.35f}, s * 0.45f,
+                      leaf);
+          DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y - s * 0.35f}, s * 0.45f,
+                      leaf);
+          DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.55f), s * 0.55f,
+                          (Color){0, 0, 0, 110});
+
+          // small fruit dots
+          DrawCircleV((Vector2){sp.x - s * 0.18f, sp.y - s * 0.55f}, s * 0.06f,
+                      RED);
+          DrawCircleV((Vector2){sp.x + s * 0.22f, sp.y - s * 0.40f}, s * 0.06f,
+                      RED);
+
+          // health bar
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.2f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){60, 220, 60, 255});
+
+          // cracks (more cracks when low hp)
+          if (r->health > 0) {
+            float hp01 = (float)r->health / 100.0f;
+            int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
+            for (int k = 0; k < cracks; k++) {
+              float a = (float)k / (float)(cracks + 1) * PI;
+              DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
+                       (int)(sp.y - sinf(a) * s * 0.25f),
+                       (int)(sp.x + cosf(a) * s * 0.18f),
+                       (int)(sp.y + sinf(a) * s * 0.22f),
+                       (Color){0, 0, 0, 120});
+            }
+          }
+          // break flash overlay
+          if (r->break_flash > 0.0f) {
+            DrawCircleV((Vector2){sp.x, sp.y}, s * 0.35f,
+                        (Color){255, 255, 255,
+                                (unsigned char)(120 * clamp01(r->break_flash *
+                                                              20.0f))});
+          }
+
+        } break;
+
+        case RES_ROCK: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // rock: polygon-ish using circles + outlines
+          Color rock = (Color){120, 120, 120, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, rock);
+          DrawCircleV((Vector2){sp.x - s * 0.35f, sp.y + s * 0.05f}, s * 0.40f,
+                      rock);
+          DrawCircleV((Vector2){sp.x + s * 0.35f, sp.y + s * 0.10f}, s * 0.45f,
+                      rock);
+
+          // highlight
+          DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.18f}, s * 0.18f,
+                      (Color){200, 200, 200, 160});
+
+          // outline
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 120});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){180, 180, 180, 255});
+          // cracks (more cracks when low hp)
+          if (r->health > 0) {
+            float hp01 = (float)r->health / 100.0f;
+            int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
+            for (int k = 0; k < cracks; k++) {
+              float a = (float)k / (float)(cracks + 1) * PI;
+              DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
+                       (int)(sp.y - sinf(a) * s * 0.25f),
+                       (int)(sp.x + cosf(a) * s * 0.18f),
+                       (int)(sp.y + sinf(a) * s * 0.22f),
+                       (Color){0, 0, 0, 120});
+            }
+          }
+          // break flash overlay
+          if (r->break_flash > 0.0f) {
+            DrawCircleV((Vector2){sp.x, sp.y}, s * 0.35f,
+                        (Color){255, 255, 255,
+                                (unsigned char)(120 * clamp01(r->break_flash *
+                                                              20.0f))});
+          }
+
+        } break;
+
+        case RES_GOLD: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // nugget: bright + rim + sparkle
+          Color gold = (Color){240, 210, 70, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, gold);
+          DrawCircleV((Vector2){sp.x - s * 0.28f, sp.y + s * 0.08f}, s * 0.38f,
+                      gold);
+          DrawCircleV((Vector2){sp.x + s * 0.30f, sp.y + s * 0.10f}, s * 0.40f,
+                      gold);
+
+          DrawCircleV((Vector2){sp.x - s * 0.12f, sp.y - s * 0.18f}, s * 0.14f,
+                      (Color){255, 255, 255, 160});
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 140});
+
+          // sparkle
+          DrawLine((int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.55f),
+                   (int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.75f), RAYWHITE);
+          DrawLine((int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.55f),
+                   (int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.75f), RAYWHITE);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){240, 210, 70, 255});
+          // cracks (more cracks when low hp)
+          if (r->health > 0) {
+            float hp01 = (float)r->health / 100.0f;
+            int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
+            for (int k = 0; k < cracks; k++) {
+              float a = (float)k / (float)(cracks + 1) * PI;
+              DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
+                       (int)(sp.y - sinf(a) * s * 0.25f),
+                       (int)(sp.x + cosf(a) * s * 0.18f),
+                       (int)(sp.y + sinf(a) * s * 0.22f),
+                       (Color){0, 0, 0, 120});
+            }
+          }
+          // break flash overlay
+          if (r->break_flash > 0.0f) {
+            DrawCircleV((Vector2){sp.x, sp.y}, s * 0.35f,
+                        (Color){255, 255, 255,
+                                (unsigned char)(120 * clamp01(r->break_flash *
+                                                              20.0f))});
+          }
+
+        } break;
+
+        case RES_FOOD: {
+          DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
+                      (int)(s * 0.32f), (Color){0, 0, 0, 70});
+
+          // berry/fruit: red body + green leaf
+          Color fruit = (Color){220, 60, 60, 255};
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, fruit);
+          DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.15f}, s * 0.18f,
+                      (Color){255, 255, 255, 120});
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
+                          (Color){0, 0, 0, 130});
+
+          // leaf
+          DrawTriangle((Vector2){sp.x, sp.y - s * 0.55f},
+                       (Vector2){sp.x - s * 0.25f, sp.y - s * 0.75f},
+                       (Vector2){sp.x + s * 0.25f, sp.y - s * 0.75f},
+                       (Color){40, 180, 60, 255});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
+                          s * 0.18f, hp01, (Color){220, 60, 60, 255});
+          // cracks (more cracks when low hp)
+          if (r->health > 0) {
+            float hp01 = (float)r->health / 100.0f;
+            int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
+            for (int k = 0; k < cracks; k++) {
+              float a = (float)k / (float)(cracks + 1) * PI;
+              DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
+                       (int)(sp.y - sinf(a) * s * 0.25f),
+                       (int)(sp.x + cosf(a) * s * 0.18f),
+                       (int)(sp.y + sinf(a) * s * 0.22f),
+                       (Color){0, 0, 0, 120});
+            }
+          }
+          // break flash overlay
+          if (r->break_flash > 0.0f) {
+            DrawCircleV((Vector2){sp.x, sp.y}, s * 0.35f,
+                        (Color){255, 255, 255,
+                                (unsigned char)(120 * clamp01(r->break_flash *
+                                                              20.0f))});
+          }
+
+        } break;
+
+        default:
+          // fallback
+          fprintf(stderr, "Unknown resource type: %d\n", r->type);
+          exit(1);
+          break;
+        }
+      }
     }
+  }
+}
 
-    static void despawn_hostiles_if_day(Chunk * c) {
-      // Only despawn during day
-      if (is_night_cached)
-        return;
+// small helpers for drawing
+static inline Color lerp_color(Color a, Color b, float t) {
+  t = clamp01(t);
+  Color out;
+  out.r = (unsigned char)(a.r + (b.r - a.r) * t);
+  out.g = (unsigned char)(a.g + (b.g - a.g) * t);
+  out.b = (unsigned char)(a.b + (b.b - a.b) * t);
+  out.a = (unsigned char)(a.a + (b.a - a.a) * t);
+  return out;
+}
+
+static inline Color mul_color(Color a, Color b, float t) {
+  // multiply blend toward (a*b) by amount t
+  t = clamp01(t);
+  Color m;
+  m.r = (unsigned char)((a.r * b.r) / 255);
+  m.g = (unsigned char)((a.g * b.g) / 255);
+  m.b = (unsigned char)((a.b * b.b) / 255);
+  m.a = a.a;
+  return lerp_color(a, m, t);
+}
+
+void draw_mobs(void) {
+
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  float tnow = (float)GetTime();
+
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+
+      // use this chunk's biome as a subtle tint for everything inside it
+      Color biome = biome_colors[c->biome_type];
 
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
           continue;
 
-        bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
-        if (hostile) {
-          m->health = 0;
-          m->aggro_timer = 0.0f;
-          m->attack_cd = 0.0f;
-          m->hurt_timer = 0.0f;
-          m->lunge_timer = 0.0f;
-          m->vel = (Vector2){0, 0};
+        Vector2 wp = {(float)(cx * CHUNK_SIZE) + m->position.x,
+                      (float)(cy * CHUNK_SIZE) + m->position.y};
+        Vector2 sp = world_to_screen(wp);
+
+        float s = px(0.26f) * MOB_SCALE;
+        float hp01 = (float)m->health / 100.0f;
+
+        // idle bob
+        float bob =
+            sinf(tnow * 6.0f + (float)(i * 13 + m->type * 7)) * (s * 0.05f);
+        sp.y += bob;
+
+        // base mob color by type
+        Color base = mob_colors[m->type];
+
+        // biome tint (subtle)
+        base = mul_color(base, biome, 0.18f);
+
+        // aggro tint (blend toward red while aggro_timer is active)
+        if (m->aggro_timer > 0.0f) {
+          float a01 =
+              clamp01(m->aggro_timer / 3.0f); // 3.0f matches your set value
+          base = lerp_color(base, (Color){220, 60, 60, 255}, 0.35f * a01);
+        }
+
+        // hurt flash (blend toward white while hurt_timer is active)
+        if (m->hurt_timer > 0.0f) {
+          float h01 = clamp01(m->hurt_timer * 6.0f); // quick strong flash
+          base = lerp_color(base, RAYWHITE, h01);
+        }
+
+        // lunge toward player (visual only)
+        if (m->lunge_timer > 0.0f) {
+          Vector2 toP = Vector2Subtract(player.position, wp);
+          float d = Vector2Length(toP);
+          Vector2 dir =
+              (d > 1e-3f) ? Vector2Scale(toP, 1.0f / d) : (Vector2){0, 0};
+          float push = (0.10f + 0.20f * clamp01(m->lunge_timer * 8.0f));
+          sp.x += dir.x * (s * push);
+          sp.y += dir.y * (s * push);
+        }
+
+        // tiny hurt shake
+        if (m->hurt_timer > 0.0f) {
+          float k = clamp01(m->hurt_timer * 10.0f);
+          sp.x += sinf(tnow * 80.0f + (float)i) * (s * 0.02f) * k;
+          sp.y += cosf(tnow * 65.0f + (float)i) * (s * 0.02f) * k;
+        }
+
+        // shadow
+        DrawEllipse((int)sp.x, (int)(sp.y + s * 0.85f), (int)(s * 1.2f),
+                    (int)(s * 0.40f), (Color){0, 0, 0, 80});
+
+        // draw per-type, but using the computed "base" tint everywhere
+        switch (m->type) {
+        case MOB_PIG: {
+          // body
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
+                          (Color){0, 0, 0, 120});
+
+          // snout (slightly darker/lighter from base)
+          Color snout = lerp_color(base, (Color){255, 120, 160, 255}, 0.55f);
+          DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.10f}, s * 0.28f,
+                      snout);
+
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.05f}, s * 0.06f,
+                      (Color){120, 60, 80, 255});
+          DrawCircleV((Vector2){sp.x + s * 0.50f, sp.y + s * 0.05f}, s * 0.06f,
+                      (Color){120, 60, 80, 255});
+
+          // ears
+          Color ear = lerp_color(base, (Color){255, 140, 175, 255}, 0.45f);
+          DrawTriangle((Vector2){sp.x - s * 0.30f, sp.y - s * 0.70f},
+                       (Vector2){sp.x - s * 0.55f, sp.y - s * 0.95f},
+                       (Vector2){sp.x - s * 0.10f, sp.y - s * 0.90f}, ear);
+          DrawTriangle((Vector2){sp.x + s * 0.10f, sp.y - s * 0.70f},
+                       (Vector2){sp.x + s * 0.35f, sp.y - s * 0.95f},
+                       (Vector2){sp.x + s * 0.55f, sp.y - s * 0.85f}, ear);
+
+          // eyes
+          DrawCircleV((Vector2){sp.x + s * 0.15f, sp.y - s * 0.15f}, s * 0.08f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x - s * 0.10f, sp.y - s * 0.15f}, s * 0.08f,
+                      BLACK);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){80, 220, 80, 255});
+        } break;
+
+        case MOB_SHEEP: {
+          // wool: keep mostly white but still accept biome tint a bit
+          Color wool = lerp_color((Color){245, 245, 245, 255}, base, 0.18f);
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.80f, wool);
+          DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y + s * 0.10f}, s * 0.55f,
+                      wool);
+          DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y + s * 0.10f}, s * 0.55f,
+                      wool);
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.80f,
+                          (Color){0, 0, 0, 90});
+
+          // face
+          Color face = (Color){70, 70, 70, 255};
+          face = mul_color(face, biome, 0.10f);
+          if (m->hurt_timer > 0.0f)
+            face = lerp_color(face, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
+
+          DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.20f}, s * 0.35f,
+                      face);
+
+          // eye
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.06f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.03f,
+                      BLACK);
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){80, 220, 80, 255});
+        } break;
+
+        case MOB_SKELETON: {
+          // bone: slightly tinted by biome + hurt flash already applied via
+          // base
+          Color bone = lerp_color((Color){230, 230, 230, 255}, base, 0.55f);
+
+          // skull
+          DrawCircleV((Vector2){sp.x, sp.y - s * 0.10f}, s * 0.65f, bone);
+          DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.10f), s * 0.65f,
+                          (Color){0, 0, 0, 140});
+
+          // jaw
+          DrawRectangle((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
+                        (int)(s * 0.80f), (int)(s * 0.25f), bone);
+          DrawRectangleLines((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
+                             (int)(s * 0.80f), (int)(s * 0.25f),
+                             (Color){0, 0, 0, 140});
+
+          // eyes
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.20f}, s * 0.12f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.20f}, s * 0.12f,
+                      BLACK);
+
+          // ribs
+          for (int k = 0; k < 4; k++) {
+            float yy = sp.y + s * (0.10f + 0.12f * k);
+            DrawLine((int)(sp.x - s * 0.35f), (int)yy, (int)(sp.x + s * 0.35f),
+                     (int)yy, (Color){0, 0, 0, 110});
+          }
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){220, 90, 90, 255});
+        } break;
+
+        case MOB_ZOMBIE: {
+          // body
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
+          DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
+                          (Color){0, 0, 0, 140});
+
+          // mouth
+          Color mouth = (Color){120, 50, 50, 255};
+          if (m->hurt_timer > 0.0f)
+            mouth = lerp_color(mouth, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
+          DrawRectangle((int)(sp.x - s * 0.25f), (int)(sp.y + s * 0.15f),
+                        (int)(s * 0.50f), (int)(s * 0.18f), mouth);
+
+          // eyes
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f}, s * 0.10f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f}, s * 0.10f,
+                      RAYWHITE);
+          DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f}, s * 0.05f,
+                      BLACK);
+          DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f}, s * 0.05f,
+                      BLACK);
+
+          // scar
+          DrawLine((int)(sp.x + s * 0.40f), (int)(sp.y - s * 0.10f),
+                   (int)(sp.x + s * 0.55f), (int)(sp.y + s * 0.05f),
+                   (Color){30, 90, 30, 255});
+
+          draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
+                          s * 0.18f, hp01, (Color){220, 90, 90, 255});
+        } break;
+
+        default:
+          break;
         }
       }
     }
+  }
+}
 
-    static void spawn_raid_wave(void) {
+static void draw_player(Vector2 pp_screen) {
+  // Body sizing
+  float bodyR = WORLD_SCALE * 0.60f * scale_size;
+  float outlineR = bodyR * 1.02f;
+
+  Color outline = (Color){20, 20, 20, 180};
+  Color body = (Color){255, 220, 120, 255};
+  Color blush = (Color){255, 140, 160, 170};
+  Color eyeW = RAYWHITE;
+  Color eyeB = (Color){35, 35, 35, 255};
+  Color shadow = (Color){0, 0, 0, 70};
+
+  // Shadow
+  DrawEllipse((int)pp_screen.x, (int)(pp_screen.y + bodyR * 0.85f),
+              (int)(bodyR * 1.35f), (int)(bodyR * 0.45f), shadow);
+
+  // Outline + body
+  DrawCircleV(pp_screen, outlineR, outline);
+  DrawCircleV(pp_screen, bodyR, body);
+
+  // Highlight
+  DrawCircleV(
+      (Vector2){pp_screen.x - bodyR * 0.25f, pp_screen.y - bodyR * 0.25f},
+      bodyR * 0.18f, (Color){255, 255, 255, 120});
+
+  // --- Mouse-aim direction (screen space) ---
+  Vector2 mouse = GetMousePosition();
+  Vector2 aim = Vector2Subtract(mouse, pp_screen);
+  float aimLen = Vector2Length(aim);
+  if (aimLen < 1e-3f)
+    aimLen = 1e-3f;
+  float aimAng = atan2f(aim.y, aim.x);
+
+  // --- Animated hands that orbit and “point” toward mouse ---
+  float t = (float)GetTime();
+
+  float handR = bodyR * 0.28f;
+  float handArm = bodyR * 0.90f; // distance from center
+
+  // slight breathing wiggle
+  float wiggle = sinf(t * 7.0f) * (bodyR * 0.04f);
+
+  // Perpendicular offset so hands sit "around" the aim line
+  Vector2 aimDir = (Vector2){cosf(aimAng), sinf(aimAng)};
+  Vector2 perp = (Vector2){-aimDir.y, aimDir.x};
+
+  // LEFT HAND: EXACTLY on aim direction (this fixes your “left hand angle”)
+  Vector2 hl = Vector2Add(pp_screen, Vector2Scale(aimDir, handArm + wiggle));
+
+  // RIGHT HAND: slightly behind + offset sideways so you can see both hands
+  Vector2 hr = pp_screen;
+  hr = Vector2Add(hr, Vector2Scale(aimDir, (handArm - bodyR * 0.12f) - wiggle));
+  hr = Vector2Add(hr, Vector2Scale(perp, bodyR * 0.22f));
+
+  // little “finger nub” pointing toward mouse from each hand
+  float nubR = handR * 0.28f;
+  Vector2 toMouseL = Vector2Subtract(mouse, hl);
+  Vector2 toMouseR = Vector2Subtract(mouse, hr);
+
+  Vector2 dirL = Vector2Normalize(toMouseL);
+  Vector2 dirR = Vector2Normalize(toMouseR);
+
+  if (Vector2Length(toMouseL) < 1e-3f)
+    dirL = aimDir;
+  if (Vector2Length(toMouseR) < 1e-3f)
+    dirR = aimDir;
+
+  Vector2 hl_nub = Vector2Add(hl, Vector2Scale(dirL, handR * 0.65f));
+  Vector2 hr_nub = Vector2Add(hr, Vector2Scale(dirR, handR * 0.65f));
+
+  // draw hands (outline + fill)
+  Color handFill = (Color){255, 210, 110, 255};
+
+  DrawCircleV(hl, handR * 1.02f, outline);
+  DrawCircleV(hl, handR, handFill);
+  DrawCircleV(hl_nub, nubR * 1.02f, outline);
+  DrawCircleV(hl_nub, nubR, handFill);
+
+  DrawCircleV(hr, handR * 1.02f, outline);
+  DrawCircleV(hr, handR, handFill);
+  DrawCircleV(hr_nub, nubR * 1.02f, outline);
+  DrawCircleV(hr_nub, nubR, handFill);
+
+  // Feet
+  float footR = bodyR * 0.26f;
+  Vector2 fl = {pp_screen.x - bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+  Vector2 fr = {pp_screen.x + bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+
+  DrawCircleV(fl, footR * 1.02f, outline);
+  DrawCircleV(fr, footR * 1.02f, outline);
+  DrawCircleV(fl, footR, (Color){255, 160, 120, 255});
+  DrawCircleV(fr, footR, (Color){255, 160, 120, 255});
+
+  // Face
+  float eyeOffX = bodyR * 0.22f;
+  float eyeOffY = bodyR * 0.12f;
+  float eyeR = bodyR * 0.13f;
+
+  Vector2 eL = {pp_screen.x - eyeOffX, pp_screen.y - eyeOffY};
+  Vector2 eR = {pp_screen.x + eyeOffX, pp_screen.y - eyeOffY};
+
+  DrawCircleV(eL, eyeR * 1.05f, outline);
+  DrawCircleV(eR, eyeR * 1.05f, outline);
+  DrawCircleV(eL, eyeR, eyeW);
+  DrawCircleV(eR, eyeR, eyeW);
+
+  float blink = (sinf(t * 2.5f) > 0.97f) ? 0.35f : 1.0f;
+  float pupR = eyeR * 0.45f;
+  DrawEllipse((int)eL.x, (int)eL.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+              eyeB);
+  DrawEllipse((int)eR.x, (int)eR.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+              eyeB);
+
+  Vector2 mouth = {pp_screen.x, pp_screen.y + bodyR * 0.18f};
+  DrawCircleV(mouth, bodyR * 0.06f, (Color){120, 60, 60, 255});
+
+  Vector2 bl = {pp_screen.x - bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+  Vector2 br = {pp_screen.x + bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+  DrawCircleV(bl, bodyR * 0.10f, blush);
+  DrawCircleV(br, bodyR * 0.10f, blush);
+
+  g_handL = hl;
+  g_handR = hr;
+}
+
+static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
+  float r = WORLD_SCALE * 0.22f * scale_size; // base agent size
+  float t = (float)GetTime();
+
+  Color outline = (Color){0, 0, 0, 140};
+  Color skin = (Color){235, 210, 190, 255};
+  Color cloth = tribeColor;
+
+  // tiny bob
+  float bob = sinf(t * 6.0f + (float)a->agent_id) * (r * 0.08f);
+  sp.y += bob;
+
+  // shadow
+  DrawEllipse((int)sp.x, (int)(sp.y + r * 1.15f), (int)(r * 1.5f),
+              (int)(r * 0.45f), (Color){0, 0, 0, 70});
+
+  // body (tunic)
+  DrawCircleV((Vector2){sp.x, sp.y + r * 0.40f}, r * 0.95f, cloth);
+  DrawCircleLines((int)sp.x, (int)(sp.y + r * 0.40f), r * 0.95f, outline);
+
+  // head
+  DrawCircleV((Vector2){sp.x, sp.y - r * 0.25f}, r * 0.85f, skin);
+  DrawCircleLines((int)sp.x, (int)(sp.y - r * 0.25f), r * 0.85f, outline);
+
+  // highlight
+  DrawCircleV((Vector2){sp.x - r * 0.25f, sp.y - r * 0.55f}, r * 0.20f,
+              (Color){255, 255, 255, 120});
+
+  // eyes
+  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
+              RAYWHITE);
+  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
+              RAYWHITE);
+  DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
+  DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.05f, BLACK);
+
+  // headband (tribe marker)
+  DrawRectangle((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
+                (int)(r * 1.40f), (int)(r * 0.22f), tribeColor);
+  DrawRectangleLines((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
+                     (int)(r * 1.40f), (int)(r * 0.22f), outline);
+
+  // tiny “tool” (points based on a subtle idle direction)
+  // If you later store last action direction, plug it here.
+  float ang = sinf(t * 1.5f + a->agent_id) * 0.8f;
+  Vector2 toolDir = {cosf(ang), sinf(ang)};
+  Vector2 toolPos = {sp.x + toolDir.x * (r * 0.95f),
+                     sp.y + toolDir.y * (r * 0.95f)};
+
+  // handle
+  DrawLineEx(sp, toolPos, r * 0.14f, (Color){120, 80, 40, 255});
+  // head (axe/spear-ish)
+  DrawCircleV(toolPos, r * 0.20f, (Color){180, 180, 180, 255});
+  DrawCircleLines((int)toolPos.x, (int)toolPos.y, r * 0.20f, outline);
+
+  // small health/stamina pips
+  float hp01 = clamp01(a->health / 100.0f);
+  float st01 = clamp01(a->stamina / 100.0f);
+  draw_health_bar((Vector2){sp.x, sp.y - r * 1.35f}, r * 1.7f, r * 0.18f, hp01,
+                  (Color){80, 220, 80, 255});
+  draw_health_bar((Vector2){sp.x, sp.y - r * 1.10f}, r * 1.7f, r * 0.18f, st01,
+                  (Color){80, 160, 255, 255});
+
+  // --- intent icon above head ---
+  Vector2 icon = (Vector2){sp.x, sp.y - r * 1.55f};
+  Color ic = (Color){0, 0, 0, 180};
+  DrawCircleV(icon, r * 0.35f, (Color){255, 255, 255, 200});
+  DrawCircleLines((int)icon.x, (int)icon.y, r * 0.35f, ic);
+
+  switch (a->last_action) {
+  case ACTION_ATTACK: {
+    // sword-ish line
+    DrawLineEx((Vector2){icon.x - r * 0.10f, icon.y + r * 0.14f},
+               (Vector2){icon.x + r * 0.14f, icon.y - r * 0.14f}, r * 0.10f,
+               (Color){120, 120, 120, 255});
+    DrawCircleV((Vector2){icon.x + r * 0.16f, icon.y - r * 0.16f}, r * 0.10f,
+                (Color){200, 200, 200, 255});
+  } break;
+
+  case ACTION_HARVEST: {
+    // pickaxe-ish
+    DrawLineEx((Vector2){icon.x - r * 0.16f, icon.y - r * 0.05f},
+               (Vector2){icon.x + r * 0.16f, icon.y + r * 0.12f}, r * 0.10f,
+               (Color){120, 80, 40, 255});
+    DrawCircleV((Vector2){icon.x + r * 0.18f, icon.y + r * 0.14f}, r * 0.10f,
+                (Color){180, 180, 180, 255});
+  } break;
+
+  default: {
+    // move: little arrow
+    DrawTriangle((Vector2){icon.x, icon.y - r * 0.16f},
+                 (Vector2){icon.x - r * 0.14f, icon.y + r * 0.12f},
+                 (Vector2){icon.x + r * 0.14f, icon.y + r * 0.12f},
+                 (Color){60, 60, 60, 255});
+  } break;
+  }
+}
+
+/* =======================
+   TRIBES & AGENTS
+======================= */
+void init_tribes(void) {
+  Color colors[] = {RED, BLUE, GREEN, ORANGE};
+  float spacing = 24.0f;
+
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Tribe *tr = &tribes[t];
+    tr->tribe_id = t;
+    tr->color = colors[t % 4];
+    tr->base.position =
+        (Vector2){WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
+                  WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
+    tr->base.radius = BASE_RADIUS;
+    tr->integrity = 100.0f;
+  }
+}
+
+void init_agents(void) {
+  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
+                  .latent_dim = 64,
+                  .action_count = ACTION_COUNT};
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    a->agent_id = i;
+    a->alive = true;
+    a->health = a->stamina = 100;
+    a->flash_timer = 0;
+    a->age = 0;
+    a->agent_start = i;
+    a->reward_accumulator = 0.0f;
+
+    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
+    a->cortex = SAM_as_MUZE(a->sam);
+
+    a->last_action = ACTION_COUNT;
+
+    Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
+    float ang = randf(0, 2 * PI);
+    float d = randf(2, tr->base.radius - 1);
+    a->position = (Vector2){tr->base.position.x + cosf(ang) * d,
+                            tr->base.position.y + sinf(ang) * d};
+  }
+}
+
+/* =======================
+   OBSERVATION & RL
+======================= */
+void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+
+  // --- self status ---
+  obs_push(obs, clamp01(a->health / 100.0f));
+  obs_push(obs, clamp01(a->stamina / 100.0f));
+
+  // --- base features ---
+  Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
+  float dbase = Vector2Length(to_base);
+  float base_dir_x = safe_norm(to_base.x, dbase);
+  float base_dir_y = safe_norm(to_base.y, dbase);
+
+  obs_push(obs, clamp01(dbase / 64.0f));
+  obs_push(obs, base_dir_x);
+  obs_push(obs, base_dir_y);
+  obs_push(obs, (dbase < tr->base.radius) ? 1.0f : 0.0f); // in base
+
+  // --- chunk density ---
+  obs_push(obs, clamp01((float)c->resource_count / (float)MAX_RESOURCES));
+
+  // --- nearest resource (by type) in VIEW CHUNK ONLY (fast) ---
+  // Features: for each resource type [tree, rock, gold, food]:
+  //   - nearest distance (normalized)
+  //   - nearest direction (x,y) normalized
+  //   - availability bit (1 if found)
+  const int R_TYPES = 4;
+  float best_d[R_TYPES];
+  Vector2 best_dir[R_TYPES];
+  int found[R_TYPES];
+
+  for (int t = 0; t < R_TYPES; t++) {
+    best_d[t] = 1e9f;
+    best_dir[t] = (Vector2){0, 0};
+    found[t] = 0;
+  }
+
+  // We need this chunk's world origin
+  // NOTE: c is the chunk agent is currently in, so:
+  int cx = (int)(a->position.x / CHUNK_SIZE);
+  int cy = (int)(a->position.y / CHUNK_SIZE);
+  Vector2 chunk_origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    int t = (int)r->type;
+    if (t < 0 || t >= R_TYPES)
+      continue;
+
+    // Convert resource local -> world
+    Vector2 r_world = Vector2Add(chunk_origin, r->position);
+
+    Vector2 dvec = Vector2Subtract(r_world, a->position);
+    float d = Vector2Length(dvec);
+
+    if (d < best_d[t]) {
+      best_d[t] = d;
+      best_dir[t] = dvec;
+      found[t] = 1;
+    }
+  }
+
+  for (int t = 0; t < R_TYPES; t++) {
+    if (!found[t]) {
+      obs_push(obs, 1.0f); // distance "far"
+      obs_push(obs, 0.0f); // dir x
+      obs_push(obs, 0.0f); // dir y
+      obs_push(obs, 0.0f); // found bit
+    } else {
+      float d = best_d[t];
+      Vector2 v = best_dir[t];
+      obs_push(obs,
+               clamp01(d / 32.0f)); // normalize to something reasonable
+      obs_push(obs, safe_norm(v.x, d));
+      obs_push(obs, safe_norm(v.y, d));
+      obs_push(obs, 1.0f);
+    }
+  }
+
+  // --- nearest mob (any type) in this chunk ---
+  float best_mob_d = 1e9f;
+  Vector2 best_mob_dir = (Vector2){0, 0};
+  int mob_found = 0;
+  int mob_type = 0;
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 m_world = Vector2Add(chunk_origin, m->position);
+    Vector2 dvec = Vector2Subtract(m_world, a->position);
+    float d = Vector2Length(dvec);
+
+    if (d < best_mob_d) {
+      best_mob_d = d;
+      best_mob_dir = dvec;
+      mob_found = 1;
+      mob_type = (int)m->type;
+    }
+  }
+
+  if (!mob_found) {
+    obs_push(obs, 1.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+  } else {
+    obs_push(obs, clamp01(best_mob_d / 32.0f));
+    obs_push(obs, safe_norm(best_mob_dir.x, best_mob_d));
+    obs_push(obs, safe_norm(best_mob_dir.y, best_mob_d));
+    obs_push(obs, (float)mob_type / 3.0f); // 0..3 -> 0..1
+  }
+
+  // bias
+  obs_push(obs, 1.0f);
+
+  // final: enforce fixed-size vector
+  obs_finalize_fixed(obs, OBS_DIM);
+}
+
+int decide_action(Agent *a, ObsBuffer *obs) {
+  return muze_plan(a->cortex, obs->data, (size_t)obs->size,
+                   (size_t)ACTION_COUNT);
+}
+
+/* =======================
+   AGENT UPDATE
+======================= */
+void update_agent(Agent *a) {
+  if (!a->alive)
+    return;
+
+  int cx = (int)(a->position.x / CHUNK_SIZE);
+  int cy = (int)(a->position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+
+  float reward = 0.0f;
+
+  // living cost / base bonus
+  float dist_to_base =
+      Vector2Length(Vector2Subtract(a->position, tr->base.position));
+  if (dist_to_base < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100.0f);
+    a->stamina = fminf(a->stamina + 0.5f, 100.0f);
+    reward += 0.01f;
+  } else {
+    a->stamina -= 0.05f;
+    reward -= 0.001f;
+  }
+
+  a->reward_accumulator += reward;
+
+  ObsBuffer obs;
+  obs_init(&obs);
+  pthread_rwlock_rdlock(&c->lock);
+  encode_observation(a, c, &obs);
+  pthread_rwlock_unlock(&c->lock);
+
+  MuCortex *cortex = a->cortex;
+  int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
+  a->last_action = action;
+
+  // apply action
+  switch (action) {
+  case ACTION_UP:
+    a->position.y -= 0.5f;
+    break;
+  case ACTION_DOWN:
+    a->position.y += 0.5f;
+    break;
+  case ACTION_LEFT:
+    a->position.x -= 0.5f;
+    break;
+  case ACTION_RIGHT:
+    a->position.x += 0.5f;
+    break;
+  default:
+    break;
+  }
+
+  dist_to_base = Vector2Distance(a->position, tr->base.position);
+  if (dist_to_base < BASE_RADIUS) {
+    a->health = fminf(a->health + 0.5f, 100.0f);
+    a->stamina = fminf(a->stamina + 0.5f, 100.0f);
+  } else {
+    a->stamina -= 0.05f;
+  }
+
+  a->age++;
+
+  int terminal = 0;
+  if (a->health <= 0.0f || a->stamina <= 0.0f) {
+    a->alive = false;
+    terminal = 1;
+    reward -= 1.0f; // death penalty (now it actually happens)
+  }
+
+  // ONLY learn through the cortex adapter (SAM brain)
+  cortex->learn(cortex->brain, obs.data, obs.size, action, reward, terminal);
+
+  obs_free(&obs);
+}
+
+static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
+                             int dmg) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    if (!projectiles[i].alive) {
+      projectiles[i].alive = true;
+      projectiles[i].pos = pos;
+      projectiles[i].vel = Vector2Scale(Vector2Normalize(dir), speed);
+      projectiles[i].ttl = ttl;
+      projectiles[i].damage = dmg;
+      return;
+    }
+  }
+}
+
+static void update_projectiles(float dt) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    Projectile *p = &projectiles[i];
+    if (!p->alive)
+      continue;
+
+    p->ttl -= dt;
+    if (p->ttl <= 0.0f) {
+      p->alive = false;
+      continue;
+    }
+
+    p->pos = Vector2Add(p->pos, Vector2Scale(p->vel, dt));
+
+    // hit player (simple circle hit)
+    float d = Vector2Distance(p->pos, player.position);
+    if (d < 0.55f) {
+      player.health -= (float)p->damage;
+      player_hurt_timer = 0.18f;
+      p->alive = false;
+      cam_shake = fmaxf(cam_shake, 0.10f);
+    }
+  }
+}
+
+static void draw_projectiles(void) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    Projectile *p = &projectiles[i];
+    if (!p->alive)
+      continue;
+
+    Vector2 sp = world_to_screen(p->pos);
+    float r = WORLD_SCALE * 0.07f * scale_size;
+    DrawCircleV(sp, r, (Color){220, 220, 220, 255});
+    DrawCircleLines((int)sp.x, (int)sp.y, r, (Color){0, 0, 0, 160});
+  }
+}
+
+static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
+  // timers
+  if (m->ai_timer > 0)
+    m->ai_timer -= dt;
+  if (m->aggro_timer > 0)
+    m->aggro_timer -= dt;
+  if (m->attack_cd > 0)
+    m->attack_cd -= dt;
+  if (m->hurt_timer > 0)
+    m->hurt_timer -= dt;
+  if (m->lunge_timer > 0)
+    m->lunge_timer -= dt;
+
+  // compute WORLD pos for decisions
+  Vector2 mw = Vector2Add(chunk_origin, m->position);
+
+  Vector2 basePos = nearest_base_pos(mw);
+  Vector2 toB = Vector2Subtract(basePos, mw);
+  float dB = Vector2Length(toB);
+  Vector2 dirB = (dB > 1e-3f) ? Vector2Scale(toB, 1.0f / dB) : (Vector2){0, 0};
+
+  // only fully “aware” if player is in same chunk (keeps it simple & cheap)
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  int mcx = (int)(mw.x / CHUNK_SIZE);
+  int mcy = (int)(mw.y / CHUNK_SIZE);
+  bool player_same_chunk = (pcx == mcx && pcy == mcy);
+
+  Vector2 toP = Vector2Subtract(player.position, mw);
+  float dP = Vector2Length(toP);
+  Vector2 dirP = (dP > 1e-3f) ? Vector2Scale(toP, 1.0f / dP) : (Vector2){0, 0};
+
+  bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
+
+  // pick wander direction sometimes
+  if (m->ai_timer <= 0.0f) {
+    m->ai_timer = randf(0.35f, 1.25f);
+    float ang = randf(0, 2 * PI);
+    m->vel = (Vector2){cosf(ang), sinf(ang)};
+  }
+
+  float speed = MOB_SPEED_PASSIVE;
+
+  // PASSIVE: flee if close or angry
+  if (!hostile) {
+    bool scared = player_same_chunk && (dP < 4.0f || m->aggro_timer > 0.0f);
+    if (scared) {
+      speed = 0.95f;
+      m->vel = Vector2Scale(dirP, -1.0f); // run away
+    }
+  }
+
+  // HOSTILE: chase / skeleton kite + shoot
+  if (hostile) {
+    speed = MOB_SPEED_HOSTILE;
+
+    bool aggroP = player_same_chunk &&
+                  ((dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f));
+
+    if (aggroP) {
+      // your existing zombie/skeleton vs player logic (keep as-is)
+      // ...
+    } else if (is_night_cached) {
+      // raid behavior: march toward nearest base even if player not around
+      m->vel = dirB;
+
+      // if inside base -> damage it
       for (int t = 0; t < TRIBE_COUNT; t++) {
         Tribe *tr = &tribes[t];
-        if (tr->integrity <= 0.0f)
-          continue;
-
-        int count = 2 + (rand() % 2); // 2..3
-        for (int k = 0; k < count; k++) {
-          float ang = randf(0, 2 * PI);
-          float dist = randf(tr->base.radius + 6.0f, tr->base.radius + 10.0f);
-          Vector2 p = (Vector2){tr->base.position.x + cosf(ang) * dist,
-                                tr->base.position.y + sinf(ang) * dist};
-
-          // bias: more skeletons in biome 2 (desert) but keep it simple
-          MobType mt = (rand() % 2 == 0) ? MOB_ZOMBIE : MOB_SKELETON;
-          spawn_mob_at_world(mt, p);
-        }
-      }
-    }
-
-    void draw_resources(void) {
-      int pcx = (int)(player.position.x / CHUNK_SIZE);
-      int pcy = (int)(player.position.y / CHUNK_SIZE);
-
-      for (int dx = -6; dx <= 6; dx++) {
-        for (int dy = -6; dy <= 6; dy++) {
-          int cx = pcx + dx;
-          int cy = pcy + dy;
-          Chunk *c = get_chunk(cx, cy);
-
-          for (int i = 0; i < c->resource_count; i++) {
-            Resource *r = &c->resources[i];
-            if (r->health <= 0)
-              continue;
-
-            Vector2 wp = {(float)(cx * CHUNK_SIZE) + r->position.x,
-                          (float)(cy * CHUNK_SIZE) + r->position.y};
-            Vector2 sp = world_to_screen(wp);
-            // shake animation when hit
-            float mul = 1.0f;
-            switch (r->type) {
-            case RES_TREE:
-              mul = TREE_SCALE;
-              break;
-            case RES_ROCK:
-              mul = ROCK_SCALE;
-              break;
-            case RES_GOLD:
-              mul = GOLD_SCALE;
-              break;
-            case RES_FOOD:
-              mul = FOOD_SCALE;
-              break;
-            default:
-              mul = 1.0f;
-              break;
-            }
-            float s = px(0.20f) * RESOURCE_SCALE * mul;
-            float s2 = s * 1.2f;
-
-            // shake animation when hit
-            if (r->hit_timer > 0.0f) {
-              float k = r->hit_timer * 18.0f;
-              sp.x += sinf(GetTime() * 70.0f) * (s * 0.02f) * k;
-              sp.y += cosf(GetTime() * 55.0f) * (s * 0.02f) * k;
-            }
-
-            // health tint
-            float hp01 = (float)r->health / 100.0f;
-
-            switch (r->type) {
-            case RES_TREE: {
-              // shadow
-              DrawEllipse((int)sp.x, (int)(sp.y + s * 0.65f), (int)(s * 0.9f),
-                          (int)(s * 0.35f), (Color){0, 0, 0, 70});
-
-              // trunk
-              DrawRectangle((int)(sp.x - s * 0.18f), (int)(sp.y - s * 0.20f),
-                            (int)(s * 0.36f), (int)(s * 0.65f),
-                            (Color){120, 80, 40, 255});
-              DrawRectangleLines((int)(sp.x - s * 0.18f),
-                                 (int)(sp.y - s * 0.20f), (int)(s * 0.36f),
-                                 (int)(s * 0.65f), (Color){0, 0, 0, 150});
-
-              // canopy (3 blobs)
-              Color leaf =
-                  (Color){30, (unsigned char)(140 + 60 * hp01), 30, 255};
-              DrawCircleV((Vector2){sp.x, sp.y - s * 0.55f}, s * 0.55f, leaf);
-              DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y - s * 0.35f},
-                          s * 0.45f, leaf);
-              DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y - s * 0.35f},
-                          s * 0.45f, leaf);
-              DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.55f), s * 0.55f,
-                              (Color){0, 0, 0, 110});
-
-              // small fruit dots
-              DrawCircleV((Vector2){sp.x - s * 0.18f, sp.y - s * 0.55f},
-                          s * 0.06f, RED);
-              DrawCircleV((Vector2){sp.x + s * 0.22f, sp.y - s * 0.40f},
-                          s * 0.06f, RED);
-
-              // health bar
-              draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.2f}, s * 1.4f,
-                              s * 0.18f, hp01, (Color){60, 220, 60, 255});
-
-              // cracks (more cracks when low hp)
-              if (r->health > 0) {
-                float hp01 = (float)r->health / 100.0f;
-                int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
-                for (int k = 0; k < cracks; k++) {
-                  float a = (float)k / (float)(cracks + 1) * PI;
-                  DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
-                           (int)(sp.y - sinf(a) * s * 0.25f),
-                           (int)(sp.x + cosf(a) * s * 0.18f),
-                           (int)(sp.y + sinf(a) * s * 0.22f),
-                           (Color){0, 0, 0, 120});
-                }
-              }
-              // break flash overlay
-              if (r->break_flash > 0.0f) {
-                DrawCircleV(
-                    (Vector2){sp.x, sp.y}, s * 0.35f,
-                    (Color){255, 255, 255,
-                            (unsigned char)(120 *
-                                            clamp01(r->break_flash * 20.0f))});
-              }
-
-            } break;
-
-            case RES_ROCK: {
-              DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
-                          (int)(s * 0.32f), (Color){0, 0, 0, 70});
-
-              // rock: polygon-ish using circles + outlines
-              Color rock = (Color){120, 120, 120, 255};
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, rock);
-              DrawCircleV((Vector2){sp.x - s * 0.35f, sp.y + s * 0.05f},
-                          s * 0.40f, rock);
-              DrawCircleV((Vector2){sp.x + s * 0.35f, sp.y + s * 0.10f},
-                          s * 0.45f, rock);
-
-              // highlight
-              DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.18f},
-                          s * 0.18f, (Color){200, 200, 200, 160});
-
-              // outline
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
-                              (Color){0, 0, 0, 120});
-
-              draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
-                              s * 0.18f, hp01, (Color){180, 180, 180, 255});
-              // cracks (more cracks when low hp)
-              if (r->health > 0) {
-                float hp01 = (float)r->health / 100.0f;
-                int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
-                for (int k = 0; k < cracks; k++) {
-                  float a = (float)k / (float)(cracks + 1) * PI;
-                  DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
-                           (int)(sp.y - sinf(a) * s * 0.25f),
-                           (int)(sp.x + cosf(a) * s * 0.18f),
-                           (int)(sp.y + sinf(a) * s * 0.22f),
-                           (Color){0, 0, 0, 120});
-                }
-              }
-              // break flash overlay
-              if (r->break_flash > 0.0f) {
-                DrawCircleV(
-                    (Vector2){sp.x, sp.y}, s * 0.35f,
-                    (Color){255, 255, 255,
-                            (unsigned char)(120 *
-                                            clamp01(r->break_flash * 20.0f))});
-              }
-
-            } break;
-
-            case RES_GOLD: {
-              DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
-                          (int)(s * 0.32f), (Color){0, 0, 0, 70});
-
-              // nugget: bright + rim + sparkle
-              Color gold = (Color){240, 210, 70, 255};
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, gold);
-              DrawCircleV((Vector2){sp.x - s * 0.28f, sp.y + s * 0.08f},
-                          s * 0.38f, gold);
-              DrawCircleV((Vector2){sp.x + s * 0.30f, sp.y + s * 0.10f},
-                          s * 0.40f, gold);
-
-              DrawCircleV((Vector2){sp.x - s * 0.12f, sp.y - s * 0.18f},
-                          s * 0.14f, (Color){255, 255, 255, 160});
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
-                              (Color){0, 0, 0, 140});
-
-              // sparkle
-              DrawLine((int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.55f),
-                       (int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.75f),
-                       RAYWHITE);
-              DrawLine((int)(sp.x + s * 0.75f), (int)(sp.y - s * 0.55f),
-                       (int)(sp.x + s * 0.55f), (int)(sp.y - s * 0.75f),
-                       RAYWHITE);
-
-              draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
-                              s * 0.18f, hp01, (Color){240, 210, 70, 255});
-              // cracks (more cracks when low hp)
-              if (r->health > 0) {
-                float hp01 = (float)r->health / 100.0f;
-                int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
-                for (int k = 0; k < cracks; k++) {
-                  float a = (float)k / (float)(cracks + 1) * PI;
-                  DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
-                           (int)(sp.y - sinf(a) * s * 0.25f),
-                           (int)(sp.x + cosf(a) * s * 0.18f),
-                           (int)(sp.y + sinf(a) * s * 0.22f),
-                           (Color){0, 0, 0, 120});
-                }
-              }
-              // break flash overlay
-              if (r->break_flash > 0.0f) {
-                DrawCircleV(
-                    (Vector2){sp.x, sp.y}, s * 0.35f,
-                    (Color){255, 255, 255,
-                            (unsigned char)(120 *
-                                            clamp01(r->break_flash * 20.0f))});
-              }
-
-            } break;
-
-            case RES_FOOD: {
-              DrawEllipse((int)sp.x, (int)(sp.y + s * 0.55f), (int)(s * 0.9f),
-                          (int)(s * 0.32f), (Color){0, 0, 0, 70});
-
-              // berry/fruit: red body + green leaf
-              Color fruit = (Color){220, 60, 60, 255};
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.55f, fruit);
-              DrawCircleV((Vector2){sp.x - s * 0.15f, sp.y - s * 0.15f},
-                          s * 0.18f, (Color){255, 255, 255, 120});
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.55f,
-                              (Color){0, 0, 0, 130});
-
-              // leaf
-              DrawTriangle((Vector2){sp.x, sp.y - s * 0.55f},
-                           (Vector2){sp.x - s * 0.25f, sp.y - s * 0.75f},
-                           (Vector2){sp.x + s * 0.25f, sp.y - s * 0.75f},
-                           (Color){40, 180, 60, 255});
-
-              draw_health_bar((Vector2){sp.x, sp.y - s2 * 1.1f}, s * 1.4f,
-                              s * 0.18f, hp01, (Color){220, 60, 60, 255});
-              // cracks (more cracks when low hp)
-              if (r->health > 0) {
-                float hp01 = (float)r->health / 100.0f;
-                int cracks = (hp01 > 0.66f) ? 0 : (hp01 > 0.33f) ? 2 : 4;
-                for (int k = 0; k < cracks; k++) {
-                  float a = (float)k / (float)(cracks + 1) * PI;
-                  DrawLine((int)(sp.x - cosf(a) * s * 0.30f),
-                           (int)(sp.y - sinf(a) * s * 0.25f),
-                           (int)(sp.x + cosf(a) * s * 0.18f),
-                           (int)(sp.y + sinf(a) * s * 0.22f),
-                           (Color){0, 0, 0, 120});
-                }
-              }
-              // break flash overlay
-              if (r->break_flash > 0.0f) {
-                DrawCircleV(
-                    (Vector2){sp.x, sp.y}, s * 0.35f,
-                    (Color){255, 255, 255,
-                            (unsigned char)(120 *
-                                            clamp01(r->break_flash * 20.0f))});
-              }
-
-            } break;
-
-            default:
-              // fallback
-              fprintf(stderr, "Unknown resource type: %d\n", r->type);
-              exit(1);
-              break;
-            }
+        float db = Vector2Distance(mw, tr->base.position);
+        if (db < tr->base.radius + 0.8f) {
+          if (m->attack_cd <= 0.0f) {
+            m->attack_cd = 0.85f;
+            m->lunge_timer = 0.12f;
+            tr->integrity = fmaxf(0.0f, tr->integrity - 5.0f);
+            cam_shake = fmaxf(cam_shake, 0.12f);
           }
         }
       }
     }
+    if (player_same_chunk) {
+      bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
+      if (aggro) {
+        speed = MOB_SPEED_HOSTILE;
 
-    // small helpers for drawing
-    static inline Color lerp_color(Color a, Color b, float t) {
-      t = clamp01(t);
-      Color out;
-      out.r = (unsigned char)(a.r + (b.r - a.r) * t);
-      out.g = (unsigned char)(a.g + (b.g - a.g) * t);
-      out.b = (unsigned char)(a.b + (b.b - a.b) * t);
-      out.a = (unsigned char)(a.a + (b.a - a.a) * t);
-      return out;
-    }
+        if (m->type == MOB_ZOMBIE) {
+          // chase
+          m->vel = dirP;
 
-    static inline Color mul_color(Color a, Color b, float t) {
-      // multiply blend toward (a*b) by amount t
-      t = clamp01(t);
-      Color m;
-      m.r = (unsigned char)((a.r * b.r) / 255);
-      m.g = (unsigned char)((a.g * b.g) / 255);
-      m.b = (unsigned char)((a.b * b.b) / 255);
-      m.a = a.a;
-      return lerp_color(a, m, t);
-    }
+          // melee attack
+          if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
+            m->attack_cd = 0.8f;
+            m->lunge_timer = 0.18f;
+            player.health -= 6.0f;
+            player_hurt_timer = 0.18f;
+          }
+        } else if (m->type == MOB_SKELETON) {
+          // keep some distance
+          float desired = 6.0f;
+          if (dP < desired - 0.8f)
+            m->vel = Vector2Scale(dirP, -1.0f); // back up
+          else if (dP > desired + 1.2f)
+            m->vel = dirP; // approach
+          else
+            m->vel = Vector2Scale(m->vel, 0.5f); // drift
 
-    void draw_mobs(void) {
-
-      int pcx = (int)(player.position.x / CHUNK_SIZE);
-      int pcy = (int)(player.position.y / CHUNK_SIZE);
-
-      float tnow = (float)GetTime();
-
-      for (int dx = -6; dx <= 6; dx++) {
-        for (int dy = -6; dy <= 6; dy++) {
-          int cx = pcx + dx;
-          int cy = pcy + dy;
-          Chunk *c = get_chunk(cx, cy);
-
-          // use this chunk's biome as a subtle tint for everything inside it
-          Color biome = biome_colors[c->biome_type];
-
-          for (int i = 0; i < MAX_MOBS; i++) {
-            Mob *m = &c->mobs[i];
-            if (m->health <= 0)
-              continue;
-
-            Vector2 wp = {(float)(cx * CHUNK_SIZE) + m->position.x,
-                          (float)(cy * CHUNK_SIZE) + m->position.y};
-            Vector2 sp = world_to_screen(wp);
-
-            float s = px(0.26f) * MOB_SCALE;
-            float hp01 = (float)m->health / 100.0f;
-
-            // idle bob
-            float bob =
-                sinf(tnow * 6.0f + (float)(i * 13 + m->type * 7)) * (s * 0.05f);
-            sp.y += bob;
-
-            // base mob color by type
-            Color base = mob_colors[m->type];
-
-            // biome tint (subtle)
-            base = mul_color(base, biome, 0.18f);
-
-            // aggro tint (blend toward red while aggro_timer is active)
-            if (m->aggro_timer > 0.0f) {
-              float a01 =
-                  clamp01(m->aggro_timer / 3.0f); // 3.0f matches your set value
-              base = lerp_color(base, (Color){220, 60, 60, 255}, 0.35f * a01);
-            }
-
-            // hurt flash (blend toward white while hurt_timer is active)
-            if (m->hurt_timer > 0.0f) {
-              float h01 = clamp01(m->hurt_timer * 6.0f); // quick strong flash
-              base = lerp_color(base, RAYWHITE, h01);
-            }
-
-            // lunge toward player (visual only)
-            if (m->lunge_timer > 0.0f) {
-              Vector2 toP = Vector2Subtract(player.position, wp);
-              float d = Vector2Length(toP);
-              Vector2 dir =
-                  (d > 1e-3f) ? Vector2Scale(toP, 1.0f / d) : (Vector2){0, 0};
-              float push = (0.10f + 0.20f * clamp01(m->lunge_timer * 8.0f));
-              sp.x += dir.x * (s * push);
-              sp.y += dir.y * (s * push);
-            }
-
-            // tiny hurt shake
-            if (m->hurt_timer > 0.0f) {
-              float k = clamp01(m->hurt_timer * 10.0f);
-              sp.x += sinf(tnow * 80.0f + (float)i) * (s * 0.02f) * k;
-              sp.y += cosf(tnow * 65.0f + (float)i) * (s * 0.02f) * k;
-            }
-
-            // shadow
-            DrawEllipse((int)sp.x, (int)(sp.y + s * 0.85f), (int)(s * 1.2f),
-                        (int)(s * 0.40f), (Color){0, 0, 0, 80});
-
-            // draw per-type, but using the computed "base" tint everywhere
-            switch (m->type) {
-            case MOB_PIG: {
-              // body
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
-                              (Color){0, 0, 0, 120});
-
-              // snout (slightly darker/lighter from base)
-              Color snout =
-                  lerp_color(base, (Color){255, 120, 160, 255}, 0.55f);
-              DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.10f},
-                          s * 0.28f, snout);
-
-              DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.05f},
-                          s * 0.06f, (Color){120, 60, 80, 255});
-              DrawCircleV((Vector2){sp.x + s * 0.50f, sp.y + s * 0.05f},
-                          s * 0.06f, (Color){120, 60, 80, 255});
-
-              // ears
-              Color ear = lerp_color(base, (Color){255, 140, 175, 255}, 0.45f);
-              DrawTriangle((Vector2){sp.x - s * 0.30f, sp.y - s * 0.70f},
-                           (Vector2){sp.x - s * 0.55f, sp.y - s * 0.95f},
-                           (Vector2){sp.x - s * 0.10f, sp.y - s * 0.90f}, ear);
-              DrawTriangle((Vector2){sp.x + s * 0.10f, sp.y - s * 0.70f},
-                           (Vector2){sp.x + s * 0.35f, sp.y - s * 0.95f},
-                           (Vector2){sp.x + s * 0.55f, sp.y - s * 0.85f}, ear);
-
-              // eyes
-              DrawCircleV((Vector2){sp.x + s * 0.15f, sp.y - s * 0.15f},
-                          s * 0.08f, BLACK);
-              DrawCircleV((Vector2){sp.x - s * 0.10f, sp.y - s * 0.15f},
-                          s * 0.08f, BLACK);
-
-              draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
-                              s * 0.18f, hp01, (Color){80, 220, 80, 255});
-            } break;
-
-            case MOB_SHEEP: {
-              // wool: keep mostly white but still accept biome tint a bit
-              Color wool = lerp_color((Color){245, 245, 245, 255}, base, 0.18f);
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.80f, wool);
-              DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y + s * 0.10f},
-                          s * 0.55f, wool);
-              DrawCircleV((Vector2){sp.x + s * 0.45f, sp.y + s * 0.10f},
-                          s * 0.55f, wool);
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.80f,
-                              (Color){0, 0, 0, 90});
-
-              // face
-              Color face = (Color){70, 70, 70, 255};
-              face = mul_color(face, biome, 0.10f);
-              if (m->hurt_timer > 0.0f)
-                face =
-                    lerp_color(face, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
-
-              DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.20f},
-                          s * 0.35f, face);
-
-              // eye
-              DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f},
-                          s * 0.06f, RAYWHITE);
-              DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f},
-                          s * 0.03f, BLACK);
-
-              draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
-                              s * 0.18f, hp01, (Color){80, 220, 80, 255});
-            } break;
-
-            case MOB_SKELETON: {
-              // bone: slightly tinted by biome + hurt flash already applied via
-              // base
-              Color bone = lerp_color((Color){230, 230, 230, 255}, base, 0.55f);
-
-              // skull
-              DrawCircleV((Vector2){sp.x, sp.y - s * 0.10f}, s * 0.65f, bone);
-              DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.10f), s * 0.65f,
-                              (Color){0, 0, 0, 140});
-
-              // jaw
-              DrawRectangle((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
-                            (int)(s * 0.80f), (int)(s * 0.25f), bone);
-              DrawRectangleLines((int)(sp.x - s * 0.40f),
-                                 (int)(sp.y + s * 0.25f), (int)(s * 0.80f),
-                                 (int)(s * 0.25f), (Color){0, 0, 0, 140});
-
-              // eyes
-              DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.20f},
-                          s * 0.12f, BLACK);
-              DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.20f},
-                          s * 0.12f, BLACK);
-
-              // ribs
-              for (int k = 0; k < 4; k++) {
-                float yy = sp.y + s * (0.10f + 0.12f * k);
-                DrawLine((int)(sp.x - s * 0.35f), (int)yy,
-                         (int)(sp.x + s * 0.35f), (int)yy,
-                         (Color){0, 0, 0, 110});
-              }
-
-              draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
-                              s * 0.18f, hp01, (Color){220, 90, 90, 255});
-            } break;
-
-            case MOB_ZOMBIE: {
-              // body
-              DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
-              DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
-                              (Color){0, 0, 0, 140});
-
-              // mouth
-              Color mouth = (Color){120, 50, 50, 255};
-              if (m->hurt_timer > 0.0f)
-                mouth =
-                    lerp_color(mouth, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
-              DrawRectangle((int)(sp.x - s * 0.25f), (int)(sp.y + s * 0.15f),
-                            (int)(s * 0.50f), (int)(s * 0.18f), mouth);
-
-              // eyes
-              DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f},
-                          s * 0.10f, RAYWHITE);
-              DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f},
-                          s * 0.10f, RAYWHITE);
-              DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f},
-                          s * 0.05f, BLACK);
-              DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f},
-                          s * 0.05f, BLACK);
-
-              // scar
-              DrawLine((int)(sp.x + s * 0.40f), (int)(sp.y - s * 0.10f),
-                       (int)(sp.x + s * 0.55f), (int)(sp.y + s * 0.05f),
-                       (Color){30, 90, 30, 255});
-
-              draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
-                              s * 0.18f, hp01, (Color){220, 90, 90, 255});
-            } break;
-
-            default:
-              break;
-            }
+          // shoot
+          if (dP < 12.0f && m->attack_cd <= 0.0f) {
+            m->attack_cd = 1.1f;
+            m->lunge_timer = 0.12f;
+            spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
           }
         }
       }
     }
+  }
+  // move (chunk-local)
+  Vector2 delta = Vector2Scale(m->vel, speed * dt);
+  m->position = Vector2Add(m->position, delta);
+  m->position = clamp_local_to_chunk(m->position);
+}
 
-    static void draw_player(Vector2 pp_screen) {
-      // Body sizing
-      float bodyR = WORLD_SCALE * 0.60f * scale_size;
-      float outlineR = bodyR * 1.02f;
+static void draw_crafting_ui(void) {
+  if (!crafting_open)
+    return;
 
-      Color outline = (Color){20, 20, 20, 180};
-      Color body = (Color){255, 220, 120, 255};
-      Color blush = (Color){255, 140, 160, 170};
-      Color eyeW = RAYWHITE;
-      Color eyeB = (Color){35, 35, 35, 255};
-      Color shadow = (Color){0, 0, 0, 70};
+  int x = 14, y = 260, w = 360, h = 28 + recipe_count * 22;
+  DrawRectangle(x, y, w, h, (Color){0, 0, 0, 120});
+  DrawRectangleLines(x, y, w, h, (Color){0, 0, 0, 220});
+  DrawText("Crafting (TAB)", x + 10, y + 6, 18, RAYWHITE);
 
-      // Shadow
-      DrawEllipse((int)pp_screen.x, (int)(pp_screen.y + bodyR * 0.85f),
-                  (int)(bodyR * 1.35f), (int)(bodyR * 0.45f), shadow);
+  for (int i = 0; i < recipe_count; i++) {
+    Recipe *r = &recipes[i];
+    Color c = can_afford(r) ? RAYWHITE : (Color){180, 180, 180, 255};
 
-      // Outline + body
-      DrawCircleV(pp_screen, outlineR, outline);
-      DrawCircleV(pp_screen, bodyR, body);
+    DrawText(TextFormat("%d) %s  [W%d S%d G%d F%d]%s", i + 1, r->name, r->wood,
+                        r->stone, r->gold, r->food,
+                        (r->unlock_flag && *r->unlock_flag) ? " (OWNED)" : ""),
+             x + 10, y + 30 + i * 20, 16, c);
+  }
+}
 
-      // Highlight
-      DrawCircleV(
-          (Vector2){pp_screen.x - bodyR * 0.25f, pp_screen.y - bodyR * 0.25f},
-          bodyR * 0.18f, (Color){255, 255, 255, 120});
+/* =======================
+   PLAYER
+======================= */
+void init_player(void) {
+  player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  player.health = 100;
+  player.stamina = 100;
+}
 
-      // --- Mouse-aim direction (screen space) ---
-      Vector2 mouse = GetMousePosition();
-      Vector2 aim = Vector2Subtract(mouse, pp_screen);
-      float aimLen = Vector2Length(aim);
-      if (aimLen < 1e-3f)
-        aimLen = 1e-3f;
-      float aimAng = atan2f(aim.y, aim.x);
+void update_player(void) {
+  float dt = GetFrameTime();
 
-      // --- Animated hands that orbit and “point” toward mouse ---
-      float t = (float)GetTime();
+  // --- cooldown timers ---
+  if (player_harvest_cd > 0.0f)
+    player_harvest_cd -= dt;
+  if (player_attack_cd > 0.0f)
+    player_attack_cd -= dt;
+  if (player_hurt_timer > 0.0f)
+    player_hurt_timer -= dt;
 
-      float handR = bodyR * 0.28f;
-      float handArm = bodyR * 0.90f; // distance from center
+  // --- movement (time-based feels better) ---
+  float speed = 0.6f; // world units per frame-ish
+  // If you want true time-based movement, use: float move = speed * (dt
+  // * 60.0f);
+  float move = speed;
 
-      // slight breathing wiggle
-      float wiggle = sinf(t * 7.0f) * (bodyR * 0.04f);
+  if (IsKeyDown(KEY_W))
+    player.position.y -= move;
+  if (IsKeyDown(KEY_S))
+    player.position.y += move;
+  if (IsKeyDown(KEY_A))
+    player.position.x -= move;
+  if (IsKeyDown(KEY_D))
+    player.position.x += move;
 
-      // Perpendicular offset so hands sit "around" the aim line
-      Vector2 aimDir = (Vector2){cosf(aimAng), sinf(aimAng)};
-      Vector2 perp = (Vector2){-aimDir.y, aimDir.x};
+  // --- crafting toggle ---
+  if (IsKeyPressed(KEY_TAB)) {
+    crafting_open = !crafting_open;
+  }
 
-      // LEFT HAND: EXACTLY on aim direction (this fixes your “left hand angle”)
-      Vector2 hl =
-          Vector2Add(pp_screen, Vector2Scale(aimDir, handArm + wiggle));
+  // --- crafting input (1..9) only when crafting menu is open ---
+  if (crafting_open) {
+    for (int i = 0; i < recipe_count && i < 9; i++) {
+      // top-row number keys
+      bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
 
-      // RIGHT HAND: slightly behind + offset sideways so you can see both hands
-      Vector2 hr = pp_screen;
-      hr = Vector2Add(hr,
-                      Vector2Scale(aimDir, (handArm - bodyR * 0.12f) - wiggle));
-      hr = Vector2Add(hr, Vector2Scale(perp, bodyR * 0.22f));
+      // keypad number keys (optional but nice)
+      pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
 
-      // little “finger nub” pointing toward mouse from each hand
-      float nubR = handR * 0.28f;
-      Vector2 toMouseL = Vector2Subtract(mouse, hl);
-      Vector2 toMouseR = Vector2Subtract(mouse, hr);
-
-      Vector2 dirL = Vector2Normalize(toMouseL);
-      Vector2 dirR = Vector2Normalize(toMouseR);
-
-      if (Vector2Length(toMouseL) < 1e-3f)
-        dirL = aimDir;
-      if (Vector2Length(toMouseR) < 1e-3f)
-        dirR = aimDir;
-
-      Vector2 hl_nub = Vector2Add(hl, Vector2Scale(dirL, handR * 0.65f));
-      Vector2 hr_nub = Vector2Add(hr, Vector2Scale(dirR, handR * 0.65f));
-
-      // draw hands (outline + fill)
-      Color handFill = (Color){255, 210, 110, 255};
-
-      DrawCircleV(hl, handR * 1.02f, outline);
-      DrawCircleV(hl, handR, handFill);
-      DrawCircleV(hl_nub, nubR * 1.02f, outline);
-      DrawCircleV(hl_nub, nubR, handFill);
-
-      DrawCircleV(hr, handR * 1.02f, outline);
-      DrawCircleV(hr, handR, handFill);
-      DrawCircleV(hr_nub, nubR * 1.02f, outline);
-      DrawCircleV(hr_nub, nubR, handFill);
-
-      // Feet
-      float footR = bodyR * 0.26f;
-      Vector2 fl = {pp_screen.x - bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
-      Vector2 fr = {pp_screen.x + bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
-
-      DrawCircleV(fl, footR * 1.02f, outline);
-      DrawCircleV(fr, footR * 1.02f, outline);
-      DrawCircleV(fl, footR, (Color){255, 160, 120, 255});
-      DrawCircleV(fr, footR, (Color){255, 160, 120, 255});
-
-      // Face
-      float eyeOffX = bodyR * 0.22f;
-      float eyeOffY = bodyR * 0.12f;
-      float eyeR = bodyR * 0.13f;
-
-      Vector2 eL = {pp_screen.x - eyeOffX, pp_screen.y - eyeOffY};
-      Vector2 eR = {pp_screen.x + eyeOffX, pp_screen.y - eyeOffY};
-
-      DrawCircleV(eL, eyeR * 1.05f, outline);
-      DrawCircleV(eR, eyeR * 1.05f, outline);
-      DrawCircleV(eL, eyeR, eyeW);
-      DrawCircleV(eR, eyeR, eyeW);
-
-      float blink = (sinf(t * 2.5f) > 0.97f) ? 0.35f : 1.0f;
-      float pupR = eyeR * 0.45f;
-      DrawEllipse((int)eL.x, (int)eL.y, (int)(pupR * 1.1f), (int)(pupR * blink),
-                  eyeB);
-      DrawEllipse((int)eR.x, (int)eR.y, (int)(pupR * 1.1f), (int)(pupR * blink),
-                  eyeB);
-
-      Vector2 mouth = {pp_screen.x, pp_screen.y + bodyR * 0.18f};
-      DrawCircleV(mouth, bodyR * 0.06f, (Color){120, 60, 60, 255});
-
-      Vector2 bl = {pp_screen.x - bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
-      Vector2 br = {pp_screen.x + bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
-      DrawCircleV(bl, bodyR * 0.10f, blush);
-      DrawCircleV(br, bodyR * 0.10f, blush);
-
-      g_handL = hl;
-      g_handR = hr;
-    }
-
-    static void draw_agent_detailed(const Agent *a, Vector2 sp,
-                                    Color tribeColor) {
-      float r = WORLD_SCALE * 0.22f * scale_size; // base agent size
-      float t = (float)GetTime();
-
-      Color outline = (Color){0, 0, 0, 140};
-      Color skin = (Color){235, 210, 190, 255};
-      Color cloth = tribeColor;
-
-      // tiny bob
-      float bob = sinf(t * 6.0f + (float)a->agent_id) * (r * 0.08f);
-      sp.y += bob;
-
-      // shadow
-      DrawEllipse((int)sp.x, (int)(sp.y + r * 1.15f), (int)(r * 1.5f),
-                  (int)(r * 0.45f), (Color){0, 0, 0, 70});
-
-      // body (tunic)
-      DrawCircleV((Vector2){sp.x, sp.y + r * 0.40f}, r * 0.95f, cloth);
-      DrawCircleLines((int)sp.x, (int)(sp.y + r * 0.40f), r * 0.95f, outline);
-
-      // head
-      DrawCircleV((Vector2){sp.x, sp.y - r * 0.25f}, r * 0.85f, skin);
-      DrawCircleLines((int)sp.x, (int)(sp.y - r * 0.25f), r * 0.85f, outline);
-
-      // highlight
-      DrawCircleV((Vector2){sp.x - r * 0.25f, sp.y - r * 0.55f}, r * 0.20f,
-                  (Color){255, 255, 255, 120});
-
-      // eyes
-      DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
-                  RAYWHITE);
-      DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.10f,
-                  RAYWHITE);
-      DrawCircleV((Vector2){sp.x - r * 0.18f, sp.y - r * 0.30f}, r * 0.05f,
-                  BLACK);
-      DrawCircleV((Vector2){sp.x + r * 0.18f, sp.y - r * 0.30f}, r * 0.05f,
-                  BLACK);
-
-      // headband (tribe marker)
-      DrawRectangle((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
-                    (int)(r * 1.40f), (int)(r * 0.22f), tribeColor);
-      DrawRectangleLines((int)(sp.x - r * 0.70f), (int)(sp.y - r * 0.55f),
-                         (int)(r * 1.40f), (int)(r * 0.22f), outline);
-
-      // tiny “tool” (points based on a subtle idle direction)
-      // If you later store last action direction, plug it here.
-      float ang = sinf(t * 1.5f + a->agent_id) * 0.8f;
-      Vector2 toolDir = {cosf(ang), sinf(ang)};
-      Vector2 toolPos = {sp.x + toolDir.x * (r * 0.95f),
-                         sp.y + toolDir.y * (r * 0.95f)};
-
-      // handle
-      DrawLineEx(sp, toolPos, r * 0.14f, (Color){120, 80, 40, 255});
-      // head (axe/spear-ish)
-      DrawCircleV(toolPos, r * 0.20f, (Color){180, 180, 180, 255});
-      DrawCircleLines((int)toolPos.x, (int)toolPos.y, r * 0.20f, outline);
-
-      // small health/stamina pips
-      float hp01 = clamp01(a->health / 100.0f);
-      float st01 = clamp01(a->stamina / 100.0f);
-      draw_health_bar((Vector2){sp.x, sp.y - r * 1.35f}, r * 1.7f, r * 0.18f,
-                      hp01, (Color){80, 220, 80, 255});
-      draw_health_bar((Vector2){sp.x, sp.y - r * 1.10f}, r * 1.7f, r * 0.18f,
-                      st01, (Color){80, 160, 255, 255});
-
-      // --- intent icon above head ---
-      Vector2 icon = (Vector2){sp.x, sp.y - r * 1.55f};
-      Color ic = (Color){0, 0, 0, 180};
-      DrawCircleV(icon, r * 0.35f, (Color){255, 255, 255, 200});
-      DrawCircleLines((int)icon.x, (int)icon.y, r * 0.35f, ic);
-
-      switch (a->last_action) {
-      case ACTION_ATTACK: {
-        // sword-ish line
-        DrawLineEx((Vector2){icon.x - r * 0.10f, icon.y + r * 0.14f},
-                   (Vector2){icon.x + r * 0.14f, icon.y - r * 0.14f}, r * 0.10f,
-                   (Color){120, 120, 120, 255});
-        DrawCircleV((Vector2){icon.x + r * 0.16f, icon.y - r * 0.16f},
-                    r * 0.10f, (Color){200, 200, 200, 255});
-      } break;
-
-      case ACTION_HARVEST: {
-        // pickaxe-ish
-        DrawLineEx((Vector2){icon.x - r * 0.16f, icon.y - r * 0.05f},
-                   (Vector2){icon.x + r * 0.16f, icon.y + r * 0.12f}, r * 0.10f,
-                   (Color){120, 80, 40, 255});
-        DrawCircleV((Vector2){icon.x + r * 0.18f, icon.y + r * 0.14f},
-                    r * 0.10f, (Color){180, 180, 180, 255});
-      } break;
-
-      default: {
-        // move: little arrow
-        DrawTriangle((Vector2){icon.x, icon.y - r * 0.16f},
-                     (Vector2){icon.x - r * 0.14f, icon.y + r * 0.12f},
-                     (Vector2){icon.x + r * 0.14f, icon.y + r * 0.12f},
-                     (Color){60, 60, 60, 255});
-      } break;
+      if (pressed) {
+        craft(&recipes[i]);
       }
     }
+  }
 
-    /* =======================
-       TRIBES & AGENTS
-    ======================= */
-    void init_tribes(void) {
-      Color colors[] = {RED, BLUE, GREEN, ORANGE};
-      float spacing = 24.0f;
+  // --- shoot arrow (F) if you have ammo ---
+  if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
+    Vector2 mouse = GetMousePosition();
+    Vector2 pp = world_to_screen(player.position);
+    Vector2 aim = Vector2Subtract(mouse, pp);
 
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        Tribe *tr = &tribes[t];
-        tr->tribe_id = t;
-        tr->color = colors[t % 4];
-        tr->base.position = (Vector2){
-            WORLD_SIZE / 2 + cosf(t * 2 * PI / TRIBE_COUNT) * spacing,
-            WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
-        tr->base.radius = BASE_RADIUS;
-        tr->integrity = 100.0f;
-      }
+    Vector2 dir = Vector2Normalize(aim);
+    inv_arrows--;
+
+    spawn_projectile(player.position, dir, 14.0f, 1.8f,
+                     12 + (has_sword ? 4 : 0));
+  }
+
+  // --- zoom controls ---
+  if (IsKeyDown(KEY_EQUAL))
+    target_world_scale += 60.0f * dt;
+  if (IsKeyDown(KEY_MINUS))
+    target_world_scale -= 60.0f * dt;
+  target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
+
+  // --- current chunk ---
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  // --- Interactions ---
+  // IMPORTANT: only regen stamina when NOT spending it this frame
+  bool spent_stamina_this_frame = false;
+
+  // LMB = attack mobs
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_attack_mob_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
+    // (attacks currently don't cost stamina in your code)
+  }
+
+  // RMB = harvest/mine resources (this spends stamina inside
+  // player_try_harvest...)
+  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
+    float before = player.stamina;
+
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_harvest_resource_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
+
+    // if harvest actually happened, stamina decreased
+    if (player.stamina < before - 0.0001f) {
+      spent_stamina_this_frame = true;
     }
+  }
 
-    void init_agents(void) {
-      MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
-                      .latent_dim = 64,
-                      .action_count = ACTION_COUNT};
+  // --- stamina regen (time-based, only when not spending this frame) ---
+  if (!spent_stamina_this_frame && player.stamina < 100.0f) {
+    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+  }
 
-      for (int i = 0; i < MAX_AGENTS; i++) {
-        Agent *a = &agents[i];
-        a->agent_id = i;
-        a->alive = true;
-        a->health = a->stamina = 100;
-        a->flash_timer = 0;
-        a->age = 0;
-        a->agent_start = i;
-        a->reward_accumulator = 0.0f;
+  // clamp health
+  if (player.health < 0.0f)
+    player.health = 0.0f;
+}
 
-        a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-        a->cortex = SAM_as_MUZE(a->sam);
+static void update_visible_world(float dt) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
 
-        a->last_action = ACTION_COUNT;
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
 
-        Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
-        float ang = randf(0, 2 * PI);
-        float d = randf(2, tr->base.radius - 1);
-        a->position = (Vector2){tr->base.position.x + cosf(ang) * d,
-                                tr->base.position.y + sinf(ang) * d};
-      }
-    }
+      pthread_rwlock_wrlock(&c->lock);
 
-    /* =======================
-       OBSERVATION & RL
-    ======================= */
-    void encode_observation(Agent * a, Chunk * c, ObsBuffer * obs) {
-      Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-
-      // --- self status ---
-      obs_push(obs, clamp01(a->health / 100.0f));
-      obs_push(obs, clamp01(a->stamina / 100.0f));
-
-      // --- base features ---
-      Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
-      float dbase = Vector2Length(to_base);
-      float base_dir_x = safe_norm(to_base.x, dbase);
-      float base_dir_y = safe_norm(to_base.y, dbase);
-
-      obs_push(obs, clamp01(dbase / 64.0f));
-      obs_push(obs, base_dir_x);
-      obs_push(obs, base_dir_y);
-      obs_push(obs, (dbase < tr->base.radius) ? 1.0f : 0.0f); // in base
-
-      // --- chunk density ---
-      obs_push(obs, clamp01((float)c->resource_count / (float)MAX_RESOURCES));
-
-      // --- nearest resource (by type) in VIEW CHUNK ONLY (fast) ---
-      // Features: for each resource type [tree, rock, gold, food]:
-      //   - nearest distance (normalized)
-      //   - nearest direction (x,y) normalized
-      //   - availability bit (1 if found)
-      const int R_TYPES = 4;
-      float best_d[R_TYPES];
-      Vector2 best_dir[R_TYPES];
-      int found[R_TYPES];
-
-      for (int t = 0; t < R_TYPES; t++) {
-        best_d[t] = 1e9f;
-        best_dir[t] = (Vector2){0, 0};
-        found[t] = 0;
-      }
-
-      // We need this chunk's world origin
-      // NOTE: c is the chunk agent is currently in, so:
-      int cx = (int)(a->position.x / CHUNK_SIZE);
-      int cy = (int)(a->position.y / CHUNK_SIZE);
       Vector2 chunk_origin =
           (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
+      // resources animation decay
       for (int i = 0; i < c->resource_count; i++) {
         Resource *r = &c->resources[i];
-        if (r->health <= 0)
-          continue;
-        int t = (int)r->type;
-        if (t < 0 || t >= R_TYPES)
-          continue;
-
-        // Convert resource local -> world
-        Vector2 r_world = Vector2Add(chunk_origin, r->position);
-
-        Vector2 dvec = Vector2Subtract(r_world, a->position);
-        float d = Vector2Length(dvec);
-
-        if (d < best_d[t]) {
-          best_d[t] = d;
-          best_dir[t] = dvec;
-          found[t] = 1;
-        }
+        if (r->hit_timer > 0)
+          r->hit_timer -= dt;
+        if (r->break_flash > 0)
+          r->break_flash -= dt;
       }
 
-      for (int t = 0; t < R_TYPES; t++) {
-        if (!found[t]) {
-          obs_push(obs, 1.0f); // distance "far"
-          obs_push(obs, 0.0f); // dir x
-          obs_push(obs, 0.0f); // dir y
-          obs_push(obs, 0.0f); // found bit
-        } else {
-          float d = best_d[t];
-          Vector2 v = best_dir[t];
-          obs_push(obs,
-                   clamp01(d / 32.0f)); // normalize to something reasonable
-          obs_push(obs, safe_norm(v.x, d));
-          obs_push(obs, safe_norm(v.y, d));
-          obs_push(obs, 1.0f);
-        }
-      }
+      // mobs
+      despawn_hostiles_if_day(c);
+      try_spawn_mobs_in_chunk(c, cx, cy, dt);
 
-      // --- nearest mob (any type) in this chunk ---
-      float best_mob_d = 1e9f;
-      Vector2 best_mob_dir = (Vector2){0, 0};
-      int mob_found = 0;
-      int mob_type = 0;
-
+      // mobs AI
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
           continue;
-
-        Vector2 m_world = Vector2Add(chunk_origin, m->position);
-        Vector2 dvec = Vector2Subtract(m_world, a->position);
-        float d = Vector2Length(dvec);
-
-        if (d < best_mob_d) {
-          best_mob_d = d;
-          best_mob_dir = dvec;
-          mob_found = 1;
-          mob_type = (int)m->type;
-        }
+        update_mob_ai(m, chunk_origin, dt);
       }
-
-      if (!mob_found) {
-        obs_push(obs, 1.0f);
-        obs_push(obs, 0.0f);
-        obs_push(obs, 0.0f);
-        obs_push(obs, 0.0f);
-      } else {
-        obs_push(obs, clamp01(best_mob_d / 32.0f));
-        obs_push(obs, safe_norm(best_mob_dir.x, best_mob_d));
-        obs_push(obs, safe_norm(best_mob_dir.y, best_mob_d));
-        obs_push(obs, (float)mob_type / 3.0f); // 0..3 -> 0..1
-      }
-
-      // bias
-      obs_push(obs, 1.0f);
-
-      // final: enforce fixed-size vector
-      obs_finalize_fixed(obs, OBS_DIM);
-    }
-
-    int decide_action(Agent * a, ObsBuffer * obs) {
-      return muze_plan(a->cortex, obs->data, (size_t)obs->size,
-                       (size_t)ACTION_COUNT);
-    }
-
-    /* =======================
-       AGENT UPDATE
-    ======================= */
-    void update_agent(Agent * a) {
-      if (!a->alive)
-        return;
-
-      int cx = (int)(a->position.x / CHUNK_SIZE);
-      int cy = (int)(a->position.y / CHUNK_SIZE);
-      Chunk *c = get_chunk(cx, cy);
-
-      Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
-
-      float reward = 0.0f;
-
-      // living cost / base bonus
-      float dist_to_base =
-          Vector2Length(Vector2Subtract(a->position, tr->base.position));
-      if (dist_to_base < BASE_RADIUS) {
-        a->health = fminf(a->health + 0.5f, 100.0f);
-        a->stamina = fminf(a->stamina + 0.5f, 100.0f);
-        reward += 0.01f;
-      } else {
-        a->stamina -= 0.05f;
-        reward -= 0.001f;
-      }
-
-      a->reward_accumulator += reward;
-
-      ObsBuffer obs;
-      obs_init(&obs);
-      pthread_rwlock_rdlock(&c->lock);
-      encode_observation(a, c, &obs);
       pthread_rwlock_unlock(&c->lock);
-
-      MuCortex *cortex = a->cortex;
-      int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
-      a->last_action = action;
-
-      // apply action
-      switch (action) {
-      case ACTION_UP:
-        a->position.y -= 0.5f;
-        break;
-      case ACTION_DOWN:
-        a->position.y += 0.5f;
-        break;
-      case ACTION_LEFT:
-        a->position.x -= 0.5f;
-        break;
-      case ACTION_RIGHT:
-        a->position.x += 0.5f;
-        break;
-      default:
-        break;
-      }
-
-      dist_to_base = Vector2Distance(a->position, tr->base.position);
-      if (dist_to_base < BASE_RADIUS) {
-        a->health = fminf(a->health + 0.5f, 100.0f);
-        a->stamina = fminf(a->stamina + 0.5f, 100.0f);
-      } else {
-        a->stamina -= 0.05f;
-      }
-
-      a->age++;
-
-      int terminal = 0;
-      if (a->health <= 0.0f || a->stamina <= 0.0f) {
-        a->alive = false;
-        terminal = 1;
-        reward -= 1.0f; // death penalty (now it actually happens)
-      }
-
-      // ONLY learn through the cortex adapter (SAM brain)
-      cortex->learn(cortex->brain, obs.data, obs.size, action, reward,
-                    terminal);
-
-      obs_free(&obs);
     }
+  }
+}
 
-    static void spawn_projectile(Vector2 pos, Vector2 dir, float speed,
-                                 float ttl, int dmg) {
-      for (int i = 0; i < MAX_PROJECTILES; i++) {
-        if (!projectiles[i].alive) {
-          projectiles[i].alive = true;
-          projectiles[i].pos = pos;
-          projectiles[i].vel = Vector2Scale(Vector2Normalize(dir), speed);
-          projectiles[i].ttl = ttl;
-          projectiles[i].damage = dmg;
-          return;
-        }
-      }
+static void draw_ui(void) {
+  // panel
+  DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
+  DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
+
+  // bars
+  float hp01 = clamp01(player.health / 100.0f);
+  float st01 = clamp01(player.stamina / 100.0f);
+
+  DrawText("Player", 24, 20, 18, RAYWHITE);
+  DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);
+  DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
+
+  // bar visuals
+  DrawRectangle(120, 46, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 46, (int)(160 * hp01), 12, (Color){80, 220, 80, 255});
+  DrawRectangleLines(120, 46, 160, 12, (Color){0, 0, 0, 200});
+
+  DrawRectangle(120, 66, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 66, (int)(160 * st01), 12, (Color){80, 160, 255, 255});
+  DrawRectangleLines(120, 66, 160, 12, (Color){0, 0, 0, 200});
+
+  // inventory
+  DrawText(TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), 24, 90, 16,
+           RAYWHITE);
+  DrawText(TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), 24, 110, 16,
+           RAYWHITE);
+
+  // crosshair
+  Vector2 m = GetMousePosition();
+  DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
+  DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
+           (Color){0, 0, 0, 200});
+  DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
+           (Color){0, 0, 0, 200});
+
+  // cooldown rings around hands
+  float hFrac = 1.0f - clamp01(player_harvest_cd / PLAYER_HARVEST_COOLDOWN);
+  float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
+
+  float rr = 12.0f;
+  DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
+           (Color){255, 140, 80, 220});
+  DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
+           (Color){80, 160, 255, 220});
+
+  DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
+           130, 16, RAYWHITE);
+
+  // base integrity
+  int y0 = 150;
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float v = clamp01(tribes[t].integrity / 100.0f);
+    DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16, tribes[t].color);
+    DrawRectangle(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 140});
+    DrawRectangle(90, y0 + 4 + t * 22, (int)(140 * v), 10, tribes[t].color);
+    DrawRectangleLines(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
+  }
+}
+
+static void draw_hover_label(void) {
+  int hp = -1;
+
+  // find nearest in current chunk within a small radius
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  const char *label = NULL;
+  float bestD = 1e9f;
+
+  // resources
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                           cy * CHUNK_SIZE + r->position.y};
+    float d = Vector2Distance(player.position, rw);
+    if (d < 2.2f && d < bestD) {
+      bestD = d;
+      label = res_name(r->type);
+      hp = r->health;
     }
+  }
 
-    static void update_projectiles(float dt) {
-      for (int i = 0; i < MAX_PROJECTILES; i++) {
-        Projectile *p = &projectiles[i];
-        if (!p->alive)
-          continue;
-
-        p->ttl -= dt;
-        if (p->ttl <= 0.0f) {
-          p->alive = false;
-          continue;
-        }
-
-        p->pos = Vector2Add(p->pos, Vector2Scale(p->vel, dt));
-
-        // hit player (simple circle hit)
-        float d = Vector2Distance(p->pos, player.position);
-        if (d < 0.55f) {
-          player.health -= (float)p->damage;
-          player_hurt_timer = 0.18f;
-          p->alive = false;
-          cam_shake = fmaxf(cam_shake, 0.10f);
-        }
-      }
+  // mobs (prefer mobs if close)
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                           cy * CHUNK_SIZE + m->position.y};
+    float d = Vector2Distance(player.position, mw);
+    if (d < 2.6f && d < bestD) {
+      bestD = d;
+      label = mob_name(m->type);
+      hp = m->health;
     }
+  }
 
-    static void draw_projectiles(void) {
-      for (int i = 0; i < MAX_PROJECTILES; i++) {
-        Projectile *p = &projectiles[i];
-        if (!p->alive)
-          continue;
-
-        Vector2 sp = world_to_screen(p->pos);
-        float r = WORLD_SCALE * 0.07f * scale_size;
-        DrawCircleV(sp, r, (Color){220, 220, 220, 255});
-        DrawCircleLines((int)sp.x, (int)sp.y, r, (Color){0, 0, 0, 160});
-      }
+  if (label) {
+    Vector2 mp = GetMousePosition();
+    DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
+                  (Color){0, 0, 0, 140});
+    DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 160, 22,
+                       (Color){0, 0, 0, 220});
+    if (hp >= 0) {
+      DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22, (int)mp.y + 13,
+               16, RAYWHITE);
+    } else {
+      DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
     }
+  }
+}
 
-    static void update_mob_ai(Mob * m, Vector2 chunk_origin, float dt) {
-      // timers
-      if (m->ai_timer > 0)
-        m->ai_timer -= dt;
-      if (m->aggro_timer > 0)
-        m->aggro_timer -= dt;
-      if (m->attack_cd > 0)
-        m->attack_cd -= dt;
-      if (m->hurt_timer > 0)
-        m->hurt_timer -= dt;
-      if (m->lunge_timer > 0)
-        m->lunge_timer -= dt;
+static void draw_minimap(void) {
+  int x = 310, y = 14; // top row, to the right of your panel
+  int size = 160;
 
-      // compute WORLD pos for decisions
-      Vector2 mw = Vector2Add(chunk_origin, m->position);
+  DrawRectangle(x, y, size, size, (Color){0, 0, 0, 110});
+  DrawRectangleLines(x, y, size, size, (Color){0, 0, 0, 220});
 
-      Vector2 basePos = nearest_base_pos(mw);
-      Vector2 toB = Vector2Subtract(basePos, mw);
-      float dB = Vector2Length(toB);
-      Vector2 dirB =
-          (dB > 1e-3f) ? Vector2Scale(toB, 1.0f / dB) : (Vector2){0, 0};
+  // sample area around player (world units)
+  float radius = 28.0f;
+  int cells = 40; // 40x40 grid
+  float cell = (float)size / (float)cells;
 
-      // only fully “aware” if player is in same chunk (keeps it simple & cheap)
-      int pcx = (int)(player.position.x / CHUNK_SIZE);
-      int pcy = (int)(player.position.y / CHUNK_SIZE);
-      int mcx = (int)(mw.x / CHUNK_SIZE);
-      int mcy = (int)(mw.y / CHUNK_SIZE);
-      bool player_same_chunk = (pcx == mcx && pcy == mcy);
+  for (int gy = 0; gy < cells; gy++) {
+    for (int gx = 0; gx < cells; gx++) {
+      float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
+      float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
 
-      Vector2 toP = Vector2Subtract(player.position, mw);
-      float dP = Vector2Length(toP);
-      Vector2 dirP =
-          (dP > 1e-3f) ? Vector2Scale(toP, 1.0f / dP) : (Vector2){0, 0};
+      Vector2 wp = (Vector2){player.position.x + nx * radius,
+                             player.position.y + ny * radius};
 
-      bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
-
-      // pick wander direction sometimes
-      if (m->ai_timer <= 0.0f) {
-        m->ai_timer = randf(0.35f, 1.25f);
-        float ang = randf(0, 2 * PI);
-        m->vel = (Vector2){cosf(ang), sinf(ang)};
-      }
-
-      float speed = MOB_SPEED_PASSIVE;
-
-      // PASSIVE: flee if close or angry
-      if (!hostile) {
-        bool scared = player_same_chunk && (dP < 4.0f || m->aggro_timer > 0.0f);
-        if (scared) {
-          speed = 0.95f;
-          m->vel = Vector2Scale(dirP, -1.0f); // run away
-        }
-      }
-
-      // HOSTILE: chase / skeleton kite + shoot
-      if (hostile) {
-        speed = MOB_SPEED_HOSTILE;
-
-        bool aggroP = player_same_chunk &&
-                      ((dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f));
-
-        if (aggroP) {
-          // your existing zombie/skeleton vs player logic (keep as-is)
-          // ...
-        } else if (is_night_cached) {
-          // raid behavior: march toward nearest base even if player not around
-          m->vel = dirB;
-
-          // if inside base -> damage it
-          for (int t = 0; t < TRIBE_COUNT; t++) {
-            Tribe *tr = &tribes[t];
-            float db = Vector2Distance(mw, tr->base.position);
-            if (db < tr->base.radius + 0.8f) {
-              if (m->attack_cd <= 0.0f) {
-                m->attack_cd = 0.85f;
-                m->lunge_timer = 0.12f;
-                tr->integrity = fmaxf(0.0f, tr->integrity - 5.0f);
-                cam_shake = fmaxf(cam_shake, 0.12f);
-              }
-            }
-          }
-        }
-        if (player_same_chunk) {
-          bool aggro = (dP < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
-          if (aggro) {
-            speed = MOB_SPEED_HOSTILE;
-
-            if (m->type == MOB_ZOMBIE) {
-              // chase
-              m->vel = dirP;
-
-              // melee attack
-              if (dP < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
-                m->attack_cd = 0.8f;
-                m->lunge_timer = 0.18f;
-                player.health -= 6.0f;
-                player_hurt_timer = 0.18f;
-              }
-            } else if (m->type == MOB_SKELETON) {
-              // keep some distance
-              float desired = 6.0f;
-              if (dP < desired - 0.8f)
-                m->vel = Vector2Scale(dirP, -1.0f); // back up
-              else if (dP > desired + 1.2f)
-                m->vel = dirP; // approach
-              else
-                m->vel = Vector2Scale(m->vel, 0.5f); // drift
-
-              // shoot
-              if (dP < 12.0f && m->attack_cd <= 0.0f) {
-                m->attack_cd = 1.1f;
-                m->lunge_timer = 0.12f;
-                spawn_projectile(mw, dirP, 9.0f, 2.0f, 8);
-              }
-            }
-          }
-        }
-      }
-      // move (chunk-local)
-      Vector2 delta = Vector2Scale(m->vel, speed * dt);
-      m->position = Vector2Add(m->position, delta);
-      m->position = clamp_local_to_chunk(m->position);
-    }
-
-    static void draw_crafting_ui(void) {
-      if (!crafting_open)
-        return;
-
-      int x = 14, y = 260, w = 360, h = 28 + recipe_count * 22;
-      DrawRectangle(x, y, w, h, (Color){0, 0, 0, 120});
-      DrawRectangleLines(x, y, w, h, (Color){0, 0, 0, 220});
-      DrawText("Crafting (TAB)", x + 10, y + 6, 18, RAYWHITE);
-
-      for (int i = 0; i < recipe_count; i++) {
-        Recipe *r = &recipes[i];
-        Color c = can_afford(r) ? RAYWHITE : (Color){180, 180, 180, 255};
-
-        DrawText(
-            TextFormat("%d) %s  [W%d S%d G%d F%d]%s", i + 1, r->name, r->wood,
-                       r->stone, r->gold, r->food,
-                       (r->unlock_flag && *r->unlock_flag) ? " (OWNED)" : ""),
-            x + 10, y + 30 + i * 20, 16, c);
-      }
-    }
-
-    /* =======================
-       PLAYER
-    ======================= */
-    void init_player(void) {
-      player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
-      player.health = 100;
-      player.stamina = 100;
-    }
-
-    void update_player(void) {
-      float dt = GetFrameTime();
-
-      // --- cooldown timers ---
-      if (player_harvest_cd > 0.0f)
-        player_harvest_cd -= dt;
-      if (player_attack_cd > 0.0f)
-        player_attack_cd -= dt;
-      if (player_hurt_timer > 0.0f)
-        player_hurt_timer -= dt;
-
-      // --- movement (time-based feels better) ---
-      float speed = 0.6f; // world units per frame-ish
-      // If you want true time-based movement, use: float move = speed * (dt
-      // * 60.0f);
-      float move = speed;
-
-      if (IsKeyDown(KEY_W))
-        player.position.y -= move;
-      if (IsKeyDown(KEY_S))
-        player.position.y += move;
-      if (IsKeyDown(KEY_A))
-        player.position.x -= move;
-      if (IsKeyDown(KEY_D))
-        player.position.x += move;
-
-      // --- crafting toggle ---
-      if (IsKeyPressed(KEY_TAB)) {
-        crafting_open = !crafting_open;
-      }
-
-      // --- crafting input (1..9) only when crafting menu is open ---
-      if (crafting_open) {
-        for (int i = 0; i < recipe_count && i < 9; i++) {
-          // top-row number keys
-          bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
-
-          // keypad number keys (optional but nice)
-          pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
-
-          if (pressed) {
-            craft(&recipes[i]);
-          }
-        }
-      }
-
-      // --- shoot arrow (F) if you have ammo ---
-      if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
-        Vector2 mouse = GetMousePosition();
-        Vector2 pp = world_to_screen(player.position);
-        Vector2 aim = Vector2Subtract(mouse, pp);
-
-        Vector2 dir = Vector2Normalize(aim);
-        inv_arrows--;
-
-        spawn_projectile(player.position, dir, 14.0f, 1.8f,
-                         12 + (has_sword ? 4 : 0));
-      }
-
-      // --- zoom controls ---
-      if (IsKeyDown(KEY_EQUAL))
-        target_world_scale += 60.0f * dt;
-      if (IsKeyDown(KEY_MINUS))
-        target_world_scale -= 60.0f * dt;
-      target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
-
-      // --- current chunk ---
-      int cx = (int)(player.position.x / CHUNK_SIZE);
-      int cy = (int)(player.position.y / CHUNK_SIZE);
+      int cx = (int)(wp.x / CHUNK_SIZE);
+      int cy = (int)(wp.y / CHUNK_SIZE);
       Chunk *c = get_chunk(cx, cy);
 
-      // --- Interactions ---
-      // IMPORTANT: only regen stamina when NOT spending it this frame
-      bool spent_stamina_this_frame = false;
-
-      // LMB = attack mobs
-      if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
-        pthread_rwlock_wrlock(&c->lock);
-        player_try_attack_mob_in_chunk(c, cx, cy);
-        pthread_rwlock_unlock(&c->lock);
-        // (attacks currently don't cost stamina in your code)
-      }
-
-      // RMB = harvest/mine resources (this spends stamina inside
-      // player_try_harvest...)
-      if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
-        float before = player.stamina;
-
-        pthread_rwlock_wrlock(&c->lock);
-        player_try_harvest_resource_in_chunk(c, cx, cy);
-        pthread_rwlock_unlock(&c->lock);
-
-        // if harvest actually happened, stamina decreased
-        if (player.stamina < before - 0.0001f) {
-          spent_stamina_this_frame = true;
-        }
-      }
-
-      // --- stamina regen (time-based, only when not spending this frame) ---
-      if (!spent_stamina_this_frame && player.stamina < 100.0f) {
-        player.stamina =
-            fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
-      }
-
-      // clamp health
-      if (player.health < 0.0f)
-        player.health = 0.0f;
+      Color bc = Fade(biome_colors[c->biome_type], 0.85f);
+      DrawRectangle((int)(x + gx * cell), (int)(y + gy * cell),
+                    (int)ceilf(cell), (int)ceilf(cell), bc);
     }
+  }
 
-    static void update_visible_world(float dt) {
-      int pcx = (int)(player.position.x / CHUNK_SIZE);
-      int pcy = (int)(player.position.y / CHUNK_SIZE);
+  // bases
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
+    if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+      continue;
+    float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+    float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+    DrawCircle((int)(x + pxm), (int)(y + pym), 3, tribes[t].color);
+  }
 
-      for (int dx = -6; dx <= 6; dx++) {
-        for (int dy = -6; dy <= 6; dy++) {
-          int cx = pcx + dx;
-          int cy = pcy + dy;
-          Chunk *c = get_chunk(cx, cy);
-
-          pthread_rwlock_wrlock(&c->lock);
-
-          Vector2 chunk_origin =
-              (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
-          // resources animation decay
-          for (int i = 0; i < c->resource_count; i++) {
-            Resource *r = &c->resources[i];
-            if (r->hit_timer > 0)
-              r->hit_timer -= dt;
-            if (r->break_flash > 0)
-              r->break_flash -= dt;
-          }
-
-          // mobs
-          despawn_hostiles_if_day(c);
-          try_spawn_mobs_in_chunk(c, cx, cy, dt);
-
-          // mobs AI
-          for (int i = 0; i < MAX_MOBS; i++) {
-            Mob *m = &c->mobs[i];
-            if (m->health <= 0)
-              continue;
-            update_mob_ai(m, chunk_origin, dt);
-          }
-          pthread_rwlock_unlock(&c->lock);
-        }
-      }
-    }
-
-    static void draw_ui(void) {
-      // panel
-      DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
-      DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
-
-      // bars
-      float hp01 = clamp01(player.health / 100.0f);
-      float st01 = clamp01(player.stamina / 100.0f);
-
-      DrawText("Player", 24, 20, 18, RAYWHITE);
-      DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);
-      DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
-
-      // bar visuals
-      DrawRectangle(120, 46, 160, 12, (Color){0, 0, 0, 140});
-      DrawRectangle(120, 46, (int)(160 * hp01), 12, (Color){80, 220, 80, 255});
-      DrawRectangleLines(120, 46, 160, 12, (Color){0, 0, 0, 200});
-
-      DrawRectangle(120, 66, 160, 12, (Color){0, 0, 0, 140});
-      DrawRectangle(120, 66, (int)(160 * st01), 12, (Color){80, 160, 255, 255});
-      DrawRectangleLines(120, 66, 160, 12, (Color){0, 0, 0, 200});
-
-      // inventory
-      DrawText(TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), 24, 90,
-               16, RAYWHITE);
-      DrawText(TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), 24, 110,
-               16, RAYWHITE);
-
-      // crosshair
-      Vector2 m = GetMousePosition();
-      DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
-      DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
-               (Color){0, 0, 0, 200});
-      DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
-               (Color){0, 0, 0, 200});
-
-      // cooldown rings around hands
-      float hFrac = 1.0f - clamp01(player_harvest_cd / PLAYER_HARVEST_COOLDOWN);
-      float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
-
-      float rr = 12.0f;
-      DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
-               (Color){255, 140, 80, 220});
-      DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
-               (Color){80, 160, 255, 220});
-
-      DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
-               130, 16, RAYWHITE);
-
-      // base integrity
-      int y0 = 150;
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        float v = clamp01(tribes[t].integrity / 100.0f);
-        DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16,
-                 tribes[t].color);
-        DrawRectangle(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 140});
-        DrawRectangle(90, y0 + 4 + t * 22, (int)(140 * v), 10, tribes[t].color);
-        DrawRectangleLines(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
-      }
-    }
-
-    static void draw_hover_label(void) {
-      int hp = -1;
-
-      // find nearest in current chunk within a small radius
-      int cx = (int)(player.position.x / CHUNK_SIZE);
-      int cy = (int)(player.position.y / CHUNK_SIZE);
+  // mobs (nearby)
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  for (int dx = -2; dx <= 2; dx++) {
+    for (int dy = -2; dy <= 2; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
       Chunk *c = get_chunk(cx, cy);
-
-      const char *label = NULL;
-      float bestD = 1e9f;
-
-      // resources
-      for (int i = 0; i < c->resource_count; i++) {
-        Resource *r = &c->resources[i];
-        if (r->health <= 0)
-          continue;
-        Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
-                               cy * CHUNK_SIZE + r->position.y};
-        float d = Vector2Distance(player.position, rw);
-        if (d < 2.2f && d < bestD) {
-          bestD = d;
-          label = res_name(r->type);
-          hp = r->health;
-        }
-      }
-
-      // mobs (prefer mobs if close)
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
           continue;
-        Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
-                               cy * CHUNK_SIZE + m->position.y};
-        float d = Vector2Distance(player.position, mw);
-        if (d < 2.6f && d < bestD) {
-          bestD = d;
-          label = mob_name(m->type);
-          hp = m->health;
-        }
-      }
-
-      if (label) {
-        Vector2 mp = GetMousePosition();
-        DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
-                      (Color){0, 0, 0, 140});
-        DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 160, 22,
-                           (Color){0, 0, 0, 220});
-        if (hp >= 0) {
-          DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22,
-                   (int)mp.y + 13, 16, RAYWHITE);
-        } else {
-          DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
-        }
-      }
-    }
-
-    static void draw_minimap(void) {
-      int x = 310, y = 14; // top row, to the right of your panel
-      int size = 160;
-
-      DrawRectangle(x, y, size, size, (Color){0, 0, 0, 110});
-      DrawRectangleLines(x, y, size, size, (Color){0, 0, 0, 220});
-
-      // sample area around player (world units)
-      float radius = 28.0f;
-      int cells = 40; // 40x40 grid
-      float cell = (float)size / (float)cells;
-
-      for (int gy = 0; gy < cells; gy++) {
-        for (int gx = 0; gx < cells; gx++) {
-          float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
-          float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
-
-          Vector2 wp = (Vector2){player.position.x + nx * radius,
-                                 player.position.y + ny * radius};
-
-          int cx = (int)(wp.x / CHUNK_SIZE);
-          int cy = (int)(wp.y / CHUNK_SIZE);
-          Chunk *c = get_chunk(cx, cy);
-
-          Color bc = Fade(biome_colors[c->biome_type], 0.85f);
-          DrawRectangle((int)(x + gx * cell), (int)(y + gy * cell),
-                        (int)ceilf(cell), (int)ceilf(cell), bc);
-        }
-      }
-
-      // bases
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
+        Vector2 mw = Vector2Add(origin, m->position);
+        Vector2 d = Vector2Subtract(mw, player.position);
         if (fabsf(d.x) > radius || fabsf(d.y) > radius)
           continue;
+
         float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
         float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-        DrawCircle((int)(x + pxm), (int)(y + pym), 3, tribes[t].color);
+        DrawPixel((int)(x + pxm), (int)(y + pym), (Color){240, 80, 80, 255});
       }
-
-      // mobs (nearby)
-      int pcx = (int)(player.position.x / CHUNK_SIZE);
-      int pcy = (int)(player.position.y / CHUNK_SIZE);
-      for (int dx = -2; dx <= 2; dx++) {
-        for (int dy = -2; dy <= 2; dy++) {
-          int cx = pcx + dx;
-          int cy = pcy + dy;
-          Chunk *c = get_chunk(cx, cy);
-          Vector2 origin =
-              (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-          for (int i = 0; i < MAX_MOBS; i++) {
-            Mob *m = &c->mobs[i];
-            if (m->health <= 0)
-              continue;
-            Vector2 mw = Vector2Add(origin, m->position);
-            Vector2 d = Vector2Subtract(mw, player.position);
-            if (fabsf(d.x) > radius || fabsf(d.y) > radius)
-              continue;
-
-            float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
-            float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-            DrawPixel((int)(x + pxm), (int)(y + pym),
-                      (Color){240, 80, 80, 255});
-          }
-        }
-      }
-
-      // player dot
-      DrawCircle(x + size / 2, y + size / 2, 3, RAYWHITE);
-      DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
     }
+  }
 
-    static void draw_hurt_vignette(void) {
-      if (player_hurt_timer <= 0.0f)
-        return;
-      float t = clamp01(player_hurt_timer / 0.18f);
-      unsigned char a = (unsigned char)(120 * t);
-      DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
+  // player dot
+  DrawCircle(x + size / 2, y + size / 2, 3, RAYWHITE);
+  DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
+}
+
+static void draw_hurt_vignette(void) {
+  if (player_hurt_timer <= 0.0f)
+    return;
+  float t = clamp01(player_hurt_timer / 0.18f);
+  unsigned char a = (unsigned char)(120 * t);
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
+}
+
+/* =======================
+   THREAD
+
+ * ======================= */
+
+static void run_agent_jobs(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_next_agent = 0;
+  job_done_workers = 0;
+  job_active = 1;
+  pthread_cond_broadcast(&job_cv);
+
+  while (job_active) {
+    pthread_cond_wait(&done_cv, &job_mtx);
+  }
+  pthread_mutex_unlock(&job_mtx);
+}
+
+static void *agent_worker(void *arg) {
+  (void)arg;
+
+  for (;;) {
+    // wait for a job
+    pthread_mutex_lock(&job_mtx);
+    while (!job_active && !job_quit) {
+      pthread_cond_wait(&job_cv, &job_mtx);
     }
-
-    /* =======================
-       THREAD
-
-     * ======================= */
-
-    static void run_agent_jobs(void) {
-      pthread_mutex_lock(&job_mtx);
-      job_next_agent = 0;
-      job_done_workers = 0;
-      job_active = 1;
-      pthread_cond_broadcast(&job_cv);
-
-      while (job_active) {
-        pthread_cond_wait(&done_cv, &job_mtx);
-      }
+    if (job_quit) {
       pthread_mutex_unlock(&job_mtx);
+      break;
     }
+    pthread_mutex_unlock(&job_mtx);
 
-    static void *agent_worker(void *arg) {
-      (void)arg;
-
-      for (;;) {
-        // wait for a job
-        pthread_mutex_lock(&job_mtx);
-        while (!job_active && !job_quit) {
-          pthread_cond_wait(&job_cv, &job_mtx);
-        }
-        if (job_quit) {
-          pthread_mutex_unlock(&job_mtx);
-          break;
-        }
-        pthread_mutex_unlock(&job_mtx);
-
-        // do work: pull agents until none left
-        for (;;) {
-          pthread_mutex_lock(&job_mtx);
-          int idx = job_next_agent++;
-          pthread_mutex_unlock(&job_mtx);
-
-          if (idx >= MAX_AGENTS)
-            break;
-          update_agent(&agents[idx]);
-        }
-
-        // notify done
-        pthread_mutex_lock(&job_mtx);
-        job_done_workers++;
-        if (job_done_workers == WORKER_COUNT) {
-          job_active = 0;
-          pthread_cond_signal(&done_cv);
-        }
-        pthread_mutex_unlock(&job_mtx);
-      }
-
-      return NULL;
-    }
-
-    /* =======================
-       MAIN
-    ======================= */
-    int main(void) {
-      srand(time(NULL));
-
-      InitWindow(1280, 800, "MUZE Tribal Simulation");
-      SCREEN_WIDTH = GetScreenWidth();
-      SCREEN_HEIGHT = GetScreenHeight();
-      TILE_SIZE = SCREEN_HEIGHT / 18.0f;
-      SetTargetFPS(60);
-
-      init_tribes();
-      init_agents();
-      init_player();
-
-      for (int x = 0; x < WORLD_SIZE; x++) {
-        for (int y = 0; y < WORLD_SIZE; y++) {
-          pthread_rwlock_init(&world[x][y].lock, NULL);
-          world[x][y].generated = false;
-          world[x][y].resource_count = 0;
-          world[x][y].mob_spawn_timer = 0.0f;
-        }
-      }
-
-      for (int i = 0; i < WORKER_COUNT; i++) {
-        pthread_create(&workers[i], NULL, agent_worker, NULL);
-      }
-
-      for (int i = 0; i < MAX_PROJECTILES; i++)
-        projectiles[i].alive = false;
-
-      while (!WindowShouldClose()) {
-        float dt = GetFrameTime();
-
-        camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
-        camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
-
-        if (cam_shake > 0.0f) {
-          cam_shake -= dt;
-          float mag = cam_shake * 0.65f;
-          camera_pos.x += randf(-mag, mag);
-          camera_pos.y += randf(-mag, mag);
-        }
-        WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
-
-        update_player();
-        update_visible_world(dt);
-        update_projectiles(dt);
-        update_daynight(dt);
-
-        run_agent_jobs(); // update agents
-
-        // detect transition night->day for reward
-        int now_night = is_night_cached;
-        if (was_night && !now_night) {
-          // dawn reward: shards + small base repair
-          inv_shards += 5;
-          for (int t = 0; t < TRIBE_COUNT; t++) {
-            tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
-          }
-        }
-        was_night = now_night;
-
-        // raid spawner
-        if (is_night_cached) {
-          raid_timer -= dt;
-          if (raid_timer <= 0.0f) {
-            raid_timer = raid_interval;
-            spawn_raid_wave();
-          }
-        } else {
-          raid_timer = 1.5f;
-        }
-
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          if (!agents[i].alive)
-            continue;
-          int acx = (int)(agents[i].position.x / CHUNK_SIZE);
-          int acy = (int)(agents[i].position.y / CHUNK_SIZE);
-          (void)get_chunk(acx, acy);
-        }
-
-        update_pickups(dt);
-        collect_nearby_pickups();
-
-        BeginDrawing();
-        ClearBackground((Color){20, 20, 20, 255});
-
-        draw_chunks();
-        draw_resources();
-        draw_mobs();
-        draw_pickups();
-        draw_projectiles();
-
-        // bases
-        for (int t = 0; t < TRIBE_COUNT; t++) {
-          Vector2 bp = world_to_screen(tribes[t].base.position);
-          DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
-                           tribes[t].color);
-        }
-
-        // agents
-        for (int i = 0; i < MAX_AGENTS; i++) {
-          if (!agents[i].alive)
-            continue;
-          Vector2 ap = world_to_screen(agents[i].position);
-          Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
-          draw_agent_detailed(&agents[i], ap, tc);
-        }
-
-        // player
-        Vector2 pp = world_to_screen(player.position);
-        draw_player(pp);
-
-        // UI + debug
-        draw_ui();
-        draw_minimap();
-        draw_crafting_ui();
-        draw_hover_label();
-        draw_daynight_overlay(); // AFTER world draw, before EndDrawing
-        draw_hurt_vignette();
-
-        DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
-        DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
-
-        EndDrawing();
-      }
-
+    // do work: pull agents until none left
+    for (;;) {
       pthread_mutex_lock(&job_mtx);
-      job_quit = 1;
-      pthread_cond_broadcast(&job_cv);
+      int idx = job_next_agent++;
       pthread_mutex_unlock(&job_mtx);
 
-      for (int i = 0; i < WORKER_COUNT; i++) {
-        pthread_join(workers[i], NULL);
-      }
-
-      CloseWindow();
-      return 0;
+      if (idx >= MAX_AGENTS)
+        break;
+      update_agent(&agents[idx]);
     }
+
+    // notify done
+    pthread_mutex_lock(&job_mtx);
+    job_done_workers++;
+    if (job_done_workers == WORKER_COUNT) {
+      job_active = 0;
+      pthread_cond_signal(&done_cv);
+    }
+    pthread_mutex_unlock(&job_mtx);
+  }
+
+  return NULL;
+}
+
+/* =======================
+   MAIN
+======================= */
+int main(void) {
+  srand(time(NULL));
+
+  InitWindow(1280, 800, "MUZE Tribal Simulation");
+  SCREEN_WIDTH = GetScreenWidth();
+  SCREEN_HEIGHT = GetScreenHeight();
+  TILE_SIZE = SCREEN_HEIGHT / 18.0f;
+  SetTargetFPS(60);
+
+  init_tribes();
+  init_agents();
+  init_player();
+
+  for (int x = 0; x < WORLD_SIZE; x++) {
+    for (int y = 0; y < WORLD_SIZE; y++) {
+      pthread_rwlock_init(&world[x][y].lock, NULL);
+      world[x][y].generated = false;
+      world[x][y].resource_count = 0;
+      world[x][y].mob_spawn_timer = 0.0f;
+    }
+  }
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_create(&workers[i], NULL, agent_worker, NULL);
+  }
+
+  for (int i = 0; i < MAX_PROJECTILES; i++)
+    projectiles[i].alive = false;
+
+  while (!WindowShouldClose()) {
+    float dt = GetFrameTime();
+
+    camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
+    camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
+
+    if (cam_shake > 0.0f) {
+      cam_shake -= dt;
+      float mag = cam_shake * 0.65f;
+      camera_pos.x += randf(-mag, mag);
+      camera_pos.y += randf(-mag, mag);
+    }
+    WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
+
+    update_player();
+    update_visible_world(dt);
+    update_projectiles(dt);
+    update_daynight(dt);
+
+    run_agent_jobs(); // update agents
+
+    // detect transition night->day for reward
+    int now_night = is_night_cached;
+    if (was_night && !now_night) {
+      // dawn reward: shards + small base repair
+      inv_shards += 5;
+      for (int t = 0; t < TRIBE_COUNT; t++) {
+        tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
+      }
+    }
+    was_night = now_night;
+
+    // raid spawner
+    if (is_night_cached) {
+      raid_timer -= dt;
+      if (raid_timer <= 0.0f) {
+        raid_timer = raid_interval;
+        spawn_raid_wave();
+      }
+    } else {
+      raid_timer = 1.5f;
+    }
+
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      if (!agents[i].alive)
+        continue;
+      int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+      int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+      (void)get_chunk(acx, acy);
+    }
+
+    update_pickups(dt);
+    collect_nearby_pickups();
+
+    BeginDrawing();
+    ClearBackground((Color){20, 20, 20, 255});
+
+    draw_chunks();
+    draw_resources();
+    draw_mobs();
+    draw_pickups();
+    draw_projectiles();
+
+    // bases
+    for (int t = 0; t < TRIBE_COUNT; t++) {
+      Vector2 bp = world_to_screen(tribes[t].base.position);
+      DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
+                       tribes[t].color);
+    }
+
+    // agents
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      if (!agents[i].alive)
+        continue;
+      Vector2 ap = world_to_screen(agents[i].position);
+      Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
+      draw_agent_detailed(&agents[i], ap, tc);
+    }
+
+    // player
+    Vector2 pp = world_to_screen(player.position);
+    draw_player(pp);
+
+    // UI + debug
+    draw_ui();
+    draw_minimap();
+    draw_crafting_ui();
+    draw_hover_label();
+    draw_daynight_overlay(); // AFTER world draw, before EndDrawing
+    draw_hurt_vignette();
+
+    DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
+
+    EndDrawing();
+  }
+
+  pthread_mutex_lock(&job_mtx);
+  job_quit = 1;
+  pthread_cond_broadcast(&job_cv);
+  pthread_mutex_unlock(&job_mtx);
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_join(workers[i], NULL);
+  }
+
+  CloseWindow();
+  return 0;
+}
