@@ -513,6 +513,14 @@ static Vector2 nearest_base_pos(Vector2 wp) {
   return best;
 }
 
+static inline Vector2 world_to_screen(Vector2 wp) {
+  Vector2 sp = Vector2Subtract(wp, camera_pos);
+  sp = Vector2Scale(sp, WORLD_SCALE);
+  sp.x += SCREEN_WIDTH / 2;
+  sp.y += SCREEN_HEIGHT / 2;
+  return sp;
+}
+
 static void draw_pickups(void) {
   for (int i = 0; i < MAX_PICKUPS; i++) {
     Pickup *p = &pickups[i];
@@ -662,14 +670,6 @@ static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
   }
   while (o->size < target_dim)
     obs_push(o, 0.0f);
-}
-
-static inline Vector2 world_to_screen(Vector2 wp) {
-  Vector2 sp = Vector2Subtract(wp, camera_pos);
-  sp = Vector2Scale(sp, WORLD_SCALE);
-  sp.x += SCREEN_WIDTH / 2;
-  sp.y += SCREEN_HEIGHT / 2;
-  return sp;
 }
 
 static inline float px(float base) { return base * WORLD_SCALE * scale_size; }
