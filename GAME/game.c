@@ -3384,6 +3384,7 @@ static void run_agent_jobs(void) {
   job_next_agent = 0;
   job_done_workers = 0;
   job_active = 1;
+
   pthread_cond_broadcast(&job_cv);
 
   while (job_active) {
