@@ -2275,7 +2275,7 @@ static void draw_hover_label(void) {
     if (d < 2.6f && d < bestD) {
       bestD = d;
       label = mob_name(m->type);
-      int hp = -1;
+      hp = m->health;
     }
   }
 
