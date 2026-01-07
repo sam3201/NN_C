@@ -16,7 +16,7 @@ typedef struct {
 
 } GameEnvState;
 
-typedef void (*env_reset_fn)(void *state, float *obs);
+typedef void (*env_reset_fn)(ObsState *obs_state);
 typedef int (*env_step_fn)(void *state, int action, float *obs, float *reward,
                            int *done);
 
