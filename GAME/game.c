@@ -2720,6 +2720,12 @@ void update_agent(Agent *a) {
     pthread_rwlock_unlock(&c->lock);
     break;
 
+  case ACTION_CRAFT:
+    pthread_rwlock_wrlock(&c->lock);
+    agent_try_repair(a, tr, c, cx, cy, &reward);
+    pthread_rwlock_unlock(&c->lock);
+    break;
+
   case ACTION_FIRE: {
     pthread_rwlock_wrlock(&c->lock);
     agent_try_fire_cone(a, tr, c, cx, cy, &reward);
