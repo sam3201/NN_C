@@ -14,7 +14,6 @@ typedef struct {
   // game state
   ObsState obs_state;
 
-  float nearest_mob_d, nearest_mob_dx, nearest_mob_dy, nearest_mob_type;
 } GameEnvState;
 
 typedef void (*env_reset_fn)(void *state, float *obs);
