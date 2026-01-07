@@ -656,221 +656,125 @@ static void agent_gain_loot_for_mob_kill(Agent *a, Tribe *tr, MobType t) {
   }
 }
 
-static int agent_try_attack_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
-                                 float *reward) {
-  if (a->attack_cd > 0.0f)
+typedef enum {
+  HIT_NONE = 0,
+  HIT_RESOURCE = 1,
+  HIT_MOB = 2,
+  HIT_BASE = 3
+} HitKind;
+
+typedef struct {
+  HitKind kind;
+  float t;         // distance along ray (world units)
+  int cx, cy;      // chunk coords of hit
+  int index;       // resource index OR mob index OR tribe index
+  Vector2 hit_pos; // world-space hit point
+} RayHit;
+
+static inline int ray_circle_intersect(Vector2 ro, Vector2 rd, Vector2 c,
+                                       float r, float *out_t) {
+  // rd must be normalized
+  Vector2 oc = Vector2Subtract(ro, c);
+  float b = Vector2DotProduct(oc, rd);
+  float cc = Vector2DotProduct(oc, oc) - r * r;
+  float disc = b * b - cc;
+  if (disc < 0.0f)
+    return 0;
+  float s = sqrtf(disc);
+  float t0 = -b - s;
+  float t1 = -b + s;
+
+  float t = (t0 > 1e-4f) ? t0 : ((t1 > 1e-4f) ? t1 : -1.0f);
+  if (t < 0.0f)
     return 0;
 
-  const float range = agent_attack_range();
-  const int dmg = agent_attack_damage();
-  const float cone = 0.60f;        // radians-ish feel; use dot threshold
-  const float cosMin = cosf(cone); // keep mobs roughly in front
-
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
-  int hit = 0;
-  float bestScore = -1e9f;
-  Mob *best = NULL;
-
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-
-    Vector2 mw = Vector2Add(origin, m->position);
-    Vector2 to = Vector2Subtract(mw, a->position);
-    float d = Vector2Length(to);
-    if (d > range || d < 1e-3f)
-      continue;
-
-    Vector2 dir = Vector2Scale(to, 1.0f / d);
-    float dot = Vector2DotProduct(dir, a->facing);
-    if (dot < cosMin)
-      continue;
-
-    // score: prefer closer + more centered
-    float score = (1.0f - d / range) + dot;
-    if (score > bestScore) {
-      bestScore = score;
-      best = m;
-    }
-  }
-
-  if (!best)
-    return 0;
-
-  a->attack_cd = agent_attack_cooldown();
-  best->health -= dmg;
-  best->hurt_timer = 0.18f;
-  best->aggro_timer = 3.0f;
-  best->lunge_timer = 0.10f;
-
-  *reward += 0.02f;
-  if (mob_is_hostile(best->type))
-    *reward += 0.02f;
-
-  if (best->health <= 0) {
-    best->health = 0;
-    agent_gain_loot_for_mob_kill(a, tr, best->type);
-    *reward += mob_is_hostile(best->type) ? 0.35f : 0.18f;
-  }
-
+  *out_t = t;
   return 1;
 }
 
-static int agent_try_harvest_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
-                                  float *reward) {
-  if (a->harvest_cd > 0.0f)
-    return 0;
+static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
+  RayHit best = {0};
+  best.kind = HIT_NONE;
+  best.t = maxT;
 
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
-  const float range = HARVEST_DISTANCE;
-  const float cosMin = cosf(0.75f);
-
-  Resource *best = NULL;
-  float bestScore = -1e9f;
-
-  for (int i = 0; i < c->resource_count; i++) {
-    Resource *r = &c->resources[i];
-    if (r->health <= 0)
-      continue;
-
-    Vector2 rw = Vector2Add(origin, r->position);
-    Vector2 to = Vector2Subtract(rw, a->position);
-    float d = Vector2Length(to);
-    if (d > range || d < 1e-3f)
-      continue;
-
-    Vector2 dir = Vector2Scale(to, 1.0f / d);
-    float dot = Vector2DotProduct(dir, a->facing);
-    if (dot < cosMin)
-      continue;
-
-    float score = (1.0f - d / range) + dot;
-    if (score > bestScore) {
-      bestScore = score;
-      best = r;
-    }
-  }
-
-  if (!best)
-    return 0;
-
-  float cost = agent_harvest_cost(best->type);
-  if (a->stamina < cost)
-    return 0;
-
-  a->harvest_cd = agent_harvest_cooldown();
-  a->stamina -= cost;
-
-  int dmg = agent_harvest_damage(best->type);
-  best->health -= dmg;
-  best->hit_timer = 0.14f;
-  best->break_flash = 0.06f;
-
-  *reward += 0.015f;
-
-  if (best->health <= 0) {
-    best->health = 0;
-    switch (best->type) {
-    case RES_TREE:
-      tr->wood += 1;
-      *reward += 0.10f;
-      break;
-    case RES_ROCK:
-      tr->stone += 1;
-      *reward += 0.11f;
-      break;
-    case RES_GOLD:
-      tr->gold += 1;
-      *reward += 0.14f;
-      break;
-    case RES_FOOD:
-      a->inv_food += 1;
-      tr->food += 1;
-      *reward += 0.12f;
-      break;
-    default:
-      break;
-    }
-  }
-
-  return 1;
-}
-
-static void agent_try_fire_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
-                                float *reward) {
-  (void)tr;
-
-  if (a->fire_cd > 0.0f)
-    return;
-  if (a->inv_arrows <= 0)
-    return;
-
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
-  const float maxRange = 14.0f;
-  const float cone = 0.70f; // widen/narrow as you like
-  const float cosMin = cosf(cone);
-
-  Mob *best = NULL;
-  float bestScore = -1e9f;
-  Vector2 bestWorld = (Vector2){0};
-
-  // Two passes: hostiles first, then anything
-  for (int pass = 0; pass < 2; pass++) {
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &c->mobs[i];
-      if (m->health <= 0)
-        continue;
-
-      bool hostile = mob_is_hostile(m->type);
-      if (pass == 0 && !hostile)
-        continue;
-
-      Vector2 mw = Vector2Add(origin, m->position);
-      Vector2 to = Vector2Subtract(mw, a->position);
-      float d = Vector2Length(to);
-      if (d < 1e-3f || d > maxRange)
-        continue;
-
-      Vector2 dir = Vector2Scale(to, 1.0f / d);
-
-      // Cone check: must be roughly in front
-      float dot = Vector2DotProduct(dir, a->facing);
-      if (dot < cosMin)
-        continue;
-
-      // Score: prefer closer + more centered + hostiles
-      float score = (1.0f - d / maxRange) + dot + (hostile ? 0.35f : 0.0f);
-
-      if (score > bestScore) {
-        bestScore = score;
-        best = m;
-        bestWorld = mw;
+  // check bases (global, cheap)
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float thit = 0.0f;
+    if (ray_circle_intersect(ro, rd, tribes[t].base.position,
+                             tribes[t].base.radius, &thit)) {
+      if (thit < best.t && thit <= maxT) {
+        best.kind = HIT_BASE;
+        best.t = thit;
+        best.index = t;
+        best.hit_pos = Vector2Add(ro, Vector2Scale(rd, thit));
       }
     }
-    if (best)
-      break;
   }
 
-  if (!best)
-    return;
+  // check nearby chunks (3x3 around ray origin chunk)
+  int ocx = (int)(ro.x / CHUNK_SIZE);
+  int ocy = (int)(ro.y / CHUNK_SIZE);
 
-  Vector2 dir = Vector2Subtract(bestWorld, a->position);
-  if (Vector2Length(dir) < 1e-3f)
-    return;
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+      int cx = ocx + dx;
+      int cy = ocy + dy;
 
-  a->inv_arrows--;
-  a->fire_cd = agent_fire_cooldown();
+      Chunk *c = get_chunk(cx, cy);
+      pthread_rwlock_rdlock(&c->lock);
 
-  spawn_projectile(a->position, dir, 13.0f, 1.65f, 10);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
-  *reward += mob_is_hostile(best->type) ? 0.05f : 0.02f;
+      // resources (circles)
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+
+        Vector2 cw = Vector2Add(origin, r->position);
+        float rr = res_radius_world(r->type);
+
+        float thit = 0.0f;
+        if (ray_circle_intersect(ro, rd, cw, rr, &thit)) {
+          if (thit < best.t && thit <= maxT) {
+            best.kind = HIT_RESOURCE;
+            best.t = thit;
+            best.cx = cx;
+            best.cy = cy;
+            best.index = i;
+            best.hit_pos = Vector2Add(ro, Vector2Scale(rd, thit));
+          }
+        }
+      }
+
+      // mobs (circles)
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+
+        Vector2 mw = Vector2Add(origin, m->position);
+        float mr = mob_radius_world(m->type);
+
+        float thit = 0.0f;
+        if (ray_circle_intersect(ro, rd, mw, mr, &thit)) {
+          if (thit < best.t && thit <= maxT) {
+            best.kind = HIT_MOB;
+            best.t = thit;
+            best.cx = cx;
+            best.cy = cy;
+            best.index = i;
+            best.hit_pos = Vector2Add(ro, Vector2Scale(rd, thit));
+          }
+        }
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  return best;
 }
 
 static void agent_try_eat(Agent *a, float *reward) {
