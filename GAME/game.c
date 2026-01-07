@@ -2175,13 +2175,13 @@ void update_player(void) {
   Chunk *c = get_chunk(cx, cy);
 
   // --- Interactions (LMB attack, RMB harvest/mine) ---
-  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_attack_cd <= 0.0f) {
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
     pthread_rwlock_wrlock(&c->lock);
     player_try_attack_mob_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
   }
 
-  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_harvest_cd <= 0.0f) {
+  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
     pthread_rwlock_wrlock(&c->lock);
     player_try_harvest_resource_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
