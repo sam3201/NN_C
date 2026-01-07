@@ -2199,6 +2199,7 @@ void update_player(void) {
     player_try_harvest_resource_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
   }
+
   player.stamina = fmaxf(0, player.stamina - STAMINA_DRAIN_RATE);
   player.health = fmaxf(0, player.health);
 
