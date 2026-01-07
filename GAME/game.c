@@ -1676,13 +1676,22 @@ void update_player(void) {
   if (IsKeyDown(KEY_D))
     player.position.x += speed;
 
+  if (IsKeyPressed(KEY_TAB))
+    crafting_open = !crafting_open;
+
+  if (crafting_open) {
+    // press 1..9 to craft
+    for (int i = 0; i < recipe_count && i < 9; i++) {
+      if (IsKeyPressed((KeyboardKey)(KEY_ONE + i))) {
+        craft(&recipes[i]);
+      }
+    }
+  }
+
   if (IsKeyDown(KEY_EQUAL))
     WORLD_SCALE += 1.0f;
   if (IsKeyDown(KEY_MINUS))
     WORLD_SCALE -= 1.0f;
-
-  if (IsKeyDown(KEY_SPACE)) {
-  }
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
