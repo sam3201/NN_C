@@ -2517,7 +2517,7 @@ int main(void) {
     draw_chunks();
     draw_resources();
     draw_mobs();
-    draw_pickups(); // NEW
+    draw_pickups();
     draw_projectiles();
 
     // bases
