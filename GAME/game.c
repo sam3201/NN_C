@@ -1189,13 +1189,36 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   float range = player_attack_range();
   int dmg = player_attack_damage();
 
-  // Attack!
-  player_attack_cd = player_attack_cooldown();
-  best->health -= dmg;
+  Mob *best = NULL;
+  float bestD = 1e9f;
 
+  Vector2 origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 mw = Vector2Add(origin, m->position);
+    float d = Vector2Distance(player.position, mw);
+
+    if (d < range && d < bestD) {
+      bestD = d;
+      best = m;
+    }
+  }
+
+  if (!best)
+    return;
+
+  player_attack_cd = player_attack_cooldown();
+
+  best->health -= dmg;
   best->hurt_timer = 0.18f;
-  best->aggro_timer = 3.0f;  // make it angry
-  best->lunge_timer = 0.10f; // small visual kick
+  best->aggro_timer = 3.0f;
+  best->lunge_timer = 0.10f;
+
   cam_shake = fmaxf(cam_shake, 0.10f);
 
   if (best->health <= 0) {
