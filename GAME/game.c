@@ -281,49 +281,6 @@ Color resource_colors[] = {
 };
 
 /* =======================
-   THREAD
-
- * ======================= */
-static void *agent_worker(void *arg) {
-  (void)arg;
-
-  for (;;) {
-    // wait for a job
-    pthread_mutex_lock(&job_mtx);
-    while (!job_active && !job_quit) {
-      pthread_cond_wait(&job_cv, &job_mtx);
-    }
-    if (job_quit) {
-      pthread_mutex_unlock(&job_mtx);
-      break;
-    }
-    pthread_mutex_unlock(&job_mtx);
-
-    // do work: pull agents until none left
-    for (;;) {
-      pthread_mutex_lock(&job_mtx);
-      int idx = job_next_agent++;
-      pthread_mutex_unlock(&job_mtx);
-
-      if (idx >= MAX_AGENTS)
-        break;
-      update_agent(&agents[idx]);
-    }
-
-    // notify done
-    pthread_mutex_lock(&job_mtx);
-    job_done_workers++;
-    if (job_done_workers == WORKER_COUNT) {
-      job_active = 0;
-      pthread_cond_signal(&done_cv);
-    }
-    pthread_mutex_unlock(&job_mtx);
-  }
-
-  return NULL;
-}
-
-/* =======================
    OBS BUFFER
  * ====================== */
 static inline void obs_init(ObsBuffer *o) {
