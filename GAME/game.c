@@ -923,6 +923,39 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   return 1;
 }
 
+static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
+  (void)tr;
+
+  if (a->fire_cd > 0.0f) {
+    *reward += R_FIRE_WASTE * 0.20f;
+    return;
+  }
+  if (a->inv_arrows <= 0) {
+    *reward += R_FIRE_NO_AMMO;
+    return;
+  }
+
+  Vector2 ro = a->position;
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  const float maxRange = 14.0f;
+
+  RayHit hit = raycast_world_objects(ro, rd, maxRange);
+
+  // Always consumes an arrow -> if it hits nothing, that's "waste"
+  a->inv_arrows--;
+  a->fire_cd = agent_fire_cooldown();
+
+  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10);
+
+  if (hit.kind == HIT_MOB)
+    *reward += R_FIRE_HIT;
+  else
+    *reward += R_FIRE_WASTE;
+}
+
 static void agent_try_eat(Agent *a, float *reward) {
   if (a->inv_food <= 0)
     return;
