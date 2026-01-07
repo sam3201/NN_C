@@ -2308,7 +2308,6 @@ static void draw_agent(const Agent *a, Vector2 sp, Color tribeColor) {
     ang = sinf(t * 1.5f + (float)a->agent_id) * 0.25f;
     break;
   }
-
   Vector2 toolDir = {cosf(ang), sinf(ang)};
   Vector2 toolPos = {sp.x + toolDir.x * (r * 0.95f),
                      sp.y + toolDir.y * (r * 0.95f)};
