@@ -2293,7 +2293,6 @@ static void draw_hover_label(void) {
     }
   }
 }
-}
 
 static void draw_minimap(void) {
   int x = 310, y = 14; // top row, to the right of your panel
