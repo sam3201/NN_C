@@ -505,6 +505,14 @@ static void update_projectiles(float dt) {
   }
 }
 
+static inline Vector2 world_to_screen(Vector2 wp) {
+  Vector2 sp = Vector2Subtract(wp, camera_pos);
+  sp = Vector2Scale(sp, WORLD_SCALE);
+  sp.x += SCREEN_WIDTH / 2;
+  sp.y += SCREEN_HEIGHT / 2;
+  return sp;
+}
+
 static void draw_projectiles(void) {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile *p = &projectiles[i];
@@ -883,14 +891,6 @@ static Vector2 nearest_base_pos(Vector2 wp) {
     }
   }
   return best;
-}
-
-static inline Vector2 world_to_screen(Vector2 wp) {
-  Vector2 sp = Vector2Subtract(wp, camera_pos);
-  sp = Vector2Scale(sp, WORLD_SCALE);
-  sp.x += SCREEN_WIDTH / 2;
-  sp.y += SCREEN_HEIGHT / 2;
-  return sp;
 }
 
 static void draw_pickups(void) {
