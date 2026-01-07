@@ -11,6 +11,7 @@
 
 typedef struct {
   SAM_t *sam;
+  MuCortex cortex;
 
   size_t obs_dim;
 
