@@ -1045,21 +1045,6 @@ Chunk *get_chunk(int cx, int cy) {
     Vector2 p = {0};
     int placed = 0;
 
-    float rad = mob_radius_world(mt);
-
-    for (int tries = 0; tries < 55; tries++) {
-      p = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
-                    randf(0.9f, CHUNK_SIZE - 0.9f)};
-
-      Vector2 worldPos = (Vector2){(float)(cx * CHUNK_SIZE) + p.x,
-                                   (float)(cy * CHUNK_SIZE) + p.y};
-
-      if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
-        placed = 1;
-        break;
-      }
-    }
-
     if (!placed) {
       p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f),
                     randf(0.8f, CHUNK_SIZE - 0.8f)};
