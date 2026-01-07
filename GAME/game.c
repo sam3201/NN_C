@@ -197,8 +197,6 @@ typedef struct Agent {
   int age;
   int last_action;
 
-  // ---- “mouse-to-move” style intent targeting ----
-
   float attack_cd;
   float harvest_cd;
   float fire_cd;
