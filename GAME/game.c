@@ -534,6 +534,69 @@ static inline float player_resource_stamina_cost(ResourceType t) {
   return 2.0f;
 }
 
+static inline int agent_in_base(const Agent *a, const Tribe *tr) {
+  float d = Vector2Distance(a->position, tr->base.position);
+  return (d < tr->base.radius + 0.35f);
+}
+
+static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
+  if (!agent_in_base(a, tr)) {
+    // discourage crafting outside base
+    *reward += -0.006f;
+    return;
+  }
+
+  // ---- Priority 1: tools (one-time tribe unlocks) ----
+  if (!tr->has_axe && tr->wood >= 3 && tr->stone >= 2) {
+    tr->wood -= 3;
+    tr->stone -= 2;
+    tr->has_axe = true;
+    *reward += 0.09f;
+    return;
+  }
+
+  if (!tr->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
+    tr->wood -= 3;
+    tr->stone -= 3;
+    tr->has_pickaxe = true;
+    *reward += 0.10f;
+    return;
+  }
+
+  if (!tr->has_sword && tr->stone >= 4 && tr->gold >= 2) {
+    tr->stone -= 4;
+    tr->gold -= 2;
+    tr->has_sword = true;
+    *reward += 0.12f;
+    return;
+  }
+
+  if (!tr->has_armor && tr->stone >= 5 && tr->gold >= 2) {
+    tr->stone -= 5;
+    tr->gold -= 2;
+    tr->has_armor = true;
+    *reward += 0.10f;
+    return;
+  }
+
+  // ---- Priority 2: ammo crafting (repeatable) ----
+  // Recipe: 1 shard + 1 wood -> 6 arrows
+  if (tr->shards >= 1 && tr->wood >= 1) {
+    tr->shards -= 1;
+    tr->wood -= 1;
+
+    int made = 6;
+    tr->arrows += made;
+    a->inv_arrows += made; // give to the crafter immediately
+
+    *reward += 0.06f;
+    return;
+  }
+
+  // nothing craftable right now
+  *reward += -0.003f;
+}
+
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg) {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
