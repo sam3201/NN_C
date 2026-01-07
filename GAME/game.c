@@ -2684,7 +2684,7 @@ void update_agent(Agent *a) {
     // No targeting. No intent. No movement assist.
     // Just attempt an attack in the agent's CURRENT chunk.
     pthread_rwlock_wrlock(&c->lock);
-    agent_try_attack_in_chunk(a, tr, c, cx, cy, &reward);
+    agent_try_attack_in_cone(a, tr, c, cx, cy, &reward);
     pthread_rwlock_unlock(&c->lock);
   } break;
 
