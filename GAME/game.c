@@ -250,6 +250,11 @@ typedef struct Agent {
   int inv_food;
   int inv_arrows;
   int inv_shards;
+  bool has_axe;
+  bool has_pickaxe;
+  bool has_sword;
+  bool has_armor;
+
 } Agent;
 
 typedef struct {
