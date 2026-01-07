@@ -181,12 +181,10 @@ typedef struct {
   int age;
   int last_action;
 
-  // --- agent cooldowns ---
   float attack_cd;
   float harvest_cd;
   float fire_cd;
 
-  // --- agent inventory ---
   int inv_food;
   int inv_arrows;
   int inv_shards;
