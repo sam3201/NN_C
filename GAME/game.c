@@ -1733,20 +1733,6 @@ static void despawn_hostiles_if_day(Chunk *c) {
   }
 }
 
-static void despawn_hostiles_if_day(Chunk *c) {
-  if (is_night_cached)
-    return;
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-    if (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON) {
-      // simple: remove them
-      m->health = 0;
-    }
-  }
-}
-
 static void update_visible_world(float dt) {
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
