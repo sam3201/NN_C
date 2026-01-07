@@ -513,6 +513,29 @@ static inline Vector2 world_to_screen(Vector2 wp) {
   return sp;
 }
 
+Mob *m = &c->mobs[slot];
+MobType mt = pick_spawn_type(night, c->biome_type);
+
+// spacing: larger mobs -> larger min distance
+float minD = 2.6f; // tweak: 2.2–3.5 feels good
+Vector2 p = {0};
+int placed = 0;
+
+for (int tries = 0; tries < 35; tries++) {
+  p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f), randf(0.8f, CHUNK_SIZE - 0.8f)};
+  if (!mob_too_close_local(c, p, minD)) {
+    placed = 1;
+    break;
+  }
+}
+
+if (!placed) {
+  // fallback (still float, but no spacing guarantee)
+  p = (Vector2){randf(0.8f, CHUNK_SIZE - 0.8f), randf(0.8f, CHUNK_SIZE - 0.8f)};
+}
+
+init_mob(m, mt, p, /*make_angry=*/0);
+
 static void draw_pickups(void) {
   for (int i = 0; i < MAX_PICKUPS; i++) {
     Pickup *p = &pickups[i];
@@ -896,52 +919,6 @@ static void player_try_harvest_resource_in_chunk(Chunk *c, int cx, int cy) {
     give_drop(best->type);
     best->health = 0;
   }
-}
-
-Chunk *get_chunk(int cx, int cy) {
-  cx = wrap(cx);
-  cy = wrap(cy);
-
-  Chunk *c = &world[cx][cy];
-  if (c->generated)
-    return c;
-
-  c->generated = true;
-  c->biome_type = (abs(cx) + abs(cy)) % 3;
-
-  for (int i = 0; i < CHUNK_SIZE; i++)
-    for (int j = 0; j < CHUNK_SIZE; j++)
-      c->terrain[i][j] = c->biome_type;
-
-  c->resource_count = 8;
-  for (int i = 0; i < c->resource_count; i++) {
-    c->resources[i].type = rand() % 4;
-    c->resources[i].position =
-        (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
-    c->resources[i].health = 100;
-    c->resources[i].visited = false;
-    c->resources[i].hit_timer = 0.0f;
-    c->resources[i].break_flash = 0.0f;
-  }
-
-  c->mob_spawn_timer = randf(1.0f, 3.0f);
-  for (int i = 0; i < MAX_MOBS; i++)
-    c->mobs[i].health = 0;
-
-  for (int i = 0; i < MAX_MOBS; i++) {
-    c->mobs[i].type = rand() % 4;
-    c->mobs[i].position = (Vector2){rand() % CHUNK_SIZE, rand() % CHUNK_SIZE};
-    c->mobs[i].health = 100;
-    c->mobs[i].visited = false;
-    c->mobs[i].vel = (Vector2){0, 0};
-    c->mobs[i].ai_timer = randf(0.2f, 1.2f);
-    c->mobs[i].aggro_timer = 0.0f;
-    c->mobs[i].attack_cd = randf(0.2f, 1.0f);
-    c->mobs[i].hurt_timer = 0.0f;
-    c->mobs[i].lunge_timer = 0.0f;
-  }
-
-  return c;
 }
 
 void draw_chunks(void) {
