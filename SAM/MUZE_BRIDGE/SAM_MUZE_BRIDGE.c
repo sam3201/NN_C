@@ -270,8 +270,6 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
 
   ad->sam = sam;
   ad->cortex.brain = ad;
-  ad->cortex.plan = adapter_plan;
-  ad->cortex.learn = adapter_learn;
 
   ad->obs_dim = 0;
   ad->hist_cap = SAM_MUZE_HISTORY;
