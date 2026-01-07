@@ -2002,6 +2002,10 @@ int main(void) {
   init_agents();
   init_player();
 
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_create(&workers[i], NULL, agent_worker, NULL);
+  }
+
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
       pthread_rwlock_init(&world[x][y].lock, NULL);
