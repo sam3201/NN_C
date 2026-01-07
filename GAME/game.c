@@ -1860,6 +1860,7 @@ static void update_projectiles(float dt) {
       player.health -= (float)p->damage;
       player_hurt_timer = 0.18f;
       p->alive = false;
+      cam_shake = fmaxf(cam_shake, 0.10f);
     }
   }
 }
