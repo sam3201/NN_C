@@ -555,10 +555,10 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     return;
   }
 
-  if (!tr->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
+  if (!a->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
     tr->wood -= 3;
     tr->stone -= 3;
-    tr->has_pickaxe = true;
+    a->has_pickaxe = true;
     *reward += 0.10f;
     return;
   }
