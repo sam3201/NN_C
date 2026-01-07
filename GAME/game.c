@@ -184,6 +184,14 @@ typedef struct Agent {
   int age;
   int last_action;
 
+  // ---- “mouse-to-move” style intent targeting ----
+  Vector2 intent_pos; // WORLD position we’re moving toward
+  int intent_has_pos; // 0/1
+  int intent_kind;    // 0 none, 1 attack, 2 harvest
+  int intent_chunk_x; // chunk holding the target (for fast lock)
+  int intent_chunk_y;
+  float intent_refresh_cd; // prevents retargeting every frame
+
   float attack_cd;
   float harvest_cd;
   float fire_cd;
