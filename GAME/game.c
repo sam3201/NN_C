@@ -640,19 +640,22 @@ static void agent_gain_loot_for_mob_kill(Agent *a, Tribe *tr, MobType t) {
   }
 }
 
-static void agent_try_attack_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
-                                      int cy, float *reward) {
+static int agent_try_attack_cone(Agent *a, Tribe *tr, Chunk *c, int cx, int cy,
+                                 float *reward) {
   if (a->attack_cd > 0.0f)
-    return;
+    return 0;
 
-  float range = agent_attack_range();
-  int dmg = agent_attack_damage();
-
-  Mob *best = NULL;
-  float bestD = 1e9f;
+  const float range = agent_attack_range();
+  const int dmg = agent_attack_damage();
+  const float cone = 0.60f;        // radians-ish feel; use dot threshold
+  const float cosMin = cosf(cone); // keep mobs roughly in front
 
   Vector2 origin =
       (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+  int hit = 0;
+  float bestScore = -1e9f;
+  Mob *best = NULL;
 
   for (int i = 0; i < MAX_MOBS; i++) {
     Mob *m = &c->mobs[i];
@@ -660,24 +663,33 @@ static void agent_try_attack_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
       continue;
 
     Vector2 mw = Vector2Add(origin, m->position);
-    float d = Vector2Distance(a->position, mw);
-    if (d < range && d < bestD) {
-      bestD = d;
+    Vector2 to = Vector2Subtract(mw, a->position);
+    float d = Vector2Length(to);
+    if (d > range || d < 1e-3f)
+      continue;
+
+    Vector2 dir = Vector2Scale(to, 1.0f / d);
+    float dot = Vector2DotProduct(dir, a->facing);
+    if (dot < cosMin)
+      continue;
+
+    // score: prefer closer + more centered
+    float score = (1.0f - d / range) + dot;
+    if (score > bestScore) {
+      bestScore = score;
       best = m;
     }
   }
 
   if (!best)
-    return;
+    return 0;
 
   a->attack_cd = agent_attack_cooldown();
-
   best->health -= dmg;
   best->hurt_timer = 0.18f;
   best->aggro_timer = 3.0f;
   best->lunge_timer = 0.10f;
 
-  // reward shaping: damage + extra if hostile
   *reward += 0.02f;
   if (mob_is_hostile(best->type))
     *reward += 0.02f;
@@ -687,6 +699,8 @@ static void agent_try_attack_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
     agent_gain_loot_for_mob_kill(a, tr, best->type);
     *reward += mob_is_hostile(best->type) ? 0.35f : 0.18f;
   }
+
+  return 1;
 }
 
 static void agent_try_harvest_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
