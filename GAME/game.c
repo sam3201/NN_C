@@ -2652,35 +2652,9 @@ void update_agent(Agent *a) {
   } break;
 
   case ACTION_HARVEST: {
-    if (a->intent_refresh_cd <= 0.0f || a->intent_kind != INTENT_HARVEST ||
-        !a->intent_has_pos) {
-      agent_set_harvest_intent(a);
-      a->intent_refresh_cd = 0.25f; // harvest retarget slower
-    }
-
-    if (!a->intent_has_pos)
-      break;
-
-    // move toward resource point
-    float stop = HARVEST_DISTANCE * 0.80f;
-    agent_move_toward(a, a->intent_pos, stop);
-
-    float d = Vector2Distance(a->position, a->intent_pos);
-    if (d <= HARVEST_DISTANCE) {
-      int rcx = a->intent_chunk_x;
-      int rcy = a->intent_chunk_y;
-
-      Chunk *rc = get_chunk(rcx, rcy);
-      pthread_rwlock_wrlock(&rc->lock);
-
-      agent_try_harvest_in_chunk(a, tr, rc, rcx, rcy, &reward);
-
-      pthread_rwlock_unlock(&rc->lock);
-
-      if (a->harvest_cd > 0.0f) {
-        a->intent_refresh_cd = 0.12f;
-      }
-    }
+    pthread_rwlock_wrlock(&c->lock);
+    agent_try_harvest_in_chunk(a, tr, c, cx, cy, &reward);
+    pthread_rwlock_unlock(&c->lock);
   } break;
 
   case ACTION_FIRE: {
