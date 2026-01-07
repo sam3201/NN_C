@@ -2539,11 +2539,9 @@ void update_player(void) {
     pthread_rwlock_wrlock(&c->lock);
     player_try_attack_mob_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
-    // (attacks currently don't cost stamina in your code)
   }
 
-  // RMB = harvest/mine resources (this spends stamina inside
-  // player_try_harvest...)
+  // RMB = harvest/mine resources
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_harvest_cd <= 0.0f) {
     float before = player.stamina;
 
@@ -2551,12 +2549,10 @@ void update_player(void) {
     player_try_harvest_resource_in_chunk(c, cx, cy);
     pthread_rwlock_unlock(&c->lock);
 
-    // if harvest actually happened, stamina decreased
     if (player.stamina < before - 0.0001f) {
       spent_stamina_this_frame = true;
     }
   }
-
   // --- stamina regen (time-based, only when not spending this frame) ---
   if (!spent_stamina_this_frame && player.stamina < 100.0f) {
     player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
