@@ -976,6 +976,7 @@ static void agent_try_eat(Agent *a, float *reward) {
 
   *reward += R_EAT_GOOD;
 }
+
 static void tribe_try_repair_base(Tribe *tr, float *reward) {
   // simple repair rule: if damaged, spend mats to repair slowly
   if (tr->integrity >= 99.9f)
