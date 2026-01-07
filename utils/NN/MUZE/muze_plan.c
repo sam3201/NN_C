@@ -156,3 +156,20 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
   free(action_probs);
   return (int)chosen;
 }
+
+/* Argmax helper */
+#ifdef MUZE_PLAN_DEBUG
+static int argmaxf(const float *x, size_t n) {
+  if (!x || n == 0)
+    return 0;
+  size_t best = 0;
+  float bestv = x[0];
+  for (size_t i = 1; i < n; i++) {
+    if (x[i] > bestv) {
+      bestv = x[i];
+      best = i;
+    }
+  }
+  return (int)best;
+}
+#endif
