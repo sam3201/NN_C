@@ -887,6 +887,8 @@ void draw_chunks(void) {
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
 
+  float chunk_px = (float)CHUNK_SIZE * WORLD_SCALE;
+
   for (int dx = -view_radius; dx <= view_radius; dx++) {
     for (int dy = -view_radius; dy <= view_radius; dy++) {
       int cx = pcx + dx;
@@ -900,9 +902,15 @@ void draw_chunks(void) {
       screen.x += SCREEN_WIDTH / 2;
       screen.y += SCREEN_HEIGHT / 2;
 
-      DrawRectangle(screen.x, screen.y, CHUNK_SIZE * WORLD_SCALE,
-                    CHUNK_SIZE * WORLD_SCALE,
-                    Fade(biome_colors[c->biome_type], 0.9f));
+      // IMPORTANT: snap to pixel grid to avoid seams
+      int sx = (int)floorf(screen.x);
+      int sy = (int)floorf(screen.y);
+
+      // IMPORTANT: ceil size (and +1) so we never leave a 1px gap
+      int sw = (int)ceilf(chunk_px) + 1;
+      int sh = (int)ceilf(chunk_px) + 1;
+
+      DrawRectangle(sx, sy, sw, sh, Fade(biome_colors[c->biome_type], 0.9f));
     }
   }
 }
