@@ -20,9 +20,6 @@ typedef struct {
   float base_r;
   float base_integrity;
 
-  // a tiny “local world” representation (start simple!)
-  // ex: 4 nearest resource types + nearest mob
-  // You can store them directly instead of full chunk sim.
   float nearest_res_d[4];
   float nearest_res_dx[4];
   float nearest_res_dy[4];
