@@ -96,6 +96,8 @@ static void spawn_raid_wave(void);
 
 // you already define this later, but spawn_raid_wave will use it:
 static void spawn_mob_at_world(MobType type, Vector2 world_pos);
+// --- agent update (was deleted) ---
+void update_agent(Agent *a);
 
 /* =======================
    STRUCTS
