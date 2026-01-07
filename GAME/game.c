@@ -708,6 +708,7 @@ static inline Color lerp_color(Color a, Color b, float t) {
   return out;
 }
 
+// small helpers (local to this function)
 static inline Color mul_color(Color a, Color b, float t) {
   // multiply blend toward (a*b) by amount t
   t = clamp01(t);
@@ -720,7 +721,6 @@ static inline Color mul_color(Color a, Color b, float t) {
 }
 
 void draw_mobs(void) {
-  // small helpers (local to this function)
 
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
