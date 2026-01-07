@@ -3396,7 +3396,7 @@ static void *agent_worker(void *arg) {
   (void)arg;
 
   for (;;) {
-    // wait for a job
+    // Wait for a job batch to become active (or quit)
     pthread_mutex_lock(&job_mtx);
     while (!job_active && !job_quit) {
       pthread_cond_wait(&job_cv, &job_mtx);
@@ -3407,23 +3407,27 @@ static void *agent_worker(void *arg) {
     }
     pthread_mutex_unlock(&job_mtx);
 
-    // do work: pull agents until none left
+    // Work loop: grab next agent index atomically under mutex
     for (;;) {
+      int idx;
+
       pthread_mutex_lock(&job_mtx);
-      int idx = job_next_agent++;
+      idx = job_next_agent++;
       pthread_mutex_unlock(&job_mtx);
 
       if (idx >= MAX_AGENTS)
         break;
+
       update_agent(&agents[idx]);
     }
 
-    // notify done
+    // Signal completion for this worker
     pthread_mutex_lock(&job_mtx);
     job_done_workers++;
-    if (job_done_workers == WORKER_COUNT) {
-      job_active = 0;
-      pthread_cond_signal(&done_cv);
+
+    if (job_done_workers >= WORKER_COUNT) {
+      job_active = 0;                // batch finished
+      pthread_cond_signal(&done_cv); // wake main thread
     }
     pthread_mutex_unlock(&job_mtx);
   }
