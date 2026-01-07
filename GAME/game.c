@@ -271,6 +271,39 @@ static inline Vector2 clamp_local_to_chunk(Vector2 lp) {
   return lp;
 }
 
+static inline int is_night(void) {
+  // night from ~0.75 -> 1.0 and 0.0 -> 0.25 (tweak)
+  return (time_of_day >= 0.75f || time_of_day <= 0.25f);
+}
+
+static void update_daynight(float dt) {
+  time_of_day += dt / day_length_seconds;
+  while (time_of_day >= 1.0f)
+    time_of_day -= 1.0f;
+  is_night_cached = is_night();
+}
+
+// a simple overlay (dark at night)
+static void draw_daynight_overlay(void) {
+  float t = time_of_day;
+
+  // “how dark is it” curve: darkest at midnight, brightest at noon
+  // (0 at noon, 1 at midnight)
+  float midnight_dist = fabsf(t - 0.0f);
+  midnight_dist = fminf(midnight_dist, fabsf(t - 1.0f));
+  float noon_dist = fabsf(t - 0.5f);
+
+  // 0..1 where 1 is midnight-ish
+  float night01 = clamp01((0.5f - noon_dist) * 2.0f);
+  night01 = 1.0f - night01;
+
+  unsigned char a = (unsigned char)(150 * night01); // max darkness alpha
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){10, 20, 40, a});
+
+  DrawText(is_night_cached ? "Night" : "Day", 20, 210, 20, RAYWHITE);
+  DrawText(TextFormat("Time: %0.2f", time_of_day), 20, 235, 18, RAYWHITE);
+}
+
 static void give_drop(ResourceType t) {
   switch (t) {
   case RES_TREE:
