@@ -1749,7 +1749,7 @@ void update_agent(Agent *a) {
 
   MuCortex *cortex = a->cortex;
   int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
-  int last_action = a->last_action;
+  a->last_action = action;
 
   // apply action
   switch (action) {
