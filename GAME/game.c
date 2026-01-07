@@ -1946,6 +1946,13 @@ int main(void) {
   init_agents();
   init_player();
 
+  for (int x = 0; x < WORLD_SIZE; x++) {
+    for (int y = 0; y < WORLD_SIZE; y++) {
+      pthread_rwlock_init(&world[x][y].lock, NULL);
+      world[x][y].generated = false;
+    }
+  }
+
   for (int i = 0; i < MAX_PROJECTILES; i++)
     projectiles[i].alive = false;
 
