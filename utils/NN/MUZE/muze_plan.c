@@ -24,12 +24,6 @@ static void renorm_probs(float *p, size_t n) {
 }
 
 static void apply_temperature_to_probs(float *p, size_t n, float temperature) {
-  /* We assume p is already a probability distribution.
-     Apply: p_i <- p_i^(1/T) then renormalize.
-     - T=1: no change
-     - T<1: sharper
-     - T>1: flatter
-  */
   if (n == 0)
     return;
 
@@ -45,7 +39,6 @@ static void apply_temperature_to_probs(float *p, size_t n, float temperature) {
     float x = p[i];
     if (!isfinite(x) || x < 0.0f)
       x = 0.0f;
-    /* clamp tiny values so powf behaves nicely */
     if (x < 1e-20f)
       x = 1e-20f;
     p[i] = powf(x, invT);
@@ -60,12 +53,12 @@ static size_t sample_from_probs(const float *p, size_t n) {
   float r = (float)rand() / (float)RAND_MAX;
   float c = 0.0f;
 
-  for (size_t i = 0; i + 1 < n; i++) { // stop at n-2
+  for (size_t i = 0; i + 1 < n; i++) {
     c += p[i];
     if (r <= c)
       return i;
   }
-  return n - 1; // last bucket gets remainder
+  return n - 1;
 }
 
 static size_t rand_uniform_index(size_t n) {
@@ -107,7 +100,6 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
       mcts_result_free(&r);
       return a;
     }
-    /* if malloc failed, fall through to policy */
   }
 
   /* --- Option: policy sampling (non-MCTS) --- */
@@ -127,16 +119,13 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
   cortex->policy(cortex->brain, latent_seq, seq_len, action_probs,
                  action_count);
 
-  /* Safety: ensure normalized before transforms */
   renorm_probs(action_probs, action_count);
 
-  /* Optional temperature (defaults to 1.0 if unset/invalid) */
   float T = cortex->policy_temperature;
   if (!(T > 0.0f))
     T = 1.0f;
   apply_temperature_to_probs(action_probs, action_count, T);
 
-  /* Optional epsilon-greedy (defaults to 0.0 if unset/invalid) */
   float eps = cortex->policy_epsilon;
   if (!(eps >= 0.0f))
     eps = 0.0f;
@@ -157,20 +146,3 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
   free(action_probs);
   return (int)chosen;
 }
-
-/* Argmax helper */
-#ifdef MUZE_PLAN_DEBUG
-static int argmaxf(const float *x, size_t n) {
-  if (!x || n == 0)
-    return 0;
-  size_t best = 0;
-  float bestv = x[0];
-  for (size_t i = 1; i < n; i++) {
-    if (x[i] > bestv) {
-      bestv = x[i];
-      best = i;
-    }
-  }
-  return (int)best;
-}
-#endif
