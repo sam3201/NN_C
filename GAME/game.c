@@ -1845,6 +1845,7 @@ static void update_visible_world(float dt) {
         update_mob_ai(m, chunk_origin, dt);
       }
     }
+    pthread_rwlock_unlock(&c->lock);
   }
 }
 
