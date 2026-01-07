@@ -2029,8 +2029,13 @@ int main(void) {
     update_visible_world(dt);
     update_projectiles(dt);
 
-    for (int i = 0; i < MAX_AGENTS; i++)
-      update_agent(&agents[i]);
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      if (!agents[i].alive)
+        continue;
+      int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+      int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+      (void)get_chunk(acx, acy);
+    }
 
     BeginDrawing();
     ClearBackground((Color){20, 20, 20, 255});
