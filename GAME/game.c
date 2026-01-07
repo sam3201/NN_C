@@ -3546,7 +3546,6 @@ int main(void) {
     }
 
     update_pickups(dt);
-    collect_nearby_pickups();
 
     BeginDrawing();
     ClearBackground((Color){20, 20, 20, 255});
