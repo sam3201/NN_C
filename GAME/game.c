@@ -2216,6 +2216,8 @@ void update_agent(Agent *a) {
   case ACTION_FIRE:
     // spawn_projectile(a->position, a->direction, 10.0f, 10.0f, 1);
     break;
+  case ACTION_NONE:
+    break;
   default:
     break;
   }
