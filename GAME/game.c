@@ -901,8 +901,6 @@ Chunk *get_chunk(int cx, int cy) {
   Chunk *c = &world[cx][cy];
 
   // Fast path (already generated)
-  if (ensure_generated) {
-  } // <-- remove this line if it appears; it's just a safety note
   if (c->generated)
     return c;
 
