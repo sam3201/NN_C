@@ -2751,36 +2751,6 @@ static void agent_try_fire_in_chunk(Agent *a, Tribe *tr, Chunk *c, int cx,
   *reward += mob_is_hostile(best->type) ? 0.05f : 0.02f;
 }
 
-static void agent_try_eat(Agent *a, float *reward) {
-  if (a->inv_food <= 0)
-    return;
-
-  // only eat if it matters (prevents wasting)
-  if (a->health > 92.0f && a->stamina > 75.0f)
-    return;
-
-  a->inv_food--;
-
-  a->health = fminf(100.0f, a->health + 18.0f);
-  a->stamina = fminf(100.0f, a->stamina + 32.0f);
-
-  *reward += 0.12f;
-}
-
-static void tribe_try_repair_base(Tribe *tr, float *reward) {
-  // simple repair rule: if damaged, spend mats to repair slowly
-  if (tr->integrity >= 99.9f)
-    return;
-
-  // spend 1 wood + 1 stone for +6 integrity
-  if (tr->wood >= 1 && tr->stone >= 1) {
-    tr->wood -= 1;
-    tr->stone -= 1;
-    tr->integrity = fminf(100.0f, tr->integrity + 6.0f);
-    *reward += 0.08f;
-  }
-}
-
 void update_agent(Agent *a) {
   if (!a->alive)
     return;
