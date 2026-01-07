@@ -1462,7 +1462,9 @@ void update_agent(Agent *a) {
 
   ObsBuffer obs;
   obs_init(&obs);
+  pthread_rwlock_rdlock(&c->lock);
   encode_observation(a, c, &obs);
+  pthread_rwlock_unlock(&c->lock);
 
   MuCortex *cortex = a->cortex;
   int action = muze_plan(cortex, obs.data, obs.size, ACTION_COUNT);
