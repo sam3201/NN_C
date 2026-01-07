@@ -2919,7 +2919,8 @@ int main(void) {
     update_projectiles(dt);
     update_daynight(dt);
 
-    run_agent_jobs(); // update agents
+    g_dt = dt;
+    run_agent_jobs();
 
     // detect transition night->day for reward
     int now_night = is_night_cached;
