@@ -1107,6 +1107,57 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
   init_mob(&c->mobs[slot], type, local, /*make_angry=*/1);
 }
 
+static void despawn_hostiles_if_day(Chunk *c) {
+  // If it's night, do nothing.
+  if (is_night_cached)
+    return;
+
+  // Daytime: remove hostile mobs in this chunk so day feels safer.
+  // You can tune this: either hard-despawn all hostiles, or probabilistic.
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
+    if (!hostile)
+      continue;
+
+    // Option A: despawn all hostiles immediately:
+    m->health = 0;
+
+    // Option B (comment A out, uncomment B) for softer cleanup:
+    // if ((rand() % 100) < 35) m->health = 0;
+  }
+}
+
+static void spawn_raid_wave(void) {
+  // Called only at night in your main loop.
+  // Spawn a small wave near each base.
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Tribe *tr = &tribes[t];
+
+    // How many attackers per mini-wave per base:
+    int count = 1 + (rand() % 3); // 1..3
+
+    for (int k = 0; k < count; k++) {
+      // pick hostile type
+      MobType mt = (rand() % 2 == 0) ? MOB_ZOMBIE : MOB_SKELETON;
+
+      // spawn in a ring around the base
+      float ang = randf(0.0f, 2.0f * PI);
+      float r = tr->base.radius + randf(6.0f, 14.0f); // distance from base edge
+
+      Vector2 pos = (Vector2){
+          tr->base.position.x + cosf(ang) * r,
+          tr->base.position.y + sinf(ang) * r,
+      };
+
+      spawn_mob_at_world(mt, pos);
+    }
+  }
+}
+
 void draw_resources(void) {
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
