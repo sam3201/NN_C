@@ -3553,8 +3553,8 @@ int main(void) {
     draw_chunks();
     draw_resources();
     draw_mobs();
-    draw_pickups();
     draw_projectiles();
+    draw_pickups();
 
     // bases
     for (int t = 0; t < TRIBE_COUNT; t++) {
