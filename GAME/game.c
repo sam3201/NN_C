@@ -698,19 +698,19 @@ void draw_resources(void) {
   }
 }
 
+static inline Color lerp_color(Color a, Color b, float t) {
+  t = clamp01(t);
+  Color out;
+  out.r = (unsigned char)(a.r + (b.r - a.r) * t);
+  out.g = (unsigned char)(a.g + (b.g - a.g) * t);
+  out.b = (unsigned char)(a.b + (b.b - a.b) * t);
+  out.a = (unsigned char)(a.a + (b.a - a.a) * t);
+  return out;
+}
 void draw_mobs(void) {
   // small helpers (local to this function)
-  Color lerp_color(Color a, Color b, float t) {
-    t = clamp01(t);
-    Color out;
-    out.r = (unsigned char)(a.r + (b.r - a.r) * t);
-    out.g = (unsigned char)(a.g + (b.g - a.g) * t);
-    out.b = (unsigned char)(a.b + (b.b - a.b) * t);
-    out.a = (unsigned char)(a.a + (b.a - a.a) * t);
-    return out;
-  }
 
-  Color mul_color(Color a, Color b, float t) {
+  auto Color mul_color(Color a, Color b, float t) {
     // multiply blend toward (a*b) by amount t
     t = clamp01(t);
     Color m;
