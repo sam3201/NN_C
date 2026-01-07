@@ -699,14 +699,41 @@ void draw_resources(void) {
 }
 
 void draw_mobs(void) {
+  // small helpers (local to this function)
+  auto Color lerp_color(Color a, Color b, float t) {
+    t = clamp01(t);
+    Color out;
+    out.r = (unsigned char)(a.r + (b.r - a.r) * t);
+    out.g = (unsigned char)(a.g + (b.g - a.g) * t);
+    out.b = (unsigned char)(a.b + (b.b - a.b) * t);
+    out.a = (unsigned char)(a.a + (b.a - a.a) * t);
+    return out;
+  }
+
+  auto Color mul_color(Color a, Color b, float t) {
+    // multiply blend toward (a*b) by amount t
+    t = clamp01(t);
+    Color m;
+    m.r = (unsigned char)((a.r * b.r) / 255);
+    m.g = (unsigned char)((a.g * b.g) / 255);
+    m.b = (unsigned char)((a.b * b.b) / 255);
+    m.a = a.a;
+    return lerp_color(a, m, t);
+  }
+
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
+
+  float tnow = (float)GetTime();
 
   for (int dx = -6; dx <= 6; dx++) {
     for (int dy = -6; dy <= 6; dy++) {
       int cx = pcx + dx;
       int cy = pcy + dy;
       Chunk *c = get_chunk(cx, cy);
+
+      // use this chunk's biome as a subtle tint for everything inside it
+      Color biome = biome_colors[c->biome_type];
 
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
@@ -717,58 +744,81 @@ void draw_mobs(void) {
                       (float)(cy * CHUNK_SIZE) + m->position.y};
         Vector2 sp = world_to_screen(wp);
 
-        float s = px(0.26f) * MOB_SCALE; // base mob radius
+        float s = px(0.26f) * MOB_SCALE;
         float hp01 = (float)m->health / 100.0f;
 
-        float bob = sinf(GetTime() * 6.0f + (float)i) * (s * 0.05f);
+        // idle bob
+        float bob =
+            sinf(tnow * 6.0f + (float)(i * 13 + m->type * 7)) * (s * 0.05f);
         sp.y += bob;
 
-        // hurt flash makes them brighter
-        Color tint = mob_colors[m->type];
-        if (m->hurt_timer > 0.0f)
-          tint = (Color){255, 255, 255, 255};
+        // base mob color by type
+        Color base = mob_colors[m->type];
 
-        // lunge shifts toward player a bit (only visual)
+        // biome tint (subtle)
+        base = mul_color(base, biome, 0.18f);
+
+        // aggro tint (blend toward red while aggro_timer is active)
+        if (m->aggro_timer > 0.0f) {
+          float a01 =
+              clamp01(m->aggro_timer / 3.0f); // 3.0f matches your set value
+          base = lerp_color(base, (Color){220, 60, 60, 255}, 0.35f * a01);
+        }
+
+        // hurt flash (blend toward white while hurt_timer is active)
+        if (m->hurt_timer > 0.0f) {
+          float h01 = clamp01(m->hurt_timer * 6.0f); // quick strong flash
+          base = lerp_color(base, RAYWHITE, h01);
+        }
+
+        // lunge toward player (visual only)
         if (m->lunge_timer > 0.0f) {
           Vector2 toP = Vector2Subtract(player.position, wp);
           float d = Vector2Length(toP);
           Vector2 dir =
               (d > 1e-3f) ? Vector2Scale(toP, 1.0f / d) : (Vector2){0, 0};
-          sp.x += dir.x * (s * 0.12f);
-          sp.y += dir.y * (s * 0.12f);
+          float push = (0.10f + 0.20f * clamp01(m->lunge_timer * 8.0f));
+          sp.x += dir.x * (s * push);
+          sp.y += dir.y * (s * push);
+        }
+
+        // tiny hurt shake
+        if (m->hurt_timer > 0.0f) {
+          float k = clamp01(m->hurt_timer * 10.0f);
+          sp.x += sinf(tnow * 80.0f + (float)i) * (s * 0.02f) * k;
+          sp.y += cosf(tnow * 65.0f + (float)i) * (s * 0.02f) * k;
         }
 
         // shadow
         DrawEllipse((int)sp.x, (int)(sp.y + s * 0.85f), (int)(s * 1.2f),
                     (int)(s * 0.40f), (Color){0, 0, 0, 80});
 
+        // draw per-type, but using the computed "base" tint everywhere
         switch (m->type) {
         case MOB_PIG: {
           // body
-          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f,
-                      (m->hurt_timer > 0.0f) ? (Color){255, 200, 210, 255}
-                                             : (Color){255, 160, 190, 255});
-
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
           DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
                           (Color){0, 0, 0, 120});
 
-          // snout
+          // snout (slightly darker/lighter from base)
+          Color snout = lerp_color(base, (Color){255, 120, 160, 255}, 0.55f);
           DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.10f}, s * 0.28f,
-                      (Color){255, 120, 160, 255});
+                      snout);
+
           DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.05f}, s * 0.06f,
                       (Color){120, 60, 80, 255});
           DrawCircleV((Vector2){sp.x + s * 0.50f, sp.y + s * 0.05f}, s * 0.06f,
                       (Color){120, 60, 80, 255});
 
           // ears
+          Color ear = lerp_color(base, (Color){255, 140, 175, 255}, 0.45f);
           DrawTriangle((Vector2){sp.x - s * 0.30f, sp.y - s * 0.70f},
                        (Vector2){sp.x - s * 0.55f, sp.y - s * 0.95f},
-                       (Vector2){sp.x - s * 0.10f, sp.y - s * 0.90f},
-                       (Color){255, 140, 175, 255});
+                       (Vector2){sp.x - s * 0.10f, sp.y - s * 0.90f}, ear);
           DrawTriangle((Vector2){sp.x + s * 0.10f, sp.y - s * 0.70f},
                        (Vector2){sp.x + s * 0.35f, sp.y - s * 0.95f},
-                       (Vector2){sp.x + s * 0.55f, sp.y - s * 0.85f},
-                       (Color){255, 140, 175, 255});
+                       (Vector2){sp.x + s * 0.55f, sp.y - s * 0.85f}, ear);
 
           // eyes
           DrawCircleV((Vector2){sp.x + s * 0.15f, sp.y - s * 0.15f}, s * 0.08f,
@@ -781,8 +831,8 @@ void draw_mobs(void) {
         } break;
 
         case MOB_SHEEP: {
-          // wool (cloudy)
-          Color wool = (Color){245, 245, 245, 255};
+          // wool: keep mostly white but still accept biome tint a bit
+          Color wool = lerp_color((Color){245, 245, 245, 255}, base, 0.18f);
           DrawCircleV((Vector2){sp.x, sp.y}, s * 0.80f, wool);
           DrawCircleV((Vector2){sp.x - s * 0.45f, sp.y + s * 0.10f}, s * 0.55f,
                       wool);
@@ -792,9 +842,15 @@ void draw_mobs(void) {
                           (Color){0, 0, 0, 90});
 
           // face
+          Color face = (Color){70, 70, 70, 255};
+          face = mul_color(face, biome, 0.10f);
+          if (m->hurt_timer > 0.0f)
+            face = lerp_color(face, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
+
           DrawCircleV((Vector2){sp.x + s * 0.55f, sp.y + s * 0.20f}, s * 0.35f,
-                      (Color){70, 70, 70, 255});
-          // eyes
+                      face);
+
+          // eye
           DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.06f,
                       RAYWHITE);
           DrawCircleV((Vector2){sp.x + s * 0.62f, sp.y + s * 0.10f}, s * 0.03f,
@@ -805,16 +861,18 @@ void draw_mobs(void) {
         } break;
 
         case MOB_SKELETON: {
+          // bone: slightly tinted by biome + hurt flash already applied via
+          // base
+          Color bone = lerp_color((Color){230, 230, 230, 255}, base, 0.55f);
+
           // skull
-          DrawCircleV((Vector2){sp.x, sp.y - s * 0.10f}, s * 0.65f,
-                      (Color){230, 230, 230, 255});
+          DrawCircleV((Vector2){sp.x, sp.y - s * 0.10f}, s * 0.65f, bone);
           DrawCircleLines((int)sp.x, (int)(sp.y - s * 0.10f), s * 0.65f,
                           (Color){0, 0, 0, 140});
 
           // jaw
           DrawRectangle((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
-                        (int)(s * 0.80f), (int)(s * 0.25f),
-                        (Color){210, 210, 210, 255});
+                        (int)(s * 0.80f), (int)(s * 0.25f), bone);
           DrawRectangleLines((int)(sp.x - s * 0.40f), (int)(sp.y + s * 0.25f),
                              (int)(s * 0.80f), (int)(s * 0.25f),
                              (Color){0, 0, 0, 140});
@@ -838,15 +896,16 @@ void draw_mobs(void) {
 
         case MOB_ZOMBIE: {
           // body
-          Color body = (Color){80, 180, 80, 255};
-          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, body);
+          DrawCircleV((Vector2){sp.x, sp.y}, s * 0.85f, base);
           DrawCircleLines((int)sp.x, (int)sp.y, s * 0.85f,
                           (Color){0, 0, 0, 140});
 
           // mouth
+          Color mouth = (Color){120, 50, 50, 255};
+          if (m->hurt_timer > 0.0f)
+            mouth = lerp_color(mouth, RAYWHITE, clamp01(m->hurt_timer * 6.0f));
           DrawRectangle((int)(sp.x - s * 0.25f), (int)(sp.y + s * 0.15f),
-                        (int)(s * 0.50f), (int)(s * 0.18f),
-                        (Color){120, 50, 50, 255});
+                        (int)(s * 0.50f), (int)(s * 0.18f), mouth);
 
           // eyes
           DrawCircleV((Vector2){sp.x - s * 0.20f, sp.y - s * 0.15f}, s * 0.10f,
@@ -858,7 +917,7 @@ void draw_mobs(void) {
           DrawCircleV((Vector2){sp.x + s * 0.20f, sp.y - s * 0.15f}, s * 0.05f,
                       BLACK);
 
-          // little "scar"
+          // scar
           DrawLine((int)(sp.x + s * 0.40f), (int)(sp.y - s * 0.10f),
                    (int)(sp.x + s * 0.55f), (int)(sp.y + s * 0.05f),
                    (Color){30, 90, 30, 255});
@@ -866,6 +925,9 @@ void draw_mobs(void) {
           draw_health_bar((Vector2){sp.x, sp.y - s * 1.35f}, s * 1.6f,
                           s * 0.18f, hp01, (Color){220, 90, 90, 255});
         } break;
+
+        default:
+          break;
         }
       }
     }
