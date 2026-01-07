@@ -2564,7 +2564,7 @@ int main(void) {
     update_projectiles(dt);
     update_daynight(dt);
 
-    run_agent_jobs(); // <-- actually updates all agents via workers
+    run_agent_jobs(); // update agents
 
     // detect transition night->day for reward
     int now_night = is_night_cached;
