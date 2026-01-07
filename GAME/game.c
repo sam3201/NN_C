@@ -802,7 +802,7 @@ static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
       on_mob_killed(m->type, mw);
       m->health = 0;
       agent_gain_loot_for_mob_kill(a, tr, m->type);
-      // *reward += 0.10f;
+      *reward += 0.10f;
     }
 
     pthread_rwlock_unlock(&c->lock);
