@@ -1468,6 +1468,9 @@ static void draw_player(Vector2 pp_screen) {
   Vector2 br = {pp_screen.x + bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
   DrawCircleV(bl, bodyR * 0.10f, blush);
   DrawCircleV(br, bodyR * 0.10f, blush);
+
+  g_handL = hl;
+  g_handR = hr;
 }
 
 static void draw_agent_detailed(const Agent *a, Vector2 sp, Color tribeColor) {
