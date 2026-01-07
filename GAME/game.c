@@ -2653,7 +2653,6 @@ void update_agent(Agent *a) {
     moveDir.x = 1;
     moveDir.y = 0;
     break;
-
     agent_try_move(a, moveDir);
 
   case ACTION_ATTACK: {
