@@ -322,7 +322,7 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
   return c;
 }
 
-void SAM_MUZE_destroy(MuCortex *cortex) {
+void SAM_as_MUZE_destroy(MuCortex *cortex) {
   if (!cortex)
     return;
 
