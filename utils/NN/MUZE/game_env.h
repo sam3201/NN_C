@@ -2,6 +2,11 @@
 #include <stddef.h>
 
 typedef struct {
+  size_t obs_size;
+  float *obs;
+} ObsState;
+
+typedef struct {
   // episode counters
   int step_i;
   int max_steps;
