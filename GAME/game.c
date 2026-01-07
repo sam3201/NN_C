@@ -975,6 +975,39 @@ Chunk *get_chunk(int cx, int cy) {
 
     MobType mt = pick_spawn_type(night, c->biome_type);
     init_mob(&c->mobs[slot], mt, p, /*make_angry=*/0);
+
+    int seed_count = 6;
+    int night = is_night_cached;
+
+    for (int k = 0; k < seed_count; k++) {
+      int slot = find_free_mob_slot(c);
+      if (slot < 0)
+        break;
+
+      MobType mt = pick_spawn_type(night, c->biome_type);
+      float rad = mob_radius_world(mt);
+
+      Vector2 p = {0};
+      int placed = 0;
+
+      for (int tries = 0; tries < 55; tries++) {
+        p = (Vector2){randf(0.9f, CHUNK_SIZE - 0.9f),
+                      randf(0.9f, CHUNK_SIZE - 0.9f)};
+
+        Vector2 worldPos = (Vector2){(float)(cx * CHUNK_SIZE) + p.x,
+                                     (float)(cy * CHUNK_SIZE) + p.y};
+
+        if (!world_pos_blocked_nearby(cx, cy, worldPos, rad)) {
+          placed = 1;
+          break;
+        }
+      }
+
+      if (!placed)
+        continue;
+
+      init_mob(&c->mobs[slot], mt, p, 0);
+    }
   }
 
   return c;
