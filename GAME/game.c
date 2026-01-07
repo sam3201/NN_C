@@ -934,6 +934,28 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
   m->lunge_timer = 0.0f;
 }
 
+static void despawn_hostiles_if_day(Chunk *c) {
+  // Only despawn during day
+  if (is_night_cached)
+    return;
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
+    if (hostile) {
+      m->health = 0;
+      m->aggro_timer = 0.0f;
+      m->attack_cd = 0.0f;
+      m->hurt_timer = 0.0f;
+      m->lunge_timer = 0.0f;
+      m->vel = (Vector2){0, 0};
+    }
+  }
+}
+
 static void spawn_raid_wave(void) {
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
