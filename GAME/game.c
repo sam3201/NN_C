@@ -2327,6 +2327,7 @@ int main(void) {
     update_player();
     update_visible_world(dt);
     update_projectiles(dt);
+    update_daynight(dt);
 
     for (int i = 0; i < MAX_AGENTS; i++) {
       if (!agents[i].alive)
