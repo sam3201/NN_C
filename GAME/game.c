@@ -1073,31 +1073,6 @@ void draw_chunks(void) {
   }
 }
 
-// ------------------- SPACING / COLLISION -------------------
-
-// Tuned in WORLD UNITS (not pixels). Increase if you still see overlaps.
-static inline float res_radius_world(ResourceType t) {
-  switch (t) {
-  case RES_TREE:
-    return 1.35f; // big canopy
-  case RES_ROCK:
-    return 1.05f;
-  case RES_GOLD:
-    return 1.00f;
-  case RES_FOOD:
-    return 0.90f;
-  default:
-    return 1.00f;
-  }
-}
-
-static inline float mob_radius_world(MobType t) {
-  (void)t;
-  // You made mobs visually huge; keep a generous world radius.
-  // If you still see overlaps, bump to 1.35f or 1.5f.
-  return 1.25f;
-}
-
 // Checks THIS chunk + 8 neighbors for overlap against BOTH mobs and resources.
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius) {
