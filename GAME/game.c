@@ -2209,6 +2209,7 @@ void update_agent(Agent *a) {
   case ACTION_RIGHT:
     a->position.x += 0.5f;
     break;
+  case ACTION_FIRE:
   default:
     break;
   }
