@@ -296,6 +296,10 @@ MuCortex *SAM_as_MUZE(SAM_t *sam) {
 
   ad->reward_baseline = 0.0f;
 
+  /* Default: policy sampling controls (non-MCTS) */
+  c->policy_epsilon = 0.10f;    /* try 0.0f if you want pure sampling */
+  c->policy_temperature = 1.0f; /* 1 = normal; 0.5 sharper; 2.0 flatter */
+
   c->brain = ad;
   c->encode = sam_encode;
   c->policy = sam_policy;
