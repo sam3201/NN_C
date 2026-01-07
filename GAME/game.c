@@ -2062,9 +2062,10 @@ void update_player(void) {
   }
 
   if (IsKeyDown(KEY_EQUAL))
-    WORLD_SCALE += 1.0f;
+    target_world_scale += 60.0f * GetFrameTime();
   if (IsKeyDown(KEY_MINUS))
-    WORLD_SCALE -= 1.0f;
+    target_world_scale -= 60.0f * GetFrameTime();
+  target_world_scale = clampf(target_world_scale, 20.0f, 90.0f);
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
