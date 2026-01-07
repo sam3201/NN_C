@@ -1678,7 +1678,6 @@ void update_player(void) {
 
   if (IsKeyPressed(KEY_TAB))
     crafting_open = !crafting_open;
-
   if (crafting_open) {
     // press 1..9 to craft
     for (int i = 0; i < recipe_count && i < 9; i++) {
