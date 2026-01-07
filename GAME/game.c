@@ -73,7 +73,7 @@
 #define R_EAT_WASTE (-0.040f) // ate when already basically full
 #define R_EAT_NO_FOOD (-0.010f)
 
-#define R_WANDER_PENALTY -0.0008f; // punish random wandering
+#define R_WANDER_PENALTY (-0.0008f); // punish random wandering
 
 #define R_DEATH (-1.000f)
 
