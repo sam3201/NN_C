@@ -190,6 +190,11 @@ static float FOOD_SCALE = 1.20f;
 // mobs can also be bigger if you want
 static float MOB_SCALE = 3.15f;
 
+// ------------------- Day/Night -------------------
+static float time_of_day = 0.25f;         // 0..1 (0 = midnight, 0.5 = noon)
+static float day_length_seconds = 240.0f; // 4 minutes per full day
+static int is_night_cached = 0;
+
 static int inv_wood = 0, inv_stone = 0, inv_gold = 0, inv_food = 0;
 
 static float player_harvest_cd = 0.0f;
