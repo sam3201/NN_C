@@ -2224,7 +2224,7 @@ void update_agent(Agent *a) {
   /*
   case ACTION_SLEEP:
     break;
-  case ACTION_SPAWN:
+  case ACTION_BREED:
     break;
     */
   case ACTION_NONE:
