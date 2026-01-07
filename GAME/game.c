@@ -444,6 +444,129 @@ static inline float player_resource_stamina_cost(ResourceType t) {
   return 2.0f;
 }
 
+static void spawn_pickup(PickupType type, Vector2 pos, int amount) {
+  for (int i = 0; i < MAX_PICKUPS; i++) {
+    if (!pickups[i].alive) {
+      pickups[i].alive = true;
+      pickups[i].pos = pos;
+      pickups[i].type = type;
+      pickups[i].amount = amount;
+      pickups[i].ttl = 30.0f;
+      pickups[i].bob_t = randf(0.0f, 10.0f);
+      return;
+    }
+  }
+}
+
+static void give_pickup(PickupType t, int amount) {
+  if (amount <= 0)
+    return;
+  switch (t) {
+  case PICK_FOOD:
+    inv_food += amount;
+    break;
+  case PICK_SHARD:
+    inv_shards += amount;
+    break;
+  case PICK_ARROW:
+    inv_arrows += amount;
+    break;
+  default:
+    break;
+  }
+}
+
+static void update_pickups(float dt) {
+  for (int i = 0; i < MAX_PICKUPS; i++) {
+    Pickup *p = &pickups[i];
+    if (!p->alive)
+      continue;
+    p->ttl -= dt;
+    p->bob_t += dt;
+    if (p->ttl <= 0.0f)
+      p->alive = false;
+  }
+}
+
+static void collect_nearby_pickups(void) {
+  for (int i = 0; i < MAX_PICKUPS; i++) {
+    Pickup *p = &pickups[i];
+    if (!p->alive)
+      continue;
+    if (Vector2Distance(p->pos, player.position) < 1.15f) {
+      give_pickup(p->type, p->amount);
+      p->alive = false;
+    }
+  }
+}
+
+static void draw_pickups(void) {
+  for (int i = 0; i < MAX_PICKUPS; i++) {
+    Pickup *p = &pickups[i];
+    if (!p->alive)
+      continue;
+
+    Vector2 sp = world_to_screen(p->pos);
+    float s = px(0.12f);
+
+    float bob = sinf(p->bob_t * 5.0f) * (s * 0.35f);
+    sp.y += bob;
+
+    // shadow
+    DrawEllipse((int)sp.x, (int)(sp.y + s * 1.2f), (int)(s * 1.4f),
+                (int)(s * 0.55f), (Color){0, 0, 0, 70});
+
+    switch (p->type) {
+    case PICK_FOOD: {
+      DrawCircleV(sp, s * 0.75f, (Color){220, 60, 60, 255});
+      DrawCircleLines((int)sp.x, (int)sp.y, s * 0.75f, (Color){0, 0, 0, 160});
+      DrawTriangle((Vector2){sp.x, sp.y - s * 0.9f},
+                   (Vector2){sp.x - s * 0.35f, sp.y - s * 1.25f},
+                   (Vector2){sp.x + s * 0.35f, sp.y - s * 1.25f},
+                   (Color){40, 180, 60, 255});
+    } break;
+
+    case PICK_SHARD: {
+      DrawPoly(sp, 4, s * 0.9f, 45.0f, (Color){170, 210, 255, 255});
+      DrawPolyLines(sp, 4, s * 0.9f, 45.0f, (Color){0, 0, 0, 160});
+    } break;
+
+    case PICK_ARROW: {
+      // tiny arrow icon
+      Vector2 a = sp;
+      Vector2 b = (Vector2){sp.x + s * 1.6f, sp.y};
+      DrawLineEx(a, b, s * 0.25f, (Color){230, 230, 230, 255});
+      DrawTriangle((Vector2){b.x, b.y},
+                   (Vector2){b.x - s * 0.5f, b.y - s * 0.35f},
+                   (Vector2){b.x - s * 0.5f, b.y + s * 0.35f},
+                   (Color){230, 230, 230, 255});
+      DrawLineEx((Vector2){sp.x - s * 0.6f, sp.y - s * 0.3f},
+                 (Vector2){sp.x - s * 0.2f, sp.y}, s * 0.18f,
+                 (Color){180, 140, 90, 255});
+      DrawLineEx((Vector2){sp.x - s * 0.6f, sp.y + s * 0.3f},
+                 (Vector2){sp.x - s * 0.2f, sp.y}, s * 0.18f,
+                 (Color){180, 140, 90, 255});
+    } break;
+    }
+  }
+}
+
+static void on_mob_killed(MobType t, Vector2 mob_world_pos) {
+  // small drop scatter
+  Vector2 p = mob_world_pos;
+  p.x += randf(-0.35f, 0.35f);
+  p.y += randf(-0.35f, 0.35f);
+
+  if (t == MOB_PIG || t == MOB_SHEEP) {
+    spawn_pickup(PICK_FOOD, p, 1 + (rand() % 2));
+  } else if (t == MOB_ZOMBIE) {
+    spawn_pickup(PICK_SHARD, p, 1 + (rand() % 3));
+  } else if (t == MOB_SKELETON) {
+    spawn_pickup(PICK_ARROW, p, 2 + (rand() % 3));
+    spawn_pickup(PICK_SHARD, p, 1);
+  }
+}
+
 static void give_drop(ResourceType t) {
   switch (t) {
   case RES_TREE:
