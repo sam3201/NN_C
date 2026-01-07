@@ -458,19 +458,6 @@ static void spawn_pickup(PickupType type, Vector2 pos, int amount) {
   }
 }
 
-static Vector2 nearest_base_pos(Vector2 wp) {
-  float bestD = 1e9f;
-  Vector2 best = tribes[0].base.position;
-  for (int t = 0; t < TRIBE_COUNT; t++) {
-    float d = Vector2Distance(wp, tribes[t].base.position);
-    if (d < bestD) {
-      bestD = d;
-      best = tribes[t].base.position;
-    }
-  }
-  return best;
-}
-
 static void give_pickup(PickupType t, int amount) {
   if (amount <= 0)
     return;
@@ -511,6 +498,19 @@ static void collect_nearby_pickups(void) {
       p->alive = false;
     }
   }
+}
+
+static Vector2 nearest_base_pos(Vector2 wp) {
+  float bestD = 1e9f;
+  Vector2 best = tribes[0].base.position;
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float d = Vector2Distance(wp, tribes[t].base.position);
+    if (d < bestD) {
+      bestD = d;
+      best = tribes[t].base.position;
+    }
+  }
+  return best;
 }
 
 static void draw_pickups(void) {
