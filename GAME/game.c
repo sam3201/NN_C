@@ -2772,7 +2772,8 @@ void update_agent(Agent *a) {
   pthread_rwlock_unlock(&c->lock);
 
   // --- MuZero chooses action ---
-  muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
+  int action =
+      muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
 
   obs_free(&obs);
 
