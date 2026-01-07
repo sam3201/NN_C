@@ -75,7 +75,7 @@ CC="${CC:-clang}"
   -I../utils/NN/MUZE \
   -I../SAM \
   -I"$RAYLIB_SRC" \
-  -L"$RAYLIB_SRC" -lraylib -pthread \
+  -L"$RAYLIB_SRC" -raylib -pthread \
   -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
   -arch arm64 \
   -o game
