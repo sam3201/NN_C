@@ -22,8 +22,9 @@ static void compute_discounted_returns(const float *rewards, int T, float gamma,
 }
 
 /* Runs self-play episodes and pushes training tuples into replay buffer */
-void selfplay_run(MuModel *model, void *env_state, env_reset_fn env_reset,
-                  env_step_fn env_step, MCTSParams *mcts_params,
+void selfplay_run(MuModel *model, void *env_state,
+                  selfplay_env_reset_fn env_reset,
+                  selfplay_env_step_fn env_step, MCTSParams *mcts_params,
                   SelfPlayParams *sp_params, ReplayBuffer *rb) {
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
