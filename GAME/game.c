@@ -180,6 +180,18 @@ typedef struct {
 /* =======================
    GLOBAL STATE
 ======================= */
+#define WORKER_COUNT 4 // tune this (2-8 typical)
+
+static pthread_t workers[WORKER_COUNT];
+static pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t done_cv = PTHREAD_COND_INITIALIZER;
+
+static int job_next_agent = 0;
+static int job_done_workers = 0;
+static int job_active = 0;
+static int job_quit = 0;
+
 Chunk world[WORLD_SIZE][WORLD_SIZE];
 Tribe tribes[TRIBE_COUNT];
 Agent agents[MAX_AGENTS];
