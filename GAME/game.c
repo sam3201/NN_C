@@ -2356,6 +2356,14 @@ static void draw_minimap(void) {
   DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
 }
 
+static void draw_hurt_vignette(void) {
+  if (player_hurt_timer <= 0.0f)
+    return;
+  float t = clamp01(player_hurt_timer / 0.18f);
+  unsigned char a = (unsigned char)(120 * t);
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
+}
+
 /* =======================
    THREAD
 
