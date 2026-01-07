@@ -2329,6 +2329,28 @@ int main(void) {
     update_projectiles(dt);
     update_daynight(dt);
 
+    // detect transition night->day for reward
+    int now_night = is_night_cached;
+    if (was_night && !now_night) {
+      // dawn reward: shards + small base repair
+      inv_shards += 5;
+      for (int t = 0; t < TRIBE_COUNT; t++) {
+        tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
+      }
+    }
+    was_night = now_night;
+
+    // raid spawner
+    if (is_night_cached) {
+      raid_timer -= dt;
+      if (raid_timer <= 0.0f) {
+        raid_timer = raid_interval;
+        spawn_raid_wave();
+      }
+    } else {
+      raid_timer = 1.5f;
+    }
+
     for (int i = 0; i < MAX_AGENTS; i++) {
       if (!agents[i].alive)
         continue;
