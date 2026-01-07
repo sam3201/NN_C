@@ -1632,6 +1632,7 @@ static void draw_player(Vector2 pp_screen) {
   Vector2 hr = pp_screen;
   hr = Vector2Add(hr, Vector2Scale(aimDir, (handArm - bodyR * 0.12f) - wiggle));
   hr = Vector2Add(hr, Vector2Scale(perp, bodyR * 0.22f));
+
   // little “finger nub” pointing toward mouse from each hand
   float nubR = handR * 0.28f;
   Vector2 hl_nub = {hl.x + cosf(aimAng) * (handR * 0.65f),
