@@ -836,6 +836,26 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos) {
   m->lunge_timer = 0.0f;
 }
 
+static void spawn_raid_wave(void) {
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Tribe *tr = &tribes[t];
+    if (tr->integrity <= 0.0f)
+      continue;
+
+    int count = 2 + (rand() % 2); // 2..3
+    for (int k = 0; k < count; k++) {
+      float ang = randf(0, 2 * PI);
+      float dist = randf(tr->base.radius + 6.0f, tr->base.radius + 10.0f);
+      Vector2 p = (Vector2){tr->base.position.x + cosf(ang) * dist,
+                            tr->base.position.y + sinf(ang) * dist};
+
+      // bias: more skeletons in biome 2 (desert) but keep it simple
+      MobType mt = (rand() % 2 == 0) ? MOB_ZOMBIE : MOB_SKELETON;
+      spawn_mob_at_world(mt, p);
+    }
+  }
+}
+
 void draw_resources(void) {
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
