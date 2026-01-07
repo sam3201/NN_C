@@ -1033,6 +1033,74 @@ static inline float res_radius_world(ResourceType t) {
   }
 }
 
+// ---- Mob radius in WORLD units (used for spacing / collisions during spawn)
+// ----
+static inline float mob_radius_world(MobType t) {
+  switch (t) {
+  case MOB_PIG:
+    return 0.95f;
+  case MOB_SHEEP:
+    return 0.95f;
+  case MOB_SKELETON:
+    return 0.90f;
+  case MOB_ZOMBIE:
+    return 0.98f;
+  default:
+    return 0.95f;
+  }
+}
+
+// ---- Spacing test: is "worldPos" too close to ANY resource/mob nearby? ----
+// IMPORTANT: we do NOT call get_chunk() here (avoids recursive generation).
+// We only check chunks that are already generated.
+static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
+                                    float radius) {
+  const float padding = 0.25f; // extra spacing so things don't touch
+
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+
+      int ncx = wrap(cx + dx);
+      int ncy = wrap(cy + dy);
+
+      Chunk *c = &world[ncx][ncy];
+      if (!c->generated)
+        continue;
+
+      Vector2 origin =
+          (Vector2){(float)(ncx * CHUNK_SIZE), (float)(ncy * CHUNK_SIZE)};
+
+      // check resources
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+
+        Vector2 r_world = Vector2Add(origin, r->position);
+        float rr = res_radius_world(r->type);
+
+        if (Vector2Distance(worldPos, r_world) < (radius + rr + padding))
+          return 1;
+      }
+
+      // check mobs
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+
+        Vector2 m_world = Vector2Add(origin, m->position);
+        float mr = mob_radius_world(m->type);
+
+        if (Vector2Distance(worldPos, m_world) < (radius + mr + padding))
+          return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 void draw_chunks(void) {
   int view_radius = 6;
 
