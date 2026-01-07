@@ -1946,7 +1946,10 @@ static void draw_hover_label(void) {
     DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
   }
 }
+/* =======================
+   THREAD
 
+ * ======================= */
 static void *agent_worker(void *arg) {
   (void)arg;
 
