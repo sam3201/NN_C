@@ -957,21 +957,25 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
 }
 
 static void agent_try_eat(Agent *a, float *reward) {
-  if (a->inv_food <= 0)
+  if (a->inv_food <= 0) {
+    *reward += R_EAT_NO_FOOD;
     return;
+  }
 
-  // only eat if it matters (prevents wasting)
-  if (a->health > 92.0f && a->stamina > 75.0f)
+  // if basically full, it's waste
+  if (a->health > 92.0f && a->stamina > 75.0f) {
+    a->inv_food--; // still consumes -> true waste punishment
+    *reward += R_EAT_WASTE;
     return;
+  }
 
   a->inv_food--;
 
   a->health = fminf(100.0f, a->health + 18.0f);
   a->stamina = fminf(100.0f, a->stamina + 32.0f);
 
-  *reward += 0.12f;
+  *reward += R_EAT_GOOD;
 }
-
 static void tribe_try_repair_base(Tribe *tr, float *reward) {
   // simple repair rule: if damaged, spend mats to repair slowly
   if (tr->integrity >= 99.9f)
