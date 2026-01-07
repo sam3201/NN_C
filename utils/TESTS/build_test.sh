@@ -50,6 +50,6 @@ $CC $CFLAGS \
   -lm -o "$OUT"
 
 echo
-echo "Build OK ✅"
+echo "Build OK"
 echo "Run with: ./$OUT"
 
