@@ -206,6 +206,10 @@ static float player_harvest_cd = 0.0f;
 static float player_attack_cd = 0.0f;
 static float player_hurt_timer = 0.0f;
 
+static int has_axe = 0;
+static int has_pickaxe = 0;
+static int has_sword = 0;
+
 static Projectile projectiles[MAX_PROJECTILES];
 
 Color biome_colors[] = {
