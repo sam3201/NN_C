@@ -852,7 +852,7 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   r->break_flash = 0.06f;
 
   // optional: remove reward shaping entirely if you want
-  // *reward += 0.005f;
+  *reward += 0.005f;
 
   if (r->health <= 0) {
     r->health = 0;
