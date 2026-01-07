@@ -2483,58 +2483,6 @@ int decide_action(Agent *a, ObsBuffer *obs) {
 /* =======================
    AGENT UPDATE
 ======================= */
-static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             int dmg) {
-  for (int i = 0; i < MAX_PROJECTILES; i++) {
-    if (!projectiles[i].alive) {
-      projectiles[i].alive = true;
-      projectiles[i].pos = pos;
-      projectiles[i].vel = Vector2Scale(Vector2Normalize(dir), speed);
-      projectiles[i].ttl = ttl;
-      projectiles[i].damage = dmg;
-      return;
-    }
-  }
-}
-
-static void update_projectiles(float dt) {
-  for (int i = 0; i < MAX_PROJECTILES; i++) {
-    Projectile *p = &projectiles[i];
-    if (!p->alive)
-      continue;
-
-    p->ttl -= dt;
-    if (p->ttl <= 0.0f) {
-      p->alive = false;
-      continue;
-    }
-
-    p->pos = Vector2Add(p->pos, Vector2Scale(p->vel, dt));
-
-    // hit player (simple circle hit)
-    float d = Vector2Distance(p->pos, player.position);
-    if (d < 0.55f) {
-      player.health -= (float)p->damage;
-      player_hurt_timer = 0.18f;
-      p->alive = false;
-      cam_shake = fmaxf(cam_shake, 0.10f);
-    }
-  }
-}
-
-static void draw_projectiles(void) {
-  for (int i = 0; i < MAX_PROJECTILES; i++) {
-    Projectile *p = &projectiles[i];
-    if (!p->alive)
-      continue;
-
-    Vector2 sp = world_to_screen(p->pos);
-    float r = WORLD_SCALE * 0.07f * scale_size;
-    DrawCircleV(sp, r, (Color){220, 220, 220, 255});
-    DrawCircleLines((int)sp.x, (int)sp.y, r, (Color){0, 0, 0, 160});
-  }
-}
-
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   // timers
   if (m->ai_timer > 0)
