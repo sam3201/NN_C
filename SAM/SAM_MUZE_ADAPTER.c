@@ -203,6 +203,8 @@ static void sam_learn(void *brain, const float *obs, size_t obs_dim, int action,
   if (!ad || !ad->sam)
     return;
 
+  ad->reward_baseline = 0.95f * ad->reward_baseline + 0.05f * reward;
+
   if (ad->has_last && (size_t)action != ad->last_action) {
     // If later you change policy() to sample instead of argmax,
     // this helps catch mismatches between executed action and cached action.
