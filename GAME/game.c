@@ -218,12 +218,6 @@ bool has_sword = false;
 
 static Projectile projectiles[MAX_PROJECTILES];
 
-typedef struct {
-  const char *name;
-  int wood, stone, gold, food;
-  int *unlock_flag; // set to 1 on craft
-} Recipe;
-
 static Recipe recipes[] = {
     {"Axe (Wood+Stone)", 3, 2, 0, 0, &has_axe},
     {"Pickaxe (Wood+Stone)", 3, 3, 0, 0, &has_pickaxe},
