@@ -2239,6 +2239,16 @@ static void draw_ui(void) {
            (Color){0, 0, 0, 200});
   DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
            (Color){0, 0, 0, 200});
+
+  // cooldown rings around hands
+  float hFrac = 1.0f - clamp01(player_harvest_cd / PLAYER_HARVEST_COOLDOWN);
+  float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
+
+  float rr = 12.0f;
+  DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
+           (Color){80, 160, 255, 220});
+  DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
+           (Color){255, 140, 80, 220});
 }
 
 static void draw_hover_label(void) {
