@@ -5322,7 +5322,7 @@ static void *agent_worker(void *arg) {
       if (idx >= MAX_AGENTS)
         break;
 
-      update_agent(&agents[idx]);
+      update_agent(&agents[idx], &g_world);
     }
 
     // Signal completion for this worker
