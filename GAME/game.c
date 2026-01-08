@@ -4649,36 +4649,6 @@ static void draw_pause_overlay(void) {
            RAYWHITE);
 }
 
-static void do_pause_menu(void) {
-  draw_pause_overlay();
-
-  float cx = SCREEN_WIDTH * 0.5f;
-  float y = SCREEN_HEIGHT * 0.35f;
-
-  Rectangle rResume = {cx - 140, y + 0, 280, 54};
-  Rectangle rSave = {cx - 140, y + 70, 280, 54};
-  Rectangle rExit = {cx - 140, y + 140, 280, 54};
-
-  if (ui_button(rResume, "Resume (ESC)")) {
-    g_state = STATE_PLAYING;
-  }
-
-  if (ui_button(rSave, "Save World")) {
-    save_world_to_disk(g_world_name);
-  }
-
-  if (ui_button(rExit, "Exit to World Select")) {
-    // Optional: save before leaving
-    save_world_to_disk(g_world_name);
-
-    world_list_refresh(&g_world_list);
-    g_state = STATE_WORLD_SELECT;
-  }
-
-  DrawText("Tip: ESC toggles pause", (int)(cx - 160), (int)(y + 220), 18,
-           RAYWHITE);
-}
-
 // tiny button helper
 static int ui_button(Rectangle r, const char *text) {
   Vector2 m = GetMousePosition();
@@ -4731,6 +4701,36 @@ static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
   }
 
   DrawText(buf, (int)r.x + 10, (int)r.y + 10, 20, RAYWHITE);
+}
+
+static void do_pause_menu(void) {
+  draw_pause_overlay();
+
+  float cx = SCREEN_WIDTH * 0.5f;
+  float y = SCREEN_HEIGHT * 0.35f;
+
+  Rectangle rResume = {cx - 140, y + 0, 280, 54};
+  Rectangle rSave = {cx - 140, y + 70, 280, 54};
+  Rectangle rExit = {cx - 140, y + 140, 280, 54};
+
+  if (ui_button(rResume, "Resume (ESC)")) {
+    g_state = STATE_PLAYING;
+  }
+
+  if (ui_button(rSave, "Save World")) {
+    save_world_to_disk(g_world_name);
+  }
+
+  if (ui_button(rExit, "Exit to World Select")) {
+    // Optional: save before leaving
+    save_world_to_disk(g_world_name);
+
+    world_list_refresh(&g_world_list);
+    g_state = STATE_WORLD_SELECT;
+  }
+
+  DrawText("Tip: ESC toggles pause", (int)(cx - 160), (int)(y + 220), 18,
+           RAYWHITE);
 }
 
 static void do_world_select_screen(void) {
