@@ -433,7 +433,6 @@ typedef struct {
   int32_t owner;
 } SaveProjectile;
 
-#pragma pack(pop)
 ypedef struct {
   char magic[4];    // "SAMW"
   uint32_t version; // 1
