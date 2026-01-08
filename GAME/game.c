@@ -352,6 +352,60 @@ typedef struct {
   int *unlock_flag; // set to 1 on craft
 } Recipe;
 
+#pragma pack(push, 1)
+typedef struct {
+  char magic[4];    // "SAMW"
+  uint32_t version; // 1
+  uint32_t seed;
+  uint32_t world_size;
+  uint32_t chunk_size;
+  float time_of_day;
+
+  // player
+  float player_x, player_y;
+  float player_health, player_stamina;
+
+  // player inv/tools
+  int32_t inv_wood, inv_stone, inv_gold, inv_food;
+  int32_t inv_shards, inv_arrows;
+  int32_t has_axe, has_pickaxe, has_sword, has_armor, has_bow;
+
+  // tribes
+  float tribe_integrity[TRIBE_COUNT];
+  int32_t tribe_wood[TRIBE_COUNT], tribe_stone[TRIBE_COUNT],
+      tribe_gold[TRIBE_COUNT], tribe_food[TRIBE_COUNT];
+  int32_t tribe_shards[TRIBE_COUNT], tribe_arrows[TRIBE_COUNT];
+
+  // chunk count follows
+  uint32_t chunk_count;
+} SaveHeader;
+
+typedef struct {
+  int32_t cx, cy;
+  int32_t biome_type;
+  float mob_spawn_timer;
+
+  uint32_t resource_count;
+  uint32_t mob_count; // alive mobs written
+} SaveChunkHeader;
+
+typedef struct {
+  float lx, ly; // local pos
+  int32_t type;
+  int32_t health;
+  float hit_timer;
+  float break_flash;
+} SaveResource;
+
+typedef struct {
+  float lx, ly; // local pos
+  int32_t type;
+  int32_t health;
+  float velx, vely;
+  float ai_timer, aggro_timer, attack_cd, hurt_timer, lunge_timer;
+} SaveMob;
+#pragma pack(pop)
+
 /* =======================
    GLOBAL STATE
 ======================= */
@@ -481,60 +535,6 @@ Color resource_colors[] = {
     GOLD,      // gold
     RED        // food
 };
-
-#pragma pack(push, 1)
-typedef struct {
-  char magic[4];    // "SAMW"
-  uint32_t version; // 1
-  uint32_t seed;
-  uint32_t world_size;
-  uint32_t chunk_size;
-  float time_of_day;
-
-  // player
-  float player_x, player_y;
-  float player_health, player_stamina;
-
-  // player inv/tools
-  int32_t inv_wood, inv_stone, inv_gold, inv_food;
-  int32_t inv_shards, inv_arrows;
-  int32_t has_axe, has_pickaxe, has_sword, has_armor, has_bow;
-
-  // tribes
-  float tribe_integrity[TRIBE_COUNT];
-  int32_t tribe_wood[TRIBE_COUNT], tribe_stone[TRIBE_COUNT],
-      tribe_gold[TRIBE_COUNT], tribe_food[TRIBE_COUNT];
-  int32_t tribe_shards[TRIBE_COUNT], tribe_arrows[TRIBE_COUNT];
-
-  // chunk count follows
-  uint32_t chunk_count;
-} SaveHeader;
-
-typedef struct {
-  int32_t cx, cy;
-  int32_t biome_type;
-  float mob_spawn_timer;
-
-  uint32_t resource_count;
-  uint32_t mob_count; // alive mobs written
-} SaveChunkHeader;
-
-typedef struct {
-  float lx, ly; // local pos
-  int32_t type;
-  int32_t health;
-  float hit_timer;
-  float break_flash;
-} SaveResource;
-
-typedef struct {
-  float lx, ly; // local pos
-  int32_t type;
-  int32_t health;
-  float velx, vely;
-  float ai_timer, aggro_timer, attack_cd, hurt_timer, lunge_timer;
-} SaveMob;
-#pragma pack(pop)
 
 // tiny button helper
 static int ui_button(Rectangle r, const char *text) {
