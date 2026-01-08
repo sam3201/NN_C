@@ -209,7 +209,7 @@ Agent agents[MAX_AGENTS];
 // =======================
 static float agent_rand01(void *ctx) {
   Agent *a = (Agent *)ctx;
-  return frand01(&a->rng);
+  return rand01(&a->rng);
 }
 
 static inline float clampf(float x, float a, float b) {
