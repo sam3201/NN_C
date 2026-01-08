@@ -46,7 +46,7 @@ Agent agents[MAX_AGENTS];
 
 static void init_agents(void) {
   for (int i = 0; i < MAX_AGENTS; i++) {
-    agents[i].alive = false;
+    agents[i].alive = true;
     agents[i].x = SCREEN_WIDTH / 2;
     agents[i].y = SCREEN_HEIGHT / 2;
   }
