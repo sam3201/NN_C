@@ -799,6 +799,43 @@ static void update_agent(Agent *a) {
     a->ep.done[a->ep_t] = 0;
     a->ep_t++;
 
+    int T = a->ep_t;
+    if (T > 0) {
+      a->ep.reward[T - 1] = a->pending_reward;
+      a->ep.done[T - 1] = 1;
+
+      // compute returns
+      float *z = malloc(sizeof(float) * T);
+      for (int t = 0; t < T; t++) {
+        float acc = 0.f, g = 1.f;
+        for (int k = t; k < T; k++) {
+          acc += g * a->ep.reward[k];
+          g *= 0.997f;
+        }
+        z[t] = acc;
+      }
+
+      pthread_mutex_lock(&g_rb_mtx);
+      for (int t = 0; t < T; t++) {
+        float *obs_t = a->ep.obs + t * OBS_DIM;
+        float *pi_t = a->ep.pi + t * ACTION_COUNT;
+
+        rb_push(g_rb, obs_t, pi_t, z[t]);
+
+        // transition for dynamics (need next_obs)
+        if (t + 1 < T) {
+          float *obs_tp1 = a->ep.obs + (t + 1) * OBS_DIM;
+          rb_push_transition(g_rb, obs_t, a->ep.action[t], a->ep.reward[t],
+                             obs_tp1, a->ep.done[t]);
+        }
+      }
+      pthread_mutex_unlock(&g_rb_mtx);
+
+      free(z);
+    }
+    a->ep_t = 0;
+    a->pending_reward = 0.f;
+
     if (a->cortex && a->has_last_transition) {
       a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                        a->last_action, a->pending_reward, 0);
