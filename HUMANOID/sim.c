@@ -24,6 +24,12 @@
 #define STUCK_RESET_SECS 3.0f // hard reset if really stuck
 #define STUCK_PENALTY 0.02f   // per second penalty when stuck (soft shaping)
 
+// Upward-velocity shaping (airborne only)
+// Reward small positive signal when moving upward (vel.y < 0)
+#define UP_VEL_SCALE                                                           \
+  1800.0f // normalize denominator (matches your obs vy scale)
+#define UP_VEL_REWARD 0.0030f // per-second max bonus (tiny)
+
 #define STILL_EPS_PX 1.5f // how close counts as "not moving"
 #define STILL_SECS 1.0f   // time with tiny movement before we consider "still"
 
@@ -32,12 +38,6 @@
 
 #define FIXED_DT (1.0f / 120.0f)
 #define MAX_ACCUM_DT (0.25f)
-//
-// Upward-velocity shaping (airborne only)
-// Reward small positive signal when moving upward (vel.y < 0)
-#define UP_VEL_SCALE                                                           \
-  1800.0f // normalize denominator (matches your obs vy scale)
-#define UP_VEL_REWARD 0.0030f // per-second max bonus (tiny)
 
 // =======================
 // JUMP KING ENV
