@@ -376,11 +376,36 @@ static void update_agent(Agent *a) {
     // drag
     p->vel.x *= p->on_ground ? 0.92f : 0.985f;
 
-    // charge (ground only)
-    if (a->last_action == ACT_CHARGE && p->on_ground) {
+    // --- charging state machine ---
+    // If agent chooses CHARGE while grounded, start/continue charging.
+    if (p->on_ground && a->last_action == ACT_CHARGE) {
       p->charging = 1;
+    }
+
+    // If charging, keep accumulating charge automatically (no need to keep
+    // selecting CHARGE).
+    if (p->charging && p->on_ground) {
       p->charge = clampf(p->charge + JUMP_CHARGE_RATE * FIXED_DT, 0.0f,
                          JUMP_CHARGE_MAX);
+    }
+
+    // Release jump only if currently charging and grounded
+    if (p->on_ground && p->charging && a->last_action == ACT_RELEASE) {
+      float t = clampf(p->charge, 0.0f, 1.0f);
+      float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t;
+      float vx = clampf(p->vel.x, -JUMP_VX_MAX, JUMP_VX_MAX);
+
+      p->vel.y = vy;
+      p->vel.x = vx;
+
+      p->on_ground = 0;
+      p->charging = 0;
+      p->charge = 0.0f;
+    }
+
+    // If grounded and NOT charging, keep charge at 0 (prevents leftover charge)
+    if (p->on_ground && !p->charging) {
+      p->charge = 0.0f;
     }
 
     // release jump
