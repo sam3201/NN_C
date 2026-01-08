@@ -92,6 +92,18 @@ static void init_agents(void) {
     agents[i].y = SCREEN_HEIGHT / 2;
     agents[i].Head.x = agents[i].x;
     agents[i].Head.y = agents[i].y - 20;
+    agents[i].Neck.x = agents[i].x;
+    agents[i].Neck.y = agents[i].y - 40;
+    agents[i].Body.x = agents[i].x;
+    agents[i].Body.y = agents[i].y - 60;
+    agents[i].Legs.x = agents[i].x;
+    agents[i].Legs.y = agents[i].y - 80;
+    agents[i].Arms.x = agents[i].x;
+    agents[i].Arms.y = agents[i].y - 100;
+    agents[i].Feet.x = agents[i].x;
+    agents[i].Feet.y = agents[i].y - 120;
+    agents[i].Hands.x = agents[i].x;
+    agents[i].Hands.y = agents[i].y - 140;
   }
 }
 
