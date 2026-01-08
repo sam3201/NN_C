@@ -217,7 +217,7 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos);
 void update_agent(Agent *a);
 static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             ProjOwner owner, int damage);
+                             ProjOwner owner);
 
 static void player_try_attack_forward(Vector2 facing_dir) {
   if (player_attack_cd > 0.0f)
