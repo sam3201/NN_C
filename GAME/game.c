@@ -5140,8 +5140,9 @@ static void do_world_select_screen(void) {
         // if load fails, create fresh using current seed
         world_reset(g_world_seed);
         save_world_to_disk(g_world_name);
+      } else {
+        load_models_from_disk(g_world_name);
       }
-      load_models_from_disk(g_world_name);
       g_state = STATE_PLAYING;
     }
   }
