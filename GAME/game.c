@@ -1453,69 +1453,103 @@ static inline int agent_in_base(const Agent *a, const Tribe *tr) {
   return (d < tr->base.radius + 0.35f);
 }
 
-static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
+static int agent_try_craft_action(Agent *a, Tribe *tr, ActionType craft_action,
+                                  float *reward) {
   if (!agent_in_base(a, tr)) {
-    *reward += -0.006f;
-    return;
+    if (reward)
+      *reward += -0.006f;
+    return 0;
   }
 
-  if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
-    tr->wood -= 3;
-    tr->stone -= 2;
-    a->has_axe = true;
-    a->last_craft_selected = TOOL_AXE;
-    *reward += 0.09f;
-    return;
-  }
+// Helper macro: spend if possible
+#define TRY_CRAFT(cond_have, w, s, g, f, on_success)                           \
+  do {                                                                         \
+    if (cond_have) {                                                           \
+      if (reward)                                                              \
+        *reward += -0.003f;                                                    \
+      return 0;                                                                \
+    }                                                                          \
+    if (tr->wood < (w) || tr->stone < (s) || tr->gold < (g) ||                 \
+        tr->food < (f)) {                                                      \
+      if (reward)                                                              \
+        *reward += -0.003f;                                                    \
+      return 0;                                                                \
+    }                                                                          \
+    tr->wood -= (w);                                                           \
+    tr->stone -= (s);                                                          \
+    tr->gold -= (g);                                                           \
+    tr->food -= (f);                                                           \
+    on_success;                                                                \
+    if (reward)                                                                \
+      *reward += 0.10f;                                                        \
+    return 1;                                                                  \
+  } while (0)
 
-  if (!a->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
-    tr->wood -= 3;
-    tr->stone -= 3;
-    a->has_pickaxe = true;
-    a->last_craft_selected = TOOL_PICKAXE;
-    *reward += 0.10f;
-    return;
-  }
+  switch (craft_action) {
+  case ACTION_CRAFT_AXE:
+    TRY_CRAFT(a->has_axe, 3, 2, 0, 0, {
+      a->has_axe = true;
+      a->last_craft_selected = TOOL_AXE;
+    });
+    break;
 
-  if (!a->has_sword && tr->stone >= 4 && tr->gold >= 2) {
-    tr->stone -= 4;
-    tr->gold -= 2;
-    a->has_sword = true;
-    a->last_craft_selected = TOOL_SWORD;
-    *reward += 0.12f;
-    return;
-  }
+  case ACTION_CRAFT_PICKAXE:
+    TRY_CRAFT(a->has_pickaxe, 3, 3, 0, 0, {
+      a->has_pickaxe = true;
+      a->last_craft_selected = TOOL_PICKAXE;
+    });
+    break;
 
-  if (!a->has_armor && tr->stone >= 5 && tr->gold >= 2) {
-    tr->stone -= 5;
-    tr->gold -= 2;
-    a->has_armor = true;
-    a->last_craft_selected = TOOL_ARMOR;
-    *reward += 0.10f;
-    return;
-  }
+  case ACTION_CRAFT_SWORD:
+    TRY_CRAFT(a->has_sword, 0, 4, 2, 0, {
+      a->has_sword = true;
+      a->last_craft_selected = TOOL_SWORD;
+    });
+    break;
 
-  if (!a->has_bow && tr->wood >= 4 && tr->gold >= 1) {
-    tr->wood -= 4;
-    tr->gold -= 1;
-    a->has_bow = true;
-    a->last_craft_selected = TOOL_BOW;
-    *reward += 0.10f;
-    return;
-  }
+  case ACTION_CRAFT_ARMOR:
+    TRY_CRAFT(a->has_armor, 0, 5, 2, 0, {
+      a->has_armor = true;
+      a->last_craft_selected = TOOL_ARMOR;
+    });
+    break;
 
-  // ammo craft (not part of the 4-tool vector)
-  if (tr->shards >= 1 && tr->wood >= 1) {
+  case ACTION_CRAFT_BOW:
+    TRY_CRAFT(a->has_bow, 4, 0, 1, 0, {
+      a->has_bow = true;
+      a->last_craft_selected = TOOL_BOW;
+    });
+    break;
+
+  case ACTION_CRAFT_ARROWS:
+    // explicit ammo craft (no “oh you probably need ammo”)
+    if (tr->shards < 1 || tr->wood < 1) {
+      if (reward)
+        *reward += -0.003f;
+      return 0;
+    }
     tr->shards -= 1;
     tr->wood -= 1;
-    int made = 6;
-    tr->arrows += made;
-    a->inv_arrows += made;
-    *reward += 0.06f;
-    return;
+    {
+      int made = 6;
+      tr->arrows += made;
+      a->inv_arrows += made;
+    }
+    if (reward)
+      *reward += 0.06f;
+    return 1;
+
+  default:
+    if (reward)
+      *reward += -0.003f;
+    return 0;
   }
 
-  *reward += -0.003f;
+  if (reward)
+    *reward += -0.003f;
+  return 0;
+
+#undef TRY_CRAFT
 }
 
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
