@@ -52,6 +52,9 @@
 #define MOB_SPEED_HOSTILE 3.85f
 
 #define MAX_PROJECTILES 64
+#define BOW_SPEED 8.0f
+#define PROJECTILE_SPEED 10.0f
+#define BOW_DAMAGE 12
 
 // =======================
 // REWARD SHAPING
