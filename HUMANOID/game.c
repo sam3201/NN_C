@@ -132,23 +132,6 @@ int main(void) {
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
 
-    if (cam_shake > 0.0f) {
-      cam_shake -= dt;
-      float mag = cam_shake * 0.65f;
-      camera_pos.x += randf(-mag, mag);
-      camera_pos.y += randf(-mag, mag);
-    }
-    WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
-
-    update_player();
-    update_visible_world(dt);
-    update_projectiles(dt);
-    update_daynight(dt);
-    collect_nearby_pickups();
-
-    update_visible_world(dt);
-
-    g_dt = dt;
     run_agent_jobs();
 
     // detect transition night->day for reward
