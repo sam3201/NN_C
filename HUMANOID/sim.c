@@ -126,6 +126,8 @@ static inline float clampf(float x, float a, float b) {
   return x < a ? a : (x > b ? b : x);
 }
 
+static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
+
 static inline void obs_pushf(ObsFixed *o, float v) {
   if (o->n < OBS_DIM)
     o->obs[o->n++] = v;
