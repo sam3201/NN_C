@@ -75,7 +75,7 @@ typedef struct {
   } Hands;
 
   // Joints
-  struct joint *Head;
+  struct joint *(struct)Head;
   struct joint *Neck;
   struct joint *Body;
   struct joint *Legs;
