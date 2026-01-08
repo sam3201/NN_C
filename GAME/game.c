@@ -2478,53 +2478,57 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   }
 }
 
-static void player_try_harvest_resource_in_chunk(Chunk *c, int cx, int cy) {
+static void player_try_harvest_forward(Vector2 facing_dir) {
   if (player_harvest_cd > 0.0f)
     return;
 
-  Resource *best = NULL;
-  float bestD = 1e9f;
+  Vector2 rd = Vector2Normalize(facing_dir);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
 
-  for (int i = 0; i < c->resource_count; i++) {
-    Resource *r = &c->resources[i];
-    if (r->health <= 0)
-      continue;
+  float range = HARVEST_DISTANCE;
 
-    Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
-                           cy * CHUNK_SIZE + r->position.y};
-
-    float d = Vector2Distance(player.position, rw);
-    if (d < HARVEST_DISTANCE && d < bestD) {
-      bestD = d;
-      best = r;
-    }
+  RayHit hit = raycast_world_objects(player.position, rd, range);
+  if (hit.kind != HIT_RESOURCE) {
+    player_harvest_cd = 0.10f; // small whiff cooldown
+    return;
   }
 
-  if (!best)
-    return;
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
 
-  float cd = player_resource_cooldown(best->type);
-  float cost = player_resource_stamina_cost(best->type);
-  int dmg = player_resource_damage(best->type);
-
-  if (player.stamina <= cost)
+  Resource *r = &c->resources[hit.index];
+  if (r->health <= 0) {
+    pthread_rwlock_unlock(&c->lock);
     return;
+  }
+
+  float cd = player_resource_cooldown(r->type);
+  float cost = player_resource_stamina_cost(r->type);
+  int dmg = player_resource_damage(r->type);
+
+  if (player.stamina < cost) {
+    pthread_rwlock_unlock(&c->lock);
+    return;
+  }
 
   player_harvest_cd = cd;
   player.stamina -= cost;
 
-  best->health -= dmg;
-  best->hit_timer = 0.14f;
-  best->break_flash = 0.06f;
+  r->health -= dmg;
+  r->hit_timer = 0.14f;
+  r->break_flash = 0.06f;
 
-  if (best->type == RES_ROCK || best->type == RES_GOLD) {
+  if (r->type == RES_ROCK || r->type == RES_GOLD) {
     cam_shake = fmaxf(cam_shake, 0.10f);
   }
 
-  if (best->health <= 0) {
-    give_drop(best->type);
-    best->health = 0;
+  if (r->health <= 0) {
+    give_drop(r->type);
+    r->health = 0;
   }
+
+  pthread_rwlock_unlock(&c->lock);
 }
 
 Chunk *get_chunk(int cx, int cy) {
