@@ -299,28 +299,14 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
 static void init_agent(Agent *a, Vector2 origin) {
   memset(a, 0, sizeof(*a));
   a->alive = true;
-  a->joint_stiffness = 1.0f;
-
-  // A simple standing-ish T pose (y increases downward in Raylib)
-  // Feel free to tweak these numbers.
-  a->pt[P_HEAD].p = vadd(origin, (Vector2){0, -90});
-  a->pt[P_NECK].p = vadd(origin, (Vector2){0, -75});
-  a->pt[P_CHEST].p = vadd(origin, (Vector2){0, -50});
-  a->pt[P_HIP].p = vadd(origin, (Vector2){0, -20});
-
-  a->pt[P_SHOULDER_L].p = vadd(origin, (Vector2){-25, -65});
-  a->pt[P_ELBOW_L].p = vadd(origin, (Vector2){-50, -55});
-  a->pt[P_HAND_L].p = vadd(origin, (Vector2){-70, -45});
-
-  a->pt[P_SHOULDER_R].p = vadd(origin, (Vector2){25, -65});
-  a->pt[P_ELBOW_R].p = vadd(origin, (Vector2){50, -55});
-  a->pt[P_HAND_R].p = vadd(origin, (Vector2){70, -45});
-
-  a->pt[P_KNEE_L].p = vadd(origin, (Vector2){-15, 15});
-  a->pt[P_ANKLE_L].p = vadd(origin, (Vector2){-15, 55});
-
-  a->pt[P_KNEE_R].p = vadd(origin, (Vector2){15, 15});
-  a->pt[P_ANKLE_R].p = vadd(origin, (Vector2){15, 55});
+  a->pl.pos = origin;
+  a->pl.vel = (Vector2){0, 0};
+  a->pl.radius = 10.0f;
+  a->pl.on_ground = 1;
+  a->pl.charging = 0;
+  a->pl.charge = 0.0f;
+  a->pl.prev_y = a->pl.pos.y;
+  a->best_alt = 0.0f;
 
   // Verlet needs previous position initialized
   for (int i = 0; i < P_COUNT; i++) {
