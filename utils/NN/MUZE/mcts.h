@@ -24,6 +24,12 @@ typedef struct {
   float root_value; // estimated root value
 } MCTSResult;
 
+typedef struct {
+  void *ctx;
+  // returns uniform float in [0,1)
+  float (*rand01)(void *ctx);
+} MCTSRng;
+
 MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params);
 MCTSResult mcts_run_latent(MuModel *model, const float *latent,
                            const MCTSParams *params);
