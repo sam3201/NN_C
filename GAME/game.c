@@ -1560,7 +1560,7 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
         return 0;
       }
 
-    // Helper macro: spend if possible
+      // Helper macro: spend if possible
 #define TRY_CRAFT(cond_have, w, s, g, f, on_success)                       \
       do {                                                                     \
         if (cond_have) {                                                       \
