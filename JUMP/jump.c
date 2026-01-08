@@ -700,7 +700,6 @@ static void init_agents(void) {
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
     if (a->cortex) {
-      // Keep these consistent and don't override epsilon elsewhere
       a->cortex->use_mcts = false;
       a->cortex->policy_temperature = 1.0f;
 
