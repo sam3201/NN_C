@@ -210,7 +210,7 @@ static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
 static GameStateType g_state = STATE_TITLE;
 
 // current world session
-static char g_world_name[4096] = "Untitled";
+static char g_world_name[4096] = "World1";
 static uint32_t g_world_seed = 1337;
 
 // UI typing buffers
