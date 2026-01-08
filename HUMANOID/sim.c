@@ -414,7 +414,14 @@ static void reset_agent_episode(Agent *a) {
 
   a->pending_reward = 0.0f;
   a->has_last_transition = 0;
-  memset(&a->last_obs, 0, sizeof(a->last_obs));
+  // DON'T memset the ObsDyn struct (it contains a heap pointer).
+  // Just clear the buffer if you want:
+  if (a->last_obs.obs) {
+    for (int i = 0; i < OBS_DIM; i++)
+      a->last_obs.obs[i] = 0.0f;
+  }
+  a->last_obs.n = 0;
+
   a->reward_accumulator = 0.0f;
 
   a->pl.pos = a->spawn_origin;
