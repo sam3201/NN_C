@@ -2822,6 +2822,53 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
     obs_push(obs, (float)mob_type / 3.0f); // 0..3 -> 0..1
   }
 
+  // ----------------------------
+  // INVENTORY / TOOLS (compact)
+  // ----------------------------
+  float in_base01 = (dbase < tr->base.radius) ? 1.0f : 0.0f;
+
+  // inv open: for agents, "inventory/crafting context is open" == in base
+  obs_push(obs, in_base01);
+
+  // available tools for use (owned)
+  obs_push(obs, a->has_axe ? 1.0f : 0.0f);
+  obs_push(obs, a->has_pickaxe ? 1.0f : 0.0f);
+  obs_push(obs, a->has_sword ? 1.0f : 0.0f);
+  obs_push(obs, a->has_armor ? 1.0f : 0.0f);
+
+  // selected tool one-hot (what the agent is "holding")
+  for (int i = 0; i < 4; i++) {
+    obs_push(obs, (a->tool_selected == i) ? 1.0f : 0.0f);
+  }
+
+  // ----------------------------
+  // EXTRA CONTEXT (small, helps policy)
+  // ----------------------------
+
+  // day/night (helps survival & raid behavior)
+  obs_push(obs, is_night_cached ? 1.0f : 0.0f);
+
+  // base integrity (per tribe)
+  obs_push(obs, clamp01(tr->integrity / 100.0f));
+
+  // tribe resources snapshot (normalize softly to avoid huge values dominating)
+  obs_push(obs, clamp01((float)tr->wood / 30.0f));
+  obs_push(obs, clamp01((float)tr->stone / 30.0f));
+  obs_push(obs, clamp01((float)tr->gold / 30.0f));
+  obs_push(obs, clamp01((float)tr->food / 30.0f));
+  obs_push(obs, clamp01((float)tr->shards / 30.0f));
+  obs_push(obs, clamp01((float)tr->arrows / 60.0f));
+
+  // agent personal inventory (important for eat/fire decisions)
+  obs_push(obs, clamp01((float)a->inv_food / 10.0f));
+  obs_push(obs, clamp01((float)a->inv_shards / 10.0f));
+  obs_push(obs, clamp01((float)a->inv_arrows / 20.0f));
+
+  // cooldown fractions (0=ready, 1=on cooldown)
+  obs_push(obs, clamp01(a->attack_cd / agent_attack_cooldown()));
+  obs_push(obs, clamp01(a->harvest_cd / agent_harvest_cooldown()));
+  obs_push(obs, clamp01(a->fire_cd / agent_fire_cooldown()));
+
   // bias
   obs_push(obs, 1.0f);
 
