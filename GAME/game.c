@@ -3262,6 +3262,7 @@ void update_player(void) {
     }
   }
 
+  // --- shoot arrow (F) if you have a bow + ammo ---
   if (IsKeyPressed(KEY_F) {
     if (has_bow && inv_arrows > 0) {
       Vector2 mouse = GetMousePosition();
