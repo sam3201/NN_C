@@ -481,6 +481,67 @@ Color resource_colors[] = {
     RED        // food
 };
 
+// tiny button helper
+static int ui_button(Rectangle r, const char *text) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
+  DrawRectangleRounded(r, 0.25f, 8, bg);
+  DrawRectangleRoundedLines(r, 0.25f, 8, (Color){0, 0, 0, 160});
+  int fs = 20;
+  int tw = MeasureText(text, fs);
+  DrawText(text, (int)(r.x + (r.width - tw) / 2),
+           (int)(r.y + (r.height - fs) / 2), fs, RAYWHITE);
+  return hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+}
+
+static void ensure_save_root(void) {
+  struct stat st;
+  if (stat(SAVE_ROOT, &st) == 0 && S_ISDIR(st.st_mode))
+    return;
+  mkdir(SAVE_ROOT, 0755);
+}
+
+static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
+                       int digits_only) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 1;
+  if (!hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 0;
+
+  Color bg = *active ? (Color){35, 35, 45, 255} : (Color){25, 25, 35, 255};
+  DrawRectangleRounded(r, 0.2f, 8, bg);
+  DrawRectangleRoundedLines(r, 0.2f, 8, (Color){0, 0, 0, 170});
+
+  // input
+  if (*active) {
+    int key = GetCharPressed();
+    while (key > 0) {
+      int len = (int)strlen(buf);
+      if (key == 32 || (key >= 33 && key <= 126)) {
+        if (digits_only && !(key >= '0' && key <= '9')) {
+          key = GetCharPressed();
+          continue;
+        }
+        if (len < cap - 1) {
+          buf[len] = (char)key;
+          buf[len + 1] = 0;
+        }
+      }
+      key = GetCharPressed();
+    }
+    if (IsKeyPressed(KEY_BACKSPACE)) {
+      int len = (int)strlen(buf);
+      if (len > 0)
+        buf[len - 1] = 0;
+    }
+  }
+
+  DrawText(buf, (int)r.x + 10, (int)r.y + 10, 20, RAYWHITE);
+}
+
 /* =======================
    OBS BUFFER
  * ====================== */
