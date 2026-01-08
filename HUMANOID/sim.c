@@ -378,92 +378,192 @@ void update_agent(Agent *a) {
   if (!a || !a->alive)
     return;
 
-  // 0) dt handling + fixed-step accumulator (THIS is usually the "fix")
   float dt = g_dt;
   if (dt <= 0.0f)
     dt = 1.0f / 60.0f;
   dt = clampf(dt, 0.0f, MAX_ACCUM_DT);
   a->accum_dt += dt;
 
-  // 1) decide action at CONTROL RATE (not every physics step)
-  //    This prevents jitter and makes learning easier.
+  const float groundY = (float)SCREEN_HEIGHT - 40.0f;
+  const Vector2 gravity = (Vector2){0.0f, 1400.0f}; // y-down in raylib; tune
+
+  // Decide action at control rate (e.g. 30Hz)
   a->control_timer -= dt;
   if (a->control_timer <= 0.0f) {
-    a->control_timer += a->control_period; // e.g. 1/30 or 1/20 sec
+    a->control_timer +=
+        (a->control_period > 0.0f) ? a->control_period : (1.0f / 30.0f);
 
-    // ---- Build observation (pure state, no "help") ----
-    // Include: pelvis orientation/angVel, COM velocity, joint angles &
-    // velocities, foot contact flags, maybe target heading etc.
-    // Typically: target joint angles in [-1,1] or torques in [-1,1]
-    // Example: action[] in [-1,1]
-    pthread_rwlock_rdlock(&c->lock);
-    encode_observation(a, c, &obs);
-    pthread_rwlock_unlock(&c->lock);
+    ObsFixed ob;
+    encode_observation_humanoid(a, groundY, &ob);
 
-    // --- MuZero chooses action ---
-    int action =
-        muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
-
-    obs_free(&obs);
-    policy_act(a->policy, &obs, a->action, a->action_dim);
-
-    // Optional: low-pass filter action to reduce twitching
-    for (int i = 0; i < a->action_dim; i++) {
-      float x = saturate(a->action[i]);
-      a->action_smoothed[i] = 0.85f * a->action_smoothed[i] + 0.15f * x;
+    // MUZE action
+    if (a->cortex) {
+      a->last_action =
+          muze_plan(a->cortex, ob.obs, (size_t)OBS_DIM, (size_t)ACTION_COUNT);
+    } else {
+      a->last_action = ACT_NONE;
     }
   }
 
-  // 2) physics substeps: integrate at FIXED_DT for stability
+  // Physics substeps
   while (a->accum_dt >= FIXED_DT) {
     a->accum_dt -= FIXED_DT;
 
-    // 2a) Convert action -> joint targets or torques (NO heuristics)
-    // Example mapping: each action channel controls a joint target angle within
-    // limits. You should have per-joint limits: [minAngle, maxAngle]
-    for (int j = 0; j < a->humanoid.joint_count; j++) {
-      Joint *J = &a->humanoid.joints[j];
+    // --- Verlet integrate (gravity) ---
+    for (int i = 0; i < P_COUNT; i++) {
+      Particle *p = &a->pt[i];
+      if (p->invMass <= 0.0f)
+        continue;
 
-      // map [-1,1] -> [min,max]
-      float u =
-          a->action_smoothed[j]; // assume 1:1 mapping; otherwise use a table
-      float target =
-          J->minAngle + (u * 0.5f + 0.5f) * (J->maxAngle - J->minAngle);
+      Vector2 cur = p->p;
+      Vector2 v = vsub(p->p, p->pprev);
 
-      // PD gains per joint (store in joint struct)
-      float tau = joint_pd(J->angle, J->angVel, target, J->kp, J->kd);
-      apply_joint_torque(J, tau);
+      // mild damping helps stability
+      v = vmul(v, 0.995f);
+
+      // a = g (since invMass used in constraints; here we just apply gravity)
+      Vector2 aacc = gravity; // pixels/s^2
+      Vector2 next = vadd(vadd(cur, v), vmul(aacc, FIXED_DT * FIXED_DT));
+
+      p->pprev = cur;
+      p->p = next;
     }
 
-    // 2b) Apply gravity + damping to bodies (pure physics)
-    for (int b = 0; b < a->humanoid.body_count; b++) {
-      Body *B = &a->humanoid.bodies[b];
-      // gravity
-      B->force.y += B->mass * a->world.gravity; // gravity negative if y-up
-      damp_body(B, FIXED_DT);
+    // --- Apply action as "muscles" (edit rest lengths + impulses) ---
+    float rest0[J_COUNT];
+    for (int j = 0; j < J_COUNT; j++)
+      rest0[j] = a->jt[j].rest;
+
+    // Rest length scaling factors (small!)
+    // < 1 contracts, > 1 extends
+    float contract = 0.92f;
+    float extend = 1.08f;
+
+    switch (a->last_action) {
+    case ACT_STEP_LEFT: {
+      // contract left hip+shin slightly, extend right (creates stepping
+      // asymmetry)
+      a->jt[J_HIP_L].rest *= contract;
+      a->jt[J_SHIN_L].rest *= contract;
+      a->jt[J_HIP_R].rest *= extend;
+      a->jt[J_SHIN_R].rest *= extend;
+
+      // tiny sideways impulse at hip
+      verlet_impulse(&a->pt[P_HIP], (Vector2){-18.0f * FIXED_DT, 0.0f});
+    } break;
+
+    case ACT_STEP_RIGHT: {
+      a->jt[J_HIP_R].rest *= contract;
+      a->jt[J_SHIN_R].rest *= contract;
+      a->jt[J_HIP_L].rest *= extend;
+      a->jt[J_SHIN_L].rest *= extend;
+      verlet_impulse(&a->pt[P_HIP], (Vector2){+18.0f * FIXED_DT, 0.0f});
+    } break;
+
+    case ACT_KNEE_L_UP: {
+      a->jt[J_SHIN_L].rest *= contract;
+      // lift left ankle a bit (impulse upward)
+      verlet_impulse(&a->pt[P_ANKLE_L], (Vector2){0.0f, -55.0f * FIXED_DT});
+    } break;
+
+    case ACT_KNEE_R_UP: {
+      a->jt[J_SHIN_R].rest *= contract;
+      verlet_impulse(&a->pt[P_ANKLE_R], (Vector2){0.0f, -55.0f * FIXED_DT});
+    } break;
+
+    case ACT_ARMS_UP: {
+      a->jt[J_UPPERARM_L].rest *= contract;
+      a->jt[J_FOREARM_L].rest *= contract;
+      a->jt[J_UPPERARM_R].rest *= contract;
+      a->jt[J_FOREARM_R].rest *= contract;
+      // pull hands upward a touch
+      verlet_impulse(&a->pt[P_HAND_L], (Vector2){0.0f, -45.0f * FIXED_DT});
+      verlet_impulse(&a->pt[P_HAND_R], (Vector2){0.0f, -45.0f * FIXED_DT});
+    } break;
+
+    case ACT_ARMS_DOWN: {
+      a->jt[J_UPPERARM_L].rest *= extend;
+      a->jt[J_FOREARM_L].rest *= extend;
+      a->jt[J_UPPERARM_R].rest *= extend;
+      a->jt[J_FOREARM_R].rest *= extend;
+    } break;
+
+    case ACT_SQUAT: {
+      // shorten spine + legs
+      a->jt[J_SPINE1].rest *= contract;
+      a->jt[J_SPINE2].rest *= contract;
+      a->jt[J_HIP_L].rest *= contract;
+      a->jt[J_SHIN_L].rest *= contract;
+      a->jt[J_HIP_R].rest *= contract;
+      a->jt[J_SHIN_R].rest *= contract;
+    } break;
+
+    case ACT_STAND: {
+      // slightly extend spine + legs (careful: too much makes it explode)
+      a->jt[J_SPINE1].rest *= extend;
+      a->jt[J_SPINE2].rest *= extend;
+      a->jt[J_HIP_L].rest *= extend;
+      a->jt[J_SHIN_L].rest *= extend;
+      a->jt[J_HIP_R].rest *= extend;
+      a->jt[J_SHIN_R].rest *= extend;
+    } break;
+
+    default:
+      break;
     }
 
-    // 2c) Step the physics world: integrate + solve constraints/contacts
-    // This is where joints & ground contacts get solved.
-    physics_step(a->world.phys, FIXED_DT);
+    // --- Solve constraints (iterations) ---
+    // More iterations = stiffer bones, but costlier. 8–16 is typical.
+    int iters = 10;
+    float old_stiff = a->joint_stiffness;
+    a->joint_stiffness = 1.0f; // keep bones stable
 
-    // 2d) After-step: update cached joint/body state
-    humanoid_sync_from_physics(&a->humanoid, a->world.phys);
+    for (int it = 0; it < iters; it++) {
+      for (int j = 0; j < J_COUNT; j++)
+        solve_joint(a, &a->jt[j]);
 
-    // 2e) Reward bookkeeping (if you do RL):
-    // reward should be computed from state, not "searching best move"
-    // Example: alive bonus, upright bonus, forward velocity, energy penalty,
-    // fall penalty.
-    float r = compute_reward(a);
-    a->episode_return += r;
-    policy_observe_reward(a->policy, r, a->done);
+      // ground collision (feet + also keep hip/head above ground)
+      for (int i = 0; i < P_COUNT; i++)
+        ground_collide(&a->pt[i], groundY);
+    }
+
+    a->joint_stiffness = old_stiff;
+
+    // restore rest lengths (muscles were only for this substep)
+    for (int j = 0; j < J_COUNT; j++)
+      a->jt[j].rest = rest0[j];
+
+    // --- Reward (minimal, physics-based) ---
+    // Encourage upright-ish posture + not dying.
+    // (No “closest target” style stuff)
+    float reward = 0.0f;
+
+    float hip_y = a->pt[P_HIP].p.y;
+    float head_y = a->pt[P_HEAD].p.y;
+
+    // alive bonus
+    reward += 0.001f;
+
+    // penalize if head hits ground-ish
+    if (head_y >= groundY - 2.0f)
+      reward -= 0.05f;
+
+    // small penalty for being too low (collapsed)
+    if (hip_y > groundY - 25.0f)
+      reward -= 0.01f;
+
+    a->reward_accumulator += reward;
+
+    // If you want MUZE learning updates, call cortex->learn somewhere with
+    // (obs, action, reward, done). But your SAM_as_MUZE adapter already expects
+    // cortex->learn being used by your loop, so wire it where you handle
+    // episodes (main loop or per-agent).
   }
 
-  // 3) Termination conditions (physics-based)
-  // e.g., pelvis too low, head hits ground, extreme tilt
-  if (humanoid_fallen(&a->humanoid)) {
-    a->done = 1;
-    a->alive = 0;
+  // termination (optional)
+  if (a->pt[P_HEAD].p.y >= ((float)SCREEN_HEIGHT - 42.0f)) {
+    // head on ground = "dead"
+    a->alive = false;
   }
 }
 
