@@ -306,6 +306,7 @@ void update_agent(Agent *a) {
     // ---- Build observation (pure state, no "help") ----
     // Include: pelvis orientation/angVel, COM velocity, joint angles &
     // velocities, foot contact flags, maybe target heading etc.
+    // Typically: target joint angles in [-1,1] or torques in [-1,1]
     // Example: action[] in [-1,1]
     pthread_rwlock_rdlock(&c->lock);
     encode_observation(a, c, &obs);
