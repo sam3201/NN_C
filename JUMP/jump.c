@@ -790,8 +790,11 @@ static void init_agents(void) {
   MuConfig cfg = {
       .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
 
+  MuConfig cfg = {
+      .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
+
   g_model = mu_model_create(&cfg);
-  g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT);
+  g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT); // capacity tune as you want
 
   int cols = 16;
   float spacing = 70.0f;
