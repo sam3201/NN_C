@@ -603,6 +603,15 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     return;
   }
 
+  if (!a->has_bow && tr->wood >= 4 && tr->gold >= 1) {
+    tr->wood -= 4;
+    tr->gold -= 1;
+    a->has_bow = true;
+    a->last_craft_selected = TOOL_BOW;
+    *reward += 0.10f;
+    return;
+  }
+
   // ammo craft (not part of the 4-tool vector)
   if (tr->shards >= 1 && tr->wood >= 1) {
     tr->shards -= 1;
