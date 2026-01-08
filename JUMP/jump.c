@@ -154,10 +154,10 @@ typedef struct {
 
   float best_alt; // best height this episode (higher is better)
 
-  // --- SAM/MUZE ---
-  SAM_t *sam;
-  MuCortex *cortex;
-  int last_action;
+  MuModel *model; // shared global
+  EpisodeBuf ep;
+  int ep_t;                    // current step index
+  float last_pi[ACTION_COUNT]; // store last π for debugging if you want
 
   int episodes_done;
 
