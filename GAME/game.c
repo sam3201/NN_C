@@ -225,12 +225,19 @@ typedef struct {
   float lunge_timer; // attack anim
 } Mob;
 
+typedef enum {
+  PROJ_OWNER_PLAYER = 0,
+  PROJ_OWNER_AGENT = 1,
+  PROJ_OWNER_MOB = 2
+} ProjOwner;
+
 typedef struct {
   bool alive;
   Vector2 pos; // WORLD pos
   Vector2 vel;
   float ttl;
   int damage;
+  ProjOwner owner;
 } Projectile;
 
 typedef struct Chunk {
