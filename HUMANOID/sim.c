@@ -59,6 +59,23 @@
 
 #define OBS_EXTRA 12
 
+// ------------ Observation Grid (runtime) ------------
+// 1280x800 with TILE_PX=20 => 64x40 grid (2560 cells)
+#define TILE_PX 20
+
+// World-space view window around the agent (in pixels)
+#define VIEW_W_PX 720.0f
+#define VIEW_H_PX 560.0f
+
+static int SCREEN_WIDTH = 1280;
+static int SCREEN_HEIGHT = 800;
+
+static int GRID_W = 0;
+static int GRID_H = 0;
+
+static int OBS_GRID = 0; // GRID_W * GRID_H
+static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
+
 typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
