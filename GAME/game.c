@@ -960,7 +960,7 @@ static int load_world_from_disk(const char *world_name) {
     if (c->resource_count > MAX_RESOURCES)
       c->resource_count = MAX_RESOURCES;
 
-    / if (h.version >= 2) {
+    if (h.version >= 2) {
       // ---------------- agents ----------------
       for (int i = 0; i < MAX_AGENTS; i++) {
         SaveAgent sa = {0};
