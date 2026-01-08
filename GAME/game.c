@@ -181,6 +181,8 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos);
 // --- agent update (was deleted) ---
 void update_agent(Agent *a);
 static void on_mob_killed(MobType type, Vector2 mob_world_pos);
+static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
+                             int dmg);
 
 /* =======================
    STRUCTS
@@ -483,6 +485,22 @@ static inline Vector2 clamp_local_to_chunk(Vector2 lp) {
   lp.x = clampf(lp.x, 0.25f, (float)CHUNK_SIZE - 0.25f);
   lp.y = clampf(lp.y, 0.25f, (float)CHUNK_SIZE - 0.25f);
   return lp;
+}
+
+static void player_fire_bow_charged(Vector2 dir, float charge01) {
+  charge01 = clamp01(charge01);
+
+  float spd = lerp(BOW_SPEED_MIN, BOW_SPEED_MAX, charge01);
+  float ttl = lerp(BOW_TTL_MIN, BOW_TTL_MAX, charge01);
+
+  int dmg = (int)roundf(lerp((float)BOW_DMG_MIN, (float)BOW_DMG_MAX, charge01));
+  if (has_sword)
+    dmg += 4; // keep your “upgrade” synergy if you want
+
+  spawn_projectile(player.position, dir, spd, ttl, dmg);
+
+  // tiny feedback
+  cam_shake = fmaxf(cam_shake, 0.05f + 0.10f * charge01);
 }
 
 static inline int is_night(void) {
