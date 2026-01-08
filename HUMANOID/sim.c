@@ -332,49 +332,35 @@ static void solve_player_platforms(PlayerJK *p) {
 // =======================
 static void encode_observation_jk(const Agent *a, ObsFixed *out) {
   out->n = 0;
+
+  // Clear grid
+  for (int i = 0; i < OBS_DIM; i++)
+    out->obs[i] = CELL_EMPTY;
+
   const PlayerJK *p = &a->pl;
 
-  float px = p->pos.x / (float)SCREEN_WIDTH;
-  float py = p->pos.y / (float)SCREEN_HEIGHT; // can be negative
-  float vx = p->vel.x / 800.0f;
-  float vy = p->vel.y / 1800.0f;
+  // View window top-left in world space (centered on agent)
+  Vector2 origin = {p->pos.x - VIEW_W_PX * 0.5f, p->pos.y - VIEW_H_PX * 0.5f};
 
-  obs_pushf(out, px);
-  obs_pushf(out, py);
-  obs_pushf(out, vx);
-  obs_pushf(out, vy);
-  obs_pushf(out, (float)p->on_ground);
-  obs_pushf(out, p->charge);
-
-  // 3 platforms above: dx, dy, w
-  int found = 0;
-  for (int i = 0; i < g_plat_count && found < 3; i++) {
+  // 1) Stamp platforms
+  for (int i = 0; i < g_plat_count; i++) {
     const Platform *pl = &g_plats[i];
-    if (!pl->one_way)
+    stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, CELL_PLAT);
+  }
+
+  // 2) Stamp other agents first (lower priority than self)
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    const Agent *b = &agents[i];
+    if (!b->alive)
       continue;
-    if (pl->y >= p->pos.y)
-      continue; // only above
-
-    float dx = (pl->x + pl->w * 0.5f) - p->pos.x;
-    float dy = pl->y - p->pos.y;
-
-    obs_pushf(out, dx / (float)SCREEN_WIDTH);
-    obs_pushf(out, dy / 600.0f);
-    obs_pushf(out, pl->w / 200.0f);
-    found++;
+    if (b == a)
+      continue;
+    stamp_point(out->obs, origin, b->pl.pos.x, b->pl.pos.y, CELL_OTHER);
   }
 
-  while (found < 3) {
-    obs_pushf(out, 0);
-    obs_pushf(out, 0);
-    obs_pushf(out, 0);
-    found++;
-  }
+  // 3) Stamp self last (highest priority)
+  stamp_point(out->obs, origin, p->pos.x, p->pos.y, CELL_SELF);
 
-  obs_pushf(out, 1.0f); // bias
-
-  for (int k = out->n; k < OBS_DIM; k++)
-    out->obs[k] = 0.0f;
   out->n = OBS_DIM;
 }
 
