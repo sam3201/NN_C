@@ -723,18 +723,7 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
 }
 
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             int dmg) {
-  for (int i = 0; i < MAX_PROJECTILES; i++) {
-    if (!projectiles[i].alive) {
-      projectiles[i].alive = true;
-      projectiles[i].pos = pos;
-      projectiles[i].vel = Vector2Scale(Vector2Normalize(dir), speed);
-      projectiles[i].ttl = ttl;
-      projectiles[i].damage = dmg;
-      return;
-    }
-  }
-}
+                             int dmg, ProjOwner owner);
 
 static void update_projectiles(float dt) {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
