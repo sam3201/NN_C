@@ -198,7 +198,7 @@ typedef enum {
 
 typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
-// ----- prototypes (so C doesn't need ordering) -----
+// ----- forward prototypes (fix implicit decl + type mismatches) -----
 typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
 typedef struct Agent Agent;
 
@@ -218,9 +218,6 @@ void update_agent(Agent *a);
 static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
-
-// ----- forward prototypes (fix implicit decl + type mismatches) -----
-
 // simple helpers
 static inline float randf(float a, float b);
 
