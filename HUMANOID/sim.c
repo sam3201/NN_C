@@ -194,85 +194,58 @@ static void build_platforms(void) {
   }
 }
 
-static void encode_observation_humanoid(const Agent *a, float groundY,
-                                        ObsFixed *out) {
+static void encode_observation_jk(const Agent *a, ObsFixed *out) {
   out->n = 0;
 
-  Vector2 hip = a->pt[P_HIP].p;
-  const float pos_scale = 1.0f / 100.0f;
-  const float vel_scale = 1.0f / 50.0f;
+  const PlayerJK *p = &a->pl;
 
-  for (int i = 0; i < P_COUNT; i++) {
-    Vector2 p = a->pt[i].p;
-    Vector2 v = vsub(a->pt[i].p, a->pt[i].pprev);
+  // normalize
+  float px = p->pos.x / (float)SCREEN_WIDTH;
+  float py = p->pos.y / (float)SCREEN_HEIGHT; // note: tower goes negative
+  float vx = p->vel.x / 800.0f;
+  float vy = p->vel.y / 1800.0f;
 
-    obs_pushf(out, (p.x - hip.x) * pos_scale);
-    obs_pushf(out, (p.y - hip.y) * pos_scale);
-    obs_pushf(out, v.x * vel_scale);
-    obs_pushf(out, v.y * vel_scale);
+  obs_pushf(out, px);
+  obs_pushf(out, py);
+  obs_pushf(out, vx);
+  obs_pushf(out, vy);
+  obs_pushf(out, (float)p->on_ground);
+  obs_pushf(out, p->charge);
 
-    float contact = 0.0f;
-    if (i == P_ANKLE_L || i == P_ANKLE_R)
-      contact = (p.y >= groundY - 0.5f) ? 1.0f : 0.0f;
-    obs_pushf(out, contact);
+  // nearest platforms above: (dx, dy, w)
+  // dy is negative when above since y smaller => platform above => (plat.y -
+  // p.y) < 0
+  int found = 0;
+  for (int i = 0; i < g_plat_count && found < 3; i++) {
+    const Platform *pl = &g_plats[i];
+    if (!pl->one_way)
+      continue;
+    if (pl->y >= p->pos.y)
+      continue; // only above
+
+    float dx = (pl->x + pl->w * 0.5f) - p->pos.x;
+    float dy = pl->y - p->pos.y;
+
+    // take "closest above" by dy magnitude
+    // simple pass: just record first few; better: scan for smallest |dy|
+    obs_pushf(out, dx / (float)SCREEN_WIDTH);
+    obs_pushf(out, dy / 600.0f);
+    obs_pushf(out, pl->w / 200.0f);
+    found++;
   }
 
-  obs_pushf(out, 1.0f);
+  while (found < 3) {
+    obs_pushf(out, 0);
+    obs_pushf(out, 0);
+    obs_pushf(out, 0);
+    found++;
+  }
 
-  // If MUZE/SAM requires exact OBS_DIM and expects zero padding:
+  obs_pushf(out, 1.0f); // bias
+
   for (int k = out->n; k < OBS_DIM; k++)
     out->obs[k] = 0.0f;
   out->n = OBS_DIM;
-}
-
-static void init_pose(Agent *a, Vector2 origin) {
-  // DO NOT memset(a) here (we keep sam/cortex + other persistent fields)
-
-  a->alive = true;
-  a->joint_stiffness = 1.0f;
-
-  // standing-ish T pose
-  a->pt[P_HEAD].p = vadd(origin, (Vector2){0, -90});
-  a->pt[P_NECK].p = vadd(origin, (Vector2){0, -75});
-  a->pt[P_CHEST].p = vadd(origin, (Vector2){0, -50});
-  a->pt[P_HIP].p = vadd(origin, (Vector2){0, -20});
-
-  a->pt[P_SHOULDER_L].p = vadd(origin, (Vector2){-25, -65});
-  a->pt[P_ELBOW_L].p = vadd(origin, (Vector2){-50, -55});
-  a->pt[P_HAND_L].p = vadd(origin, (Vector2){-70, -45});
-
-  a->pt[P_SHOULDER_R].p = vadd(origin, (Vector2){25, -65});
-  a->pt[P_ELBOW_R].p = vadd(origin, (Vector2){50, -55});
-  a->pt[P_HAND_R].p = vadd(origin, (Vector2){70, -45});
-
-  a->pt[P_KNEE_L].p = vadd(origin, (Vector2){-15, 15});
-  a->pt[P_ANKLE_L].p = vadd(origin, (Vector2){-15, 55});
-
-  a->pt[P_KNEE_R].p = vadd(origin, (Vector2){15, 15});
-  a->pt[P_ANKLE_R].p = vadd(origin, (Vector2){15, 55});
-
-  for (int i = 0; i < P_COUNT; i++) {
-    a->pt[i].pprev = a->pt[i].p;
-    a->pt[i].invMass = 1.0f;
-  }
-
-  make_joint(a, J_NECK, P_HEAD, P_NECK);
-  make_joint(a, J_SPINE1, P_NECK, P_CHEST);
-  make_joint(a, J_SPINE2, P_CHEST, P_HIP);
-
-  make_joint(a, J_SHOULDER_L, P_NECK, P_SHOULDER_L);
-  make_joint(a, J_UPPERARM_L, P_SHOULDER_L, P_ELBOW_L);
-  make_joint(a, J_FOREARM_L, P_ELBOW_L, P_HAND_L);
-
-  make_joint(a, J_SHOULDER_R, P_NECK, P_SHOULDER_R);
-  make_joint(a, J_UPPERARM_R, P_SHOULDER_R, P_ELBOW_R);
-  make_joint(a, J_FOREARM_R, P_ELBOW_R, P_HAND_R);
-
-  make_joint(a, J_HIP_L, P_HIP, P_KNEE_L);
-  make_joint(a, J_SHIN_L, P_KNEE_L, P_ANKLE_L);
-
-  make_joint(a, J_HIP_R, P_HIP, P_KNEE_R);
-  make_joint(a, J_SHIN_R, P_KNEE_R, P_ANKLE_R);
 }
 
 static void init_agent(Agent *a, Vector2 origin) {
