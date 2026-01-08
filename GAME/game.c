@@ -2917,6 +2917,25 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, clamp01((float)hostile_count_near / 6.0f));
   obs_push(obs, clamp01((float)passive_count_near / 6.0f));
 
+  // --- player relative (only meaningful if player is in same chunk) ---
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  int same_chunk = (pcx == cx && pcy == cy);
+
+  Vector2 toP = Vector2Subtract(player.position, a->position);
+  float dP = Vector2Length(toP);
+
+  obs_push(obs, same_chunk ? 1.0f : 0.0f);
+  if (!same_chunk) {
+    obs_push(obs, 1.0f); // far
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+  } else {
+    obs_push(obs, clamp01(dP / 32.0f));
+    obs_push(obs, safe_norm(toP.x, dP));
+    obs_push(obs, safe_norm(toP.y, dP));
+  }
+
   // ----------------------------
   // INVENTORY / TOOLS (compact)
   // ----------------------------
