@@ -52,9 +52,18 @@
 #define MOB_SPEED_HOSTILE 3.85f
 
 #define MAX_PROJECTILES 64
-#define BOW_SPEED 8.0f
-#define PROJECTILE_SPEED 10.0f
-#define BOW_DAMAGE 4
+// ---- Player bow charge ----
+#define BOW_CHARGE_TIME 0.75f // seconds to full charge
+#define BOW_CHARGE_MIN01                                                       \
+  0.12f // minimum charge required to fire (prevents tap-fizzle)
+#define PLAYER_FIRE_COOLDOWN 0.18f
+
+#define BOW_SPEED_MIN 10.0f
+#define BOW_SPEED_MAX 22.0f
+#define BOW_TTL_MIN 1.10f
+#define BOW_TTL_MAX 2.20f
+#define BOW_DMG_MIN 8
+#define BOW_DMG_MAX 20
 
 // =======================
 // REWARD SHAPING
