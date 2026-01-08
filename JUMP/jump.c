@@ -714,7 +714,7 @@ static void reset_agent_episode(Agent *a) {
     if (z) {
       float G = 0.0f;
       for (int t = T - 1; t >= 0; t--) {
-        G = a->ep.rewards[t] + GAMMA * G;
+        G = a->ep.rewards[t] + discount * G;
       }
 
       // push to global replay
