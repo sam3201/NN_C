@@ -1650,7 +1650,7 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
 
 #undef TRY_CRAFT
     }
-
+    }
     static void spawn_projectile(Vector2 pos, Vector2 dir, float speed,
                                  float ttl, int dmg, ProjOwner owner) {
       for (int i = 0; i < MAX_PROJECTILES; i++) {
