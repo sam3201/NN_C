@@ -433,7 +433,7 @@ typedef struct {
   int32_t owner;
 } SaveProjectile;
 
-ypedef struct {
+typedef struct {
   char magic[4];    // "SAMW"
   uint32_t version; // 1
   uint32_t seed;
