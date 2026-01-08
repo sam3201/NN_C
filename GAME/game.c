@@ -1218,7 +1218,7 @@ static int load_models_from_disk(const char *world_name) {
       continue;
 
     // DO THIS (real API):
-    a->sam = SAM_load(path);
+    a->sam = SAM_load(f);
 
     fclose(f);
   }
