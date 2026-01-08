@@ -347,8 +347,8 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
   return res;
 }
 
-MCTSResult mcts_run(MuModel *model, const float *obs,
-                    const MCTSParams *params) {
+MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params,
+                    MCTSRng *rng) {
   MCTSResult res;
   memset(&res, 0, sizeof(res));
 
