@@ -262,49 +262,6 @@ static void encode_observation_humanoid(const Agent *a, float groundY,
 }
 
 static void init_agent(Agent *a, Vector2 origin) {
-  void init_agents(void) {
-    MuConfig cfg = {.obs_dim = OBS_DIM,
-                    .latent_dim = 64, // not used by SAM_init, ok to keep here
-                    .action_count = ACTION_COUNT};
-
-    int cols = 16;
-    float spacing = 70.0f;
-
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      Agent *a = &agents[i];
-      memset(a, 0, sizeof(*a));
-
-      a->alive = true;
-      a->joint_stiffness = 1.0f;
-
-      // Fixed-step / control loop
-      a->accum_dt = 0.0f;
-      a->control_period = 1.0f / 30.0f; // 30 Hz decisions
-      a->control_timer = 0.0f;
-      a->last_action = ACT_NONE;
-      a->reward_accumulator = 0.0f;
-
-      // Spawn pose/location
-      int cx = i % cols;
-      int cy = i / cols;
-      Vector2 origin = {SCREEN_WIDTH * 0.2f + cx * spacing,
-                        SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
-
-      init_agent(a, origin); // <-- your particle/joint setup
-
-      // Brain
-      a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-      a->cortex = SAM_as_MUZE(a->sam);
-
-      // Optional: tweak MUZE sampler behavior per agent
-      if (a->cortex) {
-        a->cortex->policy_epsilon = 0.10f;
-        a->cortex->policy_temperature = 1.0f;
-        a->cortex->use_mcts = false;
-      }
-    }
-  }
-
   memset(a, 0, sizeof(*a));
   a->alive = true;
   a->joint_stiffness = 1.0f;
@@ -359,17 +316,46 @@ static void init_agent(Agent *a, Vector2 origin) {
   make_joint(a, J_SHIN_R, P_KNEE_R, P_ANKLE_R);
 }
 
-static void init_agents(void) {
-  // Scatter them a bit so you can see multiple
+void init_agents(void) {
+  MuConfig cfg = {.obs_dim = OBS_DIM,
+                  .latent_dim = 64, // not used by SAM_init, ok to keep here
+                  .action_count = ACTION_COUNT};
+
   int cols = 16;
   float spacing = 70.0f;
 
   for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    memset(a, 0, sizeof(*a));
+
+    a->alive = true;
+    a->joint_stiffness = 1.0f;
+
+    // Fixed-step / control loop
+    a->accum_dt = 0.0f;
+    a->control_period = 1.0f / 30.0f; // 30 Hz decisions
+    a->control_timer = 0.0f;
+    a->last_action = ACT_NONE;
+    a->reward_accumulator = 0.0f;
+
+    // Spawn pose/location
     int cx = i % cols;
     int cy = i / cols;
-    Vector2 o = {SCREEN_WIDTH * 0.2f + cx * spacing,
-                 SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
-    init_agent(&agents[i], o);
+    Vector2 origin = {SCREEN_WIDTH * 0.2f + cx * spacing,
+                      SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
+
+    init_agent(a, origin); // <-- your particle/joint setup
+
+    // Brain
+    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
+    a->cortex = SAM_as_MUZE(a->sam);
+
+    // Optional: tweak MUZE sampler behavior per agent
+    if (a->cortex) {
+      a->cortex->policy_epsilon = 0.10f;
+      a->cortex->policy_temperature = 1.0f;
+      a->cortex->use_mcts = false;
+    }
   }
 }
 
