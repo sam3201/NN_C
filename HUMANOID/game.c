@@ -127,9 +127,6 @@ int main(void) {
     world[x][y].mob_spawn_timer = 0.0f;
   }
 
-  for (int i = 0; i < MAX_PROJECTILES; i++)
-    projectiles[i].alive = false;
-
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
 
