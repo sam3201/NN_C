@@ -775,7 +775,6 @@ int main(void) {
   GRID_W = SCREEN_WIDTH / TILE_PX;
   GRID_H = SCREEN_HEIGHT / TILE_PX;
 
-  // Safety clamps (don’t let it become 0)
   if (GRID_W < 8)
     GRID_W = 8;
   if (GRID_H < 6)
