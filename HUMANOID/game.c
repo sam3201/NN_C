@@ -22,7 +22,7 @@
 /* =======================
    GLOBAL CONFIG
 ======================= */
-job_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 job_cv = PTHREAD_COND_INITIALIZER;
 done_cv = PTHREAD_COND_INITIALIZER;
 job_quit = 0;
