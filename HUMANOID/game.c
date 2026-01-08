@@ -143,7 +143,6 @@ int main(void) {
   // SetExitKey(KEY_NULL); //
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
-  TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
   init_agents();
