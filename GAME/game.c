@@ -737,6 +737,99 @@ static int save_world_to_disk(const char *world_name) {
 
       fwrite(&ch, sizeof(ch), 1, f);
 
+      // ------------------- agents -------------------
+      h.agent_count = MAX_AGENTS;
+      fseek(f, 0, SEEK_SET);
+      fwrite(&h, sizeof(h), 1, f);
+      fseek(f, 0, SEEK_END);
+
+      for (int i = 0; i < MAX_AGENTS; i++) {
+        Agent *a = &agents[i];
+        SaveAgent sa = {0};
+
+        sa.agent_id = a->agent_id;
+        sa.alive = a->alive ? 1 : 0;
+
+        sa.x = a->position.x;
+        sa.y = a->position.y;
+        sa.fx = a->facing.x;
+        sa.fy = a->facing.y;
+
+        sa.health = a->health;
+        sa.stamina = a->stamina;
+
+        sa.age = a->age;
+        sa.last_action = a->last_action;
+        sa.reward_accumulator = a->reward_accumulator;
+
+        sa.attack_cd = a->attack_cd;
+        sa.harvest_cd = a->harvest_cd;
+        sa.fire_cd = a->fire_cd;
+
+        sa.fire_latched = a->fire_latched;
+        sa.fire_latch_timer = a->fire_latch_timer;
+
+        sa.inv_food = a->inv_food;
+        sa.inv_arrows = a->inv_arrows;
+        sa.inv_shards = a->inv_shards;
+
+        sa.has_axe = a->has_axe;
+        sa.has_pickaxe = a->has_pickaxe;
+        sa.has_sword = a->has_sword;
+        sa.has_armor = a->has_armor;
+        sa.has_bow = a->has_bow;
+
+        sa.tool_selected = a->tool_selected;
+        sa.last_craft_selected = a->last_craft_selected;
+
+        fwrite(&sa, sizeof(sa), 1, f);
+      }
+
+      // ------------------- pickups (alive only) -------------------
+      uint32_t pcount = 0;
+      for (int i = 0; i < MAX_PICKUPS; i++)
+        if (pickups[i].alive)
+          pcount++;
+      // store counts in header-like area? simplest: write counts as u32 then
+      // entries
+      fwrite(&pcount, sizeof(uint32_t), 1, f);
+
+      for (int i = 0; i < MAX_PICKUPS; i++) {
+        if (!pickups[i].alive)
+          continue;
+        SavePickup sp = {0};
+        sp.alive = 1;
+        sp.x = pickups[i].pos.x;
+        sp.y = pickups[i].pos.y;
+        sp.type = (int32_t)pickups[i].type;
+        sp.amount = pickups[i].amount;
+        sp.ttl = pickups[i].ttl;
+        sp.bob_t = pickups[i].bob_t;
+        fwrite(&sp, sizeof(sp), 1, f);
+      }
+
+      // ------------------- projectiles (alive only) -------------------
+      uint32_t prcount = 0;
+      for (int i = 0; i < MAX_PROJECTILES; i++)
+        if (projectiles[i].alive)
+          prcount++;
+      fwrite(&prcount, sizeof(uint32_t), 1, f);
+
+      for (int i = 0; i < MAX_PROJECTILES; i++) {
+        if (!projectiles[i].alive)
+          continue;
+        SaveProjectile sp = {0};
+        sp.alive = 1;
+        sp.x = projectiles[i].pos.x;
+        sp.y = projectiles[i].pos.y;
+        sp.vx = projectiles[i].vel.x;
+        sp.vy = projectiles[i].vel.y;
+        sp.ttl = projectiles[i].ttl;
+        sp.damage = projectiles[i].damage;
+        sp.owner = (int32_t)projectiles[i].owner;
+        fwrite(&sp, sizeof(sp), 1, f);
+      }
+
       // resources
       for (int i = 0; i < c->resource_count; i++) {
         const Resource *r = &c->resources[i];
