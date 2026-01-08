@@ -116,7 +116,13 @@ typedef struct {
   float control_timer;
   float control_period; // e.g. 1/30
 
+  // --- learning bookkeeping (control-rate) ---
+  float pending_reward;    // accumulated reward since last decision
+  ObsFixed last_obs;       // observation used to pick last_action
+  int has_last_transition; // whether last_obs/last_action is valid
+
   float reward_accumulator;
+
 } Agent;
 
 enum {
