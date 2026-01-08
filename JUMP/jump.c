@@ -222,6 +222,21 @@ static inline int clampi(int v, int lo, int hi) {
   return v < lo ? lo : (v > hi ? hi : v);
 }
 
+static inline uint32_t xorshift32(uint32_t *s) {
+  uint32_t x = *s;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *s = x;
+  return x;
+}
+static inline float frand01(uint32_t *s) {
+  return (xorshift32(s) >> 8) * (1.0f / 16777216.0f); // 24-bit mantissa
+}
+static inline int irand(uint32_t *s, int n) {
+  return (int)(xorshift32(s) % (uint32_t)n);
+}
+
 static inline void world_to_grid(const Vector2 origin, float x, float y,
                                  int *out_gx, int *out_gy) {
   float u = (x - origin.x) / VIEW_W_PX; // 0..1
