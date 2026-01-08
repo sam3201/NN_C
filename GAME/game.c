@@ -4898,7 +4898,7 @@ int main(void) {
       // quick save hotkey
       if (IsKeyPressed(KEY_F5))
         save_world_to_disk(g_world_name);
-      if (IsKeyPressed(KEY_ESCAPE))
+      if (IsKeyPressed(KEY_P))
         g_state = STATE_TITLE;
     } else if (g_state == STATE_TITLE) {
 
