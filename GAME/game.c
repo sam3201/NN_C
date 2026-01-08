@@ -166,6 +166,12 @@ typedef enum {
   ACTION_COUNT
 } ActionType;
 
+typedef enum {
+  PROJ_OWNER_PLAYER = 0,
+  PROJ_OWNER_AGENT = 1,
+  PROJ_OWNER_MOB = 2
+} ProjOwner;
+
 typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
 // ----- prototypes (so C doesn't need ordering) -----
@@ -224,12 +230,6 @@ typedef struct {
   float hurt_timer;  // flash
   float lunge_timer; // attack anim
 } Mob;
-
-typedef enum {
-  PROJ_OWNER_PLAYER = 0,
-  PROJ_OWNER_AGENT = 1,
-  PROJ_OWNER_MOB = 2
-} ProjOwner;
 
 typedef struct {
   bool alive;
