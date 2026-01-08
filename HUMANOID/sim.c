@@ -331,6 +331,15 @@ static void reset_agent_episode(Agent *a) {
   memset(&a->last_obs, 0, sizeof(a->last_obs));
   a->reward_accumulator = 0.0f;
 
+  a->pl.pos = a->spawn_origin;
+  a->pl.vel = (Vector2){0, 0};
+  a->pl.radius = 10.0f;
+  a->pl.on_ground = 1;
+  a->pl.charging = 0;
+  a->pl.charge = 0.0f;
+  a->pl.prev_y = a->pl.pos.y;
+  a->last_pos = a->pl.pos;
+
   a->best_alt = 0.0f;
 }
 
