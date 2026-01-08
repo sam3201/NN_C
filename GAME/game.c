@@ -603,6 +603,14 @@ static void craft(const Recipe *r) {
     *r->unlock_flag = 1;
 }
 
+static void make_world_path(char *out, size_t cap, const char *world_name) {
+  snprintf(out, cap, "%s/%s", SAVE_ROOT, world_name);
+}
+
+static void make_save_file_path(char *out, size_t cap, const char *world_name) {
+  snprintf(out, cap, "%s/%s/world.sav", SAVE_ROOT, world_name);
+}
+
 static void make_models_dir(char *out, size_t cap, const char *world_name) {
   snprintf(out, cap, "%s/%s/models", SAVE_ROOT, world_name);
 }
@@ -611,14 +619,6 @@ static void make_agent_model_path(char *out, size_t cap, const char *world_name,
                                   int agent_id) {
   snprintf(out, cap, "%s/%s/models/agent_%03d.bin", SAVE_ROOT, world_name,
            agent_id);
-}
-
-static void make_world_path(char *out, size_t cap, const char *world_name) {
-  snprintf(out, cap, "%s/%s", SAVE_ROOT, world_name);
-}
-
-static void make_save_file_path(char *out, size_t cap, const char *world_name) {
-  snprintf(out, cap, "%s/%s/world.sav", SAVE_ROOT, world_name);
 }
 
 static void world_reset(uint32_t seed) {
