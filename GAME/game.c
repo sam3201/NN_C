@@ -217,8 +217,49 @@ static void spawn_mob_at_world(MobType type, Vector2 world_pos);
 void update_agent(Agent *a);
 static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             int dmg, ProjOwner owner);
+                             ProjOwner owner, int damage);
 
+static void player_try_attack_forward(Vector2 facing_dir) {
+  if (player_attack_cd > 0.0f)
+    return;
+
+  Vector2 rd = Vector2Normalize(facing_dir);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  float range = player_attack_range();
+  int dmg = player_attack_damage();
+
+  RayHit hit = raycast_world_objects(player.position, rd, range);
+  if (hit.kind != HIT_MOB) {
+    player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
+    return;
+  }
+
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
+
+  Mob *m = &c->mobs[hit.index];
+  if (m->health > 0) {
+    player_attack_cd = player_attack_cooldown();
+
+    m->health -= dmg;
+    m->hurt_timer = 0.18f;
+    m->aggro_timer = 3.0f;
+    m->lunge_timer = 0.10f;
+
+    cam_shake = fmaxf(cam_shake, 0.10f);
+
+    if (m->health <= 0) {
+      Vector2 mob_world_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                                        hit.cy * CHUNK_SIZE + m->position.y};
+      on_mob_killed(m->type, mob_world_pos);
+      m->health = 0;
+    }
+  }
+
+  pthread_rwlock_unlock(&c->lock);
+}
 static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   if (player_attack_cd > 0.0f)
     return;
@@ -266,42 +307,25 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   }
 }
 
-    int dmg,
-    ProjOwner owner);
-    // simple helpers
-    static inline float randf(float a, float b);
-
-    // day/night
-    static inline int is_night(void);
-
-    // chunk/local coordinate helpers
-    static inline Vector2 clamp_local_to_chunk(Vector2 lp);
-
-    // mobs / chunk helpers
-    static int find_free_mob_slot(Chunk *c);
-
-    // initialization
-    void init_tribes(void);
-    void init_agents(void);
 
     // saving
-    static void ensure_save_root(void);
+static void ensure_save_root(void);
 
-    static GameStateType g_state = STATE_TITLE;
+static GameStateType g_state = STATE_TITLE;
 
-    // current world session
-    static char g_world_name[4096] = "World1";
-    static uint32_t g_world_seed = 1337;
+// current world session
+static char g_world_name[4096] = "World1";
+static uint32_t g_world_seed = 1337;
 
-    // UI typing buffers
-    static int g_typing_name = 0;
-    static int g_typing_seed = 0;
-    static char g_seed_text[16] = "1337";
+// UI typing buffers
+static int g_typing_name = 0;
+static int g_typing_seed = 0;
+static char g_seed_text[16] = "1337";
 
-    // save directory
-    static const char *SAVE_ROOT = "saves";
+// save directory
+static const char *SAVE_ROOT = "saves";
 
-    /* =======================
+/* =======================
        STRUCTS
     ======================= */
 
@@ -1609,6 +1633,7 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
 
 #undef TRY_CRAFT
     }
+
     static void spawn_projectile(Vector2 pos, Vector2 dir, float speed,
                                  float ttl, int dmg, ProjOwner owner) {
       for (int i = 0; i < MAX_PROJECTILES; i++) {
@@ -2528,92 +2553,102 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
       init_mob(m, mt, p, /*make_angry=*/0);
     }
 
-    // -----------------------------
-    // PLAYER UPDATE (movement + aim + click actions)
-    // -----------------------------
-    void update_player(void) {
-      float dt = GetFrameTime();
-      if (dt > 0.05f)
-        dt = 0.05f;
+    static void player_try_attack_forward(Vector2 facing_dir) {
+      if (player_attack_cd > 0.0f)
+        return;
 
-      // --- UI / crafting toggles (keep simple + deterministic) ---
-      if (IsKeyPressed(KEY_E)) {
-        crafting_open = !crafting_open;
+      Vector2 rd = Vector2Normalize(facing_dir);
+      if (Vector2Length(rd) < 1e-3f)
+        rd = (Vector2){1, 0};
+
+      float range = player_attack_range();
+      int dmg = player_attack_damage();
+
+      RayHit hit = raycast_world_objects(player.position, rd, range);
+      if (hit.kind != HIT_MOB) {
+        player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
+        return;
       }
 
-      // Zoom (smooth)
-      if (IsKeyPressed(KEY_Q))
-        target_world_scale *= 0.9f;
-      if (IsKeyPressed(KEY_R))
-        target_world_scale *= 1.1f;
-      target_world_scale = Clamp(target_world_scale, 0.25f, 6.0f);
-      world_scale += (target_world_scale - world_scale) * 10.0f * dt;
-      world_scale = Clamp(world_scale, 0.25f, 6.0f);
+      Chunk *c = get_chunk(hit.cx, hit.cy);
+      pthread_rwlock_wrlock(&c->lock);
 
-      // --- Movement ---
-      Vector2 mv = {0};
-      if (IsKeyDown(KEY_W))
-        mv.y -= 1.0f;
-      if (IsKeyDown(KEY_S))
-        mv.y += 1.0f;
-      if (IsKeyDown(KEY_A))
-        mv.x -= 1.0f;
-      if (IsKeyDown(KEY_D))
-        mv.x += 1.0f;
+      Mob *m = &c->mobs[hit.index];
+      if (m->health > 0) {
+        player_attack_cd = player_attack_cooldown();
 
-      if (mv.x != 0 || mv.y != 0) {
-        mv = Vector2Normalize(mv);
-        player.pos =
-            Vector2Add(player.pos, Vector2Scale(mv, PLAYER_SPEED * dt));
-      }
+        m->health -= dmg;
+        m->hurt_timer = 0.18f;
+        m->aggro_timer = 3.0f;
+        m->lunge_timer = 0.10f;
 
-      // Clamp player into world bounds (avoid weird camera bugs)
-      player.pos.x = Clamp(player.pos.x, 0.0f, (float)WORLD_SIZE);
-      player.pos.y = Clamp(player.pos.y, 0.0f, (float)WORLD_SIZE);
+        cam_shake = fmaxf(cam_shake, 0.10f);
 
-      // --- Camera follows player ---
-      camera.target =
-          (Vector2){player.pos.x * scale_size, player.pos.y * scale_size};
-      camera.offset = (Vector2){(float)GetScreenWidth() * 0.5f,
-                                (float)GetScreenHeight() * 0.5f};
-      camera.rotation = 0.0f;
-      camera.zoom = world_scale;
-
-      // --- Mouse -> world position ---
-      // Use Raylib's camera conversion so aim/interaction doesn't drift with
-      // zoom/pan.
-      Vector2 mouse_screen = GetMousePosition();
-      Vector2 mouse_world_px = GetScreenToWorld2D(mouse_screen, camera);
-      Vector2 mouse_world = (Vector2){mouse_world_px.x / scale_size,
-                                      mouse_world_px.y / scale_size};
-
-      // --- Decide aim direction (world-space, stable) ---
-      Vector2 aim = Vector2Subtract(mouse_world, player.pos);
-      float aimLen = Vector2Length(aim);
-      Vector2 aimDir = (aimLen > 0.0001f) ? Vector2Scale(aim, 1.0f / aimLen)
-                                          : (Vector2){1.0f, 0.0f};
-
-      // --- Left click = ATTACK, Right click = HARVEST ---
-      // Hold-to-repeat feels good; if you want press-only, swap Down->Pressed.
-      bool attackDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-      bool harvestDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-
-      if (!crafting_open) {
-        if (attackDown) {
-          // Attack uses aim direction like the player would
-          agent_try_attack_action(&player, aimDir);
-        }
-        if (harvestDown) {
-          // Harvest uses aim direction like the player would
-          agent_try_harvest_action(&player, aimDir);
+        if (m->health <= 0) {
+          Vector2 mob_world_pos =
+              (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                        hit.cy * CHUNK_SIZE + m->position.y};
+          on_mob_killed(m->type, mob_world_pos);
+          m->health = 0;
         }
       }
 
-      // --- Crafting selection (mouse clicks inside UI) ---
-      // Keep your existing crafting UI logic below this point if you had more;
-      // this update_player only handles toggling and interaction gating
-      // cleanly.
+      pthread_rwlock_unlock(&c->lock);
     }
+
+    static void player_try_harvest_forward(Vector2 facing_dir) {
+      if (player_harvest_cd > 0.0f)
+        return;
+
+      Vector2 rd = Vector2Normalize(facing_dir);
+      if (Vector2Length(rd) < 1e-3f)
+        rd = (Vector2){1, 0};
+
+      float range = HARVEST_DISTANCE;
+
+      RayHit hit = raycast_world_objects(player.position, rd, range);
+      if (hit.kind != HIT_RESOURCE) {
+        player_harvest_cd = 0.10f; // small whiff cooldown
+        return;
+      }
+
+      Chunk *c = get_chunk(hit.cx, hit.cy);
+      pthread_rwlock_wrlock(&c->lock);
+
+      Resource *r = &c->resources[hit.index];
+      if (r->health <= 0) {
+        pthread_rwlock_unlock(&c->lock);
+        return;
+      }
+
+      float cd = player_resource_cooldown(r->type);
+      float cost = player_resource_stamina_cost(r->type);
+      int dmg = player_resource_damage(r->type);
+
+      if (player.stamina < cost) {
+        pthread_rwlock_unlock(&c->lock);
+        return;
+      }
+
+      player_harvest_cd = cd;
+      player.stamina -= cost;
+
+      r->health -= dmg;
+      r->hit_timer = 0.14f;
+      r->break_flash = 0.06f;
+
+      if (r->type == RES_ROCK || r->type == RES_GOLD) {
+        cam_shake = fmaxf(cam_shake, 0.10f);
+      }
+
+      if (r->health <= 0) {
+        give_drop(r->type);
+        r->health = 0;
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+
     Chunk *get_chunk(int cx, int cy) {
       cx = wrap(cx);
       cy = wrap(cy);
@@ -3496,52 +3531,133 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
       }
     }
 
-    // -----------------------------
-    // PLAYER DRAW (faces mouse + hands orbit body correctly)
-    // -----------------------------
     static void draw_player(Vector2 pp_screen) {
-      // Screen-space mouse, for rendering-only aim visuals
+      // Body sizing
+      float bodyR = WORLD_SCALE * 0.60f * scale_size;
+      float outlineR = bodyR * 1.02f;
+
+      Color outline = (Color){20, 20, 20, 180};
+      Color body = (Color){255, 220, 120, 255};
+      Color blush = (Color){255, 140, 160, 170};
+      Color eyeW = RAYWHITE;
+      Color eyeB = (Color){35, 35, 35, 255};
+      Color shadow = (Color){0, 0, 0, 70};
+
+      // Shadow
+      DrawEllipse((int)pp_screen.x, (int)(pp_screen.y + bodyR * 0.85f),
+                  (int)(bodyR * 1.35f), (int)(bodyR * 0.45f), shadow);
+
+      // Outline + body
+      DrawCircleV(pp_screen, outlineR, outline);
+      DrawCircleV(pp_screen, bodyR, body);
+
+      // Highlight
+      DrawCircleV(
+          (Vector2){pp_screen.x - bodyR * 0.25f, pp_screen.y - bodyR * 0.25f},
+          bodyR * 0.18f, (Color){255, 255, 255, 120});
+
+      // --- Mouse-aim direction (screen space) ---
       Vector2 mouse = GetMousePosition();
+      Vector2 aim = Vector2Subtract(mouse, pp_screen);
+      float aimLen = Vector2Length(aim);
+      if (aimLen < 1e-3f)
+        aimLen = 1e-3f;
+      float aimAng = atan2f(aim.y, aim.x);
 
-      Vector2 toMouse = Vector2Subtract(mouse, pp_screen);
-      float d = Vector2Length(toMouse);
-
-      Vector2 aimDir = (d > 0.0001f) ? Vector2Scale(toMouse, 1.0f / d)
-                                     : (Vector2){1.0f, 0.0f};
-      Vector2 perp =
-          (Vector2){-aimDir.y, aimDir.x}; // 90° to aim (screen-space)
-
-      // Body
-      float bodyR = BASE_RADIUS * world_scale;
-      DrawCircleV(pp_screen, bodyR, (Color){60, 200, 255, 255});
-
-      // Hands should move around the circle body “in direction to the mouse”
-      // Put them slightly forward (toward mouse) but still on an orbit around
-      // the body.
-      float orbitR = bodyR * 0.95f;
-      float handR = bodyR * 0.28f;
-
-      // Small bob so it looks alive (optional but helps)
+      // --- Animated hands that orbit and “point” toward mouse ---
       float t = (float)GetTime();
-      float bob = sinf(t * 10.0f) * (bodyR * 0.06f);
 
-      // Forward bias so the "front" of the player is toward the mouse
-      Vector2 forward = Vector2Scale(aimDir, orbitR + bob);
+      float handR = bodyR * 0.28f;
+      float handArm = bodyR * 0.90f; // distance from center
 
-      // Left/Right are defined geometrically via perp (so they never swap
-      // weirdly)
-      Vector2 leftHand = Vector2Add(
-          pp_screen, Vector2Add(forward, Vector2Scale(perp, -bodyR * 0.55f)));
-      Vector2 rightHand = Vector2Add(
-          pp_screen, Vector2Add(forward, Vector2Scale(perp, bodyR * 0.55f)));
+      // slight breathing wiggle
+      float wiggle = sinf(t * 7.0f) * (bodyR * 0.04f);
 
-      DrawCircleV(leftHand, handR, (Color){30, 30, 30, 255});
-      DrawCircleV(rightHand, handR, (Color){30, 30, 30, 255});
+      // Perpendicular offset so hands sit "around" the aim line
+      Vector2 aimDir = (Vector2){cosf(aimAng), sinf(aimAng)};
+      Vector2 perp = (Vector2){-aimDir.y, aimDir.x};
 
-      // “Face” indicator: a small dot on the front-center so aim feels correct
-      Vector2 nose = Vector2Add(pp_screen, Vector2Scale(aimDir, bodyR * 0.75f));
-      DrawCircleV(nose, bodyR * 0.10f, (Color){255, 255, 255, 200});
+      // LEFT HAND: EXACTLY on aim direction (this fixes your “left hand angle”)
+      Vector2 hl =
+          Vector2Add(pp_screen, Vector2Scale(aimDir, handArm + wiggle));
+
+      // RIGHT HAND: slightly behind + offset sideways so you can see both hands
+      Vector2 hr = pp_screen;
+      hr = Vector2Add(hr,
+                      Vector2Scale(aimDir, (handArm - bodyR * 0.12f) - wiggle));
+      hr = Vector2Add(hr, Vector2Scale(perp, bodyR * 0.22f));
+
+      // little “finger nub” pointing toward mouse from each hand
+      float nubR = handR * 0.28f;
+      Vector2 toMouseL = Vector2Subtract(mouse, hl);
+      Vector2 toMouseR = Vector2Subtract(mouse, hr);
+
+      Vector2 dirL = Vector2Normalize(toMouseL);
+      Vector2 dirR = Vector2Normalize(toMouseR);
+
+      if (Vector2Length(toMouseL) < 1e-3f)
+        dirL = aimDir;
+      if (Vector2Length(toMouseR) < 1e-3f)
+        dirR = aimDir;
+
+      Vector2 hl_nub = Vector2Add(hl, Vector2Scale(dirL, handR * 0.65f));
+      Vector2 hr_nub = Vector2Add(hr, Vector2Scale(dirR, handR * 0.65f));
+
+      // draw hands (outline + fill)
+      Color handFill = (Color){255, 210, 110, 255};
+
+      DrawCircleV(hl, handR * 1.02f, outline);
+      DrawCircleV(hl, handR, handFill);
+      DrawCircleV(hl_nub, nubR * 1.02f, outline);
+      DrawCircleV(hl_nub, nubR, handFill);
+
+      DrawCircleV(hr, handR * 1.02f, outline);
+      DrawCircleV(hr, handR, handFill);
+      DrawCircleV(hr_nub, nubR * 1.02f, outline);
+      DrawCircleV(hr_nub, nubR, handFill);
+
+      // Feet
+      float footR = bodyR * 0.26f;
+      Vector2 fl = {pp_screen.x - bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+      Vector2 fr = {pp_screen.x + bodyR * 0.25f, pp_screen.y + bodyR * 0.70f};
+
+      DrawCircleV(fl, footR * 1.02f, outline);
+      DrawCircleV(fr, footR * 1.02f, outline);
+      DrawCircleV(fl, footR, (Color){255, 160, 120, 255});
+      DrawCircleV(fr, footR, (Color){255, 160, 120, 255});
+
+      // Face
+      float eyeOffX = bodyR * 0.22f;
+      float eyeOffY = bodyR * 0.12f;
+      float eyeR = bodyR * 0.13f;
+
+      Vector2 eL = {pp_screen.x - eyeOffX, pp_screen.y - eyeOffY};
+      Vector2 eR = {pp_screen.x + eyeOffX, pp_screen.y - eyeOffY};
+
+      DrawCircleV(eL, eyeR * 1.05f, outline);
+      DrawCircleV(eR, eyeR * 1.05f, outline);
+      DrawCircleV(eL, eyeR, eyeW);
+      DrawCircleV(eR, eyeR, eyeW);
+
+      float blink = (sinf(t * 2.5f) > 0.97f) ? 0.35f : 1.0f;
+      float pupR = eyeR * 0.45f;
+      DrawEllipse((int)eL.x, (int)eL.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+                  eyeB);
+      DrawEllipse((int)eR.x, (int)eR.y, (int)(pupR * 1.1f), (int)(pupR * blink),
+                  eyeB);
+
+      Vector2 mouth = {pp_screen.x, pp_screen.y + bodyR * 0.18f};
+      DrawCircleV(mouth, bodyR * 0.06f, (Color){120, 60, 60, 255});
+
+      Vector2 bl = {pp_screen.x - bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+      Vector2 br = {pp_screen.x + bodyR * 0.38f, pp_screen.y + bodyR * 0.05f};
+      DrawCircleV(bl, bodyR * 0.10f, blush);
+      DrawCircleV(br, bodyR * 0.10f, blush);
+
+      g_handL = hl;
+      g_handR = hr;
     }
+
     static void draw_agent(const Agent *a, Vector2 sp, Color tribeColor) {
       float r = WORLD_SCALE * 0.60 * scale_size; // base agent size
       float t = (float)GetTime();
@@ -3722,8 +3838,6 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
 
         a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
         a->cortex = SAM_as_MUZE(a->sam);
-        a->cortex->cfg = cfg;
-        a->cortex->use_mcts = true;
 
         a->last_action = ACTION_COUNT;
 
@@ -4563,92 +4677,147 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
       player.stamina = 100;
     }
 
-    // -----------------------------
-    // PLAYER UPDATE (movement + aim + click actions)
-    // -----------------------------
     void update_player(void) {
       float dt = GetFrameTime();
-      if (dt > 0.05f)
-        dt = 0.05f;
+      if (dt <= 0.0f)
+        dt = 1.0f / 60.0f;
 
-      // --- UI / crafting toggles (keep simple + deterministic) ---
-      if (IsKeyPressed(KEY_E)) {
+      // --- cooldown timers ---
+      if (player_harvest_cd > 0.0f)
+        player_harvest_cd -= dt;
+      if (player_attack_cd > 0.0f)
+        player_attack_cd -= dt;
+      if (player_fire_cd > 0.0f)
+        player_fire_cd -= dt;
+      if (player_hurt_timer > 0.0f)
+        player_hurt_timer -= dt;
+
+      // --- stamina regen (player) ---
+      // tweak as you like:
+      player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+
+      // --- movement ---
+      float speed = 0.6f;
+      float move = speed; // (or speed * dt * 60.0f for true time-based)
+
+      bool moving = false;
+      if (IsKeyDown(KEY_W)) {
+        player.position.y -= move;
+        moving = true;
+      }
+      if (IsKeyDown(KEY_S)) {
+        player.position.y += move;
+        moving = true;
+      }
+      if (IsKeyDown(KEY_A)) {
+        player.position.x -= move;
+        moving = true;
+      }
+      if (IsKeyDown(KEY_D)) {
+        player.position.x += move;
+        moving = true;
+      }
+      // --- zoom controls ---
+      if (IsKeyDown(KEY_EQUAL))
+        target_world_scale += 60.0f * dt;
+      if (IsKeyDown(KEY_MINUS))
+        target_world_scale -= 60.0f * dt;
+      target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
+
+      // optional: tiny stamina drain while moving
+      if (moving) {
+        player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
+      }
+
+      // --- crafting toggle ---
+      if (IsKeyPressed(KEY_TAB)) {
         crafting_open = !crafting_open;
       }
 
-      // Zoom (smooth)
-      if (IsKeyPressed(KEY_Q))
-        target_world_scale *= 0.9f;
-      if (IsKeyPressed(KEY_R))
-        target_world_scale *= 1.1f;
-      target_world_scale = Clamp(target_world_scale, 0.25f, 6.0f);
-      world_scale += (target_world_scale - world_scale) * 10.0f * dt;
-      world_scale = Clamp(world_scale, 0.25f, 6.0f);
-
-      // --- Movement ---
-      Vector2 mv = {0};
-      if (IsKeyDown(KEY_W))
-        mv.y -= 1.0f;
-      if (IsKeyDown(KEY_S))
-        mv.y += 1.0f;
-      if (IsKeyDown(KEY_A))
-        mv.x -= 1.0f;
-      if (IsKeyDown(KEY_D))
-        mv.x += 1.0f;
-
-      if (mv.x != 0 || mv.y != 0) {
-        mv = Vector2Normalize(mv);
-        player.pos =
-            Vector2Add(player.pos, Vector2Scale(mv, PLAYER_SPEED * dt));
-      }
-
-      // Clamp player into world bounds (avoid weird camera bugs)
-      player.pos.x = Clamp(player.pos.x, 0.0f, (float)WORLD_SIZE);
-      player.pos.y = Clamp(player.pos.y, 0.0f, (float)WORLD_SIZE);
-
-      // --- Camera follows player ---
-      camera.target =
-          (Vector2){player.pos.x * scale_size, player.pos.y * scale_size};
-      camera.offset = (Vector2){(float)GetScreenWidth() * 0.5f,
-                                (float)GetScreenHeight() * 0.5f};
-      camera.rotation = 0.0f;
-      camera.zoom = world_scale;
-
-      // --- Mouse -> world position ---
-      // Use Raylib's camera conversion so aim/interaction doesn't drift with
-      // zoom/pan.
-      Vector2 mouse_screen = GetMousePosition();
-      Vector2 mouse_world_px = GetScreenToWorld2D(mouse_screen, camera);
-      Vector2 mouse_world = (Vector2){mouse_world_px.x / scale_size,
-                                      mouse_world_px.y / scale_size};
-
-      // --- Decide aim direction (world-space, stable) ---
-      Vector2 aim = Vector2Subtract(mouse_world, player.pos);
-      float aimLen = Vector2Length(aim);
-      Vector2 aimDir = (aimLen > 0.0001f) ? Vector2Scale(aim, 1.0f / aimLen)
-                                          : (Vector2){1.0f, 0.0f};
-
-      // --- Left click = ATTACK, Right click = HARVEST ---
-      // Hold-to-repeat feels good; if you want press-only, swap Down->Pressed.
-      bool attackDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-      bool harvestDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-
-      if (!crafting_open) {
-        if (attackDown) {
-          // Attack uses aim direction like the player would
-          agent_try_attack_action(&player, aimDir);
-        }
-        if (harvestDown) {
-          // Harvest uses aim direction like the player would
-          agent_try_harvest_action(&player, aimDir);
+      // --- crafting input (1..9) only when crafting menu is open ---
+      if (crafting_open) {
+        for (int i = 0; i < recipe_count && i < 9; i++) {
+          bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
+          pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
+          if (pressed)
+            craft(&recipes[i]);
         }
       }
 
-      // --- Crafting selection (mouse clicks inside UI) ---
-      // Keep your existing crafting UI logic below this point if you had more;
-      // this update_player only handles toggling and interaction gating
-      // cleanly.
+      // =========================
+      // CONTINUOUS HOLD ACTIONS
+      // =========================
+
+      // (A) Continuous melee attack (hold LEFT mouse)
+      if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        int cx = (int)(player.position.x / CHUNK_SIZE);
+        int cy = (int)(player.position.y / CHUNK_SIZE);
+        Chunk *c = get_chunk(cx, cy);
+
+        // player_try_attack_mob_in_chunk modifies mobs -> take write lock
+        pthread_rwlock_wrlock(&c->lock);
+        player_try_attack_mob_in_chunk(c, wrap(cx), wrap(cy));
+        pthread_rwlock_unlock(&c->lock);
+      }
+
+      // (B) Continuous harvest/mine (hold RIGHT mouse)
+      if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        int cx = (int)(player.position.x / CHUNK_SIZE);
+        int cy = (int)(player.position.y / CHUNK_SIZE);
+        Chunk *c = get_chunk(cx, cy);
+
+        // player_try_harvest_resource_in_chunk modifies resources -> write lock
+        pthread_rwlock_wrlock(&c->lock);
+        player_try_harvest_resource_in_chunk(c, wrap(cx), wrap(cy));
+        pthread_rwlock_unlock(&c->lock);
+      }
+
+      // =========================
+      // BOW CHARGE + RELEASE (F)
+      // =========================
+      // Hold F to charge, release F to fire (if enough charge).
+      if (has_bow) {
+        if (IsKeyDown(KEY_F)) {
+          bow_charging = 1;
+          bow_charge01 += dt / BOW_CHARGE_TIME;
+          bow_charge01 = clamp01(bow_charge01);
+        }
+
+        // Release to fire (continuous-ready through player_fire_cd)
+        if (bow_charging && IsKeyReleased(KEY_F)) {
+          bow_charging = 0;
+
+          if (player_fire_cd <= 0.0f && inv_arrows > 0 &&
+              bow_charge01 >= BOW_CHARGE_MIN01) {
+            // aim from player -> mouse in WORLD space
+            Vector2 mouse = GetMousePosition();
+            Vector2 mouse_world = {
+                (mouse.x - SCREEN_WIDTH * 0.5f) / WORLD_SCALE + camera_pos.x,
+                (mouse.y - SCREEN_HEIGHT * 0.5f) / WORLD_SCALE + camera_pos.y};
+
+            Vector2 dir = Vector2Subtract(mouse_world, player.position);
+            if (Vector2Length(dir) < 1e-3f)
+              dir = (Vector2){1, 0};
+            dir = Vector2Normalize(dir);
+
+            // consume ammo + set cooldown
+            inv_arrows--;
+            player_fire_cd = PLAYER_FIRE_COOLDOWN;
+
+            // uses your existing charged fire helper
+            player_fire_bow_charged(dir, bow_charge01);
+          }
+
+          // reset charge after release regardless
+          bow_charge01 = 0.0f;
+        }
+      } else {
+        // if you don't have bow, ensure charge is off
+        bow_charging = 0;
+        bow_charge01 = 0.0f;
+      }
     }
+
     static void update_visible_world(float dt) {
       int pcx = (int)(player.position.x / CHUNK_SIZE);
       int pcy = (int)(player.position.y / CHUNK_SIZE);
@@ -5558,3 +5727,4 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
       CloseWindow();
       return 0;
     }
+
