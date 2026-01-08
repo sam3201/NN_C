@@ -147,6 +147,8 @@ typedef struct {
   MuCortex *cortex;
   int last_action;
 
+  int episodes_done;
+
   // fixed step + control rate
   float accum_dt;
   float control_timer;
@@ -163,8 +165,6 @@ typedef struct {
   int has_last_transition;
 
   float reward_accumulator;
-
-  int episodes_done;
 
 } Agent;
 
