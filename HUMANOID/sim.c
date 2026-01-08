@@ -57,7 +57,7 @@
 #define CELL_GROUND 4.0f
 #define CELL_LEDGE 5.0f // thin "top surface" highlight (helps massively)
 
-#define OBS_EXTRA 12
+#define OBS_EXTRA 14
 
 // ------------ Observation Grid (runtime) ------------
 // 1280x800 with TILE_PX=20 => 64x40 grid (2560 cells)
