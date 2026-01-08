@@ -4123,7 +4123,7 @@ case ACTION_CRAFT:
   break;
   */
   case ACTION_CRAFT_AXE:
-    br if (!agent_in_base(a, tr)) {
+    if (!agent_in_base(a, tr)) {
       *reward += -0.006f;
       return;
     }
