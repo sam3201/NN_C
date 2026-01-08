@@ -2679,7 +2679,7 @@ void init_tribes(void) {
 }
 
 void init_agents(void) {
-  MuConfig cfg = {.obs_dim = 64, // expandable, not fixed memory
+  MuConfig cfg = {.obs_dim = OBS_DIM, // expandable, not fixed memory
                   .latent_dim = 64,
                   .action_count = ACTION_COUNT};
 
