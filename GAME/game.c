@@ -2771,6 +2771,9 @@ void init_agents(void) {
     a->harvest_cd = 0.0f;
     a->fire_cd = 0.0f;
 
+    a->fire_latched = 0;
+    a->fire_latch_timer = 0.0f;
+
     a->inv_food = 0;
     a->inv_arrows = 0;
     a->inv_shards = 0;
