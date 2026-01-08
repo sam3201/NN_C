@@ -158,6 +158,14 @@ typedef struct {
 
   float best_alt; // best height this episode (higher is better)
 
+  // decision / brain
+  void *sam;        // or SAM* if you have a type
+  MuCortex *cortex; // from MUZE/muze_cortex.h
+
+  MCTSParams mcts_params; // if you want per-agent params
+
+  int last_action; // ACT_*
+
   MuModel *model; // shared global
   EpisodeBuf ep;
   int ep_t;                    // current step index
