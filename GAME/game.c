@@ -95,7 +95,8 @@ typedef enum {
   TOOL_PICKAXE = 2,
   TOOL_SWORD = 3,
   TOOL_ARMOR = 4,
-  TOOL_COUNT = 5,
+  TOOL_BOW = 5,
+  TOOL_COUNT = 6,
   TOOL_NONE = -1
 } ToolType;
 
