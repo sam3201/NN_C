@@ -1156,12 +1156,34 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward,
   a->inv_arrows--;
   a->fire_cd = agent_fire_cooldown();
 
-  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10);
+  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10); // visual
 
-  if (hit.kind == HIT_MOB)
-    *reward += R_FIRE_HIT;
-  else
+  if (hit.kind == HIT_MOB) {
+    Chunk *hc = get_chunk(hit.cx, hit.cy);
+    pthread_rwlock_wrlock(&hc->lock);
+
+    Mob *m = &hc->mobs[hit.index];
+    if (m->health > 0) {
+      m->health -= 18; // <-- ranged damage (tune)
+      m->hurt_timer = 0.18f;
+      m->aggro_timer = 3.0f;
+
+      *reward += R_FIRE_HIT;
+
+      if (m->health <= 0) {
+        Vector2 mw = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                               hit.cy * CHUNK_SIZE + m->position.y};
+        on_mob_killed(m->type, mw);
+        m->health = 0;
+        agent_gain_loot_for_mob_kill(a, tr, m->type);
+        *reward += R_ATTACK_KILL; // or make a separate R_FIRE_KILL
+      }
+    }
+
+    pthread_rwlock_unlock(&hc->lock);
+  } else {
     *reward += R_FIRE_WASTE;
+  }
 }
 
 static void agent_try_eat(Agent *a, float *reward) {
