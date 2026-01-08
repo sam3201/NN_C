@@ -424,27 +424,45 @@ void update_agent(Agent *a) {
   a->accum_dt += dt;
 
   const float groundY = (float)SCREEN_HEIGHT - 40.0f;
-  const Vector2 gravity = (Vector2){0.0f, 1400.0f}; // y-down in raylib; tune
+  const Vector2 gravity = (Vector2){0.0f, 1400.0f}; // y-down in raylib
 
-  // Decide action at control rate (e.g. 30Hz)
+  // ------------------------------------------------------------
+  // 1) CONTROL TICK (30Hz): learn from previous action, then choose new
+  // ------------------------------------------------------------
   a->control_timer -= dt;
   if (a->control_timer <= 0.0f) {
     a->control_timer +=
         (a->control_period > 0.0f) ? a->control_period : (1.0f / 30.0f);
 
-    ObsFixed ob;
-    encode_observation_humanoid(a, groundY, &ob);
+    // (A) If we have a previous (obs, action), train it with reward accumulated
+    // since then.
+    if (a->cortex && a->has_last_transition) {
+      int terminal =
+          a->alive ? 0 : 1; // usually 0 here; final flush happens below too
+      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
+                       a->last_action, a->pending_reward, terminal);
+    }
 
-    // MUZE action
+    // reset reward accumulator for the *next* action window
+    a->pending_reward = 0.0f;
+
+    // (B) Build current obs and pick a new action
+    encode_observation_humanoid(a, groundY, &a->last_obs);
+    a->last_obs.n = OBS_DIM; // ensure dimension is consistent
+
     if (a->cortex) {
-      a->last_action =
-          muze_plan(a->cortex, ob.obs, (size_t)OBS_DIM, (size_t)ACTION_COUNT);
+      a->last_action = muze_plan(a->cortex, a->last_obs.obs, (size_t)OBS_DIM,
+                                 (size_t)ACTION_COUNT);
     } else {
       a->last_action = ACT_NONE;
     }
+
+    a->has_last_transition = 1;
   }
 
-  // Physics substeps
+  // ------------------------------------------------------------
+  // 2) PHYSICS SUBSTEPS (120Hz fixed dt): integrate + muscles + constraints
+  // ------------------------------------------------------------
   while (a->accum_dt >= FIXED_DT) {
     a->accum_dt -= FIXED_DT;
 
@@ -457,37 +475,27 @@ void update_agent(Agent *a) {
       Vector2 cur = p->p;
       Vector2 v = vsub(p->p, p->pprev);
 
-      // mild damping helps stability
-      v = vmul(v, 0.995f);
+      v = vmul(v, 0.995f); // damping
 
-      // a = g (since invMass used in constraints; here we just apply gravity)
-      Vector2 aacc = gravity; // pixels/s^2
-      Vector2 next = vadd(vadd(cur, v), vmul(aacc, FIXED_DT * FIXED_DT));
-
+      Vector2 next = vadd(vadd(cur, v), vmul(gravity, FIXED_DT * FIXED_DT));
       p->pprev = cur;
       p->p = next;
     }
 
-    // --- Apply action as "muscles" (edit rest lengths + impulses) ---
+    // --- Apply action as "muscles" ---
     float rest0[J_COUNT];
     for (int j = 0; j < J_COUNT; j++)
       rest0[j] = a->jt[j].rest;
 
-    // Rest length scaling factors (small!)
-    // < 1 contracts, > 1 extends
     float contract = 0.92f;
     float extend = 1.08f;
 
     switch (a->last_action) {
     case ACT_STEP_LEFT: {
-      // contract left hip+shin slightly, extend right (creates stepping
-      // asymmetry)
       a->jt[J_HIP_L].rest *= contract;
       a->jt[J_SHIN_L].rest *= contract;
       a->jt[J_HIP_R].rest *= extend;
       a->jt[J_SHIN_R].rest *= extend;
-
-      // tiny sideways impulse at hip
       verlet_impulse(&a->pt[P_HIP], (Vector2){-18.0f * FIXED_DT, 0.0f});
     } break;
 
@@ -501,7 +509,6 @@ void update_agent(Agent *a) {
 
     case ACT_KNEE_L_UP: {
       a->jt[J_SHIN_L].rest *= contract;
-      // lift left ankle a bit (impulse upward)
       verlet_impulse(&a->pt[P_ANKLE_L], (Vector2){0.0f, -55.0f * FIXED_DT});
     } break;
 
@@ -515,7 +522,6 @@ void update_agent(Agent *a) {
       a->jt[J_FOREARM_L].rest *= contract;
       a->jt[J_UPPERARM_R].rest *= contract;
       a->jt[J_FOREARM_R].rest *= contract;
-      // pull hands upward a touch
       verlet_impulse(&a->pt[P_HAND_L], (Vector2){0.0f, -45.0f * FIXED_DT});
       verlet_impulse(&a->pt[P_HAND_R], (Vector2){0.0f, -45.0f * FIXED_DT});
     } break;
@@ -528,7 +534,6 @@ void update_agent(Agent *a) {
     } break;
 
     case ACT_SQUAT: {
-      // shorten spine + legs
       a->jt[J_SPINE1].rest *= contract;
       a->jt[J_SPINE2].rest *= contract;
       a->jt[J_HIP_L].rest *= contract;
@@ -538,7 +543,6 @@ void update_agent(Agent *a) {
     } break;
 
     case ACT_STAND: {
-      // slightly extend spine + legs (careful: too much makes it explode)
       a->jt[J_SPINE1].rest *= extend;
       a->jt[J_SPINE2].rest *= extend;
       a->jt[J_HIP_L].rest *= extend;
@@ -551,58 +555,53 @@ void update_agent(Agent *a) {
       break;
     }
 
-    // --- Solve constraints (iterations) ---
-    // More iterations = stiffer bones, but costlier. 8–16 is typical.
+    // --- Solve constraints ---
     int iters = 10;
     float old_stiff = a->joint_stiffness;
-    a->joint_stiffness = 1.0f; // keep bones stable
+    a->joint_stiffness = 1.0f;
 
     for (int it = 0; it < iters; it++) {
       for (int j = 0; j < J_COUNT; j++)
         solve_joint(a, &a->jt[j]);
-
-      // ground collision (feet + also keep hip/head above ground)
       for (int i = 0; i < P_COUNT; i++)
         ground_collide(&a->pt[i], groundY);
     }
 
     a->joint_stiffness = old_stiff;
 
-    // restore rest lengths (muscles were only for this substep)
     for (int j = 0; j < J_COUNT; j++)
       a->jt[j].rest = rest0[j];
 
-    // --- Reward (minimal, physics-based) ---
-    // Encourage upright-ish posture + not dying.
-    // (No “closest target” style stuff)
+    // --- Reward (per substep, but ACCUMULATED) ---
     float reward = 0.0f;
-
     float hip_y = a->pt[P_HIP].p.y;
     float head_y = a->pt[P_HEAD].p.y;
 
-    // alive bonus
-    reward += 0.001f;
-
-    // penalize if head hits ground-ish
+    reward += 0.001f; // alive bonus
     if (head_y >= groundY - 2.0f)
       reward -= 0.05f;
-
-    // small penalty for being too low (collapsed)
     if (hip_y > groundY - 25.0f)
       reward -= 0.01f;
 
+    // accumulate reward until next control tick
+    a->pending_reward += reward;
     a->reward_accumulator += reward;
-
-    // If you want MUZE learning updates, call cortex->learn somewhere with
-    // (obs, action, reward, done). But your SAM_as_MUZE adapter already expects
-    // cortex->learn being used by your loop, so wire it where you handle
-    // episodes (main loop or per-agent).
   }
 
-  // termination (optional)
+  // ------------------------------------------------------------
+  // 3) TERMINATION + FINAL LEARN FLUSH
+  // ------------------------------------------------------------
   if (a->pt[P_HEAD].p.y >= ((float)SCREEN_HEIGHT - 42.0f)) {
-    // head on ground = "dead"
+    // Mark dead
     a->alive = false;
+
+    // One last learn call to close the episode
+    if (a->cortex && a->has_last_transition) {
+      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
+                       a->last_action, a->pending_reward, 1 /*terminal*/);
+    }
+    a->pending_reward = 0.0f;
+    a->has_last_transition = 0;
   }
 }
 
