@@ -59,6 +59,9 @@ static void draw_agent(Agent *a, Texture2D *ap, Texture2D *tc) {
 
   // Neck
   DrawLine(a->x, a->y, a->x, a->y - 20, RAYWHITE);
+
+  // Body
+  DrawLine(a->x, a->y - 20, a->x, a->y - 40, RAYWHITE);
 }
 static void update_agent(Agent *a) {}
 
