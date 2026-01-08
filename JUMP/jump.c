@@ -85,6 +85,10 @@ static int GRID_H = 0;
 static int OBS_GRID = 0; // GRID_W * GRID_H
 static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 
+static MuModel *g_model = NULL;
+static ReplayBuffer *g_rb = NULL;
+static pthread_mutex_t g_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
+
 typedef enum { PLAT_RECT = 0, PLAT_RAMP = 1 } PlatKind;
 
 typedef struct {
