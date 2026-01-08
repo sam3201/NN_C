@@ -477,15 +477,7 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = dx_n;                // 9
   out->obs[k++] = dy_n;                // 10
                                        // extra useful scalars
-  // 1) how fast the charge is growing *right now*
-  float charge_rate_n =
-      (p->on_ground && p->charging) ? (JUMP_CHARGE_RATE / 2.0f) : 0.0f;
-  charge_rate_n = clampf(charge_rate_n, 0.0f, 1.0f);
-
-  // 2) falling flag (y-down world): vel.y > 0 means falling
-  float falling = (p->vel.y > 0.0f) ? 1.0f : 0.0f;
-
-  out->obs[k++] = 1.0f; // 11 bias
+  out->obs[k++] = 1.0f;                // 11 bias
 
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
