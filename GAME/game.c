@@ -3275,7 +3275,7 @@ void update_player(void) {
       spawn_projectile(player.position, dir, 14.0f, 1.8f,
                        12 + (has_sword ? 4 : 0));
     } else {
-      cam_shake = fmaxf(cam_shake, 0.5f);
+      cam_shake = fmaxf(cam_shake, 0.25f);
     }
   }
 
