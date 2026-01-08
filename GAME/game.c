@@ -2002,67 +2002,39 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   return 1;
 }
 
-static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward,
+static void agent_try_fire_forward(Agent *a, float *reward,
                                    bool is_continuous) {
-  (void)tr;
-
   if (!a->has_bow) {
-    *reward += -0.006f; // tried to fire without bow
+    if (reward)
+      *reward += -0.006f;
     return;
   }
 
   if (a->fire_cd > 0.0f) {
-    if (!is_continuous)
-      *reward += R_FIRE_WASTE * 0.20f;
+    if (!is_continuous && reward)
+      *reward += R_FIRE_WASTE * 0.10f;
     return;
   }
 
   if (a->inv_arrows <= 0) {
-    *reward += R_FIRE_NO_AMMO;
+    if (reward)
+      *reward += R_FIRE_NO_AMMO;
     return;
   }
 
-  Vector2 ro = a->position;
   Vector2 rd = Vector2Normalize(a->facing);
   if (Vector2Length(rd) < 1e-3f)
     rd = (Vector2){1, 0};
 
-  const float maxRange = 14.0f;
-
-  RayHit hit = raycast_world_objects(ro, rd, maxRange);
-
-  // Always consumes an arrow -> if it hits nothing, that's "waste"
+  // consume + spawn; outcome handled by projectile collision only
   a->inv_arrows--;
   a->fire_cd = agent_fire_cooldown();
 
   spawn_projectile(a->position, rd, 13.0f, 1.65f, 10, PROJ_OWNER_AGENT);
 
-  if (hit.kind == HIT_MOB) {
-    Chunk *hc = get_chunk(hit.cx, hit.cy);
-    pthread_rwlock_wrlock(&hc->lock);
-
-    Mob *m = &hc->mobs[hit.index];
-    if (m->health > 0) {
-      m->health -= 18; // <-- ranged damage (tune)
-      m->hurt_timer = 0.18f;
-      m->aggro_timer = 3.0f;
-
-      *reward += R_FIRE_HIT;
-
-      if (m->health <= 0) {
-        Vector2 mw = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
-                               hit.cy * CHUNK_SIZE + m->position.y};
-        on_mob_killed(m->type, mw);
-        m->health = 0;
-        agent_gain_loot_for_mob_kill(a, tr, m->type);
-        *reward += R_ATTACK_KILL; // or make a separate R_FIRE_KILL
-      }
-    }
-
-    pthread_rwlock_unlock(&hc->lock);
-  } else {
-    *reward += R_FIRE_WASTE;
-  }
+  // optional: slight penalty to discourage blind spam (NOT lookahead-based)
+  if (reward && !is_continuous)
+    *reward += -0.002f;
 }
 
 static void agent_try_eat(Agent *a, float *reward) {
