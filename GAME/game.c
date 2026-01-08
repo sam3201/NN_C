@@ -207,7 +207,7 @@ static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
 
-static GameState g_state = STATE_TITLE;
+static GameStateType g_state = STATE_TITLE;
 
 // current world session
 static char g_world_name[64] = "World1";
