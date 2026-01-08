@@ -107,6 +107,7 @@ typedef struct {
   float joint_stiffness; // 0..1
 
   // --- MUZE control ---
+  SAM_t *sam;
   MuCortex *cortex;
   int last_action;
 
