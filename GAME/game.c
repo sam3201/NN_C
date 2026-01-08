@@ -3406,22 +3406,64 @@ void update_player(void) {
   }
 
   // --- shoot arrow (F) if you have a bow + ammo ---
+  // --- cooldown timers ---
+  if (player_fire_cd > 0.0f)
+    player_fire_cd -= dt;
+
+  // --- bow charge (hold F to charge, release to fire) ---
   if (IsKeyPressed(KEY_F)) {
-    if (has_bow && inv_arrows > 0) {
-      Vector2 mouse = GetMousePosition();
-      Vector2 pp = world_to_screen(player.position);
-      Vector2 aim = Vector2Subtract(mouse, pp);
-
-      Vector2 dir = Vector2Normalize(aim);
-      inv_arrows--;
-
-      spawn_projectile(player.position, dir, 14.0f, 1.8f,
-                       12 + (has_sword ? 4 : 0));
+    // start charging only if we can actually shoot
+    if (has_bow && inv_arrows > 0 && player_fire_cd <= 0.0f) {
+      bow_charging = 1;
+      bow_charge01 = 0.0f;
     } else {
-      cam_shake = fmaxf(cam_shake, 0.66f);
+      cam_shake = fmaxf(cam_shake, 0.35f);
     }
   }
 
+  if (bow_charging) {
+    // keep charging while held
+    if (IsKeyDown(KEY_F)) {
+      bow_charge01 += dt / BOW_CHARGE_TIME;
+      bow_charge01 = clamp01(bow_charge01);
+
+      // optional: slight shake while charging (tiny)
+      cam_shake = fmaxf(cam_shake, 0.01f + 0.02f * bow_charge01);
+    }
+
+    // release -> fire (or cancel)
+    if (IsKeyReleased(KEY_F)) {
+      if (!has_bow || inv_arrows <= 0 || player_fire_cd > 0.0f) {
+        // can't fire anymore -> cancel
+        cam_shake = fmaxf(cam_shake, 0.35f);
+      } else if (bow_charge01 >= BOW_CHARGE_MIN01) {
+        Vector2 mouse = GetMousePosition();
+        Vector2 pp = world_to_screen(player.position);
+        Vector2 aim = Vector2Subtract(mouse, pp);
+
+        Vector2 dir = Vector2Normalize(aim);
+        if (Vector2Length(aim) < 1e-3f)
+          dir = (Vector2){1, 0};
+
+        inv_arrows--;
+        player_fire_cd = PLAYER_FIRE_COOLDOWN;
+
+        player_fire_bow_charged(dir, bow_charge01);
+      } else {
+        // too little charge -> treat as “cancel”
+        // (prevents accidental micro-taps)
+      }
+
+      bow_charging = 0;
+      bow_charge01 = 0.0f;
+    }
+  }
+
+  // If crafting menu opened while charging, cancel cleanly
+  if (crafting_open && bow_charging) {
+    bow_charging = 0;
+    bow_charge01 = 0.0f;
+  }
   // --- zoom controls ---
   if (IsKeyDown(KEY_EQUAL))
     target_world_scale += 60.0f * dt;
