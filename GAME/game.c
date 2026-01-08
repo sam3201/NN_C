@@ -3241,540 +3241,539 @@ void update_player(void) {
     player.position.x -= move;
   if (IsKeyDown(KEY_D))
     player.position.x += move;
+  0
+      // --- crafting toggle ---
+      if (IsKeyPressed(KEY_TAB)) {
+    crafting_open = !crafting_open;
+  }
+
+  // --- crafting input (1..9) only when crafting menu is open ---
+  if (crafting_open) {
+    for (int i = 0; i < recipe_count && i < 9; i++) {
+      // top-row number keys
+      bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
+
+      // keypad number keys (optional but nice)
+      pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
+
+      if (pressed) {
+        craft(&recipes[i]);
+      }
+    }
+  }
+
+  // --- shoot arrow (F) if you have ammo ---
   if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
+    Vector2 mouse = GetMousePosition();
+    Vector2 pp = world_to_screen(player.position);
+    Vector2 aim = Vector2Subtract(mouse, pp);
 
-    // --- crafting toggle ---
-    if (IsKeyPressed(KEY_TAB)) {
-      crafting_open = !crafting_open;
+    Vector2 dir = Vector2Normalize(aim);
+    inv_arrows--;
+
+    spawn_projectile(player.position, dir, 14.0f, 1.8f,
+                     12 + (has_sword ? 4 : 0));
+  }
+
+  // --- zoom controls ---
+  if (IsKeyDown(KEY_EQUAL))
+    target_world_scale += 60.0f * dt;
+  if (IsKeyDown(KEY_MINUS))
+    target_world_scale -= 60.0f * dt;
+  target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
+
+  // --- current chunk ---
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  // --- Interactions ---
+  // IMPORTANT: only regen stamina when NOT spending it this frame
+  bool spent_stamina_this_frame = false;
+
+  // LMB = attack mobs
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_attack_mob_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  // RMB = harvest/mine resources
+  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
+    float before = player.stamina;
+
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_harvest_resource_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
+
+    if (player.stamina < before - 0.0001f) {
+      spent_stamina_this_frame = true;
     }
+  }
 
-    // --- crafting input (1..9) only when crafting menu is open ---
-    if (crafting_open) {
-      for (int i = 0; i < recipe_count && i < 9; i++) {
-        // top-row number keys
-        bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
+  // --- stamina regen (time-based, only when not spending this frame) ---
+  if (!spent_stamina_this_frame && player.stamina < 100.0f) {
+    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+  }
 
-        // keypad number keys (optional but nice)
-        pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
+  // clamp health
+  if (player.health < 0.0f)
+    player.health = 0.0f;
+}
 
-        if (pressed) {
-          craft(&recipes[i]);
-        }
-      }
-    }
+static void update_visible_world(float dt) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
 
-    // --- shoot arrow (F) if you have ammo ---
-    if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
-      Vector2 mouse = GetMousePosition();
-      Vector2 pp = world_to_screen(player.position);
-      Vector2 aim = Vector2Subtract(mouse, pp);
+  for (int dx = -6; dx <= 6; dx++) {
+    for (int dy = -6; dy <= 6; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
 
-      Vector2 dir = Vector2Normalize(aim);
-      inv_arrows--;
-
-      spawn_projectile(player.position, dir, 14.0f, 1.8f,
-                       12 + (has_sword ? 4 : 0));
-    }
-
-    // --- zoom controls ---
-    if (IsKeyDown(KEY_EQUAL))
-      target_world_scale += 60.0f * dt;
-    if (IsKeyDown(KEY_MINUS))
-      target_world_scale -= 60.0f * dt;
-    target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
-
-    // --- current chunk ---
-    int cx = (int)(player.position.x / CHUNK_SIZE);
-    int cy = (int)(player.position.y / CHUNK_SIZE);
-    Chunk *c = get_chunk(cx, cy);
-
-    // --- Interactions ---
-    // IMPORTANT: only regen stamina when NOT spending it this frame
-    bool spent_stamina_this_frame = false;
-
-    // LMB = attack mobs
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
       pthread_rwlock_wrlock(&c->lock);
-      player_try_attack_mob_in_chunk(c, cx, cy);
+
+      Vector2 chunk_origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+
+      // resources animation decay
+      for (int i = 0; i < c->resource_count; i++) {
+        Resource *r = &c->resources[i];
+        if (r->hit_timer > 0)
+          r->hit_timer -= dt;
+        if (r->break_flash > 0)
+          r->break_flash -= dt;
+      }
+
+      // mobs
+      despawn_hostiles_if_day(c);
+      try_spawn_mobs_in_chunk(c, cx, cy, dt);
+
+      // mobs AI
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        update_mob_ai(m, chunk_origin, dt);
+      }
       pthread_rwlock_unlock(&c->lock);
     }
+  }
+}
 
-    // RMB = harvest/mine resources
-    if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
-      float before = player.stamina;
+static void draw_ui(void) {
+  // panel
+  DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
+  DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
 
-      pthread_rwlock_wrlock(&c->lock);
-      player_try_harvest_resource_in_chunk(c, cx, cy);
-      pthread_rwlock_unlock(&c->lock);
+  // bars
+  float hp01 = clamp01(player.health / 100.0f);
+  float st01 = clamp01(player.stamina / 100.0f);
 
-      if (player.stamina < before - 0.0001f) {
-        spent_stamina_this_frame = true;
+  DrawText("Player", 24, 20, 18, RAYWHITE);
+  DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);
+  DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
+
+  // bar visuals
+  DrawRectangle(120, 46, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 46, (int)(160 * hp01), 12, (Color){80, 220, 80, 255});
+  DrawRectangleLines(120, 46, 160, 12, (Color){0, 0, 0, 200});
+
+  DrawRectangle(120, 66, 160, 12, (Color){0, 0, 0, 140});
+  DrawRectangle(120, 66, (int)(160 * st01), 12, (Color){80, 160, 255, 255});
+  DrawRectangleLines(120, 66, 160, 12, (Color){0, 0, 0, 200});
+
+  // inventory
+  DrawText(TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), 24, 90, 16,
+           RAYWHITE);
+  DrawText(TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), 24, 110, 16,
+           RAYWHITE);
+
+  // crosshair
+  Vector2 m = GetMousePosition();
+  DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
+  DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
+           (Color){0, 0, 0, 200});
+  DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
+           (Color){0, 0, 0, 200});
+
+  // cooldown rings around hands
+  float hFrac = 1.0f - clamp01(player_harvest_cd / PLAYER_HARVEST_COOLDOWN);
+  float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
+
+  float rr = 12.0f;
+  DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
+           (Color){255, 140, 80, 220});
+  DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
+           (Color){80, 160, 255, 220});
+
+  DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
+           130, 16, RAYWHITE);
+
+  // base integrity
+  int y0 = 150;
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float v = clamp01(tribes[t].integrity / 100.0f);
+    DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16, tribes[t].color);
+    DrawRectangle(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 140});
+    DrawRectangle(90, y0 + 4 + t * 22, (int)(140 * v), 10, tribes[t].color);
+    DrawRectangleLines(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
+  }
+}
+
+static void draw_hover_label(void) {
+  int hp = -1;
+
+  // find nearest in current chunk within a small radius
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  const char *label = NULL;
+  float bestD = 1e9f;
+
+  // resources
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
+                           cy * CHUNK_SIZE + r->position.y};
+    float d = Vector2Distance(player.position, rw);
+    if (d < 2.2f && d < bestD) {
+      bestD = d;
+      label = res_name(r->type);
+      hp = r->health;
+    }
+  }
+
+  // mobs (prefer mobs if close)
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+    Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
+                           cy * CHUNK_SIZE + m->position.y};
+    float d = Vector2Distance(player.position, mw);
+    if (d < 2.6f && d < bestD) {
+      bestD = d;
+      label = mob_name(m->type);
+      hp = m->health;
+    }
+  }
+
+  if (label) {
+    Vector2 mp = GetMousePosition();
+    DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
+                  (Color){0, 0, 0, 140});
+    DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 160, 22,
+                       (Color){0, 0, 0, 220});
+    if (hp >= 0) {
+      DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22, (int)mp.y + 13,
+               16, RAYWHITE);
+    } else {
+      DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
+    }
+  }
+}
+
+static void draw_minimap(void) {
+  int x = 310, y = 14; // top row, to the right of your panel
+  int size = 160;
+
+  DrawRectangle(x, y, size, size, (Color){0, 0, 0, 110});
+  DrawRectangleLines(x, y, size, size, (Color){0, 0, 0, 220});
+
+  // sample area around player (world units)
+  float radius = 28.0f;
+  int cells = 40; // 40x40 grid
+  float cell = (float)size / (float)cells;
+
+  for (int gy = 0; gy < cells; gy++) {
+    for (int gx = 0; gx < cells; gx++) {
+      float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
+      float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
+
+      Vector2 wp = (Vector2){player.position.x + nx * radius,
+                             player.position.y + ny * radius};
+
+      int cx = (int)(wp.x / CHUNK_SIZE);
+      int cy = (int)(wp.y / CHUNK_SIZE);
+      Chunk *c = get_chunk(cx, cy);
+
+      Color bc = Fade(biome_colors[c->biome_type], 0.85f);
+      DrawRectangle((int)(x + gx * cell), (int)(y + gy * cell),
+                    (int)ceilf(cell), (int)ceilf(cell), bc);
+    }
+  }
+
+  // bases
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
+    if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+      continue;
+    float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+    float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+    DrawCircle((int)(x + pxm), (int)(y + pym), 3, tribes[t].color);
+  }
+
+  // mobs (nearby)
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  for (int dx = -2; dx <= 2; dx++) {
+    for (int dy = -2; dy <= 2; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        Vector2 mw = Vector2Add(origin, m->position);
+        Vector2 d = Vector2Subtract(mw, player.position);
+        if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+          continue;
+
+        float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+        float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+        DrawPixel((int)(x + pxm), (int)(y + pym), (Color){240, 80, 80, 255});
       }
     }
-
-    // --- stamina regen (time-based, only when not spending this frame) ---
-    if (!spent_stamina_this_frame && player.stamina < 100.0f) {
-      player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
-    }
-
-    // clamp health
-    if (player.health < 0.0f)
-      player.health = 0.0f;
   }
 
-  static void update_visible_world(float dt) {
-    int pcx = (int)(player.position.x / CHUNK_SIZE);
-    int pcy = (int)(player.position.y / CHUNK_SIZE);
+  // player dot
+  DrawCircle(x + size / 2, y + size / 2, 3, RAYWHITE);
+  DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
+}
 
-    for (int dx = -6; dx <= 6; dx++) {
-      for (int dy = -6; dy <= 6; dy++) {
-        int cx = pcx + dx;
-        int cy = pcy + dy;
-        Chunk *c = get_chunk(cx, cy);
+static void draw_hurt_vignette(void) {
+  if (player_hurt_timer <= 0.0f)
+    return;
+  float t = clamp01(player_hurt_timer / 0.18f);
+  unsigned char a = (unsigned char)(120 * t);
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
+}
 
-        pthread_rwlock_wrlock(&c->lock);
+/* =======================
+   THREAD
 
-        Vector2 chunk_origin =
-            (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+ * ======================= */
 
-        // resources animation decay
-        for (int i = 0; i < c->resource_count; i++) {
-          Resource *r = &c->resources[i];
-          if (r->hit_timer > 0)
-            r->hit_timer -= dt;
-          if (r->break_flash > 0)
-            r->break_flash -= dt;
-        }
+static void run_agent_jobs(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_next_agent = 0;
+  job_done_workers = 0;
+  job_active = 1;
 
-        // mobs
-        despawn_hostiles_if_day(c);
-        try_spawn_mobs_in_chunk(c, cx, cy, dt);
+  pthread_cond_broadcast(&job_cv);
 
-        // mobs AI
-        for (int i = 0; i < MAX_MOBS; i++) {
-          Mob *m = &c->mobs[i];
-          if (m->health <= 0)
-            continue;
-          update_mob_ai(m, chunk_origin, dt);
-        }
-        pthread_rwlock_unlock(&c->lock);
+  while (job_active) {
+    pthread_cond_wait(&done_cv, &job_mtx);
+  }
+  pthread_mutex_unlock(&job_mtx);
+}
+
+static void *agent_worker(void *arg) {
+  (void)arg;
+
+  for (;;) {
+    // Wait for a job batch to become active (or quit)
+    pthread_mutex_lock(&job_mtx);
+    while (!job_active && !job_quit) {
+      pthread_cond_wait(&job_cv, &job_mtx);
+    }
+    if (job_quit) {
+      pthread_mutex_unlock(&job_mtx);
+      break;
+    }
+    pthread_mutex_unlock(&job_mtx);
+
+    // Work loop: grab next agent index atomically under mutex
+    for (;;) {
+      int idx;
+
+      pthread_mutex_lock(&job_mtx);
+      idx = job_next_agent++;
+      pthread_mutex_unlock(&job_mtx);
+
+      if (idx >= MAX_AGENTS)
+        break;
+
+      update_agent(&agents[idx]);
+    }
+
+    // Signal completion for this worker
+    pthread_mutex_lock(&job_mtx);
+    job_done_workers++;
+
+    if (job_done_workers >= WORKER_COUNT) {
+      job_active = 0;                // batch finished
+      pthread_cond_signal(&done_cv); // wake main thread
+    }
+    pthread_mutex_unlock(&job_mtx);
+  }
+
+  return NULL;
+}
+
+static void start_workers(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_quit = 0;
+  job_active = 0;
+  job_next_agent = 0;
+  job_done_workers = 0;
+  pthread_mutex_unlock(&job_mtx);
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_create(&workers[i], NULL, agent_worker, NULL);
+  }
+}
+
+static void stop_workers(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_quit = 1;
+  pthread_cond_broadcast(&job_cv);
+  pthread_mutex_unlock(&job_mtx);
+
+  for (int i = 0; i < WORKER_COUNT; i++) {
+    pthread_join(workers[i], NULL);
+  }
+}
+
+/* =======================
+   MAIN
+======================= */
+int main(void) {
+  srand(time(NULL));
+
+  InitWindow(1280, 800, "MUZE Tribal Simulation");
+  SCREEN_WIDTH = GetScreenWidth();
+  SCREEN_HEIGHT = GetScreenHeight();
+  TILE_SIZE = SCREEN_HEIGHT / 18.0f;
+  SetTargetFPS(60);
+
+  init_tribes();
+  init_agents();
+  init_player();
+
+  start_workers();
+
+  for (int x = 0; x < WORLD_SIZE; x++) {
+    for (int y = 0; y < WORLD_SIZE; y++) {
+      pthread_rwlock_init(&world[x][y].lock, NULL);
+      world[x][y].generated = false;
+      world[x][y].resource_count = 0;
+      world[x][y].mob_spawn_timer = 0.0f;
+    }
+  }
+
+  for (int i = 0; i < MAX_PROJECTILES; i++)
+    projectiles[i].alive = false;
+
+  while (!WindowShouldClose()) {
+    float dt = GetFrameTime();
+
+    camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
+    camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
+
+    if (cam_shake > 0.0f) {
+      cam_shake -= dt;
+      float mag = cam_shake * 0.65f;
+      camera_pos.x += randf(-mag, mag);
+      camera_pos.y += randf(-mag, mag);
+    }
+    WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
+
+    update_player();
+    update_visible_world(dt);
+    update_projectiles(dt);
+    update_daynight(dt);
+    collect_nearby_pickups();
+
+    update_visible_world(dt);
+
+    g_dt = dt;
+    run_agent_jobs();
+
+    // detect transition night->day for reward
+    int now_night = is_night_cached;
+    if (was_night && !now_night) {
+      // dawn reward: shards + small base repair
+      inv_shards += 5;
+      for (int t = 0; t < TRIBE_COUNT; t++) {
+        tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
       }
     }
-  }
+    was_night = now_night;
 
-  static void draw_ui(void) {
-    // panel
-    DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
-    DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
-
-    // bars
-    float hp01 = clamp01(player.health / 100.0f);
-    float st01 = clamp01(player.stamina / 100.0f);
-
-    DrawText("Player", 24, 20, 18, RAYWHITE);
-    DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);
-    DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
-
-    // bar visuals
-    DrawRectangle(120, 46, 160, 12, (Color){0, 0, 0, 140});
-    DrawRectangle(120, 46, (int)(160 * hp01), 12, (Color){80, 220, 80, 255});
-    DrawRectangleLines(120, 46, 160, 12, (Color){0, 0, 0, 200});
-
-    DrawRectangle(120, 66, 160, 12, (Color){0, 0, 0, 140});
-    DrawRectangle(120, 66, (int)(160 * st01), 12, (Color){80, 160, 255, 255});
-    DrawRectangleLines(120, 66, 160, 12, (Color){0, 0, 0, 200});
-
-    // inventory
-    DrawText(TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), 24, 90, 16,
-             RAYWHITE);
-    DrawText(TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), 24, 110, 16,
-             RAYWHITE);
-
-    // crosshair
-    Vector2 m = GetMousePosition();
-    DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
-    DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
-             (Color){0, 0, 0, 200});
-    DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
-             (Color){0, 0, 0, 200});
-
-    // cooldown rings around hands
-    float hFrac = 1.0f - clamp01(player_harvest_cd / PLAYER_HARVEST_COOLDOWN);
-    float aFrac = 1.0f - clamp01(player_attack_cd / PLAYER_ATTACK_COOLDOWN);
-
-    float rr = 12.0f;
-    DrawRing(g_handL, rr - 3, rr, -90, -90 + 360.0f * aFrac, 24,
-             (Color){255, 140, 80, 220});
-    DrawRing(g_handR, rr - 3, rr, -90, -90 + 360.0f * hFrac, 24,
-             (Color){80, 160, 255, 220});
-
-    DrawText(TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), 24,
-             130, 16, RAYWHITE);
-
-    // base integrity
-    int y0 = 150;
-    for (int t = 0; t < TRIBE_COUNT; t++) {
-      float v = clamp01(tribes[t].integrity / 100.0f);
-      DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16, tribes[t].color);
-      DrawRectangle(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 140});
-      DrawRectangle(90, y0 + 4 + t * 22, (int)(140 * v), 10, tribes[t].color);
-      DrawRectangleLines(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
+    // raid spawner
+    if (is_night_cached) {
+      raid_timer -= dt;
+      if (raid_timer <= 0.0f) {
+        raid_timer = raid_interval;
+        spawn_raid_wave();
+      }
+    } else {
+      raid_timer = 1.5f;
     }
-  }
 
-  static void draw_hover_label(void) {
-    int hp = -1;
-
-    // find nearest in current chunk within a small radius
-    int cx = (int)(player.position.x / CHUNK_SIZE);
-    int cy = (int)(player.position.y / CHUNK_SIZE);
-    Chunk *c = get_chunk(cx, cy);
-
-    const char *label = NULL;
-    float bestD = 1e9f;
-
-    // resources
-    for (int i = 0; i < c->resource_count; i++) {
-      Resource *r = &c->resources[i];
-      if (r->health <= 0)
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      if (!agents[i].alive)
         continue;
-      Vector2 rw = (Vector2){cx * CHUNK_SIZE + r->position.x,
-                             cy * CHUNK_SIZE + r->position.y};
-      float d = Vector2Distance(player.position, rw);
-      if (d < 2.2f && d < bestD) {
-        bestD = d;
-        label = res_name(r->type);
-        hp = r->health;
-      }
+      int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+      int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+      (void)get_chunk(acx, acy);
     }
 
-    // mobs (prefer mobs if close)
-    for (int i = 0; i < MAX_MOBS; i++) {
-      Mob *m = &c->mobs[i];
-      if (m->health <= 0)
-        continue;
-      Vector2 mw = (Vector2){cx * CHUNK_SIZE + m->position.x,
-                             cy * CHUNK_SIZE + m->position.y};
-      float d = Vector2Distance(player.position, mw);
-      if (d < 2.6f && d < bestD) {
-        bestD = d;
-        label = mob_name(m->type);
-        hp = m->health;
-      }
-    }
+    update_pickups(dt);
 
-    if (label) {
-      Vector2 mp = GetMousePosition();
-      DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
-                    (Color){0, 0, 0, 140});
-      DrawRectangleLines((int)mp.x + 14, (int)mp.y + 10, 160, 22,
-                         (Color){0, 0, 0, 220});
-      if (hp >= 0) {
-        DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22,
-                 (int)mp.y + 13, 16, RAYWHITE);
-      } else {
-        DrawText(label, (int)mp.x + 22, (int)mp.y + 13, 16, RAYWHITE);
-      }
-    }
-  }
+    BeginDrawing();
+    ClearBackground(BLACK);
 
-  static void draw_minimap(void) {
-    int x = 310, y = 14; // top row, to the right of your panel
-    int size = 160;
-
-    DrawRectangle(x, y, size, size, (Color){0, 0, 0, 110});
-    DrawRectangleLines(x, y, size, size, (Color){0, 0, 0, 220});
-
-    // sample area around player (world units)
-    float radius = 28.0f;
-    int cells = 40; // 40x40 grid
-    float cell = (float)size / (float)cells;
-
-    for (int gy = 0; gy < cells; gy++) {
-      for (int gx = 0; gx < cells; gx++) {
-        float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
-        float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
-
-        Vector2 wp = (Vector2){player.position.x + nx * radius,
-                               player.position.y + ny * radius};
-
-        int cx = (int)(wp.x / CHUNK_SIZE);
-        int cy = (int)(wp.y / CHUNK_SIZE);
-        Chunk *c = get_chunk(cx, cy);
-
-        Color bc = Fade(biome_colors[c->biome_type], 0.85f);
-        DrawRectangle((int)(x + gx * cell), (int)(y + gy * cell),
-                      (int)ceilf(cell), (int)ceilf(cell), bc);
-      }
-    }
+    draw_chunks();
+    draw_resources();
+    draw_mobs();
+    draw_projectiles();
+    draw_pickups();
 
     // bases
     for (int t = 0; t < TRIBE_COUNT; t++) {
-      Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
-      if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+      Vector2 bp = world_to_screen(tribes[t].base.position);
+      DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
+                       tribes[t].color);
+    }
+
+    // agents
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      if (!agents[i].alive)
         continue;
-      float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
-      float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-      DrawCircle((int)(x + pxm), (int)(y + pym), 3, tribes[t].color);
+      Vector2 ap = world_to_screen(agents[i].position);
+      Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
+      draw_agent(&agents[i], ap, tc);
     }
 
-    // mobs (nearby)
-    int pcx = (int)(player.position.x / CHUNK_SIZE);
-    int pcy = (int)(player.position.y / CHUNK_SIZE);
-    for (int dx = -2; dx <= 2; dx++) {
-      for (int dy = -2; dy <= 2; dy++) {
-        int cx = pcx + dx;
-        int cy = pcy + dy;
-        Chunk *c = get_chunk(cx, cy);
-        Vector2 origin =
-            (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-        for (int i = 0; i < MAX_MOBS; i++) {
-          Mob *m = &c->mobs[i];
-          if (m->health <= 0)
-            continue;
-          Vector2 mw = Vector2Add(origin, m->position);
-          Vector2 d = Vector2Subtract(mw, player.position);
-          if (fabsf(d.x) > radius || fabsf(d.y) > radius)
-            continue;
+    // player
+    Vector2 pp = world_to_screen(player.position);
+    draw_player(pp);
 
-          float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
-          float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-          DrawPixel((int)(x + pxm), (int)(y + pym), (Color){240, 80, 80, 255});
-        }
-      }
-    }
+    // UI + debug
+    draw_ui();
+    draw_hover_label();
+    draw_minimap();
+    draw_daynight_overlay(); // AFTER world draw, before EndDrawing
+    draw_hurt_vignette();
+    draw_crafting_ui();
 
-    // player dot
-    DrawCircle(x + size / 2, y + size / 2, 3, RAYWHITE);
-    DrawCircleLines(x + size / 2, y + size / 2, 3, (Color){0, 0, 0, 200});
+    DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
+
+    EndDrawing();
   }
 
-  static void draw_hurt_vignette(void) {
-    if (player_hurt_timer <= 0.0f)
-      return;
-    float t = clamp01(player_hurt_timer / 0.18f);
-    unsigned char a = (unsigned char)(120 * t);
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
-  }
+  stop_workers();
 
-  /* =======================
-     THREAD
-
-   * ======================= */
-
-  static void run_agent_jobs(void) {
-    pthread_mutex_lock(&job_mtx);
-    job_next_agent = 0;
-    job_done_workers = 0;
-    job_active = 1;
-
-    pthread_cond_broadcast(&job_cv);
-
-    while (job_active) {
-      pthread_cond_wait(&done_cv, &job_mtx);
-    }
-    pthread_mutex_unlock(&job_mtx);
-  }
-
-  static void *agent_worker(void *arg) {
-    (void)arg;
-
-    for (;;) {
-      // Wait for a job batch to become active (or quit)
-      pthread_mutex_lock(&job_mtx);
-      while (!job_active && !job_quit) {
-        pthread_cond_wait(&job_cv, &job_mtx);
-      }
-      if (job_quit) {
-        pthread_mutex_unlock(&job_mtx);
-        break;
-      }
-      pthread_mutex_unlock(&job_mtx);
-
-      // Work loop: grab next agent index atomically under mutex
-      for (;;) {
-        int idx;
-
-        pthread_mutex_lock(&job_mtx);
-        idx = job_next_agent++;
-        pthread_mutex_unlock(&job_mtx);
-
-        if (idx >= MAX_AGENTS)
-          break;
-
-        update_agent(&agents[idx]);
-      }
-
-      // Signal completion for this worker
-      pthread_mutex_lock(&job_mtx);
-      job_done_workers++;
-
-      if (job_done_workers >= WORKER_COUNT) {
-        job_active = 0;                // batch finished
-        pthread_cond_signal(&done_cv); // wake main thread
-      }
-      pthread_mutex_unlock(&job_mtx);
-    }
-
-    return NULL;
-  }
-
-  static void start_workers(void) {
-    pthread_mutex_lock(&job_mtx);
-    job_quit = 0;
-    job_active = 0;
-    job_next_agent = 0;
-    job_done_workers = 0;
-    pthread_mutex_unlock(&job_mtx);
-
-    for (int i = 0; i < WORKER_COUNT; i++) {
-      pthread_create(&workers[i], NULL, agent_worker, NULL);
-    }
-  }
-
-  static void stop_workers(void) {
-    pthread_mutex_lock(&job_mtx);
-    job_quit = 1;
-    pthread_cond_broadcast(&job_cv);
-    pthread_mutex_unlock(&job_mtx);
-
-    for (int i = 0; i < WORKER_COUNT; i++) {
-      pthread_join(workers[i], NULL);
-    }
-  }
-
-  /* =======================
-     MAIN
-  ======================= */
-  int main(void) {
-    srand(time(NULL));
-
-    InitWindow(1280, 800, "MUZE Tribal Simulation");
-    SCREEN_WIDTH = GetScreenWidth();
-    SCREEN_HEIGHT = GetScreenHeight();
-    TILE_SIZE = SCREEN_HEIGHT / 18.0f;
-    SetTargetFPS(60);
-
-    init_tribes();
-    init_agents();
-    init_player();
-
-    start_workers();
-
-    for (int x = 0; x < WORLD_SIZE; x++) {
-      for (int y = 0; y < WORLD_SIZE; y++) {
-        pthread_rwlock_init(&world[x][y].lock, NULL);
-        world[x][y].generated = false;
-        world[x][y].resource_count = 0;
-        world[x][y].mob_spawn_timer = 0.0f;
-      }
-    }
-
-    for (int i = 0; i < MAX_PROJECTILES; i++)
-      projectiles[i].alive = false;
-
-    while (!WindowShouldClose()) {
-      float dt = GetFrameTime();
-
-      camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
-      camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
-
-      if (cam_shake > 0.0f) {
-        cam_shake -= dt;
-        float mag = cam_shake * 0.65f;
-        camera_pos.x += randf(-mag, mag);
-        camera_pos.y += randf(-mag, mag);
-      }
-      WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
-
-      update_player();
-      update_visible_world(dt);
-      update_projectiles(dt);
-      update_daynight(dt);
-      collect_nearby_pickups();
-
-      update_visible_world(dt);
-
-      g_dt = dt;
-      run_agent_jobs();
-
-      // detect transition night->day for reward
-      int now_night = is_night_cached;
-      if (was_night && !now_night) {
-        // dawn reward: shards + small base repair
-        inv_shards += 5;
-        for (int t = 0; t < TRIBE_COUNT; t++) {
-          tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
-        }
-      }
-      was_night = now_night;
-
-      // raid spawner
-      if (is_night_cached) {
-        raid_timer -= dt;
-        if (raid_timer <= 0.0f) {
-          raid_timer = raid_interval;
-          spawn_raid_wave();
-        }
-      } else {
-        raid_timer = 1.5f;
-      }
-
-      for (int i = 0; i < MAX_AGENTS; i++) {
-        if (!agents[i].alive)
-          continue;
-        int acx = (int)(agents[i].position.x / CHUNK_SIZE);
-        int acy = (int)(agents[i].position.y / CHUNK_SIZE);
-        (void)get_chunk(acx, acy);
-      }
-
-      update_pickups(dt);
-
-      BeginDrawing();
-      ClearBackground(BLACK);
-
-      draw_chunks();
-      draw_resources();
-      draw_mobs();
-      draw_projectiles();
-      draw_pickups();
-
-      // bases
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        Vector2 bp = world_to_screen(tribes[t].base.position);
-        DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
-                         tribes[t].color);
-      }
-
-      // agents
-      for (int i = 0; i < MAX_AGENTS; i++) {
-        if (!agents[i].alive)
-          continue;
-        Vector2 ap = world_to_screen(agents[i].position);
-        Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
-        draw_agent(&agents[i], ap, tc);
-      }
-
-      // player
-      Vector2 pp = world_to_screen(player.position);
-      draw_player(pp);
-
-      // UI + debug
-      draw_ui();
-      draw_hover_label();
-      draw_minimap();
-      draw_daynight_overlay(); // AFTER world draw, before EndDrawing
-      draw_hurt_vignette();
-      draw_crafting_ui();
-
-      DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
-      DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
-
-      EndDrawing();
-    }
-
-    stop_workers();
-
-    CloseWindow();
-    return 0;
-  }
+  CloseWindow();
+  return 0;
+}
