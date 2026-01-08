@@ -3213,6 +3213,13 @@ void update_agent(Agent *a) {
       reward += R_WANDER_PENALTY;
   }
 
+#if AGENT_FIRE_CANCEL_ON_MOVE
+  if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
+    a->fire_latched = 0;
+    a->fire_latch_timer = 0.0f;
+  }
+#endif
+
   // --- survival shaping ---
   if (a->health <= 0.0f) {
     a->health = 0.0f;
