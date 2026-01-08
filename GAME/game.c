@@ -3241,6 +3241,7 @@ void update_player(void) {
     player.position.x -= move;
   if (IsKeyDown(KEY_D))
     player.position.x += move;
+
   // --- crafting toggle ---
   if (IsKeyPressed(KEY_TAB)) {
     crafting_open = !crafting_open;
