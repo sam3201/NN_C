@@ -389,7 +389,12 @@ void init_agents(void) {
     Vector2 origin = {SCREEN_WIDTH * 0.2f + cx * spacing,
                       SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
 
-    init_agent(a, origin); // <-- your particle/joint setup
+    a->spawn_origin = origin;
+
+    a->episode_time = 0.0f;
+    a->episode_limit = EPISODE_SECONDS;
+
+    init_pose(a, origin);
 
     // Brain
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
