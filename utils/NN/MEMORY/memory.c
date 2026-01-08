@@ -17,39 +17,27 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
   }
 }
 
-void store_memory(Memory *memory, long double *vision_inputs, int action,
-                  float reward, float value_estimate) {
+void store_memory(Memory *m, const long double *x, int action, float reward,
+                  float value_estimate) {
+  if (!m || !m->buffer)
+    return;
 
-  if (memory->size >= memory->capacity) {
-    int new_capacity = memory->capacity * 2;
-    MemoryEntry *new_buffer = (MemoryEntry *)realloc(
-        memory->buffer, new_capacity * sizeof(MemoryEntry));
+  int idx = m->index % m->capacity;
 
-    if (new_buffer == NULL) {
-      fprintf(stderr, "Critical: Could not expand memory capacity!\n");
-      return;
-    }
-
-    memory->buffer = new_buffer;
-    memory->capacity = new_capacity;
+  // allocate once per slot, reuse forever
+  if (!m->buffer[idx].vision_inputs) {
+    m->buffer[idx].vision_inputs =
+        (long double *)malloc(sizeof(long double) * m->input_size);
   }
 
-  int idx = memory->size;
+  memcpy(m->buffer[idx].vision_inputs, x, sizeof(long double) * m->input_size);
+  m->buffer[idx].action_taken = action;
+  m->buffer[idx].reward = reward;
+  m->buffer[idx].value_estimate = value_estimate;
 
-  memory->buffer[idx].vision_inputs =
-      (long double *)malloc(memory->input_size * sizeof(long double));
-
-  if (memory->buffer[idx].vision_inputs != NULL) {
-    memcpy(memory->buffer[idx].vision_inputs, vision_inputs,
-           memory->input_size * sizeof(long double));
-  }
-
-  memory->buffer[idx].action_taken = action;
-  memory->buffer[idx].reward = reward;
-  memory->buffer[idx].value_estimate = value_estimate;
-
-  memory->size++;
-  memory->index++;
+  m->index++;
+  if (m->size < m->capacity)
+    m->size++;
 }
 
 void free_memory(Memory *memory) {
