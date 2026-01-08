@@ -30,9 +30,10 @@ typedef struct {
   float (*rand01)(void *ctx);
 } MCTSRng;
 
-MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params);
+MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params,
+                    MCTSRng *rng);
 MCTSResult mcts_run_latent(MuModel *model, const float *latent,
-                           const MCTSParams *params);
+                           const MCTSParams *params, MCTSRng *rng);
 
 void mcts_result_free(MCTSResult *res);
 
