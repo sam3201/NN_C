@@ -93,7 +93,7 @@ typedef enum {
   TOOL_SWORD = 3,
   TOOL_ARMOR = 4,
   TOOL_COUNT = 5,
-  TOOL_NONE = 99
+  TOOL_NONE = -1
 } ToolType;
 
 typedef enum {
