@@ -58,15 +58,15 @@ echo "Compiling sim..."
 CC = "${CC:-gcc}"
 
 #Note : -w hides warnings.Consider removing once you're stable.
-     "$CC" -
-     w sim.c $NN_SRC $MUZE_SRC $SAM_SRC - I../ utils / NN -
-     I../ utils / NN / MUZE - I../ SAM - I "$RAYLIB_SRC" - L"$RAYLIB_SRC" -
-     lraylib - pthread - framework OpenGL - framework Cocoa -
-     framework IOKit - framework CoreVideo - arch arm64 -
-     o sim
+"$CC" -
+w sim.c $NN_SRC $MUZE_SRC $SAM_SRC - I../ utils / NN -
+I../ utils / NN / MUZE - I../ SAM - I "$RAYLIB_SRC" - L"$RAYLIB_SRC" -
+lraylib - pthread - framework OpenGL - framework Cocoa -
+framework IOKit - framework CoreVideo - arch arm64 -
+o sim
 
-         echo "Compilation successful! Running the sim..."./
-         sim status = $
+ echo "Compilation successful! Running the sim..."./
+ sim status = $
 ?
 
 echo "Game exited with status $status" rm - f./ sim exit "$status"
