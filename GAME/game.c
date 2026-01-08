@@ -4137,9 +4137,10 @@ case ACTION_CRAFT:
   case ACTION_CRAFT_BOW:
     break;
 
-  case ACTION_CRAFT_ARROWS
+  case ACTION_CRAFT_ARROWS:
+    break;
 
-      case ACTION_FIRE: {
+  case ACTION_FIRE: {
     pthread_rwlock_rdlock(&c->lock);
     agent_face_nearest_mob_in_chunk(a, c, cx, cy, 14.0f);
     pthread_rwlock_unlock(&c->lock);
