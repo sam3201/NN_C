@@ -418,22 +418,20 @@ int main(void) {
   */
 
   while (!WindowShouldClose()) {
-    float dt = GetFrameTime();
+    g_dt = GetFrameTime();
 
     run_agent_jobs();
-
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      if (!agents[i].alive)
-        continue;
-    }
 
     BeginDrawing();
     ClearBackground(BLACK);
 
+    float groundY = (float)SCREEN_HEIGHT - 40.0f;
+    DrawLine(0, (int)groundY, SCREEN_WIDTH, (int)groundY, DARKGRAY);
+
     for (int i = 0; i < MAX_AGENTS; i++) {
       if (!agents[i].alive)
         continue;
-      draw_agent(&agents[i], ap, tc);
+      draw_agent(&agents[i]);
     }
 
     DrawText("HUMANOID Simulation", 20, 160, 20, RAYWHITE);
