@@ -404,7 +404,7 @@ static void update_agent(Agent *a) {
     }
 
     // If grounded and NOT charging, keep charge at 0 (prevents leftover charge)
-    if (p->on_ground && !p->charging) {
+    if (p->on_ground && !p->charging && a->last_action != ACT_CHARGE) {
       p->charge = 0.0f;
     }
 
