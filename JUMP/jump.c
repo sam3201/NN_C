@@ -192,7 +192,7 @@ typedef struct {
 
   float reward_accumulator;
 
-  float last_obs[OBS_DIM];
+  float *last_obs[OBS_DIM];
   int has_last_obs;
 
 } Agent;
