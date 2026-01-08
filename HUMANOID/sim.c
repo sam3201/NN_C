@@ -675,17 +675,18 @@ void update_agent(Agent *a) {
   // ------------------------------------------------------------
   // 3) TERMINATION + FINAL LEARN FLUSH
   // ------------------------------------------------------------
-  if (a->pt[P_HEAD].p.y >= ((float)SCREEN_HEIGHT - 42.0f)) {
-    // Mark dead
-    a->alive = false;
+  // Episode timeout
+  if (a->episode_time >= a->episode_limit) {
+    // treat timeout as terminal (or non-terminal; terminal usually works better
+    // for episodic training)
+    reset_agent_episode(a, groundY);
+    return;
+  }
 
-    // One last learn call to close the episode
-    if (a->cortex && a->has_last_transition) {
-      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                       a->last_action, a->pending_reward, 1 /*terminal*/);
-    }
-    a->pending_reward = 0.0f;
-    a->has_last_transition = 0;
+  // If died (head touch), reset immediately
+  if (!a->alive) {
+    reset_agent_episode(a, groundY);
+    return;
   }
 }
 
