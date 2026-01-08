@@ -705,8 +705,6 @@ static void init_agents(void) {
       cortex->mcts_params.num_simulations = 50..200;
       cortex->mcts_params.max_depth = 8..32;
       cortex->mcts_params.discount = 0.997f;
-
-      a->cortex->use_mcts = false;
       a->cortex->policy_temperature = 1.0f;
 
       // Start high exploration immediately (episode 0)
