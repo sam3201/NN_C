@@ -1213,7 +1213,7 @@ static int load_models_from_disk(const char *world_name) {
       continue;
 
     // DO THIS (real API):
-    SAM *sam = SAM_load(f, a->sam);
+    SAM_t *sam = SAM_load(f, );
 
     fclose(f);
   }
