@@ -1055,19 +1055,19 @@ static void update_agent(Agent *a) {
     }
   }
 
-  int terminal = (!a->alive) ? 1 : 0;
-
-  if (a->cortex && a->has_last_obs) {
-    a->cortex->learn(a->cortex->brain, a->last_obs, (size_t)OBS_DIM, action,
-                     reward, terminal);
-  }
-
   // update observation AFTER physics for next control tick
   encode_observation_jk(a, &a->last_obs);
 
   // TERMINATE
   if (!a->alive || a->episode_time >= a->episode_limit) {
     reset_agent_episode(a);
+  }
+
+  int terminal = (!a->alive) ? 1 : 0;
+
+  if (a->cortex && a->has_last_obs) {
+    a->cortex->learn(a->cortex->brain, a->last_obs, (size_t)OBS_DIM, action,
+                     reward, terminal);
   }
 }
 
