@@ -426,11 +426,25 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   for (int i = 0; i < g_plat_count; i++) {
     const Platform *pl = &g_plats[i];
 
-    float cell = pl->one_way ? CELL_ONEWAY : CELL_GROUND;
-    stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, cell);
+    if (pl->kind == PLAT_RECT) {
+      float cell = pl->one_way ? CELL_ONEWAY : CELL_GROUND;
+      stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, cell);
+      stamp_platform_top(out->obs, origin, pl->x, pl->y, pl->w, CELL_LEDGE);
+    } else {
+      // Ramp: sample points along the segment and stamp
+      const int S = 24;
+      for (int s = 0; s <= S; s++) {
+        float t = (float)s / (float)S;
+        float rx = pl->x + (pl->x2 - pl->x) * t;
+        float ry = pl->y + (pl->y2 - pl->y) * t;
 
-    // emphasize top surface (landing target)
-    stamp_platform_top(out->obs, origin, pl->x, pl->y, pl->w, CELL_LEDGE);
+        // “body” and “surface”
+        stamp_rect(out->obs, origin, rx - 6.0f, ry - 6.0f, 12.0f, 12.0f,
+                   CELL_GROUND);
+        stamp_rect(out->obs, origin, rx - 6.0f, ry - 2.0f, 12.0f, 4.0f,
+                   CELL_LEDGE);
+      }
+    }
   }
 
   // ----------------------------
