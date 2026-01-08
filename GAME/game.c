@@ -1600,7 +1600,7 @@ static void player_try_harvest_resource_in_chunk(Chunk *c, int cx, int cy) {
   best->break_flash = 0.06f;
 
   if (best->type == RES_ROCK || best->type == RES_GOLD) {
-    cam_shake = fmaxf(cam_shake, 0.08f);
+    cam_shake = fmaxf(cam_shake, 0.8f);
   }
 
   if (best->health <= 0) {
