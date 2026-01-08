@@ -614,41 +614,71 @@ int main(void) {
   init_agents();
   start_workers();
 
+  Camera2D cam = {0};
+  cam.offset = (Vector2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f};
+  cam.target = (Vector2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f};
+  cam.rotation = 0.0f;
+  cam.zoom = 1.0f;
+
   while (!WindowShouldClose()) {
     g_dt = GetFrameTime();
 
     // simulate
     run_agent_jobs();
 
-    // best agent for highlight + camera focus
+    // pick best agent
     int best_i = find_best_agent_index();
     Agent *ba = &agents[best_i];
+
+    // desired camera target = best agent position
+    Vector2 desired = ba->pl.pos;
+    desired = clamp_target_to_world(desired);
+
+    // smooth camera so it doesn't snap (tune 8..20)
+    float smooth = 12.0f;
+    float t = 1.0f - expf(-smooth * g_dt);
+    cam.target.x = lerpf(cam.target.x, desired.x, t);
+    cam.target.y = lerpf(cam.target.y, desired.y, t);
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    BeginMode2D(cam);
+
+    // draw world in world coordinates (NO camY needed)
+    for (int i = 0; i < g_plat_count; i++) {
+      Platform *pl = &g_plats[i];
+      DrawRectangle((int)pl->x, (int)pl->y, (int)pl->w, (int)pl->h,
+                    pl->one_way ? GRAY : DARKGRAY);
+    }
+
+    for (int i = 0; i < MAX_AGENTS; i++) {
+      Vector2 p = agents[i].pl.pos;
+      int x = (int)p.x;
+      int y = (int)p.y;
+      int r = (int)agents[i].pl.radius;
+
+      if (i == best_i) {
+        DrawCircle(x, y, r + 6, GOLD);
+        DrawCircle(x, y, r + 3, ORANGE);
+        DrawCircle(x, y, r, WHITE);
+      } else {
+        DrawCircle(x, y, r, RAYWHITE);
+      }
+    }
+
+    EndMode2D();
+
+    // HUD (screen space) — must be AFTER EndMode2D, and inside BeginDrawing
+    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 20, 20, RAYWHITE);
+    DrawText(TextFormat("Best agent: %d", best_i), 20, 45, 20, RAYWHITE);
+    DrawText(TextFormat("Best alt: %.1f", ba->best_alt), 20, 70, 20, RAYWHITE);
     DrawText(TextFormat("Charge: %.2f", ba->pl.charge), 20, 95, 20, RAYWHITE);
     DrawText(TextFormat("Charging: %d", ba->pl.charging), 20, 120, 20,
              RAYWHITE);
     DrawText(TextFormat("OnGround: %d", ba->pl.on_ground), 20, 145, 20,
              RAYWHITE);
     DrawText(TextFormat("LastAct: %d", ba->last_action), 20, 170, 20, RAYWHITE);
-
-    float groundY = (float)SCREEN_HEIGHT - 40.0f;
-
-    float camY = clampf((groundY - agents[best_i].pl.pos.y) - 250.0f, 0.0f,
-                        WORLD_HEIGHT);
-    camY = -camY;
-
-    BeginDrawing();
-    ClearBackground(BLACK);
-
-    draw_platforms(camY);
-
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      draw_agent_jk(&agents[i], camY, i == best_i);
-    }
-
-    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 20, 20, RAYWHITE);
-    DrawText(TextFormat("Best agent: %d", best_i), 20, 45, 20, RAYWHITE);
-    DrawText(TextFormat("Best alt: %.1f", agents[best_i].best_alt), 20, 70, 20,
-             RAYWHITE);
 
     EndDrawing();
   }
