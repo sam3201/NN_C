@@ -2687,7 +2687,8 @@ void init_agents(void) {
     a->inv_arrows = 0;
     a->inv_shards = 0;
 
-    a->has_axe = a->has_pickaxe = a->has_sword = a->has_armor = false;
+    a->has_axe = a->has_pickaxe = a->has_sword = a->has_armor = a->has_bow =
+        false;
 
     a->tool_selected = TOOL_HAND;
     a->last_craft_selected = -1;
