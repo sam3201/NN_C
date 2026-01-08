@@ -60,14 +60,14 @@ printf "  %s\n" $SAM_SRC
 # -----------------------
 # Compile
 # -----------------------
-echo "Compiling game..."
+echo "Compiling sim..."
 
 # Use clang on macOS if you want; gcc often maps to clang anyway.
 CC="${CC:-clang}"
 
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" -g -w \
-  game.c \
+  sim.c \
   $NN_SRC \
   $MUZE_SRC \
   $SAM_SRC \
@@ -78,16 +78,16 @@ CC="${CC:-clang}"
   -L"$RAYLIB_SRC" -lraylib -pthread \
   -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
   -arch arm64 \
-  -o game
+  -o sim
 
-echo "Compilation successful! Running the game..."
-lldb ./game
+echo "Compilation successful! Running the sim..."
+lldb ./sim
 status=$?
 
 echo "Game exited with status $status"
 echo "Cleaning up..."
-rm -rf game.dSYM
-rm game
+rm -rf sim.dSYM
+rm sim
 exit "$status"
 
 
