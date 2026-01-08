@@ -26,7 +26,7 @@ pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
 pthread_cond_t done_cv = PTHREAD_COND_INITIALIZER;
 bool job_quit = 0;
-job_active = 0;
+bool job_active = 0;
 job_next_agent = 0;
 job_done_workers = 0;
 
