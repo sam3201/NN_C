@@ -16,7 +16,7 @@
 #define FPS 60.0f
 #define EPISODE_SECONDS 8.0f
 
-#// Grid observation: OBS_DIM must equal GRID_W * GRID_H
+// Grid observation: OBS_DIM must equal GRID_W * GRID_H
 #define GRID_W 9
 #define GRID_H 8
 #if (OBS_DIM != (GRID_W * GRID_H))
@@ -28,7 +28,7 @@
 #define CELL_SELF 1.0f
 #define CELL_OTHER 2.0f
 #define CELL_PLAT 3.0f
-define OBS_DIM 72
+#define OBS_DIM 72
 
 // Anti-stuck shaping
 // if no new best_alt for this long -> punish / reset
@@ -66,7 +66,7 @@ define OBS_DIM 72
 #define JUMP_VY_MAX -1550.0f
 #define JUMP_VX_MAX 520.0f
 
-    typedef struct {
+typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
 } Platform;
