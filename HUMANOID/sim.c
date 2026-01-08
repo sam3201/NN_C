@@ -381,34 +381,28 @@ void init_agents(void) {
   }
 }
 
-static void reset_agent_episode(Agent *a, float groundY) {
-  // If we had a pending transition, close it out as terminal
+static void reset_agent_episode(Agent *a) {
   if (a->cortex && a->has_last_transition) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                     a->last_action, a->pending_reward, 1 /*terminal*/);
+                     a->last_action, a->pending_reward, 1);
   }
 
-  // Reset episode bookkeeping (control loop)
   a->alive = true;
-  a->accum_dt = 0.0f;
-  a->control_timer = 0.0f;
-  a->last_action = ACT_NONE;
-
+  a->episode_time = 0.0f;
   a->pending_reward = 0.0f;
   a->has_last_transition = 0;
   memset(&a->last_obs, 0, sizeof(a->last_obs));
-
-  a->episode_time = 0.0f;
   a->reward_accumulator = 0.0f;
 
-  // Reset pose
-  init_pose(a, a->spawn_origin);
+  a->pl.pos = a->spawn_origin;
+  a->pl.vel = (Vector2){0, 0};
+  a->pl.radius = 10.0f;
+  a->pl.on_ground = 1;
+  a->pl.charging = 0;
+  a->pl.charge = 0.0f;
+  a->pl.prev_y = a->pl.pos.y;
 
-  // Optional: ensure not spawned under ground
-  if (a->pt[P_ANKLE_L].p.y > groundY)
-    a->pt[P_ANKLE_L].p.y = groundY;
-  if (a->pt[P_ANKLE_R].p.y > groundY)
-    a->pt[P_ANKLE_R].p.y = groundY;
+  a->best_alt = 0.0f;
 }
 
 static void solve_joint(Agent *ag, const Joint *j) {
