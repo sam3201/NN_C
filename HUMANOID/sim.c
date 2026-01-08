@@ -430,7 +430,7 @@ static void update_agent(Agent *a) {
     if (!p->on_ground) {
       p->charging = 0;
       // Optional: also clear charge so obs doesn't carry stale values.
-      // p->charge = 0.0f;
+      p->charge = 0.0f;
     }
 
     // reward: maximize height
