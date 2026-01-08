@@ -4134,9 +4134,10 @@ case ACTION_CRAFT:
   case ACTION_CRAFT_ARMOR:
     break;
 
-  case ACTION_CRAFT_BOW
+  case ACTION_CRAFT_BOW:
+    break;
 
-      case ACTION_CRAFT_ARROWS
+  case ACTION_CRAFT_ARROWS
 
       case ACTION_FIRE: {
     pthread_rwlock_rdlock(&c->lock);
