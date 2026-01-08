@@ -712,9 +712,9 @@ static void reset_agent_episode(Agent *a) {
     int T = a->ep_t;
     float *z = (float *)malloc(sizeof(float) * (size_t)T);
     if (z) {
-      float g = 0.0f;
+      float G = 0.0f;
       for (int t = T - 1; t >= 0; t--) {
-        g *= a->mcts_params.discount;
+        g +=
       }
 
       // push to global replay
