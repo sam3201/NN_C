@@ -806,7 +806,6 @@ static void update_agent(Agent *a) {
         break;
       }
     }
-    mcts_result_free(&mr);
 
     if (a->ep_t > 0) {
       a->ep.reward[a->ep_t - 1] = a->pending_reward;
@@ -818,6 +817,7 @@ static void update_agent(Agent *a) {
            sizeof(float) * OBS_DIM);
     memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, mr.pi,
            sizeof(float) * ACTION_COUNT);
+    mcts_result_free(&mr);
     a->ep.action[a->ep_t] = chosen;
     a->ep.done[a->ep_t] = 0;
     a->ep_t++;
