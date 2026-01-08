@@ -890,7 +890,7 @@ static int load_world_from_disk(const char *world_name) {
     fclose(f);
     return 0;
   }
-  if (h.version != 1) {
+  if (h.version != 1 && h.version != 2) {
     fclose(f);
     return 0;
   }
