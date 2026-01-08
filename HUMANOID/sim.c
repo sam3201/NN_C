@@ -307,34 +307,6 @@ static void init_agent(Agent *a, Vector2 origin) {
   a->pl.charge = 0.0f;
   a->pl.prev_y = a->pl.pos.y;
   a->best_alt = 0.0f;
-
-  // Verlet needs previous position initialized
-  for (int i = 0; i < P_COUNT; i++) {
-    a->pt[i].pprev = a->pt[i].p;
-    a->pt[i].invMass = 1.0f;
-  }
-
-  // If you want to "pin" something for debugging:
-  // a->pt[P_HEAD].invMass = 0.0f;
-
-  // Bones / constraints
-  make_joint(a, J_NECK, P_HEAD, P_NECK);
-  make_joint(a, J_SPINE1, P_NECK, P_CHEST);
-  make_joint(a, J_SPINE2, P_CHEST, P_HIP);
-
-  make_joint(a, J_SHOULDER_L, P_NECK, P_SHOULDER_L);
-  make_joint(a, J_UPPERARM_L, P_SHOULDER_L, P_ELBOW_L);
-  make_joint(a, J_FOREARM_L, P_ELBOW_L, P_HAND_L);
-
-  make_joint(a, J_SHOULDER_R, P_NECK, P_SHOULDER_R);
-  make_joint(a, J_UPPERARM_R, P_SHOULDER_R, P_ELBOW_R);
-  make_joint(a, J_FOREARM_R, P_ELBOW_R, P_HAND_R);
-
-  make_joint(a, J_HIP_L, P_HIP, P_KNEE_L);
-  make_joint(a, J_SHIN_L, P_KNEE_L, P_ANKLE_L);
-
-  make_joint(a, J_HIP_R, P_HIP, P_KNEE_R);
-  make_joint(a, J_SHIN_R, P_KNEE_R, P_ANKLE_R);
 }
 
 void init_agents(void) {
