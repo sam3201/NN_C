@@ -4116,25 +4116,25 @@ void update_agent(Agent *a) {
     agent_try_harvest_forward(a, tr, &reward);
     break;
 
-    /*
-  case ACTION_CRAFT:
-    // agent_try_craft(a, tr, &reward);
-    ACTION_CRAFT_AXE
+  /*
+case ACTION_CRAFT:
+  // agent_try_craft(a, tr, &reward);
 
-ACTION_CRAFT_PICKAXE
+  break;
+  */
+  case ACTION_CRAFT_AXE
 
-ACTION_CRAFT_SWORD
+      case ACTION_CRAFT_PICKAXE
 
-ACTION_CRAFT_ARMOR
+      case ACTION_CRAFT_SWORD
 
-ACTION_CRAFT_BOW
+      case ACTION_CRAFT_ARMOR
 
-ACTION_CRAFT_ARROWS
+      case ACTION_CRAFT_BOW
 
-    break;
-    */
+      case ACTION_CRAFT_ARROWS
 
-  case ACTION_FIRE: {
+      case ACTION_FIRE: {
     pthread_rwlock_rdlock(&c->lock);
     agent_face_nearest_mob_in_chunk(a, c, cx, cy, 14.0f);
     pthread_rwlock_unlock(&c->lock);
