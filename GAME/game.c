@@ -1920,6 +1920,8 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
     rd = (Vector2){1, 0};
 
   float range = HARVEST_DISTANCE;
+  bool using_axe = (a->tool_selected == TOOL_AXE) && a->has_axe;
+  bool using_pick = (a->tool_selected == TOOL_PICKAXE) && a->has_pickaxe;
 
   RayHit hit = raycast_world_objects(ro, rd, range);
   if (hit.kind != HIT_RESOURCE) {
