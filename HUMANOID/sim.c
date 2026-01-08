@@ -515,15 +515,6 @@ static void draw_agent_jk(const Agent *a, float camY) {
   Vector2 p = a->pl.pos;
   DrawCircle((int)p.x, (int)(p.y + camY), (int)a->pl.radius, RAYWHITE);
 }
-
-pthread_cond_broadcast(&job_cv);
-
-while (job_active) {
-  pthread_cond_wait(&done_cv, &job_mtx);
-}
-pthread_mutex_unlock(&job_mtx);
-}
-
 static void *agent_worker(void *arg) {
   (void)arg;
 
