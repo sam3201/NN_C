@@ -382,8 +382,59 @@ typedef struct {
   int scroll;   // index offset for drawing
 } WorldList;
 
-#pragma pack(push, 1)
+t #pragma pack(push, 1)
+
+    typedef struct {
+  // identity
+  int32_t agent_id;
+  int32_t alive;
+
+  // pose
+  float x, y;
+  float fx, fy;
+
+  // vitals
+  float health, stamina;
+
+  // bookkeeping
+  int32_t age;
+  int32_t last_action;
+  float reward_accumulator;
+
+  // cooldowns + latches
+  float attack_cd, harvest_cd, fire_cd;
+  int32_t fire_latched;
+  float fire_latch_timer;
+
+  // inventory
+  int32_t inv_food, inv_arrows, inv_shards;
+
+  // tools
+  int32_t has_axe, has_pickaxe, has_sword, has_armor, has_bow;
+  int32_t tool_selected;
+  int32_t last_craft_selected;
+} SaveAgent;
+
 typedef struct {
+  int32_t alive;
+  float x, y;
+  int32_t type;
+  int32_t amount;
+  float ttl;
+  float bob_t;
+} SavePickup;
+
+typedef struct {
+  int32_t alive;
+  float x, y;
+  float vx, vy;
+  float ttl;
+  int32_t damage;
+  int32_t owner;
+} SaveProjectile;
+
+#pragma pack(pop)
+ypedef struct {
   char magic[4];    // "SAMW"
   uint32_t version; // 1
   uint32_t seed;
