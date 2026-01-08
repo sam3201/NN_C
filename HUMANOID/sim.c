@@ -161,7 +161,7 @@ static void build_platforms(void) {
     float w = 120 + (rand() % 120);
     float h = 14;
     float dx = (rand() % 240) - 120;
-    float dy = 90 + (rand() % 80);
+    float dy = 60 + (rand() % 60); // 60..119
 
     x = clampf(x + dx, 80.0f, (float)SCREEN_WIDTH - 200.0f);
     y -= dy;
