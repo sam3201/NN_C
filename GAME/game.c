@@ -5087,6 +5087,7 @@ static void do_pause_menu(void) {
   if (ui_button(rExit, "Exit to World Select")) {
     // Optional: save before leaving
     save_world_to_disk(g_world_name);
+    save_models_to_disk(g_world_name);
 
     world_list_refresh(&g_world_list);
     g_state = STATE_WORLD_SELECT;
