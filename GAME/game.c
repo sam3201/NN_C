@@ -555,16 +555,15 @@ static inline int agent_in_base(const Agent *a, const Tribe *tr) {
 
 static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
   if (!agent_in_base(a, tr)) {
-    // discourage crafting outside base
     *reward += -0.006f;
     return;
   }
 
-  // ---- Priority 1: tools (one-time tribe unlocks) ----
   if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
     tr->wood -= 3;
     tr->stone -= 2;
     a->has_axe = true;
+    a->last_craft_selected = TOOL_AXE;
     *reward += 0.09f;
     return;
   }
@@ -573,6 +572,7 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     tr->wood -= 3;
     tr->stone -= 3;
     a->has_pickaxe = true;
+    a->last_craft_selected = TOOL_PICKAXE;
     *reward += 0.10f;
     return;
   }
@@ -581,6 +581,7 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     tr->stone -= 4;
     tr->gold -= 2;
     a->has_sword = true;
+    a->last_craft_selected = TOOL_SWORD;
     *reward += 0.12f;
     return;
   }
@@ -589,25 +590,22 @@ static void agent_try_craft(Agent *a, Tribe *tr, float *reward) {
     tr->stone -= 5;
     tr->gold -= 2;
     a->has_armor = true;
+    a->last_craft_selected = TOOL_ARMOR;
     *reward += 0.10f;
     return;
   }
 
-  // ---- Priority 2: ammo crafting (repeatable) ----
-  // Recipe: 1 shard + 1 wood -> 6 arrows
+  // ammo craft (not part of the 4-tool vector)
   if (tr->shards >= 1 && tr->wood >= 1) {
     tr->shards -= 1;
     tr->wood -= 1;
-
     int made = 6;
     tr->arrows += made;
-    a->inv_arrows += made; // give to the crafter immediately
-
+    a->inv_arrows += made;
     *reward += 0.06f;
     return;
   }
 
-  // nothing craftable right now
   *reward += -0.003f;
 }
 
