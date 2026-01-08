@@ -5410,7 +5410,7 @@ int main(void) {
       // For now: quick load the current name
       if (ui_button((Rectangle){60, 140, 260, 50}, "Load World Name")) {
         if (load_world_from_disk(g_world_name))
-          load_models_from_disk(world_name);
+          load_models_from_disk(g_world_name);
         g_state = STATE_PLAYING;
       }
 
