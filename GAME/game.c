@@ -3278,6 +3278,7 @@ void update_player(void) {
       cam_shake = fmaxf(cam_shake, 0.03f);
     }
   }
+
   // --- zoom controls ---
   if (IsKeyDown(KEY_EQUAL))
     target_world_scale += 60.0f * dt;
