@@ -1942,9 +1942,9 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   }
 
   float cost = agent_harvest_cost(r->type);
-  if (r->type == RES_TREE)
+  if (r->type == RES_TREE && a->has_axe)
     cost *= 0.78f;
-  if ((r->type == RES_ROCK || r->type == RES_GOLD))
+  if ((r->type == RES_ROCK || r->type == RES_GOLD) && a->has_pickaxe)
     cost *= 0.78f;
 
   if (a->stamina < cost) {
