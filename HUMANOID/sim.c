@@ -638,7 +638,7 @@ static void update_agent(Agent *a) {
     p->vel.x += ax * control * FIXED_DT;
 
     // drag
-    p->vel.x *= p->on_ground ? 0.92f : 0.985f;
+    p->vel.x *= p->on_ground ? 0.92f : AIR_DRAG;
 
     // --- charging state machine ---
     // If agent chooses CHARGE while grounded, start/continue charging.
