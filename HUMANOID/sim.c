@@ -18,9 +18,17 @@
 // =======================
 // CONFIG
 // =======================
-#define FPS 60
+#define FPS 60.0
+
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
+
+#define FIXED_DT                                                               \
+  (1.0f / 120.0f)            // stable for humanoids; 60 can work but is touchy
+#define MAX_ACCUM_DT (0.25f) // prevent spiral-of-death
+#define MAX_TORQUE (120.0f)  // clamp to avoid explosions
+#define JOINT_DAMPING (1.2f) // extra damping for stability
+#define ANGVEL_CLAMP (40.0f) // clamp angular velocity (optional safety)
 
 // =======================
 // SIMPLE VERLET RAGDOLL
