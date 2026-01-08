@@ -98,7 +98,7 @@ typedef struct {
 static int SCREEN_WIDTH = 1280;
 static int SCREEN_HEIGHT = 800;
 
-static float g_dt = 1.0f / 60.0f;
+static float g_dt = 1.0f / FPS;
 
 pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
