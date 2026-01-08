@@ -4122,11 +4122,13 @@ case ACTION_CRAFT:
 
   break;
   */
-  case ACTION_CRAFT_AXE
+  case ACTION_CRAFT_AXE:
+    break;
 
-      case ACTION_CRAFT_PICKAXE
+  case ACTION_CRAFT_PICKAXE:
+    break;
 
-      case ACTION_CRAFT_SWORD
+  case ACTION_CRAFT_SWORD
 
       case ACTION_CRAFT_ARMOR
 
