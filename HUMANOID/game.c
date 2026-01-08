@@ -90,6 +90,8 @@ static void init_agents(void) {
     agents[i].alive = true;
     agents[i].x = SCREEN_WIDTH / 2;
     agents[i].y = SCREEN_HEIGHT / 2;
+    agents[i].Head.x = agents[i].x;
+    agents[i].Head.y = agents[i].y - 20;
   }
 }
 
