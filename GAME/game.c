@@ -5141,7 +5141,6 @@ static void do_world_select_screen(void) {
         world_reset(g_world_seed);
         save_world_to_disk(g_world_name);
       }
-
       g_state = STATE_PLAYING;
     }
   }
