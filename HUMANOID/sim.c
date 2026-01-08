@@ -781,7 +781,9 @@ int main(void) {
   if (GRID_H < 6)
     GRID_H = 6;
 
-  OBS_DIM = GRID_W * GRID_H;
+  OBS_GRID = GRID_W * GRID_H;
+  OBS_DIM = OBS_GRID + OBS_EXTRA;
+
   SetTargetFPS((int)FPS);
 
   build_platforms();
