@@ -471,9 +471,8 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   // 2) falling flag (y-down world): vel.y > 0 means falling
   float falling = (p->vel.y > 0.0f) ? 1.0f : 0.0f;
 
-  // Fill OBS_EXTRA = 10
-  // Fill OBS_EXTRA = 12
-  // indices 0..11 (relative to k0=OBS_GRID)
+  // Fill OBS_EXTRA = 14
+  // indices 0..13 (relative to k0=OBS_GRID)
   out->obs[k++] = px;                  // 0
   out->obs[k++] = py;                  // 1
   out->obs[k++] = vx;                  // 2
@@ -485,8 +484,9 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = stuck_n;             // 8
   out->obs[k++] = dx_n;                // 9
   out->obs[k++] = dy_n;                // 10
-                                       // extra useful scalars
-  out->obs[k++] = 1.0f;                // 11 bias
+  out->obs[k++] = charge_rate_n;       // 11  NEW
+  out->obs[k++] = falling;             // 12  NEW
+  out->obs[k++] = 1.0f;                // 13 bias
 
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
