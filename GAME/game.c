@@ -458,6 +458,11 @@ typedef struct {
 
   // chunk count follows
   uint32_t chunk_count;
+  // ---- extra dynamic state ----
+  uint32_t agent_count;
+  uint32_t pickup_count;     // number of alive pickups written
+  uint32_t projectile_count; // number of alive projectiles written
+
 } SaveHeader;
 
 typedef struct {
