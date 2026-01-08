@@ -29,17 +29,42 @@
 #define WORKER_COUNT 4
 #define MAX_AGENTS 64
 
-#define FIXED_DT                                                               \
-  (1.0f / 120.0f)            // stable for humanoids; 60 can work but is touchy
-#define MAX_ACCUM_DT (0.25f) // prevent spiral-of-death
-#define MAX_TORQUE (120.0f)  // clamp to avoid explosions
-#define JOINT_DAMPING (1.2f) // extra damping for stability
-#define ANGVEL_CLAMP (40.0f) // clamp angular velocity (optional safety)
-
 // =======================
-// SIMPLE VERLET RAGDOLL
+// JUMP KING ENV
 // =======================
+#define PLATFORM_MAX 256
+#define WORLD_HEIGHT 8000.0f // tall tower
+#define GRAVITY_Y 2600.0f
+#define MOVE_SPEED 260.0f
+#define AIR_CONTROL 0.35f
 
+#define JUMP_CHARGE_RATE 1.6f // per second
+#define JUMP_CHARGE_MAX 1.0f
+#define JUMP_VY_MIN -650.0f
+#define JUMP_VY_MAX -1550.0f
+#define JUMP_VX_MAX 520.0f
+
+typedef struct {
+  float x, y, w, h; // axis-aligned rect
+  int one_way;      // 1 = one-way from below
+} Platform;
+
+typedef struct {
+  Vector2 pos;
+  Vector2 vel;
+  float radius;
+
+  int on_ground; // standing on something (ground or platform)
+  int was_below; // helper for one-way landing
+  float prev_y;  // for one-way crossing test
+
+  // jump charge
+  int charging;
+  float charge; // 0..1
+} PlayerJK;
+
+static Platform g_plats[PLATFORM_MAX];
+static int g_plat_count = 0;
 typedef struct {
   Vector2 p;     // current position
   Vector2 pprev; // previous position (for Verlet)
