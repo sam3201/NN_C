@@ -865,11 +865,6 @@ static void update_agent(Agent *a) {
     a->pending_reward = 0.0f;
 
     encode_observation_jk(a, &a->last_obs);
-    a->last_action = a->cortex
-                         ? muze_plan(a->cortex, a->last_obs.obs,
-                                     (size_t)OBS_DIM, (size_t)ACTION_COUNT)
-                         : ACT_NONE;
-
     a->has_last_transition = 1;
   }
 
