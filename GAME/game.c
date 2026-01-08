@@ -4013,7 +4013,7 @@ static int agent_face_nearest_mob_in_chunk(Agent *a, Chunk *c, int cx, int cy,
 /* =======================
    AGENT UPDATE
 ======================= */
-void update_agent(Agent *a, float *reward) {
+void update_agent(Agent *a) {
   if (!a || !a->alive)
     return;
 
@@ -5322,7 +5322,7 @@ static void *agent_worker(void *arg) {
       if (idx >= MAX_AGENTS)
         break;
 
-      update_agent(&agents[idx], &g_world);
+      update_agent(&agents[idx]);
     }
 
     // Signal completion for this worker
