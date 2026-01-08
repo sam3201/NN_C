@@ -146,6 +146,54 @@ static inline float clampf(float x, float a, float b) {
 }
 static inline float saturate(float x) { return clampf(x, -1.0f, 1.0f); }
 
+static int circle_overlaps_rect(Vector2 c, float r, const Platform *pl) {
+  float cx = clampf(c.x, pl->x, pl->x + pl->w);
+  float cy = clampf(c.y, pl->y, pl->y + pl->h);
+  float dx = c.x - cx;
+  float dy = c.y - cy;
+  return (dx * dx + dy * dy) <= r * r;
+}
+
+static void solve_player_platforms(PlayerJK *p) {
+  p->on_ground = 0;
+
+  for (int i = 0; i < g_plat_count; i++) {
+    Platform *pl = &g_plats[i];
+
+    // one-way: only collide when falling AND we were above the top last step
+    if (pl->one_way) {
+      if (p->vel.y < 0)
+        continue; // rising => pass through
+
+      float top = pl->y;
+      float prev_bottom = p->prev_y + p->radius;
+      float cur_bottom = p->pos.y + p->radius;
+
+      // must cross the top surface downward
+      if (!(prev_bottom <= top && cur_bottom >= top))
+        continue;
+
+      // must be horizontally over the platform
+      if (p->pos.x < pl->x - p->radius || p->pos.x > pl->x + pl->w + p->radius)
+        continue;
+
+      // snap onto top
+      p->pos.y = top - p->radius;
+      p->vel.y = 0;
+      p->on_ground = 1;
+      continue;
+    }
+
+    // solid platforms (ground)
+    if (circle_overlaps_rect(p->pos, p->radius, pl)) {
+      // simple: push up out of it (good enough for ground)
+      p->pos.y = pl->y - p->radius;
+      p->vel.y = 0;
+      p->on_ground = 1;
+    }
+  }
+}
+
 static void apply_action_muscles(Agent *a, int action) {
   // Reset to neutral every substep (muscles are per-step, not permanent)
   // We'll start from original rest each time; store "base rest" separately if
