@@ -94,3 +94,10 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
   free(p_pred);
   free(v_pred);
 }
+
+void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
+                            const TrainerConfig *cfg) {
+  // Current MUZE replay buffer stores (obs, pi, z), not raw transitions.
+  // So "dynamics training" is effectively the same training pass for now.
+  trainer_train_from_replay(model, rb, cfg);
+}
