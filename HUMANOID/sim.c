@@ -48,6 +48,8 @@
 #define UP_VEL_SCALE 1800.0f
 #define UP_VEL_REWARD 0.0030f
 
+#define PLATFORM_MAX 256
+
 typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
