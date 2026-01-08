@@ -56,12 +56,16 @@ typedef struct {
   } Arms;
 
   // Feet
-  DrawLine(a->x - 10, a->y - 60, a->x - 20, a->y - 80, RAYWHITE);
-  DrawLine(a->x + 10, a->y - 60, a->x + 20, a->y - 80, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Feet;
 
   // Hands
-  DrawLine(a->x - 10, a->y - 40, a->x - 20, a->y - 60, RAYWHITE);
-  DrawLine(a->x + 10, a->y - 40, a->x + 20, a->y - 60, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Hands;
 } Agent;
 
 /* =======================
