@@ -24,7 +24,7 @@
 typedef struct {
   int x;
   int y;
-  Node *node;
+  Node *connection;
 } joint;
 typedef struct {
   bool alive;
