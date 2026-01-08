@@ -363,7 +363,9 @@ MCTSResult mcts_run(MuModel *model, const float *obs, const MCTSParams *params,
     return res;
 
   mu_model_repr(model, obs, latent);
-  res = mcts_run_latent(model, latent, params);
+
+  // PASS rng through (fix)
+  res = mcts_run_latent(model, latent, params, rng);
 
   free(latent);
   return res;
