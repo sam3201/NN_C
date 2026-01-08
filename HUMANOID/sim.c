@@ -426,6 +426,13 @@ static void update_agent(Agent *a) {
     // collisions
     solve_player_platforms(p);
 
+    // If we are not grounded, we cannot be charging.
+    if (!p->on_ground) {
+      p->charging = 0;
+      // Optional: also clear charge so obs doesn't carry stale values.
+      // p->charge = 0.0f;
+    }
+
     // reward: maximize height
     float groundY = (float)SCREEN_HEIGHT - 40.0f;
     float alt = groundY - p->pos.y;
