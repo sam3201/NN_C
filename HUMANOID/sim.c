@@ -116,6 +116,9 @@ typedef struct {
   MuCortex *cortex;
   int last_action;
 
+  float episode_time;
+  float episode_limit; // seconds
+
   // --- fixed step / control rate ---
   float accum_dt;
   float control_timer;
