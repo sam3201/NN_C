@@ -195,29 +195,6 @@ static void apply_action_muscles(Agent *a, int action) {
 }
 
 // PD controller for joints: tau = kp*(target - angle) - kd*angVel
-static inline float joint_pd(float angle, float angVel, float target, float kp,
-                             float kd) {
-  float err = target - angle;
-  return kp * err - kd * angVel;
-}
-
-static inline void apply_joint_torque(Joint *j, float tau) {
-  tau = clampf(tau, -MAX_TORQUE, MAX_TORQUE);
-  // Your engine call here:
-  // physics_apply_joint_torque(j, tau);
-  j->motor_torque = tau; // placeholder
-}
-
-static inline void damp_body(Body *b, float dt) {
-  // optional global damping (helps ragdolls)
-  b->linVel.x *= 1.0f / (1.0f + 0.05f * dt);
-  b->linVel.y *= 1.0f / (1.0f + 0.05f * dt);
-  b->angVel *= 1.0f / (1.0f + JOINT_DAMPING * dt);
-
-  // optional clamps (safety)
-  b->angVel = clampf(b->angVel, -ANGVEL_CLAMP, ANGVEL_CLAMP);
-}
-
 static inline void obs_pushf(ObsFixed *o, float v) {
   if (o->n < OBS_DIM)
     o->obs[o->n++] = v;
