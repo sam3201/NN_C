@@ -865,6 +865,7 @@ static void update_agent(Agent *a) {
     a->pending_reward = 0.0f;
 
     encode_observation_jk(a, &a->last_obs);
+    a->last_action = chosen;
     a->has_last_transition = 1;
   }
 
