@@ -227,9 +227,8 @@ static void visits_to_pi(const Node *root, float temperature, float *pi_out) {
 /* =========================
    Public API
    ========================= */
-MCTSResult resMCTSResult mcts_run_latent(MuModel *model, const float *latent,
-                                         const MCTSParams *params,
-                                         MCTSRng *rng) {
+MCTSResult mcts_run_latent(MuModel *model, const float *latent,
+                           const MCTSParams *params, MCTSRng *rng) {
   memset(&res, 0, sizeof(res));
 
   if (!model || !latent || !params)
