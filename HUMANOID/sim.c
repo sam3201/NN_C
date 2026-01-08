@@ -471,6 +471,24 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   // 2) falling flag (y-down world): vel.y > 0 means falling
   float falling = (p->vel.y > 0.0f) ? 1.0f : 0.0f;
 
+  // Movement intent (WASD-ish, derived from chosen action)
+  float move_intent = 0.0f; // -1 left, +1 right
+  float act_left = 0.0f, act_right = 0.0f, act_charge = 0.0f,
+        act_release = 0.0f;
+
+  if (a->last_action == ACT_LEFT) {
+    move_intent = -1.0f;
+    act_left = 1.0f;
+  }
+  if (a->last_action == ACT_RIGHT) {
+    move_intent = +1.0f;
+    act_right = 1.0f;
+  }
+  if (a->last_action == ACT_CHARGE)
+    act_charge = 1.0f;
+  if (a->last_action == ACT_RELEASE)
+    act_release = 1.0f;
+
   // Fill OBS_EXTRA = 14
   // indices 0..13 (relative to k0=OBS_GRID)
   out->obs[k++] = px;                  // 0
