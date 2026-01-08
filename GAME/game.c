@@ -219,6 +219,27 @@ static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
 
+// ----- forward prototypes (fix implicit decl + type mismatches) -----
+
+// simple helpers
+static inline float randf(float a, float b);
+
+// day/night
+static inline int is_night(void);
+
+// chunk/local coordinate helpers
+static inline Vector2 clamp_local_to_chunk(Vector2 lp);
+
+// mobs / chunk helpers
+static int find_free_mob_slot(Chunk *c);
+
+// initialization
+void init_tribes(void);
+void init_agents(void);
+
+// saving
+static void ensure_save_root(void);
+
 static GameStateType g_state = STATE_TITLE;
 
 // current world session
