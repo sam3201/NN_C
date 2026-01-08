@@ -3395,29 +3395,49 @@ void init_player(void) {
 
 void update_player(void) {
   float dt = GetFrameTime();
+  if (dt <= 0.0f)
+    dt = 1.0f / 60.0f;
 
   // --- cooldown timers ---
   if (player_harvest_cd > 0.0f)
     player_harvest_cd -= dt;
   if (player_attack_cd > 0.0f)
     player_attack_cd -= dt;
+  if (player_fire_cd > 0.0f)
+    player_fire_cd -= dt;
   if (player_hurt_timer > 0.0f)
     player_hurt_timer -= dt;
 
-  // --- movement (time-based feels better) ---
-  float speed = 0.6f; // world units per frame-ish
-  // If you want true time-based movement, use: float move = speed * (dt
-  // * 60.0f);
-  float move = speed;
+  // --- stamina regen (player) ---
+  // tweak as you like:
+  player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
 
-  if (IsKeyDown(KEY_W))
+  // --- movement ---
+  float speed = 0.6f;
+  float move = speed; // (or speed * dt * 60.0f for true time-based)
+
+  bool moving = false;
+  if (IsKeyDown(KEY_W)) {
     player.position.y -= move;
-  if (IsKeyDown(KEY_S))
+    moving = true;
+  }
+  if (IsKeyDown(KEY_S)) {
     player.position.y += move;
-  if (IsKeyDown(KEY_A))
+    moving = true;
+  }
+  if (IsKeyDown(KEY_A)) {
     player.position.x -= move;
-  if (IsKeyDown(KEY_D))
+    moving = true;
+  }
+  if (IsKeyDown(KEY_D)) {
     player.position.x += move;
+    moving = true;
+  }
+
+  // optional: tiny stamina drain while moving
+  if (moving) {
+    player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
+  }
 
   // --- crafting toggle ---
   if (IsKeyPressed(KEY_TAB)) {
@@ -3427,121 +3447,85 @@ void update_player(void) {
   // --- crafting input (1..9) only when crafting menu is open ---
   if (crafting_open) {
     for (int i = 0; i < recipe_count && i < 9; i++) {
-      // top-row number keys
       bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
-
-      // keypad number keys (optional but nice)
       pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
-
-      if (pressed) {
+      if (pressed)
         craft(&recipes[i]);
-      }
     }
   }
 
-  // --- shoot arrow (F) if you have a bow + ammo ---
-  // --- cooldown timers ---
-  if (player_fire_cd > 0.0f)
-    player_fire_cd -= dt;
+  // =========================
+  // CONTINUOUS HOLD ACTIONS
+  // =========================
 
-  // --- bow charge (hold F to charge, release to fire) ---
-  if (IsKeyPressed(KEY_F)) {
-    // start charging only if we can actually shoot
-    if (has_bow && inv_arrows > 0 && player_fire_cd <= 0.0f) {
-      bow_charging = 1;
-      bow_charge01 = 0.0f;
-    } else {
-      cam_shake = fmaxf(cam_shake, 0.35f);
-    }
+  // (A) Continuous melee attack (hold LEFT mouse)
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    int cx = (int)(player.position.x / CHUNK_SIZE);
+    int cy = (int)(player.position.y / CHUNK_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    // player_try_attack_mob_in_chunk modifies mobs -> take write lock
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_attack_mob_in_chunk(c, wrap(cx), wrap(cy));
+    pthread_rwlock_unlock(&c->lock);
   }
 
-  if (bow_charging) {
-    // keep charging while held
+  // (B) Continuous harvest/mine (hold RIGHT mouse)
+  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+    int cx = (int)(player.position.x / CHUNK_SIZE);
+    int cy = (int)(player.position.y / CHUNK_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    // player_try_harvest_resource_in_chunk modifies resources -> write lock
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_harvest_resource_in_chunk(c, wrap(cx), wrap(cy));
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  // =========================
+  // BOW CHARGE + RELEASE (F)
+  // =========================
+  // Hold F to charge, release F to fire (if enough charge).
+  if (has_bow) {
     if (IsKeyDown(KEY_F)) {
+      bow_charging = 1;
       bow_charge01 += dt / BOW_CHARGE_TIME;
       bow_charge01 = clamp01(bow_charge01);
-
-      // optional: slight shake while charging (tiny)
-      cam_shake = fmaxf(cam_shake, 0.01f + 0.02f * bow_charge01);
     }
 
-    // release -> fire (or cancel)
-    if (IsKeyReleased(KEY_F)) {
-      if (!has_bow || inv_arrows <= 0 || player_fire_cd > 0.0f) {
-        // can't fire anymore -> cancel
-        cam_shake = fmaxf(cam_shake, 0.35f);
-      } else if (bow_charge01 >= BOW_CHARGE_MIN01) {
+    // Release to fire (continuous-ready through player_fire_cd)
+    if (bow_charging && IsKeyReleased(KEY_F)) {
+      bow_charging = 0;
+
+      if (player_fire_cd <= 0.0f && inv_arrows > 0 &&
+          bow_charge01 >= BOW_CHARGE_MIN01) {
+        // aim from player -> mouse in WORLD space
         Vector2 mouse = GetMousePosition();
-        Vector2 pp = world_to_screen(player.position);
-        Vector2 aim = Vector2Subtract(mouse, pp);
+        Vector2 mouse_world = {
+            (mouse.x - SCREEN_WIDTH * 0.5f) / WORLD_SCALE + camera_pos.x,
+            (mouse.y - SCREEN_HEIGHT * 0.5f) / WORLD_SCALE + camera_pos.y};
 
-        Vector2 dir = Vector2Normalize(aim);
-        if (Vector2Length(aim) < 1e-3f)
+        Vector2 dir = Vector2Subtract(mouse_world, player.position);
+        if (Vector2Length(dir) < 1e-3f)
           dir = (Vector2){1, 0};
+        dir = Vector2Normalize(dir);
 
+        // consume ammo + set cooldown
         inv_arrows--;
         player_fire_cd = PLAYER_FIRE_COOLDOWN;
 
+        // uses your existing charged fire helper
         player_fire_bow_charged(dir, bow_charge01);
-      } else {
-        // too little charge -> treat as “cancel”
-        // (prevents accidental micro-taps)
       }
 
-      bow_charging = 0;
+      // reset charge after release regardless
       bow_charge01 = 0.0f;
     }
-  }
-
-  // If crafting menu opened while charging, cancel cleanly
-  if (crafting_open && bow_charging) {
+  } else {
+    // if you don't have bow, ensure charge is off
     bow_charging = 0;
     bow_charge01 = 0.0f;
   }
-  // --- zoom controls ---
-  if (IsKeyDown(KEY_EQUAL))
-    target_world_scale += 60.0f * dt;
-  if (IsKeyDown(KEY_MINUS))
-    target_world_scale -= 60.0f * dt;
-  target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
-
-  // --- current chunk ---
-  int cx = (int)(player.position.x / CHUNK_SIZE);
-  int cy = (int)(player.position.y / CHUNK_SIZE);
-  Chunk *c = get_chunk(cx, cy);
-
-  // --- Interactions ---
-  // IMPORTANT: only regen stamina when NOT spending it this frame
-  bool spent_stamina_this_frame = false;
-
-  // LMB = attack mobs
-  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
-    pthread_rwlock_wrlock(&c->lock);
-    player_try_attack_mob_in_chunk(c, cx, cy);
-    pthread_rwlock_unlock(&c->lock);
-  }
-
-  // RMB = harvest/mine resources
-  if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
-    float before = player.stamina;
-
-    pthread_rwlock_wrlock(&c->lock);
-    player_try_harvest_resource_in_chunk(c, cx, cy);
-    pthread_rwlock_unlock(&c->lock);
-
-    if (player.stamina < before - 0.0001f) {
-      spent_stamina_this_frame = true;
-    }
-  }
-
-  // --- stamina regen (time-based, only when not spending this frame) ---
-  if (!spent_stamina_this_frame && player.stamina < 100.0f) {
-    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
-  }
-
-  // clamp health
-  if (player.health < 0.0f)
-    player.health = 0.0f;
 }
 
 static void update_visible_world(float dt) {
