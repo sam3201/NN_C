@@ -32,6 +32,7 @@ typedef struct {
   int x;
   int y;
 
+  // Head
   struct {
     int x;
     int y;
