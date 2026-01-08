@@ -66,7 +66,6 @@ framework IOKit - framework CoreVideo - arch arm64 -
 o sim
 
  echo "Compilation successful! Running the sim..."./
- sim status = $
-?
+ sim status = $?
 
 echo "Game exited with status $status" rm - f./ sim exit "$status"
