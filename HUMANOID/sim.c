@@ -476,7 +476,7 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = stuck_n;             // 8
   out->obs[k++] = dx_n;                // 9
   out->obs[k++] = dy_n;                // 10
-                        // extra useful scalars
+                                       // extra useful scalars
   // 1) how fast the charge is growing *right now*
   float charge_rate_n =
       (p->on_ground && p->charging) ? (JUMP_CHARGE_RATE / 2.0f) : 0.0f;
