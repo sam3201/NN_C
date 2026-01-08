@@ -643,16 +643,29 @@ void update_agent(Agent *a) {
     for (int j = 0; j < J_COUNT; j++)
       a->jt[j].rest = rest0[j];
 
-    // --- Reward (per substep, but ACCUMULATED) ---
+    // --- Reward (per substep, accumulated to control tick) ---
     float reward = 0.0f;
-    float hip_y = a->pt[P_HIP].p.y;
-    float head_y = a->pt[P_HEAD].p.y;
 
-    reward += 0.001f; // alive bonus
-    if (head_y >= groundY - 2.0f)
-      reward -= 0.05f;
+    float head_y = a->pt[P_HEAD].p.y;
+    float hip_y  = a->pt[P_HIP].p.y;
+
+    // alive drip
+    reward += 0.001f;
+
+    // HEAD ALTITUDE (y-down, so altitude = groundY - head_y)
+    float head_alt = groundY - head_y; // px above ground
+    float alt_norm = clampf(head_alt / HEAD_TARGET_ALT, 0.0f, 1.0f);
+    reward += 0.004f * alt_norm;
+
+    // penalize “collapsed” hip a bit (optional)
     if (hip_y > groundY - 25.0f)
       reward -= 0.01f;
+
+    // BIG punishment if head touches ground (and we’ll terminate)
+    if (head_y >= groundY - HEAD_TOUCH_EPS) {
+      reward -= 0.50f;  // strong negative signal
+      a->alive = false; // terminal this step
+    }
 
     // accumulate reward until next control tick
     a->pending_reward += reward;
