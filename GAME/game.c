@@ -485,6 +485,22 @@ static inline Vector2 clamp_local_to_chunk(Vector2 lp) {
   return lp;
 }
 
+static void player_fire_bow_charged(Vector2 dir, float charge01) {
+  charge01 = clamp01(charge01);
+
+  float spd = lerp(BOW_SPEED_MIN, BOW_SPEED_MAX, charge01);
+  float ttl = lerp(BOW_TTL_MIN, BOW_TTL_MAX, charge01);
+
+  int dmg = (int)roundf(lerp((float)BOW_DMG_MIN, (float)BOW_DMG_MAX, charge01));
+  if (has_sword)
+    dmg += 4; // keep your “upgrade” synergy if you want
+
+  spawn_projectile(player.position, dir, spd, ttl, dmg);
+
+  // tiny feedback
+  cam_shake = fmaxf(cam_shake, 0.05f + 0.10f * charge01);
+}
+
 static inline int is_night(void) {
   // night from ~0.75 -> 1.0 and 0.0 -> 0.25 (tweak)
   return (time_of_day >= 0.75f || time_of_day <= 0.25f);
