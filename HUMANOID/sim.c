@@ -911,6 +911,12 @@ int main(void) {
   while (!WindowShouldClose()) {
     g_dt = GetFrameTime();
 
+    float groundY = (float)SCREEN_HEIGHT - 40.0f;
+    float camY = 0.0f;
+    float focus_alt = agents[0].best_alt; // or max across agents
+    camY = clampf((groundY - agents[0].pl.pos.y) - 250.0f, 0.0f, WORLD_HEIGHT);
+    camY = -camY; // move world down as you go up
+
     run_agent_jobs();
 
     BeginDrawing();
