@@ -751,13 +751,84 @@ static void update_projectiles(float dt) {
 
     p->pos = Vector2Add(p->pos, Vector2Scale(p->vel, dt));
 
-    // hit player (simple circle hit)
-    float d = Vector2Distance(p->pos, player.position);
-    if (d < 0.55f) {
-      player.health -= (float)p->damage;
-      player_hurt_timer = 0.18f;
-      p->alive = false;
-      cam_shake = fmaxf(cam_shake, 0.10f);
+    // ---------------------------
+    // MOB projectiles: hit player
+    // ---------------------------
+    if (p->owner == PROJ_OWNER_MOB) {
+      float d = Vector2Distance(p->pos, player.position);
+      if (d < 0.55f) {
+        player.health -= (float)p->damage;
+        player_hurt_timer = 0.18f;
+        p->alive = false;
+        cam_shake = fmaxf(cam_shake, 0.10f);
+        continue;
+      }
+
+      // hit agents too (simple circle)
+      for (int aidx = 0; aidx < MAX_AGENTS; aidx++) {
+        Agent *a = &agents[aidx];
+        if (!a->alive)
+          continue;
+        if (Vector2Distance(p->pos, a->position) < 0.55f) {
+          a->health -= (float)p->damage;
+          a->flash_timer = 0.18f;
+          p->alive = false;
+          cam_shake = fmaxf(cam_shake, 0.08f);
+          break;
+        }
+      }
+      if (!p->alive)
+        continue;
+    }
+
+    // -----------------------------------
+    // PLAYER/AGENT projectiles: hit mobs
+    // -----------------------------------
+    if (p->owner == PROJ_OWNER_PLAYER || p->owner == PROJ_OWNER_AGENT) {
+      int cx = (int)(p->pos.x / CHUNK_SIZE);
+      int cy = (int)(p->pos.y / CHUNK_SIZE);
+
+      // check a small neighborhood so fast arrows don't miss edge cases
+      for (int dx = -1; dx <= 1 && p->alive; dx++) {
+        for (int dy = -1; dy <= 1 && p->alive; dy++) {
+          Chunk *c = get_chunk(cx + dx, cy + dy);
+
+          pthread_rwlock_wrlock(&c->lock);
+
+          Vector2 origin = (Vector2){(float)((cx + dx) * CHUNK_SIZE),
+                                     (float)((cy + dy) * CHUNK_SIZE)};
+
+          for (int mi = 0; mi < MAX_MOBS; mi++) {
+            Mob *m = &c->mobs[mi];
+            if (m->health <= 0)
+              continue;
+
+            Vector2 mw = Vector2Add(origin, m->position);
+            float mr = mob_radius_world(m->type);
+
+            // projectile collision radius ~ small
+            if (Vector2Distance(p->pos, mw) < (mr * 0.85f)) {
+              m->health -= p->damage;
+              m->hurt_timer = 0.18f;
+              m->aggro_timer = 3.0f;
+
+              p->alive = false;
+              cam_shake = fmaxf(cam_shake, 0.08f);
+
+              if (m->health <= 0) {
+                Vector2 mob_world_pos =
+                    (Vector2){(float)((cx + dx) * CHUNK_SIZE) + m->position.x,
+                              (float)((cy + dy) * CHUNK_SIZE) + m->position.y};
+                on_mob_killed(m->type, mob_world_pos);
+                m->health = 0;
+              }
+              break;
+            }
+          }
+
+          pthread_rwlock_unlock(&c->lock);
+        }
+      }
     }
   }
 }
