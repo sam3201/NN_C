@@ -207,6 +207,20 @@ static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
 
+static GameState g_state = STATE_TITLE;
+
+// current world session
+static char g_world_name[64] = "World1";
+static uint32_t g_world_seed = 1337;
+
+// UI typing buffers
+static int g_typing_name = 0;
+static int g_typing_seed = 0;
+static char g_seed_text[16] = "1337";
+
+// save directory
+static const char *SAVE_ROOT = "saves";
+
 /* =======================
    STRUCTS
 ======================= */
