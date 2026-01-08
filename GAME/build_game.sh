@@ -63,7 +63,7 @@ printf "  %s\n" $SAM_SRC
 echo "Compiling game..."
 
 # Use clang on macOS if you want; gcc often maps to clang anyway.
-CC="${CC:-clang}"
+CC="${CC:-gcc}"
 
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" -w \
