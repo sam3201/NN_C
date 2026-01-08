@@ -937,27 +937,32 @@ static int load_world_from_disk(const char *world_name) {
     fclose(f);
     return 0;
   }
+
   if (h.magic[0] != 'S' || h.magic[1] != 'A' || h.magic[2] != 'M' ||
       h.magic[3] != 'W') {
     fclose(f);
     return 0;
   }
-  if (h.version != 1 && h.version != 2) {
+  if (h.version != 3) {
+    // you *can* keep your old v1/v2 loader if you want backwards compat,
+    // but DO NOT mix layouts. For now: reject.
     fclose(f);
+    fprintf(stderr, "Unsupported save version: %u\n", h.version);
     return 0;
   }
 
-  // reset world using saved seed, then apply dynamic state
   g_world_seed = h.seed;
   world_reset(g_world_seed);
 
   time_of_day = h.time_of_day;
   is_night_cached = is_night();
 
+  // player
   player.position = (Vector2){h.player_x, h.player_y};
   player.health = h.player_health;
   player.stamina = h.player_stamina;
 
+  // inv/tools
   inv_wood = h.inv_wood;
   inv_stone = h.inv_stone;
   inv_gold = h.inv_gold;
@@ -971,6 +976,7 @@ static int load_world_from_disk(const char *world_name) {
   has_armor = h.has_armor;
   has_bow = h.has_bow;
 
+  // tribes
   for (int t = 0; t < TRIBE_COUNT; t++) {
     tribes[t].integrity = h.tribe_integrity[t];
     tribes[t].wood = h.tribe_wood[t];
@@ -981,7 +987,109 @@ static int load_world_from_disk(const char *world_name) {
     tribes[t].arrows = h.tribe_arrows[t];
   }
 
-  // chunks
+  // ---- agents ONCE ----
+  uint32_t acount = h.agent_count;
+  if (acount != MAX_AGENTS) {
+    // if you later allow variable agent_count, handle it; for now keep fixed.
+    fprintf(stderr, "Save has agent_count=%u but build expects %d\n", acount,
+            MAX_AGENTS);
+    fclose(f);
+    return 0;
+  }
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    SaveAgent sa = {0};
+    if (fread(&sa, sizeof(sa), 1, f) != 1) {
+      fclose(f);
+      return 0;
+    }
+
+    Agent *a = &agents[i];
+    a->agent_id = sa.agent_id;
+    a->alive = sa.alive ? true : false;
+
+    a->position = (Vector2){sa.x, sa.y};
+    a->facing = (Vector2){sa.fx, sa.fy};
+
+    a->health = sa.health;
+    a->stamina = sa.stamina;
+
+    a->age = sa.age;
+    a->last_action = sa.last_action;
+    a->reward_accumulator = sa.reward_accumulator;
+
+    a->attack_cd = sa.attack_cd;
+    a->harvest_cd = sa.harvest_cd;
+    a->fire_cd = sa.fire_cd;
+
+    a->fire_latched = sa.fire_latched;
+    a->fire_latch_timer = sa.fire_latch_timer;
+
+    a->inv_food = sa.inv_food;
+    a->inv_arrows = sa.inv_arrows;
+    a->inv_shards = sa.inv_shards;
+
+    a->has_axe = sa.has_axe;
+    a->has_pickaxe = sa.has_pickaxe;
+    a->has_sword = sa.has_sword;
+    a->has_armor = sa.has_armor;
+    a->has_bow = sa.has_bow;
+
+    a->tool_selected = sa.tool_selected;
+    a->last_craft_selected = sa.last_craft_selected;
+  }
+
+  // ---- pickups ONCE ----
+  for (int i = 0; i < MAX_PICKUPS; i++)
+    pickups[i].alive = false;
+
+  uint32_t pcount = h.pickup_count;
+  for (uint32_t k = 0; k < pcount; k++) {
+    SavePickup sp = {0};
+    if (fread(&sp, sizeof(sp), 1, f) != 1) {
+      fclose(f);
+      return 0;
+    }
+
+    for (int i = 0; i < MAX_PICKUPS; i++) {
+      if (!pickups[i].alive) {
+        pickups[i].alive = true;
+        pickups[i].pos = (Vector2){sp.x, sp.y};
+        pickups[i].type = (PickupType)sp.type;
+        pickups[i].amount = sp.amount;
+        pickups[i].ttl = sp.ttl;
+        pickups[i].bob_t = sp.bob_t;
+        break;
+      }
+    }
+  }
+
+  // ---- projectiles ONCE ----
+  for (int i = 0; i < MAX_PROJECTILES; i++)
+    projectiles[i].alive = false;
+
+  uint32_t prcount = h.projectile_count;
+  for (uint32_t k = 0; k < prcount; k++) {
+    SaveProjectile sp = {0};
+    if (fread(&sp, sizeof(sp), 1, f) != 1) {
+      fclose(f);
+      return 0;
+    }
+
+    for (int i = 0; i < MAX_PROJECTILES; i++) {
+      if (!projectiles[i].alive) {
+        projectiles[i].alive = true;
+        projectiles[i].pos = (Vector2){sp.x, sp.y};
+        projectiles[i].vel = (Vector2){sp.vx, sp.vy};
+        projectiles[i].ttl = sp.ttl;
+        projectiles[i].damage = sp.damage;
+        projectiles[i].owner = (ProjOwner)sp.owner;
+        break;
+      }
+    }
+  }
+
+  // ---- chunks ----
   for (uint32_t k = 0; k < h.chunk_count; k++) {
     SaveChunkHeader ch = {0};
     if (fread(&ch, sizeof(ch), 1, f) != 1) {
@@ -1003,7 +1111,6 @@ static int load_world_from_disk(const char *world_name) {
     c->biome_type = ch.biome_type;
     c->mob_spawn_timer = ch.mob_spawn_timer;
 
-    // terrain is trivial in your generator (biome fill), so keep it consistent:
     for (int i = 0; i < CHUNK_SIZE; i++)
       for (int j = 0; j < CHUNK_SIZE; j++)
         c->terrain[i][j] = c->biome_type;
@@ -1012,116 +1119,15 @@ static int load_world_from_disk(const char *world_name) {
     if (c->resource_count > MAX_RESOURCES)
       c->resource_count = MAX_RESOURCES;
 
-    if (h.version >= 2) {
-      // ---------------- agents ----------------
-      for (int i = 0; i < MAX_AGENTS; i++) {
-        SaveAgent sa = {0};
-        if (fread(&sa, sizeof(sa), 1, f) != 1) {
-          fclose(f);
-          return 0;
-        }
-
-        Agent *a = &agents[i];
-
-        a->agent_id = sa.agent_id;
-        a->alive = sa.alive ? true : false;
-
-        a->position = (Vector2){sa.x, sa.y};
-        a->facing = (Vector2){sa.fx, sa.fy};
-
-        a->health = sa.health;
-        a->stamina = sa.stamina;
-
-        a->age = sa.age;
-        a->last_action = sa.last_action;
-        a->reward_accumulator = sa.reward_accumulator;
-
-        a->attack_cd = sa.attack_cd;
-        a->harvest_cd = sa.harvest_cd;
-        a->fire_cd = sa.fire_cd;
-
-        a->fire_latched = sa.fire_latched;
-        a->fire_latch_timer = sa.fire_latch_timer;
-
-        a->inv_food = sa.inv_food;
-        a->inv_arrows = sa.inv_arrows;
-        a->inv_shards = sa.inv_shards;
-
-        a->has_axe = sa.has_axe;
-        a->has_pickaxe = sa.has_pickaxe;
-        a->has_sword = sa.has_sword;
-        a->has_armor = sa.has_armor;
-        a->has_bow = sa.has_bow;
-
-        a->tool_selected = sa.tool_selected;
-        a->last_craft_selected = sa.last_craft_selected;
-      }
-
-      // ---------------- pickups ----------------
-      for (int i = 0; i < MAX_PICKUPS; i++)
-        pickups[i].alive = false;
-
-      uint32_t pcount = 0;
-      if (fread(&pcount, sizeof(uint32_t), 1, f) != 1) {
-        fclose(f);
-        return 0;
-      }
-
-      for (uint32_t k = 0; k < pcount; k++) {
-        SavePickup sp = {0};
-        if (fread(&sp, sizeof(sp), 1, f) != 1) {
-          fclose(f);
-          return 0;
-        }
-        // place into first free slot
-        for (int i = 0; i < MAX_PICKUPS; i++) {
-          if (!pickups[i].alive) {
-            pickups[i].alive = true;
-            pickups[i].pos = (Vector2){sp.x, sp.y};
-            pickups[i].type = (PickupType)sp.type;
-            pickups[i].amount = sp.amount;
-            pickups[i].ttl = sp.ttl;
-            pickups[i].bob_t = sp.bob_t;
-            break;
-          }
-        }
-      }
-
-      // ---------------- projectiles ----------------
-      for (int i = 0; i < MAX_PROJECTILES; i++)
-        projectiles[i].alive = false;
-
-      uint32_t prcount = 0;
-      if (fread(&prcount, sizeof(uint32_t), 1, f) != 1) {
-        fclose(f);
-        return 0;
-      }
-
-      for (uint32_t k = 0; k < prcount; k++) {
-        SaveProjectile sp = {0};
-        if (fread(&sp, sizeof(sp), 1, f) != 1) {
-          fclose(f);
-          return 0;
-        }
-
-        for (int i = 0; i < MAX_PROJECTILES; i++) {
-          if (!projectiles[i].alive) {
-            projectiles[i].alive = true;
-            projectiles[i].pos = (Vector2){sp.x, sp.y};
-            projectiles[i].vel = (Vector2){sp.vx, sp.vy};
-            projectiles[i].ttl = sp.ttl;
-            projectiles[i].damage = sp.damage;
-            projectiles[i].owner = (ProjOwner)sp.owner;
-            break;
-          }
-        }
-      }
-    }
-
     // resources
     for (int i = 0; i < (int)ch.resource_count; i++) {
       SaveResource sr = {0};
-      fread(&sr, sizeof(sr), 1, f);
+      if (fread(&sr, sizeof(sr), 1, f) != 1) {
+        pthread_rwlock_unlock(&c->lock);
+        fclose(f);
+        return 0;
+      }
+
       if (i < MAX_RESOURCES) {
         Resource *r = &c->resources[i];
         r->position = clamp_local_to_chunk((Vector2){sr.lx, sr.ly});
@@ -1133,14 +1139,17 @@ static int load_world_from_disk(const char *world_name) {
       }
     }
 
-    // clear mobs
+    // clear mobs then load alive mobs
     for (int i = 0; i < MAX_MOBS; i++)
       c->mobs[i].health = 0;
 
-    // mobs (alive only) — place into first free slots
     for (uint32_t i = 0; i < ch.mob_count; i++) {
       SaveMob sm = {0};
-      fread(&sm, sizeof(sm), 1, f);
+      if (fread(&sm, sizeof(sm), 1, f) != 1) {
+        pthread_rwlock_unlock(&c->lock);
+        fclose(f);
+        return 0;
+      }
 
       int slot = find_free_mob_slot(c);
       if (slot >= 0) {
