@@ -371,52 +371,53 @@ static void build_platforms(void) {
 static void solve_player_platforms(PlayerJK *p) {
   p->on_ground = 0;
 
-  // ---- RAMP ----
-  if (pl->kind == PLAT_RAMP) {
-    // only land when falling
-    if (p->vel.y < 0.0f)
-      continue;
-
-    float x0 = pl->x, y0 = pl->y;
-    float x1 = pl->x2, y1 = pl->y2;
-
-    float minx = fminf(x0, x1), maxx = fmaxf(x0, x1);
-    if (p->pos.x < minx - p->radius || p->pos.x > maxx + p->radius)
-      continue;
-
-    // y on ramp at player's x (linear interpolation)
-    float t = (fabsf(x1 - x0) > 0.0001f) ? ((p->pos.x - x0) / (x1 - x0)) : 0.0f;
-    t = clampf(t, 0.0f, 1.0f);
-    float y_on = y0 + (y1 - y0) * t;
-
-    float prev_bottom = p->prev_y + p->radius;
-    float cur_bottom = p->pos.y + p->radius;
-
-    // must cross the ramp surface downward
-    if (!(prev_bottom <= y_on && cur_bottom >= y_on))
-      continue;
-
-    // snap to ramp
-    p->pos.y = y_on - p->radius;
-    p->vel.y = 0.0f;
-    p->on_ground = 1;
-
-    // slide due to gravity component along slope
-    float dx = (x1 - x0);
-    float dy = (y1 - y0); // y-down
-    float slope = (fabsf(dx) > 0.0001f) ? (dy / dx) : 0.0f;
-
-    // sin(theta) where tan(theta)=slope -> slope/sqrt(1+slope^2)
-    float sinth = slope / sqrtf(1.0f + slope * slope);
-
-    // gravity pulls "down the ramp"
-    p->vel.x += GRAVITY_Y * sinth * RAMP_SLIDE_SCALE * FIXED_DT;
-
-    continue;
-  }
-
   for (int i = 0; i < g_plat_count; i++) {
     Platform *pl = &g_plats[i];
+
+    // ---- RAMP ----
+    if (pl->kind == PLAT_RAMP) {
+      // only land when falling
+      if (p->vel.y < 0.0f)
+        continue;
+
+      float x0 = pl->x, y0 = pl->y;
+      float x1 = pl->x2, y1 = pl->y2;
+
+      float minx = fminf(x0, x1), maxx = fmaxf(x0, x1);
+      if (p->pos.x < minx - p->radius || p->pos.x > maxx + p->radius)
+        continue;
+
+      // y on ramp at player's x (linear interpolation)
+      float t =
+          (fabsf(x1 - x0) > 0.0001f) ? ((p->pos.x - x0) / (x1 - x0)) : 0.0f;
+      t = clampf(t, 0.0f, 1.0f);
+      float y_on = y0 + (y1 - y0) * t;
+
+      float prev_bottom = p->prev_y + p->radius;
+      float cur_bottom = p->pos.y + p->radius;
+
+      // must cross the ramp surface downward
+      if (!(prev_bottom <= y_on && cur_bottom >= y_on))
+        continue;
+
+      // snap to ramp
+      p->pos.y = y_on - p->radius;
+      p->vel.y = 0.0f;
+      p->on_ground = 1;
+
+      // slide due to gravity component along slope
+      float dx = (x1 - x0);
+      float dy = (y1 - y0); // y-down
+      float slope = (fabsf(dx) > 0.0001f) ? (dy / dx) : 0.0f;
+
+      // sin(theta) where tan(theta)=slope -> slope/sqrt(1+slope^2)
+      float sinth = slope / sqrtf(1.0f + slope * slope);
+
+      // gravity pulls "down the ramp"
+      p->vel.x += GRAVITY_Y * sinth * RAMP_SLIDE_SCALE * FIXED_DT;
+
+      continue;
+    }
 
     if (pl->one_way) {
       if (p->vel.y < 0)
