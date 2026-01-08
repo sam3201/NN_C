@@ -505,7 +505,6 @@ static void update_agent(Agent *a) {
     float d2 = dxp * dxp + dyp * dyp;
 
     if (p->on_ground && !p->charging && d2 < (STILL_EPS_PX * STILL_EPS_PX)) {
-
       a->pos_still_time += FIXED_DT;
     } else {
       a->pos_still_time = 0.0f;
