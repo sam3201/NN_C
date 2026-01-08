@@ -632,11 +632,12 @@ static void reset_agent_episode(Agent *a) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                      a->last_action, a->pending_reward, 1);
   }
-  a->episodes_done++;
   if (a->cortex) {
+    // epsilon for the NEXT episode we are about to start
     a->cortex->policy_epsilon = epsilon_schedule(a->episodes_done);
-    a->cortex->policy_temperature = 1.0f; // optionally decay this too
+    a->cortex->policy_temperature = 1.0f;
   }
+  a->episodes_done++;
 
   a->alive = true;
   a->episode_time = 0.0f;
