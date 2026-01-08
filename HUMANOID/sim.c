@@ -212,11 +212,10 @@ static inline int clampi(int v, int lo, int hi) {
 
 static inline void world_to_grid(const Vector2 origin, float x, float y,
                                  int *out_gx, int *out_gy) {
-  // origin is top-left of view window in world-space
   float u = (x - origin.x) / VIEW_W_PX; // 0..1
   float v = (y - origin.y) / VIEW_H_PX; // 0..1
-  int gx = (int)floorf(u * GRID_W);
-  int gy = (int)floorf(v * GRID_H);
+  int gx = (int)floorf(u * (float)GRID_W);
+  int gy = (int)floorf(v * (float)GRID_H);
   *out_gx = gx;
   *out_gy = gy;
 }
