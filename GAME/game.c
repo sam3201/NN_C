@@ -2936,6 +2936,10 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
     obs_push(obs, safe_norm(toP.y, dP));
   }
 
+  // facing (so forward-actions make sense)
+  obs_push(obs, a->facing.x);
+  obs_push(obs, a->facing.y);
+
   // ----------------------------
   // INVENTORY / TOOLS (compact)
   // ----------------------------
