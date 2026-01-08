@@ -3275,6 +3275,11 @@ void update_player(void) {
 
       spawn_projectile(player.position, dir, 14.0f, 1.8f,
                        12 + (has_sword ? 4 : 0));
+    } else {
+      if (IsKeyPressed(KEY_F) && !has_bow) {
+        // tiny nudge: no bow yet
+        cam_shake = fmaxf(cam_shake, 0.03f);
+      }
     }
     }
 
