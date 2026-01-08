@@ -136,7 +136,10 @@ static void add_dirichlet_noise(Node *root, float alpha, float eps) {
 
   float sum = 0.0f;
   for (int i = 0; i < A; i++) {
-    float u = (rand() + 1.0f) / (RAND_MAX + 1.0f);
+    float u = rng ? rng->rand01(rng->ctx) : ((float)rand() / (float)RAND_MAX);
+    if (u <= 0.0f)
+      u = 1e-6f;
+
     g[i] = -logf(u); /* exponential(1) */
     sum += g[i];
   }
