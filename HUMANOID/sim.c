@@ -324,6 +324,16 @@ static void build_platforms(void) {
       .one_way = 0,
   };
 
+  // Simple ramps near spawn area
+  g_plats[g_plat_count++] = (Platform){
+      .kind = PLAT_RAMP,
+      .one_way = 0,
+      .x = 250.0f,
+      .y = (float)SCREEN_HEIGHT - 160.0f,
+      .x2 = 450.0f,
+      .y2 = (float)SCREEN_HEIGHT - 100.0f, // down to right
+  };
+
   g_plats[g_plat_count++] = (Platform){
       .kind = PLAT_RAMP,
       .one_way = 0,
