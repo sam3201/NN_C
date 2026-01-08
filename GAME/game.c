@@ -528,7 +528,7 @@ static void player_fire_bow_charged(Vector2 dir, float charge01) {
   if (has_sword)
     dmg += 4; // keep your “upgrade” synergy if you want
 
-  spawn_projectile(player.position, dir, spd, ttl, dmg);
+  spawn_projectile(player.position, dir, spd, ttl, dmg, PROJ_OWNER_PLAYER);
 
   // tiny feedback
   cam_shake = fmaxf(cam_shake, 0.05f + 0.10f * charge01);
