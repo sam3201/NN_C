@@ -65,17 +65,15 @@ typedef struct {
 
 static Platform g_plats[PLATFORM_MAX];
 static int g_plat_count = 0;
-typedef struct {
-  Vector2 p;     // current position
-  Vector2 pprev; // previous position (for Verlet)
-  float invMass; // 0 = pinned, 1 = normal
-} Particle;
 
-typedef struct {
-  int a;      // particle index A
-  int b;      // particle index B
-  float rest; // rest length
-} Joint;
+enum {
+  ACT_NONE = 0,
+  ACT_LEFT,
+  ACT_RIGHT,
+  ACT_CHARGE,  // hold
+  ACT_RELEASE, // release jump
+  ACTION_COUNT
+};
 
 typedef struct {
   float obs[OBS_DIM];
