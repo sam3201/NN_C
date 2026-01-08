@@ -1098,6 +1098,10 @@ int main(void) {
     DrawText(TextFormat("OnGround: %d", ba->pl.on_ground), 20, 145, 20,
              RAYWHITE);
     DrawText(TextFormat("LastAct: %d", ba->last_action), 20, 170, 20, RAYWHITE);
+    DrawText(TextFormat("Eps: %.3f  Ep: %d",
+                        ba->cortex ? ba->cortex->policy_epsilon : 0.0f,
+                        ba->episodes_done),
+             20, 195, 20, RAYWHITE);
 
     EndDrawing();
   }
