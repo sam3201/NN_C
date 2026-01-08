@@ -1166,6 +1166,22 @@ int main(void) {
     // simulate
     run_agent_jobs();
 
+    static int train_counter = 0;
+    train_counter++;
+    if ((train_counter % 2) == 0) { // every other frame, tune
+      TrainerConfig tc = {
+          .batch_size = 64,
+          .train_steps = 50,
+          .min_replay_size = 2048,
+          .lr = 0.01f,
+      };
+
+      pthread_mutex_lock(&g_rb_mtx);
+      trainer_train_from_replay(g_model, g_rb, &tc);
+      trainer_train_dynamics(g_model, g_rb, &tc);
+      pthread_mutex_unlock(&g_rb_mtx);
+    }
+
     // pick best agent
     int best_i = find_best_agent_index();
     Agent *ba = &agents[best_i];
