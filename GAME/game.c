@@ -3708,6 +3708,12 @@ void update_player(void) {
     player.position.x += move;
     moving = true;
   }
+  // --- zoom controls ---
+  if (IsKeyDown(KEY_EQUAL))
+    target_world_scale += 60.0f * dt;
+  if (IsKeyDown(KEY_MINUS))
+    target_world_scale -= 60.0f * dt;
+  target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
 
   // optional: tiny stamina drain while moving
   if (moving) {
