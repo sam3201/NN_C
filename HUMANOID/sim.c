@@ -462,6 +462,15 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
   float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f);
 
+  // extra useful scalars
+  // 1) how fast the charge is growing *right now*
+  float charge_rate_n =
+      (p->on_ground && p->charging) ? (JUMP_CHARGE_RATE / 2.0f) : 0.0f;
+  charge_rate_n = clampf(charge_rate_n, 0.0f, 1.0f);
+
+  // 2) falling flag (y-down world): vel.y > 0 means falling
+  float falling = (p->vel.y > 0.0f) ? 1.0f : 0.0f;
+
   // Fill OBS_EXTRA = 10
   // Fill OBS_EXTRA = 12
   // indices 0..11 (relative to k0=OBS_GRID)
