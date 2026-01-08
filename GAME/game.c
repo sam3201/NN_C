@@ -3203,6 +3203,16 @@ void update_agent(Agent *a) {
     break;
   }
 
+  // --- continuous fire: if latched, keep attempting to fire as soon as CD
+  // allows ---
+  if (a->fire_latched) {
+    // IMPORTANT: don't also fire twice in the same tick if action already was
+    // FIRE
+    if (action != ACTION_FIRE) {
+      agent_try_fire_forward(a, tr, &reward);
+    }
+  }
+
   // Movement
   agent_try_move(a, moveDir);
 
