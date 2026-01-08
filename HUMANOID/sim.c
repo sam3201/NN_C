@@ -515,6 +515,7 @@ static void draw_agent_jk(const Agent *a, float camY) {
   Vector2 p = a->pl.pos;
   DrawCircle((int)p.x, (int)(p.y + camY), (int)a->pl.radius, RAYWHITE);
 }
+
 static void *agent_worker(void *arg) {
   (void)arg;
 
