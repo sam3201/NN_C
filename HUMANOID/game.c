@@ -145,8 +145,6 @@ int main(void) {
     for (int i = 0; i < MAX_AGENTS; i++) {
       if (!agents[i].alive)
         continue;
-      Vector2 ap = world_to_screen(agents[i].position);
-      Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
       draw_agent(&agents[i], ap, tc);
     }
 
