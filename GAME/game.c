@@ -4118,6 +4118,17 @@ void update_agent(Agent *a) {
 
   case ACTION_CRAFT:
     // agent_try_craft(a, tr, &reward);
+    ACTION_CRAFT_AXE
+
+    ACTION_CRAFT_PICKAXE
+
+    ACTION_CRAFT_SWORD
+
+    ACTION_CRAFT_ARMOR
+
+    ACTION_CRAFT_BOW
+
+    ACTION_CRAFT_ARROWS
 
     break;
 
