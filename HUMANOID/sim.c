@@ -20,10 +20,11 @@
 // =======================
 #define FPS 60.0
 
-#define OBS_DIM 72
 #define EPISODE_SECONDS 8.0f
 #define HEAD_TOUCH_EPS 1.5f   // how close to ground counts as “touch”
 #define HEAD_TARGET_ALT 90.0f // px above ground that we’d like (tune)
+
+#define OBS_DIM 72
 
 #define WORKER_COUNT 4
 #define MAX_AGENTS 64
