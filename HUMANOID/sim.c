@@ -43,7 +43,7 @@ static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 #define VIEW_W_PX 720.0f
 #define VIEW_H_PX 560.0f
 
-#define PLATFORM_MAX 256
+#define PLATFORM_MAX 64
 
 typedef struct {
   float x, y, w, h;
