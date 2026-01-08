@@ -18,6 +18,8 @@
 /* =======================
    GLOBAL CONFIG
 ======================= */
+#define WORKER_COUNT 4
+#define MAX_AGENTS 128
 
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
