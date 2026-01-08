@@ -22,6 +22,13 @@
 /* =======================
    GLOBAL CONFIG
 ======================= */
+job_mtx = PTHREAD_MUTEX_INITIALIZER;
+job_cv = PTHREAD_COND_INITIALIZER;
+done_cv = PTHREAD_COND_INITIALIZER;
+job_quit = 0;
+job_active = 0;
+job_next_agent = 0;
+job_done_workers = 0;
 
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
