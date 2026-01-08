@@ -715,7 +715,6 @@ static void reset_agent_episode(Agent *a) {
       float g = 0.0f;
       for (int t = T - 1; t >= 0; t--) {
         g *= a->mcts_params.discount;
-        z[t] = acc;
       }
 
       // push to global replay
