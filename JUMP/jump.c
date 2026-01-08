@@ -786,8 +786,8 @@ static void reset_agent_episode(Agent *a) {
   a->has_last_obs = 1;
 
   int action =
-      muze_plan(a->cortex->brain, a->last_obs.obs, (size_t)ACTION_COUNT);
-  a->last_action = ACT_NONE;
+      muze_plan(a->cortex, a->last_obs, (size_t)OBS_DIM, (size_t)ACTION_COUNT);
+  a->last_action = action;
 
   // keep last_pi clean
   for (int i = 0; i < ACTION_COUNT; i++)
