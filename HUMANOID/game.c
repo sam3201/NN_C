@@ -23,6 +23,12 @@
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 800
 
+typedef struct {
+  bool alive;
+  int x;
+  int y;
+} agent_t;
+
 /* =======================
    GLOBAL CONFIG
 ======================= */
