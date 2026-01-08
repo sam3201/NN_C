@@ -513,6 +513,7 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = act_release; // 17
 
   out->obs[k++] = 1.0f; // 18 bias
+
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
   out->n = OBS_DIM;
