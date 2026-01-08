@@ -13,6 +13,7 @@
 // =======================
 // CONFIG
 // =======================
+
 #define FPS 60.0f
 #define EPISODE_SECONDS 8.0f
 
@@ -41,6 +42,8 @@ static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 // World-space view window around the agent (in pixels)
 #define VIEW_W_PX 720.0f
 #define VIEW_H_PX 560.0f
+
+#define PLATFORM_MAX 100
 
 typedef struct {
   float x, y, w, h;
