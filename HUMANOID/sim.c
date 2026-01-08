@@ -482,6 +482,16 @@ static void update_agent(Agent *a) {
       p->charge = 0.0f;
     }
 
+    // --------------------------
+    // Upward velocity shaping (airborne)
+    // --------------------------
+    if (!p->on_ground) {
+      // upward speed is -vel.y (since y-down)
+      float up = (-p->vel.y) / UP_VEL_SCALE; // roughly 0..~1
+      up = clampf(up, 0.0f, 1.0f);
+      a->pending_reward += UP_VEL_REWARD * up * FIXED_DT;
+    }
+
     // reward: maximize height
     float groundY = (float)SCREEN_HEIGHT - 40.0f;
     float alt = groundY - p->pos.y;
