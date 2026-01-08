@@ -110,7 +110,7 @@ int main(void) {
   srand(time(NULL));
 
   InitWindow(1280, 800, "HUMANOID");
-  SetExitKey(KEY_NULL); // <- ESC will NOT close the window anymore
+  SetExitKey(KEY_NULL); //
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
