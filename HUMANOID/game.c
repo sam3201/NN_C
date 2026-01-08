@@ -148,20 +148,7 @@ int main(void) {
       draw_agent(&agents[i], ap, tc);
     }
 
-    // player
-    Vector2 pp = world_to_screen(player.position);
-    draw_player(pp);
-    draw_bow_charge_fx();
-
-    // UI + debug
-    draw_ui();
-    draw_hover_label();
-    draw_minimap();
-    draw_daynight_overlay(); // AFTER world draw, before EndDrawing
-    draw_hurt_vignette();
-    draw_crafting_ui();
-
-    DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+    DrawText("HUMANOID Simulation", 20, 160, 20, RAYWHITE);
     DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
 
     EndDrawing();
