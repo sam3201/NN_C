@@ -266,6 +266,9 @@ typedef struct Agent {
   bool has_sword;
   bool has_armor;
 
+  int tool_selected;
+  int last_craft_selected;
+
 } Agent;
 
 typedef struct {
