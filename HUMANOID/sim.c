@@ -18,7 +18,7 @@
 
 // Grid observation: OBS_DIM must equal GRID_W * GRID_H
 #define GRID_W SCREEN_WIDTH
-#define GRID_H 8
+#define GRID_H SCREEN_HEIGHT
 #if (OBS_DIM != (GRID_W * GRID_H))
 #error "OBS_DIM must equal GRID_W*GRID_H"
 #endif
