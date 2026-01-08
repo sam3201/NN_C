@@ -1653,6 +1653,7 @@ static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
       projectiles[i].ttl = ttl;
       projectiles[i].damage = dmg;
       projectiles[i].owner = owner;
+      projectiles[i].owner_agent_id = ;
       return;
     }
   }
