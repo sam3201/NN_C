@@ -30,6 +30,9 @@
 #define MOVE_SPEED 260.0f
 #define AIR_CONTROL 0.35f
 
+#define AIR_ACCEL_SCALE 0.55f // extra drift accel amount (in air)
+#define AIR_DRAG 0.992f       // keep velocity longer in air (was 0.985)
+
 #define JUMP_CHARGE_RATE 1.6f
 #define JUMP_CHARGE_MAX 1.0f
 #define JUMP_VY_MIN -650.0f
