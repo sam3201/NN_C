@@ -109,7 +109,7 @@ static void stop_workers(void) {
 int main(void) {
   srand(time(NULL));
 
-  InitWindow(1280, 800, "HUMANOID`");
+  InitWindow(1280, 800, "HUMANOID");
   SetExitKey(KEY_NULL); // <- ESC will NOT close the window anymore
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
