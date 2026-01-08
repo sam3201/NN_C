@@ -55,7 +55,7 @@ void selfplay_run(MuModel *model, void *env_state,
       mp.temperature = sp_params->temperature > 0.0f ? sp_params->temperature
                                                      : mcts_params->temperature;
 
-      MCTSResult mr = mcts_run(model, obs_cur, &mp);
+      MCTSResult mr = mcts_run(model, obs_cur, &mp, NULL);
 
       /* sample action according to pi (with rng) */
       float r = (float)rand() / (float)RAND_MAX;
