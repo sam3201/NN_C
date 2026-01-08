@@ -81,7 +81,7 @@ CC="${CC:-gcc}"
   -o sim 
 
 echo "Compilation successful! Running the game..."
-./game
+./sim
 status=$?
 
 echo "Game exited with status $status"
