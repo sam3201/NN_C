@@ -25,6 +25,10 @@ struct MuModel {
   int dyn_W_count;
   int pred_W_count;
 
+  float *rew_W; // [latent_dim]
+  float rew_b;  // scalar bias
+  int rew_W_count;
+
   void *runtime;
 
   /* dispatch hooks (MuZero style) */
