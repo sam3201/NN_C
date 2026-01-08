@@ -17,7 +17,6 @@ void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
 int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
                          int *a_batch, float *r_batch, float *next_obs_batch,
                          int *done_batch);
-
 int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
               float *z_batch);
 size_t rb_size(ReplayBuffer *rb);
