@@ -104,7 +104,8 @@
 #define OBS_DIM 128
 #define TRAIN_INTERVAL 1
 
-#define WORLD_NAME_MAX 64
+#define MAX_WORLDS 4096
+#define WORLD_NAME_MAX 4096
 
 // ------------------- Saving / UI -------------------
 #define AUTOSAVE_INTERVAL_SEC 10.0f // change to taste
