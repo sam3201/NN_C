@@ -785,6 +785,7 @@ static void reset_agent_episode(Agent *a) {
   memcpy(a->last_obs, obs.data, sizeof(float) * OBS_DIM);
   a->has_last_obs = 1;
 
+  int action = muze_plan(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM);
   a->last_action = ACT_NONE;
 
   // keep last_pi clean
