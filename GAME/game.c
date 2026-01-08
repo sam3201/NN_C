@@ -4714,6 +4714,137 @@ static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
   DrawText(buf, (int)r.x + 10, (int)r.y + 10, 20, RAYWHITE);
 }
 
+static void do_world_select_screen(void) {
+  // Refresh list on first entry or when empty
+  static int initialized = 0;
+  if (!initialized) {
+    world_list_refresh(&g_world_list);
+    initialized = 1;
+  }
+
+  world_list_ensure_valid(&g_world_list);
+
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){18, 18, 28, 255});
+  DrawText("Select World", 40, 30, 44, RAYWHITE);
+
+  Rectangle listBox = {40, 100, 520, (float)SCREEN_HEIGHT - 180};
+  DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
+  DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
+
+  int itemH = 44;
+  int visible = (int)(listBox.height / itemH);
+  if (visible < 1)
+    visible = 1;
+
+  // mouse wheel scroll
+  float wheel = GetMouseWheelMove();
+  if (wheel != 0.0f && g_world_list.count > 0) {
+    g_world_list.scroll -= (int)wheel;
+    if (g_world_list.scroll < 0)
+      g_world_list.scroll = 0;
+    int maxScroll =
+        (g_world_list.count > visible) ? (g_world_list.count - visible) : 0;
+    if (g_world_list.scroll > maxScroll)
+      g_world_list.scroll = maxScroll;
+  }
+
+  // keyboard nav
+  if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
+    g_world_list.selected--;
+  if (IsKeyPressed(KEY_DOWN) && g_world_list.selected < g_world_list.count - 1)
+    g_world_list.selected++;
+
+  // keep selected in view
+  if (g_world_list.selected >= 0) {
+    if (g_world_list.selected < g_world_list.scroll)
+      g_world_list.scroll = g_world_list.selected;
+    if (g_world_list.selected >= g_world_list.scroll + visible)
+      g_world_list.scroll = g_world_list.selected - visible + 1;
+  }
+
+  // draw items
+  for (int i = 0; i < visible; i++) {
+    int idx = g_world_list.scroll + i;
+    if (idx >= g_world_list.count)
+      break;
+
+    Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
+                     listBox.width - 20, (float)itemH - 6};
+    int hot = CheckCollisionPointRec(GetMousePosition(), row);
+
+    Color bg = (Color){35, 35, 55, 255};
+    if (idx == g_world_list.selected)
+      bg = (Color){60, 60, 95, 255};
+    else if (hot)
+      bg = (Color){45, 45, 70, 255};
+
+    DrawRectangleRounded(row, 0.18f, 8, bg);
+
+    DrawText(g_world_list.names[idx], (int)(row.x + 12), (int)(row.y + 10), 22,
+             RAYWHITE);
+
+    if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      g_world_list.selected = idx;
+    }
+  }
+
+  Rectangle rPlay = {600, 140, 260, 54};
+  Rectangle rDelete = {600, 210, 260, 54};
+  Rectangle rCreate = {600, 280, 260, 54};
+  Rectangle rBack = {600, 350, 260, 54};
+
+  int hasSelection = (g_world_list.selected >= 0 &&
+                      g_world_list.selected < g_world_list.count);
+
+  if (ui_button(rPlay, hasSelection ? "Play Selected" : "Play (no world)")) {
+    if (hasSelection) {
+      snprintf(g_world_name, sizeof(g_world_name), "%s",
+               g_world_list.names[g_world_list.selected]);
+
+      // load
+      if (!load_world_from_disk(g_world_name)) {
+        // if load fails, create fresh using current seed
+        world_reset(g_world_seed);
+        save_world_to_disk(g_world_name);
+      }
+
+      g_autosave_timer = 0.0f;
+      g_state = STATE_PLAYING;
+    }
+  }
+
+  if (ui_button(rDelete, hasSelection ? "Delete World" : "Delete (no world)")) {
+    if (hasSelection) {
+      const char *wname = g_world_list.names[g_world_list.selected];
+      delete_world_by_name(wname);
+
+      world_list_refresh(&g_world_list);
+      world_list_ensure_valid(&g_world_list);
+    }
+  }
+
+  if (ui_button(rCreate, "Create New World")) {
+    // go to your create UI
+    g_state = STATE_WORLD_CREATE;
+  }
+
+  if (ui_button(rBack, "Back")) {
+    g_state = STATE_TITLE;
+  }
+
+  // Enter to play
+  if (hasSelection && IsKeyPressed(KEY_ENTER)) {
+    snprintf(g_world_name, sizeof(g_world_name), "%s",
+             g_world_list.names[g_world_list.selected]);
+    if (!load_world_from_disk(g_world_name)) {
+      world_reset(g_world_seed);
+      save_world_to_disk(g_world_name);
+    }
+    g_autosave_timer = 0.0f;
+    g_state = STATE_PLAYING;
+  }
+}
+
 /* =======================
    THREAD
 
