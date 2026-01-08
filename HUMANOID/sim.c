@@ -475,36 +475,21 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
 // AGENTS
 // =======================
 static void reset_agent_episode(Agent *a) {
+  // terminal learn (done=1) if we had a transition
   if (a->cortex && a->has_last_transition) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                     a->last_action, a->pending_reward, 0);
+                     a->last_action, a->pending_reward, 1);
   }
-  a->pending_reward = 0.0f;
-
-  encode_observation_jk(a, &a->last_obs);
-
-  a->last_action = a->cortex ? muze_plan(a->cortex, a->last_obs.obs,
-                                         (size_t)OBS_DIM, (size_t)ACTION_COUNT)
-                             : ACT_NONE;
 
   a->alive = true;
   a->episode_time = 0.0f;
+
   a->time_since_progress = 0.0f;
   a->last_best_alt = 0.0f;
-
   a->pos_still_time = 0.0f;
 
   a->pending_reward = 0.0f;
   a->has_last_transition = 0;
-  // DON'T memset the ObsDyn struct (it contains a heap pointer).
-  // Just clear the buffer if you want:
-  if (a->last_obs.obs) {
-    for (int i = 0; i < OBS_DIM; i++)
-      a->last_obs.obs[i] = 0.0f;
-  }
-  a->last_obs.n = 0;
-
-  a->reward_accumulator = 0.0f;
 
   a->pl.pos = a->spawn_origin;
   a->pl.vel = (Vector2){0, 0};
@@ -513,9 +498,13 @@ static void reset_agent_episode(Agent *a) {
   a->pl.charging = 0;
   a->pl.charge = 0.0f;
   a->pl.prev_y = a->pl.pos.y;
-  a->last_pos = a->pl.pos;
 
+  a->last_pos = a->pl.pos;
   a->best_alt = 0.0f;
+
+  // refresh obs for the new starting state
+  encode_observation_jk(a, &a->last_obs);
+  a->last_action = ACT_NONE;
 }
 
 static void init_agents(void) {
