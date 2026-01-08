@@ -1,8 +1,8 @@
 #ifndef REPLAY_BUFFER_H
 #define REPLAY_BUFFER_H
 
+#include "game.h"
 #include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
