@@ -80,51 +80,6 @@ typedef struct {
   int n;
 } ObsFixed;
 
-enum {
-  P_HEAD = 0,
-  P_NECK,
-  P_CHEST,
-  P_HIP,
-
-  P_SHOULDER_L,
-  P_ELBOW_L,
-  P_HAND_L,
-
-  P_SHOULDER_R,
-  P_ELBOW_R,
-  P_HAND_R,
-
-  P_KNEE_L,
-  P_ANKLE_L,
-
-  P_KNEE_R,
-  P_ANKLE_R,
-
-  P_COUNT
-};
-
-enum {
-  J_NECK = 0,
-  J_SPINE1,
-  J_SPINE2,
-
-  J_SHOULDER_L,
-  J_UPPERARM_L,
-  J_FOREARM_L,
-
-  J_SHOULDER_R,
-  J_UPPERARM_R,
-  J_FOREARM_R,
-
-  J_HIP_L,
-  J_SHIN_L,
-
-  J_HIP_R,
-  J_SHIN_R,
-
-  J_COUNT
-};
-
 typedef struct {
   bool alive;
   Vector2 spawn_origin;
