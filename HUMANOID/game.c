@@ -132,7 +132,7 @@ static void make_joint(Agent *ag, int j, int a, int b) {
   ag->jt[j].rest = vlen(vsub(ag->pt[b].p, ag->pt[a].p));
 }
 
-static void init_one_agent(Agent *a, Vector2 origin) {
+static void init_agent(Agent *a, Vector2 origin) {
   memset(a, 0, sizeof(*a));
   a->alive = true;
   a->joint_stiffness = 1.0f;
