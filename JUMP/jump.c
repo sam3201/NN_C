@@ -73,6 +73,9 @@
 #define VIEW_W_PX 720.0f
 #define VIEW_H_PX 560.0f
 
+#define EP_MAX_STEPS                                                           \
+  4096 // enough for 8 seconds at 30Hz control: ~240, but give slack
+
 static int SCREEN_WIDTH = 1280;
 static int SCREEN_HEIGHT = 800;
 
