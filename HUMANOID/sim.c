@@ -42,11 +42,6 @@ static int OBS_DIM = 0;
 #define CELL_OTHER 2.0f
 #define CELL_PLAT 3.0f
 
-typedef struct {
-  float *obs; // heap buffer, length = OBS_DIM
-  int n;      // should end up == OBS_DIM
-} ObsDyn;
-
 // World-space view window around the agent (in pixels)
 #define VIEW_W_PX 720.0f
 #define VIEW_H_PX 560.0f
@@ -120,6 +115,25 @@ typedef struct {
   float obs[OBS_DIM];
   int n;
 } ObsFixed;
+
+// ------------ Observation Grid (runtime) ------------
+// Choose a scale. 1280x800 with 20px tiles => 64x40 grid.
+#define TILE_PX 20
+
+static int GRID_W = 0;
+static int GRID_H = 0;
+static int OBS_DIM = 0;
+
+// Cell IDs
+#define CELL_EMPTY 0.0f
+#define CELL_SELF 1.0f
+#define CELL_OTHER 2.0f
+#define CELL_PLAT 3.0f
+
+typedef struct {
+  float *obs; // heap buffer, length = OBS_DIM
+  int n;      // should end up == OBS_DIM
+} ObsDyn;
 
 typedef struct {
   bool alive;
