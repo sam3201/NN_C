@@ -3382,142 +3382,261 @@ void update_agent(Agent *a) {
   a->age++;
 }
 
+// ------------------------------------------------------------
+// Nearest agent lookup (WORLD space) in a given chunk
+// ------------------------------------------------------------
+static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 from_world,
+                                     float *outDist) {
+  cx = wrap(cx);
+  cy = wrap(cy);
+
+  Agent *best = NULL;
+  float bestD = 1e9f;
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    if (!a->alive)
+      continue;
+
+    int acx = wrap((int)(a->position.x / CHUNK_SIZE));
+    int acy = wrap((int)(a->position.y / CHUNK_SIZE));
+
+    if (acx != cx || acy != cy)
+      continue;
+
+    float d = Vector2Distance(from_world, a->position);
+    if (d < bestD) {
+      bestD = d;
+      best = a;
+    }
+  }
+
+  if (outDist)
+    *outDist = best ? bestD : 1e9f;
+
+  return best;
+}
+
+// ------------------------------------------------------------
+// Mob AI update (chunk-local state, decisions in WORLD space)
+// NOTE: This keeps mobs inside their current chunk (no transfer)
+// ------------------------------------------------------------
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
+  if (!m || m->health <= 0)
+    return;
+
   // timers
-  if (m->ai_timer > 0)
+  if (m->ai_timer > 0.0f)
     m->ai_timer -= dt;
-  if (m->aggro_timer > 0)
+  if (m->aggro_timer > 0.0f)
     m->aggro_timer -= dt;
-  if (m->attack_cd > 0)
+  if (m->attack_cd > 0.0f)
     m->attack_cd -= dt;
-  if (m->hurt_timer > 0)
+  if (m->hurt_timer > 0.0f)
     m->hurt_timer -= dt;
-  if (m->lunge_timer > 0)
+  if (m->lunge_timer > 0.0f)
     m->lunge_timer -= dt;
 
-  // compute WORLD pos for decisions
+  // WORLD pos for decisions
   Vector2 mw = Vector2Add(chunk_origin, m->position);
 
+  int mcx = wrap((int)(mw.x / CHUNK_SIZE));
+  int mcy = wrap((int)(mw.y / CHUNK_SIZE));
+
+  int pcx = wrap((int)(player.position.x / CHUNK_SIZE));
+  int pcy = wrap((int)(player.position.y / CHUNK_SIZE));
+  bool player_same_chunk = (pcx == mcx && pcy == mcy);
+
+  bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
+
+  // wander: pick a random dir sometimes (baseline for all mobs)
+  if (m->ai_timer <= 0.0f) {
+    m->ai_timer = randf(0.35f, 1.25f);
+    float ang = randf(0.0f, 2.0f * PI);
+    m->vel = (Vector2){cosf(ang), sinf(ang)};
+  }
+
+  // base attraction (mostly for hostiles when no target)
   Vector2 basePos = nearest_base_pos(mw);
   Vector2 toB = Vector2Subtract(basePos, mw);
   float dB = Vector2Length(toB);
   Vector2 dirB = (dB > 1e-3f) ? Vector2Scale(toB, 1.0f / dB) : (Vector2){0, 0};
 
-  // only fully “aware” if player is in same chunk (keeps it simple & cheap)
-  int pcx = (int)(player.position.x / CHUNK_SIZE);
-  int pcy = (int)(player.position.y / CHUNK_SIZE);
-  int mcx = (int)(mw.x / CHUNK_SIZE);
-  int mcy = (int)(mw.y / CHUNK_SIZE);
-  bool player_same_chunk = (pcx == mcx && pcy == mcy);
+  // target choice (player vs nearest agent in same chunk)
+  float dA = 1e9f;
+  Agent *targetA = nearest_agent_in_chunk(mcx, mcy, mw, &dA);
 
   Vector2 toP = Vector2Subtract(player.position, mw);
   float dP = Vector2Length(toP);
   Vector2 dirP = (dP > 1e-3f) ? Vector2Scale(toP, 1.0f / dP) : (Vector2){0, 0};
 
-  bool hostile = (m->type == MOB_ZOMBIE || m->type == MOB_SKELETON);
-
-  // pick wander direction sometimes
-  if (m->ai_timer <= 0.0f) {
-    m->ai_timer = randf(0.35f, 1.25f);
-    float ang = randf(0, 2 * PI);
-    m->vel = (Vector2){cosf(ang), sinf(ang)};
-  }
-
+  // PASSIVE BEHAVIOR (pigs/sheep): flee if player or an agent is close or if
+  // hit
   float speed = MOB_SPEED_PASSIVE;
 
-  // PASSIVE: flee if close or angry
   if (!hostile) {
-    bool scared = player_same_chunk && (dP < 4.0f || m->aggro_timer > 0.0f);
-    if (scared) {
+    // consider agents too (not just player)
+    float bestThreatD = 1e9f;
+    Vector2 threatDir = (Vector2){0, 0};
+
+    if (player_same_chunk && dP < bestThreatD) {
+      bestThreatD = dP;
+      threatDir = dirP;
+    }
+    if (targetA && dA < bestThreatD) {
+      Vector2 dv = Vector2Subtract(targetA->position, mw);
+      float d = Vector2Length(dv);
+      if (d > 1e-3f) {
+        bestThreatD = d;
+        threatDir = Vector2Scale(dv, 1.0f / d);
+      }
+    }
+
+    bool scared = (bestThreatD < 4.0f) || (m->aggro_timer > 0.0f);
+    if (scared && bestThreatD < 1e8f) {
       speed = MOB_SPEED_SCARED;
-      m->vel = Vector2Scale(dirP, -1.0f); // run away
+      m->vel = Vector2Scale(threatDir, -1.0f); // run away
+    } else {
+      speed = MOB_SPEED_PASSIVE;
+      // keep wander vel from timer above
     }
   }
 
+  // HOSTILE BEHAVIOR (zombie/skeleton)
   if (hostile) {
     speed = MOB_SPEED_HOSTILE;
 
-    int mcx2 = (int)(mw.x / CHUNK_SIZE);
-    int mcy2 = (int)(mw.y / CHUNK_SIZE);
-
-    float dA = 1e9f;
-    Agent *targetA = nearest_agent_in_chunk(mcx2, mcy2, mw, &dA);
-
-    // decide best target in THIS chunk: player (if present) or agent
+    // pick best target if in same chunk
     bool player_here = player_same_chunk;
     bool agent_here = (targetA != NULL);
 
-    Vector2 targetPos = player.position;
-    float targetD = dP;
+    Vector2 targetPos = basePos;
+    Vector2 targetDir = dirB;
+    float targetDist = dB;
+    int targetKind = 0; // 0=base, 1=player, 2=agent
 
-    if (agent_here && (!player_here || dA < dP)) {
-      targetPos = targetA->position;
-      targetD = dA;
+    // Only consider player if actually in chunk (cheap rule like your obs)
+    if (player_here) {
+      targetPos = player.position;
+      targetDir = dirP;
+      targetDist = dP;
+      targetKind = 1;
     }
 
-    Vector2 toT = Vector2Subtract(targetPos, mw);
-    float dT = Vector2Length(toT);
-    Vector2 dirT =
-        (dT > 1e-3f) ? Vector2Scale(toT, 1.0f / dT) : (Vector2){0, 0};
+    // Consider agent in chunk
+    if (agent_here && dA < targetDist) {
+      Vector2 dv = Vector2Subtract(targetA->position, mw);
+      float d = Vector2Length(dv);
+      if (d > 1e-3f) {
+        targetPos = targetA->position;
+        targetDir = Vector2Scale(dv, 1.0f / d);
+        targetDist = d;
+        targetKind = 2;
+      }
+    }
 
-    bool aggroT = (dT < MOB_AGGRO_RANGE) || (m->aggro_timer > 0.0f);
+    // aggro logic: chase if within aggro range or already angry
+    bool in_aggro = (targetKind != 0) && (targetDist < MOB_AGGRO_RANGE);
+    if (in_aggro)
+      m->aggro_timer = fmaxf(m->aggro_timer, 2.5f);
 
-    if (aggroT) {
-      if (m->type == MOB_ZOMBIE) {
-        m->vel = dirT;
+    bool should_chase = (m->aggro_timer > 0.0f) && (targetKind != 0);
 
-        if (dT < MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
-          m->attack_cd = 0.8f;
-          m->lunge_timer = 0.18f;
+    if (should_chase) {
+      m->vel = targetDir;
 
-          if (agent_here && (!player_here || targetA == targetA) &&
-              (targetA &&
-               Vector2Distance(targetA->position, mw) < MOB_ATTACK_RANGE)) {
-            targetA->health -= 6.0f;
-            targetA->flash_timer = 0.18f;
-          } else if (player_here) {
-            player.health -= 6.0f;
-            player_hurt_timer = 0.18f;
-          }
-        }
-      } else if (m->type == MOB_SKELETON) {
-        float desired = 6.0f;
-        if (dT < desired - 0.8f)
-          m->vel = Vector2Scale(dirT, -1.0f);
-        else if (dT > desired + 1.2f)
-          m->vel = dirT;
-        else
-          m->vel = Vector2Scale(m->vel, 0.5f);
+      // attack if close enough
+      if (targetDist <= MOB_ATTACK_RANGE && m->attack_cd <= 0.0f) {
+        m->attack_cd = randf(0.55f, 0.95f);
+        m->lunge_timer = 0.12f;
 
-        if (dT < 12.0f && m->attack_cd <= 0.0f) {
-          m->attack_cd = 1.1f;
-          m->lunge_timer = 0.12f;
-
-          // shoot at chosen target
-          spawn_projectile(mw, dirT, 9.0f, 2.0f, 8, PROJ_OWNER_MOB);
+        if (targetKind == 1) {
+          // hit player
+          player.health -= (float)PLAYER_TAKEN_DAMAGE;
+          player_hurt_timer = 0.18f;
+          cam_shake = fmaxf(cam_shake, 0.08f);
+        } else if (targetKind == 2 && targetA) {
+          // hit agent
+          targetA->health -= (float)AGENT_TAKEN_DAMAGE;
+          targetA->flash_timer = 0.18f;
+          cam_shake = fmaxf(cam_shake, 0.06f);
         }
       }
-    } else if (is_night_cached) {
-      // keep your existing raid-to-base behavior
-      m->vel = dirB;
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        Tribe *trb = &tribes[t];
-        float db = Vector2Distance(mw, trb->base.position);
-        if (db < trb->base.radius + 0.8f) {
-          if (m->attack_cd <= 0.0f) {
-            m->attack_cd = 0.85f;
-            m->lunge_timer = 0.12f;
-            trb->integrity = fmaxf(0.0f, trb->integrity - 5.0f);
-            cam_shake = fmaxf(cam_shake, 0.12f);
-          }
-        }
+    } else {
+      // no good target: drift toward nearest base at night, wander at day
+      if (is_night_cached) {
+        // bias toward base, but keep it a bit noisy
+        Vector2 v =
+            Vector2Add(Vector2Scale(dirB, 0.80f), Vector2Scale(m->vel, 0.20f));
+        float lv = Vector2Length(v);
+        if (lv > 1e-3f)
+          m->vel = Vector2Scale(v, 1.0f / lv);
+      } else {
+        // day hostiles still wander (and you also despawn them elsewhere)
+      }
+    }
+
+    // skeleton optional: occasional ranged shot at player/agent in chunk
+    if (m->type == MOB_SKELETON && should_chase) {
+      // simple “throw/shot” behavior: only if not in melee range
+      if (targetDist > MOB_ATTACK_RANGE * 1.2f && targetDist < 12.0f &&
+          m->attack_cd <= 0.0f) {
+        m->attack_cd = randf(1.10f, 1.65f);
+        m->lunge_timer = 0.10f;
+
+        // shoot toward target
+        Vector2 dir = targetDir;
+        if (Vector2Length(dir) < 1e-3f)
+          dir = (Vector2){1, 0};
+
+        spawn_projectile(mw, dir, 11.0f, 1.35f, 2, PROJ_OWNER_MOB);
       }
     }
   }
-  // --- apply movement (chunk-local) ---
-  Vector2 delta = Vector2Scale(m->vel, speed * dt);
-  m->position = Vector2Add(m->position, delta);
-  m->position = clamp_local_to_chunk(m->position);
+
+  // normalize vel if needed
+  float vlen = Vector2Length(m->vel);
+  if (vlen > 1e-3f)
+    m->vel = Vector2Scale(m->vel, 1.0f / vlen);
+
+  // integrate motion (KEEP IN CHUNK)
+  Vector2 step = Vector2Scale(m->vel, speed * dt);
+
+  // propose local movement
+  Vector2 next_local = Vector2Add(m->position, step);
+
+  // keep mobs inside their chunk (no cross-chunk transfer)
+  // bounce off edges gently
+  const float edge = 0.35f;
+  if (next_local.x < edge) {
+    next_local.x = edge;
+    m->vel.x = fabsf(m->vel.x);
+  } else if (next_local.x > (float)CHUNK_SIZE - edge) {
+    next_local.x = (float)CHUNK_SIZE - edge;
+    m->vel.x = -fabsf(m->vel.x);
+  }
+
+  if (next_local.y < edge) {
+    next_local.y = edge;
+    m->vel.y = fabsf(m->vel.y);
+  } else if (next_local.y > (float)CHUNK_SIZE - edge) {
+    next_local.y = (float)CHUNK_SIZE - edge;
+    m->vel.y = -fabsf(m->vel.y);
+  }
+
+  // collision check (world) against nearby generated chunks
+  Vector2 next_world = Vector2Add(chunk_origin, next_local);
+  float rad = mob_radius_world(m->type);
+
+  if (!world_pos_blocked_nearby(mcx, mcy, next_world, rad, -999999, -999999)) {
+    m->position = clamp_local_to_chunk(next_local);
+  } else {
+    // blocked: pick a new direction soon
+    m->ai_timer = fminf(m->ai_timer, 0.15f);
+    // small random nudge direction away from stuck
+    float ang = randf(0.0f, 2.0f * PI);
+    m->vel = (Vector2){cosf(ang), sinf(ang)};
+  }
 }
 
 static void draw_crafting_ui(void) {
