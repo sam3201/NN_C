@@ -18,6 +18,15 @@
 
 #define OBS_DIM 72
 
+// Anti-stuck shaping
+#define STUCK_NO_PROGRESS_SECS                                                 \
+  1.5f // if no new best_alt for this long -> punish / reset
+#define STUCK_RESET_SECS 3.0f // hard reset if really stuck
+#define STUCK_PENALTY 0.02f   // per second penalty when stuck (soft shaping)
+
+#define STILL_EPS_PX 1.5f // how close counts as "not moving"
+#define STILL_SECS 1.0f   // time with tiny movement before we consider "still"
+
 #define WORKER_COUNT 4
 #define MAX_AGENTS 8
 
