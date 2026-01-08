@@ -85,6 +85,6 @@ echo "Compilation successful! Running the game..."
 status=$?
 
 echo "Game exited with status $status"
-rm -f ./game
+rm -f ./sim
 exit "$status"
 
