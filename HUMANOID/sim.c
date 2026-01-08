@@ -48,6 +48,11 @@ typedef struct {
   float rest; // rest length
 } Joint;
 
+typedef struct {
+  float obs[OBS_DIM];
+  int n;
+} ObsFixed;
+
 enum {
   P_HEAD = 0,
   P_NECK,
