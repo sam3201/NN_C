@@ -1192,7 +1192,7 @@ static int save_models_to_disk(const char *world_name) {
       continue;
 
     // DO THIS (real API):
-    if (!SAM_save(f, a->sam)) {
+    if (!SAM_save(path, a->sam)) {
       fprintf(stderr, "Failed to save model for agent %d\n", a->agent_id);
       fclose(f);
       return 1;
