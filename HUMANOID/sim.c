@@ -457,6 +457,8 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = stuck_n;             // 8
   out->obs[k++] =
       dx_n + dy_n * 0.0f + 1.0f * 0.0f; // placeholder? NO: use bias below
+  out->obs[k++] = dx_n;
+  out->obs[k++] = dy_n;
 
   // Replace last one with a real bias (recommended)
   out->obs[k - 1] = 1.0f; // 9 bias
@@ -467,9 +469,6 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
   out->n = OBS_DIM;
-
-  out->obs[k++] = dx_n;
-  out->obs[k++] = dy_n;
 }
 
 // =======================
