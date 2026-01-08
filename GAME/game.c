@@ -108,12 +108,6 @@
 #define MAX_WORLDS 4096
 #define WORLD_NAME_MAX 4096
 
-// ------------------- Saving / UI -------------------
-#define AUTOSAVE_INTERVAL_SEC 10.0f // change to taste
-
-static float g_autosave_timer = 0.0f; // accumulates while playing
-static int g_pause_wants_save = 0;    // optional “save on pause” toggle
-
 /* =======================
    ENUMS
 ======================= */
