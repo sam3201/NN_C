@@ -64,12 +64,13 @@ MuModel *mu_model_create(const MuConfig *cfg) {
   /* allocate fake/placeholder weights */
   m->repr_W_count = obs * lat;
   m->dyn_W_count = (lat) * (lat + 1);
-  m->dyn_W = malloc(sizeof(float) * m->dyn_W_count);
 
   m->pred_W_count = lat * (act + 1); // policy + value head
 
   m->repr_W = (float *)malloc(sizeof(float) * m->repr_W_count);
-  m->dyn_W = (float *)malloc(sizeof(float) * m->dyn_W_count);
+  m->dyn_W_count = (lat) * (lat + 1);
+  m->dyn_W = malloc(sizeof(float) * m->dyn_W_count);
+
   m->pred_W = (float *)malloc(sizeof(float) * m->pred_W_count);
 
   m->rew_W_count = lat;
