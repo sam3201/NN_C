@@ -3212,7 +3212,7 @@ void update_agent(Agent *a) {
     // IMPORTANT: don't also fire twice in the same tick if action already was
     // FIRE
     if (action != ACTION_FIRE) {
-      agent_try_fire_forward(a, tr, &reward, true);
+      agent_try_fire_forward(a, tr, &reward, false);
     }
   }
 
