@@ -58,6 +58,10 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
     rb->size++;
 }
 
+int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
+                         int *a_batch, float *r_batch, float *next_obs_batch,
+                         int *done_batch);
+
 static int rand_int(int n) {
   return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
 }
