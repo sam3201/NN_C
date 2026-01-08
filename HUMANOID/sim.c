@@ -164,6 +164,8 @@ typedef struct {
 
   float reward_accumulator;
 
+  int episodes_done;
+
 } Agent;
 
 // =======================
