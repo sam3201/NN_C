@@ -464,6 +464,12 @@ static inline void obs_free(ObsBuffer *o) {
 /* =======================
    HELPERS
 ======================= */
+static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+static inline float lerp_angle(float a, float b, float t) {
+  float d = wrap_angle(b - a);
+  return a + d * t;
+}
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 static inline float randf(float a, float b) {
   return a + (float)rand() / RAND_MAX * (b - a);
@@ -1373,13 +1379,6 @@ static inline float wrap_angle(float a) {
   while (a < -PI)
     a += 2.0f * PI;
   return a;
-}
-
-static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
-
-static inline float lerp_angle(float a, float b, float t) {
-  float d = wrap_angle(b - a);
-  return a + d * t;
 }
 
 static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
