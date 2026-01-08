@@ -219,47 +219,6 @@ static void on_mob_killed(MobType type, Vector2 mob_world_pos);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
 
-static void player_try_attack_forward(Vector2 facing_dir) {
-  if (player_attack_cd > 0.0f)
-    return;
-
-  Vector2 rd = Vector2Normalize(facing_dir);
-  if (Vector2Length(rd) < 1e-3f)
-    rd = (Vector2){1, 0};
-
-  float range = player_attack_range();
-  int dmg = player_attack_damage();
-
-  RayHit hit = raycast_world_objects(player.position, rd, range);
-  if (hit.kind != HIT_MOB) {
-    player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
-    return;
-  }
-
-  Chunk *c = get_chunk(hit.cx, hit.cy);
-  pthread_rwlock_wrlock(&c->lock);
-
-  Mob *m = &c->mobs[hit.index];
-  if (m->health > 0) {
-    player_attack_cd = player_attack_cooldown();
-
-    m->health -= dmg;
-    m->hurt_timer = 0.18f;
-    m->aggro_timer = 3.0f;
-    m->lunge_timer = 0.10f;
-
-    cam_shake = fmaxf(cam_shake, 0.10f);
-
-    if (m->health <= 0) {
-      Vector2 mob_world_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
-                                        hit.cy * CHUNK_SIZE + m->position.y};
-      on_mob_killed(m->type, mob_world_pos);
-      m->health = 0;
-    }
-  }
-
-  pthread_rwlock_unlock(&c->lock);
-}
 static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
   if (player_attack_cd > 0.0f)
     return;
@@ -2569,102 +2528,92 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
       init_mob(m, mt, p, /*make_angry=*/0);
     }
 
-    static void player_try_attack_forward(Vector2 facing_dir) {
-      if (player_attack_cd > 0.0f)
-        return;
+    // -----------------------------
+    // PLAYER UPDATE (movement + aim + click actions)
+    // -----------------------------
+    void update_player(void) {
+      float dt = GetFrameTime();
+      if (dt > 0.05f)
+        dt = 0.05f;
 
-      Vector2 rd = Vector2Normalize(facing_dir);
-      if (Vector2Length(rd) < 1e-3f)
-        rd = (Vector2){1, 0};
-
-      float range = player_attack_range();
-      int dmg = player_attack_damage();
-
-      RayHit hit = raycast_world_objects(player.position, rd, range);
-      if (hit.kind != HIT_MOB) {
-        player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
-        return;
+      // --- UI / crafting toggles (keep simple + deterministic) ---
+      if (IsKeyPressed(KEY_E)) {
+        crafting_open = !crafting_open;
       }
 
-      Chunk *c = get_chunk(hit.cx, hit.cy);
-      pthread_rwlock_wrlock(&c->lock);
+      // Zoom (smooth)
+      if (IsKeyPressed(KEY_Q))
+        target_world_scale *= 0.9f;
+      if (IsKeyPressed(KEY_R))
+        target_world_scale *= 1.1f;
+      target_world_scale = Clamp(target_world_scale, 0.25f, 6.0f);
+      world_scale += (target_world_scale - world_scale) * 10.0f * dt;
+      world_scale = Clamp(world_scale, 0.25f, 6.0f);
 
-      Mob *m = &c->mobs[hit.index];
-      if (m->health > 0) {
-        player_attack_cd = player_attack_cooldown();
+      // --- Movement ---
+      Vector2 mv = {0};
+      if (IsKeyDown(KEY_W))
+        mv.y -= 1.0f;
+      if (IsKeyDown(KEY_S))
+        mv.y += 1.0f;
+      if (IsKeyDown(KEY_A))
+        mv.x -= 1.0f;
+      if (IsKeyDown(KEY_D))
+        mv.x += 1.0f;
 
-        m->health -= dmg;
-        m->hurt_timer = 0.18f;
-        m->aggro_timer = 3.0f;
-        m->lunge_timer = 0.10f;
+      if (mv.x != 0 || mv.y != 0) {
+        mv = Vector2Normalize(mv);
+        player.pos =
+            Vector2Add(player.pos, Vector2Scale(mv, PLAYER_SPEED * dt));
+      }
 
-        cam_shake = fmaxf(cam_shake, 0.10f);
+      // Clamp player into world bounds (avoid weird camera bugs)
+      player.pos.x = Clamp(player.pos.x, 0.0f, (float)WORLD_SIZE);
+      player.pos.y = Clamp(player.pos.y, 0.0f, (float)WORLD_SIZE);
 
-        if (m->health <= 0) {
-          Vector2 mob_world_pos =
-              (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
-                        hit.cy * CHUNK_SIZE + m->position.y};
-          on_mob_killed(m->type, mob_world_pos);
-          m->health = 0;
+      // --- Camera follows player ---
+      camera.target =
+          (Vector2){player.pos.x * scale_size, player.pos.y * scale_size};
+      camera.offset = (Vector2){(float)GetScreenWidth() * 0.5f,
+                                (float)GetScreenHeight() * 0.5f};
+      camera.rotation = 0.0f;
+      camera.zoom = world_scale;
+
+      // --- Mouse -> world position ---
+      // Use Raylib's camera conversion so aim/interaction doesn't drift with
+      // zoom/pan.
+      Vector2 mouse_screen = GetMousePosition();
+      Vector2 mouse_world_px = GetScreenToWorld2D(mouse_screen, camera);
+      Vector2 mouse_world = (Vector2){mouse_world_px.x / scale_size,
+                                      mouse_world_px.y / scale_size};
+
+      // --- Decide aim direction (world-space, stable) ---
+      Vector2 aim = Vector2Subtract(mouse_world, player.pos);
+      float aimLen = Vector2Length(aim);
+      Vector2 aimDir = (aimLen > 0.0001f) ? Vector2Scale(aim, 1.0f / aimLen)
+                                          : (Vector2){1.0f, 0.0f};
+
+      // --- Left click = ATTACK, Right click = HARVEST ---
+      // Hold-to-repeat feels good; if you want press-only, swap Down->Pressed.
+      bool attackDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+      bool harvestDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+
+      if (!crafting_open) {
+        if (attackDown) {
+          // Attack uses aim direction like the player would
+          agent_try_attack_action(&player, aimDir);
+        }
+        if (harvestDown) {
+          // Harvest uses aim direction like the player would
+          agent_try_harvest_action(&player, aimDir);
         }
       }
 
-      pthread_rwlock_unlock(&c->lock);
+      // --- Crafting selection (mouse clicks inside UI) ---
+      // Keep your existing crafting UI logic below this point if you had more;
+      // this update_player only handles toggling and interaction gating
+      // cleanly.
     }
-
-    static void player_try_harvest_forward(Vector2 facing_dir) {
-      if (player_harvest_cd > 0.0f)
-        return;
-
-      Vector2 rd = Vector2Normalize(facing_dir);
-      if (Vector2Length(rd) < 1e-3f)
-        rd = (Vector2){1, 0};
-
-      float range = HARVEST_DISTANCE;
-
-      RayHit hit = raycast_world_objects(player.position, rd, range);
-      if (hit.kind != HIT_RESOURCE) {
-        player_harvest_cd = 0.10f; // small whiff cooldown
-        return;
-      }
-
-      Chunk *c = get_chunk(hit.cx, hit.cy);
-      pthread_rwlock_wrlock(&c->lock);
-
-      Resource *r = &c->resources[hit.index];
-      if (r->health <= 0) {
-        pthread_rwlock_unlock(&c->lock);
-        return;
-      }
-
-      float cd = player_resource_cooldown(r->type);
-      float cost = player_resource_stamina_cost(r->type);
-      int dmg = player_resource_damage(r->type);
-
-      if (player.stamina < cost) {
-        pthread_rwlock_unlock(&c->lock);
-        return;
-      }
-
-      player_harvest_cd = cd;
-      player.stamina -= cost;
-
-      r->health -= dmg;
-      r->hit_timer = 0.14f;
-      r->break_flash = 0.06f;
-
-      if (r->type == RES_ROCK || r->type == RES_GOLD) {
-        cam_shake = fmaxf(cam_shake, 0.10f);
-      }
-
-      if (r->health <= 0) {
-        give_drop(r->type);
-        r->health = 0;
-      }
-
-      pthread_rwlock_unlock(&c->lock);
-    }
-
     Chunk *get_chunk(int cx, int cy) {
       cx = wrap(cx);
       cy = wrap(cy);
