@@ -430,6 +430,7 @@ static void init_agents(void) {
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
     memset(a, 0, sizeof(*a));
+    obs_alloc(&a->last_obs);
 
     int cx = i % cols;
     int cy = i / cols;
