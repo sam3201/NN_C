@@ -463,6 +463,8 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f); // only above -> negative
 
   // Fill OBS_EXTRA = 10
+  // Fill OBS_EXTRA = 12
+  // indices 0..11 (relative to k0=OBS_GRID)
   out->obs[k++] = px;                  // 0
   out->obs[k++] = py;                  // 1
   out->obs[k++] = vx;                  // 2
@@ -472,10 +474,9 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = p->charge;           // 6
   out->obs[k++] = alt_n;               // 7
   out->obs[k++] = stuck_n;             // 8
-  out->obs[k++] =
-      dx_n + dy_n * 0.0f + 1.0f * 0.0f; // placeholder? NO: use bias below
-  out->obs[k++] = dx_n;
-  out->obs[k++] = dy_n;
+  out->obs[k++] = dx_n;                // 9
+  out->obs[k++] = dy_n;                // 10
+  out->obs[k++] = 1.0f;                // 11 bias
 
   // Replace last one with a real bias (recommended)
   out->obs[k - 1] = 1.0f; // 9 bias
