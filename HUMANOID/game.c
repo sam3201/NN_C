@@ -74,6 +74,15 @@ typedef struct {
     int y;
   } Hands;
 
+  // Joints
+  struct joint *Head;
+  struct joint *Neck;
+  struct joint *Body;
+  struct joint *Legs;
+  struct joint *Arms;
+  struct joint *Feet;
+  struct joint *Hands;
+
 } Agent;
 
 /* =======================
