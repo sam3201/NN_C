@@ -32,7 +32,7 @@
 
 #define FIXED_DT (1.0f / 120.0f)
 #define MAX_ACCUM_DT (0.25f)
-
+//
 // Upward-velocity shaping (airborne only)
 // Reward small positive signal when moving upward (vel.y < 0)
 #define UP_VEL_SCALE                                                           \
