@@ -78,11 +78,8 @@ static void draw_agent(Agent *a, Texture2D *ap, Texture2D *tc) {
   // Hands
   DrawLine(a->x - 10, a->y - 40, a->x - 20, a->y - 60, RAYWHITE);
   DrawLine(a->x + 10, a->y - 40, a->x + 20, a->y - 60, RAYWHITE);
-
-  // Eyes
-  DrawCircleV((Vector2){a->x - 10, a->y - 10}, 5, RAYWHITE);
-  DrawCircleV((Vector2){a->x + 10, a->y - 10}, 5, RAYWHITE);
 }
+
 static void update_agent(Agent *a) {}
 
 static void run_agent_jobs(void) {
