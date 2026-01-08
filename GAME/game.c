@@ -4831,10 +4831,12 @@ static int world_dir_has_save(const char *world_name) {
 }
 
 static void ensure_save_root(void) {
-  struct stat st;
-  if (stat(SAVE_ROOT, &st) == 0 && S_ISDIR(st.st_mode))
-    return;
-  mkdir(SAVE_ROOT, 0755);
+  struct stat st = {0};
+  if (stat(SAVE_ROOT, &st) == -1) {
+    if (mkdir(SAVE_ROOT, 0755) != 0 && errno != EEXIST) {
+      fprintf(stderr, "mkdir(%s) failed: %s\n", SAVE_ROOT, strerror(errno));
+    }
+  }
 }
 
 static void world_list_refresh(WorldList *wl) {
