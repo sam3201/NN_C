@@ -700,6 +700,12 @@ static void init_agents(void) {
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
     if (a->cortex) {
+      cortex->use_mcts = true;
+      cortex->mcts_model = your_model;
+      cortex->mcts_params.num_simulations = 50..200;
+      cortex->mcts_params.max_depth = 8..32;
+      cortex->mcts_params.discount = 0.997f;
+
       a->cortex->use_mcts = false;
       a->cortex->policy_temperature = 1.0f;
 
