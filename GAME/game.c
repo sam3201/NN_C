@@ -4116,21 +4116,23 @@ void update_agent(Agent *a) {
     agent_try_harvest_forward(a, tr, &reward);
     break;
 
+    /*
   case ACTION_CRAFT:
     // agent_try_craft(a, tr, &reward);
     ACTION_CRAFT_AXE
 
-    ACTION_CRAFT_PICKAXE
+ACTION_CRAFT_PICKAXE
 
-    ACTION_CRAFT_SWORD
+ACTION_CRAFT_SWORD
 
-    ACTION_CRAFT_ARMOR
+ACTION_CRAFT_ARMOR
 
-    ACTION_CRAFT_BOW
+ACTION_CRAFT_BOW
 
-    ACTION_CRAFT_ARROWS
+ACTION_CRAFT_ARROWS
 
     break;
+    */
 
   case ACTION_FIRE: {
     pthread_rwlock_rdlock(&c->lock);
