@@ -362,6 +362,13 @@ typedef struct {
   int *unlock_flag; // set to 1 on craft
 } Recipe;
 
+typedef struct {
+  char names[MAX_WORLDS][WORLD_NAME_MAX];
+  int count;
+  int selected; // -1 if none
+  int scroll;   // index offset for drawing
+} WorldList;
+
 #pragma pack(push, 1)
 typedef struct {
   char magic[4];    // "SAMW"
