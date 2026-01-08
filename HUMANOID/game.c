@@ -26,6 +26,7 @@ typedef struct {
   int y;
   struct joint *connection;
 } joint;
+
 typedef struct {
   bool alive;
   int x;
