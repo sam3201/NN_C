@@ -3340,7 +3340,6 @@ void update_agent(Agent *a) {
   }
 
   // --- continuous fire: if latched, keep attempting to fire as soon as CD
-  // allows ---
   if (a->fire_latched) {
     if (action != ACTION_FIRE) {
       // auto-face while latched too (so it doesn't keep shooting the old
