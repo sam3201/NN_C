@@ -17,7 +17,7 @@
 #define EPISODE_SECONDS 8.0f
 
 // Grid observation: OBS_DIM must equal GRID_W * GRID_H
-#define GRID_W 9
+#define GRID_W SCREEN_WIDTH
 #define GRID_H 8
 #if (OBS_DIM != (GRID_W * GRID_H))
 #error "OBS_DIM must equal GRID_W*GRID_H"
