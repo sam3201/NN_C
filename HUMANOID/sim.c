@@ -436,28 +436,31 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   // tiny helper: "where is the nearest ledge above me?"
   // (purely from the known platforms, still within your sim; treat as extra
   // cue)
-  float best_dy = 999999.0f;
+  float best_abs_dy = 1e30f;
   float best_dx = 0.0f;
+  float best_dy = -600.0f; // default "somewhat above"
+
   for (int i = 0; i < g_plat_count; i++) {
     const Platform *pl = &g_plats[i];
     if (!pl->one_way)
       continue;
-
-    // must be above (smaller y)
     if (pl->y >= p->pos.y)
-      continue;
+      continue; // must be above
 
     float cx = pl->x + pl->w * 0.5f;
     float dx = cx - p->pos.x;
     float dy = pl->y - p->pos.y; // negative
 
-    // prefer closest above (dy closest to 0 but negative)
-    float abs_dy = fabsf(dy);
-    if (abs_dy < fabsf(best_dy)) {
-      best_dy = dy;
+    float abs_dy = -dy; // since dy is negative
+    if (abs_dy < best_abs_dy) {
+      best_abs_dy = abs_dy;
       best_dx = dx;
+      best_dy = dy;
     }
   }
+
+  float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
+  float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f);
 
   float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
   float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f); // only above -> negative
