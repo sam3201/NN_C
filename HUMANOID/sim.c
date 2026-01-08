@@ -695,16 +695,19 @@ static void init_agents(void) {
     a->control_timer = 0.0f;
     a->last_action = ACT_NONE;
 
+    a->episodes_done = 0; // IMPORTANT: define episode 0 explicitly
+
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
-    a->episodes_done = 0;
-    /*
     if (a->cortex) {
-      a->cortex->policy_epsilon = 0.10f;
-      a->cortex->policy_temperature = 1.0f;
+      // Keep these consistent and don't override epsilon elsewhere
       a->cortex->use_mcts = false;
+      a->cortex->policy_temperature = 1.0f;
+
+      // Start high exploration immediately (episode 0)
+      a->cortex->policy_epsilon = epsilon_schedule(0);
     }
-    */
+
     reset_agent_episode(a);
   }
 }
