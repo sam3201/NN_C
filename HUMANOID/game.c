@@ -32,7 +32,10 @@ typedef struct {
   } Head;
 
   // Neck
-  DrawLine(a->x, a->y, a->x, a->y - 20, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Neck;
 
   // Body
   DrawLine(a->x, a->y - 20, a->x, a->y - 40, RAYWHITE);
