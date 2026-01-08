@@ -151,7 +151,8 @@ typedef struct {
   float pos_still_time; // seconds with tiny movement
 
   float pending_reward;
-  ObsFixed last_obs;
+  ObsDyn last_obs;
+
   int has_last_transition;
 
   float reward_accumulator;
