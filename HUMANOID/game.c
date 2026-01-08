@@ -40,6 +40,7 @@ bool job_quit = 0;
 bool job_active = 0;
 unsigned int job_next_agent = 0;
 size_t job_done_workers = 0;
+pthread_t workers[WORKER_COUNT];
 
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
