@@ -806,6 +806,7 @@ static void update_agent(Agent *a) {
         break;
       }
     }
+    mcts_result_free(&mr);
 
     if (a->ep_t > 0) {
       a->ep.reward[a->ep_t - 1] = a->pending_reward;
