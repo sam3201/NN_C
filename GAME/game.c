@@ -3071,159 +3071,139 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
 /* =======================
    AGENT UPDATE
 ======================= */
-void update_agent(Agent *a) {
-  if (!a || !a->alive)
-    return;
-
-  float dt = g_dt;
+void update_player(void) {
+  float dt = GetFrameTime();
   if (dt <= 0.0f)
     dt = 1.0f / 60.0f;
 
-  Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+  // --- cooldown timers ---
+  if (player_harvest_cd > 0.0f)
+    player_harvest_cd -= dt;
+  if (player_attack_cd > 0.0f)
+    player_attack_cd -= dt;
+  if (player_fire_cd > 0.0f)
+    player_fire_cd -= dt;
+  if (player_hurt_timer > 0.0f)
+    player_hurt_timer -= dt;
 
-  // --- timers ---
-  if (a->attack_cd > 0.0f)
-    a->attack_cd -= dt;
-  if (a->harvest_cd > 0.0f)
-    a->harvest_cd -= dt;
-  if (a->fire_cd > 0.0f)
-    a->fire_cd -= dt;
-  if (a->flash_timer > 0.0f)
-    a->flash_timer -= dt;
+  // --- stamina regen (player) ---
+  // tweak as you like:
+  player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
 
-  // --- passive environment dynamics (NOT policy overrides) ---
-  float dBase = Vector2Distance(a->position, tr->base.position);
-  bool in_base = (dBase < tr->base.radius + 0.35f);
+  // --- movement ---
+  float speed = 0.6f;
+  float move = speed; // (or speed * dt * 60.0f for true time-based)
 
-  if (in_base) {
-    a->health = fminf(100.0f, a->health + 10.0f * dt);
-    a->stamina = fminf(100.0f, a->stamina + 24.0f * dt);
-  } else {
-    a->stamina = fminf(100.0f, a->stamina + (STAMINA_REGEN_RATE * 0.55f) * dt);
+  bool moving = false;
+  if (IsKeyDown(KEY_W)) {
+    player.position.y -= move;
+    moving = true;
+  }
+  if (IsKeyDown(KEY_S)) {
+    player.position.y += move;
+    moving = true;
+  }
+  if (IsKeyDown(KEY_A)) {
+    player.position.x -= move;
+    moving = true;
+  }
+  if (IsKeyDown(KEY_D)) {
+    player.position.x += move;
+    moving = true;
   }
 
-  // --- build observation ---
-  int cx = (int)(a->position.x / CHUNK_SIZE);
-  int cy = (int)(a->position.y / CHUNK_SIZE);
-  Chunk *c = get_chunk(cx, cy);
-
-  ObsBuffer obs;
-  obs_init(&obs);
-
-  pthread_rwlock_rdlock(&c->lock);
-  encode_observation(a, c, &obs);
-  pthread_rwlock_unlock(&c->lock);
-
-  // --- MuZero chooses action ---
-  int action =
-      muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
-
-  obs_free(&obs);
-
-  a->last_action = action;
-
-  // tool selection is "sticky" but reacts to actions
-  if (action == ACTION_ATTACK) {
-    a->tool_selected = a->has_sword ? TOOL_SWORD : TOOL_HAND;
-  } else if (action == ACTION_HARVEST) {
-    if (a->has_pickaxe)
-      a->tool_selected = TOOL_PICKAXE;
-    else if (a->has_axe)
-      a->tool_selected = TOOL_AXE;
-    else
-      a->tool_selected = TOOL_HAND;
-  } else if (action == ACTION_FIRE) {
-    a->tool_selected = (a->has_bow ? TOOL_BOW : TOOL_HAND);
+  // optional: tiny stamina drain while moving
+  if (moving) {
+    player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
   }
 
-  // --- execute ---
-  float reward = 0.0f;
-
-  Vector2 moveDir = {0, 0};
-  switch (action) {
-  case ACTION_UP:
-    moveDir = (Vector2){0, -1};
-    break;
-  case ACTION_DOWN:
-    moveDir = (Vector2){0, 1};
-    break;
-  case ACTION_LEFT:
-    moveDir = (Vector2){-1, 0};
-    break;
-  case ACTION_RIGHT:
-    moveDir = (Vector2){1, 0};
-    break;
-
-  case ACTION_ATTACK:
-    // No targeting assist. Attack in facing direction.
-    agent_try_attack_forward(a, tr, &reward);
-    break;
-
-  case ACTION_HARVEST:
-    agent_try_harvest_forward(a, tr, &reward);
-    break;
-
-  case ACTION_CRAFT:
-    agent_try_craft(a, tr, &reward);
-    break;
-
-  case ACTION_FIRE:
-    agent_try_fire_forward(a, tr, &reward);
-    break;
-
-  case ACTION_EAT:
-    agent_try_eat(a, &reward);
-    break;
-
-  default:
-    // If they do nothing, you can optionally punish "doing nothing"
-    // reward += -0.002f;
-    break;
+  // --- crafting toggle ---
+  if (IsKeyPressed(KEY_TAB)) {
+    crafting_open = !crafting_open;
   }
 
-  // Movement
-  agent_try_move(a, moveDir);
-
-  // Facing updates only when moved
-  if (moveDir.x != 0.0f || moveDir.y != 0.0f) {
-    agent_set_facing_from(moveDir, a);
-    if (moveDir.x != 0.0f || moveDir.y != 0.0f)
-      reward += R_WANDER_PENALTY;
-  }
-
-  // --- survival shaping ---
-  if (a->health <= 0.0f) {
-    a->health = 0.0f;
-    a->alive = false;
-    reward += R_DEATH;
-  } else {
-    reward += R_SURVIVE_PER_TICK;
-  }
-
-  a->reward_accumulator += reward;
-  a->age++;
-}
-
-static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mw, float *outD) {
-  Agent *best = NULL;
-  float bestD = 1e9f;
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &agents[i];
-    if (!a->alive)
-      continue;
-    int acx = (int)(a->position.x / CHUNK_SIZE);
-    int acy = (int)(a->position.y / CHUNK_SIZE);
-    if (acx != cx || acy != cy)
-      continue;
-    float d = Vector2Distance(mw, a->position);
-    if (d < bestD) {
-      bestD = d;
-      best = a;
+  // --- crafting input (1..9) only when crafting menu is open ---
+  if (crafting_open) {
+    for (int i = 0; i < recipe_count && i < 9; i++) {
+      bool pressed = IsKeyPressed((KeyboardKey)(KEY_ONE + i));
+      pressed = pressed || IsKeyPressed((KeyboardKey)(KEY_KP_1 + i));
+      if (pressed)
+        craft(&recipes[i]);
     }
   }
-  if (outD)
-    *outD = bestD;
-  return best;
+
+  // =========================
+  // CONTINUOUS HOLD ACTIONS
+  // =========================
+
+  // (A) Continuous melee attack (hold LEFT mouse)
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    int cx = (int)(player.position.x / CHUNK_SIZE);
+    int cy = (int)(player.position.y / CHUNK_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    // player_try_attack_mob_in_chunk modifies mobs -> take write lock
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_attack_mob_in_chunk(c, wrap(cx), wrap(cy));
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  // (B) Continuous harvest/mine (hold RIGHT mouse)
+  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+    int cx = (int)(player.position.x / CHUNK_SIZE);
+    int cy = (int)(player.position.y / CHUNK_SIZE);
+    Chunk *c = get_chunk(cx, cy);
+
+    // player_try_harvest_resource_in_chunk modifies resources -> write lock
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_harvest_resource_in_chunk(c, wrap(cx), wrap(cy));
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  // =========================
+  // BOW CHARGE + RELEASE (F)
+  // =========================
+  // Hold F to charge, release F to fire (if enough charge).
+  if (has_bow) {
+    if (IsKeyDown(KEY_F)) {
+      bow_charging = 1;
+      bow_charge01 += dt / BOW_CHARGE_TIME;
+      bow_charge01 = clamp01(bow_charge01);
+    }
+
+    // Release to fire (continuous-ready through player_fire_cd)
+    if (bow_charging && IsKeyReleased(KEY_F)) {
+      bow_charging = 0;
+
+      if (player_fire_cd <= 0.0f && inv_arrows > 0 &&
+          bow_charge01 >= BOW_CHARGE_MIN01) {
+        // aim from player -> mouse in WORLD space
+        Vector2 mouse = GetMousePosition();
+        Vector2 mouse_world = {
+            (mouse.x - SCREEN_WIDTH * 0.5f) / WORLD_SCALE + camera_pos.x,
+            (mouse.y - SCREEN_HEIGHT * 0.5f) / WORLD_SCALE + camera_pos.y};
+
+        Vector2 dir = Vector2Subtract(mouse_world, player.position);
+        if (Vector2Length(dir) < 1e-3f)
+          dir = (Vector2){1, 0};
+        dir = Vector2Normalize(dir);
+
+        // consume ammo + set cooldown
+        inv_arrows--;
+        player_fire_cd = PLAYER_FIRE_COOLDOWN;
+
+        // uses your existing charged fire helper
+        player_fire_bow_charged(dir, bow_charge01);
+      }
+
+      // reset charge after release regardless
+      bow_charge01 = 0.0f;
+    }
+  } else {
+    // if you don't have bow, ensure charge is off
+    bow_charging = 0;
+    bow_charge01 = 0.0f;
+  }
 }
 
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
