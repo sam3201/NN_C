@@ -749,8 +749,9 @@ static void reset_agent_episode(Agent *a) {
 static void init_agents(void) {
   MuConfig cfg = {
       .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
+
   g_model = mu_model_create(&cfg);
-  g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT); // big-ish
+  g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT);
 
   int cols = 16;
   float spacing = 70.0f;
@@ -758,7 +759,9 @@ static void init_agents(void) {
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
     memset(a, 0, sizeof(*a));
+
     obs_alloc(&a->last_obs);
+    episode_alloc(&a->ep);
 
     int cx = i % cols;
     int cy = i / cols;
@@ -771,28 +774,32 @@ static void init_agents(void) {
     a->accum_dt = 0.0f;
     a->control_period = 1.0f / 30.0f;
     a->control_timer = 0.0f;
-    a->last_action = ACT_NONE;
 
     uint32_t base = (uint32_t)time(NULL);
     a->rng = base ^ (0x9e3779b9u * (uint32_t)(i + 1));
 
-    a->ep = NULL;
-    episode_alloc();
-    a->episodes_done = 0; // IMPORTANT: define episode 0 explicitly
+    a->episodes_done = 0;
+    a->ep_t = 0;
+    a->pending_reward = 0.0f;
+    a->has_last_transition = 0;
 
+    // SAM / cortex
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
+
+    // Default MCTS params (store them in Agent so update_agent can use them)
+    a->mcts_params.num_simulations = 80;
+    a->mcts_params.max_depth = 16;
+    a->mcts_params.discount = 0.997f;
+    a->mcts_params.c_puct = 1.25f;
+    a->mcts_params.temperature = 1.0f;
+    a->mcts_params.dirichlet_alpha = 0.3f;
+    a->mcts_params.dirichlet_eps = 0.25f;
+
     if (a->cortex) {
       a->cortex->use_mcts = true;
       a->cortex->mcts_model = g_model;
-      a->cortex->mcts_params.num_simulations = 80;
-      a->cortex->mcts_params.max_depth = 16;
-      a->cortex->mcts_params.discount = 0.997f;
-      a->cortex->mcts_params.c_puct = 1.25f;
-      a->cortex->mcts_params.temperature = 1.0f;
-      a->cortex->mcts_params.dirichlet_alpha = 0.3f;
-      a->cortex->mcts_params.dirichlet_eps = 0.25f;
-
+      a->cortex->mcts_params = a->mcts_params; // keep them consistent
       a->cortex->policy_temperature = 1.0f;
       a->cortex->policy_epsilon = epsilon_schedule(0);
     }
