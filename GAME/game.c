@@ -3420,7 +3420,7 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
           m->lunge_timer = 0.12f;
 
           // shoot at chosen target
-          spawn_projectile(mw, dirT, 9.0f, 2.0f, 8);
+          spawn_projectile(mw, dirT, 9.0f, 2.0f, 8, PROJ_OWNER_MOB);
         }
       }
     } else if (is_night_cached) {
