@@ -2895,7 +2895,7 @@ void update_agent(Agent *a) {
     else
       a->tool_selected = TOOL_NONE;
   } else if (action == ACTION_FIRE) {
-    // bow isn't in your 4-tool list; leave selection unchanged
+    a->tool_selected = TOOL_BOW;
   }
 
   // --- execute ---
