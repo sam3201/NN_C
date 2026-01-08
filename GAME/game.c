@@ -198,7 +198,7 @@ typedef enum {
 
 typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
-// ----- forward prototypes (fix implicit decl + type mismatches) -----
+// ----- forward prototypes  -----
 typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
 typedef struct Agent Agent;
 
