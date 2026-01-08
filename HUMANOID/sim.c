@@ -487,9 +487,6 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
 
   out->obs[k++] = 1.0f; // 11 bias
 
-  // If you want dx/dy instead of bias, do this:
-  // out->obs[k-2] = dx_n; out->obs[k-1] = dy_n;  (and bump OBS_EXTRA to 11/12)
-
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
   out->n = OBS_DIM;
