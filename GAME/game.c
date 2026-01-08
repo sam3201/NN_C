@@ -3241,8 +3241,8 @@ void update_player(void) {
     player.position.x -= move;
   if (IsKeyDown(KEY_D))
     player.position.x += move;
-  0 // --- shoot arrow (F) if you have ammo ---
-      if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
+  // --- shoot arrow (F) if you have ammo ---
+  if (IsKeyPressed(KEY_F) && inv_arrows > 0) {
 
     // --- crafting toggle ---
     if (IsKeyPressed(KEY_TAB)) {
