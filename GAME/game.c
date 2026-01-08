@@ -58,6 +58,10 @@
   0.12f // minimum charge required to fire (prevents tap-fizzle)
 #define PLAYER_FIRE_COOLDOWN 0.18f
 
+// agent continuous fire: one FIRE action keeps firing for a bit
+#define AGENT_FIRE_LATCH_TIME 0.85f // seconds of "auto-fire" after ACTION_FIRE
+#define AGENT_FIRE_CANCEL_ON_MOVE 1 // set 0 if you want strafing auto-fire
+
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
 #define BOW_TTL_MIN 1.10f
