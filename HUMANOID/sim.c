@@ -99,6 +99,9 @@ typedef struct {
 
   // optional per-agent tuning
   float joint_stiffness; // 0..1 (we’ll use ~1)
+
+  SAM_t *Sam;
+  MuCortex *cortex;
 } Agent;
 
 /* =======================
