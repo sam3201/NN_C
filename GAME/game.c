@@ -3153,6 +3153,10 @@ void update_agent(Agent *a) {
   } else if (action == ACTION_FIRE) {
     a->tool_selected = (a->has_bow ? TOOL_BOW : TOOL_HAND);
   }
+  if (action == ACTION_FIRE) {
+    a->fire_latched = 1;
+    a->fire_latch_timer = AGENT_FIRE_LATCH_TIME;
+  }
 
   // --- execute ---
   float reward = 0.0f;
