@@ -465,6 +465,7 @@ static inline void obs_free(ObsBuffer *o) {
    HELPERS
 ======================= */
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
 static inline float wrap_angle(float a) {
   while (a > PI)
     a -= 2.0f * PI;
