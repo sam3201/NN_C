@@ -97,11 +97,17 @@ typedef struct {
   Particle pt[P_COUNT];
   Joint jt[J_COUNT];
 
-  // optional per-agent tuning
-  float joint_stiffness; // 0..1 (we’ll use ~1)
+  float joint_stiffness; // 0..1
 
-  SAM_t *sam;
+  // --- MUZE control ---
   MuCortex *cortex;
+  int last_action;
+
+  // --- fixed step / control rate ---
+  float accum_dt;
+  float control_timer;
+  float control_period; // e.g. 1/30
+
   float reward_accumulator;
 } Agent;
 
