@@ -54,7 +54,7 @@
 #define MAX_PROJECTILES 64
 #define BOW_SPEED 8.0f
 #define PROJECTILE_SPEED 10.0f
-#define BOW_DAMAGE 12
+#define BOW_DAMAGE 10
 
 // =======================
 // REWARD SHAPING
