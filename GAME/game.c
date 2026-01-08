@@ -3342,9 +3342,13 @@ void update_agent(Agent *a) {
   // --- continuous fire: if latched, keep attempting to fire as soon as CD
   // allows ---
   if (a->fire_latched) {
-    // IMPORTANT: don't also fire twice in the same tick if action already was
-    // FIRE
     if (action != ACTION_FIRE) {
+      // auto-face while latched too (so it doesn't keep shooting the old
+      // direction)
+      pthread_rwlock_rdlock(&c->lock);
+      agent_face_nearest_mob_in_chunk(a, c, cx, cy, 14.0f);
+      pthread_rwlock_unlock(&c->lock);
+
       agent_try_fire_forward(a, tr, &reward, true);
     }
   }
