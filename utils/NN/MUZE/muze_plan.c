@@ -88,8 +88,8 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
 
     if (latent) {
       mu_model_repr(cortex->mcts_model, obs, latent);
-      MCTSResult r =
-          mcts_run_latent(cortex->mcts_model, latent, &cortex->mcts_params);
+      MCTSResult r = mcts_run_latent(cortex->mcts_model, latent,
+                                     &cortex->mcts_params, rng);
 
       free(latent);
 
