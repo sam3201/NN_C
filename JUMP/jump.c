@@ -704,10 +704,11 @@ static void reset_agent_episode(Agent *a) {
 }
 
 static void init_agents(void) {
-  MuConfig cfg = {
+  int cols = MuConfig cfg = {
       .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
-
-  int cols = 16;
+  g_model = mu_model_create(&cfg);
+  g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT); // big-ish
+  16;
   float spacing = 70.0f;
 
   for (int i = 0; i < MAX_AGENTS; i++) {
