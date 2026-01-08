@@ -836,6 +836,9 @@ int main(void) {
     EndDrawing();
   }
 
+  for (int i = 0; i < MAX_AGENTS; i++)
+    obs_free(&agents[i].last_obs);
+
   stop_workers();
   CloseWindow();
   return 0;
