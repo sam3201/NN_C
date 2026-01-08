@@ -4957,6 +4957,8 @@ int main(void) {
   srand(time(NULL));
 
   InitWindow(1280, 800, "MUZE Tribal Simulation");
+  SetExitKey(KEY_NULL); // <- ESC will NOT close the window anymore
+
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
