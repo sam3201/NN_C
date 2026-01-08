@@ -50,6 +50,13 @@
 
 #define PLATFORM_MAX 256
 
+#define CELL_EMPTY 0.0f
+#define CELL_SELF 1.0f
+#define CELL_OTHER 2.0f
+#define CELL_ONEWAY 3.0f
+#define CELL_GROUND 4.0f
+#define CELL_LEDGE 5.0f // thin "top surface" highlight (helps massively)
+
 typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
