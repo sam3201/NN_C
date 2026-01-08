@@ -354,7 +354,7 @@ static void solve_player_platforms(PlayerJK *p) {
 // =======================
 // OBS
 // =======================
-static void encode_observation_jk(const Agent *a, ObsFixed *out) {
+static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->n = 0;
 
   // Clear grid
@@ -363,16 +363,15 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
 
   const PlayerJK *p = &a->pl;
 
-  // View window top-left in world space (centered on agent)
   Vector2 origin = {p->pos.x - VIEW_W_PX * 0.5f, p->pos.y - VIEW_H_PX * 0.5f};
 
-  // 1) Stamp platforms
+  // platforms
   for (int i = 0; i < g_plat_count; i++) {
     const Platform *pl = &g_plats[i];
     stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, CELL_PLAT);
   }
 
-  // 2) Stamp other agents first (lower priority than self)
+  // other agents
   for (int i = 0; i < MAX_AGENTS; i++) {
     const Agent *b = &agents[i];
     if (!b->alive)
@@ -382,7 +381,7 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
     stamp_point(out->obs, origin, b->pl.pos.x, b->pl.pos.y, CELL_OTHER);
   }
 
-  // 3) Stamp self last (highest priority)
+  // self
   stamp_point(out->obs, origin, p->pos.x, p->pos.y, CELL_SELF);
 
   out->n = OBS_DIM;
