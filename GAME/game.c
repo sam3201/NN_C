@@ -2841,6 +2841,82 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
     obs_push(obs, (float)mob_type / 3.0f); // 0..3 -> 0..1
   }
 
+  // --- nearest HOSTILE mob in this chunk ---
+  float best_h_d = 1e9f;
+  Vector2 best_h_dir = (Vector2){0, 0};
+  int hostile_found = 0;
+
+  // --- nearest PASSIVE mob in this chunk ---
+  float best_p_d = 1e9f;
+  Vector2 best_p_dir = (Vector2){0, 0};
+  int passive_found = 0;
+
+  int hostile_count_near = 0; // within 6 units
+  int passive_count_near = 0;
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 m_world = Vector2Add(chunk_origin, m->position);
+    Vector2 dvec = Vector2Subtract(m_world, a->position);
+    float d = Vector2Length(dvec);
+
+    int hostile = mob_is_hostile(m->type);
+
+    if (d < 6.0f) {
+      if (hostile)
+        hostile_count_near++;
+      else
+        passive_count_near++;
+    }
+
+    if (hostile) {
+      if (d < best_h_d) {
+        best_h_d = d;
+        best_h_dir = dvec;
+        hostile_found = 1;
+      }
+    } else {
+      if (d < best_p_d) {
+        best_p_d = d;
+        best_p_dir = dvec;
+        passive_found = 1;
+      }
+    }
+  }
+
+  // hostile features
+  if (!hostile_found) {
+    obs_push(obs, 1.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+  } else {
+    obs_push(obs, clamp01(best_h_d / 32.0f));
+    obs_push(obs, safe_norm(best_h_dir.x, best_h_d));
+    obs_push(obs, safe_norm(best_h_dir.y, best_h_d));
+    obs_push(obs, 1.0f);
+  }
+
+  // passive features
+  if (!passive_found) {
+    obs_push(obs, 1.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+    obs_push(obs, 0.0f);
+  } else {
+    obs_push(obs, clamp01(best_p_d / 32.0f));
+    obs_push(obs, safe_norm(best_p_dir.x, best_p_d));
+    obs_push(obs, safe_norm(best_p_dir.y, best_p_d));
+    obs_push(obs, 1.0f);
+  }
+
+  // counts (soft normalized)
+  obs_push(obs, clamp01((float)hostile_count_near / 6.0f));
+  obs_push(obs, clamp01((float)passive_count_near / 6.0f));
+
   // ----------------------------
   // INVENTORY / TOOLS (compact)
   // ----------------------------
