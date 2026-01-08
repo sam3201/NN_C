@@ -2683,6 +2683,9 @@ void init_agents(void) {
 
     a->has_axe = a->has_pickaxe = a->has_sword = a->has_armor = false;
 
+    a->tool_selected = TOOL_NONE;
+    a->last_craft_selected = -1;
+
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
 
