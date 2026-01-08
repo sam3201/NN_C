@@ -1192,7 +1192,9 @@ static int save_models_to_disk(const char *world_name) {
       continue;
 
     // DO THIS (real API):
-    // if (!SAM_save(f, a->sam)) { ... }
+    if (!SAM_save(f, a->sam)) {
+      ...
+    }
 
     fclose(f);
   }
