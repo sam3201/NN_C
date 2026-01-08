@@ -8,8 +8,8 @@ extern "C" {
 #endif
 
 typedef struct {
-  float *obs;      // O
-  float *next_obs; // O
+  Observation *obs;      // O
+  Observation *next_obs; // O
   int action;
   float reward;
   int done;
