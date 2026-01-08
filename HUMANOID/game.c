@@ -132,9 +132,6 @@ int main(void) {
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
 
-    camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
-    camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
-
     if (cam_shake > 0.0f) {
       cam_shake -= dt;
       float mag = cam_shake * 0.65f;
