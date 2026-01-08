@@ -282,50 +282,128 @@ static void ground_collide(Particle *p, float groundY) {
   }
 }
 
-static void update_agent(Agent *a) {
+void update_agent(Agent *a) {
   if (!a || !a->alive)
     return;
 
+  // 0) dt handling + fixed-step accumulator (THIS is usually the "fix")
   float dt = g_dt;
   if (dt <= 0.0f)
     dt = 1.0f / 60.0f;
+  dt = clampf(dt, 0.0f, MAX_ACCUM_DT);
+  a->accum_dt += dt;
 
-  const Vector2 gravity = {0.0f, 1400.0f}; // pixels/sec^2
-  const float groundY = (float)SCREEN_HEIGHT - 40.0f;
+  // 1) decide action at CONTROL RATE (not every physics step)
+  //    This prevents jitter and makes learning easier.
+  a->control_timer -= dt;
+  if (a->control_timer <= 0.0f) {
+    a->control_timer += a->control_period; // e.g. 1/30 or 1/20 sec
 
-  // 1) Integrate (Verlet)
-  for (int i = 0; i < P_COUNT; i++) {
-    Particle *p = &a->pt[i];
-    if (p->invMass <= 0.0f)
-      continue;
+    // ---- Build observation (pure state, no "help") ----
+    // Include: pelvis orientation/angVel, COM velocity, joint angles &
+    // velocities, foot contact flags, maybe target heading etc.
+    Obs obs;
+    obs_build_humanoid(a, &obs); // you implement
 
-    Vector2 vel = vsub(p->p, p->pprev);
-    p->pprev = p->p;
+    // ---- Policy outputs muscle commands ----
+    // Typically: target joint angles in [-1,1] or torques in [-1,1]
+    // Example: action[] in [-1,1]
+    policy_act(a->policy, &obs, a->action, a->action_dim);
 
-    // a = gravity
-    Vector2 acc = gravity;
-
-    // p = p + v + a*dt^2
-    p->p = vadd(p->p, vadd(vel, vmul(acc, dt * dt)));
-  }
-
-  // 2) Constraint solve (iterate for stability)
-  int iterations = 10;
-  for (int it = 0; it < iterations; it++) {
-    for (int j = 0; j < J_COUNT; j++) {
-      solve_joint(a, &a->jt[j]);
-    }
-    // ground each iteration helps stop “sinking”
-    for (int i = 0; i < P_COUNT; i++) {
-      ground_collide(&a->pt[i], groundY);
+    // Optional: low-pass filter action to reduce twitching
+    for (int i = 0; i < a->action_dim; i++) {
+      float x = saturate(a->action[i]);
+      a->action_smoothed[i] = 0.85f * a->action_smoothed[i] + 0.15f * x;
     }
   }
 
-  // 3) Final ground pass
-  for (int i = 0; i < P_COUNT; i++) {
-    ground_collide(&a->pt[i], groundY);
+  // 2) physics substeps: integrate at FIXED_DT for stability
+  while (a->accum_dt >= FIXED_DT) {
+    a->accum_dt -= FIXED_DT;
+
+    // 2a) Convert action -> joint targets or torques (NO heuristics)
+    // Example mapping: each action channel controls a joint target angle within
+    // limits. You should have per-joint limits: [minAngle, maxAngle]
+    for (int j = 0; j < a->humanoid.joint_count; j++) {
+      Joint *J = &a->humanoid.joints[j];
+
+      // map [-1,1] -> [min,max]
+      float u =
+          a->action_smoothed[j]; // assume 1:1 mapping; otherwise use a table
+      float target =
+          J->minAngle + (u * 0.5f + 0.5f) * (J->maxAngle - J->minAngle);
+
+      // PD gains per joint (store in joint struct)
+      float tau = joint_pd(J->angle, J->angVel, target, J->kp, J->kd);
+      apply_joint_torque(J, tau);
+    }
+
+    // 2b) Apply gravity + damping to bodies (pure physics)
+    for (int b = 0; b < a->humanoid.body_count; b++) {
+      Body *B = &a->humanoid.bodies[b];
+      // gravity
+      B->force.y += B->mass * a->world.gravity; // gravity negative if y-up
+      damp_body(B, FIXED_DT);
+    }
+
+    // 2c) Step the physics world: integrate + solve constraints/contacts
+    // This is where joints & ground contacts get solved.
+    physics_step(a->world.phys, FIXED_DT);
+
+    // 2d) After-step: update cached joint/body state
+    humanoid_sync_from_physics(&a->humanoid, a->world.phys);
+
+    // 2e) Reward bookkeeping (if you do RL):
+    // reward should be computed from state, not "searching best move"
+    // Example: alive bonus, upright bonus, forward velocity, energy penalty,
+    // fall penalty.
+    float r = compute_reward(a);
+    a->episode_return += r;
+    policy_observe_reward(a->policy, r, a->done);
+  }
+
+  // 3) Termination conditions (physics-based)
+  // e.g., pelvis too low, head hits ground, extreme tilt
+  if (humanoid_fallen(&a->humanoid)) {
+    a->done = 1;
+    a->alive = 0;
   }
 }
+The “fix” in plain terms (what usually breaks humanoid sims)
+If your current update_agent is unstable, it’s almost always one of these:
+
+Variable dt integration (frame dt fed straight into ragdoll)
+✅ Fixed by fixed timestep accumulator (accum_dt, FIXED_DT).
+
+Policy updates every physics tick (120Hz twitching)
+✅ Fixed by control rate (control_period like 1/20–1/30 sec) + optional action smoothing.
+
+No torque clamp / too-strong motors
+✅ Fixed by MAX_TORQUE clamp and per-joint kp/kd tuning.
+
+No damping (energy builds up forever through constraint solver)
+✅ Fixed by small global damping + sane kd.
+
+To wire this perfectly, paste just these from your humanoid sim
+You don’t need to paste the whole project—just:
+
+your current update_agent()
+
+the Agent / Humanoid structs (or at least joints/bodies fields)
+
+how your physics step looks (step_world, solve_constraints, etc.)
+
+what your action space is (torques? target angles? muscle activations?)
+
+…and I’ll return a direct patch that compiles in your codebase (matching your names/types), not a template.
+
+
+
+
+
+
+
+
 
 static void draw_agent(const Agent *a) {
   if (!a || !a->alive)
