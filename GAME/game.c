@@ -286,6 +286,10 @@ typedef struct Agent {
   int tool_selected;
   int last_craft_selected;
 
+  // --- continuous actions (latches) ---
+  int fire_latched;       // 0/1
+  float fire_latch_timer; // seconds remaining to keep trying
+
 } Agent;
 
 typedef struct {
