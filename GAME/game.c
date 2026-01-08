@@ -2955,17 +2955,16 @@ void update_agent(Agent *a) {
 
   // tool selection is "sticky" but reacts to actions
   if (action == ACTION_ATTACK) {
-    a->tool_selected = a->has_sword ? TOOL_SWORD : TOOL_NONE;
+    a->tool_selected = a->has_sword ? TOOL_SWORD : TOOL_HAND;
   } else if (action == ACTION_HARVEST) {
-    // default: prefer pickaxe if owned, otherwise axe
     if (a->has_pickaxe)
       a->tool_selected = TOOL_PICKAXE;
     else if (a->has_axe)
       a->tool_selected = TOOL_AXE;
     else
-      a->tool_selected = TOOL_NONE;
+      a->tool_selected = TOOL_HAND;
   } else if (action == ACTION_FIRE) {
-    a->tool_selected = TOOL_BOW;
+    a->tool_selected = (a->has_bow ? TOOL_BOW : TOOL_HAND);
   }
 
   // --- execute ---
