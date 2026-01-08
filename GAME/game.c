@@ -87,11 +87,12 @@
 ======================= */
 
 typedef enum {
-  TOOL_AXE = 0,
-  TOOL_PICKAXE = 1,
-  TOOL_SWORD = 2,
-  TOOL_ARMOR = 3,
-  TOOL_COUNT = 4,
+  TOOL_HAND = 0,
+  TOOL_AXE = 1,
+  TOOL_PICKAXE = 2,
+  TOOL_SWORD = 3,
+  TOOL_ARMOR = 4,
+  TOOL_COUNT = 5,
   TOOL_NONE = 99
 } ToolType;
 
