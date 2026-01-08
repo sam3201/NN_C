@@ -22,6 +22,10 @@
 #define MAX_AGENTS 128
 
 typedef struct {
+  int x;
+  int y;
+} joint;
+typedef struct {
   bool alive;
   int x;
   int y;
