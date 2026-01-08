@@ -1102,6 +1102,10 @@ int main(void) {
                         ba->cortex ? ba->cortex->policy_epsilon : 0.0f,
                         ba->episodes_done),
              20, 195, 20, RAYWHITE);
+    DrawText(TextFormat("Eps: %.3f  Ep: %d",
+                        ba->cortex ? ba->cortex->policy_epsilon : 0.0f,
+                        ba->episodes_done),
+             20, 195, 20, RAYWHITE);
 
     EndDrawing();
   }
