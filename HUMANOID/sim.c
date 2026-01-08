@@ -601,6 +601,14 @@ int main(void) {
 
     // best agent for highlight + camera focus
     int best_i = find_best_agent_index();
+    Agent *ba = &agents[best_i];
+    DrawText(TextFormat("Charge: %.2f", ba->pl.charge), 20, 95, 20, RAYWHITE);
+    DrawText(TextFormat("Charging: %d", ba->pl.charging), 20, 120, 20,
+             RAYWHITE);
+    DrawText(TextFormat("OnGround: %d", ba->pl.on_ground), 20, 145, 20,
+             RAYWHITE);
+    DrawText(TextFormat("LastAct: %d", ba->last_action), 20, 170, 20, RAYWHITE);
+
     float groundY = (float)SCREEN_HEIGHT - 40.0f;
 
     float camY = clampf((groundY - agents[best_i].pl.pos.y) - 250.0f, 0.0f,
