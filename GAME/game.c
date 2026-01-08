@@ -2879,6 +2879,21 @@ void update_agent(Agent *a) {
 
   a->last_action = action;
 
+  // tool selection is "sticky" but reacts to actions
+  if (action == ACTION_ATTACK) {
+    a->tool_selected = a->has_sword ? TOOL_SWORD : TOOL_NONE;
+  } else if (action == ACTION_HARVEST) {
+    // default: prefer pickaxe if owned, otherwise axe
+    if (a->has_pickaxe)
+      a->tool_selected = TOOL_PICKAXE;
+    else if (a->has_axe)
+      a->tool_selected = TOOL_AXE;
+    else
+      a->tool_selected = TOOL_NONE;
+  } else if (action == ACTION_FIRE) {
+    // bow isn't in your 4-tool list; leave selection unchanged
+  }
+
   // --- execute ---
   float reward = 0.0f;
 
