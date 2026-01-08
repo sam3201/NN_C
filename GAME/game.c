@@ -353,6 +353,8 @@ bool crafting_open = false;
 bool has_axe = false;
 bool has_pickaxe = false;
 bool has_sword = false;
+bool has_armor = false;
+bool has_bow = false;
 
 static Pickup pickups[MAX_PICKUPS];
 
