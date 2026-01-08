@@ -57,6 +57,8 @@
 #define CELL_GROUND 4.0f
 #define CELL_LEDGE 5.0f // thin "top surface" highlight (helps massively)
 
+#define OBS_EXTRA 12
+
 typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
