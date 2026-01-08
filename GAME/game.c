@@ -1123,7 +1123,8 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   return 1;
 }
 
-static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
+static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward,
+                                   bool is_continuous) {
   (void)tr;
 
   if (!a->has_bow) {
