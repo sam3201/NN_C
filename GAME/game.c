@@ -3276,57 +3276,55 @@ void update_player(void) {
       spawn_projectile(player.position, dir, 14.0f, 1.8f,
                        12 + (has_sword ? 4 : 0));
     } else {
-      if (IsKeyPressed(KEY_F) && !has_bow) {
-        // tiny nudge: no bow yet
-        cam_shake = fmaxf(cam_shake, 0.03f);
-      }
+      cam_shake = fmaxf(cam_shake, 0.03f);
     }
     }
+}
 
-    // --- zoom controls ---
-    if (IsKeyDown(KEY_EQUAL))
-      target_world_scale += 60.0f * dt;
-    if (IsKeyDown(KEY_MINUS))
-      target_world_scale -= 60.0f * dt;
-    target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
+// --- zoom controls ---
+if (IsKeyDown(KEY_EQUAL))
+  target_world_scale += 60.0f * dt;
+if (IsKeyDown(KEY_MINUS))
+  target_world_scale -= 60.0f * dt;
+target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
 
-    // --- current chunk ---
-    int cx = (int)(player.position.x / CHUNK_SIZE);
-    int cy = (int)(player.position.y / CHUNK_SIZE);
-    Chunk *c = get_chunk(cx, cy);
+// --- current chunk ---
+int cx = (int)(player.position.x / CHUNK_SIZE);
+int cy = (int)(player.position.y / CHUNK_SIZE);
+Chunk *c = get_chunk(cx, cy);
 
-    // --- Interactions ---
-    // IMPORTANT: only regen stamina when NOT spending it this frame
-    bool spent_stamina_this_frame = false;
+// --- Interactions ---
+// IMPORTANT: only regen stamina when NOT spending it this frame
+bool spent_stamina_this_frame = false;
 
-    // LMB = attack mobs
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
-    pthread_rwlock_wrlock(&c->lock);
-    player_try_attack_mob_in_chunk(c, cx, cy);
-    pthread_rwlock_unlock(&c->lock);
-    }
+// LMB = attack mobs
+if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
+  pthread_rwlock_wrlock(&c->lock);
+  player_try_attack_mob_in_chunk(c, cx, cy);
+  pthread_rwlock_unlock(&c->lock);
+}
 
-    // RMB = harvest/mine resources
-    if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
-    float before = player.stamina;
+// RMB = harvest/mine resources
+if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
+  float before = player.stamina;
 
-    pthread_rwlock_wrlock(&c->lock);
-    player_try_harvest_resource_in_chunk(c, cx, cy);
-    pthread_rwlock_unlock(&c->lock);
+  pthread_rwlock_wrlock(&c->lock);
+  player_try_harvest_resource_in_chunk(c, cx, cy);
+  pthread_rwlock_unlock(&c->lock);
 
-    if (player.stamina < before - 0.0001f) {
-      spent_stamina_this_frame = true;
-    }
-    }
+  if (player.stamina < before - 0.0001f) {
+    spent_stamina_this_frame = true;
+  }
+}
 
-    // --- stamina regen (time-based, only when not spending this frame) ---
-    if (!spent_stamina_this_frame && player.stamina < 100.0f) {
-    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
-    }
+// --- stamina regen (time-based, only when not spending this frame) ---
+if (!spent_stamina_this_frame && player.stamina < 100.0f) {
+  player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+}
 
-    // clamp health
-    if (player.health < 0.0f)
-      player.health = 0.0f;
+// clamp health
+if (player.health < 0.0f)
+  player.health = 0.0f;
 }
 
 static void update_visible_world(float dt) {
