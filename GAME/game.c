@@ -3278,7 +3278,6 @@ void update_player(void) {
     } else {
       cam_shake = fmaxf(cam_shake, 0.03f);
     }
-    }
 }
 
 // --- zoom controls ---
@@ -3299,27 +3298,27 @@ bool spent_stamina_this_frame = false;
 
 // LMB = attack mobs
 if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && player_attack_cd <= 0.0f) {
-  pthread_rwlock_wrlock(&c->lock);
-  player_try_attack_mob_in_chunk(c, cx, cy);
-  pthread_rwlock_unlock(&c->lock);
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_attack_mob_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
 }
 
 // RMB = harvest/mine resources
 if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && player_harvest_cd <= 0.0f) {
-  float before = player.stamina;
+    float before = player.stamina;
 
-  pthread_rwlock_wrlock(&c->lock);
-  player_try_harvest_resource_in_chunk(c, cx, cy);
-  pthread_rwlock_unlock(&c->lock);
+    pthread_rwlock_wrlock(&c->lock);
+    player_try_harvest_resource_in_chunk(c, cx, cy);
+    pthread_rwlock_unlock(&c->lock);
 
-  if (player.stamina < before - 0.0001f) {
-    spent_stamina_this_frame = true;
-  }
+    if (player.stamina < before - 0.0001f) {
+      spent_stamina_this_frame = true;
+    }
 }
 
 // --- stamina regen (time-based, only when not spending this frame) ---
 if (!spent_stamina_this_frame && player.stamina < 100.0f) {
-  player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
+    player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
 }
 
 // clamp health
