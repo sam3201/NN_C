@@ -4475,6 +4475,245 @@ static void draw_hurt_vignette(void) {
   DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){120, 0, 0, a});
 }
 
+static int is_dir_path(const char *path) {
+  struct stat st;
+  if (stat(path, &st) != 0)
+    return 0;
+  return S_ISDIR(st.st_mode);
+}
+
+static int is_file_path(const char *path) {
+  struct stat st;
+  if (stat(path, &st) != 0)
+    return 0;
+  return S_ISREG(st.st_mode);
+}
+
+// optional: only list folders that contain world.sav
+static int world_dir_has_save(const char *world_name) {
+  char p[256];
+  make_save_file_path(p, sizeof(p), world_name);
+  return is_file_path(p);
+}
+
+static void world_list_refresh(WorldList *wl) {
+  ensure_save_root();
+
+  wl->count = 0;
+  wl->selected = -1;
+  wl->scroll = 0;
+
+  DIR *d = opendir(SAVE_ROOT);
+  if (!d)
+    return;
+
+  struct dirent *e;
+  while ((e = readdir(d)) != NULL) {
+    if (e->d_name[0] == '.')
+      continue;
+
+    char full[256];
+    snprintf(full, sizeof(full), "%s/%s", SAVE_ROOT, e->d_name);
+
+    if (!is_dir_path(full))
+      continue;
+
+    // If you want *every* folder listed, comment this out.
+    if (!world_dir_has_save(e->d_name))
+      continue;
+
+    if (wl->count < MAX_WORLDS) {
+      snprintf(wl->names[wl->count], WORLD_NAME_MAX, "%s", e->d_name);
+      wl->count++;
+    }
+  }
+
+  closedir(d);
+
+  // simple sort (lexicographic)
+  for (int i = 0; i < wl->count; i++) {
+    for (int j = i + 1; j < wl->count; j++) {
+      if (strcmp(wl->names[j], wl->names[i]) < 0) {
+        char tmp[WORLD_NAME_MAX];
+        strcpy(tmp, wl->names[i]);
+        strcpy(wl->names[i], wl->names[j]);
+        strcpy(wl->names[j], tmp);
+      }
+    }
+  }
+
+  if (wl->count > 0)
+    wl->selected = 0;
+}
+
+static void world_list_ensure_valid(WorldList *wl) {
+  if (wl->count <= 0) {
+    wl->selected = -1;
+    wl->scroll = 0;
+    return;
+  }
+  if (wl->selected < 0)
+    wl->selected = 0;
+  if (wl->selected >= wl->count)
+    wl->selected = wl->count - 1;
+  if (wl->scroll < 0)
+    wl->scroll = 0;
+  if (wl->scroll > wl->count - 1)
+    wl->scroll = wl->count - 1;
+}
+
+// =======================
+// DELETE WORLD (rm -r saves/<world>)
+// =======================
+static int delete_dir_recursive(const char *path) {
+  DIR *d = opendir(path);
+  if (!d) {
+    // If it doesn't exist, treat as success-ish
+    return (errno == ENOENT) ? 1 : 0;
+  }
+
+  struct dirent *e;
+  while ((e = readdir(d)) != NULL) {
+    if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
+      continue;
+
+    char child[512];
+    snprintf(child, sizeof(child), "%s/%s", path, e->d_name);
+
+    struct stat st;
+    if (stat(child, &st) != 0)
+      continue;
+
+    if (S_ISDIR(st.st_mode)) {
+      if (!delete_dir_recursive(child)) {
+        closedir(d);
+        return 0;
+      }
+      if (rmdir(child) != 0) {
+        closedir(d);
+        return 0;
+      }
+    } else {
+      if (remove(child) != 0) {
+        closedir(d);
+        return 0;
+      }
+    }
+  }
+
+  closedir(d);
+  // remove the top directory
+  if (rmdir(path) != 0)
+    return 0;
+  return 1;
+}
+
+static int delete_world_by_name(const char *world_name) {
+  char world_dir[256];
+  make_world_path(world_dir, sizeof(world_dir), world_name);
+  return delete_dir_recursive(world_dir);
+}
+
+static void draw_pause_overlay(void) {
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 160});
+  const char *title = "PAUSED";
+  int fs = 52;
+  int tw = MeasureText(title, fs);
+  DrawText(title, (SCREEN_WIDTH - tw) / 2, (int)(SCREEN_HEIGHT * 0.18f), fs,
+           RAYWHITE);
+}
+
+static void do_pause_menu(void) {
+  draw_pause_overlay();
+
+  float cx = SCREEN_WIDTH * 0.5f;
+  float y = SCREEN_HEIGHT * 0.35f;
+
+  Rectangle rResume = {cx - 140, y + 0, 280, 54};
+  Rectangle rSave = {cx - 140, y + 70, 280, 54};
+  Rectangle rExit = {cx - 140, y + 140, 280, 54};
+
+  if (ui_button(rResume, "Resume (ESC)")) {
+    g_state = STATE_PLAYING;
+  }
+
+  if (ui_button(rSave, "Save World")) {
+    save_world_to_disk(g_world_name);
+  }
+
+  if (ui_button(rExit, "Exit to World Select")) {
+    // Optional: save before leaving
+    save_world_to_disk(g_world_name);
+
+    world_list_refresh(&g_world_list);
+    g_state = STATE_WORLD_SELECT;
+  }
+
+  DrawText("Tip: ESC toggles pause", (int)(cx - 160), (int)(y + 220), 18,
+           RAYWHITE);
+}
+
+// tiny button helper
+static int ui_button(Rectangle r, const char *text) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
+  DrawRectangleRounded(r, 0.25f, 8, bg);
+  DrawRectangleRoundedLines(r, 0.25f, 8, (Color){0, 0, 0, 160});
+  int fs = 20;
+  int tw = MeasureText(text, fs);
+  DrawText(text, (int)(r.x + (r.width - tw) / 2),
+           (int)(r.y + (r.height - fs) / 2), fs, RAYWHITE);
+  return hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+}
+
+static void ensure_save_root(void) {
+  struct stat st;
+  if (stat(SAVE_ROOT, &st) == 0 && S_ISDIR(st.st_mode))
+    return;
+  mkdir(SAVE_ROOT, 0755);
+}
+
+static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
+                       int digits_only) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 1;
+  if (!hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 0;
+
+  Color bg = *active ? (Color){35, 35, 45, 255} : (Color){25, 25, 35, 255};
+  DrawRectangleRounded(r, 0.2f, 8, bg);
+  DrawRectangleRoundedLines(r, 0.2f, 8, (Color){0, 0, 0, 170});
+
+  // input
+  if (*active) {
+    int key = GetCharPressed();
+    while (key > 0) {
+      int len = (int)strlen(buf);
+      if (key == 32 || (key >= 33 && key <= 126)) {
+        if (digits_only && !(key >= '0' && key <= '9')) {
+          key = GetCharPressed();
+          continue;
+        }
+        if (len < cap - 1) {
+          buf[len] = (char)key;
+          buf[len + 1] = 0;
+        }
+      }
+      key = GetCharPressed();
+    }
+    if (IsKeyPressed(KEY_BACKSPACE)) {
+      int len = (int)strlen(buf);
+      if (len > 0)
+        buf[len - 1] = 0;
+    }
+  }
+
+  DrawText(buf, (int)r.x + 10, (int)r.y + 10, 20, RAYWHITE);
+}
+
 /* =======================
    THREAD
 
