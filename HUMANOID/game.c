@@ -28,8 +28,6 @@ typedef struct {
   int x;
   int y;
 
-  unsigned int radius;
-
 } Agent;
 
 /* =======================
