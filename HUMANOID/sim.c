@@ -94,17 +94,17 @@ typedef struct {
   float control_timer;
   float control_period;
 
-  float pending_reward;
-  ObsFixed last_obs;
-  int has_last_transition;
-
-  float reward_accumulator;
-
   float time_since_progress; // seconds since best_alt improved
   float last_best_alt;       // best_alt snapshot for progress detection
 
   Vector2 last_pos;     // last position sample
   float pos_still_time; // seconds with tiny movement
+
+  float pending_reward;
+  ObsFixed last_obs;
+  int has_last_transition;
+
+  float reward_accumulator;
 
 } Agent;
 
