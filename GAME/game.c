@@ -111,7 +111,8 @@ typedef enum {
   STATE_TITLE = 0,
   STATE_WORLD_SELECT,
   STATE_WORLD_CREATE,
-  STATE_PLAYING
+  STATE_PLAYING,
+  STATE_COUNT
 } GameState;
 
 typedef enum {
