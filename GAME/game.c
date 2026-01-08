@@ -113,6 +113,7 @@ typedef enum {
   STATE_WORLD_SELECT,
   STATE_WORLD_CREATE,
   STATE_PLAYING,
+  STATE_PAUSED, // <-- add
   STATE_COUNT
 } GameStateType;
 
