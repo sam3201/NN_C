@@ -84,31 +84,28 @@ typedef struct {
   bool alive;
   Vector2 spawn_origin;
 
-  Particle pt[P_COUNT];
-  Joint jt[J_COUNT];
+  PlayerJK pl;
 
-  float joint_stiffness; // 0..1
+  float episode_time;
+  float episode_limit;
 
-  // --- SAM / MUZE control ---
+  // best achieved height this episode (higher = better)
+  float best_alt; // altitude above ground baseline
+
+  // --- SAM/MUZE ---
   SAM_t *sam;
   MuCortex *cortex;
   int last_action;
 
-  float episode_time;
-  float episode_limit; // seconds
-
-  // --- fixed step / control rate ---
   float accum_dt;
   float control_timer;
-  float control_period; // e.g. 1/30
+  float control_period;
 
-  // --- learning bookkeeping (control-rate) ---
-  float pending_reward;    // accumulated reward since last decision
-  ObsFixed last_obs;       // observation used to pick last_action
-  int has_last_transition; // whether last_obs/last_action is valid
+  float pending_reward;
+  ObsFixed last_obs;
+  int has_last_transition;
 
   float reward_accumulator;
-
 } Agent;
 
 /* =======================
