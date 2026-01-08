@@ -3855,6 +3855,7 @@ static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
         a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
         a->cortex = SAM_as_MUZE(a->sam);
         a->cortex->cfg = cfg;
+        a->cortex->use_mcts = true;
 
         a->last_action = ACTION_COUNT;
 
