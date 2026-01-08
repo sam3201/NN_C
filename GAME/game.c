@@ -1123,6 +1123,63 @@ static int load_world_from_disk(const char *world_name) {
   return 1;
 }
 
+static int save_models_to_disk(const char *world_name) {
+  char dir[256];
+  make_models_dir(dir, sizeof(dir), world_name);
+  mkdir(dir, 0755); // ok if exists
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    if (!a->sam)
+      continue;
+
+    char path[256];
+    make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
+
+    // ---- IMPORTANT ----
+    // Replace these with the real SAM/MUZE serialization calls in your
+    // codebase. The pattern should be: "write weights/optimizer/replay/etc to
+    // FILE".
+
+    FILE *f = fopen(path, "wb");
+    if (!f)
+      continue;
+
+    // Example placeholder API names:
+    // SAM_save_file(a->sam, f);
+    // or SAM_save(a->sam, path);
+    // or MUZE_save(a->cortex, f);
+
+    fclose(f);
+  }
+  return 1;
+}
+
+static int load_models_from_disk(const char *world_name) {
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    if (!a->sam)
+      continue;
+
+    char path[256];
+    make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
+
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+      // no model yet -> keep fresh initialized model
+      continue;
+    }
+
+    // Example placeholder API names:
+    // SAM_load_file(a->sam, f);
+    // or SAM_load_into(a->sam, path);
+    // or MUZE_load(a->cortex, f);
+
+    fclose(f);
+  }
+  return 1;
+}
+
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
     (Color){140, 140, 140, 255}, // stone
