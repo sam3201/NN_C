@@ -113,7 +113,7 @@ typedef enum {
   STATE_WORLD_CREATE,
   STATE_PLAYING,
   STATE_COUNT
-} GameState;
+} GameStateType;
 
 typedef enum {
   TOOL_HAND = 0,
