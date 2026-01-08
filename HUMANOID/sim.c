@@ -462,9 +462,6 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
   float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f);
 
-  float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
-  float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f); // only above -> negative
-
   // Fill OBS_EXTRA = 10
   // Fill OBS_EXTRA = 12
   // indices 0..11 (relative to k0=OBS_GRID)
