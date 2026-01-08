@@ -66,6 +66,7 @@ typedef struct {
     int x;
     int y;
   } Hands;
+
 } Agent;
 
 /* =======================
