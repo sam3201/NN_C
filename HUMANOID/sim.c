@@ -174,6 +174,19 @@ static inline float clampf(float x, float a, float b) {
 }
 static inline float saturate(float x) { return clampf(x, -1.0f, 1.0f); }
 
+static inline void verlet_impulse(Particle *p, Vector2 dv) {
+  // In Verlet, changing pprev changes velocity.
+  // v = p - pprev, so to add dv: set pprev = p - (v + dv) = pprev - dv
+  p->pprev = vsub(p->pprev, dv);
+}
+
+static void apply_action_muscles(Agent *a, int action) {
+  // Reset to neutral every substep (muscles are per-step, not permanent)
+  // We'll start from original rest each time; store "base rest" separately if
+  // you want. For now: we do small relative tweaks on a->jt[].rest directly,
+  // then restore after solve.
+}
+
 // PD controller for joints: tau = kp*(target - angle) - kd*angVel
 static inline float joint_pd(float angle, float angVel, float target, float kp,
                              float kd) {
