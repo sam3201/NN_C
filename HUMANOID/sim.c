@@ -492,6 +492,7 @@ void update_agent(Agent *a) {
     dt = 1.0f / 60.0f;
   dt = clampf(dt, 0.0f, MAX_ACCUM_DT);
   a->accum_dt += dt;
+  a->episode_time += dt;
 
   const float groundY = (float)SCREEN_HEIGHT - 40.0f;
   const Vector2 gravity = (Vector2){0.0f, 1400.0f}; // y-down in raylib
