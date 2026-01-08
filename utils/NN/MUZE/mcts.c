@@ -248,7 +248,9 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
   dbg_print_root("after expand(root)", root);
 
   if (params->dirichlet_alpha > 0.0f && params->dirichlet_eps > 0.0f) {
-    add_dirichlet_noise(root, params->dirichlet_alpha, params->dirichlet_eps);
+    add_dirichlet_noise(root, params->dirichlet_alpha, params->dirichlet_eps,
+                        rng);
+
     dbg_print_root("after dirichlet(root)", root);
   }
 
