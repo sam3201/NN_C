@@ -922,8 +922,6 @@ int main(void) {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    float groundY = (float)SCREEN_HEIGHT - 40.0f;
-    DrawLine(0, (int)groundY, SCREEN_WIDTH, (int)groundY, DARKGRAY);
     draw_platforms(camY);
     for (int i = 0; i < MAX_AGENTS; i++)
       draw_agent_jk(&agents[i], camY);
