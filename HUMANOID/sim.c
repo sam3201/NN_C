@@ -134,6 +134,35 @@ static inline Vector2 vmul(Vector2 a, float s) {
   return (Vector2){a.x * s, a.y * s};
 }
 
+static inline float clampf(float x, float a, float b) {
+  return x < a ? a : (x > b ? b : x);
+}
+static inline float saturate(float x) { return clampf(x, -1.0f, 1.0f); }
+
+// PD controller for joints: tau = kp*(target - angle) - kd*angVel
+static inline float joint_pd(float angle, float angVel, float target, float kp,
+                             float kd) {
+  float err = target - angle;
+  return kp * err - kd * angVel;
+}
+
+static inline void apply_joint_torque(Joint *j, float tau) {
+  tau = clampf(tau, -MAX_TORQUE, MAX_TORQUE);
+  // Your engine call here:
+  // physics_apply_joint_torque(j, tau);
+  j->motor_torque = tau; // placeholder
+}
+
+static inline void damp_body(Body *b, float dt) {
+  // optional global damping (helps ragdolls)
+  b->linVel.x *= 1.0f / (1.0f + 0.05f * dt);
+  b->linVel.y *= 1.0f / (1.0f + 0.05f * dt);
+  b->angVel *= 1.0f / (1.0f + JOINT_DAMPING * dt);
+
+  // optional clamps (safety)
+  b->angVel = clampf(b->angVel, -ANGVEL_CLAMP, ANGVEL_CLAMP);
+}
+
 static void make_joint(Agent *ag, int j, int a, int b) {
   ag->jt[j].a = a;
   ag->jt[j].b = b;
