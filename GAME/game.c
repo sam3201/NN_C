@@ -4128,11 +4128,12 @@ case ACTION_CRAFT:
   case ACTION_CRAFT_PICKAXE:
     break;
 
-  case ACTION_CRAFT_SWORD
+  case ACTION_CRAFT_SWORD break;
 
-      case ACTION_CRAFT_ARMOR
+      case ACTION_CRAFT_ARMOR:
+    break;
 
-      case ACTION_CRAFT_BOW
+  case ACTION_CRAFT_BOW
 
       case ACTION_CRAFT_ARROWS
 
