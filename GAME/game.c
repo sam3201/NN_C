@@ -948,6 +948,58 @@ static void world_list_ensure_valid(WorldList *wl) {
     wl->scroll = wl->count - 1;
 }
 
+// =======================
+// DELETE WORLD (rm -r saves/<world>)
+// =======================
+static int delete_dir_recursive(const char *path) {
+  DIR *d = opendir(path);
+  if (!d) {
+    // If it doesn't exist, treat as success-ish
+    return (errno == ENOENT) ? 1 : 0;
+  }
+
+  struct dirent *e;
+  while ((e = readdir(d)) != NULL) {
+    if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
+      continue;
+
+    char child[512];
+    snprintf(child, sizeof(child), "%s/%s", path, e->d_name);
+
+    struct stat st;
+    if (stat(child, &st) != 0)
+      continue;
+
+    if (S_ISDIR(st.st_mode)) {
+      if (!delete_dir_recursive(child)) {
+        closedir(d);
+        return 0;
+      }
+      if (rmdir(child) != 0) {
+        closedir(d);
+        return 0;
+      }
+    } else {
+      if (remove(child) != 0) {
+        closedir(d);
+        return 0;
+      }
+    }
+  }
+
+  closedir(d);
+  // remove the top directory
+  if (rmdir(path) != 0)
+    return 0;
+  return 1;
+}
+
+static int delete_world_by_name(const char *world_name) {
+  char world_dir[256];
+  make_world_path(world_dir, sizeof(world_dir), world_name);
+  return delete_dir_recursive(world_dir);
+}
+
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
     (Color){140, 140, 140, 255}, // stone
