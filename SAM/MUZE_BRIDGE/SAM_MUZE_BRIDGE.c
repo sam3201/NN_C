@@ -122,8 +122,8 @@ static void sam_encode(void *brain, float *obs, size_t obs_dim,
     }
 
     ad->has_last = 0;
-    ad->last_seq_ptrs = latent_seq; // points into a ring buffer
-    ad->last_seq_len = seq_len;
+    ad->last_seq_ptrs = NULL;
+    ad->last_seq_len = 0;
   }
 
   long double *dst = ad->hist_data + (ad->write_idx * ad->obs_dim);
