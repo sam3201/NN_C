@@ -104,6 +104,7 @@ enum {
 
 typedef struct {
   bool alive;
+  Vector2 spawn_origin;
 
   Particle pt[P_COUNT];
   Joint jt[J_COUNT];
