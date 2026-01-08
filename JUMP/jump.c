@@ -353,6 +353,15 @@ static void obs_alloc(ObsDyn *o) {
   o->obs = (float *)calloc((size_t)OBS_DIM, sizeof(float));
 }
 
+static void episode_alloc(EpisodeBuf *ep) {
+  ep->obs = (float *)malloc(sizeof(float) * EP_MAX_STEPS * OBS_DIM);
+  ep->pi = (float *)malloc(sizeof(float) * EP_MAX_STEPS * ACTION_COUNT);
+  ep->reward = (float *)malloc(sizeof(float) * EP_MAX_STEPS);
+  ep->action = (int *)malloc(sizeof(int) * EP_MAX_STEPS);
+  ep->done = (int *)malloc(sizeof(int) * EP_MAX_STEPS);
+  ep->T = 0;
+}
+
 static void obs_free(ObsDyn *o) {
   free(o->obs);
   o->obs = NULL;
