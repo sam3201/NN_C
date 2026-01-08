@@ -29,7 +29,6 @@
 #define GRAVITY_Y 2600.0f
 #define MOVE_SPEED 260.0f
 #define AIR_CONTROL 0.35f
-
 #define AIR_ACCEL_SCALE 0.55f // extra drift accel amount (in air)
 #define AIR_DRAG 0.992f       // keep velocity longer in air (was 0.985)
 
