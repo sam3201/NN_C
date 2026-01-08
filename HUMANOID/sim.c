@@ -315,6 +315,12 @@ static void reset_agent_episode(Agent *a) {
 
   a->alive = true;
   a->episode_time = 0.0f;
+  a->time_since_progress = 0.0f;
+  a->last_best_alt = 0.0f;
+
+  a->last_pos = a->pl.pos;
+  a->pos_still_time = 0.0f;
+
   a->pending_reward = 0.0f;
   a->has_last_transition = 0;
   memset(&a->last_obs, 0, sizeof(a->last_obs));
