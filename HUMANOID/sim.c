@@ -393,8 +393,15 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
 static void reset_agent_episode(Agent *a) {
   if (a->cortex && a->has_last_transition) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                     a->last_action, a->pending_reward, 1);
+                     a->last_action, a->pending_reward, 0);
   }
+  a->pending_reward = 0.0f;
+
+  encode_observation_jk(a, &a->last_obs);
+
+  a->last_action = a->cortex ? muze_plan(a->cortex, a->last_obs.obs,
+                                         (size_t)OBS_DIM, (size_t)ACTION_COUNT)
+                             : ACT_NONE;
 
   a->alive = true;
   a->episode_time = 0.0f;
