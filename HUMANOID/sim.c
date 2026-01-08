@@ -13,28 +13,27 @@
 // =======================
 // CONFIG
 // =======================
+// =======================
+// CONFIG
+// =======================
 #define FPS 60.0f
 #define EPISODE_SECONDS 8.0f
 
-// Grid observation: OBS_DIM must equal GRID_W * GRID_H
-#define GRID_W SCREEN_WIDTH
-#define GRID_H SCREEN_HEIGHT
-#if (OBS_DIM != (GRID_W * GRID_H))
-#error "OBS_DIM must equal GRID_W*GRID_H"
-#endif
-
-// Cell IDs (floats are fine)
-#define CELL_EMPTY 0.0f
-#define CELL_SELF 1.0f
-#define CELL_OTHER 2.0f
-#define CELL_PLAT 3.0f
 // ------------ Observation Grid (runtime) ------------
-// Choose a scale. 1280x800 with 20px tiles => 64x40 grid.
+// 1280x800 with TILE_PX=20 => 64x40 grid (2560 cells)
 #define TILE_PX 20
+
+static int SCREEN_WIDTH = 1280;
+static int SCREEN_HEIGHT = 800;
 
 static int GRID_W = 0;
 static int GRID_H = 0;
-static int OBS_DIM = 0;
+
+static int OBS_GRID = 0; // GRID_W * GRID_H
+static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
+
+// Append scalar features after the grid
+#define OBS_EXTRA 10
 
 // Cell IDs
 #define CELL_EMPTY 0.0f
@@ -45,43 +44,6 @@ static int OBS_DIM = 0;
 // World-space view window around the agent (in pixels)
 #define VIEW_W_PX 720.0f
 #define VIEW_H_PX 560.0f
-
-// Anti-stuck shaping
-// if no new best_alt for this long -> punish / reset
-#define STUCK_NO_PROGRESS_SECS 1.5f
-#define STUCK_RESET_SECS 3.0f // hard reset if really stuck
-#define STUCK_PENALTY 0.02f   // per second penalty when stuck (soft shaping)
-
-// Upward-velocity shaping (airborne only)
-// Reward small positive signal when moving upward (vel.y < 0)
-#define UP_VEL_SCALE                                                           \
-  1800.0f // normalize denominator (matches your obs vy scale)
-#define UP_VEL_REWARD 0.0030f // per-second max bonus (tiny)
-
-#define STILL_EPS_PX 1.5f // how close counts as "not moving"
-#define STILL_SECS 1.0f   // time with tiny movement before we consider "still"
-
-#define WORKER_COUNT 4
-#define MAX_AGENTS 8
-
-#define FIXED_DT (1.0f / 120.0f)
-#define MAX_ACCUM_DT (0.25f)
-
-// =======================
-// JUMP KING ENV
-// =======================
-#define PLATFORM_MAX 256
-#define WORLD_HEIGHT 8000.0f
-#define GRAVITY_Y 2600.0f
-#define MOVE_SPEED 260.0f
-#define AIR_CONTROL 0.35f
-
-#define JUMP_CHARGE_RATE 1.6f
-#define JUMP_CHARGE_MAX 1.0f
-#define JUMP_VY_MIN -650.0f
-#define JUMP_VY_MAX -1550.0f
-#define JUMP_VX_MAX 520.0f
-
 typedef struct {
   float x, y, w, h;
   int one_way; // 1 = one-way from below
