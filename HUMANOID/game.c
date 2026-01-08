@@ -62,7 +62,7 @@ static void *agent_worker(void *arg) {
       if (idx >= MAX_AGENTS)
         break;
 
-      update_agent(&agents[idx]);
+      // update_agent(&agents[idx]);
     }
 
     // Signal completion for this worker
