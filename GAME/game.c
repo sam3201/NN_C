@@ -3265,7 +3265,6 @@ void update_player(void) {
   // --- shoot arrow (F) if you have ammo ---
   // --- shoot arrow (F) if you have a bow + ammo ---
   if (IsKeyPressed(KEY_F) && has_bow && inv_arrows > 0) {
-
     Vector2 mouse = GetMousePosition();
     Vector2 pp = world_to_screen(player.position);
     Vector2 aim = Vector2Subtract(mouse, pp);
