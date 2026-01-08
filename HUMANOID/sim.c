@@ -404,6 +404,36 @@ void init_agents(void) {
   }
 }
 
+static void reset_agent_episode(Agent *a, float groundY) {
+  // If we had a pending transition, close it out as terminal
+  if (a->cortex && a->has_last_transition) {
+    a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
+                     a->last_action, a->pending_reward, 1 /*terminal*/);
+  }
+
+  // Reset episode bookkeeping (control loop)
+  a->alive = true;
+  a->accum_dt = 0.0f;
+  a->control_timer = 0.0f;
+  a->last_action = ACT_NONE;
+
+  a->pending_reward = 0.0f;
+  a->has_last_transition = 0;
+  memset(&a->last_obs, 0, sizeof(a->last_obs));
+
+  a->episode_time = 0.0f;
+  a->reward_accumulator = 0.0f;
+
+  // Reset pose
+  init_pose(a, a->spawn_origin);
+
+  // Optional: ensure not spawned under ground
+  if (a->pt[P_ANKLE_L].p.y > groundY)
+    a->pt[P_ANKLE_L].p.y = groundY;
+  if (a->pt[P_ANKLE_R].p.y > groundY)
+    a->pt[P_ANKLE_R].p.y = groundY;
+}
+
 static void solve_joint(Agent *ag, const Joint *j) {
   Particle *A = &ag->pt[j->a];
   Particle *B = &ag->pt[j->b];
