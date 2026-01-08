@@ -53,6 +53,9 @@ static void init_agents(void) {
   }
 }
 
+static void draw_agent(Agent *a, Texture2D *ap, Texture2D *tc) {
+  // Head
+}
 static void update_agent(Agent *a) {}
 
 static void run_agent_jobs(void) {
