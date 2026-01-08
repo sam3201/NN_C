@@ -139,8 +139,6 @@ int main(void) {
         continue;
     }
 
-    update_pickups(dt);
-
     BeginDrawing();
     ClearBackground(BLACK);
 
