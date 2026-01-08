@@ -1038,6 +1038,11 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
 static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward) {
   (void)tr;
 
+  if (!a->has_bow) {
+    *reward += -0.006f; // tried to fire without bow
+    return;
+  }
+
   if (a->fire_cd > 0.0f) {
     *reward += R_FIRE_WASTE * 0.20f;
     return;
