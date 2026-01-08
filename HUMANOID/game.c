@@ -42,6 +42,8 @@ unsigned int job_next_agent = 0;
 size_t job_done_workers = 0;
 pthread_t workers[WORKER_COUNT];
 
+Agent agents[MAX_AGENTS];
+
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
   job_next_agent = 0;
