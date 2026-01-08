@@ -126,6 +126,25 @@ static inline float clampf(float x, float a, float b) {
   return x < a ? a : (x > b ? b : x);
 }
 
+static Vector2 clamp_target_to_world(Vector2 t) {
+  // Horizontal world bounds (you already clamp player 0..SCREEN_WIDTH)
+  if (t.x < 0)
+    t.x = 0;
+  if (t.x > (float)SCREEN_WIDTH)
+    t.x = (float)SCREEN_WIDTH;
+
+  // Vertical bounds: keep target within the tower range
+  // ground is around SCREEN_HEIGHT-40, top is about -WORLD_HEIGHT.
+  float minY = -WORLD_HEIGHT;                // highest visible world Y
+  float maxY = (float)SCREEN_HEIGHT - 40.0f; // ground
+  if (t.y < minY)
+    t.y = minY;
+  if (t.y > maxY)
+    t.y = maxY;
+
+  return t;
+}
+
 static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
 
 static inline void obs_pushf(ObsFixed *o, float v) {
