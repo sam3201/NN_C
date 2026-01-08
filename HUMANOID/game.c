@@ -120,12 +120,14 @@ int main(void) {
 
   start_workers();
 
+  /*
   for (int y = 0; y < WORLD_SIZE; y++) {
     pthread_rwlock_init(&world[x][y].lock, NULL);
     world[x][y].generated = false;
     world[x][y].resource_count = 0;
     world[x][y].mob_spawn_timer = 0.0f;
   }
+  */
 
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
