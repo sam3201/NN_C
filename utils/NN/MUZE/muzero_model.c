@@ -104,6 +104,7 @@ void mu_model_free(MuModel *m) {
   free(m->repr_W);
   free(m->dyn_W);
   free(m->pred_W);
+  free(m->rew_W);
   free(m);
 }
 
