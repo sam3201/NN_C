@@ -253,6 +253,56 @@ static void encode_observation_humanoid(const Agent *a, float groundY,
   // Remaining slots already zero-filled
 }
 
+static void init_pose(Agent *a, Vector2 origin) {
+  // DO NOT memset(a) here (we keep sam/cortex + other persistent fields)
+
+  a->alive = true;
+  a->joint_stiffness = 1.0f;
+
+  // standing-ish T pose
+  a->pt[P_HEAD].p = vadd(origin, (Vector2){0, -90});
+  a->pt[P_NECK].p = vadd(origin, (Vector2){0, -75});
+  a->pt[P_CHEST].p = vadd(origin, (Vector2){0, -50});
+  a->pt[P_HIP].p = vadd(origin, (Vector2){0, -20});
+
+  a->pt[P_SHOULDER_L].p = vadd(origin, (Vector2){-25, -65});
+  a->pt[P_ELBOW_L].p = vadd(origin, (Vector2){-50, -55});
+  a->pt[P_HAND_L].p = vadd(origin, (Vector2){-70, -45});
+
+  a->pt[P_SHOULDER_R].p = vadd(origin, (Vector2){25, -65});
+  a->pt[P_ELBOW_R].p = vadd(origin, (Vector2){50, -55});
+  a->pt[P_HAND_R].p = vadd(origin, (Vector2){70, -45});
+
+  a->pt[P_KNEE_L].p = vadd(origin, (Vector2){-15, 15});
+  a->pt[P_ANKLE_L].p = vadd(origin, (Vector2){-15, 55});
+
+  a->pt[P_KNEE_R].p = vadd(origin, (Vector2){15, 15});
+  a->pt[P_ANKLE_R].p = vadd(origin, (Vector2){15, 55});
+
+  for (int i = 0; i < P_COUNT; i++) {
+    a->pt[i].pprev = a->pt[i].p;
+    a->pt[i].invMass = 1.0f;
+  }
+
+  make_joint(a, J_NECK, P_HEAD, P_NECK);
+  make_joint(a, J_SPINE1, P_NECK, P_CHEST);
+  make_joint(a, J_SPINE2, P_CHEST, P_HIP);
+
+  make_joint(a, J_SHOULDER_L, P_NECK, P_SHOULDER_L);
+  make_joint(a, J_UPPERARM_L, P_SHOULDER_L, P_ELBOW_L);
+  make_joint(a, J_FOREARM_L, P_ELBOW_L, P_HAND_L);
+
+  make_joint(a, J_SHOULDER_R, P_NECK, P_SHOULDER_R);
+  make_joint(a, J_UPPERARM_R, P_SHOULDER_R, P_ELBOW_R);
+  make_joint(a, J_FOREARM_R, P_ELBOW_R, P_HAND_R);
+
+  make_joint(a, J_HIP_L, P_HIP, P_KNEE_L);
+  make_joint(a, J_SHIN_L, P_KNEE_L, P_ANKLE_L);
+
+  make_joint(a, J_HIP_R, P_HIP, P_KNEE_R);
+  make_joint(a, J_SHIN_R, P_KNEE_R, P_ANKLE_R);
+}
+
 static void init_agent(Agent *a, Vector2 origin) {
   memset(a, 0, sizeof(*a));
   a->alive = true;
