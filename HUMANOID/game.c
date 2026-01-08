@@ -26,10 +26,10 @@ typedef struct {
   int x;
   int y;
 
-  struct Head {
+  struct {
     int x;
     int y;
-  } head;
+  } Head;
 
 } Agent;
 
