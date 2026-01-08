@@ -2854,11 +2854,15 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, a->has_pickaxe ? 1.0f : 0.0f);
   obs_push(obs, a->has_sword ? 1.0f : 0.0f);
   obs_push(obs, a->has_armor ? 1.0f : 0.0f);
+  obs_push(obs, a->has_bow ? 1.0f : 0.0f);
 
-  // selected tool one-hot (what the agent is "holding")
-  for (int i = 0; i < 4; i++) {
+  // selected tool one-hot across TOOL_COUNT
+  for (int i = 0; i < TOOL_COUNT; i++) {
     obs_push(obs, (a->tool_selected == i) ? 1.0f : 0.0f);
   }
+
+  // also provide selected tool as a single continuous scalar (helps learning)
+  obs_push(obs, (float)a->tool_selected / (float)(TOOL_COUNT - 1));
 
   // ----------------------------
   // EXTRA CONTEXT (small, helps policy)
