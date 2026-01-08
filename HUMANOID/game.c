@@ -29,10 +29,6 @@ typedef struct {
   int y;
 
   unsigned int radius;
-  unsigned int health;
-  unsigned int health_max;
-  unsigned int attack;
-  unsigned int defense;
 
 } Agent;
 
