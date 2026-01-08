@@ -475,16 +475,6 @@ static void update_agent(Agent *a) {
     // collisions
     solve_player_platforms(p);
 
-    // --------------------------
-    // Upward velocity shaping (airborne)
-    // --------------------------
-    if (!p->on_ground) {
-      // upward speed is -vel.y (since y-down)
-      float up = (-p->vel.y) / UP_VEL_SCALE; // roughly 0..~1
-      up = clampf(up, 0.0f, 1.0f);
-      a->pending_reward += UP_VEL_REWARD * up * FIXED_DT;
-    }
-
     // If we are not grounded, we cannot be charging.
     if (!p->on_ground) {
       p->charging = 0;
