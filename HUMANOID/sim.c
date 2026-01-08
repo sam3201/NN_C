@@ -82,9 +82,17 @@ static int GRID_H = 0;
 static int OBS_GRID = 0; // GRID_W * GRID_H
 static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 
+typedef enum { PLAT_RECT = 0, PLAT_RAMP = 1 } PlatKind;
+
 typedef struct {
+  PlatKind kind;
+  int one_way;
+
+  // rect
   float x, y, w, h;
-  int one_way; // 1 = one-way from below
+
+  // ramp (line segment from (x,y) to (x2,y2))
+  float x2, y2;
 } Platform;
 
 typedef struct {
