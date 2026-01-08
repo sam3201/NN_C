@@ -19,8 +19,8 @@
 // Grid observation: OBS_DIM must equal GRID_W * GRID_H
 #define GRID_W 9
 #define GRID_H 8
-#if (OBS_DIM != (GRID_W * GRID_H)) #error                                      \
-    "OBS_DIM must equal GRID_W*GRID_H" #endif
+#if (OBS_DIM != (GRID_W * GRID_H)) #error "OBS_DIM must equal GRID_W*GRID_H"
+#endif
 
 // Cell IDs (floats are fine)
 #define CELL_EMPTY 0.0f
