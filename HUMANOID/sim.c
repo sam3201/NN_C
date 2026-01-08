@@ -17,33 +17,36 @@
 #define FPS 60.0f
 #define EPISODE_SECONDS 8.0f
 
-// ------------ Observation Grid (runtime) ------------
-// 1280x800 with TILE_PX=20 => 64x40 grid (2560 cells)
-#define TILE_PX 20
+#define WORKER_COUNT 4
+#define MAX_AGENTS 8
 
-static int SCREEN_WIDTH = 1280;
-static int SCREEN_HEIGHT = 800;
+// Fixed-step physics
+#define FIXED_DT (1.0f / 120.0f)
+#define MAX_ACCUM_DT 0.25f
 
-static int GRID_W = 0;
-static int GRID_H = 0;
+// Jump King-ish world
+#define WORLD_HEIGHT 8000.0f
+#define GRAVITY_Y 2600.0f
+#define MOVE_SPEED 260.0f
+#define AIR_CONTROL 0.35f
 
-static int OBS_GRID = 0; // GRID_W * GRID_H
-static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
+#define JUMP_CHARGE_RATE 1.6f
+#define JUMP_CHARGE_MAX 1.0f
+#define JUMP_VY_MIN -650.0f
+#define JUMP_VY_MAX -1550.0f
+#define JUMP_VX_MAX 520.0f
 
-// Append scalar features after the grid
-#define OBS_EXTRA 10
+// Anti-stuck
+#define STUCK_NO_PROGRESS_SECS 1.5f
+#define STUCK_RESET_SECS 3.0f
+#define STUCK_PENALTY 0.02f
 
-// Cell IDs
-#define CELL_EMPTY 0.0f
-#define CELL_SELF 1.0f
-#define CELL_OTHER 2.0f
-#define CELL_PLAT 3.0f
+#define STILL_EPS_PX 1.5f
+#define STILL_SECS 1.0f
 
-// World-space view window around the agent (in pixels)
-#define VIEW_W_PX 720.0f
-#define VIEW_H_PX 560.0f
-
-#define PLATFORM_MAX 16
+// Upward-velocity shaping
+#define UP_VEL_SCALE 1800.0f
+#define UP_VEL_REWARD 0.0030f
 
 typedef struct {
   float x, y, w, h;
