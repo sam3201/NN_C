@@ -228,123 +228,123 @@ static void visits_to_pi(const Node *root, float temperature, float *pi_out) {
    Public API
    ========================= */
 MCTSResult mcts_run_latent(MuModel *model, const float *latent,
-                           const MCTSParams *params) {
-  MCTSResult res;
-  memset(&res, 0, sizeof(res));
+                           const MCTSParams *params, MCTSRng *rng);
+MCTSResult res;
+memset(&res, 0, sizeof(res));
 
-  if (!model || !latent || !params)
-    return res;
+if (!model || !latent || !params)
+  return res;
 
-  const int A = model->cfg.action_count;
-  const int L = model->cfg.latent_dim;
+const int A = model->cfg.action_count;
+const int L = model->cfg.latent_dim;
 
-  Node *root = node_create(A, L);
-  if (!root)
-    return res;
+Node *root = node_create(A, L);
+if (!root)
+  return res;
 
-  memcpy(root->latent, latent, sizeof(float) * (size_t)L);
+memcpy(root->latent, latent, sizeof(float) * (size_t)L);
 
-  float root_value = expand_node(root, model);
-  dbg_print_root("after expand(root)", root);
+float root_value = expand_node(root, model);
+dbg_print_root("after expand(root)", root);
 
-  if (params->dirichlet_alpha > 0.0f && params->dirichlet_eps > 0.0f) {
-    add_dirichlet_noise(root, params->dirichlet_alpha, params->dirichlet_eps);
-    dbg_print_root("after dirichlet(root)", root);
-  }
+if (params->dirichlet_alpha > 0.0f && params->dirichlet_eps > 0.0f) {
+  add_dirichlet_noise(root, params->dirichlet_alpha, params->dirichlet_eps);
+  dbg_print_root("after dirichlet(root)", root);
+}
 
-  int max_depth = (params->max_depth > 0) ? params->max_depth : 64;
+int max_depth = (params->max_depth > 0) ? params->max_depth : 64;
 
-  int *actions = (int *)malloc(sizeof(int) * (size_t)max_depth);
-  float *rewards = (float *)malloc(sizeof(float) * (size_t)max_depth);
-  float *h_cur = (float *)malloc(sizeof(float) * (size_t)L);
+int *actions = (int *)malloc(sizeof(int) * (size_t)max_depth);
+float *rewards = (float *)malloc(sizeof(float) * (size_t)max_depth);
+float *h_cur = (float *)malloc(sizeof(float) * (size_t)L);
 
-  if (!actions || !rewards || !h_cur) {
-    free(actions);
-    free(rewards);
-    free(h_cur);
-    node_free(root);
-    return res;
-  }
-
-  for (int sim = 0; sim < params->num_simulations; sim++) {
-    Node *node = root;
-    int depth = 0;
-
-    memcpy(h_cur, root->latent, sizeof(float) * (size_t)L);
-
-    while (node->expanded && depth < max_depth) {
-      int a = select_puct(node, params->c_puct);
-      actions[depth] = a;
-
-      if (!node->children[a]) {
-        Node *child = node_create(A, L);
-        if (!child)
-          break;
-        node->children[a] = child;
-
-        float r = 0.0f;
-        mu_model_dynamics(model, h_cur, a, child->latent, &r);
-        rewards[depth] = r;
-
-        float leaf_value = expand_node(child, model);
-        backup_with_discount(root, actions, rewards, depth + 1, leaf_value,
-                             params->discount);
-        break;
-      } else {
-        Node *child = node->children[a];
-        float r = 0.0f;
-        mu_model_dynamics(model, h_cur, a, child->latent, &r);
-        rewards[depth] = r;
-
-        memcpy(h_cur, child->latent, sizeof(float) * (size_t)L);
-        node = child;
-        depth++;
-      }
-    }
-  }
-
-  dbg_print_root("after simulations(root)", root);
-
-  float *pi = (float *)malloc(sizeof(float) * (size_t)A);
-  if (!pi) {
-    free(actions);
-    free(rewards);
-    free(h_cur);
-    node_free(root);
-    return res;
-  }
-
-  visits_to_pi(root, params->temperature, pi);
-
-  /* Choose action: best Q among visited; fallback to best prior. */
-  int best_a = 0;
-  float best_q = -INFINITY;
-  for (int a = 0; a < A; a++) {
-    if (root->N[a] > 0 && root->Q[a] > best_q) {
-      best_q = root->Q[a];
-      best_a = a;
-    }
-  }
-  if (best_q == -INFINITY) {
-    float best_p = -INFINITY;
-    for (int a = 0; a < A; a++) {
-      if (root->P[a] > best_p) {
-        best_p = root->P[a];
-        best_a = a;
-      }
-    }
-  }
-
-  res.action_count = A;
-  res.pi = pi;
-  res.chosen_action = best_a;
-  res.root_value = root_value;
-
+if (!actions || !rewards || !h_cur) {
   free(actions);
   free(rewards);
   free(h_cur);
   node_free(root);
   return res;
+}
+
+for (int sim = 0; sim < params->num_simulations; sim++) {
+  Node *node = root;
+  int depth = 0;
+
+  memcpy(h_cur, root->latent, sizeof(float) * (size_t)L);
+
+  while (node->expanded && depth < max_depth) {
+    int a = select_puct(node, params->c_puct);
+    actions[depth] = a;
+
+    if (!node->children[a]) {
+      Node *child = node_create(A, L);
+      if (!child)
+        break;
+      node->children[a] = child;
+
+      float r = 0.0f;
+      mu_model_dynamics(model, h_cur, a, child->latent, &r);
+      rewards[depth] = r;
+
+      float leaf_value = expand_node(child, model);
+      backup_with_discount(root, actions, rewards, depth + 1, leaf_value,
+                           params->discount);
+      break;
+    } else {
+      Node *child = node->children[a];
+      float r = 0.0f;
+      mu_model_dynamics(model, h_cur, a, child->latent, &r);
+      rewards[depth] = r;
+
+      memcpy(h_cur, child->latent, sizeof(float) * (size_t)L);
+      node = child;
+      depth++;
+    }
+  }
+}
+
+dbg_print_root("after simulations(root)", root);
+
+float *pi = (float *)malloc(sizeof(float) * (size_t)A);
+if (!pi) {
+  free(actions);
+  free(rewards);
+  free(h_cur);
+  node_free(root);
+  return res;
+}
+
+visits_to_pi(root, params->temperature, pi);
+
+/* Choose action: best Q among visited; fallback to best prior. */
+int best_a = 0;
+float best_q = -INFINITY;
+for (int a = 0; a < A; a++) {
+  if (root->N[a] > 0 && root->Q[a] > best_q) {
+    best_q = root->Q[a];
+    best_a = a;
+  }
+}
+if (best_q == -INFINITY) {
+  float best_p = -INFINITY;
+  for (int a = 0; a < A; a++) {
+    if (root->P[a] > best_p) {
+      best_p = root->P[a];
+      best_a = a;
+    }
+  }
+}
+
+res.action_count = A;
+res.pi = pi;
+res.chosen_action = best_a;
+res.root_value = root_value;
+
+free(actions);
+free(rewards);
+free(h_cur);
+node_free(root);
+return res;
 }
 
 MCTSResult mcts_run(MuModel *model, const float *obs,
