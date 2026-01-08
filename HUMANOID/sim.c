@@ -256,9 +256,15 @@ static void stamp_point(float *grid, Vector2 origin, float x, float y,
     grid[idx] = value;
 }
 
-static inline void obs_pushf(ObsFixed *o, float v) {
-  if (o->n < OBS_DIM)
-    o->obs[o->n++] = v;
+static void obs_alloc(ObsDyn *o) {
+  o->n = 0;
+  o->obs = (float *)calloc((size_t)OBS_DIM, sizeof(float));
+}
+
+static void obs_free(ObsDyn *o) {
+  free(o->obs);
+  o->obs = NULL;
+  o->n = 0;
 }
 
 static int circle_overlaps_rect(Vector2 c, float r, const Platform *pl) {
