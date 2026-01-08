@@ -116,9 +116,7 @@ int main(void) {
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
-  init_tribes();
   init_agents();
-  init_player();
 
   start_workers();
 
