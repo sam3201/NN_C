@@ -82,7 +82,7 @@
 
 #define R_DEATH (-1.000f)
 
-#define OBS_DIM 100
+#define OBS_DIM 128
 #define TRAIN_INTERVAL 1
 
 /* =======================
