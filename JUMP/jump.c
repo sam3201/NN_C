@@ -703,23 +703,60 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
 // AGENTS
 // =======================
 static void reset_agent_episode(Agent *a) {
-  // terminal learn (done=1) if we had a transition
+  // ---- finalize last step reward/done (if episode has steps) ----
+  if (a->ep_t > 0) {
+    // assign reward to the last stored step
+    a->ep.reward[a->ep_t - 1] = a->pending_reward;
+    a->ep.done[a->ep_t - 1] = 1;
+
+    // compute discounted returns z_t
+    int T = a->ep_t;
+    float *z = (float *)malloc(sizeof(float) * (size_t)T);
+    if (z) {
+      for (int t = 0; t < T; t++) {
+        float acc = 0.0f, g = 1.0f;
+        for (int k = t; k < T; k++) {
+          acc += g * a->ep.reward[k];
+          g *= a->mcts_params.discount;
+        }
+        z[t] = acc;
+      }
+
+      // push to global replay
+      pthread_mutex_lock(&g_rb_mtx);
+      for (int t = 0; t < T; t++) {
+        float *obs_t = a->ep.obs + t * OBS_DIM;
+        float *pi_t = a->ep.pi + t * ACTION_COUNT;
+
+        rb_push(g_rb, obs_t, pi_t, z[t]);
+
+        // push transitions for dynamics training (if you have this implemented)
+        if (t + 1 < T) {
+          float *obs_tp1 = a->ep.obs + (t + 1) * OBS_DIM;
+          rb_push_transition(g_rb, obs_t, a->ep.action[t], a->ep.reward[t],
+                             obs_tp1, a->ep.done[t]);
+        }
+      }
+      pthread_mutex_unlock(&g_rb_mtx);
+
+      free(z);
+    }
+  }
+
+  // ---- optional online learner hook (terminal) ----
   if (a->cortex && a->has_last_transition) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                      a->last_action, a->pending_reward, 1);
   }
 
-  // Set exploration params for the episode we are ABOUT to start
+  // ---- new episode exploration schedule ----
   if (a->cortex) {
-    a->cortex->policy_epsilon =
-        epsilon_schedule(a->episodes_done); // ep0 -> 0.80
-    a->cortex->policy_temperature =
-        1.0f; // you can decay this too later if you want
+    a->cortex->policy_epsilon = epsilon_schedule(a->episodes_done);
+    a->cortex->policy_temperature = 1.0f;
   }
-
-  // Now count this new episode as started
   a->episodes_done++;
 
+  // ---- reset episode bookkeeping ----
   a->alive = true;
   a->episode_time = 0.0f;
 
@@ -730,6 +767,9 @@ static void reset_agent_episode(Agent *a) {
   a->pending_reward = 0.0f;
   a->has_last_transition = 0;
 
+  a->ep_t = 0;
+
+  // ---- reset player ----
   a->pl.pos = a->spawn_origin;
   a->pl.vel = (Vector2){0, 0};
   a->pl.radius = 10.0f;
@@ -741,9 +781,13 @@ static void reset_agent_episode(Agent *a) {
   a->last_pos = a->pl.pos;
   a->best_alt = 0.0f;
 
-  // refresh obs for the new starting state
+  // seed initial obs
   encode_observation_jk(a, &a->last_obs);
   a->last_action = ACT_NONE;
+
+  // keep last_pi clean
+  for (int i = 0; i < ACTION_COUNT; i++)
+    a->last_pi[i] = 0.0f;
 }
 
 static void init_agents(void) {
