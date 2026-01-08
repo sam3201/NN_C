@@ -19,8 +19,8 @@ typedef struct {
 } Memory;
 
 void init_memory(Memory *memory, int initial_capacity, int input_size);
-void store_memory(Memory *memory, long double *vision_inputs, int action,
-                  float reward, float value_estimate);
+void store_memory(Memory *m, const long double *x, int action, float reward,
+                  float value_estimate);
 void free_memory(Memory *memory);
 
 #endif
