@@ -174,6 +174,15 @@ static inline float clampf(float x, float a, float b) {
 }
 static inline float saturate(float x) { return clampf(x, -1.0f, 1.0f); }
 
+static inline void obs_pushf(ObsFixed *o, float v) {
+  if (o->n < OBS_DIM)
+    o->obs[o->n++] = v;
+}
+
+static inline float safe_div(float a, float b) {
+  return (fabsf(b) > 1e-6f) ? (a / b) : 0.0f;
+}
+
 // PD controller for joints: tau = kp*(target - angle) - kd*angVel
 static inline float joint_pd(float angle, float angVel, float target, float kp,
                              float kd) {
