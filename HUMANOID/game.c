@@ -20,8 +20,6 @@
 // =======================
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 800
 
 typedef struct {
   bool alive;
@@ -33,7 +31,9 @@ typedef struct {
 /* =======================
    GLOBAL CONFIG
 ======================= */
-pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
+const unsigned int SCREEN_WIDTH = 1280 const unsigned int SCREEN_HEIGHT 800
+
+    pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
 pthread_cond_t done_cv = PTHREAD_COND_INITIALIZER;
 bool job_quit = 0;
