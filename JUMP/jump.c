@@ -360,12 +360,33 @@ static void obs_free(ObsDyn *o) {
 }
 
 static void episode_alloc(EpisodeBuf *ep) {
+  memset(ep, 0, sizeof(*ep));
   ep->obs = (float *)malloc(sizeof(float) * EP_MAX_STEPS * OBS_DIM);
   ep->pi = (float *)malloc(sizeof(float) * EP_MAX_STEPS * ACTION_COUNT);
   ep->reward = (float *)malloc(sizeof(float) * EP_MAX_STEPS);
   ep->action = (int *)malloc(sizeof(int) * EP_MAX_STEPS);
   ep->done = (int *)malloc(sizeof(int) * EP_MAX_STEPS);
   ep->T = 0;
+
+  if (!ep->obs || !ep->pi || !ep->reward || !ep->action || !ep->done) {
+    free(ep->obs);
+    free(ep->pi);
+    free(ep->reward);
+    free(ep->action);
+    free(ep->done);
+    memset(ep, 0, sizeof(*ep));
+  }
+}
+
+static void episode_free(EpisodeBuf *ep) {
+  if (!ep)
+    return;
+  free(ep->obs);
+  free(ep->pi);
+  free(ep->reward);
+  free(ep->action);
+  free(ep->done);
+  memset(ep, 0, sizeof(*ep));
 }
 
 static int circle_overlaps_rect(Vector2 c, float r, const Platform *pl) {
