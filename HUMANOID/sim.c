@@ -515,7 +515,6 @@ void update_agent(Agent *a) {
 
     // (B) Build current obs and pick a new action
     encode_observation_humanoid(a, groundY, &a->last_obs);
-    a->last_obs.n = OBS_DIM; // ensure dimension is consistent
 
     if (a->cortex) {
       a->last_action = muze_plan(a->cortex, a->last_obs.obs, (size_t)OBS_DIM,
