@@ -33,6 +33,12 @@
 #define FIXED_DT (1.0f / 120.0f)
 #define MAX_ACCUM_DT (0.25f)
 
+// Upward-velocity shaping (airborne only)
+// Reward small positive signal when moving upward (vel.y < 0)
+#define UP_VEL_SCALE                                                           \
+  1800.0f // normalize denominator (matches your obs vy scale)
+#define UP_VEL_REWARD 0.0030f // per-second max bonus (tiny)
+
 // =======================
 // JUMP KING ENV
 // =======================
