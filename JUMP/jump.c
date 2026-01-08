@@ -215,6 +215,12 @@ Agent agents[MAX_AGENTS];
 // =======================
 // MATH / HELPERS
 // =======================
+static inline float frand01(uint32_t *s) {
+  return (xorshift32(s) >> 8) * (1.0f / 16777216.0f); // 24-bit mantissa
+}
+static inline int irand(uint32_t *s, int n) {
+  return (int)(xorshift32(s) % (uint32_t)n);
+}
 static float agent_rand01(void *ctx) {
   Agent *a = (Agent *)ctx;
   return frand01(&a->rng);
@@ -258,12 +264,6 @@ static inline uint32_t xorshift32(uint32_t *s) {
   x ^= x << 5;
   *s = x;
   return x;
-}
-static inline float frand01(uint32_t *s) {
-  return (xorshift32(s) >> 8) * (1.0f / 16777216.0f); // 24-bit mantissa
-}
-static inline int irand(uint32_t *s, int n) {
-  return (int)(xorshift32(s) % (uint32_t)n);
 }
 
 static inline void world_to_grid(const Vector2 origin, float x, float y,
