@@ -1269,6 +1269,7 @@ int main(void) {
     obs_free(&agents[i].last_obs);
 
   stop_workers();
+  episode_free(&g_rb);
   CloseWindow();
   return 0;
 }
