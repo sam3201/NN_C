@@ -135,6 +135,15 @@ typedef struct {
 } ObsDyn;
 
 typedef struct {
+  int T;
+  float *obs;    // [EP_MAX_STEPS * OBS_DIM]
+  float *pi;     // [EP_MAX_STEPS * ACTION_COUNT]
+  float *reward; // [EP_MAX_STEPS]
+  int *action;   // [EP_MAX_STEPS]
+  int *done;     // [EP_MAX_STEPS]
+} EpisodeBuf;
+
+typedef struct {
   bool alive;
   Vector2 spawn_origin;
 
