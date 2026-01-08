@@ -18,6 +18,7 @@
 // =======================
 // CONFIG
 // =======================
+#define FPS 60
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
 
