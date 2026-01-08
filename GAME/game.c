@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <unistd.h> // rmdir
+#include <unistd.h>
 
 /* =======================
    GLOBAL CONFIG
