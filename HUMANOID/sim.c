@@ -111,6 +111,24 @@ typedef struct {
   float reward_accumulator;
 } Agent;
 
+enum {
+  ACT_NONE = 0,
+
+  ACT_STEP_LEFT,
+  ACT_STEP_RIGHT,
+
+  ACT_KNEE_L_UP,
+  ACT_KNEE_R_UP,
+
+  ACT_ARMS_UP,
+  ACT_ARMS_DOWN,
+
+  ACT_SQUAT,
+  ACT_STAND,
+
+  ACTION_COUNT
+};
+
 /* =======================
    GLOBAL CONFIG
 ======================= */
