@@ -217,6 +217,27 @@ static void stamp_rect(float *grid, Vector2 origin, float rx, float ry,
   }
 }
 
+static void stamp_disk(float *grid, Vector2 origin, float x, float y,
+                       float value, int radius_cells) {
+  int cx, cy;
+  world_to_grid(origin, x, y, &cx, &cy);
+  if (cx < 0 || cx >= GRID_W || cy < 0 || cy >= GRID_H)
+    return;
+
+  for (int dy = -radius_cells; dy <= radius_cells; dy++) {
+    for (int dx = -radius_cells; dx <= radius_cells; dx++) {
+      if (dx * dx + dy * dy > radius_cells * radius_cells)
+        continue;
+      int gx = cx + dx, gy = cy + dy;
+      if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H)
+        continue;
+      int idx = grid_index(gx, gy);
+      if (grid[idx] < value)
+        grid[idx] = value;
+    }
+  }
+}
+
 // Stamp a point/circle-ish (agent) into a single cell (or small radius if
 // desired)
 static void stamp_point(float *grid, Vector2 origin, float x, float y,
