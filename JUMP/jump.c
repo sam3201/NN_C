@@ -785,6 +785,20 @@ static void update_agent(Agent *a) {
       }
     }
 
+    if (a->ep_t > 0) {
+      a->ep.reward[a->ep_t - 1] = a->pending_reward;
+    }
+    a->pending_reward = 0.f;
+
+    // now store current obs and π
+    memcpy(a->ep.obs + a->ep_t * OBS_DIM, a->last_obs.obs,
+           sizeof(float) * OBS_DIM);
+    memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, mr.pi,
+           sizeof(float) * ACTION_COUNT);
+    a->ep.action[a->ep_t] = chosen;
+    a->ep.done[a->ep_t] = 0;
+    a->ep_t++;
+
     if (a->cortex && a->has_last_transition) {
       a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                        a->last_action, a->pending_reward, 0);
