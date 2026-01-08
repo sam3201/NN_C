@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  Observation *obs;      // O
+  GameState *obs;        // O
   Observation *next_obs; // O
   int action;
   float reward;
