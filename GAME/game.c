@@ -2,11 +2,15 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
 #include "../utils/Raylib/src/raymath.h"
+#include <dirent.h>
+#include <errno.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <time.h>
 
 /* =======================
