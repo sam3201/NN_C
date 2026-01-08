@@ -856,6 +856,8 @@ int main(void) {
   SCREEN_HEIGHT = GetScreenHeight();
   SetTargetFPS(60);
 
+  build_platforms();
+
   init_agents();
 
   start_workers();
