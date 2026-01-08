@@ -2156,7 +2156,7 @@ static void collect_nearby_pickups(void) {
   }
 }
 
-static Vector2 uinearest_base_pos(Vector2 wp) {
+static Vector2 ui_nearest_base_pos(Vector2 wp) {
   float bestD = 1e9f;
   Vector2 best = tribes[0].base.position;
   for (int t = 0; t < TRIBE_COUNT; t++) {
