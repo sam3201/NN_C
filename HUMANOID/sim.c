@@ -312,6 +312,15 @@ void update_agent(Agent *a) {
     // ---- Policy outputs muscle commands ----
     // Typically: target joint angles in [-1,1] or torques in [-1,1]
     // Example: action[] in [-1,1]
+    pthread_rwlock_rdlock(&c->lock);
+    encode_observation(a, c, &obs);
+    pthread_rwlock_unlock(&c->lock);
+
+    // --- MuZero chooses action ---
+    int action =
+        muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
+
+    obs_free(&obs);
     policy_act(a->policy, &obs, a->action, a->action_dim);
 
     // Optional: low-pass filter action to reduce twitching
