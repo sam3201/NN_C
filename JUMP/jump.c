@@ -1230,7 +1230,8 @@ int main(void) {
 
     static int train_counter = 0;
     train_counter++;
-    if ((train_counter % 2) == 0) { // every other frame, tune
+
+    if ((train_counter % 2) == 0) {
       TrainerConfig tc = {
           .batch_size = 64,
           .train_steps = 50,
