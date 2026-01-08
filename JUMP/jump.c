@@ -857,19 +857,28 @@ static void update_agent(Agent *a) {
   a->accum_dt += dt;
   a->episode_time += dt;
 
-  // CONTROL TICK
+  // --------------------------
+  // CONTROL TICK (30 Hz)
+  // --------------------------
   a->control_timer -= dt;
   if (a->control_timer <= 0.0f) {
     a->control_timer +=
-        (a->control_period > 0) ? a->control_period : (1.0f / 20.0f);
+        (a->control_period > 0.0f) ? a->control_period : (1.0f / 20.0f);
 
+    // finalize previous step's reward (reward accrued since last control tick)
+    if (a->ep_t > 0) {
+      a->ep.reward[a->ep_t - 1] = a->pending_reward;
+    }
+    a->pending_reward = 0.0f;
+
+    // run MCTS on current obs
     MCTSRng rng = {.ctx = a, .rand01 = agent_rand01};
-    MCTSParams mp = a->mcts_params; // store in agent or global
+    MCTSParams mp = a->mcts_params;
     MCTSResult mr = mcts_run(g_model, a->last_obs.obs, &mp, &rng);
 
-    // sample action from mr.pi using agent rng
+    // choose action by sampling from pi
     float r = frand01(&a->rng);
-    float cum = 0.f;
+    float cum = 0.0f;
     int chosen = 0;
     for (int i = 0; i < ACTION_COUNT; i++) {
       cum += mr.pi[i];
@@ -879,70 +888,34 @@ static void update_agent(Agent *a) {
       }
     }
 
-    if (a->ep_t > 0) {
-      a->ep.reward[a->ep_t - 1] = a->pending_reward;
+    // store current (obs, pi, action) into episode buffer
+    if (a->ep_t < EP_MAX_STEPS) {
+      memcpy(a->ep.obs + a->ep_t * OBS_DIM, a->last_obs.obs,
+             sizeof(float) * OBS_DIM);
+      memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, mr.pi,
+             sizeof(float) * ACTION_COUNT);
+      a->ep.action[a->ep_t] = chosen;
+      a->ep.done[a->ep_t] = 0;
+      a->ep_t++;
+    } else {
+      // episode buffer overflow -> force terminate
+      a->alive = false;
     }
-    a->pending_reward = 0.f;
 
-    // now store current obs and π
-    memcpy(a->ep.obs + a->ep_t * OBS_DIM, a->last_obs.obs,
-           sizeof(float) * OBS_DIM);
-    memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, mr.pi,
-           sizeof(float) * ACTION_COUNT);
+    // keep last_pi for debugging / optional logging
+    for (int i = 0; i < ACTION_COUNT; i++)
+      a->last_pi[i] = mr.pi[i];
+
     mcts_result_free(&mr);
-    a->ep.action[a->ep_t] = chosen;
-    a->ep.done[a->ep_t] = 0;
-    a->ep_t++;
 
-    int T = a->ep_t;
-    if (T > 0) {
-      a->ep.reward[T - 1] = a->pending_reward;
-      a->ep.done[T - 1] = 1;
-
-      // compute returns
-      float *z = malloc(sizeof(float) * T);
-      for (int t = 0; t < T; t++) {
-        float acc = 0.f, g = 1.f;
-        for (int k = t; k < T; k++) {
-          acc += g * a->ep.reward[k];
-          g *= 0.997f;
-        }
-        z[t] = acc;
-      }
-
-      pthread_mutex_lock(&g_rb_mtx);
-      for (int t = 0; t < T; t++) {
-        float *obs_t = a->ep.obs + t * OBS_DIM;
-        float *pi_t = a->ep.pi + t * ACTION_COUNT;
-
-        rb_push(g_rb, obs_t, pi_t, z[t]);
-
-        // transition for dynamics (need next_obs)
-        if (t + 1 < T) {
-          float *obs_tp1 = a->ep.obs + (t + 1) * OBS_DIM;
-          rb_push_transition(g_rb, obs_t, a->ep.action[t], a->ep.reward[t],
-                             obs_tp1, a->ep.done[t]);
-        }
-      }
-      pthread_mutex_unlock(&g_rb_mtx);
-
-      free(z);
-    }
-    a->ep_t = 0;
-    a->pending_reward = 0.f;
-
-    if (a->cortex && a->has_last_transition) {
-      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                       a->last_action, a->pending_reward, 0);
-    }
-    a->pending_reward = 0.0f;
-
-    encode_observation_jk(a, &a->last_obs);
+    // apply the chosen action for physics
     a->last_action = chosen;
     a->has_last_transition = 1;
   }
 
+  // --------------------------
   // PHYSICS FIXED STEP
+  // --------------------------
   while (a->accum_dt >= FIXED_DT) {
     a->accum_dt -= FIXED_DT;
 
@@ -959,29 +932,23 @@ static void update_agent(Agent *a) {
     float control = p->on_ground ? 1.0f : AIR_CONTROL;
     p->vel.x += ax * control * FIXED_DT;
 
-    // Extra “drift” in air (Jump King-ish): small but persistent influence
     if (!p->on_ground &&
         (a->last_action == ACT_LEFT || a->last_action == ACT_RIGHT)) {
       p->vel.x += ax * (AIR_CONTROL * AIR_ACCEL_SCALE) * FIXED_DT;
     }
 
-    // drag
     p->vel.x *= p->on_ground ? 0.92f : AIR_DRAG;
 
     // --- charging state machine ---
-    // If agent chooses CHARGE while grounded, start/continue charging.
     if (p->on_ground && a->last_action == ACT_CHARGE) {
       p->charging = 1;
     }
 
-    // If charging, keep accumulating charge automatically (no need to keep
-    // selecting CHARGE).
     if (p->charging && p->on_ground) {
       p->charge = clampf(p->charge + JUMP_CHARGE_RATE * FIXED_DT, 0.0f,
                          JUMP_CHARGE_MAX);
     }
 
-    // Release jump only if currently charging and grounded
     if (p->on_ground && p->charging && a->last_action == ACT_RELEASE) {
       float t = clampf(p->charge, 0.0f, 1.0f);
       float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t;
@@ -995,7 +962,6 @@ static void update_agent(Agent *a) {
       p->charge = 0.0f;
     }
 
-    // If grounded and NOT charging, keep charge at 0 (prevents leftover charge)
     if (p->on_ground && !p->charging && a->last_action != ACT_CHARGE) {
       p->charge = 0.0f;
     }
@@ -1018,24 +984,18 @@ static void update_agent(Agent *a) {
     // collisions
     solve_player_platforms(p);
 
-    // If we are not grounded, we cannot be charging.
     if (!p->on_ground) {
       p->charging = 0;
-      // Optional: also clear charge so obs doesn't carry stale values.
       p->charge = 0.0f;
     }
 
-    // --------------------------
-    // Upward velocity shaping (airborne)
-    // --------------------------
+    // ---- rewards ----
     if (!p->on_ground) {
-      // upward speed is -vel.y (since y-down)
-      float up = (-p->vel.y) / UP_VEL_SCALE; // roughly 0..~1
+      float up = (-p->vel.y) / UP_VEL_SCALE;
       up = clampf(up, 0.0f, 1.0f);
       a->pending_reward += UP_VEL_REWARD * up * FIXED_DT;
     }
 
-    // reward: maximize height
     float groundY = (float)SCREEN_HEIGHT - 40.0f;
     float alt = groundY - p->pos.y;
     if (alt > a->best_alt) {
@@ -1046,11 +1006,7 @@ static void update_agent(Agent *a) {
 
     a->pending_reward += 0.001f; // alive drip
 
-    // --------------------------
-    // Anti-stuck reward shaping
-    // --------------------------
-
-    // 1) "Progress" = improving best_alt
+    // ---- anti-stuck ----
     if (a->best_alt > a->last_best_alt + 0.001f) {
       a->last_best_alt = a->best_alt;
       a->time_since_progress = 0.0f;
@@ -1058,7 +1014,6 @@ static void update_agent(Agent *a) {
       a->time_since_progress += FIXED_DT;
     }
 
-    // 2) "Stillness" = barely moving in position
     float dxp = p->pos.x - a->last_pos.x;
     float dyp = p->pos.y - a->last_pos.y;
     float d2 = dxp * dxp + dyp * dyp;
@@ -1070,15 +1025,13 @@ static void update_agent(Agent *a) {
       a->last_pos = p->pos;
     }
 
-    // Soft penalty if we haven't made upward progress for a bit
     if (a->time_since_progress > STUCK_NO_PROGRESS_SECS) {
       a->pending_reward -= STUCK_PENALTY * FIXED_DT;
     }
 
-    // Hard reset if REALLY stuck (no progress for long OR totally still)
     if (a->time_since_progress > STUCK_RESET_SECS ||
         a->pos_still_time > (STILL_SECS + 0.5f)) {
-      a->pending_reward -= 0.2f; // terminal penalty so it *feels* bad
+      a->pending_reward -= 0.2f;
       a->alive = false;
       break;
     }
@@ -1090,12 +1043,11 @@ static void update_agent(Agent *a) {
     }
   }
 
+  // update observation AFTER physics for next control tick
+  encode_observation_jk(a, &a->last_obs);
+
   // TERMINATE
   if (!a->alive || a->episode_time >= a->episode_limit) {
-    if (a->cortex && a->has_last_transition) {
-      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                       a->last_action, a->pending_reward, 1);
-    }
     reset_agent_episode(a);
   }
 }
