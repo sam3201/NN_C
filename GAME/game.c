@@ -382,9 +382,9 @@ typedef struct {
   int scroll;   // index offset for drawing
 } WorldList;
 
-t #pragma pack(push, 1)
+#pragma pack(push, 1)
 
-    typedef struct {
+typedef struct {
   // identity
   int32_t agent_id;
   int32_t alive;
