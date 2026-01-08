@@ -30,6 +30,10 @@
 #define CELL_PLAT 3.0f
 #define OBS_DIM 72
 
+// World-space view window around the agent (in pixels)
+#define VIEW_W_PX 720.0f
+#define VIEW_H_PX 560.0f
+
 // Anti-stuck shaping
 // if no new best_alt for this long -> punish / reset
 #define STUCK_NO_PROGRESS_SECS 1.5f
