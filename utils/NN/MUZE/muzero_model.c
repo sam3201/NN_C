@@ -69,7 +69,6 @@ MuModel *mu_model_create(const MuConfig *cfg) {
 
   m->repr_W = (float *)malloc(sizeof(float) * m->repr_W_count);
   m->dyn_W = malloc(sizeof(float) * m->dyn_W_count);
-
   m->pred_W = (float *)malloc(sizeof(float) * m->pred_W_count);
 
   m->rew_W_count = lat;
