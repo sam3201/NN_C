@@ -467,6 +467,9 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
   out->n = OBS_DIM;
+
+  out->obs[k++] = dx_n;
+  out->obs[k++] = dy_n;
 }
 
 // =======================
