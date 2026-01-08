@@ -15,10 +15,10 @@ typedef struct TrainerConfig {
   float lr;
 } TrainerConfig;
 
-vvoid trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
-                             const TrainerConfig *cfg);
-oid trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
-                              const TrainerConfig *cfg);
+void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
+                            const TrainerConfig *cfg);
+void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
+                               const TrainerConfig *cfg);
 
 #ifdef __cplusplus
 }
