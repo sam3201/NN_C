@@ -1290,7 +1290,14 @@ int main(void) {
     obs_free(&agents[i].last_obs);
 
   stop_workers();
-  episode_free(&g_rb);
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    obs_free(&agents[i].last_obs);
+    episode_free(&agents[i].ep);
+  }
+
+  rb_free(g_rb);
+  mu_model_free(g_model);
+
   CloseWindow();
   return 0;
-}
