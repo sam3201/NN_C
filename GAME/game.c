@@ -3346,7 +3346,7 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
   if (!hostile) {
     bool scared = player_same_chunk && (dP < 4.0f || m->aggro_timer > 0.0f);
     if (scared) {
-      speed = 0.95f;
+      speed = MOB_SPEED_SCARED;
       m->vel = Vector2Scale(dirP, -1.0f); // run away
     }
   }
