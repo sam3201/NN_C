@@ -359,72 +359,111 @@ static void solve_player_platforms(PlayerJK *p) {
 static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->n = 0;
 
-  // ----------------------------
-  // 1) GRID (first OBS_GRID cells)
-  // ----------------------------
+  // Clear ONLY the grid portion
   for (int i = 0; i < OBS_GRID; i++)
     out->obs[i] = CELL_EMPTY;
 
   const PlayerJK *p = &a->pl;
 
+  // View window centered on agent
   Vector2 origin = {p->pos.x - VIEW_W_PX * 0.5f, p->pos.y - VIEW_H_PX * 0.5f};
 
-  // platforms
+  // ----------------------------
+  // PLATFORMS (ground vs one-way)
+  // ----------------------------
   for (int i = 0; i < g_plat_count; i++) {
     const Platform *pl = &g_plats[i];
-    stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, CELL_PLAT);
+
+    float cell = pl->one_way ? CELL_ONEWAY : CELL_GROUND;
+    stamp_rect(out->obs, origin, pl->x, pl->y, pl->w, pl->h, cell);
+
+    // emphasize top surface (landing target)
+    stamp_platform_top(out->obs, origin, pl->x, pl->y, pl->w, CELL_LEDGE);
   }
 
-  // other agents
+  // ----------------------------
+  // AGENTS (stamp as disks)
+  // ----------------------------
+  // other agents first
   for (int i = 0; i < MAX_AGENTS; i++) {
     const Agent *b = &agents[i];
     if (!b->alive)
       continue;
     if (b == a)
       continue;
-    stamp_point(out->obs, origin, b->pl.pos.x, b->pl.pos.y, CELL_OTHER);
+    stamp_disk(out->obs, origin, b->pl.pos.x, b->pl.pos.y, CELL_OTHER, 1);
   }
 
   // self last (highest priority)
-  stamp_point(out->obs, origin, p->pos.x, p->pos.y, CELL_SELF);
+  stamp_disk(out->obs, origin, p->pos.x, p->pos.y, CELL_SELF, 1);
 
   // ----------------------------
-  // 2) EXTRAS (after grid)
+  // EXTRAS
   // ----------------------------
   int k = OBS_GRID;
 
   float groundY = (float)SCREEN_HEIGHT - 40.0f;
-  float alt = groundY - p->pos.y; // "height gained" (bigger is better)
+  float alt = groundY - p->pos.y;
 
-  // Normalize helpers
+  // normalized pose/vel
   float px = p->pos.x / (float)SCREEN_WIDTH;  // 0..1
-  float py = p->pos.y / (float)SCREEN_HEIGHT; // can go negative
-  float vx = p->vel.x / 800.0f;
-  float vy = p->vel.y / 1800.0f;
+  float py = p->pos.y / (float)SCREEN_HEIGHT; // can be negative
+  float vx = clampf(p->vel.x / 800.0f, -2.0f, 2.0f);
+  float vy = clampf(p->vel.y / 1800.0f, -2.0f, 2.0f);
 
-  // clamp some to keep them sane
-  vx = clampf(vx, -2.0f, 2.0f);
-  vy = clampf(vy, -2.0f, 2.0f);
+  float alt_n = clampf(alt / 2000.0f, -2.0f, 2.0f);
+  float stuck_n = a->time_since_progress / STUCK_RESET_SECS; // ~0..1+
 
-  float alt_n = alt / 2000.0f; // rough scale; adjust later if you want
-  alt_n = clampf(alt_n, -2.0f, 2.0f);
+  // tiny helper: "where is the nearest ledge above me?"
+  // (purely from the known platforms, still within your sim; treat as extra
+  // cue)
+  float best_dy = 999999.0f;
+  float best_dx = 0.0f;
+  for (int i = 0; i < g_plat_count; i++) {
+    const Platform *pl = &g_plats[i];
+    if (!pl->one_way)
+      continue;
 
-  // Fill exactly OBS_EXTRA scalars
-  out->obs[k++] = px;                                        // 0
-  out->obs[k++] = py;                                        // 1
-  out->obs[k++] = vx;                                        // 2
-  out->obs[k++] = vy;                                        // 3
-  out->obs[k++] = (float)p->on_ground;                       // 4
-  out->obs[k++] = (float)p->charging;                        // 5
-  out->obs[k++] = p->charge;                                 // 6 (0..1)
-  out->obs[k++] = alt_n;                                     // 7
-  out->obs[k++] = a->time_since_progress / STUCK_RESET_SECS; // 8 (0..~1+)
-  out->obs[k++] = 1.0f;                                      // 9 bias
+    // must be above (smaller y)
+    if (pl->y >= p->pos.y)
+      continue;
 
-  // Safety: if OBS_EXTRA changes, keep the tail clean
+    float cx = pl->x + pl->w * 0.5f;
+    float dx = cx - p->pos.x;
+    float dy = pl->y - p->pos.y; // negative
+
+    // prefer closest above (dy closest to 0 but negative)
+    float abs_dy = fabsf(dy);
+    if (abs_dy < fabsf(best_dy)) {
+      best_dy = dy;
+      best_dx = dx;
+    }
+  }
+
+  float dx_n = clampf(best_dx / (float)SCREEN_WIDTH, -1.0f, 1.0f);
+  float dy_n = clampf(best_dy / 600.0f, -3.0f, 0.0f); // only above -> negative
+
+  // Fill OBS_EXTRA = 10
+  out->obs[k++] = px;                  // 0
+  out->obs[k++] = py;                  // 1
+  out->obs[k++] = vx;                  // 2
+  out->obs[k++] = vy;                  // 3
+  out->obs[k++] = (float)p->on_ground; // 4
+  out->obs[k++] = (float)p->charging;  // 5
+  out->obs[k++] = p->charge;           // 6
+  out->obs[k++] = alt_n;               // 7
+  out->obs[k++] = stuck_n;             // 8
+  out->obs[k++] =
+      dx_n + dy_n * 0.0f + 1.0f * 0.0f; // placeholder? NO: use bias below
+
+  // Replace last one with a real bias (recommended)
+  out->obs[k - 1] = 1.0f; // 9 bias
+
+  // If you want dx/dy instead of bias, do this:
+  // out->obs[k-2] = dx_n; out->obs[k-1] = dy_n;  (and bump OBS_EXTRA to 11/12)
+
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
-
   out->n = OBS_DIM;
 }
 
