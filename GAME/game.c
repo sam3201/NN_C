@@ -516,6 +516,317 @@ static void craft(const Recipe *r) {
     *r->unlock_flag = 1;
 }
 
+static void make_world_path(char *out, size_t cap, const char *world_name) {
+  snprintf(out, cap, "%s/%s", SAVE_ROOT, world_name);
+}
+
+static void make_save_file_path(char *out, size_t cap, const char *world_name) {
+  snprintf(out, cap, "%s/%s/world.sav", SAVE_ROOT, world_name);
+}
+
+static void world_reset(uint32_t seed) {
+  srand(seed);
+
+  // reset chunks but KEEP locks valid
+  for (int x = 0; x < WORLD_SIZE; x++) {
+    for (int y = 0; y < WORLD_SIZE; y++) {
+      Chunk *c = &world[x][y];
+      // NOTE: lock should already be init'd once at program start
+      pthread_rwlock_wrlock(&c->lock);
+      c->generated = false;
+      c->resource_count = 0;
+      c->biome_type = 0;
+      c->mob_spawn_timer = randf(1.0f, 3.0f);
+      for (int i = 0; i < MAX_MOBS; i++)
+        c->mobs[i].health = 0;
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  // reset player (spawn near center)
+  player.position = (Vector2){(WORLD_SIZE * CHUNK_SIZE) * 0.5f,
+                              (WORLD_SIZE * CHUNK_SIZE) * 0.5f};
+  player.health = 100.0f;
+  player.stamina = 100.0f;
+
+  // reset globals
+  time_of_day = 0.25f;
+  is_night_cached = is_night();
+
+  inv_wood = inv_stone = inv_gold = inv_food = 0;
+  inv_shards = inv_arrows = 0;
+
+  has_axe = has_pickaxe = has_sword = has_armor = has_bow = false;
+
+  init_tribes();
+  init_agents();
+}
+
+static int save_world_to_disk(const char *world_name) {
+  ensure_save_root();
+
+  char world_dir[256];
+  make_world_path(world_dir, sizeof(world_dir), world_name);
+  mkdir(world_dir, 0755); // ok if exists
+
+  char path[256];
+  make_save_file_path(path, sizeof(path), world_name);
+
+  FILE *f = fopen(path, "wb");
+  if (!f)
+    return 0;
+
+  SaveHeader h = {0};
+  h.magic[0] = 'S';
+  h.magic[1] = 'A';
+  h.magic[2] = 'M';
+  h.magic[3] = 'W';
+  h.version = 1;
+  h.seed = g_world_seed;
+  h.world_size = WORLD_SIZE;
+  h.chunk_size = CHUNK_SIZE;
+  h.time_of_day = time_of_day;
+
+  h.player_x = player.position.x;
+  h.player_y = player.position.y;
+  h.player_health = player.health;
+  h.player_stamina = player.stamina;
+
+  h.inv_wood = inv_wood;
+  h.inv_stone = inv_stone;
+  h.inv_gold = inv_gold;
+  h.inv_food = inv_food;
+  h.inv_shards = inv_shards;
+  h.inv_arrows = inv_arrows;
+  h.has_axe = has_axe;
+  h.has_pickaxe = has_pickaxe;
+  h.has_sword = has_sword;
+  h.has_armor = has_armor;
+  h.has_bow = has_bow;
+
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    h.tribe_integrity[t] = tribes[t].integrity;
+    h.tribe_wood[t] = tribes[t].wood;
+    h.tribe_stone[t] = tribes[t].stone;
+    h.tribe_gold[t] = tribes[t].gold;
+    h.tribe_food[t] = tribes[t].food;
+    h.tribe_shards[t] = tribes[t].shards;
+    h.tribe_arrows[t] = tribes[t].arrows;
+  }
+
+  // count generated chunks
+  uint32_t chunk_count = 0;
+  for (int cx = 0; cx < WORLD_SIZE; cx++)
+    for (int cy = 0; cy < WORLD_SIZE; cy++)
+      if (world[cx][cy].generated)
+        chunk_count++;
+
+  h.chunk_count = chunk_count;
+
+  fwrite(&h, sizeof(h), 1, f);
+
+  // write chunks
+  for (int cx = 0; cx < WORLD_SIZE; cx++) {
+    for (int cy = 0; cy < WORLD_SIZE; cy++) {
+      Chunk *c = &world[cx][cy];
+      if (!c->generated)
+        continue;
+
+      pthread_rwlock_rdlock(&c->lock);
+
+      SaveChunkHeader ch = {0};
+      ch.cx = cx;
+      ch.cy = cy;
+      ch.biome_type = c->biome_type;
+      ch.mob_spawn_timer = c->mob_spawn_timer;
+
+      ch.resource_count = (uint32_t)c->resource_count;
+
+      // count alive mobs
+      uint32_t alive = 0;
+      for (int i = 0; i < MAX_MOBS; i++)
+        if (c->mobs[i].health > 0)
+          alive++;
+      ch.mob_count = alive;
+
+      fwrite(&ch, sizeof(ch), 1, f);
+
+      // resources
+      for (int i = 0; i < c->resource_count; i++) {
+        const Resource *r = &c->resources[i];
+        SaveResource sr = {0};
+        sr.lx = r->position.x;
+        sr.ly = r->position.y;
+        sr.type = (int32_t)r->type;
+        sr.health = (int32_t)r->health;
+        sr.hit_timer = r->hit_timer;
+        sr.break_flash = r->break_flash;
+        fwrite(&sr, sizeof(sr), 1, f);
+      }
+
+      // mobs (alive only)
+      for (int i = 0; i < MAX_MOBS; i++) {
+        const Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        SaveMob sm = {0};
+        sm.lx = m->position.x;
+        sm.ly = m->position.y;
+        sm.type = (int32_t)m->type;
+        sm.health = (int32_t)m->health;
+        sm.velx = m->vel.x;
+        sm.vely = m->vel.y;
+        sm.ai_timer = m->ai_timer;
+        sm.aggro_timer = m->aggro_timer;
+        sm.attack_cd = m->attack_cd;
+        sm.hurt_timer = m->hurt_timer;
+        sm.lunge_timer = m->lunge_timer;
+        fwrite(&sm, sizeof(sm), 1, f);
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  fclose(f);
+  return 1;
+}
+
+static int load_world_from_disk(const char *world_name) {
+  char path[256];
+  make_save_file_path(path, sizeof(path), world_name);
+
+  FILE *f = fopen(path, "rb");
+  if (!f)
+    return 0;
+
+  SaveHeader h = {0};
+  if (fread(&h, sizeof(h), 1, f) != 1) {
+    fclose(f);
+    return 0;
+  }
+  if (h.magic[0] != 'S' || h.magic[1] != 'A' || h.magic[2] != 'M' ||
+      h.magic[3] != 'W') {
+    fclose(f);
+    return 0;
+  }
+  if (h.version != 1) {
+    fclose(f);
+    return 0;
+  }
+
+  // reset world using saved seed, then apply dynamic state
+  g_world_seed = h.seed;
+  world_reset(g_world_seed);
+
+  time_of_day = h.time_of_day;
+  is_night_cached = is_night();
+
+  player.position = (Vector2){h.player_x, h.player_y};
+  player.health = h.player_health;
+  player.stamina = h.player_stamina;
+
+  inv_wood = h.inv_wood;
+  inv_stone = h.inv_stone;
+  inv_gold = h.inv_gold;
+  inv_food = h.inv_food;
+  inv_shards = h.inv_shards;
+  inv_arrows = h.inv_arrows;
+
+  has_axe = h.has_axe;
+  has_pickaxe = h.has_pickaxe;
+  has_sword = h.has_sword;
+  has_armor = h.has_armor;
+  has_bow = h.has_bow;
+
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    tribes[t].integrity = h.tribe_integrity[t];
+    tribes[t].wood = h.tribe_wood[t];
+    tribes[t].stone = h.tribe_stone[t];
+    tribes[t].gold = h.tribe_gold[t];
+    tribes[t].food = h.tribe_food[t];
+    tribes[t].shards = h.tribe_shards[t];
+    tribes[t].arrows = h.tribe_arrows[t];
+  }
+
+  // chunks
+  for (uint32_t k = 0; k < h.chunk_count; k++) {
+    SaveChunkHeader ch = {0};
+    if (fread(&ch, sizeof(ch), 1, f) != 1) {
+      fclose(f);
+      return 0;
+    }
+
+    int cx = (int)ch.cx;
+    int cy = (int)ch.cy;
+    if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE) {
+      fclose(f);
+      return 0;
+    }
+
+    Chunk *c = &world[cx][cy];
+    pthread_rwlock_wrlock(&c->lock);
+
+    c->generated = true;
+    c->biome_type = ch.biome_type;
+    c->mob_spawn_timer = ch.mob_spawn_timer;
+
+    // terrain is trivial in your generator (biome fill), so keep it consistent:
+    for (int i = 0; i < CHUNK_SIZE; i++)
+      for (int j = 0; j < CHUNK_SIZE; j++)
+        c->terrain[i][j] = c->biome_type;
+
+    c->resource_count = (int)ch.resource_count;
+    if (c->resource_count > MAX_RESOURCES)
+      c->resource_count = MAX_RESOURCES;
+
+    // resources
+    for (int i = 0; i < (int)ch.resource_count; i++) {
+      SaveResource sr = {0};
+      fread(&sr, sizeof(sr), 1, f);
+      if (i < MAX_RESOURCES) {
+        Resource *r = &c->resources[i];
+        r->position = clamp_local_to_chunk((Vector2){sr.lx, sr.ly});
+        r->type = (ResourceType)sr.type;
+        r->health = (int)sr.health;
+        r->visited = false;
+        r->hit_timer = sr.hit_timer;
+        r->break_flash = sr.break_flash;
+      }
+    }
+
+    // clear mobs
+    for (int i = 0; i < MAX_MOBS; i++)
+      c->mobs[i].health = 0;
+
+    // mobs (alive only) — place into first free slots
+    for (uint32_t i = 0; i < ch.mob_count; i++) {
+      SaveMob sm = {0};
+      fread(&sm, sizeof(sm), 1, f);
+
+      int slot = find_free_mob_slot(c);
+      if (slot >= 0) {
+        Mob *m = &c->mobs[slot];
+        m->position = clamp_local_to_chunk((Vector2){sm.lx, sm.ly});
+        m->type = (MobType)sm.type;
+        m->health = (int)sm.health;
+        m->visited = false;
+        m->vel = (Vector2){sm.velx, sm.vely};
+        m->ai_timer = sm.ai_timer;
+        m->aggro_timer = sm.aggro_timer;
+        m->attack_cd = sm.attack_cd;
+        m->hurt_timer = sm.hurt_timer;
+        m->lunge_timer = sm.lunge_timer;
+      }
+    }
+
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  fclose(f);
+  return 1;
+}
+
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
     (Color){140, 140, 140, 255}, // stone
