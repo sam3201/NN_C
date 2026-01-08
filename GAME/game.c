@@ -4123,7 +4123,20 @@ case ACTION_CRAFT:
   break;
   */
   case ACTION_CRAFT_AXE:
-    break;
+    br if (!agent_in_base(a, tr)) {
+      *reward += -0.006f;
+      return;
+    }
+
+    if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
+      tr->wood -= 3;
+      tr->stone -= 2;
+      a->has_axe = true;
+      a->last_craft_selected = TOOL_AXE;
+      *reward += 0.09f;
+      return;
+    }
+    eak;
 
   case ACTION_CRAFT_PICKAXE:
     break;
