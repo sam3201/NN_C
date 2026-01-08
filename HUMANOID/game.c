@@ -21,68 +21,75 @@
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
 
+// =======================
+// SIMPLE VERLET RAGDOLL
+// =======================
+
 typedef struct {
-  int x;
-  int y;
-  struct joint *connection;
-} joint;
+  Vector2 p;     // current position
+  Vector2 pprev; // previous position (for Verlet)
+  float invMass; // 0 = pinned, 1 = normal
+} Particle;
+
+typedef struct {
+  int a;      // particle index A
+  int b;      // particle index B
+  float rest; // rest length
+} Joint;
+
+enum {
+  P_HEAD = 0,
+  P_NECK,
+  P_CHEST,
+  P_HIP,
+
+  P_SHOULDER_L,
+  P_ELBOW_L,
+  P_HAND_L,
+
+  P_SHOULDER_R,
+  P_ELBOW_R,
+  P_HAND_R,
+
+  P_KNEE_L,
+  P_ANKLE_L,
+
+  P_KNEE_R,
+  P_ANKLE_R,
+
+  P_COUNT
+};
+
+enum {
+  J_NECK = 0,
+  J_SPINE1,
+  J_SPINE2,
+
+  J_SHOULDER_L,
+  J_UPPERARM_L,
+  J_FOREARM_L,
+
+  J_SHOULDER_R,
+  J_UPPERARM_R,
+  J_FOREARM_R,
+
+  J_HIP_L,
+  J_SHIN_L,
+
+  J_HIP_R,
+  J_SHIN_R,
+
+  J_COUNT
+};
 
 typedef struct {
   bool alive;
-  int x;
-  int y;
 
-  // Head
-  struct {
-    int x;
-    int y;
-  } Head;
+  Particle pt[P_COUNT];
+  Joint jt[J_COUNT];
 
-  // Neck
-  struct {
-    int x;
-    int y;
-  } Neck;
-
-  // Body
-  struct {
-    int x;
-    int y;
-  } Body;
-
-  // Legs
-  struct {
-    int x;
-    int y;
-  } Legs;
-
-  // Arms
-  struct {
-    int x;
-    int y;
-  } Arms;
-
-  // Feet
-  struct {
-    int x;
-    int y;
-  } Feet;
-
-  // Hands
-  struct {
-    int x;
-    int y;
-  } Hands;
-
-  // Joints
-  struct joint *Head;
-  struct joint *Neck;
-  struct joint *Body;
-  struct joint *Legs;
-  struct joint *Arms;
-  struct joint *Feet;
-  struct joint *Hands;
-
+  // optional per-agent tuning
+  float joint_stiffness; // 0..1 (we’ll use ~1)
 } Agent;
 
 /* =======================
