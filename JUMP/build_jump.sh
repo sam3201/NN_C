@@ -4,7 +4,7 @@ set - eu
 #-- -- -- -- -- -- -- -- -- -- -- -
 #Paths
 #-- -- -- -- -- -- -- -- -- -- -- -
-      ROOT_DIR = "$(cd " $(dirname "$0") " && pwd)" cd "$ROOT_DIR"
+ROOT_DIR = "$(cd " $(dirname "$0") " && pwd)" cd "$ROOT_DIR"
 
 RAYLIB_DIR = "../utils/Raylib" RAYLIB_SRC = "$RAYLIB_DIR/src" RAYLIB_LIB =
     "$RAYLIB_SRC/libraylib.a"
