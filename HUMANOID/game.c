@@ -197,7 +197,7 @@ static void init_agents(void) {
     int cy = i / cols;
     Vector2 o = {SCREEN_WIDTH * 0.2f + cx * spacing,
                  SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
-    init_one_agent(&agents[i], o);
+    init_agent(&agents[i], o);
   }
 }
 
