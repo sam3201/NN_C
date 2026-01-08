@@ -960,6 +960,112 @@ static int load_world_from_disk(const char *world_name) {
     if (c->resource_count > MAX_RESOURCES)
       c->resource_count = MAX_RESOURCES;
 
+    / if (h.version >= 2) {
+      // ---------------- agents ----------------
+      for (int i = 0; i < MAX_AGENTS; i++) {
+        SaveAgent sa = {0};
+        if (fread(&sa, sizeof(sa), 1, f) != 1) {
+          fclose(f);
+          return 0;
+        }
+
+        Agent *a = &agents[i];
+
+        a->agent_id = sa.agent_id;
+        a->alive = sa.alive ? true : false;
+
+        a->position = (Vector2){sa.x, sa.y};
+        a->facing = (Vector2){sa.fx, sa.fy};
+
+        a->health = sa.health;
+        a->stamina = sa.stamina;
+
+        a->age = sa.age;
+        a->last_action = sa.last_action;
+        a->reward_accumulator = sa.reward_accumulator;
+
+        a->attack_cd = sa.attack_cd;
+        a->harvest_cd = sa.harvest_cd;
+        a->fire_cd = sa.fire_cd;
+
+        a->fire_latched = sa.fire_latched;
+        a->fire_latch_timer = sa.fire_latch_timer;
+
+        a->inv_food = sa.inv_food;
+        a->inv_arrows = sa.inv_arrows;
+        a->inv_shards = sa.inv_shards;
+
+        a->has_axe = sa.has_axe;
+        a->has_pickaxe = sa.has_pickaxe;
+        a->has_sword = sa.has_sword;
+        a->has_armor = sa.has_armor;
+        a->has_bow = sa.has_bow;
+
+        a->tool_selected = sa.tool_selected;
+        a->last_craft_selected = sa.last_craft_selected;
+      }
+
+      // ---------------- pickups ----------------
+      for (int i = 0; i < MAX_PICKUPS; i++)
+        pickups[i].alive = false;
+
+      uint32_t pcount = 0;
+      if (fread(&pcount, sizeof(uint32_t), 1, f) != 1) {
+        fclose(f);
+        return 0;
+      }
+
+      for (uint32_t k = 0; k < pcount; k++) {
+        SavePickup sp = {0};
+        if (fread(&sp, sizeof(sp), 1, f) != 1) {
+          fclose(f);
+          return 0;
+        }
+        // place into first free slot
+        for (int i = 0; i < MAX_PICKUPS; i++) {
+          if (!pickups[i].alive) {
+            pickups[i].alive = true;
+            pickups[i].pos = (Vector2){sp.x, sp.y};
+            pickups[i].type = (PickupType)sp.type;
+            pickups[i].amount = sp.amount;
+            pickups[i].ttl = sp.ttl;
+            pickups[i].bob_t = sp.bob_t;
+            break;
+          }
+        }
+      }
+
+      // ---------------- projectiles ----------------
+      for (int i = 0; i < MAX_PROJECTILES; i++)
+        projectiles[i].alive = false;
+
+      uint32_t prcount = 0;
+      if (fread(&prcount, sizeof(uint32_t), 1, f) != 1) {
+        fclose(f);
+        return 0;
+      }
+
+      for (uint32_t k = 0; k < prcount; k++) {
+        SaveProjectile sp = {0};
+        if (fread(&sp, sizeof(sp), 1, f) != 1) {
+          fclose(f);
+          return 0;
+        }
+
+        for (int i = 0; i < MAX_PROJECTILES; i++) {
+          if (!projectiles[i].alive) {
+            projectiles[i].alive = true;
+            projectiles[i].pos = (Vector2){sp.x, sp.y};
+            projectiles[i].vel = (Vector2){sp.vx, sp.vy};
+            projectiles[i].ttl = sp.ttl;
+            projectiles[i].damage = sp.damage;
+            projectiles[i].owner = (ProjOwner)sp.owner;
+            break;
+          }
+        }
+      }
+    }
+
     // resources
     for (int i = 0; i < (int)ch.resource_count; i++) {
       SaveResource sr = {0};
