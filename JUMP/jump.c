@@ -187,7 +187,6 @@ typedef struct {
   uint32_t rng;
 
   float pending_reward;
-  ObsDyn last_obs;
   int has_last_transition;
 
   float reward_accumulator;
