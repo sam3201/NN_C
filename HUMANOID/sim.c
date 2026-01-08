@@ -384,50 +384,6 @@ static void reset_agent_episode(Agent *a) {
   a->best_alt = 0.0f;
 }
 
-static void solve_joint(Agent *ag, const Joint *j) {
-  Particle *A = &ag->pt[j->a];
-  Particle *B = &ag->pt[j->b];
-
-  Vector2 delta = vsub(B->p, A->p);
-  float d = vlen(delta);
-  if (d < 1e-6f)
-    return;
-
-  float diff = (d - j->rest) / d; // normalized stretch
-
-  // Weighted by mass
-  float wA = A->invMass;
-  float wB = B->invMass;
-  float wsum = wA + wB;
-  if (wsum <= 0.0f)
-    return;
-
-  // Stiffness factor (1.0 = fully enforce in one shot)
-  float k = ag->joint_stiffness;
-
-  Vector2 corr = vmul(delta, k * diff);
-
-  // Move each end opposite directions
-  if (wA > 0.0f)
-    A->p = vadd(A->p, vmul(corr, (wA / wsum)));
-  if (wB > 0.0f)
-    B->p = vsub(B->p, vmul(corr, (wB / wsum)));
-}
-
-static void ground_collide(Particle *p, float groundY) {
-  if (p->invMass <= 0.0f)
-    return;
-  if (p->p.y > groundY) {
-    p->p.y = groundY;
-
-    // crude friction/damping: reduce horizontal velocity after collision
-    Vector2 v = vsub(p->p, p->pprev);
-    v.x *= 0.6f;
-    v.y *= 0.0f; // kill vertical motion on ground
-    p->pprev = vsub(p->p, v);
-  }
-}
-
 void update_agent(Agent *a) {
   float dt = clampf(g_dt, 0.0f, MAX_ACCUM_DT);
   a->accum_dt += dt;
