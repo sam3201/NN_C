@@ -1133,9 +1133,11 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward,
   }
 
   if (a->fire_cd > 0.0f) {
-    *reward += R_FIRE_WASTE * 0.20f;
+    if (!is_continuous)
+      *reward += R_FIRE_WASTE * 0.20f;
     return;
   }
+
   if (a->inv_arrows <= 0) {
     *reward += R_FIRE_NO_AMMO;
     return;
