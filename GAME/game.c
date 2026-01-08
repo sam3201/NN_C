@@ -3980,6 +3980,7 @@ int main(void) {
     // player
     Vector2 pp = world_to_screen(player.position);
     draw_player(pp);
+    draw_bow_charge_fx();
 
     // UI + debug
     draw_ui();
