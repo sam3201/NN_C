@@ -503,6 +503,40 @@ static void player_fire_bow_charged(Vector2 dir, float charge01) {
   cam_shake = fmaxf(cam_shake, 0.05f + 0.10f * charge01);
 }
 
+static void draw_bow_charge_fx(void) {
+  if (!bow_charging || !has_bow)
+    return;
+
+  // bowstring between hands
+  DrawLineEx(g_handL, g_handR, 3.0f, (Color){20, 20, 20, 180});
+
+  // charge ring on right hand
+  float r = 26.0f;
+  DrawCircleLines((int)g_handR.x, (int)g_handR.y, r,
+                  (Color){255, 255, 255, 140});
+
+  // progress arc (simple: draw a few small segments)
+  int segs = 22;
+  float a0 = -PI / 2.0f;
+  float a1 = a0 + (2.0f * PI * bow_charge01);
+  for (int i = 0; i < segs; i++) {
+    float t0 = (float)i / (float)segs;
+    float t1 = (float)(i + 1) / (float)segs;
+    float aa0 = lerp(a0, a1, t0);
+    float aa1 = lerp(a0, a1, t1);
+
+    Vector2 p0 =
+        (Vector2){g_handR.x + cosf(aa0) * r, g_handR.y + sinf(aa0) * r};
+    Vector2 p1 =
+        (Vector2){g_handR.x + cosf(aa1) * r, g_handR.y + sinf(aa1) * r};
+    DrawLineEx(p0, p1, 3.0f, (Color){255, 220, 120, 220});
+  }
+
+  // tiny text
+  DrawText(TextFormat("Charge %d%%", (int)(bow_charge01 * 100.0f)),
+           (int)g_handR.x + 18, (int)g_handR.y - 42, 14, RAYWHITE);
+}
+
 static inline int is_night(void) {
   // night from ~0.75 -> 1.0 and 0.0 -> 0.25 (tweak)
   return (time_of_day >= 0.75f || time_of_day <= 0.25f);
