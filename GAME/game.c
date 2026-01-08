@@ -4496,6 +4496,13 @@ static int world_dir_has_save(const char *world_name) {
   return is_file_path(p);
 }
 
+static void ensure_save_root(void) {
+  struct stat st;
+  if (stat(SAVE_ROOT, &st) == 0 && S_ISDIR(st.st_mode))
+    return;
+  mkdir(SAVE_ROOT, 0755);
+}
+
 static void world_list_refresh(WorldList *wl) {
   ensure_save_root();
 
@@ -4665,13 +4672,6 @@ static int ui_button(Rectangle r, const char *text) {
   DrawText(text, (int)(r.x + (r.width - tw) / 2),
            (int)(r.y + (r.height - fs) / 2), fs, RAYWHITE);
   return hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
-}
-
-static void ensure_save_root(void) {
-  struct stat st;
-  if (stat(SAVE_ROOT, &st) == 0 && S_ISDIR(st.st_mode))
-    return;
-  mkdir(SAVE_ROOT, 0755);
 }
 
 static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
