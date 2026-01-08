@@ -166,10 +166,35 @@ static inline float safe_div(float a, float b) {
   return (fabsf(b) > 1e-6f) ? (a / b) : 0.0f;
 }
 
-static void make_joint(Agent *ag, int j, int a, int b) {
-  ag->jt[j].a = a;
-  ag->jt[j].b = b;
-  ag->jt[j].rest = vlen(vsub(ag->pt[b].p, ag->pt[a].p));
+static void build_platforms(void) {
+  g_plat_count = 0;
+
+  // ground
+  g_plats[g_plat_count++] = (Platform){.x = -2000,
+                                       .y = (float)SCREEN_HEIGHT - 40,
+                                       .w = 5000,
+                                       .h = 40,
+                                       .one_way = 0};
+
+  // tower platforms going upward (y decreases as you go up)
+  float y = (float)SCREEN_HEIGHT - 120.0f;
+  float x = 200.0f;
+
+  for (int i = 0; i < PLATFORM_MAX - 1; i++) {
+    float w = 120 + (rand() % 120);
+    float h = 14;
+    float dx = (rand() % 240) - 120; // random sideways
+    float dy = 90 + (rand() % 80);   // step up
+
+    x = clampf(x + dx, 80.0f, (float)SCREEN_WIDTH - 200.0f);
+    y -= dy;
+
+    g_plats[g_plat_count++] =
+        (Platform){.x = x, .y = y, .w = w, .h = h, .one_way = 1};
+
+    if (y < -WORLD_HEIGHT)
+      break;
+  }
 }
 
 static void encode_observation_humanoid(const Agent *a, float groundY,
