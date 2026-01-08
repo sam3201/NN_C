@@ -2871,9 +2871,6 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   // day/night (helps survival & raid behavior)
   obs_push(obs, is_night_cached ? 1.0f : 0.0f);
 
-  // day/night (helps survival & raid behavior)
-  obs_push(obs, is_night_cached ? 1.0f : 0.0f);
-
   // time of day as sin/cos (smooth cyclical signal)
   float ang = time_of_day * 2.0f * PI;
   obs_push(obs, sinf(ang));
