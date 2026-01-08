@@ -31,6 +31,27 @@ typedef struct {
     int y;
   } Head;
 
+  // Neck
+  DrawLine(a->x, a->y, a->x, a->y - 20, RAYWHITE);
+
+  // Body
+  DrawLine(a->x, a->y - 20, a->x, a->y - 40, RAYWHITE);
+
+  // Legs
+  DrawLine(a->x, a->y - 40, a->x - 10, a->y - 60, RAYWHITE);
+  DrawLine(a->x, a->y - 40, a->x + 10, a->y - 60, RAYWHITE);
+
+  // Arms
+  DrawLine(a->x, a->y - 20, a->x - 10, a->y - 40, RAYWHITE);
+  DrawLine(a->x, a->y - 20, a->x + 10, a->y - 40, RAYWHITE);
+
+  // Feet
+  DrawLine(a->x - 10, a->y - 60, a->x - 20, a->y - 80, RAYWHITE);
+  DrawLine(a->x + 10, a->y - 60, a->x + 20, a->y - 80, RAYWHITE);
+
+  // Hands
+  DrawLine(a->x - 10, a->y - 40, a->x - 20, a->y - 60, RAYWHITE);
+  DrawLine(a->x + 10, a->y - 40, a->x + 20, a->y - 60, RAYWHITE);
 } Agent;
 
 /* =======================
