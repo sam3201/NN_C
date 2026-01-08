@@ -160,13 +160,13 @@ typedef struct {
   Vector2 last_pos;     // last position sample
   float pos_still_time; // seconds with tiny movement
 
+  uint32_t rng;
+
   float pending_reward;
   ObsDyn last_obs;
   int has_last_transition;
 
   float reward_accumulator;
-
-  uint32_t rng;
 
 } Agent;
 
