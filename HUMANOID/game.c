@@ -27,6 +27,7 @@ typedef struct {
   bool alive;
   int x;
   int y;
+
 } Agent;
 
 /* =======================
