@@ -44,6 +44,14 @@ pthread_t workers[WORKER_COUNT];
 
 Agent agents[MAX_AGENTS];
 
+static void init_agents(void) {
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    agents[i].alive = false;
+    agents[i].x = 0;
+    agents[i].y = 0;
+  }
+}
+
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
   job_next_agent = 0;
