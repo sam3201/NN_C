@@ -588,6 +588,7 @@ void update_agent(Agent *a) {
     reset_agent_episode(a);
   }
 }
+
 static void draw_agent(const Agent *a) {
   if (!a || !a->alive)
     return;
