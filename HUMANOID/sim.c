@@ -408,20 +408,6 @@ static void update_agent(Agent *a) {
       p->charge = 0.0f;
     }
 
-    // release jump
-    if (a->last_action == ACT_RELEASE && p->on_ground) {
-      float t = clampf(p->charge, 0.0f, 1.0f);
-      float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t;
-      float vx = clampf(p->vel.x, -JUMP_VX_MAX, JUMP_VX_MAX);
-
-      p->vel.y = vy;
-      p->vel.x = vx;
-
-      p->on_ground = 0;
-      p->charging = 0;
-      p->charge = 0.0f;
-    }
-
     // gravity + integrate
     p->vel.y += GRAVITY_Y * FIXED_DT;
     p->pos.x += p->vel.x * FIXED_DT;
