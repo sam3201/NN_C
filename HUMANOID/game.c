@@ -55,7 +55,10 @@ static void init_agents(void) {
 
 static void draw_agent(Agent *a, Texture2D *ap, Texture2D *tc) {
   // Head
-  DrawTextureRec(*ap, (Rectangle){0, 0, 32, 32}, (Vector2){a->x, a->y}, WHITE);
+  DrawCircleV((Vector2){a->x, a->y}, 10, RAYWHITE);
+
+  // Neck
+  DrawLine(a->x, a->y, a->x, a->y - 20, RAYWHITE);
 }
 static void update_agent(Agent *a) {}
 
