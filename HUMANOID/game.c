@@ -53,6 +53,8 @@ static void init_agents(void) {
   }
 }
 
+static void update_agent(Agent *a) {}
+
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
   job_next_agent = 0;
