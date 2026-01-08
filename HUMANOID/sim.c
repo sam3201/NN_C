@@ -20,7 +20,7 @@
 // =======================
 #define FPS 60.0
 
-#define EPISODE_SECONDS 8.0f
+#define EPISODE_SECONDS 10000.0f
 #define HEAD_TOUCH_EPS 1.5f   // how close to ground counts as “touch”
 #define HEAD_TARGET_ALT 90.0f // px above ground that we’d like (tune)
 
