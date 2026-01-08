@@ -22,14 +22,23 @@ static void default_repr(MuModel *m, const float *obs, float *latent_out) {
 static void default_dynamics(MuModel *m, const float *latent_in, int action,
                              float *latent_out, float *reward_out) {
   int L = m->cfg.latent_dim;
+
+  float a = (float)action / (float)(m->cfg.action_count - 1); // 0..1
+  float a2 = a * 2.0f - 1.0f;                                 // -1..1
+
   for (int i = 0; i < L; i++) {
     float sum = 0.f;
     for (int j = 0; j < L; j++)
-      sum += latent_in[j] * m->dyn_W[i * L + j];
-    sum += 0.1f * action;
+      sum += latent_in[j] * m->dyn_W[i * (L + 1) + j];
+    sum += a2 * m->dyn_W[i * (L + 1) + L];
     latent_out[i] = tanhf(sum);
   }
-  *reward_out = 0.01f * action;
+
+  // reward head: r = dot(rew_W, latent_out) + b
+  float r = m->rew_b;
+  for (int i = 0; i < L; i++)
+    r += m->rew_W[i] * latent_out[i];
+  *reward_out = tanhf(r); // squash optional
 }
 
 static void default_predict(MuModel *m, const float *latent_in,
