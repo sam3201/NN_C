@@ -751,14 +751,17 @@ static void init_agents(void) {
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
     if (a->cortex) {
-      cortex->use_mcts = true;
-      cortex->mcts_model = your_model;
-      cortex->mcts_params.num_simulations = 50..200;
-      cortex->mcts_params.max_depth = 8..32;
-      cortex->mcts_params.discount = 0.997f;
-      a->cortex->policy_temperature = 1.0f;
+      a->cortex->use_mcts = true;
+      a->cortex->mcts_model = g_model;
+      a->cortex->mcts_params.num_simulations = 80;
+      a->cortex->mcts_params.max_depth = 16;
+      a->cortex->mcts_params.discount = 0.997f;
+      a->cortex->mcts_params.c_puct = 1.25f;
+      a->cortex->mcts_params.temperature = 1.0f;
+      a->cortex->mcts_params.dirichlet_alpha = 0.3f;
+      a->cortex->mcts_params.dirichlet_eps = 0.25f;
 
-      // Start high exploration immediately (episode 0)
+      a->cortex->policy_temperature = 1.0f;
       a->cortex->policy_epsilon = epsilon_schedule(0);
     }
 
