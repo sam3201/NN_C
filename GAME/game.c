@@ -4693,7 +4693,7 @@ int main(void) {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    f(g_state == STATE_PLAYING) {
+    if (g_state == STATE_PLAYING) {
       // ---- your current game draw/update ----
       // update_daynight(dt);
       // update agents/mobs, draw_chunks/resources/mobs/player etc
@@ -4703,8 +4703,7 @@ int main(void) {
         save_world_to_disk(g_world_name);
       if (IsKeyPressed(KEY_ESCAPE))
         g_state = STATE_TITLE;
-    }
-    else if (g_state == STATE_TITLE) {
+    } else if (g_state == STATE_TITLE) {
 
       DrawText("SAMCRAFT", 40, 40, 52, RAYWHITE);
       DrawText("F5 = Save while playing", 44, 100, 18,
@@ -4720,8 +4719,7 @@ int main(void) {
         g_state = STATE_WORLD_CREATE;
       if (ui_button(b3, "Quit"))
         CloseWindow();
-    }
-    else if (g_state == STATE_WORLD_CREATE) {
+    } else if (g_state == STATE_WORLD_CREATE) {
 
       DrawText("Create World", 60, 50, 34, RAYWHITE);
 
@@ -4743,8 +4741,7 @@ int main(void) {
       if (ui_button((Rectangle){280, 300, 140, 50}, "Back")) {
         g_state = STATE_TITLE;
       }
-    }
-    else if (g_state == STATE_WORLD_SELECT) {
+    } else if (g_state == STATE_WORLD_SELECT) {
       DrawText("Select World", 60, 50, 34, RAYWHITE);
       DrawText("(This screen next: list saves/ folders)", 60, 95, 18,
                (Color){200, 200, 200, 180});
