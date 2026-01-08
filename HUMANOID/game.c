@@ -27,8 +27,8 @@ pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
 pthread_cond_t done_cv = PTHREAD_COND_INITIALIZER;
 bool job_quit = 0;
 bool job_active = 0;
-job_next_agent = 0;
-job_done_workers = 0;
+size_t job_next_agent = 0;
+size_t job_done_workers = 0;
 
 static void run_agent_jobs(void) {
   pthread_mutex_lock(&job_mtx);
