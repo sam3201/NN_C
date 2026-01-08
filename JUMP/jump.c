@@ -823,9 +823,17 @@ static void init_agents(void) {
     a->pending_reward = 0.0f;
     a->has_last_transition = 0;
 
-    // SAM / cortex
-    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
     a->cortex = SAM_as_MUZE(a->sam);
+
+    a->cortex->use_mcts = true;
+    a->cortex->mcts_model = g_model; // REQUIRED if MCTS is on
+    a->cortex->mcts_params.num_simulations = 50;
+    a->cortex->mcts_params.max_depth = 16;
+    a->cortex->mcts_params.discount = 0.997f;
+    a->cortex->mcts_params.c_puct = 1.25f;
+    a->cortex->mcts_params.temperature = 1.0f;
+    a->cortex->mcts_params.dirichlet_alpha = 0.3f;
+    a->cortex->mcts_params.dirichlet_eps = 0.25f;
 
     // Default MCTS params (store them in Agent so update_agent can use them)
     a->mcts_params.num_simulations = 80;
