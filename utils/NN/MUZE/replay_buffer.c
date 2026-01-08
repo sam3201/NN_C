@@ -58,6 +58,28 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
     rb->size++;
 }
 
+void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
+                        float reward, const float *next_obs, int done) {
+  // This is a simple placeholder policy/target encoding.
+  // Replace with your actual expected transition format if MUZE uses something
+  // else.
+
+  // Example: if rb_push expects (obs, pi, z) for MuZero-style training,
+  // you need to construct pi and z appropriately or store transitions
+  // separately.
+
+  (void)action;
+  (void)reward;
+  (void)next_obs;
+  (void)done;
+
+  // If your current replay buffer only supports rb_push(obs, pi, z),
+  // you have two options:
+  //   1) Extend ReplayBuffer to store transitions (obs, action, reward, etc.)
+  //   2) Convert transitions into (obs, pi, z) at episode end instead of
+  //   per-step.
+}
+
 static int rand_int(int n) {
   return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
 }
