@@ -356,6 +356,10 @@ static int inv_wood = 0, inv_stone = 0, inv_gold = 0, inv_food = 0;
 static float player_harvest_cd = 0.0f;
 static float player_attack_cd = 0.0f;
 static float player_hurt_timer = 0.0f;
+static float player_fire_cd = 0.0f;
+
+static int bow_charging = 0;
+static float bow_charge01 = 0.0f; // 0..1
 
 bool crafting_open = false;
 
