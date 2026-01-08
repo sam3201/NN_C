@@ -27,7 +27,7 @@ typedef struct {
   bool alive;
   int x;
   int y;
-} agent_t;
+} Agent_t;
 
 /* =======================
    GLOBAL CONFIG
