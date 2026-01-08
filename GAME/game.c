@@ -4693,6 +4693,72 @@ int main(void) {
     BeginDrawing();
     ClearBackground(BLACK);
 
+    f(g_state == STATE_PLAYING) {
+      // ---- your current game draw/update ----
+      // update_daynight(dt);
+      // update agents/mobs, draw_chunks/resources/mobs/player etc
+
+      // quick save hotkey
+      if (IsKeyPressed(KEY_F5))
+        save_world_to_disk(g_world_name);
+      if (IsKeyPressed(KEY_ESCAPE))
+        g_state = STATE_TITLE;
+    }
+    else if (g_state == STATE_TITLE) {
+
+      DrawText("SAMCRAFT", 40, 40, 52, RAYWHITE);
+      DrawText("F5 = Save while playing", 44, 100, 18,
+               (Color){200, 200, 200, 180});
+
+      Rectangle b1 = (Rectangle){60, 160, 260, 50};
+      Rectangle b2 = (Rectangle){60, 220, 260, 50};
+      Rectangle b3 = (Rectangle){60, 280, 260, 50};
+
+      if (ui_button(b1, "Play (Load/Select)"))
+        g_state = STATE_WORLD_SELECT;
+      if (ui_button(b2, "Create World"))
+        g_state = STATE_WORLD_CREATE;
+      if (ui_button(b3, "Quit"))
+        CloseWindow();
+    }
+    else if (g_state == STATE_WORLD_CREATE) {
+
+      DrawText("Create World", 60, 50, 34, RAYWHITE);
+
+      DrawText("World Name", 60, 120, 18, RAYWHITE);
+      ui_textbox((Rectangle){60, 145, 360, 45}, g_world_name,
+                 sizeof(g_world_name), &g_typing_name, 0);
+
+      DrawText("Seed", 60, 205, 18, RAYWHITE);
+      ui_textbox((Rectangle){60, 230, 200, 45}, g_seed_text,
+                 sizeof(g_seed_text), &g_typing_seed, 1);
+
+      if (ui_button((Rectangle){60, 300, 200, 50}, "Create & Play")) {
+        g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
+        world_reset(g_world_seed);
+        save_world_to_disk(g_world_name); // create initial save
+        g_state = STATE_PLAYING;
+      }
+
+      if (ui_button((Rectangle){280, 300, 140, 50}, "Back")) {
+        g_state = STATE_TITLE;
+      }
+    }
+    else if (g_state == STATE_WORLD_SELECT) {
+      DrawText("Select World", 60, 50, 34, RAYWHITE);
+      DrawText("(This screen next: list saves/ folders)", 60, 95, 18,
+               (Color){200, 200, 200, 180});
+
+      // For now: quick load the current name
+      if (ui_button((Rectangle){60, 140, 260, 50}, "Load World Name")) {
+        if (load_world_from_disk(g_world_name))
+          g_state = STATE_PLAYING;
+      }
+
+      if (ui_button((Rectangle){60, 200, 260, 50}, "Back"))
+        g_state = STATE_TITLE;
+    }
+
     draw_chunks();
     draw_resources();
     draw_mobs();
