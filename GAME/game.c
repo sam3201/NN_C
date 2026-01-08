@@ -2163,6 +2163,40 @@ static void agent_try_fire_forward(Agent *a, float *reward,
     *reward += -0.002f;
 }
 
+static void agent_try_fire_forward(Agent *a, float *reward,
+                                   bool is_continuous) {
+  if (!a->has_bow) {
+    if (reward)
+      *reward += -0.006f;
+    return;
+  }
+
+  if (a->fire_cd > 0.0f) {
+    if (!is_continuous && reward)
+      *reward += R_FIRE_WASTE * 0.10f;
+    return;
+  }
+
+  if (a->inv_arrows <= 0) {
+    if (reward)
+      *reward += R_FIRE_NO_AMMO;
+    return;
+  }
+
+  Vector2 rd = Vector2Normalize(a->facing);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
+
+  // consume + spawn; outcome handled by projectile collision only
+  a->inv_arrows--;
+  a->fire_cd = agent_fire_cooldown();
+
+  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10, PROJ_OWNER_AGENT);
+
+  // optional: slight penalty to discourage blind spam (NOT lookahead-based)
+  if (reward && !is_continuous)
+    *reward += -0.002f;
+}
 static void agent_try_eat(Agent *a, float *reward) {
   if (a->inv_food <= 0) {
     *reward += R_EAT_NO_FOOD;
