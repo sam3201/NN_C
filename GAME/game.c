@@ -3858,7 +3858,6 @@ static void update_visible_world(float dt) {
       try_spawn_mobs_in_chunk(c, cx, cy, dt);
 
       // mobs AI
-      Vector2 origin = {cx * CHUNK_SIZE, cy * CHUNK_SIZE};
       for (int i = 0; i < MAX_MOBS; i++) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
