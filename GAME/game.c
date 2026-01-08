@@ -2431,51 +2431,46 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   init_mob(m, mt, p, /*make_angry=*/0);
 }
 
-static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
+static void player_try_attack_forward(Vector2 facing_dir) {
   if (player_attack_cd > 0.0f)
     return;
+
+  Vector2 rd = Vector2Normalize(facing_dir);
+  if (Vector2Length(rd) < 1e-3f)
+    rd = (Vector2){1, 0};
 
   float range = player_attack_range();
   int dmg = player_attack_damage();
 
-  Mob *best = NULL;
-  float bestD = 1e9f;
+  RayHit hit = raycast_world_objects(player.position, rd, range);
+  if (hit.kind != HIT_MOB) {
+    player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
+    return;
+  }
 
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+  Chunk *c = get_chunk(hit.cx, hit.cy);
+  pthread_rwlock_wrlock(&c->lock);
 
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
+  Mob *m = &c->mobs[hit.index];
+  if (m->health > 0) {
+    player_attack_cd = player_attack_cooldown();
 
-    Vector2 mw = Vector2Add(origin, m->position);
-    float d = Vector2Distance(player.position, mw);
+    m->health -= dmg;
+    m->hurt_timer = 0.18f;
+    m->aggro_timer = 3.0f;
+    m->lunge_timer = 0.10f;
 
-    if (d < range && d < bestD) {
-      bestD = d;
-      best = m;
+    cam_shake = fmaxf(cam_shake, 0.10f);
+
+    if (m->health <= 0) {
+      Vector2 mob_world_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                                        hit.cy * CHUNK_SIZE + m->position.y};
+      on_mob_killed(m->type, mob_world_pos);
+      m->health = 0;
     }
   }
 
-  if (!best)
-    return;
-
-  player_attack_cd = player_attack_cooldown();
-
-  best->health -= dmg;
-  best->hurt_timer = 0.18f;
-  best->aggro_timer = 3.0f;
-  best->lunge_timer = 0.10f;
-
-  cam_shake = fmaxf(cam_shake, 0.10f);
-
-  if (best->health <= 0) {
-    Vector2 mob_world_pos = (Vector2){cx * CHUNK_SIZE + best->position.x,
-                                      cy * CHUNK_SIZE + best->position.y};
-    on_mob_killed(best->type, mob_world_pos);
-    best->health = 0;
-  }
+  pthread_rwlock_unlock(&c->lock);
 }
 
 static void player_try_harvest_forward(Vector2 facing_dir) {
