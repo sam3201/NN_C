@@ -637,6 +637,12 @@ static void update_agent(Agent *a) {
     float control = p->on_ground ? 1.0f : AIR_CONTROL;
     p->vel.x += ax * control * FIXED_DT;
 
+    // Extra “drift” in air (Jump King-ish): small but persistent influence
+    if (!p->on_ground &&
+        (a->last_action == ACT_LEFT || a->last_action == ACT_RIGHT)) {
+      p->vel.x += ax * (AIR_CONTROL * AIR_ACCEL_SCALE) * FIXED_DT;
+    }
+
     // drag
     p->vel.x *= p->on_ground ? 0.92f : AIR_DRAG;
 
