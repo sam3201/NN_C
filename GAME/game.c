@@ -470,6 +470,7 @@ static inline float lerp_angle(float a, float b, float t) {
   float d = wrap_angle(b - a);
   return a + d * t;
 }
+
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 static inline float randf(float a, float b) {
   return a + (float)rand() / RAND_MAX * (b - a);
