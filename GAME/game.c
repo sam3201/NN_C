@@ -85,6 +85,16 @@
 /* =======================
    ENUMS
 ======================= */
+
+typedef enum {
+  TOOL_AXE = 0,
+  TOOL_PICKAXE = 1,
+  TOOL_SWORD = 2,
+  TOOL_ARMOR = 3,
+  TOOL_COUNT = 4,
+  TOOL_NONE = 99
+} ToolType;
+
 typedef enum {
   RES_TREE = 0,
   RES_ROCK,
