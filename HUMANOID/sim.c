@@ -471,211 +471,123 @@ static void ground_collide(Particle *p, float groundY) {
 }
 
 void update_agent(Agent *a) {
-  if (!a || !a->alive)
-    return;
-
-  float dt = g_dt;
-  if (dt <= 0.0f)
-    dt = 1.0f / 60.0f;
-  dt = clampf(dt, 0.0f, MAX_ACCUM_DT);
+  float dt = clampf(g_dt, 0.0f, MAX_ACCUM_DT);
   a->accum_dt += dt;
   a->episode_time += dt;
 
-  const float groundY = (float)SCREEN_HEIGHT - 40.0f;
-  const Vector2 gravity = (Vector2){0.0f, 1400.0f}; // y-down in raylib
-
-  // ------------------------------------------------------------
-  // 1) CONTROL TICK (30Hz): learn from previous action, then choose new
-  // ------------------------------------------------------------
+  // CONTROL TICK
   a->control_timer -= dt;
   if (a->control_timer <= 0.0f) {
     a->control_timer +=
-        (a->control_period > 0.0f) ? a->control_period : (1.0f / 30.0f);
+        a->control_period > 0 ? a->control_period : (1.0f / 20.0f);
 
-    // (A) If we have a previous (obs, action), train it with reward accumulated
-    // since then.
     if (a->cortex && a->has_last_transition) {
-      int terminal =
-          a->alive ? 0 : 1; // usually 0 here; final flush happens below too
       a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                       a->last_action, a->pending_reward, terminal);
+                       a->last_action, a->pending_reward, 0);
     }
-
-    // reset reward accumulator for the *next* action window
     a->pending_reward = 0.0f;
 
-    // (B) Build current obs and pick a new action
-    encode_observation_humanoid(a, groundY, &a->last_obs);
+    encode_observation_jk(a, &a->last_obs);
 
-    if (a->cortex) {
-      a->last_action = muze_plan(a->cortex, a->last_obs.obs, (size_t)OBS_DIM,
-                                 (size_t)ACTION_COUNT);
-    } else {
-      a->last_action = ACT_NONE;
-    }
+    a->last_action = a->cortex
+                         ? muze_plan(a->cortex, a->last_obs.obs,
+                                     (size_t)OBS_DIM, (size_t)ACTION_COUNT)
+                         : ACT_NONE;
 
     a->has_last_transition = 1;
   }
 
-  // ------------------------------------------------------------
-  // 2) PHYSICS SUBSTEPS (120Hz fixed dt): integrate + muscles + constraints
-  // ------------------------------------------------------------
+  // PHYSICS FIXED STEP
   while (a->accum_dt >= FIXED_DT) {
     a->accum_dt -= FIXED_DT;
 
-    // --- Verlet integrate (gravity) ---
-    for (int i = 0; i < P_COUNT; i++) {
-      Particle *p = &a->pt[i];
-      if (p->invMass <= 0.0f)
-        continue;
+    PlayerJK *p = &a->pl;
+    p->prev_y = p->pos.y;
 
-      Vector2 cur = p->p;
-      Vector2 v = vsub(p->p, p->pprev);
+    // movement intent
+    float ax = 0.0f;
+    if (a->last_action == ACT_LEFT)
+      ax = -MOVE_SPEED;
+    if (a->last_action == ACT_RIGHT)
+      ax = +MOVE_SPEED;
 
-      v = vmul(v, 0.995f); // damping
+    float control = p->on_ground ? 1.0f : AIR_CONTROL;
+    p->vel.x += ax * control * FIXED_DT;
 
-      Vector2 next = vadd(vadd(cur, v), vmul(gravity, FIXED_DT * FIXED_DT));
-      p->pprev = cur;
-      p->p = next;
+    // simple drag
+    p->vel.x *= p->on_ground ? 0.92f : 0.985f;
+
+    // charging
+    if (a->last_action == ACT_CHARGE && p->on_ground) {
+      p->charging = 1;
+      p->charge = clampf(p->charge + JUMP_CHARGE_RATE * FIXED_DT, 0.0f,
+                         JUMP_CHARGE_MAX);
     }
 
-    // --- Apply action as "muscles" ---
-    float rest0[J_COUNT];
-    for (int j = 0; j < J_COUNT; j++)
-      rest0[j] = a->jt[j].rest;
+    // release jump
+    if (a->last_action == ACT_RELEASE && p->on_ground) {
+      float t = clampf(p->charge, 0.0f, 1.0f);
+      float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t; // negative (up)
+      float vx = clampf(p->vel.x, -JUMP_VX_MAX, JUMP_VX_MAX);
 
-    float contract = 0.92f;
-    float extend = 1.08f;
+      p->vel.y = vy;
+      p->vel.x = vx;
 
-    switch (a->last_action) {
-    case ACT_STEP_LEFT: {
-      a->jt[J_HIP_L].rest *= contract;
-      a->jt[J_SHIN_L].rest *= contract;
-      a->jt[J_HIP_R].rest *= extend;
-      a->jt[J_SHIN_R].rest *= extend;
-      verlet_impulse(&a->pt[P_HIP], (Vector2){-18.0f * FIXED_DT, 0.0f});
-    } break;
+      p->on_ground = 0;
+      p->charging = 0;
+      p->charge = 0.0f;
+    }
 
-    case ACT_STEP_RIGHT: {
-      a->jt[J_HIP_R].rest *= contract;
-      a->jt[J_SHIN_R].rest *= contract;
-      a->jt[J_HIP_L].rest *= extend;
-      a->jt[J_SHIN_L].rest *= extend;
-      verlet_impulse(&a->pt[P_HIP], (Vector2){+18.0f * FIXED_DT, 0.0f});
-    } break;
+    // gravity
+    p->vel.y += GRAVITY_Y * FIXED_DT;
 
-    case ACT_KNEE_L_UP: {
-      a->jt[J_SHIN_L].rest *= contract;
-      verlet_impulse(&a->pt[P_ANKLE_L], (Vector2){0.0f, -55.0f * FIXED_DT});
-    } break;
+    // integrate
+    p->pos.x += p->vel.x * FIXED_DT;
+    p->pos.y += p->vel.y * FIXED_DT;
 
-    case ACT_KNEE_R_UP: {
-      a->jt[J_SHIN_R].rest *= contract;
-      verlet_impulse(&a->pt[P_ANKLE_R], (Vector2){0.0f, -55.0f * FIXED_DT});
-    } break;
+    // bounds
+    if (p->pos.x < 0) {
+      p->pos.x = 0;
+      p->vel.x = 0;
+    }
+    if (p->pos.x > SCREEN_WIDTH) {
+      p->pos.x = SCREEN_WIDTH;
+      p->vel.x = 0;
+    }
 
-    case ACT_ARMS_UP: {
-      a->jt[J_UPPERARM_L].rest *= contract;
-      a->jt[J_FOREARM_L].rest *= contract;
-      a->jt[J_UPPERARM_R].rest *= contract;
-      a->jt[J_FOREARM_R].rest *= contract;
-      verlet_impulse(&a->pt[P_HAND_L], (Vector2){0.0f, -45.0f * FIXED_DT});
-      verlet_impulse(&a->pt[P_HAND_R], (Vector2){0.0f, -45.0f * FIXED_DT});
-    } break;
+    // collide platforms (one-way landing)
+    solve_player_platforms(p);
 
-    case ACT_ARMS_DOWN: {
-      a->jt[J_UPPERARM_L].rest *= extend;
-      a->jt[J_FOREARM_L].rest *= extend;
-      a->jt[J_UPPERARM_R].rest *= extend;
-      a->jt[J_FOREARM_R].rest *= extend;
-    } break;
+    // REWARD: maximize height (lower y is higher). Pick a baseline: screen
+    // ground.
+    float groundY = (float)SCREEN_HEIGHT - 40.0f;
+    float alt = groundY - p->pos.y; // higher alt => better
+    if (alt > a->best_alt) {
+      float delta = alt - a->best_alt;
+      a->best_alt = alt;
+      a->pending_reward += 0.02f * (delta / 50.0f); // shaped for progress
+    }
 
-    case ACT_SQUAT: {
-      a->jt[J_SPINE1].rest *= contract;
-      a->jt[J_SPINE2].rest *= contract;
-      a->jt[J_HIP_L].rest *= contract;
-      a->jt[J_SHIN_L].rest *= contract;
-      a->jt[J_HIP_R].rest *= contract;
-      a->jt[J_SHIN_R].rest *= contract;
-    } break;
+    // small alive reward
+    a->pending_reward += 0.001f;
 
-    case ACT_STAND: {
-      a->jt[J_SPINE1].rest *= extend;
-      a->jt[J_SPINE2].rest *= extend;
-      a->jt[J_HIP_L].rest *= extend;
-      a->jt[J_SHIN_L].rest *= extend;
-      a->jt[J_HIP_R].rest *= extend;
-      a->jt[J_SHIN_R].rest *= extend;
-    } break;
-
-    default:
+    // punish falling too low (death)
+    if (p->pos.y > groundY + 200.0f) {
+      a->pending_reward -= 0.5f;
+      a->alive = false;
       break;
     }
-
-    // --- Solve constraints ---
-    int iters = 10;
-    float old_stiff = a->joint_stiffness;
-    a->joint_stiffness = 1.0f;
-
-    for (int it = 0; it < iters; it++) {
-      for (int j = 0; j < J_COUNT; j++)
-        solve_joint(a, &a->jt[j]);
-      for (int i = 0; i < P_COUNT; i++)
-        ground_collide(&a->pt[i], groundY);
-    }
-
-    a->joint_stiffness = old_stiff;
-
-    for (int j = 0; j < J_COUNT; j++)
-      a->jt[j].rest = rest0[j];
-
-    // --- Reward (per substep, accumulated to control tick) ---
-    float reward = 0.0f;
-
-    float head_y = a->pt[P_HEAD].p.y;
-    float hip_y = a->pt[P_HIP].p.y;
-
-    // alive drip
-    reward += 0.001f;
-
-    // HEAD ALTITUDE (y-down, so altitude = groundY - head_y)
-    float head_alt = groundY - head_y; // px above ground
-    float alt_norm = clampf(head_alt / HEAD_TARGET_ALT, 0.0f, 1.0f);
-    reward += 0.004f * alt_norm;
-
-    // penalize “collapsed” hip a bit (optional)
-    if (hip_y > groundY - 25.0f)
-      reward -= 0.01f;
-
-    // BIG punishment if head touches ground (and we’ll terminate)
-    if (head_y >= groundY - HEAD_TOUCH_EPS) {
-      reward -= 0.50f;  // strong negative signal
-      a->alive = false; // terminal this step
-    }
-
-    // accumulate reward until next control tick
-    a->pending_reward += reward;
-    a->reward_accumulator += reward;
   }
 
-  // ------------------------------------------------------------
-  // 3) TERMINATION + FINAL LEARN FLUSH
-  // ------------------------------------------------------------
-  // Episode timeout
-  if (a->episode_time >= a->episode_limit) {
-    // treat timeout as terminal (or non-terminal; terminal usually works better
-    // for episodic training)
-    reset_agent_episode(a, groundY);
-    return;
-  }
-
-  // If died (head touch), reset immediately
-  if (!a->alive) {
-    reset_agent_episode(a, groundY);
-    return;
+  // TERMINATE
+  if (!a->alive || a->episode_time >= a->episode_limit) {
+    if (a->cortex && a->has_last_transition) {
+      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
+                       a->last_action, a->pending_reward, 1);
+    }
+    reset_agent_episode(a);
   }
 }
-
 static void draw_agent(const Agent *a) {
   if (!a || !a->alive)
     return;
