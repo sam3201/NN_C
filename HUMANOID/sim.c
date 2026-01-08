@@ -369,41 +369,6 @@ void update_agent(Agent *a) {
     a->alive = 0;
   }
 }
-The “fix” in plain terms (what usually breaks humanoid sims)
-If your current update_agent is unstable, it’s almost always one of these:
-
-Variable dt integration (frame dt fed straight into ragdoll)
-✅ Fixed by fixed timestep accumulator (accum_dt, FIXED_DT).
-
-Policy updates every physics tick (120Hz twitching)
-✅ Fixed by control rate (control_period like 1/20–1/30 sec) + optional action smoothing.
-
-No torque clamp / too-strong motors
-✅ Fixed by MAX_TORQUE clamp and per-joint kp/kd tuning.
-
-No damping (energy builds up forever through constraint solver)
-✅ Fixed by small global damping + sane kd.
-
-To wire this perfectly, paste just these from your humanoid sim
-You don’t need to paste the whole project—just:
-
-your current update_agent()
-
-the Agent / Humanoid structs (or at least joints/bodies fields)
-
-how your physics step looks (step_world, solve_constraints, etc.)
-
-what your action space is (torques? target angles? muscle activations?)
-
-…and I’ll return a direct patch that compiles in your codebase (matching your names/types), not a template.
-
-
-
-
-
-
-
-
 
 static void draw_agent(const Agent *a) {
   if (!a || !a->alive)
