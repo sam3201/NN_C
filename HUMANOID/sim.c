@@ -238,6 +238,12 @@ static void stamp_disk(float *grid, Vector2 origin, float x, float y,
   }
 }
 
+static void stamp_platform_top(float *grid, Vector2 origin, float x, float y,
+                               float w, float value) {
+  // stamp a thin strip at y (platform top)
+  stamp_rect(grid, origin, x, y - 2.0f, w, 4.0f, value);
+}
+
 // Stamp a point/circle-ish (agent) into a single cell (or small radius if
 // desired)
 static void stamp_point(float *grid, Vector2 origin, float x, float y,
