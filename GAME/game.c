@@ -1220,31 +1220,6 @@ static int load_models_from_disk(const char *world_name) {
   return 1;
 }
 
-static int load_models_from_disk(const char *world_name) {
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &agents[i];
-    if (!a->sam)
-      continue;
-
-    char path[256];
-    make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
-
-    FILE *f = fopen(path, "rb");
-    if (!f) {
-      // no model yet -> keep fresh initialized model
-      continue;
-    }
-
-    // Example placeholder API names:
-    // SAM_load_file(a->sam, f);
-    // or SAM_load_into(a->sam, path);
-    // or MUZE_load(a->cortex, f);
-
-    fclose(f);
-  }
-  return 1;
-}
-
 Color biome_colors[] = {
     (Color){40, 120, 40, 255},   // grass
     (Color){140, 140, 140, 255}, // stone
