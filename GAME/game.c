@@ -4111,7 +4111,8 @@ void update_agent(Agent *a) {
     break;
 
   case ACTION_CRAFT:
-    agent_try_craft(a, tr, &reward);
+    // agent_try_craft(a, tr, &reward);
+
     break;
 
   case ACTION_FIRE: {
