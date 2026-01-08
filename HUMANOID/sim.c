@@ -185,6 +185,58 @@ static Vector2 clamp_target_to_world(Vector2 t) {
 
 static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
 
+static inline int grid_index(int gx, int gy) { return gy * GRID_W + gx; }
+
+static inline int clampi(int v, int lo, int hi) {
+  return v < lo ? lo : (v > hi ? hi : v);
+}
+
+static inline void world_to_grid(const Vector2 origin, float x, float y,
+                                 int *out_gx, int *out_gy) {
+  // origin is top-left of view window in world-space
+  float u = (x - origin.x) / VIEW_W_PX; // 0..1
+  float v = (y - origin.y) / VIEW_H_PX; // 0..1
+  int gx = (int)floorf(u * GRID_W);
+  int gy = (int)floorf(v * GRID_H);
+  *out_gx = gx;
+  *out_gy = gy;
+}
+
+// Stamp an AABB (platform) into grid cells
+static void stamp_rect(float *grid, Vector2 origin, float rx, float ry,
+                       float rw, float rh, float value) {
+  int gx0, gy0, gx1, gy1;
+  world_to_grid(origin, rx, ry, &gx0, &gy0);
+  world_to_grid(origin, rx + rw, ry + rh, &gx1, &gy1);
+
+  // Expand slightly so thin platforms still appear
+  gx0 = clampi(gx0 - 1, 0, GRID_W - 1);
+  gy0 = clampi(gy0 - 1, 0, GRID_H - 1);
+  gx1 = clampi(gx1 + 1, 0, GRID_W - 1);
+  gy1 = clampi(gy1 + 1, 0, GRID_H - 1);
+
+  for (int gy = gy0; gy <= gy1; gy++) {
+    for (int gx = gx0; gx <= gx1; gx++) {
+      int idx = grid_index(gx, gy);
+      if (grid[idx] < value)
+        grid[idx] = value; // keep higher priority
+    }
+  }
+}
+
+// Stamp a point/circle-ish (agent) into a single cell (or small radius if
+// desired)
+static void stamp_point(float *grid, Vector2 origin, float x, float y,
+                        float value) {
+  int gx, gy;
+  world_to_grid(origin, x, y, &gx, &gy);
+  if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H)
+    return;
+  int idx = grid_index(gx, gy);
+  if (grid[idx] < value)
+    grid[idx] = value;
+}
+
 static inline void obs_pushf(ObsFixed *o, float v) {
   if (o->n < OBS_DIM)
     o->obs[o->n++] = v;
