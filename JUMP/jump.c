@@ -165,6 +165,7 @@ typedef struct {
   int has_last_transition;
 
   float reward_accumulator;
+  uint32_t rng;
 
 } Agent;
 
