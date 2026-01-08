@@ -325,7 +325,6 @@ void init_agents(void) {
     memset(a, 0, sizeof(*a));
 
     a->alive = true;
-    a->joint_stiffness = 1.0f;
 
     // Fixed-step / control loop
     a->accum_dt = 0.0f;
