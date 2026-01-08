@@ -19,7 +19,7 @@
 #define OBS_DIM 72
 
 #define WORKER_COUNT 4
-#define MAX_AGENTS 64
+#define MAX_AGENTS 8
 
 #define FIXED_DT (1.0f / 120.0f)
 #define MAX_ACCUM_DT (0.25f)
