@@ -1165,7 +1165,7 @@ static void agent_try_fire_forward(Agent *a, Tribe *tr, float *reward,
   a->inv_arrows--;
   a->fire_cd = agent_fire_cooldown();
 
-  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10); // visual
+  spawn_projectile(a->position, rd, 13.0f, 1.65f, 10, PROJ_OWNER_AGENT);
 
   if (hit.kind == HIT_MOB) {
     Chunk *hc = get_chunk(hit.cx, hit.cy);
