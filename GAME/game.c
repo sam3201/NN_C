@@ -3193,7 +3193,7 @@ void update_agent(Agent *a) {
     break;
 
   case ACTION_FIRE:
-    agent_try_fire_forward(a, tr, &reward);
+    agent_try_fire_forward(a, tr, &reward, 0);
     break;
 
   case ACTION_EAT:
