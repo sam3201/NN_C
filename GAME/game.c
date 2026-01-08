@@ -383,7 +383,8 @@ typedef struct {
   Vector2 vel;
   float ttl;
   int damage;
-  int owner_agent_id ProjOwner owner;
+  int owner_agent_id;
+  ProjOwner owner;
 } Projectile;
 
 typedef struct Chunk {
