@@ -26,7 +26,10 @@ typedef struct {
   int x;
   int y;
 
-  typedef struct {}
+  struct Head {
+    int x;
+    int y;
+  } head;
 
 } Agent;
 
