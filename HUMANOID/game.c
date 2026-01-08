@@ -26,6 +26,8 @@ typedef struct {
   int x;
   int y;
 
+  typedef struct {}
+
 } Agent;
 
 /* =======================
