@@ -220,37 +220,33 @@ static void make_joint(Agent *ag, int j, int a, int b) {
 
 static void encode_observation_humanoid(const Agent *a, float groundY,
                                         ObsFixed *out) {
-  memset(out, 0, sizeof(*out));
   out->n = 0;
 
   Vector2 hip = a->pt[P_HIP].p;
-
-  // For each particle: (pos relative to hip) + (vel)
-  // Normalize a bit so values aren't huge.
   const float pos_scale = 1.0f / 100.0f;
   const float vel_scale = 1.0f / 50.0f;
 
   for (int i = 0; i < P_COUNT; i++) {
     Vector2 p = a->pt[i].p;
-    Vector2 v = vsub(a->pt[i].p, a->pt[i].pprev); // verlet velocity proxy
+    Vector2 v = vsub(a->pt[i].p, a->pt[i].pprev);
 
     obs_pushf(out, (p.x - hip.x) * pos_scale);
     obs_pushf(out, (p.y - hip.y) * pos_scale);
     obs_pushf(out, v.x * vel_scale);
     obs_pushf(out, v.y * vel_scale);
 
-    // contact bit (foot/ankle touching ground)
     float contact = 0.0f;
-    if (i == P_ANKLE_L || i == P_ANKLE_R) {
+    if (i == P_ANKLE_L || i == P_ANKLE_R)
       contact = (p.y >= groundY - 0.5f) ? 1.0f : 0.0f;
-    }
     obs_pushf(out, contact);
   }
 
-  // A small bias
   obs_pushf(out, 1.0f);
 
-  // Remaining slots already zero-filled
+  // If MUZE/SAM requires exact OBS_DIM and expects zero padding:
+  for (int k = out->n; k < OBS_DIM; k++)
+    out->obs[k] = 0.0f;
+  out->n = OBS_DIM;
 }
 
 static void init_pose(Agent *a, Vector2 origin) {
