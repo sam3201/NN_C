@@ -1453,8 +1453,8 @@ static inline int agent_in_base(const Agent *a, const Tribe *tr) {
   return (d < tr->base.radius + 0.35f);
 }
 
-static int agent_try_craft_action(Agent *a, Tribe *tr, ActionType craft_action,
-                                  float *reward) {
+static int agent_try_craft(Agent *a, Tribe *tr, ActionType craft_action,
+                           float *reward) {
   if (!agent_in_base(a, tr)) {
     if (reward)
       *reward += -0.006f;
