@@ -320,8 +320,10 @@ static void solve_player_platforms(PlayerJK *p) {
 static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->n = 0;
 
-  // Clear grid
-  for (int i = 0; i < OBS_DIM; i++)
+  // ----------------------------
+  // 1) GRID (first OBS_GRID cells)
+  // ----------------------------
+  for (int i = 0; i < OBS_GRID; i++)
     out->obs[i] = CELL_EMPTY;
 
   const PlayerJK *p = &a->pl;
@@ -344,8 +346,45 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
     stamp_point(out->obs, origin, b->pl.pos.x, b->pl.pos.y, CELL_OTHER);
   }
 
-  // self
+  // self last (highest priority)
   stamp_point(out->obs, origin, p->pos.x, p->pos.y, CELL_SELF);
+
+  // ----------------------------
+  // 2) EXTRAS (after grid)
+  // ----------------------------
+  int k = OBS_GRID;
+
+  float groundY = (float)SCREEN_HEIGHT - 40.0f;
+  float alt = groundY - p->pos.y; // "height gained" (bigger is better)
+
+  // Normalize helpers
+  float px = p->pos.x / (float)SCREEN_WIDTH;  // 0..1
+  float py = p->pos.y / (float)SCREEN_HEIGHT; // can go negative
+  float vx = p->vel.x / 800.0f;
+  float vy = p->vel.y / 1800.0f;
+
+  // clamp some to keep them sane
+  vx = clampf(vx, -2.0f, 2.0f);
+  vy = clampf(vy, -2.0f, 2.0f);
+
+  float alt_n = alt / 2000.0f; // rough scale; adjust later if you want
+  alt_n = clampf(alt_n, -2.0f, 2.0f);
+
+  // Fill exactly OBS_EXTRA scalars
+  out->obs[k++] = px;                                        // 0
+  out->obs[k++] = py;                                        // 1
+  out->obs[k++] = vx;                                        // 2
+  out->obs[k++] = vy;                                        // 3
+  out->obs[k++] = (float)p->on_ground;                       // 4
+  out->obs[k++] = (float)p->charging;                        // 5
+  out->obs[k++] = p->charge;                                 // 6 (0..1)
+  out->obs[k++] = alt_n;                                     // 7
+  out->obs[k++] = a->time_since_progress / STUCK_RESET_SECS; // 8 (0..~1+)
+  out->obs[k++] = 1.0f;                                      // 9 bias
+
+  // Safety: if OBS_EXTRA changes, keep the tail clean
+  while (k < OBS_DIM)
+    out->obs[k++] = 0.0f;
 
   out->n = OBS_DIM;
 }
