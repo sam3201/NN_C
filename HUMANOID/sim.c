@@ -1,9 +1,6 @@
 #include "../SAM/SAM.h"
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/Raylib/src/raylib.h"
-#include "../utils/Raylib/src/raymath.h"
-#include <dirent.h>
-#include <errno.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -11,18 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
-#include <unistd.h>
 
 // =======================
 // CONFIG
 // =======================
-#define FPS 60.0
-
+#define FPS 60.0f
 #define EPISODE_SECONDS 8.0f
-#define HEAD_TOUCH_EPS 1.5f   // how close to ground counts as “touch”
-#define HEAD_TARGET_ALT 90.0f // px above ground that we’d like (tune)
 
 #define OBS_DIM 72
 
@@ -36,20 +28,20 @@
 // JUMP KING ENV
 // =======================
 #define PLATFORM_MAX 256
-#define WORLD_HEIGHT 8000.0f // tall tower
+#define WORLD_HEIGHT 8000.0f
 #define GRAVITY_Y 2600.0f
 #define MOVE_SPEED 260.0f
 #define AIR_CONTROL 0.35f
 
-#define JUMP_CHARGE_RATE 1.6f // per second
+#define JUMP_CHARGE_RATE 1.6f
 #define JUMP_CHARGE_MAX 1.0f
 #define JUMP_VY_MIN -650.0f
 #define JUMP_VY_MAX -1550.0f
 #define JUMP_VX_MAX 520.0f
 
 typedef struct {
-  float x, y, w, h; // axis-aligned rect
-  int one_way;      // 1 = one-way from below
+  float x, y, w, h;
+  int one_way; // 1 = one-way from below
 } Platform;
 
 typedef struct {
@@ -57,11 +49,9 @@ typedef struct {
   Vector2 vel;
   float radius;
 
-  int on_ground; // standing on something (ground or platform)
-  int was_below; // helper for one-way landing
-  float prev_y;  // for one-way crossing test
+  int on_ground;
+  float prev_y;
 
-  // jump charge
   int charging;
   float charge; // 0..1
 } PlayerJK;
@@ -73,8 +63,8 @@ enum {
   ACT_NONE = 0,
   ACT_LEFT,
   ACT_RIGHT,
-  ACT_CHARGE,  // hold
-  ACT_RELEASE, // release jump
+  ACT_CHARGE,
+  ACT_RELEASE,
   ACTION_COUNT
 };
 
@@ -92,14 +82,14 @@ typedef struct {
   float episode_time;
   float episode_limit;
 
-  // best achieved height this episode (higher = better)
-  float best_alt; // altitude above ground baseline
+  float best_alt; // best height this episode (higher is better)
 
   // --- SAM/MUZE ---
   SAM_t *sam;
   MuCortex *cortex;
   int last_action;
 
+  // fixed step + control rate
   float accum_dt;
   float control_timer;
   float control_period;
@@ -111,12 +101,11 @@ typedef struct {
   float reward_accumulator;
 } Agent;
 
-/* =======================
-   GLOBAL CONFIG
-======================= */
+// =======================
+// GLOBALS
+// =======================
 static int SCREEN_WIDTH = 1280;
 static int SCREEN_HEIGHT = 800;
-
 static float g_dt = 1.0f / FPS;
 
 pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -130,24 +119,17 @@ pthread_t workers[WORKER_COUNT];
 
 Agent agents[MAX_AGENTS];
 
-static inline float vlen(Vector2 v) { return sqrtf(v.x * v.x + v.y * v.y); }
-
-static inline Vector2 vsub(Vector2 a, Vector2 b) {
-  return (Vector2){a.x - b.x, a.y - b.y};
-}
-
-static inline Vector2 vadd(Vector2 a, Vector2 b) {
-  return (Vector2){a.x + b.x, a.y + b.y};
-}
-
-static inline Vector2 vmul(Vector2 a, float s) {
-  return (Vector2){a.x * s, a.y * s};
-}
-
+// =======================
+// MATH / HELPERS
+// =======================
 static inline float clampf(float x, float a, float b) {
   return x < a ? a : (x > b ? b : x);
 }
-static inline float saturate(float x) { return clampf(x, -1.0f, 1.0f); }
+
+static inline void obs_pushf(ObsFixed *o, float v) {
+  if (o->n < OBS_DIM)
+    o->obs[o->n++] = v;
+}
 
 static int circle_overlaps_rect(Vector2 c, float r, const Platform *pl) {
   float cx = clampf(c.x, pl->x, pl->x + pl->w);
@@ -157,39 +139,76 @@ static int circle_overlaps_rect(Vector2 c, float r, const Platform *pl) {
   return (dx * dx + dy * dy) <= r * r;
 }
 
+// =======================
+// PLATFORMS
+// =======================
+static void build_platforms(void) {
+  g_plat_count = 0;
+
+  // ground
+  g_plats[g_plat_count++] = (Platform){
+      .x = -2000,
+      .y = (float)SCREEN_HEIGHT - 40,
+      .w = 5000,
+      .h = 40,
+      .one_way = 0,
+  };
+
+  float y = (float)SCREEN_HEIGHT - 120.0f;
+  float x = 200.0f;
+
+  for (int i = 0; i < PLATFORM_MAX - 1; i++) {
+    float w = 120 + (rand() % 120);
+    float h = 14;
+    float dx = (rand() % 240) - 120;
+    float dy = 90 + (rand() % 80);
+
+    x = clampf(x + dx, 80.0f, (float)SCREEN_WIDTH - 200.0f);
+    y -= dy;
+
+    g_plats[g_plat_count++] = (Platform){
+        .x = x,
+        .y = y,
+        .w = w,
+        .h = h,
+        .one_way = 1,
+    };
+
+    if (y < -WORLD_HEIGHT)
+      break;
+  }
+}
+
 static void solve_player_platforms(PlayerJK *p) {
   p->on_ground = 0;
 
   for (int i = 0; i < g_plat_count; i++) {
     Platform *pl = &g_plats[i];
 
-    // one-way: only collide when falling AND we were above the top last step
     if (pl->one_way) {
       if (p->vel.y < 0)
-        continue; // rising => pass through
+        continue; // rising: pass through
 
       float top = pl->y;
       float prev_bottom = p->prev_y + p->radius;
       float cur_bottom = p->pos.y + p->radius;
 
-      // must cross the top surface downward
+      // must cross top surface downward
       if (!(prev_bottom <= top && cur_bottom >= top))
         continue;
 
-      // must be horizontally over the platform
+      // must be horizontally over platform
       if (p->pos.x < pl->x - p->radius || p->pos.x > pl->x + pl->w + p->radius)
         continue;
 
-      // snap onto top
       p->pos.y = top - p->radius;
       p->vel.y = 0;
       p->on_ground = 1;
       continue;
     }
 
-    // solid platforms (ground)
+    // solid (ground)
     if (circle_overlaps_rect(p->pos, p->radius, pl)) {
-      // simple: push up out of it (good enough for ground)
       p->pos.y = pl->y - p->radius;
       p->vel.y = 0;
       p->on_ground = 1;
@@ -197,62 +216,15 @@ static void solve_player_platforms(PlayerJK *p) {
   }
 }
 
-static void apply_action_muscles(Agent *a, int action) {
-  // Reset to neutral every substep (muscles are per-step, not permanent)
-  // We'll start from original rest each time; store "base rest" separately if
-  // you want. For now: we do small relative tweaks on a->jt[].rest directly,
-  // then restore after solve.
-}
-
-// PD controller for joints: tau = kp*(target - angle) - kd*angVel
-static inline void obs_pushf(ObsFixed *o, float v) {
-  if (o->n < OBS_DIM)
-    o->obs[o->n++] = v;
-}
-
-static inline float safe_div(float a, float b) {
-  return (fabsf(b) > 1e-6f) ? (a / b) : 0.0f;
-}
-
-static void build_platforms(void) {
-  g_plat_count = 0;
-
-  // ground
-  g_plats[g_plat_count++] = (Platform){.x = -2000,
-                                       .y = (float)SCREEN_HEIGHT - 40,
-                                       .w = 5000,
-                                       .h = 40,
-                                       .one_way = 0};
-
-  // tower platforms going upward (y decreases as you go up)
-  float y = (float)SCREEN_HEIGHT - 120.0f;
-  float x = 200.0f;
-
-  for (int i = 0; i < PLATFORM_MAX - 1; i++) {
-    float w = 120 + (rand() % 120);
-    float h = 14;
-    float dx = (rand() % 240) - 120; // random sideways
-    float dy = 90 + (rand() % 80);   // step up
-
-    x = clampf(x + dx, 80.0f, (float)SCREEN_WIDTH - 200.0f);
-    y -= dy;
-
-    g_plats[g_plat_count++] =
-        (Platform){.x = x, .y = y, .w = w, .h = h, .one_way = 1};
-
-    if (y < -WORLD_HEIGHT)
-      break;
-  }
-}
-
+// =======================
+// OBS
+// =======================
 static void encode_observation_jk(const Agent *a, ObsFixed *out) {
   out->n = 0;
-
   const PlayerJK *p = &a->pl;
 
-  // normalize
   float px = p->pos.x / (float)SCREEN_WIDTH;
-  float py = p->pos.y / (float)SCREEN_HEIGHT; // note: tower goes negative
+  float py = p->pos.y / (float)SCREEN_HEIGHT; // can be negative
   float vx = p->vel.x / 800.0f;
   float vy = p->vel.y / 1800.0f;
 
@@ -263,9 +235,7 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
   obs_pushf(out, (float)p->on_ground);
   obs_pushf(out, p->charge);
 
-  // nearest platforms above: (dx, dy, w)
-  // dy is negative when above since y smaller => platform above => (plat.y -
-  // p.y) < 0
+  // 3 platforms above: dx, dy, w
   int found = 0;
   for (int i = 0; i < g_plat_count && found < 3; i++) {
     const Platform *pl = &g_plats[i];
@@ -277,8 +247,6 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
     float dx = (pl->x + pl->w * 0.5f) - p->pos.x;
     float dy = pl->y - p->pos.y;
 
-    // take "closest above" by dy magnitude
-    // simple pass: just record first few; better: scan for smallest |dy|
     obs_pushf(out, dx / (float)SCREEN_WIDTH);
     obs_pushf(out, dy / 600.0f);
     obs_pushf(out, pl->w / 200.0f);
@@ -299,67 +267,9 @@ static void encode_observation_jk(const Agent *a, ObsFixed *out) {
   out->n = OBS_DIM;
 }
 
-static void init_agent(Agent *a, Vector2 origin) {
-  memset(a, 0, sizeof(*a));
-  a->alive = true;
-  a->pl.pos = origin;
-  a->pl.vel = (Vector2){0, 0};
-  a->pl.radius = 10.0f;
-  a->pl.on_ground = 1;
-  a->pl.charging = 0;
-  a->pl.charge = 0.0f;
-  a->pl.prev_y = a->pl.pos.y;
-  a->best_alt = 0.0f;
-}
-
-void init_agents(void) {
-  MuConfig cfg = {.obs_dim = OBS_DIM,
-                  .latent_dim = 64, // not used by SAM_init, ok to keep here
-                  .action_count = ACTION_COUNT};
-
-  int cols = 16;
-  float spacing = 70.0f;
-
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &agents[i];
-    memset(a, 0, sizeof(*a));
-
-    a->alive = true;
-
-    // Fixed-step / control loop
-    a->accum_dt = 0.0f;
-    a->control_period = 1.0f / 30.0f; // 30 Hz decisions
-    a->control_timer = 0.0f;
-    a->last_action = ACT_NONE;
-    a->reward_accumulator = 0.0f;
-    a->pending_reward = 0.0f;
-    a->has_last_transition = 0;
-    memset(&a->last_obs, 0, sizeof(a->last_obs));
-
-    // Spawn pose/location
-    int cx = i % cols;
-    int cy = i / cols;
-    Vector2 origin = {SCREEN_WIDTH * 0.2f + cx * spacing,
-                      SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
-
-    a->spawn_origin = origin;
-
-    a->episode_time = 0.0f;
-    a->episode_limit = EPISODE_SECONDS;
-
-    // Brain
-    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-    a->cortex = SAM_as_MUZE(a->sam);
-
-    // Optional: tweak MUZE sampler behavior per agent
-    if (a->cortex) {
-      a->cortex->policy_epsilon = 0.10f;
-      a->cortex->policy_temperature = 1.0f;
-      a->cortex->use_mcts = false;
-    }
-  }
-}
-
+// =======================
+// AGENTS
+// =======================
 static void reset_agent_episode(Agent *a) {
   if (a->cortex && a->has_last_transition) {
     a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
@@ -384,7 +294,43 @@ static void reset_agent_episode(Agent *a) {
   a->best_alt = 0.0f;
 }
 
-void update_agent(Agent *a) {
+static void init_agents(void) {
+  MuConfig cfg = {
+      .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
+
+  int cols = 16;
+  float spacing = 70.0f;
+
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *a = &agents[i];
+    memset(a, 0, sizeof(*a));
+
+    int cx = i % cols;
+    int cy = i / cols;
+    Vector2 origin = {SCREEN_WIDTH * 0.2f + cx * spacing,
+                      SCREEN_HEIGHT * 0.35f + cy * spacing * 1.1f};
+
+    a->spawn_origin = origin;
+    a->episode_limit = EPISODE_SECONDS;
+
+    a->accum_dt = 0.0f;
+    a->control_period = 1.0f / 30.0f;
+    a->control_timer = 0.0f;
+    a->last_action = ACT_NONE;
+
+    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
+    a->cortex = SAM_as_MUZE(a->sam);
+    if (a->cortex) {
+      a->cortex->policy_epsilon = 0.10f;
+      a->cortex->policy_temperature = 1.0f;
+      a->cortex->use_mcts = false;
+    }
+
+    reset_agent_episode(a);
+  }
+}
+
+static void update_agent(Agent *a) {
   float dt = clampf(g_dt, 0.0f, MAX_ACCUM_DT);
   a->accum_dt += dt;
   a->episode_time += dt;
@@ -393,7 +339,7 @@ void update_agent(Agent *a) {
   a->control_timer -= dt;
   if (a->control_timer <= 0.0f) {
     a->control_timer +=
-        a->control_period > 0 ? a->control_period : (1.0f / 20.0f);
+        (a->control_period > 0) ? a->control_period : (1.0f / 20.0f);
 
     if (a->cortex && a->has_last_transition) {
       a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
@@ -402,7 +348,6 @@ void update_agent(Agent *a) {
     a->pending_reward = 0.0f;
 
     encode_observation_jk(a, &a->last_obs);
-
     a->last_action = a->cortex
                          ? muze_plan(a->cortex, a->last_obs.obs,
                                      (size_t)OBS_DIM, (size_t)ACTION_COUNT)
@@ -418,7 +363,7 @@ void update_agent(Agent *a) {
     PlayerJK *p = &a->pl;
     p->prev_y = p->pos.y;
 
-    // movement intent
+    // horizontal intent
     float ax = 0.0f;
     if (a->last_action == ACT_LEFT)
       ax = -MOVE_SPEED;
@@ -428,10 +373,10 @@ void update_agent(Agent *a) {
     float control = p->on_ground ? 1.0f : AIR_CONTROL;
     p->vel.x += ax * control * FIXED_DT;
 
-    // simple drag
+    // drag
     p->vel.x *= p->on_ground ? 0.92f : 0.985f;
 
-    // charging
+    // charge (ground only)
     if (a->last_action == ACT_CHARGE && p->on_ground) {
       p->charging = 1;
       p->charge = clampf(p->charge + JUMP_CHARGE_RATE * FIXED_DT, 0.0f,
@@ -441,7 +386,7 @@ void update_agent(Agent *a) {
     // release jump
     if (a->last_action == ACT_RELEASE && p->on_ground) {
       float t = clampf(p->charge, 0.0f, 1.0f);
-      float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t; // negative (up)
+      float vy = JUMP_VY_MIN + (JUMP_VY_MAX - JUMP_VY_MIN) * t;
       float vx = clampf(p->vel.x, -JUMP_VX_MAX, JUMP_VX_MAX);
 
       p->vel.y = vy;
@@ -452,10 +397,8 @@ void update_agent(Agent *a) {
       p->charge = 0.0f;
     }
 
-    // gravity
+    // gravity + integrate
     p->vel.y += GRAVITY_Y * FIXED_DT;
-
-    // integrate
     p->pos.x += p->vel.x * FIXED_DT;
     p->pos.y += p->vel.y * FIXED_DT;
 
@@ -465,27 +408,24 @@ void update_agent(Agent *a) {
       p->vel.x = 0;
     }
     if (p->pos.x > SCREEN_WIDTH) {
-      p->pos.x = SCREEN_WIDTH;
+      p->pos.x = (float)SCREEN_WIDTH;
       p->vel.x = 0;
     }
 
-    // collide platforms (one-way landing)
+    // collisions
     solve_player_platforms(p);
 
-    // REWARD: maximize height (lower y is higher). Pick a baseline: screen
-    // ground.
+    // reward: maximize height
     float groundY = (float)SCREEN_HEIGHT - 40.0f;
-    float alt = groundY - p->pos.y; // higher alt => better
+    float alt = groundY - p->pos.y;
     if (alt > a->best_alt) {
       float delta = alt - a->best_alt;
       a->best_alt = alt;
-      a->pending_reward += 0.02f * (delta / 50.0f); // shaped for progress
+      a->pending_reward += 0.02f * (delta / 50.0f);
     }
 
-    // small alive reward
-    a->pending_reward += 0.001f;
+    a->pending_reward += 0.001f; // alive drip
 
-    // punish falling too low (death)
     if (p->pos.y > groundY + 200.0f) {
       a->pending_reward -= 0.5f;
       a->alive = false;
@@ -503,24 +443,27 @@ void update_agent(Agent *a) {
   }
 }
 
-static void draw_platforms(float camY) {
-  for (int i = 0; i < g_plat_count; i++) {
-    Platform *pl = &g_plats[i];
-    DrawRectangle((int)pl->x, (int)(pl->y + camY), (int)pl->w, (int)pl->h,
-                  pl->one_way ? GRAY : DARKGRAY);
-  }
-}
+// =======================
+// THREADING
+// =======================
+static void run_agent_jobs(void) {
+  pthread_mutex_lock(&job_mtx);
+  job_next_agent = 0;
+  job_done_workers = 0;
+  job_active = 1;
 
-static void draw_agent_jk(const Agent *a, float camY) {
-  Vector2 p = a->pl.pos;
-  DrawCircle((int)p.x, (int)(p.y + camY), (int)a->pl.radius, RAYWHITE);
+  pthread_cond_broadcast(&job_cv);
+
+  while (job_active) {
+    pthread_cond_wait(&done_cv, &job_mtx);
+  }
+  pthread_mutex_unlock(&job_mtx);
 }
 
 static void *agent_worker(void *arg) {
   (void)arg;
 
   for (;;) {
-    // Wait for a job batch to become active (or quit)
     pthread_mutex_lock(&job_mtx);
     while (!job_active && !job_quit) {
       pthread_cond_wait(&job_cv, &job_mtx);
@@ -531,27 +474,22 @@ static void *agent_worker(void *arg) {
     }
     pthread_mutex_unlock(&job_mtx);
 
-    // Work loop: grab next agent index atomically under mutex
     for (;;) {
       int idx;
-
       pthread_mutex_lock(&job_mtx);
-      idx = job_next_agent++;
+      idx = (int)job_next_agent++;
       pthread_mutex_unlock(&job_mtx);
 
       if (idx >= MAX_AGENTS)
         break;
-
       update_agent(&agents[idx]);
     }
 
-    // Signal completion for this worker
     pthread_mutex_lock(&job_mtx);
     job_done_workers++;
-
     if (job_done_workers >= WORKER_COUNT) {
-      job_active = 0;                // batch finished
-      pthread_cond_signal(&done_cv); // wake main thread
+      job_active = 0;
+      pthread_cond_signal(&done_cv);
     }
     pthread_mutex_unlock(&job_mtx);
   }
@@ -583,65 +521,92 @@ static void stop_workers(void) {
   }
 }
 
-/* =======================
-   MAIN
-======================= */
-int main(void) {
-  srand(time(NULL));
+// =======================
+// RENDERING
+// =======================
+static void draw_platforms(float camY) {
+  for (int i = 0; i < g_plat_count; i++) {
+    Platform *pl = &g_plats[i];
+    DrawRectangle((int)pl->x, (int)(pl->y + camY), (int)pl->w, (int)pl->h,
+                  pl->one_way ? GRAY : DARKGRAY);
+  }
+}
 
-  InitWindow(1280, 800, "HUMANOID");
-  // SetExitKey(KEY_NULL); //
+static void draw_agent_jk(const Agent *a, float camY, bool highlight) {
+  Vector2 p = a->pl.pos;
+  int x = (int)p.x;
+  int y = (int)(p.y + camY);
+  int r = (int)a->pl.radius;
+
+  if (highlight) {
+    DrawCircle(x, y, r + 6, GOLD);
+    DrawCircle(x, y, r + 3, ORANGE);
+    DrawCircle(x, y, r, WHITE);
+  } else {
+    DrawCircle(x, y, r, RAYWHITE);
+  }
+}
+
+static int find_best_agent_index(void) {
+  int best = 0;
+  float best_alt = agents[0].best_alt;
+
+  for (int i = 1; i < MAX_AGENTS; i++) {
+    if (agents[i].best_alt > best_alt) {
+      best_alt = agents[i].best_alt;
+      best = i;
+    }
+  }
+  return best;
+}
+
+// =======================
+// MAIN
+// =======================
+int main(void) {
+  srand((unsigned int)time(NULL));
+
+  InitWindow(1280, 800, "Jump King (MUZE)");
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
-  SetTargetFPS(60);
+  SetTargetFPS((int)FPS);
 
   build_platforms();
-
   init_agents();
-
   start_workers();
-
-  /*
-  for (int y = 0; y < WORLD_SIZE; y++) {
-    pthread_rwlock_init(&world[x][y].lock, NULL);
-    world[x][y].generated = false;
-    world[x][y].resource_count = 0;
-    world[x][y].mob_spawn_timer = 0.0f;
-  }
-  */
 
   while (!WindowShouldClose()) {
     g_dt = GetFrameTime();
 
-    float groundY = (float)SCREEN_HEIGHT - 40.0f;
-    float camY = 0.0f;
-    float focus_alt = agents[0].best_alt; // or max across agents
-    camY = clampf((groundY - agents[0].pl.pos.y) - 250.0f, 0.0f, WORLD_HEIGHT);
-    camY = -camY; // move world down as you go up
-
+    // simulate
     run_agent_jobs();
+
+    // best agent for highlight + camera focus
+    int best_i = find_best_agent_index();
+    float groundY = (float)SCREEN_HEIGHT - 40.0f;
+
+    float camY = clampf((groundY - agents[best_i].pl.pos.y) - 250.0f, 0.0f,
+                        WORLD_HEIGHT);
+    camY = -camY;
 
     BeginDrawing();
     ClearBackground(BLACK);
 
     draw_platforms(camY);
-    for (int i = 0; i < MAX_AGENTS; i++)
-      draw_agent_jk(&agents[i], camY);
 
     for (int i = 0; i < MAX_AGENTS; i++) {
-      if (!agents[i].alive)
-        continue;
-      draw_agent(&agents[i]);
+      draw_agent_jk(&agents[i], camY, i == best_i);
     }
 
-    DrawText("HUMANOID Simulation", 20, 160, 20, RAYWHITE);
-    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
+    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 20, 20, RAYWHITE);
+    DrawText(TextFormat("Best agent: %d", best_i), 20, 45, 20, RAYWHITE);
+    DrawText(TextFormat("Best alt: %.1f", agents[best_i].best_alt), 20, 70, 20,
+             RAYWHITE);
 
     EndDrawing();
   }
 
   stop_workers();
-
   CloseWindow();
   return 0;
 }
