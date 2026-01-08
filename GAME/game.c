@@ -443,10 +443,10 @@ Tribe tribes[TRIBE_COUNT];
 Agent agents[MAX_AGENTS];
 Player player;
 
-static WorldList g_world_list = {0};
-
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 float TILE_SIZE;
+
+static WorldList g_world_list = {0};
 
 Vector2 camera_pos;
 float WORLD_SCALE = 50.0f;
