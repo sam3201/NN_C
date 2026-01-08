@@ -266,10 +266,11 @@ typedef struct Agent {
   int inv_arrows;
   int inv_shards;
 
-  bool has_axe;
-  bool has_pickaxe;
-  bool has_sword;
-  bool has_armor;
+  bool has_axe = false;
+  bool has_pickaxe = false;
+  bool has_sword = false;
+  bool has_armor = false;
+  bool has_bow = false;
 
   int tool_selected;
   int last_craft_selected;
