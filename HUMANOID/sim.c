@@ -292,6 +292,16 @@ static void stamp_point(float *grid, Vector2 origin, float x, float y,
     grid[idx] = value;
 }
 
+static float epsilon_schedule(int ep) {
+  // high exploration early, then decay
+  float e0 = 0.80f;         // start
+  float e1 = 0.05f;         // floor
+  float half_life = 200.0f; // how fast it decays
+  float t = (float)ep / half_life;
+  float e = e1 + (e0 - e1) * expf(-t);
+  return e;
+}
+
 static void obs_alloc(ObsDyn *o) {
   o->n = 0;
   o->obs = (float *)calloc((size_t)OBS_DIM, sizeof(float));
