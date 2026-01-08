@@ -782,6 +782,9 @@ static void reset_agent_episode(Agent *a) {
 
   // seed initial obs
   encode_observation_jk(a, &a->last_obs);
+  memcpy(a->last_obs, obs.data, sizeof(float) * OBS_DIM);
+  a->has_last_obs = 1;
+
   a->last_action = ACT_NONE;
 
   // keep last_pi clean
