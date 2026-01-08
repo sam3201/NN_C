@@ -2243,33 +2243,6 @@ void draw_resources(void) {
   }
 }
 
-static int agent_face_nearest_mob_in_chunk(Agent *a, Chunk *c, int cx, int cy,
-                                           float maxRange) {
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-  float bestD = 1e9f;
-  Vector2 bestDir = {0};
-
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-
-    Vector2 mw = Vector2Add(origin, m->position);
-    Vector2 dv = Vector2Subtract(mw, a->position);
-    float d = Vector2Length(dv);
-    if (d < bestD && d <= maxRange) {
-      bestD = d;
-      bestDir = dv;
-    }
-  }
-
-  if (bestD >= 1e8f)
-    return 0;
-  agent_set_facing_from(bestDir, a);
-  return 1;
-}
-
 // small helpers for drawing
 static inline Color lerp_color(Color a, Color b, float t) {
   t = clamp01(t);
@@ -3271,6 +3244,33 @@ void update_agent(Agent *a) {
 
   a->reward_accumulator += reward;
   a->age++;
+}
+
+static int agent_face_nearest_mob_in_chunk(Agent *a, Chunk *c, int cx, int cy,
+                                           float maxRange) {
+  Vector2 origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+  float bestD = 1e9f;
+  Vector2 bestDir = {0};
+
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+
+    Vector2 mw = Vector2Add(origin, m->position);
+    Vector2 dv = Vector2Subtract(mw, a->position);
+    float d = Vector2Length(dv);
+    if (d < bestD && d <= maxRange) {
+      bestD = d;
+      bestDir = dv;
+    }
+  }
+
+  if (bestD >= 1e8f)
+    return 0;
+  agent_set_facing_from(bestDir, a);
+  return 1;
 }
 
 static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
