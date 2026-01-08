@@ -808,7 +808,7 @@ static int save_world_to_disk(const char *world_name) {
         fwrite(&sp, sizeof(sp), 1, f);
       }
 
-      // ------------------- projectiles (alive only) -------------------
+      // projectiles (alive only)
       uint32_t prcount = 0;
       for (int i = 0; i < MAX_PROJECTILES; i++)
         if (projectiles[i].alive)
