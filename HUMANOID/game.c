@@ -38,15 +38,22 @@ typedef struct {
   } Neck;
 
   // Body
-  DrawLine(a->x, a->y - 20, a->x, a->y - 40, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Body;
 
   // Legs
-  DrawLine(a->x, a->y - 40, a->x - 10, a->y - 60, RAYWHITE);
-  DrawLine(a->x, a->y - 40, a->x + 10, a->y - 60, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Legs;
 
   // Arms
-  DrawLine(a->x, a->y - 20, a->x - 10, a->y - 40, RAYWHITE);
-  DrawLine(a->x, a->y - 20, a->x + 10, a->y - 40, RAYWHITE);
+  struct {
+    int x;
+    int y;
+  } Arms;
 
   // Feet
   DrawLine(a->x - 10, a->y - 60, a->x - 20, a->y - 80, RAYWHITE);
