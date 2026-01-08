@@ -31,7 +31,8 @@ typedef struct {
 /* =======================
    GLOBAL CONFIG
 ======================= */
-const unsigned int SCREEN_WIDTH = 1280 const unsigned int SCREEN_HEIGHT 800
+const unsigned int SCREEN_WIDTH = 1280;
+const unsigned int SCREEN_HEIGHT 800
 
     pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
