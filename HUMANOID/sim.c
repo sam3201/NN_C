@@ -19,8 +19,8 @@
 #define OBS_DIM 72
 
 // Anti-stuck shaping
-#define STUCK_NO_PROGRESS_SECS                                                 \
-  1.5f // if no new best_alt for this long -> punish / reset
+// if no new best_alt for this long -> punish / reset
+#define STUCK_NO_PROGRESS_SECS 1.5f
 #define STUCK_RESET_SECS 3.0f // hard reset if really stuck
 #define STUCK_PENALTY 0.02f   // per second penalty when stuck (soft shaping)
 
