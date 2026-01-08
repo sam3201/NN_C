@@ -15,10 +15,14 @@
 #include <time.h>
 #include <unistd.h>
 
+// =======================
+// CONFIG
+// =======================
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 800
+
 /* =======================
    GLOBAL CONFIG
 ======================= */
