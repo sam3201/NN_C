@@ -712,6 +712,7 @@ static void reset_agent_episode(Agent *a) {
     int T = a->ep_t;
     float *z = (float *)malloc(sizeof(float) * (size_t)T);
     if (z) {
+      float g = 0.0f;
       for (int t = 0; t < T; t++) {
         float acc = 0.0f, g = 1.0f;
         for (int k = t; k < T; k++) {
