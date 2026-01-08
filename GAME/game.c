@@ -1860,7 +1860,6 @@ static int agent_try_attack_forward(Agent *a, Tribe *tr, float *reward) {
   if (Vector2Length(rd) < 1e-3f)
     rd = (Vector2){1, 0};
 
-  bool using_pickaxe = (a->tool_selected == TOOL_PICKAXE) && a->has_pickaxe;
   bool using_sword = (a->tool_selected == TOOL_SWORD) && a->has_sword;
   float range = agent_attack_range() + (using_sword ? 0.45f : 0.0f);
   int dmg = agent_attack_damage() + (using_sword ? 10 : 0);
