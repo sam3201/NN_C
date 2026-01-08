@@ -1959,7 +1959,7 @@ static int agent_try_harvest_forward(Agent *a, Tribe *tr, float *reward) {
   int dmg = agent_harvest_damage(r->type);
   if (r->type == RES_TREE && using_axe)
     dmg += 10;
-  if ((r->type == RES_ROCK || r->type == RES_GOLD) && a->has_pickaxe)
+  if ((r->type == RES_ROCK || r->type == RES_GOLD) && using_pick)
     dmg += 14;
 
   r->health -= dmg;
