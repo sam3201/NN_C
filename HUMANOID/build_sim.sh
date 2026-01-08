@@ -67,7 +67,7 @@ CC="${CC:-gcc}"
 
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" -w \
-  game.c \
+  sim.c \
   $NN_SRC \
   $MUZE_SRC \
   $SAM_SRC \
@@ -78,13 +78,13 @@ CC="${CC:-gcc}"
   -L"$RAYLIB_SRC" -lraylib -pthread \
   -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo \
   -arch arm64 \
-  -o game
+  -o sim
 
-echo "Compilation successful! Running the game..."
-./game
+echo "Compilation successful! Running the sim..."
+./sim
 status=$?
 
 echo "Game exited with status $status"
-rm -f ./game
+rm -f ./sim
 exit "$status"
 
