@@ -111,11 +111,12 @@ enum {
   ACTION_COUNT
 };
 
+/*
 typedef struct {
   float obs[OBS_DIM];
   int n;
 } ObsFixed;
-
+*/
 typedef struct {
   float *obs; // heap buffer, length = OBS_DIM
   int n;      // should end up == OBS_DIM
