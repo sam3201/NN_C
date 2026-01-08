@@ -647,7 +647,7 @@ void update_agent(Agent *a) {
     float reward = 0.0f;
 
     float head_y = a->pt[P_HEAD].p.y;
-    float hip_y  = a->pt[P_HIP].p.y;
+    float hip_y = a->pt[P_HIP].p.y;
 
     // alive drip
     reward += 0.001f;
@@ -681,7 +681,7 @@ void update_agent(Agent *a) {
 
     // One last learn call to close the episode
     if (a->cortex && a->has_last_transition) {
-      a->cortex->end_episode(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
+      a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                        a->last_action, a->pending_reward, 1 /*terminal*/);
     }
     a->pending_reward = 0.0f;
