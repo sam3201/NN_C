@@ -28,7 +28,7 @@
 #define CELL_SELF 1.0f
 #define CELL_OTHER 2.0f
 #define CELL_PLAT 3.0f
-#define OBS_DIM 72
+#define TILE_PX 20
 
 // World-space view window around the agent (in pixels)
 #define VIEW_W_PX 720.0f
