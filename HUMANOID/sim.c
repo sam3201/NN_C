@@ -487,6 +487,43 @@ static void update_agent(Agent *a) {
 
     a->pending_reward += 0.001f; // alive drip
 
+    // --------------------------
+    // Anti-stuck reward shaping
+    // --------------------------
+
+    // 1) "Progress" = improving best_alt
+    if (a->best_alt > a->last_best_alt + 0.001f) {
+      a->last_best_alt = a->best_alt;
+      a->time_since_progress = 0.0f;
+    } else {
+      a->time_since_progress += FIXED_DT;
+    }
+
+    // 2) "Stillness" = barely moving in position
+    float dxp = p->pos.x - a->last_pos.x;
+    float dyp = p->pos.y - a->last_pos.y;
+    float d2 = dxp * dxp + dyp * dyp;
+
+    if (d2 < (STILL_EPS_PX * STILL_EPS_PX)) {
+      a->pos_still_time += FIXED_DT;
+    } else {
+      a->pos_still_time = 0.0f;
+      a->last_pos = p->pos;
+    }
+
+    // Soft penalty if we haven't made upward progress for a bit
+    if (a->time_since_progress > STUCK_NO_PROGRESS_SECS) {
+      a->pending_reward -= STUCK_PENALTY * FIXED_DT;
+    }
+
+    // Hard reset if REALLY stuck (no progress for long OR totally still)
+    if (a->time_since_progress > STUCK_RESET_SECS ||
+        a->pos_still_time > (STILL_SECS + 0.5f)) {
+      a->pending_reward -= 0.2f; // terminal penalty so it *feels* bad
+      a->alive = false;
+      break;
+    }
+
     if (p->pos.y > groundY + 200.0f) {
       a->pending_reward -= 0.5f;
       a->alive = false;
