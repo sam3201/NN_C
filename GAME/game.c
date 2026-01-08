@@ -5048,6 +5048,13 @@ static void do_pause_menu(void) {
            RAYWHITE);
 }
 
+static void save_current_world_session(void) {
+  if (g_world_name[0] == '\0')
+    return;
+  save_world_to_disk(g_world_name);
+  save_models_to_disk(g_world_name);
+}
+
 static void do_world_select_screen(void) {
   // Refresh list on first entry or when empty
   static int initialized = 0;
