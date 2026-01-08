@@ -108,6 +108,13 @@
 ======================= */
 
 typedef enum {
+  STATE_TITLE = 0,
+  STATE_WORLD_SELECT,
+  STATE_WORLD_CREATE,
+  STATE_PLAYING
+} GameState;
+
+typedef enum {
   TOOL_HAND = 0,
   TOOL_AXE = 1,
   TOOL_PICKAXE = 2,
