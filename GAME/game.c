@@ -4899,7 +4899,7 @@ int main(void) {
       if (IsKeyPressed(KEY_F5))
         save_world_to_disk(g_world_name);
       if (IsKeyPressed(KEY_P))
-        g_state = STATE_TITLE;
+        g_state = STATE_PAUSED;
     } else if (g_state == STATE_TITLE) {
 
       DrawText("SAMCRAFT", 40, 40, 52, RAYWHITE);
