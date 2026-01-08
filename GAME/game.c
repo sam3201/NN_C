@@ -663,7 +663,7 @@ static int save_world_to_disk(const char *world_name) {
   h.magic[1] = 'A';
   h.magic[2] = 'M';
   h.magic[3] = 'W';
-  h.version = 1;
+  h.version = 2;
   h.seed = g_world_seed;
   h.world_size = WORLD_SIZE;
   h.chunk_size = CHUNK_SIZE;
