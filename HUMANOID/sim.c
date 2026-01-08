@@ -489,8 +489,8 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   if (a->last_action == ACT_RELEASE)
     act_release = 1.0f;
 
-  // Fill OBS_EXTRA = 14
-  // indices 0..13 (relative to k0=OBS_GRID)
+  // Fill OBS_EXTRA = 19
+  // indices 0..18 (relative to k0=OBS_GRID)
   out->obs[k++] = px;                  // 0
   out->obs[k++] = py;                  // 1
   out->obs[k++] = vx;                  // 2
@@ -502,10 +502,17 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
   out->obs[k++] = stuck_n;             // 8
   out->obs[k++] = dx_n;                // 9
   out->obs[k++] = dy_n;                // 10
-  out->obs[k++] = charge_rate_n;       // 11  NEW
-  out->obs[k++] = falling;             // 12  NEW
-  out->obs[k++] = 1.0f;                // 13 bias
+  out->obs[k++] = charge_rate_n;       // 11
+  out->obs[k++] = falling;             // 12
 
+  // NEW movement obs
+  out->obs[k++] = move_intent; // 13  (-1..1)
+  out->obs[k++] = act_left;    // 14
+  out->obs[k++] = act_right;   // 15
+  out->obs[k++] = act_charge;  // 16
+  out->obs[k++] = act_release; // 17
+
+  out->obs[k++] = 1.0f; // 18 bias
   while (k < OBS_DIM)
     out->obs[k++] = 0.0f;
   out->n = OBS_DIM;
