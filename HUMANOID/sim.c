@@ -59,6 +59,10 @@
 #define CELL_GROUND 4.0f
 #define CELL_LEDGE 5.0f // thin "top surface" highlight (helps massively)
 
+#define PLATFORM_RAMP_MAX 32
+#define RAMP_SLIDE_SCALE 0.45f // gravity component along ramp -> vx
+#define CELL_RAMP 4.5f         // optional (between ground & ledge)
+
 #define OBS_EXTRA 19
 
 // ------------ Observation Grid (runtime) ------------
