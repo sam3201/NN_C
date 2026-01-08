@@ -20,6 +20,8 @@
 // =======================
 #define FPS 60.0
 
+#define OBS_DIM 64
+
 #define WORKER_COUNT 4
 #define MAX_AGENTS 128
 
