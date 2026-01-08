@@ -60,7 +60,7 @@ printf "  %s\n" $SAM_SRC
 # -----------------------
 # Compile
 # -----------------------
-echo "Compiling game..."
+echo "Compiling sim..."
 
 # Use clang on macOS if you want; gcc often maps to clang anyway.
 CC="${CC:-gcc}"
