@@ -686,9 +686,9 @@ static int save_world_to_disk(const char *world_name) {
   h.has_armor = has_armor;
   h.has_bow = has_bow;
 
-  uint32_t agent_count;
-  uint32_t pickup_count;     // number of alive pickups written
-  uint32_t projectile_count; // number of alive projectiles written
+  h.agent_count = 0;
+  h.pickup_count;     // number of alive pickups written
+  h.projectile_count; // number of alive projectiles written
 
   for (int t = 0; t < TRIBE_COUNT; t++) {
     h.tribe_integrity[t] = tribes[t].integrity;
