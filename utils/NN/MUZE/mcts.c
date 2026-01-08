@@ -125,7 +125,8 @@ static int select_puct(const Node *n, float c_puct) {
 }
 
 /* Not a true Dirichlet sampler; good enough for exploration noise at root. */
-static void add_dirichlet_noise(Node *root, float alpha, float eps, RNG *rng) {
+static void add_dirichlet_noise(Node *root, float alpha, float eps,
+                                MCTSRng *rng) {
   if (!root || alpha <= 0.0f || eps <= 0.0f)
     return;
 
