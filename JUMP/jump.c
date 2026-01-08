@@ -769,6 +769,22 @@ static void update_agent(Agent *a) {
     a->control_timer +=
         (a->control_period > 0) ? a->control_period : (1.0f / 20.0f);
 
+    MCTSRng rng = {.ctx = a, .rand01 = agent_rand01};
+    MCTSParams mp = a->mcts_params; // store in agent or global
+    MCTSResult mr = mcts_run(g_model, a->last_obs.obs, &mp, &rng);
+
+    // sample action from mr.pi using agent rng
+    float r = frand01(&a->rng);
+    float cum = 0.f;
+    int chosen = 0;
+    for (int i = 0; i < ACTION_COUNT; i++) {
+      cum += mr.pi[i];
+      if (r <= cum) {
+        chosen = i;
+        break;
+      }
+    }
+
     if (a->cortex && a->has_last_transition) {
       a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
                        a->last_action, a->pending_reward, 0);
