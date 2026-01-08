@@ -23,7 +23,7 @@
 #define OBS_DIM 72
 
 #define WORKER_COUNT 4
-#define MAX_AGENTS 128
+#define MAX_AGENTS 64
 
 #define FIXED_DT                                                               \
   (1.0f / 120.0f)            // stable for humanoids; 60 can work but is touchy
