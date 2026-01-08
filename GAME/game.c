@@ -179,8 +179,18 @@ typedef enum {
   ACTION_FIRE,
   ACTION_HARVEST,
   ACTION_EAT,
-  ACTION_CRAFT,
-  ACTION_NONE,
+  // ACTION_CRAFT,
+  ACTION_CRAFT_AXE
+
+      ACTION_CRAFT_PICKAXE
+
+          ACTION_CRAFT_SWORD
+
+              ACTION_CRAFT_ARMOR
+
+                  ACTION_CRAFT_BOW
+
+                      ACTION_CRAFT_ARROWS ACTION_NONE,
   ACTION_COUNT
 } ActionType;
 
