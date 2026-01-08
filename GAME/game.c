@@ -4013,7 +4013,7 @@ static int agent_face_nearest_mob_in_chunk(Agent *a, Chunk *c, int cx, int cy,
 /* =======================
    AGENT UPDATE
 ======================= */
-void update_agent(Agent *a) {
+void update_agent(Agent *a, float *reward) {
   if (!a || !a->alive)
     return;
 
