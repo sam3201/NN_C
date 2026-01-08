@@ -755,6 +755,7 @@ static void init_agents(void) {
     uint32_t base = (uint32_t)time(NULL);
     a->rng = base ^ (0x9e3779b9u * (uint32_t)(i + 1));
 
+    a->ep = episode_alloc();
     a->episodes_done = 0; // IMPORTANT: define episode 0 explicitly
 
     a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
