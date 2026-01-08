@@ -3101,6 +3101,13 @@ void update_agent(Agent *a) {
     a->fire_cd -= dt;
   if (a->flash_timer > 0.0f)
     a->flash_timer -= dt;
+  if (a->fire_latch_timer > 0.0f) {
+    a->fire_latch_timer -= dt;
+    if (a->fire_latch_timer <= 0.0f) {
+      a->fire_latch_timer = 0.0f;
+      a->fire_latched = 0;
+    }
+  }
 
   // --- passive environment dynamics (NOT policy overrides) ---
   float dBase = Vector2Distance(a->position, tr->base.position);
