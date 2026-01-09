@@ -106,9 +106,8 @@ MuModel *mu_model_create(const MuConfig *cfg) {
 }
 
 MuModel *mu_model_create_toy(int obs_dim, int action_count) {
-  MuConfig cfg = {.obs_dim = obs_dim,
-                  .latent_dim = /* whatever */,
-                  .action_count = action_count};
+  MuConfig cfg = {
+      .obs_dim = obs_dim, .latent_dim = obs_dim, .action_count = action_count};
   MuModel *m = (MuModel *)calloc(1, sizeof(MuModel));
   m->cfg = cfg;
 
