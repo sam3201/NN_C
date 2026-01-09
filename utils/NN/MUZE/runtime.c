@@ -78,27 +78,150 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
   trainer_train_from_replay(model, rt->rb, &tc);
 }
 
-// Chooses action + fills out_pi[A].
-// If cortex->use_mcts, uses MCTS (requires mcts_model).
-// Else uses cortex->encode + cortex->policy.
-// Applies policy_temperature + policy_epsilon.
+#include <math.h>
+#include <string.h>
+
+static void normalize_probs(float *p, size_t n) {
+  float sum = 0.0f;
+  for (size_t i = 0; i < n; i++) {
+    if (p[i] < 0.0f)
+      p[i] = 0.0f;
+    sum += p[i];
+  }
+  if (sum <= 1e-12f) {
+    float u = (n ? 1.0f / (float)n : 0.0f);
+    for (size_t i = 0; i < n; i++)
+      p[i] = u;
+    return;
+  }
+  float inv = 1.0f / sum;
+  for (size_t i = 0; i < n; i++)
+    p[i] *= inv;
+}
+
+static void apply_temperature(float *p, size_t n, float temp) {
+  // temp <= 0 => act like argmax (very sharp). We'll approximate by hard
+  // one-hot.
+  if (n == 0)
+    return;
+
+  if (temp <= 0.0f) {
+    size_t best = 0;
+    float bestv = p[0];
+    for (size_t i = 1; i < n; i++) {
+      if (p[i] > bestv) {
+        bestv = p[i];
+        best = i;
+      }
+    }
+    for (size_t i = 0; i < n; i++)
+      p[i] = (i == best) ? 1.0f : 0.0f;
+    return;
+  }
+
+  // Standard: p_i <- p_i^(1/temp)
+  float invT = 1.0f / temp;
+  for (size_t i = 0; i < n; i++) {
+    float x = p[i];
+    // avoid powf(0, something)
+    p[i] = (x <= 0.0f) ? 0.0f : powf(x, invT);
+  }
+  normalize_probs(p, n);
+}
+
+static void apply_epsilon_mix(float *p, size_t n, float eps) {
+  if (n == 0)
+    return;
+  if (eps <= 0.0f)
+    return;
+  if (eps > 1.0f)
+    eps = 1.0f;
+
+  float u = 1.0f / (float)n;
+  for (size_t i = 0; i < n; i++) {
+    p[i] = (1.0f - eps) * p[i] + eps * u;
+  }
+  normalize_probs(p, n);
+}
+
+static int sample_from_probs(const float *p, size_t n, MCTSRng *rng) {
+  if (n == 0)
+    return -1;
+
+  float r = 0.0f;
+  if (rng && rng->rand01)
+    r = rng->rand01(rng->ctx);
+  else
+    r = (float)rand() / (float)RAND_MAX;
+
+  float c = 0.0f;
+  for (size_t i = 0; i < n; i++) {
+    c += p[i];
+    if (r <= c)
+      return (int)i;
+  }
+  return (int)(n - 1);
+}
+
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng) {
-  if (cortex->use_mcts && cortex->mcts_model) {
-    MCTSResult mr = mcts_run(cortex->mcts_model, obs, cortex->mcts_params, rng);
-    float *out_pi = malloc(sizeof(float) * action_count);
-    float memcpy(out_pi, mr.pi, sizeof(float) * action_count);
-    // sample action from out_pi (after epsilon/temperature if you want them on
-    // top)
+  if (!cortex || !obs || !out_pi || action_count == 0)
+    return -1;
+
+  // ---- Case 1: MCTS ----
+  if (cortex->use_mcts) {
+    if (!cortex->mcts_model)
+      return -1;
+
+    // NOTE: match your actual signature:
+    // In your jump.c you used: mcts_run(model, obs, &params, &rng)
+    MCTSResult mr =
+        mcts_run(cortex->mcts_model, obs, &cortex->mcts_params, rng);
+
+    // Copy pi out
+    size_t n = action_count;
+    // If mr.pi is exactly action_count, this is fine. If not, clamp.
+    // (Assuming mr.pi length == action_count in your codebase.)
+    memcpy(out_pi, mr.pi, sizeof(float) * n);
+
+    normalize_probs(out_pi, n);
+    apply_temperature(out_pi, n, cortex->policy_temperature);
+    apply_epsilon_mix(out_pi, n, cortex->policy_epsilon);
+
+    int a = sample_from_probs(out_pi, n, rng);
 
     mcts_result_free(&mr);
-    return mr.chosen_action;
+    return a;
   }
-  cortex->encode(...)
-      ->latent_seq
 
-          cortex->policy(...)
-      ->out_pi
+  // ---- Case 2: Direct policy (SAM bridge, etc.) ----
+  if (!cortex->encode || !cortex->policy)
+    return -1;
 
-          cortex->free_latent_seq(...) return -1;
+  long double **latent_seq = NULL;
+  size_t seq_len = 0;
+
+  // encode may want non-const float*
+  cortex->encode(cortex->brain, (float *)obs, obs_dim, &latent_seq, &seq_len);
+
+  if (!latent_seq || seq_len == 0) {
+    if (cortex->free_latent_seq)
+      cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
+    // fallback to uniform
+    float u = 1.0f / (float)action_count;
+    for (size_t i = 0; i < action_count; i++)
+      out_pi[i] = u;
+    return sample_from_probs(out_pi, action_count, rng);
+  }
+
+  cortex->policy(cortex->brain, latent_seq, seq_len, out_pi, action_count);
+
+  if (cortex->free_latent_seq)
+    cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
+
+  normalize_probs(out_pi, action_count);
+  apply_temperature(out_pi, action_count, cortex->policy_temperature);
+  apply_epsilon_mix(out_pi, action_count, cortex->policy_epsilon);
+
+  return sample_from_probs(out_pi, action_count, rng);
 }
