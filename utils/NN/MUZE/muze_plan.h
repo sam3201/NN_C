@@ -3,7 +3,7 @@
 
 #include "muze_cortex.h"
 
-int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
-              size_t action_count);
+int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim, size_t action_count,
+              MCTSRng *rng);
 
 #endif
