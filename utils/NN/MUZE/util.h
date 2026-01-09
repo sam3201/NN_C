@@ -4,7 +4,7 @@
 #define VERSION 0
 
 #ifdef debug
-#define DEBUG(x) printf("VERSION: %s\n", x)
+#define DEBUG(x) printf("VERSION: %d %s\n", VERSION, x)
 #else
 #define DEBUG(x)
 #endif
