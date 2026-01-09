@@ -101,17 +101,10 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
 
     return idx;
   }
-  @ @ void rb_push(ReplayBuffer * rb, const float *obs, const float *pi,
-                   float z) {
+  void rb_push(ReplayBuffer * rb, const float *obs, const float *pi, float z) {
     if (!rb || !obs || !pi)
       return;
 
-    - // We MUST make transition fields valid too; use next_obs = obs as safe
-        - // default. (Trainer dynamics can still learn something; or you can
-          // skip
-        - // done=0.)
-        -rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs,
-                      /*done*/ 0);
     // Keep transition fields valid: next_obs = obs, action=0, reward=0,
     // done=0
     rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
