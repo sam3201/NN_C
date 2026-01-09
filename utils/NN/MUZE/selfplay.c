@@ -6,13 +6,9 @@
 
 static void compute_discounted_returns(const float *rewards, int T, float gamma,
                                        float *z_out) {
-  for (int t = 0; t < T; t++) {
-    float acc = 0.0f;
-    float g = 1.0f;
-    for (int k = t; k < T; k++) {
-      acc += g * rewards[k];
-      g *= gamma;
-    }
+  float acc = 0.0f;
+  for (int t = T - 1; t >= 0; --t) {
+    acc = rewards[t] + gamma * acc;
     z_out[t] = acc;
   }
 }
