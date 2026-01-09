@@ -46,8 +46,6 @@ static void apply_temperature_to_probs(float *p, size_t n, float temperature) {
   renorm_probs(p, n);
 }
 
-// muze_plan.c
-
 static float rand01(MCTSRng *rng) {
   if (rng && rng->rand01)
     return rng->rand01(rng->ctx);
