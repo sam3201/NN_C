@@ -77,3 +77,10 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
 
   trainer_train_from_replay(model, rt->rb, &tc);
 }
+
+// Chooses action + fills out_pi[A].
+// If cortex->use_mcts, uses MCTS (requires mcts_model).
+// Else uses cortex->encode + cortex->policy.
+// Applies policy_temperature + policy_epsilon.
+int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
+                       float *out_pi, size_t action_count, MCTSRng *rng);
