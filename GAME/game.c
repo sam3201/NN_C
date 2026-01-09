@@ -4549,6 +4549,7 @@ void update_player(void) {
   }
   if (IsKeyDown(KEY_D)) {
     player.position.x += move;
+    player.facing.x = 1.0f;
     moving = true;
   }
   // --- zoom controls ---
