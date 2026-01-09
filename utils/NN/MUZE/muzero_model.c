@@ -105,48 +105,6 @@ MuModel *mu_model_create(const MuConfig *cfg) {
   return m;
 }
 
-MuModel *mu_model_create_toy(int obs_dim, int action_count) {
-  MuConfig cfg = {
-      .obs_dim = obs_dim, .latent_dim = obs_dim, .action_count = action_count};
-  MuModel *m = (MuModel *)calloc(1, sizeof(MuModel));
-  m->cfg = cfg;
-
-  int O = cfg.obs_dim;
-  int L = cfg.latent_dim;
-  int A = cfg.action_count;
-
-  m->repr_W_count = O * L;
-  m->pred_W_count = (A + 1) * L;
-  m->dyn_W_count = L * (L + 1);
-  m->rew_W_count = L;
-
-  m->repr_W = (float *)malloc(sizeof(float) * (size_t)m->repr_W_count);
-  m->pred_W = (float *)malloc(sizeof(float) * (size_t)m->pred_W_count);
-  m->dyn_W = (float *)malloc(sizeof(float) * (size_t)m->dyn_W_count);
-  m->rew_W = (float *)malloc(sizeof(float) * (size_t)m->rew_W_count);
-
-  m->rew_b = 0.0f;
-
-  // init (example)
-  for (int i = 0; i < m->repr_W_count; i++)
-    m->repr_W[i] = 0.01f;
-  for (int i = 0; i < m->pred_W_count; i++)
-    m->pred_W[i] = 0.01f;
-  for (int i = 0; i < m->dyn_W_count; i++)
-    m->dyn_W[i] = 0.01f;
-  for (int i = 0; i < m->rew_W_count; i++)
-    m->rew_W[i] = 0.01f;
-
-  // Either use defaults:
-  m->repr = NULL;
-  m->predict = NULL;
-  m->dynamics = NULL;
-  // OR set hooks that read these arrays.
-
-  m->runtime = mu_runtime_create(m, 0.95f);
-  return m;
-}
-
 /* ------------------------
    Free model
    ------------------------ */
