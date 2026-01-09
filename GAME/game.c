@@ -321,6 +321,7 @@ typedef struct Agent {
 
 typedef struct {
   Vector2 position;
+  Vector2 facing;
   float health;
   float stamina;
 } Player;
