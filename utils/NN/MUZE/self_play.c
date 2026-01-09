@@ -143,6 +143,20 @@ void selfplay_run(MuModel *model, void *env_state,
         break;
       }
 
+      // after the episode ends (after while loop), backfill discounted returns:
+      if (step > 0) {
+        float *z = (float *)malloc(sizeof(float) * (size_t)step);
+        if (z) {
+          compute_discounted_returns(reward_buf, step, gamma, z);
+
+          for (int t2 = 0; t2 < step; t2++) {
+            rb_set_z(rb, idx_buf[t2], z[t2]); // updates the same stored entry
+          }
+
+          free(z);
+        }
+      }
+
       float reward = 0.0f;
       int done_flag = 0;
       int ret = env_step(env_state, chosen, next_obs, &reward, &done_flag);
