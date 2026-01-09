@@ -5,26 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct ReplayBuffer {
-  size_t capacity;
-  size_t size;
-  size_t write_idx;
-
-  int obs_dim;
-  int action_count;
-
-  // MuZero tuples
-  float *obs_buf; /* capacity * obs_dim */
-  float *pi_buf;  /* capacity * action_count */
-  float *z_buf;   /* capacity */
-
-  // Transition tuples
-  int *a_buf;          /* capacity */
-  float *r_buf;        /* capacity */
-  float *next_obs_buf; /* capacity * obs_dim */
-  int *done_buf;       /* capacity */
-};
-
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count) {
   ReplayBuffer *rb = (ReplayBuffer *)malloc(sizeof(ReplayBuffer));
   if (!rb)
