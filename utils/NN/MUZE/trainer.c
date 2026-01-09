@@ -25,9 +25,44 @@ static float cross_entropy(const float *pi_target, const float *p_pred, int A) {
 
 void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
                             const TrainerConfig *cfg) {
-  // Current MUZE replay buffer stores (obs, pi, z), not raw transitions.
-  // So "dynamics training" is effectively the same training pass for now.
-  trainer_train_from_replay(model, rb, cfg);
+  if (!model || !rb || !cfg)
+    return;
+
+  size_t n = rb_size(rb);
+  if ((int)n < cfg->min_replay_size)
+    return;
+
+  int B = cfg->batch_size;
+  int O = muzero_model_obs_dim(model);
+
+  float *obs = (float *)malloc(sizeof(float) * B * O);
+  float *obs2 = (float *)malloc(sizeof(float) * B * O);
+  int *a = (int *)malloc(sizeof(int) * B);
+  float *r = (float *)malloc(sizeof(float) * B);
+  int *done = (int *)malloc(sizeof(int) * B);
+
+  if (!obs || !obs2 || !a || !r || !done) {
+    free(obs);
+    free(obs2);
+    free(a);
+    free(r);
+    free(done);
+    return;
+  }
+
+  for (int step = 0; step < cfg->train_steps; step++) {
+    int actual = rb_sample_transition(rb, B, obs, a, r, obs2, done);
+    if (actual <= 0)
+      break;
+
+    muzero_model_train_dynamics_batch(model, obs, a, r, obs2, actual, cfg->lr);
+  }
+
+  free(obs);
+  free(obs2);
+  free(a);
+  free(r);
+  free(done);
 }
 
 void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
