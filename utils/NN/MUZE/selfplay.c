@@ -1,13 +1,9 @@
 #include "selfplay.h"
-#include "toy_env.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* Helper: compute discounted returns for an episode of length T.
-   rewards[0..T-1], gamma -> returns z_t = sum_{k=0..T-1-t} gamma^k *
-   rewards[t+k] output z_out must be length T
-*/
 static void compute_discounted_returns(const float *rewards, int T, float gamma,
                                        float *z_out) {
   for (int t = 0; t < T; t++) {
@@ -21,11 +17,36 @@ static void compute_discounted_returns(const float *rewards, int T, float gamma,
   }
 }
 
-/* Runs self-play episodes and pushes training tuples into replay buffer */
+static float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+static float clampf(float x, float lo, float hi) {
+  if (x < lo) return lo;
+  if (x > hi) return hi;
+  return x;
+}
+
+static int sample_from_probs_rng(const float *p, int n, MCTSRng *rng) {
+  if (!p || n <= 0) return 0;
+
+  float r = 0.0f;
+  if (rng && rng->rand01) r = rng->rand01(rng->ctx);
+  else r = (float)rand() / (float)RAND_MAX;
+
+  float c = 0.0f;
+  for (int i = 0; i < n; i++) {
+    c += p[i];
+    if (r <= c) return i;
+  }
+  return n - 1;
+}
+
 void selfplay_run(MuModel *model, void *env_state,
                   selfplay_env_reset_fn env_reset,
-                  selfplay_env_step_fn env_step, MCTSParams *mcts_params,
-                  SelfPlayParams *sp_params, ReplayBuffer *rb) {
+                  selfplay_env_step_fn env_step,
+                  MCTSParams *mcts_params,
+                  SelfPlayParams *sp_params,
+                  ReplayBuffer *rb,
+                  MCTSRng *rng) {
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
 
@@ -33,83 +54,137 @@ void selfplay_run(MuModel *model, void *env_state,
   int A = model->cfg.action_count;
   int max_steps = sp_params->max_steps > 0 ? sp_params->max_steps : 200;
 
-  /* temporary buffers for one episode */
-  float *obs_buf = malloc(sizeof(float) * max_steps * obs_dim);
-  float *pi_buf = malloc(sizeof(float) * max_steps * A);
-  float *reward_buf = malloc(sizeof(float) * max_steps);
-  int *act_buf = malloc(sizeof(int) * max_steps);
+  float gamma = sp_params->gamma;
+  if (!(gamma > 0.0f && gamma <= 1.0f)) gamma = 0.997f;
+
+  int log_every = sp_params->log_every > 0 ? sp_params->log_every : 10;
+
+  float *obs_buf = (float *)malloc(sizeof(float) * (size_t)max_steps * (size_t)obs_dim);
+  float *pi_buf  = (float *)malloc(sizeof(float) * (size_t)max_steps * (size_t)A);
+  float *reward_buf = (float *)malloc(sizeof(float) * (size_t)max_steps);
+  int   *act_buf = (int *)malloc(sizeof(int) * (size_t)max_steps);
+
+  float *obs0 = (float *)malloc(sizeof(float) * (size_t)obs_dim);
+
+  if (!obs_buf || !pi_buf || !reward_buf || !act_buf || !obs0) {
+    free(obs_buf); free(pi_buf); free(reward_buf); free(act_buf); free(obs0);
+    return;
+  }
+
+  double avg_return = 0.0;
+  double avg_root_v = 0.0;
+  int avg_count = 0;
 
   for (int ep = 0; ep < sp_params->total_episodes; ep++) {
-    /* reset env */
-    float *obs0 = malloc(sizeof(float) * obs_dim);
     env_reset(env_state, obs0);
 
     int step = 0;
     int done = 0;
-    float obs_cur[obs_dim];
-    memcpy(obs_cur, obs0, sizeof(float) * obs_dim);
+
+    float *obs_cur = (float *)malloc(sizeof(float) * (size_t)obs_dim);
+    if (!obs_cur) break;
+    memcpy(obs_cur, obs0, sizeof(float) * (size_t)obs_dim);
+
+    float ep_return = 0.0f;
+    float ep_root_v_sum = 0.0f;
 
     while (!done && step < max_steps) {
-      /* run MCTS for current obs */
+      // ---- temperature schedule ----
+      float t = 1.0f;
+      if (sp_params->temp_decay_episodes > 0) {
+        t = (float)ep / (float)sp_params->temp_decay_episodes;
+      }
+      t = clampf(t, 0.0f, 1.0f);
+
+      float temp = lerp(sp_params->temp_start, sp_params->temp_end, t);
+      if (!(temp > 0.0f)) temp = 1e-6f;
+
+      // ---- MCTS params for this step ----
       MCTSParams mp = *mcts_params;
-      mp.temperature = sp_params->temperature > 0.0f ? sp_params->temperature
-                                                     : mcts_params->temperature;
+      mp.temperature = temp;
 
-      MCTSResult mr = mcts_run(model, obs_cur, &mp, NULL);
-
-      /* sample action according to pi (with rng) */
-      float r = (float)rand() / (float)RAND_MAX;
-      float cum = 0.0f;
-      int chosen = 0;
-      for (int a = 0; a < A; a++) {
-        cum += mr.pi[a];
-        if (r <= cum) {
-          chosen = a;
-          break;
-        }
+      // Root noise during self-play (MuZero)
+      if (sp_params->dirichlet_alpha > 0.0f && sp_params->dirichlet_eps > 0.0f) {
+        mp.dirichlet_alpha = sp_params->dirichlet_alpha;
+        mp.dirichlet_eps   = sp_params->dirichlet_eps;
       }
 
-      /* store obs and pi */
-      memcpy(obs_buf + step * obs_dim, obs_cur, sizeof(float) * obs_dim);
-      memcpy(pi_buf + step * A, mr.pi, sizeof(float) * A);
+      // Run MCTS using rng
+      MCTSResult mr = mcts_run(model, obs_cur, &mp, rng);
+      ep_root_v_sum += mr.root_value;
 
-      /* step env */
-      float next_obs[obs_dim];
+      // Store obs and pi
+      memcpy(obs_buf + (size_t)step * (size_t)obs_dim, obs_cur,
+             sizeof(float) * (size_t)obs_dim);
+      memcpy(pi_buf + (size_t)step * (size_t)A, mr.pi,
+             sizeof(float) * (size_t)A);
+
+      // Choose action by sampling MCTS policy (already temperature’d inside mcts->pi)
+      int chosen = sample_from_probs_rng(mr.pi, A, rng);
+      act_buf[step] = chosen;
+
+      // Step env
+      float *next_obs = (float *)malloc(sizeof(float) * (size_t)obs_dim);
+      if (!next_obs) {
+        mcts_result_free(&mr);
+        break;
+      }
+
       float reward = 0.0f;
       int done_flag = 0;
       int ret = env_step(env_state, chosen, next_obs, &reward, &done_flag);
-      if (ret != 0) {
-        /* env error: stop episode */
-        done_flag = 1;
-      }
-      reward_buf[step] = reward;
-      act_buf[step] = chosen;
+      if (ret != 0) done_flag = 1;
 
-      // store raw transition for dynamics training
+      reward_buf[step] = reward;
+      ep_return += reward;
+
+      // Store transition for dynamics training
       rb_push_transition(rb, obs_cur, chosen, reward, next_obs, done_flag);
 
-      /* advance */
-      memcpy(obs_cur, next_obs, sizeof(float) * obs_dim);
+      // Advance
+      memcpy(obs_cur, next_obs, sizeof(float) * (size_t)obs_dim);
+      free(next_obs);
+
       step++;
+      if (done_flag) done = 1;
 
       mcts_result_free(&mr);
-
-      if (done_flag)
-        done = 1;
     }
 
-    /* compute discounted returns z_t and push samples to replay buffer */
-    float *z = malloc(sizeof(float) * step);
-    compute_discounted_returns(reward_buf, step, sp_params->gamma, z);
-    for (int t = 0; t < step; t++) {
-      rb_push(rb, obs_buf + t * obs_dim, pi_buf + t * A, z[t]);
+    // discounted returns z_t + push (obs,pi,z)
+    if (step > 0) {
+      float *z = (float *)malloc(sizeof(float) * (size_t)step);
+      if (z) {
+        compute_discounted_returns(reward_buf, step, gamma, z);
+        for (int t2 = 0; t2 < step; t2++) {
+          rb_push(rb,
+                  obs_buf + (size_t)t2 * (size_t)obs_dim,
+                  pi_buf + (size_t)t2 * (size_t)A,
+                  z[t2]);
+        }
+        free(z);
+      }
     }
-    free(z);
-    free(obs0);
+
+    free(obs_cur);
+
+    // metrics
+    float mean_root_v = (step > 0) ? (ep_root_v_sum / (float)step) : 0.0f;
+
+    avg_return = 0.95 * avg_return + 0.05 * (double)ep_return;
+    avg_root_v = 0.95 * avg_root_v + 0.05 * (double)mean_root_v;
+    avg_count++;
+
+    if ((ep % log_every) == 0) {
+      printf("[selfplay] ep=%d steps=%d return=%.3f avg_return=%.3f rootV=%.3f avg_rootV=%.3f replay=%zu\n",
+             ep, step, ep_return, (float)avg_return, mean_root_v, (float)avg_root_v, rb_size(rb));
+    }
   }
 
   free(obs_buf);
   free(pi_buf);
   free(reward_buf);
   free(act_buf);
+  free(obs0);
 }
+
