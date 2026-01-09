@@ -274,10 +274,13 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
         mcts_run(cortex->mcts_model, obs, &cortex->mcts_params, rng);
 
     // Copy pi out
-    size_t n = action_count;
-    // If mr.pi is exactly action_count, this is fine. If not, clamp.
-    // (Assuming mr.pi length == action_count in your codebase.)
+    +size_t n = action_count;
+    if ((size_t)mr.action_count < n)
+      n = (size_t)mr.action_count;
     memcpy(out_pi, mr.pi, sizeof(float) * n);
+    // if caller provided larger buffer, pad remainder uniformly
+    for (size_t i = n; i < action_count; i++)
+      out_pi[i] = 0.0f;
 
     normalize_probs(out_pi, n);
     apply_temperature(out_pi, n, cortex->policy_temperature);
