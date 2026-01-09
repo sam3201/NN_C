@@ -110,7 +110,6 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
   // done=0
   rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
 }
-}
 
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
                         float reward, const float *next_obs, int done) {
