@@ -59,7 +59,7 @@ void mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg) {
 TrainerConfig mu_runtime_get_trainer_config(const MuRuntime *rt) {
   if (!rt)
     return trainer_default_cfg();
-  return rt->has_trainer_cfg ? rt->trainer_cfg : trainer_default_cfg();
+  return rt->has_cfg ? rt->cfg : trainer_default_cfg();
 }
 
 void mu_runtime_free(MuRuntime *rt) {
