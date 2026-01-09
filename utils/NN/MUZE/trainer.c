@@ -82,15 +82,13 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
                                         &lat_mse, &rew_mse);
     }
 
-    +if (!is_finite_float(lat_mse) || !is_finite_float(rew_mse)) {
-      +printf("[dyn] NaN/Inf detected at step=%d (lat_mse=%f rew_mse=%f)\n",
-              +step, lat_mse, rew_mse);
-      +break;
-      +
+    if (!is_finite_float(lat_mse) || !is_finite_float(rew_mse)) {
+      printf("[dyn] NaN/Inf detected at step=%d (lat_mse=%f rew_mse=%f)\n",
+             +step, lat_mse, rew_mse);
+      break;
     }
-    +
 
-        if ((step % 50) == 0) {
+    if ((step % 50) == 0) {
       printf("[dyn] step=%d lat_mse=%.6f rew_mse=%.6f replay=%zu\n", step,
              lat_mse, rew_mse, rb_size(rb));
     }
