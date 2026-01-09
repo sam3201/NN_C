@@ -68,6 +68,8 @@ void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
 void mu_model_train(MuModel *m);
+void mu_model_train(MuModel *m);
+void mu_model_train_with_cfg(MuModel *m, const TrainerConfig *cfg); // NEW
 
 /* ---- toy model (MuZero-style “real model” for the toy env) ---- */
 MuModel *mu_model_create_toy(int size, int action_count);
