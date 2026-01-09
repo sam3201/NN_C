@@ -1,3 +1,4 @@
+// runtime.c (top)
 #include "runtime.h"
 #include "trainer.h"
 #include <stdio.h>
@@ -6,14 +7,27 @@
 
 MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   MuRuntime *rt = calloc(1, sizeof(MuRuntime));
+  if (!rt || !model)
+    return rt;
 
   rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
 
-  rt->last_obs = malloc(sizeof(float) * model->cfg.obs_dim);
-  rt->last_pi = malloc(sizeof(float) * model->cfg.action_count);
+  rt->last_obs = malloc(sizeof(float) * (size_t)model->cfg.obs_dim);
+  rt->last_pi = malloc(sizeof(float) * (size_t)model->cfg.action_count);
+
   rt->has_last = 0;
   rt->gamma = gamma;
   rt->total_steps = 0;
+
+  // If allocation failed, clean up safely.
+  if (!rt->rb || !rt->last_obs || !rt->last_pi) {
+    if (rt->rb)
+      rb_free(rt->rb);
+    free(rt->last_obs);
+    free(rt->last_pi);
+    free(rt);
+    return NULL;
+  }
 
   return rt;
 }
