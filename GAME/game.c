@@ -4585,7 +4585,7 @@ void update_player(void) {
 
     // player_try_attack_mob_in_chunk modifies mobs -> take write lock
     pthread_rwlock_wrlock(&c->lock);
-    player_try_attack(c, wrap(cx), wrap(cy));
+    player_try_attack_forward(c, wrap(cx), wrap(cy));
     pthread_rwlock_unlock(&c->lock);
   }
 
