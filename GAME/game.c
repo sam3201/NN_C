@@ -4205,7 +4205,6 @@ case ACTION_CRAFT:
 // ------------------------------------------------------------
 // Nearest agent finder (same chunk only)
 // ------------------------------------------------------------
-/*
 static Agent *nearest_agent_in_chunk(int cx, int cy, Vector2 mob_world_pos,
                                      float *outDist) {
   Agent *best = NULL;
@@ -4254,7 +4253,6 @@ static int nearest_base_idx(Vector2 wp, Vector2 *outPos, float *outDist) {
     *outDist = bestD;
   return bestI;
 }
-*/
 
 // ------------------------------------------------------------
 // Mob AI (rewrite)
