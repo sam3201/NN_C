@@ -56,9 +56,15 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
       break;
 
     float lat_mse = 0.0f, rew_mse = 0.0f;
-    muzero_model_train_dynamics_batch(model, obs, a, r, obs2, actual, cfg->lr,
-                                      &lat_mse, &rew_mse);
-
+    if (model->train_dynamics) {
+      // Your hook signature doesn't include the mse outs, so you just call it:
+      model->train_dynamics(model, obs_batch, a_batch, r_batch, next_obs_batch,
+                            B, lr);
+    } else {
+      muzero_model_train_dynamics_batch(model, obs_batch, a_batch, r_batch,
+                                        next_obs_batch, B, lr, &latent_mse,
+                                        &reward_mse);
+    }
     if ((step % 50) == 0) {
       printf("[dyn] step=%d lat_mse=%.6f rew_mse=%.6f replay=%zu\n", step,
              lat_mse, rew_mse, rb_size(rb));
