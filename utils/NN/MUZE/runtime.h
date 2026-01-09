@@ -1,8 +1,11 @@
 //
 #ifndef MUZE_RUNTIME_H runtime
 #define MUZE_RUNTIME_H
-#include "muze_cortex.h" #include "muzero_model.h" #include "replay_buffer.h"
-    : #include "trainer.h" : #include<stdint.h>
+#include "muze_cortex.h"
+#include "muzero_model.h"
+#include "replay_buffer.h"
+#include "trainer.h"
+#include <stdint.h>
 
     : : #define TRAIN_WINDOW 1024       // training cache size, NOT memory size
     : #define TRAIN_WARMUP TRAIN_WINDOW // warmup cache size
