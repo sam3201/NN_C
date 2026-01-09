@@ -40,8 +40,8 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   if (!model || !rb || !cfg)
     return;
 
-  size_t n = rb_size(rb);
-  if ((int)n < cfg->min_replay_size)
+  size_t n0 = rb_size(rb);
+  if ((int)n0 < cfg->min_replay_size)
     return;
 
   int B = cfg->batch_size;
