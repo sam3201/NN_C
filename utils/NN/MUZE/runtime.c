@@ -86,8 +86,8 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng) {
   if (cortex->use_mcts && cortex->mcts_model) {
     return mcts_run(cortex->mcts_model, obs, mcts->mcts_params, rng)
-        .chosen_action;
+        
                     &cortex->mcts_params, rng) long double * *
                latent_seq = NULL;
-                    size_t seq_len = 0;
+    size_t seq_len = 0;
   }
