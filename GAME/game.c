@@ -4165,7 +4165,7 @@ case ACTION_CRAFT:
       // agent_face_nearest_mob_in_chunk(a, c, cx, cy, 14.0f);
       pthread_rwlock_unlock(&c->lock);
 
-      agent_try_fire_forward(a, tr, &reward, true);
+      agent_try_fire_forward(a, &reward, true);
     }
   }
 
