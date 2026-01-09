@@ -4597,7 +4597,7 @@ void update_player(void) {
 
     // player_try_harvest_resource_in_chunk modifies resources -> write lock
     pthread_rwlock_wrlock(&c->lock);
-    player_try_harvest_resource(c, wrap(cx), wrap(cy));
+    player_try_harvest_forward(player->facing_dir);
     pthread_rwlock_unlock(&c->lock);
   }
 
