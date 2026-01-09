@@ -112,9 +112,9 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
         - // done=0.)
         -rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs,
                       /*done*/ 0);
-    + // Keep transition fields valid: next_obs = obs, action=0, reward=0,
-      // done=0
-        +rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
+    // Keep transition fields valid: next_obs = obs, action=0, reward=0,
+    // done=0
+    rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
   }
 }
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
