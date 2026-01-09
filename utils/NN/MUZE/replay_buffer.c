@@ -57,34 +57,31 @@ void rb_free(ReplayBuffer *rb) {
 }
 
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
-                    float z, int action, float reward, const float *next_obs,
-                    int done) {
-  if (!rb || !obs || !pi || !next_obs)
-    return (size_t)-1;
+                    float z) {
+  if (!rb)
+    return 0;
 
-  size_t idx = rb->write_idx;
-
-  memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, obs,
-         sizeof(float) * (size_t)rb->obs_dim);
-
-  memcpy(rb->pi_buf + idx * (size_t)rb->action_count, pi,
-         sizeof(float) * (size_t)rb->action_count);
-
+  size_t idx = rb->head; // wherever you write next
+  // copy obs -> rb->obs_buf[idx]
+  memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
+  memcpy(rb->pi_buf + idx * rb->action_count, pi,
+         sizeof(float) * rb->action_count);
   rb->z_buf[idx] = z;
 
-  rb->a_buf[idx] = action;
-  rb->r_buf[idx] = reward;
-
-  memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, next_obs,
-         sizeof(float) * (size_t)rb->obs_dim);
-
-  rb->done_buf[idx] = done ? 1 : 0;
-
-  rb->write_idx = (rb->write_idx + 1) % rb->capacity;
+  // advance head / size
+  rb->head = (rb->head + 1) % rb->capacity;
   if (rb->size < rb->capacity)
     rb->size++;
 
   return idx;
+}
+
+void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
+  if (!rb)
+    return;
+  if (idx >= rb->capacity)
+    return;
+  rb->z_buf[idx] = z;
 }
 
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
