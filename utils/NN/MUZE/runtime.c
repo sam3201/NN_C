@@ -41,6 +41,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
     free(rt);
     return NULL;
   }
+  memset(rt->last_pi, 0, sizeof(float) * (size_t)model->cfg.action_count);
 
   return rt;
 }
