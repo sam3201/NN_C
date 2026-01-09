@@ -83,4 +83,4 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
 // Else uses cortex->encode + cortex->policy.
 // Applies policy_temperature + policy_epsilon.
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
-                       float *out_pi, size_t action_count, MCTSRng *rng);
+                       float *out_pi, size_t action_count, MCTSRng *rng) {}
