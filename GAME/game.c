@@ -33,6 +33,7 @@ static inline Vector2 clamp_local_to_chunk(Vector2 p);
 static int find_free_mob_slot(struct Chunk *c);
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
+Chunk *get_chunk(int cx, int cy);
 // ----------------------------------------------------------------------
 
 /* =======================
@@ -1772,8 +1773,6 @@ static inline int ray_circle_intersect(Vector2 ro, Vector2 rd, Vector2 c,
   *out_t = t;
   return 1;
 }
-
-Chunk *get_chunk(int cx, int cy);
 
 static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
   RayHit best = {0};
