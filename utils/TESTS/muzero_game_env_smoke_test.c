@@ -65,7 +65,7 @@ static Env *env_create(unsigned int seed) {
   //   Env *e = GAME_ENV_init(seed);
   //   Env *e = game_env_init_default(seed);
   Env *e = {0};
-  e = game_env_init(e, env_reset, gameenv_step_fn step_fn);
+  e = game_env_init(e, env_reset, env_step);
 
   return e;
 }
