@@ -250,8 +250,7 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
   if (lr <= 0.0f)
     return;
   if (!m->repr_W || !m->pred_W) {
-    // You can printf here once if you want:
-    // printf("[train_batch] skipped: repr_W/pred_W not allocated\n");
+    printf("[train_batch] skipped: repr_W/pred_W not allocated\n");
     return;
   }
 
