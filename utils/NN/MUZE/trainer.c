@@ -2,6 +2,7 @@
 #include "muzero_model.h"
 #include "replay_buffer.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
