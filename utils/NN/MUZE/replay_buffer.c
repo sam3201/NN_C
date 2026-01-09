@@ -76,23 +76,18 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
     +if (!obs || !pi || !next_obs) + return 0;
 
     size_t idx = rb->write_idx;
-    - // copy obs -> rb->obs_buf[idx]
-        -memcpy(rb->obs_buf + idx * rb->obs_dim, obs,
-                sizeof(float) * rb->obs_dim);
-    -memcpy(rb->pi_buf + idx * rb->action_count, pi,
-            -sizeof(float) * rb->action_count);
-    + // policy/value training fields
-        +memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, +obs,
-                +sizeof(float) * (size_t)rb->obs_dim);
-    +memcpy(rb->pi_buf + idx * (size_t)rb->action_count, +pi,
-            +sizeof(float) * (size_t)rb->action_count);
+    // policy/value training fields
+    memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, +obs,
+           sizeof(float) * (size_t)rb->obs_dim);
+    memcpy(rb->pi_buf + idx * (size_t)rb->action_count, +pi,
+           sizeof(float) * (size_t)rb->action_count);
     rb->z_buf[idx] = z;
-    + + // transition fields (for dynamics/reward training)
-      +rb->a_buf[idx] = action;
-    +rb->r_buf[idx] = reward;
-    +memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, +next_obs,
-            +sizeof(float) * (size_t)rb->obs_dim);
-    +rb->done_buf[idx] = done ? 1 : 0;
+    // transition fields (for dynamics/reward training)
+    rb->a_buf[idx] = action;
+    rb->r_buf[idx] = reward;
+    memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, +next_obs,
+           +sizeof(float) * (size_t)rb->obs_dim);
+    rb->done_buf[idx] = done ? 1 : 0;
 
     // advance head / size
     rb->write_idx = (rb->write_idx + 1) % rb->capacity;
