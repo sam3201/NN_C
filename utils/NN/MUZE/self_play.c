@@ -71,7 +71,8 @@ void selfplay_run(MuModel *model, void *env_state,
 
   size_t *idx_buf = (size_t *)malloc(sizeof(size_t) * (size_t)max_steps);
 
-  if (!obs_buf || !pi_buf || !reward_buf || !act_buf || !obs0 || !idx_buf) {
+  if (!obs_buf || !pi_buf || !reward_buf || !act_buf || !obs0 || !idx_buf ||
+      !z_buf) {
     free(obs_buf);
     free(pi_buf);
     free(reward_buf);
