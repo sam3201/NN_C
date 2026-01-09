@@ -79,8 +79,8 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
                                                 const float *obs,
                                                 const float *pi, -float z) {
   size_t rb_push_full(ReplayBuffer * rb, +const float *obs, +const float *pi,
-                      +float z, +int action, +float reward,
-                      +const float *next_obs, +int done) {
+                      float z, +int action, +float reward,
+                      const float *next_obs, +int done) {
     if (!rb)
       return 0;
 
