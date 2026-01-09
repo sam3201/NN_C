@@ -4121,7 +4121,7 @@ case ACTION_CRAFT:
       *reward += 0.09f;
       return;
     }
-    eak;
+    break;
 
   case ACTION_CRAFT_PICKAXE:
     break;
