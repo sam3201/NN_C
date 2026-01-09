@@ -150,12 +150,17 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   if (!rt || !model)
     return;
 
-  TrainerConfig tc = {
-      .batch_size = 32,
-      .train_steps = 200,
-      .min_replay_size = TRAIN_WARMUP,
-      .lr = 0.05f,
-  };
+  // Priority:
+  // 1) per-call cfg if provided
+  // 2) runtime-stored cfg if user set it
+  // 3) defaults
+  TrainerConfig tc;
+  if (cfg)
+    tc = *cfg;
+  else if (rt->has_trainer_cfg)
+    tc = rt->trainer_cfg;
+  else
+    tc = trainer_default_cfg();
 
   // policy/value pass (obs,pi,z)
   trainer_train_from_replay(model, rt->rb, &tc);
@@ -163,7 +168,6 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   // dynamics/reward pass (obs,a,r,next_obs,done)
   trainer_train_dynamics(model, rt->rb, &tc);
 }
-
 static void normalize_probs(float *p, size_t n) {
   float sum = 0.0f;
   for (size_t i = 0; i < n; i++) {
