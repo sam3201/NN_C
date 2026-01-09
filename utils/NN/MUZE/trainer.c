@@ -145,10 +145,6 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
     return;
   }
 
-  // Optional: for logging only
-  float *p_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
-  float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
-
   for (int t = 0; t < steps; t++) {
     int actual = rb_sample(rb, B, obs_batch, pi_batch, z_batch);
     if (actual <= 0)
