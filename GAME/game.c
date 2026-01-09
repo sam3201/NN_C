@@ -113,6 +113,11 @@
 #define MAX_WORLDS 4096
 #define WORLD_NAME_MAX 4096
 
+/* =======================
+   GLOBAL STATE
+======================= */
+#define WORKER_COUNT 8
+
 static pthread_t workers[WORKER_COUNT];
 static pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
@@ -201,11 +206,6 @@ static Recipe recipes[] = {
     {"Armor (Stone+Gold)", 0, 5, 2, 0, &has_armor},
     {"Bow (Wood+Gold)", 4, 0, 1, 0, &has_bow},
 };
-
-/* =======================
-   GLOBAL STATE
-======================= */
-#define WORKER_COUNT 8
 
 /* =======================
    ENUMS
