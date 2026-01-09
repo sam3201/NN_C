@@ -87,3 +87,4 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
   if (cortex->use_mcts && cortex->mcts_model) {
     MCTSResult mr = mcts_run(cortex->mcts_model, obs, cortex->mcts_params, rng)
   }
+}
