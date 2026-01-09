@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #define TRAIN_WINDOW 1024 // training cache size, NOT memory size
-
+#define TRAIN_WARMUP 1024 // warmup cache size
 typedef struct {
   ReplayBuffer *rb;
 
