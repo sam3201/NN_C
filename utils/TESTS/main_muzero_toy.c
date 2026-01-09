@@ -1,4 +1,5 @@
 #include "../NN/MUZE/all.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
