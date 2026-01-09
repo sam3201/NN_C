@@ -32,9 +32,6 @@ typedef struct {
 MuRuntime *mu_runtime_create(MuModel *model, float gamma);
 void mu_runtime_free(MuRuntime *rt);
 
-void mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg);
-TrainerConfig mu_runtime_get_trainer_config(const MuRuntime *rt);
-
 /* Runtime operations (internal) */
 void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
                      int action, float reward);
