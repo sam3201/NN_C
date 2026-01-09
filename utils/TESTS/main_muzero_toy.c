@@ -1,4 +1,4 @@
-#include "all.h"
+#include "../NN/MUZE/all.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
