@@ -250,10 +250,6 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
     return;
   if (lr <= 0.0f)
     return;
-  if (!m->repr_W || !m->pred_W) {
-    printf("[train_batch] skipped: repr_W/pred_W not allocated\n");
-    return;
-  }
 
   int O = m->cfg.obs_dim;
   int L = m->cfg.latent_dim;
