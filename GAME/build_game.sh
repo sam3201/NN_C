@@ -64,7 +64,7 @@ echo "Compiling game..."
 
 # Use clang on macOS if you want; gcc often maps to clang anyway.
 CC="${CC:-gcc}"
-FLAGS="${FLAGS:-} -g -w -fmax-errors=n"
+FLAGS="${FLAGS:-} -g -w -fmax-errors=10000000"
 
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" $FLAGS \
