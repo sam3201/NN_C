@@ -115,7 +115,7 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 
 void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
 
-void mu_runtime_train(MuRuntime *rt, MuModel *model) {
+void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   if (!rt || !model)
     return;
 
