@@ -92,4 +92,5 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
 
     return mr.chosen_action;
   }
+  return;
 }
