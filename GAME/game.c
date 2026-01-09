@@ -15,6 +15,25 @@
 #include <time.h>
 #include <unistd.h>
 
+// ------------------- Compile helpers / forward decls -------------------
+#ifndef SAVE_ROOT
+#define SAVE_ROOT "saves"
+#endif
+
+static uint32_t g_world_seed = 0;
+
+// Forward declarations for functions used before their definitions (C99+)
+struct Chunk; // forward decl
+static inline float randf(float a, float b);
+static inline int is_night(void);
+static void init_tribes(void);
+static void init_agents(void);
+static void ensure_save_root(void);
+static inline Vector2 clamp_local_to_chunk(Vector2 p);
+static int find_free_mob_slot(struct Chunk *c);
+// ----------------------------------------------------------------------
+
+
 /* =======================
    GLOBAL CONFIG
 ======================= */
@@ -5603,4 +5622,3 @@ static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
       CloseWindow();
       return 0;
     }
-
