@@ -77,19 +77,18 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
 +  float *logits_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
    float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
 
--  if (!obs_batch || !pi_batch || !z_batch || !p_pred || !v_pred) {
-  +if (!obs_batch || !pi_batch || !z_batch || !logits_pred || !v_pred) {
-    free(obs_batch);
-    free(pi_batch);
-    free(z_batch);
-    -free(p_pred);
-    +free(logits_pred);
-    free(v_pred);
-    return;
+  if (!obs_batch || !pi_batch || !z_batch || !logits_pred || !v_pred) {
+  free(obs_batch);
+  free(pi_batch);
+  free(z_batch);
+  -free(p_pred);
+  +free(logits_pred);
+  free(v_pred);
+  return;
   }
-  }
-  void trainer_train_from_replay(MuModel * model, ReplayBuffer * rb,
-                                 const TrainerConfig *cfg) {
+}
+void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
+                               const TrainerConfig *cfg) {
   if (!model || !rb || !cfg)
     return;
 
@@ -161,4 +160,4 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   free(z_batch);
   free(p_pred);
   free(v_pred);
-  }
+}
