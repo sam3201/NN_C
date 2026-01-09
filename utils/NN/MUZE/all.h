@@ -17,4 +17,18 @@
 #include "trainer.h"
 #include "util.h"
 
+#include "ewc.h"
+#include "game_env.h"
+#include "growth.h"
+#include "mcts.h"
+#include "muze_cortex.h"
+#include "muze_loop.h"
+#include "muze_plan.h"
+#include "muzero_model.h"
+#include "replay_buffer.h"
+#include "runtime.h"
+#include "self_play.h"
+#include "toy_env.h"
+#include "trainer.h"
+#include "util.h"
 #endif
