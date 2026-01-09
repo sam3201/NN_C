@@ -127,7 +127,6 @@ void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
 
   free(tmp_pi);
 }
-}
 
 static int rand_int(int n) {
   return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
