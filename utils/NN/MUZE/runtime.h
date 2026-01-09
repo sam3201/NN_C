@@ -25,6 +25,7 @@ typedef struct {
   size_t total_steps;
 
   TrainerConfig tcfg;
+  bool has_tcfg;
 } MuRuntime;
 
 /* Runtime lifecycle */
