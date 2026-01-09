@@ -471,10 +471,11 @@ static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
                              int dmg, ProjOwner owner);
 Chunk *get_chunk(int cx, int cy);
 static inline float mob_radius_world(MobType t);
-static void on_mob_killed(MobType type, Vector2 mob_world_pos);
-// ----------------------------------------------------------------------
+// ---------static void on_mob_killed(MobType t, Vector2 mob_world_pos) {
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 
-static pthread_t workers[WORKER_COUNT];
+                                                                                          static pthread_t workers
+                                                                                              [WORKER_COUNT];
 static pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t done_cv = PTHREAD_COND_INITIALIZER;
