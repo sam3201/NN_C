@@ -54,9 +54,11 @@ echo "Build OK"
 lldb ./$OUT
 if [ "$?" -eq 0 ]; then 
   echo Run Success 
+  rm "$OUT"
   exit 0 
 else
   echo Run Failed
+  rm "$OUT"
   exit 1
 fi
   
