@@ -1,61 +1,63 @@
-// replay_buffer.h
-
-#ifndef REPLAY_BUFFER_H
-#define REPLAY_BUFFER_H
-
-#include "game_env.h"
-#include <stddef.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define TRAIN_WINDOW 1024
-#define TRAIN_WARMUP TRAIN_WINDOW
-
-typedef struct {
-  size_t capacity;
-  size_t size;
-  size_t write_idx;
-
-  int obs_dim;
-  int action_count;
-
-  // MuZero tuples
-  float *obs_buf; /* capacity * obs_dim */
-  float *pi_buf;  /* capacity * action_count */
-  float *z_buf;   /* capacity */
-
-  // Transition tuples
-  int *a_buf;          /* capacity */
-  float *r_buf;        /* capacity */
-  float *next_obs_buf; /* capacity * obs_dim */
-  int *done_buf;       /* capacity */
-} ReplayBuffer;
-
-ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
-void rb_free(ReplayBuffer *rb);
-
-/* NEW: one push that makes a slot valid for both samplers */
-size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
-                    float z, int action, float reward, const float *next_obs,
-                    int done);
-
-void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
-void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
-                        float reward, const float *next_obs, int done);
-
-int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
-              float *z_batch);
-
-int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
-                         int *a_batch, float *r_batch, float *next_obs_batch,
-                         int *done_batch);
-
-size_t rb_size(ReplayBuffer *rb);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+runtime
+    .h : // runtime.h
+         runtime.h : runtime.h
+    : #ifndef MUZE_RUNTIME_H runtime.h
+    : #define MUZE_RUNTIME_H runtime.h
+    : runtime.h : #include
+                  "muze_cortex.h" runtime.h
+    : #include "muzero_model.h" runtime.h
+    : #include "replay_buffer.h" runtime.h
+    : #include "trainer.h" runtime.h : #include<stdint.h>
+                                           runtime.h : runtime
+    .h : #define TRAIN_WINDOW 1024 // training cache size, NOT memory size
+         runtime
+    .h : #define TRAIN_WARMUP TRAIN_WINDOW // warmup cache size
+             runtime.h : typedef struct {
+  runtime.h : ReplayBuffer *rb;
+  runtime.h : runtime.h : float *last_obs;
+  runtime.h : float *last_pi;
+  runtime.h : int last_action;
+  runtime.h : int has_last;
+  runtime.h : runtime.h : float gamma;
+  runtime.h : runtime
+                  .h : /* infinite logical memory */
+                       runtime.h : size_t total_steps;
+  runtime.h : runtime.h : TrainerConfig cfg;
+  runtime.h : bool has_cfg;
+  runtime.h:
+} MuRuntime;
+runtime.h : runtime
+                .h : /* Runtime lifecycle */
+                     runtime.h : MuRuntime *
+                                 mu_runtime_create(MuModel *model, float gamma);
+runtime.h : void mu_runtime_free(MuRuntime *rt);
+runtime.h : runtime
+                .h : /* : set/get trainer config */
+                     runtime.h
+    : void
+      mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg);
+runtime.h : TrainerConfig mu_runtime_get_trainer_config(const MuRuntime *rt);
+runtime.h : runtime
+                .h : /* Runtime operations (internal) */
+                     runtime.h
+    : void
+      mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
+                      runtime.h : int action, float reward);
+runtime.h : runtime.h
+    : void
+      mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
+                              runtime.h : const float *pi, int action,
+                              float reward);
+runtime.h : runtime.h
+    : void
+      mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
+                             runtime.h : float terminal_reward);
+runtime.h : runtime.h : void mu_runtime_reset_episode(MuRuntime *rt);
+runtime.h : void mu_runtime_train(MuRuntime *rt, MuModel *model,
+                                  const TrainerConfig *cfg);
+runtime.h : runtime.h : int muze_select_action(MuCortex *cortex,
+                                               const float *obs, size_t obs_dim,
+                                               runtime.h : float *out_pi,
+                                               size_t action_count,
+                                               MCTSRng *rng);
+runtime.h : runtime.h : #endif
