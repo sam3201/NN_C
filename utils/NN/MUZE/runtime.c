@@ -23,6 +23,7 @@ void mu_runtime_free(MuRuntime *rt) {
     return;
   rb_free(rt->rb);
   free(rt->last_obs);
+  free(rt->last_pi); // <--- ADD
   free(rt);
 }
 
