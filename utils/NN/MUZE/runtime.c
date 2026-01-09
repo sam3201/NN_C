@@ -74,8 +74,7 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   const int O = model->cfg.obs_dim;
   const int A = model->cfg.action_count;
 
-  // First call of an episode: just cache (obs, pi, action). No reward yet to
-  // assign.
+  // First step of episode: cache (obs, pi, action). No reward to assign yet.
   if (!rt->has_last) {
     memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
     memcpy(rt->last_pi, pi, sizeof(float) * (size_t)A);
@@ -85,20 +84,18 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   }
 
   /*
-    We are now at the *next* timestep and have received `reward` from the
-    previous action. Push training tuple for the previous state:
+    We are at time t and received `reward` from the *previous* action.
+    Push training tuple for previous state:
 
       (last_obs, last_pi, z)
 
-    For now we keep your current "one-step" target:
-      z = reward
-
-    (Later you can upgrade to n-step or full-episode discounted z.)
+    Current target kept consistent with your existing runtime:
+      z = reward   (one-step target for now)
   */
   float z = reward;
   rb_push(rt->rb, rt->last_obs, rt->last_pi, z);
 
-  // Cache current decision info for the next transition.
+  // Cache current decision info for the next transition
   memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
   memcpy(rt->last_pi, pi, sizeof(float) * (size_t)A);
   rt->last_action = action;
