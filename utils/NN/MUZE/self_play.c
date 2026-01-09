@@ -159,9 +159,6 @@ void selfplay_run(MuModel *model, void *env_state,
       reward_buf[step] = reward;
       ep_return += reward;
 
-      // Store transition for dynamics training
-      rb_push_transition(rb, obs_cur, chosen, reward, next_obs, done_flag);
-
       // Advance
       memcpy(obs_cur, next_obs, sizeof(float) * (size_t)obs_dim);
       free(next_obs);
