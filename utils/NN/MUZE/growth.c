@@ -62,7 +62,6 @@ int mu_model_grow_latent(MuModel *m, int new_L) {
   m->pred_W = new_pred;
 
   m->repr_W_count = new_L * O;
-  m->dyn_W_count = new_L * new_L;
   m->pred_W_count = (A + 1) * new_L;
 
   m->dyn_W_count = new_L * (new_L + 1);
