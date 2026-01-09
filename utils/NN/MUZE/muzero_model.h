@@ -39,7 +39,8 @@ struct MuModel {
   void (*train_policy_value)(MuModel *, const float *, const float *,
                              const float *, int, float);
   void (*train_dynamics)(MuModel *, const float *, const int *, const float *,
-                         const float *, int, float);
+                         const float *, int, float, float *out_latent_mse,
+                         float *out_reward_mse);
 };
 
 /* creation / destruction */
