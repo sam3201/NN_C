@@ -125,8 +125,11 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
 
     // backward/update
     // Must exist (or you implement): does SGD step using targets
-    muzero_model_train_batch(model, obs_batch, pi_batch, z_batch, actual,
-                             cfg->lr);
+    if (model->train_policy_value) {
+      model->train_policy_value(model, obs_batch, pi_batch, z_batch, B, lr);
+    } else {
+      muzero_model_train_batch(model, obs_batch, pi_batch, z_batch, B, lr);
+    }
 
     if ((step % 50) == 0) {
       printf("[train] step=%d pol=%.4f val=%.4f replay=%zu\n", step, pol_loss,
