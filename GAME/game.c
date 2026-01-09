@@ -4503,6 +4503,7 @@ static void draw_crafting_ui(void) {
 ======================= */
 void init_player(void) {
   player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  player.facing = (Vector2){0, 1};
   player.health = 100;
   player.stamina = 100;
 }
