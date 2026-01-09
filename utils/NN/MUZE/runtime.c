@@ -108,7 +108,7 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
   if (!rt->has_last)
     return;
 
-  // Push final state with whatever policy we cached for it.
+  // Push final state with the policy we cached for it.
   rb_push(rt->rb, rt->last_obs, rt->last_pi, terminal_reward);
   rt->has_last = 0;
 }
