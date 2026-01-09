@@ -53,21 +53,6 @@ typedef struct {
 // ---- Adapter: env handle type ----
 // If your game_env is a struct, use that type here.
 // If it’s an opaque pointer, use void*.
-typedef GameEnv Env; // <-- CHANGE if your env type is named differently
-
-// ---- Adapter functions (map to your real ones) ----
-
-// Create an environment
-static Env *env_create(unsigned int seed) {
-  // CHANGE these to your actual constructors:
-  // Examples you might have:
-  //   Env *e = game_env_create(seed);
-  //   Env *e = GAME_ENV_init(seed);
-  //   Env *e = game_env_init_default(seed);
-  Env *e = {0};
-  e = Game_env_init(e, seed);
-  return e;
-}
 
 // Destroy/free environment
 static void env_destroy(Env *e) {
