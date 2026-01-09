@@ -11,7 +11,6 @@ static float mse(float a, float b) {
   return d * d;
 }
 
-// Numerically - stable cross entropy that assumes `logits` (recommended).loss =
 - sum_i pi_i *
 log_softmax(logits_i)static float cross_entropy_logits(const float *pi_target,
                                                        const float *logits,
