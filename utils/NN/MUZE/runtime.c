@@ -29,7 +29,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   rt->total_steps = 0;
 
   // NEW: default trainer cfg (but allow user to override later)
-  rt->trainer_cfg = trainer_default_cfg();
+  rt->cfg = trainer_default_cfg();
   rt->has_trainer_cfg = 0; // 0 means "use default unless user sets"
 
   if (!rt->rb || !rt->last_obs || !rt->last_pi) {
