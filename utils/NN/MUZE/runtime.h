@@ -41,7 +41,6 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z, int action, float reward, const float *next_obs,
                     int done);
 
-/* Keep old APIs, but make them safe wrappers */
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
                         float reward, const float *next_obs, int done);
