@@ -67,7 +67,7 @@ CC="${CC:-gcc}"
 FLAGS="${FLAGS:-} -g -w -fmax-errors=n"
 
 # Note: -w hides warnings. Consider removing once you're stable.
-"$CC" -w \
+"$CC" $FLAGS \
   game.c \
   $NN_SRC \
   $MUZE_SRC \
