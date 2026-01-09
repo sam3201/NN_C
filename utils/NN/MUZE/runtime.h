@@ -1,56 +1,59 @@
-// runtime.h
+// replay_buffer.h
 
-#ifndef MUZE_RUNTIME_H
-#define MUZE_RUNTIME_H
+#ifndef REPLAY_BUFFER_H
+#define REPLAY_BUFFER_H
 
 #include "game_env.h"
-#include "muze_cortex.h"
-#include "muzero_model.h"
-#include "replay_buffer.h"
-#include "trainer.h"
-#include <stdint.h>
+#include <stddef.h>
 
-#define TRAIN_WINDOW 1024         // training cache size, NOT memory size
-#define TRAIN_WARMUP TRAIN_WINDOW // warmup cache size
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
-  ReplayBuffer *rb;
+  size_t capacity;
+  size_t size;
+  size_t write_idx;
 
-  float *last_obs;
-  float *last_pi;
-  int last_action;
-  int has_last;
+  int obs_dim;
+  int action_count;
 
-  float gamma;
+  // MuZero tuples
+  float *obs_buf; /* capacity * obs_dim */
+  float *pi_buf;  /* capacity * action_count */
+  float *z_buf;   /* capacity */
 
-  /* infinite logical memory */
-  size_t total_steps;
+  // Transition tuples
+  int *a_buf;          /* capacity */
+  float *r_buf;        /* capacity */
+  float *next_obs_buf; /* capacity * obs_dim */
+  int *done_buf;       /* capacity */
+} ReplayBuffer;
 
-  TrainerConfig cfg;
-  bool has_cfg;
-} MuRuntime;
+ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
+void rb_free(ReplayBuffer *rb);
 
-/* Runtime lifecycle */
-MuRuntime *mu_runtime_create(MuModel *model, float gamma);
-void mu_runtime_free(MuRuntime *rt);
+/* NEW: one push that makes a slot valid for both samplers */
+size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
+                    float z, int action, float reward, const float *next_obs,
+                    int done);
 
-/* : set/get trainer config */
-void mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg);
-TrainerConfig mu_runtime_get_trainer_config(const MuRuntime *rt);
+/* Keep old APIs, but make them safe wrappers */
+void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
+void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
+                        float reward, const float *next_obs, int done);
 
-/* Runtime operations (internal) */
-void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
-                     int action, float reward);
+int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
+              float *z_batch);
 
-void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
-                             const float *pi, int action, float reward);
+int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
+                         int *a_batch, float *r_batch, float *next_obs_batch,
+                         int *done_batch);
 
-void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
-                            float terminal_reward);
+size_t rb_size(ReplayBuffer *rb);
 
-void mu_runtime_reset_episode(MuRuntime *rt);
-void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg);
-
-int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
-                       float *out_pi, size_t action_count, MCTSRng *rng);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
