@@ -37,7 +37,6 @@ void rb_free(ReplayBuffer *rb);
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z);
 
-// Backfill z for an already-stored slot.
 void rb_set_z(ReplayBuffer *rb, size_t idx, float z);
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
@@ -52,8 +51,6 @@ int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
 
 size_t rb_size(ReplayBuffer *rb);
 //
-// Backfill z for an already-stored slot.
-void rb_set_z(ReplayBuffer *rb, size_t idx, float z);
 
 #ifdef __cplusplus
 }
