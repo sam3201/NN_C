@@ -64,7 +64,6 @@ void muzero_model_train_dynamics_batch(
     float *out_latent_mse, // optional (can be NULL)
     float *out_reward_mse  // optional (can be NULL)
 );
-
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
