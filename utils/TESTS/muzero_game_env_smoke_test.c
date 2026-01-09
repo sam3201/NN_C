@@ -58,17 +58,6 @@ typedef GameEnv Env; // <-- CHANGE if your env type is named differently
 // ---- Adapter functions (map to your real ones) ----
 
 // Create an environment
-static Env *env_create(unsigned int seed) {
-  // CHANGE these to your actual constructors:
-  // Examples you might have:
-  //   Env *e = game_env_create(seed);
-  //   Env *e = GAME_ENV_init(seed);
-  //   Env *e = game_env_init_default(seed);
-  Env *e = {0};
-  e = game_env_init(e, env_reset, env_step);
-
-  return e;
-}
 
 // Destroy/free environment
 static void env_destroy(Env *e) {
@@ -86,6 +75,9 @@ static int env_reset(Env *e, float *out_obs, int max_obs) {
   int n = game_env_reset(e, out_obs, max_obs); // <-- EDIT
   return n;
 }
+
+GameEnv *game_env_init(GameEnv *game_env, gameenv_reset_fn reset_fn,
+                       gameenv_step_fn step_fn);
 
 // Step environment with action. Writes next obs into out_obs.
 // Returns (reward, done) and obs length through *out_nobs.
