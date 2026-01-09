@@ -73,8 +73,7 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
    float *pi_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
    float *z_batch = (float *)malloc(sizeof(float) * (size_t)B);
 
--  float *p_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
-+  float *logits_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
+float *logits_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
    float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
 
   if (!obs_batch || !pi_batch || !z_batch || !logits_pred || !v_pred) {
