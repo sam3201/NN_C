@@ -86,7 +86,13 @@ void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
   /* One-step bootstrap target */
   float z = reward;
 
-  float pi[model->cfg.action_count];
+  int A = model->cfg.action_count;
+  float *pi = (float *)malloc(sizeof(float) * (size_t)A);
+  if (!pi)
+    return;
+  ... rb_push(... pi...);
+  free(pi);
+
   for (int i = 0; i < model->cfg.action_count; i++)
     pi[i] = (i == rt->last_action) ? 1.0f : 0.0f;
 
