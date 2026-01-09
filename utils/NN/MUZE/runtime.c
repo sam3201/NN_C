@@ -134,10 +134,11 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   rt->last_action = action;
 }
 
-mu_runtime_end_episode_with_nextobs(...)
+void mu_runtime_end_episode_with_nextobs(MuRuntime *rt, MuModel *model,
+                                         const float *next_obs) {}
 
-    void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
-                                float terminal_reward) {
+void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
+                            float terminal_reward) {
   if (!rt || !model)
     return;
   if (!rt->has_last)
