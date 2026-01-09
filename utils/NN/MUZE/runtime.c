@@ -274,7 +274,7 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
         mcts_run(cortex->mcts_model, obs, &cortex->mcts_params, rng);
 
     // Copy pi out
-    +size_t n = action_count;
+    size_t n = action_count;
     if ((size_t)mr.action_count < n)
       n = (size_t)mr.action_count;
     memcpy(out_pi, mr.pi, sizeof(float) * n);
