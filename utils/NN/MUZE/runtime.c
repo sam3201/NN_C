@@ -85,8 +85,8 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng) {
   if (cortex->use_mcts && cortex->mcts_model) {
-    return mcts_run(cortex->mcts_model, obs, &cortex->mcts_params,
-                    rng) long double * *
+    return mcts_run(cortex->mcts_model, obs, mcts_params_default,
+                    &cortex->mcts_params, rng) long double * *
                latent_seq = NULL;
     size_t seq_len = 0;
   }
