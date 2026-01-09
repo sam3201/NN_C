@@ -53,7 +53,7 @@ typedef struct {
 // ---- Adapter: env handle type ----
 // If your game_env is a struct, use that type here.
 // If it’s an opaque pointer, use void*.
-typedef Game_env Env; // <-- CHANGE if your env type is named differently
+typedef Game_Env Env; // <-- CHANGE if your env type is named differently
 
 // ---- Adapter functions (map to your real ones) ----
 
