@@ -53,7 +53,7 @@ void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
 
 void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
                              const float *pi, int action, float reward) {
-  if (!rt || !model || !obs)
+  if (!rt || !model || !obs || !pi)
     return;
 
   rt->total_steps++;
@@ -61,33 +61,33 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   const int O = model->cfg.obs_dim;
   const int A = model->cfg.action_count;
 
-  // First call just "primes" last_obs/last_action so next call can store a
-  // tuple. This matches the buffering behavior of mu_runtime_step().
+  // First call of an episode: just cache (obs, pi, action). No reward yet to
+  // assign.
   if (!rt->has_last) {
     memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
+    memcpy(rt->last_pi, pi, sizeof(float) * (size_t)A);
     rt->last_action = action;
     rt->has_last = 1;
     return;
   }
 
-  // One-step target (simple bootstrap like your existing runtime)
+  /*
+    We are now at the *next* timestep and have received `reward` from the
+    previous action. Push training tuple for the previous state:
+
+      (last_obs, last_pi, z)
+
+    For now we keep your current "one-step" target:
+      z = reward
+
+    (Later you can upgrade to n-step or full-episode discounted z.)
+  */
   float z = reward;
+  rb_push(rt->rb, rt->last_obs, rt->last_pi, z);
 
-  // If caller didn't provide pi, fall back to one-hot of last_action.
-  if (!pi) {
-    float onehot[A];
-    for (int i = 0; i < A; i++)
-      onehot[i] = (i == rt->last_action) ? 1.0f : 0.0f;
-    rb_push(rt->rb, rt->last_obs, onehot, z);
-  } else {
-    // Use caller-provided policy target for the PREVIOUS state (rt->last_obs).
-    // Assumption: `pi` corresponds to the policy used when choosing
-    // rt->last_action.
-    rb_push(rt->rb, rt->last_obs, pi, z);
-  }
-
-  // Update last_* to current step's state/action for the next transition.
+  // Cache current decision info for the next transition.
   memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
+  memcpy(rt->last_pi, pi, sizeof(float) * (size_t)A);
   rt->last_action = action;
 }
 
