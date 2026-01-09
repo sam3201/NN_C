@@ -115,9 +115,6 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 
 void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
 
-#include <math.h>
-#include <string.h>
-
 static void normalize_probs(float *p, size_t n) {
   float sum = 0.0f;
   for (size_t i = 0; i < n; i++) {
