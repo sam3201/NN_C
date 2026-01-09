@@ -153,7 +153,8 @@ void selfplay_run(MuModel *model, void *env_state,
       //    placeholder z for now; we will overwrite with discounted return
       //    later
       float z_placeholder = reward; // quick default
-      idx_buf[step] = rb_push_full(rb, obs_cur, mr.pi, z_placeholder);
+      idx_buf[step] = rb_push_full(rb, obs_cur, mr.pi, z_placeholder, chosen,
+                                   reward, next_obs, done_flag);
 
       reward_buf[step] = reward;
       ep_return += reward;
