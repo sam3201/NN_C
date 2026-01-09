@@ -102,6 +102,33 @@ static int rand_int(int n) {
   return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
 }
 
+int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
+              float *z_batch) {
+  if (!rb || rb->size == 0)
+    return 0;
+  if (!obs_batch || !pi_batch || !z_batch)
+    return 0;
+
+  int actual = batch;
+  if ((size_t)batch > rb->size)
+    actual = (int)rb->size;
+
+  for (int i = 0; i < actual; i++) {
+    int idx = rand_int((int)rb->size);
+
+    memcpy(obs_batch + i * rb->obs_dim,
+           rb->obs_buf + (size_t)idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)rb->obs_dim);
+
+    memcpy(pi_batch + i * rb->action_count,
+           rb->pi_buf + (size_t)idx * (size_t)rb->action_count,
+           sizeof(float) * (size_t)rb->action_count);
+
+    z_batch[i] = rb->z_buf[idx];
+  }
+  return actual;
+}
+
 int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
                          int *a_batch, float *r_batch, float *next_obs_batch,
                          int *done_batch) {
