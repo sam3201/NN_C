@@ -37,7 +37,8 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
 
   size_t n = rb_size(rb);
   if ((int)n < cfg->min_replay_size) {
-    // not enough data yet
+    printf("[train] waiting: replay=%zu < min=%d\n", n, cfg->min_replay_size);
+
     return;
   }
 
