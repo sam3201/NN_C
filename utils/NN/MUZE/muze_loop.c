@@ -177,8 +177,7 @@ void muze_run_loop(MuModel *model, void *env_state,
     // ---- training ----
     printf("=== [loop] train_calls=%d ===\n", train_calls);
     for (int k = 0; k < train_calls; k++) {
-      trainer_train_from_replay(model, rb, &tc);
-      trainer_train_dynamics(model, rb, &tc);
+      trainer_train_unroll(model, rb, &tc, loop_cfg->unroll_steps);
     }
 
     printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
