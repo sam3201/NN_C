@@ -89,22 +89,25 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
     return;
 
   size_t n = rb_size(rb);
-  if ((int)n < cfg->min_replay_size) {
+  if (n < (size_t)cfg->min_replay_size) {
     printf("[train] waiting: replay=%zu < min=%d\n", n, cfg->min_replay_size);
     return;
   }
 
-  int B = cfg->batch_size;
-  int obs_dim = muzero_model_obs_dim(model);
-  int A = muzero_model_action_count(model);
+  const int B = cfg->batch_size;
+  const int obs_dim = muzero_model_obs_dim(model);
+  const int A = muzero_model_action_count(model);
 
-  float *obs_batch = (float *)malloc(sizeof(float) * B * obs_dim);
-  float *pi_batch = (float *)malloc(sizeof(float) * B * A);
-  float *z_batch = (float *)malloc(sizeof(float) * B);
+  // pick your actual config field name here:
+  const float lr = cfg->learning_rate; // <-- IMPORTANT: define lr
 
-  // outputs
-  float *p_pred = (float *)malloc(sizeof(float) * B * A);
-  float *v_pred = (float *)malloc(sizeof(float) * B);
+  float *obs_batch =
+      (float *)malloc(sizeof(float) * (size_t)B * (size_t)obs_dim);
+  float *pi_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
+  float *z_batch = (float *)malloc(sizeof(float) * (size_t)B);
+
+  float *p_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
+  float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
 
   if (!obs_batch || !pi_batch || !z_batch || !p_pred || !v_pred) {
     free(obs_batch);
@@ -121,12 +124,10 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
       break;
 
     // forward pass
-    // Must exist (or you implement): fills p_pred (probs) and v_pred (scalar)
     muzero_model_forward_batch(model, obs_batch, actual, p_pred, v_pred);
 
-    // compute loss (for logging)
-    float pol_loss = 0.0f;
-    float val_loss = 0.0f;
+    // compute loss (logging)
+    float pol_loss = 0.0f, val_loss = 0.0f;
     for (int i = 0; i < actual; i++) {
       pol_loss += cross_entropy(&pi_batch[i * A], &p_pred[i * A], A);
       val_loss += mse(z_batch[i], v_pred[i]);
@@ -134,12 +135,12 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
     pol_loss /= (float)actual;
     val_loss /= (float)actual;
 
-    // backward/update
-    // Must exist (or you implement): does SGD step using targets
+    // backward/update  <-- use actual, not B
     if (model->train_policy_value) {
-      model->train_policy_value(model, obs_batch, pi_batch, z_batch, B, lr);
+      model->train_policy_value(model, obs_batch, pi_batch, z_batch, actual,
+                                lr);
     } else {
-      muzero_model_train_batch(model, obs_batch, pi_batch, z_batch, B, lr);
+      muzero_model_train_batch(model, obs_batch, pi_batch, z_batch, actual, lr);
     }
 
     if ((step % 50) == 0) {
