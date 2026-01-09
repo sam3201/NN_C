@@ -354,3 +354,111 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
   free(g_repr);
   free(g_pred);
 }
+
+void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
+                                       const int *a_batch, const float *r_batch,
+                                       const float *next_obs_batch, int B,
+                                       float lr) {
+  if (!m || !obs_batch || !a_batch || !r_batch || !next_obs_batch || B <= 0)
+    return;
+  if (lr <= 0.0f)
+    return;
+
+  const int O = m->cfg.obs_dim;
+  const int L = m->cfg.latent_dim;
+  const int A = m->cfg.action_count;
+
+  float *h = (float *)malloc(sizeof(float) * L);
+  float *h2 = (float *)malloc(sizeof(float) * L);
+  float *h_tgt = (float *)malloc(sizeof(float) * L);
+  float *pre2 = (float *)malloc(sizeof(float) * L);
+  float *g_dyn = (float *)calloc((size_t)L * (size_t)(L + 1), sizeof(float));
+  float *g_rewW = (float *)calloc((size_t)L, sizeof(float));
+  float g_rewB = 0.0f;
+
+  if (!h || !h2 || !h_tgt || !pre2 || !g_dyn || !g_rewW) {
+    free(h);
+    free(h2);
+    free(h_tgt);
+    free(pre2);
+    free(g_dyn);
+    free(g_rewW);
+    return;
+  }
+
+  for (int i = 0; i < B; i++) {
+    const float *obs = obs_batch + i * O;
+    const float *obs2 = next_obs_batch + i * O;
+    const int act = a_batch[i];
+    const float r_tgt = r_batch[i];
+
+    // h = repr(s), h_tgt = repr(s')
+    mu_model_repr(m, obs, h);
+    mu_model_repr(m, obs2, h_tgt);
+
+    // normalize action to [-1,1] like your dynamics
+    float a = (A > 1) ? (float)act / (float)(A - 1) : 0.0f;
+    float a2 = a * 2.0f - 1.0f;
+
+    // forward dynamics: pre2, h2
+    for (int li = 0; li < L; li++) {
+      float sum = 0.0f;
+      const float *row = &m->dyn_W[li * (L + 1)];
+      for (int j = 0; j < L; j++)
+        sum += h[j] * row[j];
+      sum += a2 * row[L];
+      pre2[li] = sum;
+      h2[li] = tanhf(sum);
+    }
+
+    // reward head forward on h2
+    float r_lin = m->rew_b;
+    for (int li = 0; li < L; li++)
+      r_lin += m->rew_W[li] * h2[li];
+    float r_pred = tanhf(r_lin);
+
+    // losses: mse(h2,h_tgt) + mse(r_pred, r_tgt)
+    // grads:
+    // dL/dh2 from latent mse:
+    //   2*(h2 - h_tgt)
+    // plus from reward mse through tanh:
+    //   dr = 2*(r_pred - r_tgt)
+    //   dr/drlin = (1-r_pred^2)
+    float drlin = 2.0f * (r_pred - r_tgt) * (1.0f - r_pred * r_pred);
+
+    // reward head grads
+    g_rewB += drlin;
+    for (int li = 0; li < L; li++)
+      g_rewW[li] += drlin * h2[li];
+
+    // backprop into h2 from reward head:
+    // dL/dh2 += drlin * rew_W
+    for (int li = 0; li < L; li++) {
+      float d_h2 = 2.0f * (h2[li] - h_tgt[li]) + drlin * m->rew_W[li];
+
+      // through tanh: dh2/dpre = (1 - h2^2)
+      float d_pre = d_h2 * (1.0f - h2[li] * h2[li]);
+
+      // dyn_W grads: pre = sum_j h[j]*W + a2*W_action
+      float *grow = &g_dyn[li * (L + 1)];
+      for (int j = 0; j < L; j++)
+        grow[j] += d_pre * h[j];
+      grow[L] += d_pre * a2;
+    }
+  }
+
+  // SGD update (avg)
+  float scale = lr / (float)B;
+  for (int idx = 0; idx < L * (L + 1); idx++)
+    m->dyn_W[idx] -= scale * g_dyn[idx];
+  for (int li = 0; li < L; li++)
+    m->rew_W[li] -= scale * g_rewW[li];
+  m->rew_b -= scale * g_rewB;
+
+  free(h);
+  free(h2);
+  free(h_tgt);
+  free(pre2);
+  free(g_dyn);
+  free(g_rewW);
+}
