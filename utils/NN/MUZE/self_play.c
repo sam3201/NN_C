@@ -65,6 +65,7 @@ void selfplay_run(MuModel *model, void *env_state,
       (float *)malloc(sizeof(float) * (size_t)max_steps * (size_t)A);
   float *reward_buf = (float *)malloc(sizeof(float) * (size_t)max_steps);
   int *act_buf = (int *)malloc(sizeof(int) * (size_t)max_steps);
+  float *z_buf = (float *)malloc(sizeof(float) * (size_t)max_steps);
 
   float *obs0 = (float *)malloc(sizeof(float) * (size_t)obs_dim);
 
