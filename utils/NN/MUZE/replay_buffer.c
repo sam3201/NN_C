@@ -102,6 +102,7 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
     return idx;
   }
 }
+
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
   if (!rb || !obs || !pi)
     return;
