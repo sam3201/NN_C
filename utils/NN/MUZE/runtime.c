@@ -157,8 +157,8 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   TrainerConfig tc;
   if (cfg)
     tc = *cfg;
-  else if (rt->has_trainer_cfg)
-    tc = rt->trainer_cfg;
+  else if (rt->has_cfg)
+    tc = rt->cfg;
   else
     tc = trainer_default_cfg();
 
@@ -168,6 +168,7 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   // dynamics/reward pass (obs,a,r,next_obs,done)
   trainer_train_dynamics(model, rt->rb, &tc);
 }
+
 static void normalize_probs(float *p, size_t n) {
   float sum = 0.0f;
   for (size_t i = 0; i < n; i++) {
