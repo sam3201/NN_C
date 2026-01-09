@@ -136,7 +136,7 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim, size_t action_count,
   float u = (rng && rng->rand01) ? rng->rand01(rng->ctx)
                                  : (float)rand() / (float)RAND_MAX;
   if (u < eps) {
-    chosen = rng->rand01(rng->ctx) < 0.5f ? 0 : action_count - 1;
+    chosen = rand_uniform_index(action_count);
   } else {
     chosen = sample_from_probs(action_probs, action_count);
   }
