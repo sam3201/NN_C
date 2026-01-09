@@ -10,6 +10,7 @@
 // You MUST fill in the ADAPTER SECTION to match your actual MUZE env API.
 
 #include <assert.h>
+#include <curses.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
