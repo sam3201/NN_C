@@ -93,55 +93,47 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
     return;
 
   size_t n = rb_size(rb);
-  if (n < (size_t)cfg->min_replay_size) {
-    printf("[train] waiting: replay=%zu < min=%d\n", n, cfg->min_replay_size);
+  if ((int)n < cfg->min_replay_size)
     return;
-  }
 
-  const int B = cfg->batch_size;
-  const int obs_dim = muzero_model_obs_dim(model);
-  const int A = muzero_model_action_count(model);
+  int B = cfg->batch_size;
+  if (B <= 0)
+    return;
 
-  // pick your actual config field name here:
+  int steps = cfg->train_steps;
+  if (steps <= 0)
+    steps = 1;
+
   float lr = cfg->lr;
   if (!(lr > 0.0f))
-    lr = 0.05f;
+    return;
 
-  float *obs_batch =
-      (float *)malloc(sizeof(float) * (size_t)B * (size_t)obs_dim);
+  int O = muzero_model_obs_dim(model);
+  int A = muzero_model_action_count(model);
+  if (O <= 0 || A <= 0)
+    return;
+
+  float *obs_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
   float *pi_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
   float *z_batch = (float *)malloc(sizeof(float) * (size_t)B);
 
-  float *p_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
-  float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
-
-  if (!obs_batch || !pi_batch || !z_batch || !p_pred || !v_pred) {
+  if (!obs_batch || !pi_batch || !z_batch) {
     free(obs_batch);
     free(pi_batch);
     free(z_batch);
-    free(p_pred);
-    free(v_pred);
     return;
   }
 
-  for (int step = 0; step < cfg->train_steps; step++) {
+  // Optional: for logging only
+  float *p_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
+  float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
+
+  for (int t = 0; t < steps; t++) {
     int actual = rb_sample(rb, B, obs_batch, pi_batch, z_batch);
     if (actual <= 0)
       break;
 
-    // forward pass
-    muzero_model_forward_batch(model, obs_batch, actual, p_pred, v_pred);
-
-    // compute loss (logging)
-    float pol_loss = 0.0f, val_loss = 0.0f;
-    for (int i = 0; i < actual; i++) {
-      pol_loss += cross_entropy(&pi_batch[i * A], &p_pred[i * A], A);
-      val_loss += mse(z_batch[i], v_pred[i]);
-    }
-    pol_loss /= (float)actual;
-    val_loss /= (float)actual;
-
-    // backward/update  <-- use actual, not B
+    // Train policy/value via model hook or default batch trainer
     if (model->train_policy_value) {
       model->train_policy_value(model, obs_batch, pi_batch, z_batch, actual,
                                 lr);
@@ -149,15 +141,33 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
       muzero_model_train_batch(model, obs_batch, pi_batch, z_batch, actual, lr);
     }
 
-    if ((step % 50) == 0) {
-      printf("[train] step=%d pol=%.4f val=%.4f replay=%zu\n", step, pol_loss,
-             val_loss, rb_size(rb));
+    // Lightweight logging (optional)
+    if (p_pred && v_pred && (t == 0 || (t % 50) == 0)) {
+      muzero_model_forward_batch(model, obs_batch, actual, p_pred, v_pred);
+
+      double v_mse = 0.0;
+      int cnt = 0;
+      for (int i = 0; i < actual; i++) {
+        float vp = v_pred[i];
+        float zt = z_batch[i];
+        if (is_finite_float(vp) && is_finite_float(zt)) {
+          double d = (double)vp - (double)zt;
+          v_mse += d * d;
+          cnt++;
+        }
+      }
+      if (cnt > 0)
+        v_mse /= (double)cnt;
+
+      printf("[train pv] step=%d/%d batch=%d v_mse=%.6f replay=%zu\n", t + 1,
+             steps, actual, (float)v_mse, n);
     }
   }
+
+  free(p_pred);
+  free(v_pred);
 
   free(obs_batch);
   free(pi_batch);
   free(z_batch);
-  free(p_pred);
-  free(v_pred);
 }
