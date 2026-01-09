@@ -60,6 +60,8 @@ if [ "$?" -eq 0 ]; then
 else
   echo Run Failed
   rm "$OUT"
+  rm "a.sh"
+  rm "a.sh.dSYM"
   exit 1
 fi
   
