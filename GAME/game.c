@@ -472,7 +472,6 @@ static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
 Chunk *get_chunk(int cx, int cy);
 static inline float mob_radius_world(MobType t);
 static void on_mob_killed(MobType t, Vector2 mob_world_pos);
-
 // ----------------------------------------------------------------------
 
 static pthread_t workers[WORKER_COUNT];
