@@ -87,6 +87,7 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   return;
   }
 }
+
 void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
                                const TrainerConfig *cfg) {
   if (!model || !rb || !cfg)
