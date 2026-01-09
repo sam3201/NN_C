@@ -12,6 +12,7 @@ typedef struct {
   ReplayBuffer *rb;
 
   float *last_obs;
+  float *last_pi; // <--- ADD THIS
   int last_action;
   int has_last;
 
