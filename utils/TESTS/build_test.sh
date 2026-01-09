@@ -51,12 +51,13 @@ $CC $CFLAGS \
 
 echo
 echo "Build OK"
-echo "Run with: ./$OUT"
-
-if [ "$?" -eq 0 ]; then
+lldb ./$OUT
+if [ "$?" -eq 0 ]; then 
   exit 0
+  echo Running $OUT
 else
   exit 1
+
 fi
   
 
