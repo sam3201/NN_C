@@ -1,358 +1,277 @@
-// utils/TESTS/muzero_game_env_smoke_test.c
+// utils/TESTS/muze_curses_viz_test.c
+// Terminal visualizer for MUZE using curses (ncurses).
 //
-// Smoke/integration test for full (non-toy) MuZero stack using game_env.
-// This is meant to:
-//   - step a real env (game_env) for a few episodes with random actions
-//   - store transitions into replay buffer
-//   - run a tiny training loop (a few gradient steps)
-//   - sanity-check for NaNs / crashes / shape mismatches
+// Build (macOS):
+//   gcc muze_curses_viz_test.c <your_muze_objs...> -lncurses -o muze_curses_viz
 //
-// You MUST fill in the ADAPTER SECTION to match your actual MUZE env API.
+// Notes:
+// - You MUST fill in the ADAPTER section to match your APIs.
+// - Everything else is generic and should stay as-is.
 
-#include <assert.h>
 #include <curses.h>
-#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
-// Pull in MUZE
-#include "../NN/MUZE/all.h"      // adjust include path if needed
-#include "../NN/MUZE/game_env.h" // real env header
-
-// ===========================
-// ADAPTER SECTION (EDIT THIS)
-// ===========================
+// ============================================================
+// ADAPTER SECTION (EDIT THIS TO MATCH YOUR CODEBASE)
+// ============================================================
 //
-// The idea: normalize your env API into the small set of calls this test uses.
-// If your env API already matches, you can delete adapter wrappers and call
-// directly.
+// Goal: Provide a minimal interface for the visualizer.
+//
+// 1) "tick" function that advances the system once (self-play / train step /
+// inference step) 2) a "stats" struct you can populate from your
+// runtime/trainer/selfplay data 3) optional: a text framebuffer to render your
+// env (grid/board)
 
-#ifndef MUZE_TEST_MAX_OBS
-#define MUZE_TEST_MAX_OBS 4096
-#endif
-
-#ifndef MUZE_TEST_MAX_ACTIONS
-#define MUZE_TEST_MAX_ACTIONS 64
-#endif
-
-// ---- Types you likely already have ----
-// Replace these with your actual types if they differ.
-
-// A single step outcome (replace with your actual step result type).
 typedef struct {
-  float reward;
-  int done;
-} StepOut;
+  // Fill with whatever you can easily query each frame:
+  int episode;
+  int step_in_episode;
 
-// ---- Adapter: env handle type ----
-// If your game_env is a struct, use that type here.
-// If it’s an opaque pointer, use void*.
-typedef GameEnv Env; // <-- CHANGE if your env type is named differently
+  double last_reward;
+  double value_estimate;
+  double policy_entropy;
 
-// ---- Adapter functions (map to your real ones) ----
+  int replay_size;
+  int games_in_buffer;
 
-// Create an environment
+  double loss_total;
+  double loss_policy;
+  double loss_value;
+  double loss_reward;
 
-// Destroy/free environment
-static void env_destroy(Env *e) {
-  // e.g. game_env_destroy(e);
-  game_env_destroy(e); // <-- EDIT
-}
+  double lr;
 
-// Reset environment and return initial observation into out_obs.
-// Return observation length.
-static int env_reset(Env *e, GameState *state) {
-  // Examples:
-  //   int n = game_env_reset(e, out_obs, max_obs);
-  //   Obs o = game_env_reset(e); memcpy(out_obs, o.data, ...)
+  // search stats if you have them
+  int mcts_sims;
+  int mcts_depth;
+} VizStats;
 
-  game_env_reset(state); // <-- EDIT
-}
+// Optional env render buffer (ASCII grid). If you don’t have a grid env,
+// you can leave width/height = 0 and fb = NULL.
+typedef struct {
+  int width;
+  int height;
+  // fb is row-major, each cell one char (not null-terminated per row).
+  const char *fb;
+} VizFrame;
 
-GameEnv *game_env_init(GameEnv *game_env, gameenv_reset_fn reset_fn,
-                       gameenv_step_fn step_fn);
-
-// Step environment with action. Writes next obs into out_obs.
-// Returns (reward, done) and obs length through *out_nobs.
-static StepOut env_step(Env *e, int action, float *out_obs, int max_obs,
-                        int *out_nobs) {
-  StepOut r = {0};
-
-  // Examples:
-  //   r.reward = game_env_step(e, action, out_obs, max_obs, out_nobs, &r.done);
-  //   StepResult sr = game_env_step(e, action); ...
-  r.reward = 0.0f;
-  r.done = 0;
-
-  // A common pattern:
-  //   float reward; int done; int nobs;
-  //   reward = game_env_step(e, action, out_obs, max_obs, &nobs, &done);
-  //   r.reward = reward; r.done = done; *out_nobs = nobs;
-
-  float reward = 0.0f;
-  int done = 0;
-  int nobs = 0;
-
-  reward = game_env_step(e, action, out_obs, max_obs, &nobs, &done); // <-- EDIT
-  r.reward = reward;
-  r.done = done;
-  *out_nobs = nobs;
-
-  return r;
-}
-
-// Number of discrete actions in this env
-static int env_num_actions(Env *e) {
-  // e.g. return game_env_action_space(e);
-  return game_env_num_actions(e); // <-- EDIT
-}
-
-// ===========================
-// END ADAPTER SECTION
-// ===========================
-
-// ---------------------------
-// Small helpers
-// ---------------------------
-static int rand_int(int lo, int hi_inclusive) {
-  return lo + (rand() % (hi_inclusive - lo + 1));
-}
-
-static int is_finite_array(const float *x, int n) {
-  for (int i = 0; i < n; i++) {
-    if (!isfinite((double)x[i]))
-      return 0;
-  }
-  return 1;
-}
-
-static void banner(const char *msg) {
-  printf("\n====================\n%s\n====================\n", msg);
-}
-
-// ---------------------------
-// MAIN TEST
-// ---------------------------
-int main(void) {
-  srand((unsigned)time(NULL));
-
-  banner("MUZE non-toy MuZero smoke test (game_env)");
-
-  // ---- Hyperparameters (small, fast smoke) ----
-  const int episodes = 3;
-  const int max_steps_per_episode = 200;
-
-  const int train_steps = 25; // small sanity training
-  const int batch_size = 16;
-
-  // ---- Create env ----
-  unsigned int seed = (unsigned int)time(NULL);
-  Env *env = env_create(seed);
-  if (!env) {
-    fprintf(stderr, "ERROR: env_create failed\n");
-    return 1;
-  }
-
-  const int action_n = env_num_actions(env);
-  if (action_n <= 1 || action_n > MUZE_TEST_MAX_ACTIONS) {
-    fprintf(stderr, "ERROR: suspicious action count: %d\n", action_n);
-    env_destroy(env);
-    return 1;
-  }
-  printf("Action space size: %d\n", action_n);
-
-  // ---- Build MuZero model/config ----
+// ----- You implement these 3 functions -----
+//
+// Return true to keep running, false to stop (or you can stop via 'q' key too).
+static bool muze_viz_tick(VizStats *out_stats) {
+  // TODO: ADVANCE your system by one step:
+  // Examples (depending on how your code is organized):
+  //   - self_play_step(...)
+  //   - trainer_step(...)
+  //   - muze_loop_step(...)
+  //   - runtime_step(...)
   //
-  // NOTE: These names may differ in your codebase.
-  // The intention: create model + replay buffer + trainer/runtime.
+  // Populate out_stats with whatever you have.
 
-  // If you already have a single "runtime" object, prefer that.
-  // Otherwise use your existing components.
+  memset(out_stats, 0, sizeof(*out_stats));
+  out_stats->episode = 0;
+  out_stats->step_in_episode = 0;
+  out_stats->last_reward = 0.0;
+  out_stats->value_estimate = 0.0;
+  out_stats->policy_entropy = 0.0;
+  out_stats->replay_size = 0;
+  out_stats->games_in_buffer = 0;
+  out_stats->loss_total = 0.0;
+  out_stats->loss_policy = 0.0;
+  out_stats->loss_value = 0.0;
+  out_stats->loss_reward = 0.0;
+  out_stats->lr = 0.0;
+  out_stats->mcts_sims = 0;
+  out_stats->mcts_depth = 0;
 
-  // --- Replay Buffer ---
-  replay_buffer_t *rb =
-      replay_buffer_create(/*capacity=*/50000); // <-- EDIT if name differs
-  if (!rb) {
-    fprintf(stderr, "ERROR: replay_buffer_create failed\n");
-    env_destroy(env);
-    return 1;
+  // Return true to keep running:
+  return true;
+}
+
+static VizFrame muze_viz_get_frame(void) {
+  // TODO: Return a pointer to a stable framebuffer of ASCII tiles.
+  // If you don’t have a framebuffer, return {0,0,NULL}.
+  VizFrame f = {0, 0, NULL};
+  return f;
+}
+
+static void muze_viz_shutdown(void) {
+  // TODO: Cleanup anything you initialized in your adapter.
+  // (replay buffer, env, model, threads, etc.)
+}
+
+// ============================================================
+// VISUALIZER (no edits usually needed below)
+// ============================================================
+
+static uint64_t now_us(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)(ts.tv_nsec / 1000ULL);
+}
+
+static void draw_box(int y, int x, int h, int w, const char *title) {
+  mvaddch(y, x, ACS_ULCORNER);
+  mvhline(y, x + 1, ACS_HLINE, w - 2);
+  mvaddch(y, x + w - 1, ACS_URCORNER);
+
+  mvvline(y + 1, x, ACS_VLINE, h - 2);
+  mvvline(y + 1, x + w - 1, ACS_VLINE, h - 2);
+
+  mvaddch(y + h - 1, x, ACS_LLCORNER);
+  mvhline(y + h - 1, x + 1, ACS_HLINE, w - 2);
+  mvaddch(y + h - 1, x + w - 1, ACS_LRCORNER);
+
+  if (title && title[0]) {
+    mvprintw(y, x + 2, " %s ", title);
+  }
+}
+
+static void draw_hud(int y, int x, int w, const VizStats *s, double fps,
+                     bool paused) {
+  char pbuf[32];
+  snprintf(pbuf, sizeof(pbuf), "%s", paused ? "PAUSED" : "RUNNING");
+
+  mvprintw(y + 0, x + 0, "Status: %-7s   FPS: %6.1f", pbuf, fps);
+  mvprintw(y + 1, x + 0, "Episode: %-6d   Step: %-6d   Reward: %+8.4f",
+           s->episode, s->step_in_episode, s->last_reward);
+  mvprintw(y + 2, x + 0, "Value:   %+8.4f   Entropy: %8.4f   LR: %g",
+           s->value_estimate, s->policy_entropy, s->lr);
+  mvprintw(y + 3, x + 0, "Replay:  size=%-7d games=%-6d", s->replay_size,
+           s->games_in_buffer);
+  mvprintw(y + 4, x + 0,
+           "Loss:    total=%8.5f  policy=%8.5f  value=%8.5f  reward=%8.5f",
+           s->loss_total, s->loss_policy, s->loss_value, s->loss_reward);
+  mvprintw(y + 5, x + 0, "MCTS:    sims=%-6d depth=%-4d", s->mcts_sims,
+           s->mcts_depth);
+
+  // Controls
+  mvprintw(y + 7, x + 0,
+           "Keys:  q=quit   p=pause   n=step(when paused)   r=reset screen");
+  mvprintw(y + 8, x + 0,
+           "       +/- = speed    (speed affects tick rate / sleep)");
+  // clear remaining line space if needed
+  (void)w;
+}
+
+static void draw_frame(int y, int x, int max_h, int max_w, VizFrame f) {
+  if (f.width <= 0 || f.height <= 0 || !f.fb) {
+    mvprintw(y, x, "(no framebuffer provided by adapter)");
+    return;
   }
 
-  // --- MuZero Model ---
-  // You likely have a config struct; keep it minimal for smoke test.
-  muzero_config_t cfg;
-  memset(&cfg, 0, sizeof(cfg));
+  int draw_h = (f.height < max_h) ? f.height : max_h;
+  int draw_w = (f.width < max_w) ? f.width : max_w;
 
-  // Fill reasonable defaults; EDIT these fields to match your struct.
-  // Common fields:
-  // cfg.action_space_size = action_n;
-  // cfg.observation_size  = ??? (if fixed); else model reads obs length
-  // dynamically. cfg.num_unroll_steps  = ... cfg.discount          = 0.997f;
-  // cfg.hidden_dim        = 128;
-  // cfg.learning_rate     = 1e-3f;
-
-  cfg.action_space_size = action_n; // <-- EDIT if field differs
-  cfg.discount = 0.997f;            // <-- EDIT if field differs
-  cfg.num_unroll_steps = 5;         // <-- EDIT if field differs
-  cfg.hidden_dim = 128;             // <-- EDIT if field differs
-  cfg.learning_rate = 1e-3f;        // <-- EDIT if field differs
-
-  muzero_model_t *model = muzero_model_create(&cfg); // <-- EDIT if name differs
-  if (!model) {
-    fprintf(stderr, "ERROR: muzero_model_create failed\n");
-    replay_buffer_destroy(rb);
-    env_destroy(env);
-    return 1;
-  }
-
-  // --- Trainer ---
-  trainer_t *trainer = trainer_create(model, rb); // <-- EDIT if name differs
-  if (!trainer) {
-    fprintf(stderr, "ERROR: trainer_create failed\n");
-    muzero_model_destroy(model);
-    replay_buffer_destroy(rb);
-    env_destroy(env);
-    return 1;
-  }
-
-  // -------------------------
-  // Collect experience
-  // -------------------------
-  banner("Collecting experience (random policy, real env)");
-
-  float obs[MUZE_TEST_MAX_OBS];
-  float next_obs[MUZE_TEST_MAX_OBS];
-
-  long total_steps = 0;
-
-  for (int ep = 0; ep < episodes; ep++) {
-    int obs_n = env_reset(env, obs, MUZE_TEST_MAX_OBS);
-    if (obs_n <= 0 || obs_n > MUZE_TEST_MAX_OBS) {
-      fprintf(stderr, "ERROR: env_reset returned obs_n=%d\n", obs_n);
-      break;
-    }
-    if (!is_finite_array(obs, obs_n)) {
-      fprintf(stderr, "ERROR: env_reset produced non-finite obs\n");
-      break;
-    }
-
-    float ep_return = 0.0f;
-
-    for (int t = 0; t < max_steps_per_episode; t++) {
-      int a = rand_int(0, action_n - 1);
-
-      int next_n = 0;
-      StepOut so = env_step(env, a, next_obs, MUZE_TEST_MAX_OBS, &next_n);
-
-      if (next_n <= 0 || next_n > MUZE_TEST_MAX_OBS) {
-        fprintf(stderr, "ERROR: env_step returned next_n=%d\n", next_n);
-        so.done = 1;
-      }
-      if (!is_finite_array(next_obs, next_n)) {
-        fprintf(stderr, "ERROR: env_step produced non-finite next_obs\n");
-        so.done = 1;
-      }
-      if (!isfinite((double)so.reward)) {
-        fprintf(stderr, "ERROR: env_step produced non-finite reward\n");
-        so.done = 1;
-      }
-
-      // Push to replay buffer (EDIT to match your transition format)
-      //
-      // Typical fields:
-      //  - observation (s)
-      //  - action (a)
-      //  - reward (r)
-      //  - done (terminal)
-      //  - next observation (s')
-      //
-      // If your buffer stores trajectories, you may want:
-      //    replay_buffer_begin_episode(...)
-      //    replay_buffer_add_step(...)
-      //    replay_buffer_end_episode(...)
-      //
-      replay_buffer_add_transition(rb, obs, obs_n, a, so.reward, next_obs,
-                                   next_n,
-                                   so.done); // <-- EDIT if signature differs
-
-      // Advance
-      memcpy(obs, next_obs, (size_t)next_n * sizeof(float));
-      obs_n = next_n;
-
-      ep_return += so.reward;
-      total_steps++;
-
-      if (so.done)
-        break;
-    }
-
-    printf("Episode %d return: %.3f\n", ep, ep_return);
-  }
-
-  printf("Collected total steps: %ld\n", total_steps);
-
-  // -------------------------
-  // Train a tiny amount
-  // -------------------------
-  banner("Training smoke (few steps)");
-
-  for (int i = 0; i < train_steps; i++) {
-    // If you have a function that samples internally:
-    //   trainer_step(trainer, batch_size);
-    // If you need to pass config, pass cfg.
-
-    int ok =
-        trainer_step(trainer, batch_size); // <-- EDIT if name/signature differs
-    if (!ok) {
-      fprintf(stderr, "ERROR: trainer_step failed at i=%d\n", i);
-      break;
-    }
-
-    if ((i % 5) == 0) {
-      // Optional: print loss stats if you have them
-      // printf("step %d: loss=%f\n", i, trainer->last_loss);
-      printf("train step %d ok\n", i);
+  for (int r = 0; r < draw_h; r++) {
+    for (int c = 0; c < draw_w; c++) {
+      char ch = f.fb[r * f.width + c];
+      mvaddch(y + r, x + c, (ch == 0) ? ' ' : ch);
     }
   }
+}
 
-  // -------------------------
-  // Optional: quick inference sanity
-  // -------------------------
-  banner("Inference sanity");
+int main(void) {
+  initscr();
+  cbreak();
+  noecho();
+  keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE);
+  curs_set(0);
 
-  int obs_n = env_reset(env, obs, MUZE_TEST_MAX_OBS);
-  if (obs_n > 0) {
-    // Typical: model_initial_inference(model, obs, obs_n, &out)
-    // Where out contains policy logits & value.
-    muzero_infer_out_t out;
-    memset(&out, 0, sizeof(out));
+  // If your terminal supports colors, you can enable them:
+  if (has_colors()) {
+    start_color();
+    use_default_colors();
+  }
 
-    int ok =
-        muzero_model_initial_inference(model, obs, obs_n, &out); // <-- EDIT
-    if (!ok) {
-      fprintf(stderr, "WARN: initial_inference failed (check adapter)\n");
-    } else {
-      // Basic checks
-      if (!isfinite((double)out.value)) {
-        fprintf(stderr, "ERROR: value is non-finite\n");
-      } else {
-        printf("value: %f\n", (double)out.value);
+  bool running = true;
+  bool paused = false;
+
+  // Speed control (microseconds sleep after each tick)
+  int64_t sleep_us = 0; // start fast
+  const int64_t sleep_min = 0;
+  const int64_t sleep_max = 50000;
+
+  VizStats stats;
+  memset(&stats, 0, sizeof(stats));
+
+  uint64_t last_fps_t = now_us();
+  uint64_t frames = 0;
+  double fps = 0.0;
+
+  while (running) {
+    int ch = getch();
+    if (ch != ERR) {
+      if (ch == 'q' || ch == 'Q')
+        running = false;
+      else if (ch == 'p' || ch == 'P')
+        paused = !paused;
+      else if (ch == 'r' || ch == 'R') {
+        clear();
+        refresh();
+      } else if (ch == '+') {
+        sleep_us -= 2000;
+        if (sleep_us < sleep_min)
+          sleep_us = sleep_min;
+      } else if (ch == '-') {
+        sleep_us += 2000;
+        if (sleep_us > sleep_max)
+          sleep_us = sleep_max;
+      } else if (ch == 'n' || ch == 'N') {
+        // single-step only when paused
+        if (paused) {
+          (void)muze_viz_tick(&stats);
+        }
       }
     }
+
+    if (!paused) {
+      if (!muze_viz_tick(&stats)) {
+        running = false;
+      }
+    }
+
+    // Layout
+    int term_h, term_w;
+    getmaxyx(stdscr, term_h, term_w);
+
+    int hud_h = 12;
+    int hud_w = term_w - 2;
+    int frame_y = hud_h + 2;
+    int frame_h = term_h - frame_y - 2;
+    int frame_w = term_w - 2;
+
+    erase();
+
+    draw_box(0, 0, hud_h, term_w, "MUZE Visualizer");
+    draw_hud(1, 2, hud_w, &stats, fps, paused);
+
+    draw_box(hud_h, 0, term_h - hud_h, term_w, "Environment / Frame");
+    VizFrame f = muze_viz_get_frame();
+    draw_frame(frame_y, 2, frame_h, frame_w, f);
+
+    // FPS calc
+    frames++;
+    uint64_t t = now_us();
+    if (t - last_fps_t >= 500000) { // update every 0.5s
+      fps = (double)frames * 1000000.0 / (double)(t - last_fps_t);
+      frames = 0;
+      last_fps_t = t;
+    }
+
+    refresh();
+
+    if (sleep_us > 0)
+      usleep((useconds_t)sleep_us);
   }
 
-  // -------------------------
-  // Cleanup
-  // -------------------------
-  banner("Cleanup");
-
-  trainer_destroy(trainer);    // <-- EDIT if name differs
-  muzero_model_destroy(model); // <-- EDIT if name differs
-  replay_buffer_destroy(rb);   // <-- EDIT if name differs
-  env_destroy(env);
-
-  printf("DONE\n");
+  endwin();
+  muze_viz_shutdown();
   return 0;
 }
