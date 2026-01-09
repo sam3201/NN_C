@@ -64,76 +64,56 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
   rb->z_buf[idx] = z;
 }
 
-void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
-  if (!rb || !obs || !pi)
-    return;
-
-  // We MUST make transition fields valid too; use next_obs = obs as safe
-  // default. (Trainer dynamics can still learn something; or you can skip
-  // done=0.)
-  rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs, /*done*/ 0);
-}
-
 -- -a / replay_buffer.c++ +
     b / replay_buffer.c @ @-size_t rb_push_full(ReplayBuffer *rb,
                                                 const float *obs,
                                                 const float *pi, -float z) {
-  size_t rb_push_full(ReplayBuffer * rb, +const float *obs, +const float *pi,
-                      float z, +int action, +float reward,
-                      const float *next_obs, +int done) {
+  +size_t rb_push_full(ReplayBuffer * rb, +const float *obs, +const float *pi,
+                       +float z, +int action, +float reward,
+                       +const float *next_obs, +int done) {
     if (!rb)
       return 0;
 
     size_t idx = rb->write_idx;
-    // --- policy/value tuples ---
-    memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
+    -       // copy obs -> rb->obs_buf[idx]
+        + + // --- policy/value tuples ---
+          memcpy(rb->obs_buf + idx * rb->obs_dim, obs,
+                 sizeof(float) * rb->obs_dim);
     memcpy(rb->pi_buf + idx * rb->action_count, pi,
            sizeof(float) * rb->action_count);
     rb->z_buf[idx] = z;
 
-    // --- transition tuples ---
-    rb->a_buf[idx] = action;
-    rb->r_buf[idx] = reward;
-    memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
-           +sizeof(float) * rb->obs_dim);
-    rb->done_buf[idx] = done ? 1 : 0;
-
-    // advance head / size
-    rb->write_idx = (rb->write_idx + 1) % rb->capacity;
+    + // --- transition tuples ---
+        +rb->a_buf[idx] = action;
+    +rb->r_buf[idx] = reward;
+    +memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
+            +sizeof(float) * rb->obs_dim);
+    +rb->done_buf[idx] = done ? 1 : 0;
+    +
+        // advance head / size
+        rb->write_idx = (rb->write_idx + 1) % rb->capacity;
     if (rb->size < rb->capacity)
       rb->size++;
 
     return idx;
   }
-  void rb_push(ReplayBuffer * rb, const float *obs, const float *pi, float z) {
+  @ @ void rb_push(ReplayBuffer * rb, const float *obs, const float *pi,
+                   float z) {
     if (!rb || !obs || !pi)
       return;
 
-    // Make transition fields valid too; safest default: next_obs = obs.
-    rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
-                 +/*next_obs*/ obs, /*done*/ 0);
+    - // We MUST make transition fields valid too; use next_obs = obs as safe
+        - // default. (Trainer dynamics can still learn something; or you can
+          // skip
+        - // done=0.)
+        -rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs,
+                      /*done*/ 0);
+    + // Make transition fields valid too; safest default: next_obs = obs.
+        +rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
+                      +/*next_obs*/ obs, /*done*/ 0);
   }
-  void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
-                          float reward, const float *next_obs, int done) {
-    if (!rb || !obs || !next_obs)
-      return;
-
-    Default pi = one - hot(action),
-            z = reward(1 - step) float *tmp_pi =
-                (float *)malloc(sizeof(float) * (size_t)rb->action_count);
-    if (!tmp_pi)
-      return;
-    if (action >= 0 && action < rb->action_count)
-      tmp_pi[action] = 1.0f;
-
-    rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs,
-                 done);
-
-    free(tmp_pi);
-  }
-
-  void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
-                          float reward, const float *next_obs, int done) {
+  @ @ void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
+                              float reward, const float *next_obs, int done) {
     if (!rb || !obs || !next_obs)
       return;
 
@@ -141,17 +121,15 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
     float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
     if (!tmp_pi)
       return;
+    @ @ if (action >= 0 && action < rb->action_count) tmp_pi[action] = 1.0f;
 
-    for (int i = 0; i < rb->action_count; i++)
-      tmp_pi[i] = 0.0f;
-    if (action >= 0 && action < rb->action_count)
-      tmp_pi[action] = 1.0f;
-
-    rb_push_full(rb, obs, tmp_pi, /*z*/ reward, action, reward, next_obs, done);
+    -rb_push_full(rb, obs, tmp_pi, /*z*/ reward, action, reward, next_obs,
+                  done);
+    +rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs,
+                  done);
 
     free(tmp_pi);
   }
-
   static int rand_int(int n) {
     return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
   }
