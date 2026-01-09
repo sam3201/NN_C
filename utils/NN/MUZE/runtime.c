@@ -17,22 +17,26 @@ static TrainerConfig trainer_default_cfg(void) {
 
 MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   MuRuntime *rt = calloc(1, sizeof(MuRuntime));
-  if (!rt || !model)
+  if (!rt)
     return NULL;
 
-  rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
+  if (!model) {
+    free(rt);
+    return NULL;
+  }
 
+  rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
   rt->last_obs = malloc(sizeof(float) * (size_t)model->cfg.obs_dim);
   rt->last_pi = malloc(sizeof(float) * (size_t)model->cfg.action_count);
-  memset(rt->last_pi, 0, sizeof(float) * (size_t)model->cfg.action_count);
+  if (rt->last_pi)
+    memset(rt->last_pi, 0, sizeof(float) * (size_t)model->cfg.action_count);
 
   rt->has_last = 0;
   rt->gamma = gamma;
   rt->total_steps = 0;
 
-  // NEW: default trainer cfg (but allow user to override later)
   rt->cfg = trainer_default_cfg();
-  rt->has_cfg = 0; // 0 means "use default unless user sets"
+  rt->has_cfg = 0;
 
   if (!rt->rb || !rt->last_obs || !rt->last_pi) {
     if (rt->rb)
