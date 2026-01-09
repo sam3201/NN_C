@@ -50,6 +50,7 @@ int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
                          int *done_batch);
 
 size_t rb_size(ReplayBuffer *rb);
+void rb_set_z(ReplayBuffer *rb, size_t idx, float z);
 
 #ifdef __cplusplus
 }
