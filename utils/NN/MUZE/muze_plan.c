@@ -50,8 +50,9 @@ static size_t sample_from_probs(const float *p, size_t n, MCTSRng *rng) {
   if (!p || n == 0)
     return 0;
 
-  float r = (float)rng->rand01(rng->ctx) ? rng->rand01(rng->ctx)
-                                         : (float)rand() / (float)RAND_MAX;
+  float r = (float)rng->rand01(rng->ctx) / (float)RAND_MAX
+                ? rng->rand01(rng->ctx)
+                : (float)rand() / (float)RAND_MAX;
   float c = 0.0f;
 
   for (size_t i = 0; i + 1 < n; i++) {
