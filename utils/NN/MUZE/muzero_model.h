@@ -36,6 +36,10 @@ struct MuModel {
   void (*repr)(MuModel *, const float *, float *);
   void (*predict)(MuModel *, const float *, float *, float *);
   void (*dynamics)(MuModel *, const float *, int, float *, float *);
+  void (*train_policy_value)(MuModel *, const float *, const float *,
+                             const float *, int, float);
+  void (*train_dynamics)(MuModel *, const float *, const int *, const float *,
+                         const float *, int, float);
 };
 
 /* creation / destruction */
