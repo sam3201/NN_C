@@ -101,14 +101,15 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
 
     return idx;
   }
-  void rb_push(ReplayBuffer * rb, const float *obs, const float *pi, float z) {
-    if (!rb || !obs || !pi)
-      return;
+}
+void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
+  if (!rb || !obs || !pi)
+    return;
 
-    // Keep transition fields valid: next_obs = obs, action=0, reward=0,
-    // done=0
-    rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
-  }
+  // Keep transition fields valid: next_obs = obs, action=0, reward=0,
+  // done=0
+  rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
+}
 }
 
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
