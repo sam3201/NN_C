@@ -99,7 +99,9 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
   const int A = muzero_model_action_count(model);
 
   // pick your actual config field name here:
-  const float lr = cfg->learning_rate; // <-- IMPORTANT: define lr
+  float lr = cfg->lr;
+  if (!(lr > 0.0f))
+    lr = 0.05f;
 
   float *obs_batch =
       (float *)malloc(sizeof(float) * (size_t)B * (size_t)obs_dim);
