@@ -149,9 +149,6 @@ void selfplay_run(MuModel *model, void *env_state,
       if (ret != 0)
         done_flag = 1;
 
-      // 1) store transition for dynamics training (already done)
-      rb_push_transition(rb, obs_cur, chosen, reward, next_obs, done_flag);
-
       // 2) also store (obs, pi, z) for policy/value training
       //    placeholder z for now; we will overwrite with discounted return
       //    later
