@@ -20,6 +20,96 @@
 #define SAVE_ROOT "saves"
 #endif
 
+/* =======================
+   ENUMS
+======================= */
+
+typedef enum {
+  STATE_TITLE = 0,
+  STATE_WORLD_SELECT,
+  STATE_WORLD_CREATE,
+  STATE_PLAYING,
+  STATE_PAUSED,
+  STATE_COUNT
+} GameStateType;
+
+typedef enum {
+  TOOL_HAND = 0,
+  TOOL_AXE = 1,
+  TOOL_PICKAXE = 2,
+  TOOL_SWORD = 3,
+  TOOL_ARMOR = 4,
+  TOOL_BOW = 5,
+  TOOL_COUNT = 6,
+  TOOL_NONE = -1
+} ToolType;
+
+typedef enum {
+  RES_TREE = 0,
+  RES_ROCK,
+  RES_GOLD,
+  RES_FOOD,
+  RES_NONE
+} ResourceType;
+
+typedef enum {
+  MOB_PIG = 0,
+  MOB_SHEEP,
+  MOB_SKELETON,
+  MOB_ZOMBIE,
+  MOB_COUNT
+} MobType;
+
+typedef enum {
+  INTENT_NONE = 0,
+  INTENT_ATTACK,
+  INTENT_HARVEST,
+  INTENT_COUNT
+} IntentType;
+
+typedef enum {
+  HIT_NONE = 0,
+  HIT_RESOURCE = 1,
+  HIT_MOB = 2,
+  HIT_BASE = 3
+} HitKind;
+
+typedef struct {
+  HitKind kind;
+  float t;         // distance along ray (world units)
+  int cx, cy;      // chunk coords of hit
+  int index;       // resource index OR mob index OR tribe index
+  Vector2 hit_pos; // world-space hit point
+} RayHit;
+
+typedef enum {
+  ACTION_UP = 0,
+  ACTION_DOWN,
+  ACTION_LEFT,
+  ACTION_RIGHT,
+  ACTION_ATTACK,
+  ACTION_FIRE,
+  ACTION_HARVEST,
+  ACTION_EAT,
+  // ACTION_CRAFT,
+  ACTION_CRAFT_AXE,
+  ACTION_CRAFT_PICKAXE,
+  ACTION_CRAFT_SWORD,
+  ACTION_CRAFT_ARMOR,
+  ACTION_CRAFT_BOW,
+  ACTION_CRAFT_ARROWS,
+  ACTION_NONE,
+  ACTION_COUNT
+} ActionType;
+
+typedef enum {
+  PROJ_OWNER_PLAYER = 0,
+  PROJ_OWNER_AGENT = 1,
+  PROJ_OWNER_MOB = 2
+} ProjOwner;
+
+typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
+
 static uint32_t g_world_seed = 0;
 
 // Forward declarations for functions used before their definitions (C99+)
@@ -128,96 +218,6 @@ Chunk *get_chunk(int cx, int cy);
 
 #define MAX_WORLDS 4096
 #define WORLD_NAME_MAX 4096
-
-/* =======================
-   ENUMS
-======================= */
-
-typedef enum {
-  STATE_TITLE = 0,
-  STATE_WORLD_SELECT,
-  STATE_WORLD_CREATE,
-  STATE_PLAYING,
-  STATE_PAUSED,
-  STATE_COUNT
-} GameStateType;
-
-typedef enum {
-  TOOL_HAND = 0,
-  TOOL_AXE = 1,
-  TOOL_PICKAXE = 2,
-  TOOL_SWORD = 3,
-  TOOL_ARMOR = 4,
-  TOOL_BOW = 5,
-  TOOL_COUNT = 6,
-  TOOL_NONE = -1
-} ToolType;
-
-typedef enum {
-  RES_TREE = 0,
-  RES_ROCK,
-  RES_GOLD,
-  RES_FOOD,
-  RES_NONE
-} ResourceType;
-
-typedef enum {
-  MOB_PIG = 0,
-  MOB_SHEEP,
-  MOB_SKELETON,
-  MOB_ZOMBIE,
-  MOB_COUNT
-} MobType;
-
-typedef enum {
-  INTENT_NONE = 0,
-  INTENT_ATTACK,
-  INTENT_HARVEST,
-  INTENT_COUNT
-} IntentType;
-
-typedef enum {
-  HIT_NONE = 0,
-  HIT_RESOURCE = 1,
-  HIT_MOB = 2,
-  HIT_BASE = 3
-} HitKind;
-
-typedef struct {
-  HitKind kind;
-  float t;         // distance along ray (world units)
-  int cx, cy;      // chunk coords of hit
-  int index;       // resource index OR mob index OR tribe index
-  Vector2 hit_pos; // world-space hit point
-} RayHit;
-
-typedef enum {
-  ACTION_UP = 0,
-  ACTION_DOWN,
-  ACTION_LEFT,
-  ACTION_RIGHT,
-  ACTION_ATTACK,
-  ACTION_FIRE,
-  ACTION_HARVEST,
-  ACTION_EAT,
-  // ACTION_CRAFT,
-  ACTION_CRAFT_AXE,
-  ACTION_CRAFT_PICKAXE,
-  ACTION_CRAFT_SWORD,
-  ACTION_CRAFT_ARMOR,
-  ACTION_CRAFT_BOW,
-  ACTION_CRAFT_ARROWS,
-  ACTION_NONE,
-  ACTION_COUNT
-} ActionType;
-
-typedef enum {
-  PROJ_OWNER_PLAYER = 0,
-  PROJ_OWNER_AGENT = 1,
-  PROJ_OWNER_MOB = 2
-} ProjOwner;
-
-typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
 // ----- forward prototypes -----
 /* =======================
