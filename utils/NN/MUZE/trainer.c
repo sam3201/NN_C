@@ -41,11 +41,11 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
     return;
 
   -size_t n = rb_size(rb);
-  -if ((int)n < cfg->min_replay_size) + size_t n0 = rb_size(rb);
   +if ((int)n0 < cfg->min_replay_size) return;
 
   int B = cfg->batch_size;
   int O = muzero_model_obs_dim(model);
+
 void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
      float lat_mse = 0.0f, rew_mse = 0.0f;
 
