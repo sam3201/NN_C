@@ -6,7 +6,7 @@
 #include "muze_cortex.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
-#include "runtime.h"
+#include "trainer.h"
 #include <stdint.h>
 
 #define TRAIN_WINDOW 1024         // training cache size, NOT memory size
