@@ -115,21 +115,6 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 
 void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
 
-void mu_runtime_train(MuRuntime *rt, MuModel *model) {
-  if (!rt || !model)
-    return;
-
-  // you can tune these defaults later
-  TrainerConfig tc = {
-      .batch_size = 32,
-      .train_steps = 200,
-      .min_replay_size = TRAIN_WARMUP,
-      .lr = 0.05f,
-  };
-
-  trainer_train_from_replay(model, rt->rb, &tc);
-}
-
 #include <math.h>
 #include <string.h>
 
