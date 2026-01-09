@@ -87,7 +87,7 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
   if (cortex->use_mcts && cortex->mcts_model) {
     MCTSResult mr = mcts_run(cortex->mcts_model, obs, cortex->mcts_params, rng);
     float *out_pi = malloc(sizeof(float) * action_count);
-    float memcpy(out_pi, mr->pi, sizeof(float) * action_count);
+    float memcpy(out_pi, mr.pi, sizeof(float) * action_count);
     rb_sample(
     mcts_result_free(&mr);
 
