@@ -24,6 +24,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
 
   rt->last_obs = malloc(sizeof(float) * (size_t)model->cfg.obs_dim);
   rt->last_pi = malloc(sizeof(float) * (size_t)model->cfg.action_count);
+  memset(rt->last_pi, 0, sizeof(float) * (size_t)model->cfg.action_count);
 
   rt->has_last = 0;
   rt->gamma = gamma;
@@ -41,7 +42,6 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
     free(rt);
     return NULL;
   }
-  memset(rt->last_pi, 0, sizeof(float) * (size_t)model->cfg.action_count);
 
   return rt;
 }
