@@ -69,7 +69,7 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
   rb->z_buf[idx] = z;
 
   // advance head / size
-  rb->write_idx = (rb->head + 1) % rb->capacity;
+  rb->write_idx = (rb->write_idx + 1) % rb->capacity;
   if (rb->size < rb->capacity)
     rb->size++;
 
