@@ -33,9 +33,12 @@ typedef struct {
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
 void rb_free(ReplayBuffer *rb);
 
-// Push (obs, pi, z) and return the index written (for later overwrite).
+// Push full sample into *all* buffers and return the index written (for later
+// overwrite). Stores: (obs, pi, z) for policy/value (action, reward, next_obs,
+//done) for dynamics
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
-                    float z);
+                    float z, int action, float reward, const float *next_obs,
+                    int done);
 
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z);
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
