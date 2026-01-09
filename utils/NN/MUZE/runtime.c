@@ -10,7 +10,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
 
   rt->last_obs = malloc(sizeof(float) * model->cfg.obs_dim);
-  rt->last_pi = malloc(sizeof(float) * model->cfg.action_count); // <--- ADD
+  rt->last_pi = malloc(sizeof(float) * model->cfg.action_count);
   rt->has_last = 0;
   rt->gamma = gamma;
   rt->total_steps = 0;
@@ -23,7 +23,7 @@ void mu_runtime_free(MuRuntime *rt) {
     return;
   rb_free(rt->rb);
   free(rt->last_obs);
-  free(rt->last_pi); // <--- ADD
+  free(rt->last_pi);
   free(rt);
 }
 
