@@ -69,7 +69,6 @@ static int env_reset(Env *e, GameState *state) {
   //   Obs o = game_env_reset(e); memcpy(out_obs, o.data, ...)
 
   game_env_reset(state); // <-- EDIT
-  return n;
 }
 
 GameEnv *game_env_init(GameEnv *game_env, gameenv_reset_fn reset_fn,
