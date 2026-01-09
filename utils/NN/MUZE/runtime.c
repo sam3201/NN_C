@@ -85,9 +85,9 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng) {
   if (cortex->use_mcts && cortex->mcts_model) {
-    MCTSResult mr = mcts_run(cortex->mcts_model, obs, cortex->mcts_params,
-                             rng) float out_pi[action_count];
-    memcpy(out_pi, mr.pi, sizeof(float) * action_count);
+    MCTSResult mr =
+        mcts_run(cortex->mcts_model, obs, cortex->mcts_params,
+                 rng) float memcpy(out_pi, mr.pi, sizeof(float) * action_count);
     rb_sample(
     mcts_result_free(&mr);
 
