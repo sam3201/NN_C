@@ -127,8 +127,9 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
     if (!rb || !obs || !next_obs)
       return;
 
-    // Default pi = one-hot(action), z = reward (1-step)
-    float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
+    Default pi = one - hot(action),
+            z = reward(1 - step) float *tmp_pi =
+                (float *)malloc(sizeof(float) * (size_t)rb->action_count);
     if (!tmp_pi)
       return;
     if (action >= 0 && action < rb->action_count)
