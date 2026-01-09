@@ -56,6 +56,24 @@ void rb_free(ReplayBuffer *rb) {
   free(rb);
 }
 
+void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
+  if (!rb)
+    return;
+  if (idx >= rb->capacity)
+    return;
+  rb->z_buf[idx] = z;
+}
+
+void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
+  if (!rb || !obs || !pi)
+    return;
+
+  // We MUST make transition fields valid too; use next_obs = obs as safe
+  // default. (Trainer dynamics can still learn something; or you can skip
+  // done=0.)
+  rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs, /*done*/ 0);
+}
+
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z) {
   if (!rb)
@@ -74,24 +92,6 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
     rb->size++;
 
   return idx;
-}
-
-void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
-  if (!rb)
-    return;
-  if (idx >= rb->capacity)
-    return;
-  rb->z_buf[idx] = z;
-}
-
-void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
-  if (!rb || !obs || !pi)
-    return;
-
-  // We MUST make transition fields valid too; use next_obs = obs as safe
-  // default. (Trainer dynamics can still learn something; or you can skip
-  // done=0.)
-  rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs, /*done*/ 0);
 }
 
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
