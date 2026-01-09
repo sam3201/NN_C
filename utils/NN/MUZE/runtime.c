@@ -4,6 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+static TrainerConfig trainer_default_cfg(void) {
+  TrainerConfig tc = {
+      .batch_size = 32,
+      .train_steps = 200,
+      .min_replay_size = TRAIN_WARMUP,
+      .lr = 0.05f,
+  };
+  return tc;
+}
+
 MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   MuRuntime *rt = calloc(1, sizeof(MuRuntime));
   if (!rt || !model)
@@ -18,7 +28,10 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   rt->gamma = gamma;
   rt->total_steps = 0;
 
-  // If allocation failed, clean up safely.
+  // NEW: default trainer cfg (but allow user to override later)
+  rt->trainer_cfg = trainer_default_cfg();
+  rt->has_trainer_cfg = 0; // 0 means "use default unless user sets"
+
   if (!rt->rb || !rt->last_obs || !rt->last_pi) {
     if (rt->rb)
       rb_free(rt->rb);
@@ -29,6 +42,24 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   }
 
   return rt;
+}
+
+void mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg) {
+  if (!rt)
+    return;
+  if (cfg) {
+    rt->trainer_cfg = *cfg;
+    rt->has_trainer_cfg = 1;
+  } else {
+    rt->trainer_cfg = trainer_default_cfg();
+    rt->has_trainer_cfg = 0;
+  }
+}
+
+TrainerConfig mu_runtime_get_trainer_config(const MuRuntime *rt) {
+  if (!rt)
+    return trainer_default_cfg();
+  return rt->has_trainer_cfg ? rt->trainer_cfg : trainer_default_cfg();
 }
 
 void mu_runtime_free(MuRuntime *rt) {
