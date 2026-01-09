@@ -93,7 +93,6 @@ size_t rb_push_full(ReplayBuffer *rb, +const float *obs, +const float *pi,
 
   return idx;
 }
-}
 
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
   if (!rb || !obs || !pi)
