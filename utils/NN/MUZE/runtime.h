@@ -1,3 +1,5 @@
+// runtime.h
+
 #ifndef MUZE_RUNTIME_H
 #define MUZE_RUNTIME_H
 
@@ -12,7 +14,7 @@ typedef struct {
   ReplayBuffer *rb;
 
   float *last_obs;
-  float *last_pi; // <--- ADD THIS
+  float *last_pi; // <-- add this
   int last_action;
   int has_last;
 
@@ -29,18 +31,16 @@ void mu_runtime_free(MuRuntime *rt);
 /* Runtime operations (internal) */
 void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
                      int action, float reward);
+
 void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
                              const float *pi, int action, float reward);
+
 void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
                             float terminal_reward);
 
 void mu_runtime_reset_episode(MuRuntime *rt);
 void mu_runtime_train(MuRuntime *rt, MuModel *model);
 
-// Chooses action + fills out_pi[A].
-// If cortex->use_mcts, uses MCTS (requires mcts_model).
-// Else uses cortex->encode + cortex->policy.
-// Applies policy_temperature + policy_epsilon.
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng);
 
