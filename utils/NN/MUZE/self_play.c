@@ -131,6 +131,15 @@ void selfplay_run(MuModel *model, void *env_state,
       memcpy(pi_buf + (size_t)step * (size_t)A, mr.pi,
              sizeof(float) * (size_t)A);
 
+      // 1) store transition for dynamics training (already done)
+      rb_push_transition(rb, obs_cur, chosen, reward, next_obs, done_flag);
+
+      // 2) also store (obs, pi, z) for policy/value training
+      //    placeholder z for now; we will overwrite with discounted return
+      //    later
+      float z_placeholder = reward; // quick default
+      idx_buf[step] = rb_push_full(rb, obs_cur, mr.pi, z_placeholder);
+
       // Choose action by sampling MCTS policy (already temperature’d inside
       // mcts->pi)
       int chosen = sample_from_probs_rng(mr.pi, A, rng);
@@ -148,12 +157,6 @@ void selfplay_run(MuModel *model, void *env_state,
       int ret = env_step(env_state, chosen, next_obs, &reward, &done_flag);
       if (ret != 0)
         done_flag = 1;
-
-      // 2) also store (obs, pi, z) for policy/value training
-      //    placeholder z for now; we will overwrite with discounted return
-      //    later
-      float z_placeholder = reward; // quick default
-      idx_buf[step] = rb_push_full(rb, obs_cur, mr.pi, z_placeholder);
 
       reward_buf[step] = reward;
       ep_return += reward;
