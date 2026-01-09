@@ -170,21 +170,6 @@ void selfplay_run(MuModel *model, void *env_state,
       mcts_result_free(&mr);
     }
 
-    // discounted returns z_t + push (obs,pi,z)
-    /*
-    if (step > 0) {
-      float *z = (float *)malloc(sizeof(float) * (size_t)step);
-      if (z) {
-        compute_discounted_returns(reward_buf, step, gamma, z);
-        for (int t2 = 0; t2 < step; t2++) {
-          rb_push(rb, obs_buf + (size_t)t2 * (size_t)obs_dim,
-                  pi_buf + (size_t)t2 * (size_t)A, z[t2]);
-        }
-        free(z);
-      }
-    }
-    */
-
     free(obs_cur);
 
     // metrics
