@@ -22,7 +22,9 @@ typedef struct {
   float gamma;
 
   /* infinite logical memory */
-  uint64_t total_steps;
+  size_t total_steps;
+
+  TrainerConfig tc;
 } MuRuntime;
 
 /* Runtime lifecycle */
