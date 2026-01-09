@@ -24,12 +24,23 @@ int mu_model_grow_latent(MuModel *m, int new_L) {
     }
   }
 
-  /* Dynamics weights */
-  float *new_dyn = malloc(sizeof(float) * new_L * new_L);
+  /* Dynamics weights: shape L x (L+1) */
+  float *new_dyn = malloc(sizeof(float) * new_L * (new_L + 1));
   for (int i = 0; i < new_L; i++) {
-    for (int j = 0; j < new_L; j++) {
-      new_dyn[i * new_L + j] =
-          (i < old_L && j < old_L) ? m->dyn_W[i * old_L + j] : small_rand();
+    for (int j = 0; j < new_L + 1; j++) {
+
+      // if this is an old row and an old latent column
+      if (i < old_L && j < old_L) {
+        new_dyn[i * (new_L + 1) + j] = m->dyn_W[i * (old_L + 1) + j];
+      }
+      // preserve old action column into new action column
+      else if (i < old_L && j == new_L) {
+        new_dyn[i * (new_L + 1) + j] = m->dyn_W[i * (old_L + 1) + old_L];
+      }
+      // everything else is new
+      else {
+        new_dyn[i * (new_L + 1) + j] = small_rand();
+      }
     }
   }
 
