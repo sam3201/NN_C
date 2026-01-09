@@ -81,7 +81,12 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
 
   // random indices in [0, rb->size)
   for (int s = 0; s < samples; s++) {
-    int idx = (int)((double)rand() / ((double)RAND_MAX + 1.0) * (int)rb->size);
+    int idx;
+    if (rng && rng->rand01) {
+      idx = (int)(rng->rand01(rng->ctx) * (float)rb->size);
+    } else {
+      idx = (int)((double)rand() / ((double)RAND_MAX + 1.0) * (int)rb->size);
+    }
     if (idx < 0)
       idx = 0;
     if ((size_t)idx >= rb->size)
