@@ -53,3 +53,10 @@ echo
 echo "Build OK"
 echo "Run with: ./$OUT"
 
+if [ "$?" -eq 0 ]; then
+  exit 0
+else
+  exit 1
+fi
+  
+
