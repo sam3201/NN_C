@@ -8,7 +8,7 @@
 #include "replay_buffer.h"
 #include <stdint.h>
 
-#define TRAIN_WINDOW 256 // training cache size, NOT memory size
+#define TRAIN_WINDOW 1024 // training cache size, NOT memory size
 
 typedef struct {
   ReplayBuffer *rb;
