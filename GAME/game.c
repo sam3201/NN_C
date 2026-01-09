@@ -31,7 +31,8 @@ static void init_agents(void);
 static void ensure_save_root(void);
 static inline Vector2 clamp_local_to_chunk(Vector2 p);
 static int find_free_mob_slot(struct Chunk *c);
-
+static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
+                             int dmg, ProjOwner owner);
 // ----------------------------------------------------------------------
 
 /* =======================
