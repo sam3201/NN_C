@@ -36,7 +36,7 @@ typedef struct {
       train -> policy/value + dynamics/reward
 */
 void muze_run_loop(MuModel *model, void *env_state,
-                   self_play_env_reset_fn env_reset,
+                   selfplay_env_reset_fn env_reset,
                    selfplay_env_step_fn env_step, ReplayBuffer *rb,
                    const MCTSParams *base_mcts_params,
                    const SelfPlayParams *base_sp_params,
