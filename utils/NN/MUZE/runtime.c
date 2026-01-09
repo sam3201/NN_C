@@ -51,8 +51,8 @@ void mu_runtime_set_trainer_config(MuRuntime *rt, const TrainerConfig *cfg) {
     rt->cfg = *cfg;
     rt->has_cfg = 1;
   } else {
-    rt->trainer_cfg = trainer_default_cfg();
-    rt->has_trainer_cfg = 0;
+    rt->cfg = trainer_default_cfg();
+    rt->has_cfg = 0;
   }
 }
 
