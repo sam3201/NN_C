@@ -29,15 +29,13 @@ void mu_runtime_free(MuRuntime *rt);
 void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
                      int action, float reward);
 
+void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
+                             const float *pi, int action, float reward);
 void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
                             float terminal_reward);
 
 void mu_runtime_reset_episode(MuRuntime *rt);
 void mu_runtime_train(MuRuntime *rt, MuModel *model);
-
-// runtime.h (add)
-void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
-                             const float *pi, int action, float reward);
 
 // Chooses action + fills out_pi[A].
 // If cortex->use_mcts, uses MCTS (requires mcts_model).
