@@ -474,6 +474,7 @@ static inline float mob_radius_world(MobType t);
 static void on_mob_killed(MobType t, Vector2 mob_world_pos);
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius, int self_cx, int self_cy);
+static inline float res_radius_world(ResourceType t);
 
 // ----------------------------------------------------------------------
 
