@@ -164,6 +164,7 @@ void selfplay_run(MuModel *model, void *env_state,
     }
 
     // discounted returns z_t + push (obs,pi,z)
+    /*
     if (step > 0) {
       float *z = (float *)malloc(sizeof(float) * (size_t)step);
       if (z) {
@@ -175,6 +176,7 @@ void selfplay_run(MuModel *model, void *env_state,
         free(z);
       }
     }
+    */
 
     free(obs_cur);
 
