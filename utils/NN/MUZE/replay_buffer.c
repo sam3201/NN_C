@@ -182,3 +182,9 @@ int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
 }
 
 size_t rb_size(ReplayBuffer *rb) { return rb ? rb->size : 0; }
+void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
+  if (!rb)
+    return;
+  rb->z_buf[idx] = z;
+  return;
+}
