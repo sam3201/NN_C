@@ -64,38 +64,35 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
   rb->z_buf[idx] = z;
 }
 
--- -a / replay_buffer.c++ +
-    b / replay_buffer.c @ @-size_t rb_push_full(ReplayBuffer *rb,
-                                                const float *obs,
-                                                const float *pi, -float z) {
-  +size_t rb_push_full(ReplayBuffer * rb, +const float *obs, +const float *pi,
-                       +float z, +int action, +float reward,
-                       +const float *next_obs, +int done) {
-    if (!rb)
-      return 0;
-    +if (!obs || !pi || !next_obs) + return 0;
+size_t rb_push_full(ReplayBuffer *rb, +const float *obs, +const float *pi,
+                    float z, +int action, +float reward, const float *next_obs,
+                    +int done) {
+  if (!rb)
+    return 0;
+  if (!obs || !pi || !next_obs)
+    +return 0;
 
-    size_t idx = rb->write_idx;
-    // policy/value training fields
-    memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, +obs,
-           sizeof(float) * (size_t)rb->obs_dim);
-    memcpy(rb->pi_buf + idx * (size_t)rb->action_count, +pi,
-           sizeof(float) * (size_t)rb->action_count);
-    rb->z_buf[idx] = z;
-    // transition fields (for dynamics/reward training)
-    rb->a_buf[idx] = action;
-    rb->r_buf[idx] = reward;
-    memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, +next_obs,
-           +sizeof(float) * (size_t)rb->obs_dim);
-    rb->done_buf[idx] = done ? 1 : 0;
+  size_t idx = rb->write_idx;
+  // policy/value training fields
+  memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, +obs,
+         sizeof(float) * (size_t)rb->obs_dim);
+  memcpy(rb->pi_buf + idx * (size_t)rb->action_count, +pi,
+         sizeof(float) * (size_t)rb->action_count);
+  rb->z_buf[idx] = z;
+  // transition fields (for dynamics/reward training)
+  rb->a_buf[idx] = action;
+  rb->r_buf[idx] = reward;
+  memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, +next_obs,
+         +sizeof(float) * (size_t)rb->obs_dim);
+  rb->done_buf[idx] = done ? 1 : 0;
 
-    // advance head / size
-    rb->write_idx = (rb->write_idx + 1) % rb->capacity;
-    if (rb->size < rb->capacity)
-      rb->size++;
+  // advance head / size
+  rb->write_idx = (rb->write_idx + 1) % rb->capacity;
+  if (rb->size < rb->capacity)
+    rb->size++;
 
-    return idx;
-  }
+  return idx;
+}
 }
 
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
