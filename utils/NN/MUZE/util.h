@@ -1,5 +1,5 @@
 #ifdef debug
-#define DEBUG(x) std::cout << x << std::endl;
+#define DEBUG(x) printf("VERSION: %s\n", x)
 #else
 #define DEBUG(x)
 #endif
