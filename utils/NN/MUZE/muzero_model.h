@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#include "trainer.h"
-
 typedef struct {
   int obs_dim;
   int latent_dim;
@@ -14,6 +12,7 @@ typedef struct {
 } MuConfig;
 
 /* forward declare */
+typedef struct TrainerConfig TrainerConfig;
 typedef struct MuModel MuModel;
 
 struct MuModel {
