@@ -40,51 +40,72 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   if (!model || !rb || !cfg)
     return;
 
-  -size_t n = rb_size(rb);
-  +if ((int)n0 < cfg->min_replay_size) return;
+  size_t n = rb_size(rb);
+  if ((int)n < cfg->min_replay_size)
+    return;
 
   int B = cfg->batch_size;
+  if (B <= 0)
+    return;
+
+  int steps = cfg->train_steps;
+  if (steps <= 0)
+    steps = 1;
+
+  float lr = cfg->lr;
+  if (!(lr > 0.0f))
+    return;
+
   int O = muzero_model_obs_dim(model);
+  if (O <= 0)
+    return;
 
-void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
-     float lat_mse = 0.0f, rew_mse = 0.0f;
+  float *obs_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
+  float *next_obs_batch =
+      (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
+  int *a_batch = (int *)malloc(sizeof(int) * (size_t)B);
+  float *r_batch = (float *)malloc(sizeof(float) * (size_t)B);
+  int *done_batch = (int *)malloc(sizeof(int) * (size_t)B);
 
-     if (model->train_dynamics) {
-    // hook matches muzero_model.h: includes mse out params
-    model->train_dynamics(model, obs, a, r, obs2, actual, lr, &lat_mse,
-                          &rew_mse);
-     } else {
-    muzero_model_train_dynamics_batch(model, obs, a, r, obs2, actual, lr,
-                                      &lat_mse, &rew_mse);
-     }
+  if (!obs_batch || !next_obs_batch || !a_batch || !r_batch || !done_batch) {
+    free(obs_batch);
+    free(next_obs_batch);
+    free(a_batch);
+    free(r_batch);
+    free(done_batch);
+    return;
+  }
 
-if (!is_finite_float(lat_mse) || !is_finite_float(rew_mse)) {
-    +printf("[dyn] NaN/Inf detected at step=%d (lat_mse=%f rew_mse=%f)\n",
-            +step, lat_mse, rew_mse);
-    break;
+  for (int t = 0; t < steps; t++) {
+    int actual = rb_sample_transition(rb, B, obs_batch, a_batch, r_batch,
+                                      next_obs_batch, done_batch);
+    if (actual <= 0)
+      break;
+
+    float lat_mse = 0.0f;
+    float rew_mse = 0.0f;
+
+    if (model->train_dynamics) {
+      model->train_dynamics(model, obs_batch, a_batch, r_batch, next_obs_batch,
+                            actual, lr, &lat_mse, &rew_mse);
+    } else {
+      muzero_model_train_dynamics_batch(model, obs_batch, a_batch, r_batch,
+                                        next_obs_batch, actual, lr, &lat_mse,
+                                        &rew_mse);
     }
 
-     if ((step % 50) == 0) {
-    printf("[dyn] step=%d lat_mse=%.6f rew_mse=%.6f replay=%zu\n", step,
-           lat_mse, rew_mse, rb_size(rb));
-     }
-}
-@@ -105,12 +128,12 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
-   float *pi_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
-   float *z_batch = (float *)malloc(sizeof(float) * (size_t)B);
-
-float *logits_pred = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
-   float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
-
-  if (!obs_batch || !pi_batch || !z_batch || !logits_pred || !v_pred) {
-  free(obs_batch);
-  free(pi_batch);
-  free(z_batch);
-  -free(p_pred);
-  +free(logits_pred);
-  free(v_pred);
-  return;
+    if (t == 0 || (t % 50) == 0) {
+      printf("[train dyn] step=%d/%d batch=%d latent_mse=%.6f reward_mse=%.6f "
+             "replay=%zu\n",
+             t + 1, steps, actual, lat_mse, rew_mse, n);
+    }
   }
+
+  free(obs_batch);
+  free(next_obs_batch);
+  free(a_batch);
+  free(r_batch);
+  free(done_batch);
 }
 
 void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
