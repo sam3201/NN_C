@@ -56,8 +56,8 @@ if [ "$?" -eq 0 ]; then
   echo Run Success 
   exit 0 
 else
+  echo Run Failed
   exit 1
-
 fi
   
 
