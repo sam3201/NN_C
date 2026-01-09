@@ -40,8 +40,7 @@
 // ---- Types you likely already have ----
 // Replace these with your actual types if they differ.
 typedef struct {
-  float *data;
-  int len;
+  Observation *obs int len;
 } ObsVec;
 
 // A single step outcome (replace with your actual step result type).
