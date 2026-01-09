@@ -133,10 +133,8 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
       return;
     @ @ if (action >= 0 && action < rb->action_count) tmp_pi[action] = 1.0f;
 
-    -rb_push_full(rb, obs, tmp_pi, /*z*/ reward, action, reward, next_obs,
-                  done);
-    +rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs,
-                  done);
+    rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs,
+                 done);
 
     free(tmp_pi);
   }
