@@ -63,12 +63,12 @@ static void env_destroy(Env *e) {
 
 // Reset environment and return initial observation into out_obs.
 // Return observation length.
-static int env_reset(Env *e, Obs *obs) {
+static int env_reset(Env *e, GameState *state) {
   // Examples:
   //   int n = game_env_reset(e, out_obs, max_obs);
   //   Obs o = game_env_reset(e); memcpy(out_obs, o.data, ...)
 
-  int n = game_env_reset(e, out_obs, max_obs); // <-- EDIT
+  int n = game_env_reset(e, state); // <-- EDIT
   return n;
 }
 
