@@ -85,6 +85,7 @@ void selfplay_run(MuModel *model, void *env_state,
       reward_buf[step] = reward;
       act_buf[step] = chosen;
 
+      // store raw transition for dynamics training
       rb_push_transition(rb, obs_cur, chosen, reward, next_obs, done_flag);
 
       /* advance */
