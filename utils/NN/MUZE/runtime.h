@@ -1,18 +1,16 @@
-runtime
-    .h : // runtime.h
-         runtime.h : runtime.h
-    : #ifndef MUZE_RUNTIME_H runtime.h
-    : #define MUZE_RUNTIME_H runtime.h
+// runtime.h
+runtime.h : runtime.h : #ifndef MUZE_RUNTIME_H runtime
+                            .h : #define MUZE_RUNTIME_H runtime.h
     : runtime.h : #include
                   "muze_cortex.h" runtime.h
     : #include "muzero_model.h" runtime.h
     : #include "replay_buffer.h" runtime.h
     : #include "trainer.h" runtime.h : #include<stdint.h>
-                                           runtime.h : runtime
-    .h : #define TRAIN_WINDOW 1024 // training cache size, NOT memory size
-         runtime
-    .h : #define TRAIN_WARMUP TRAIN_WINDOW // warmup cache size
-             runtime.h : typedef struct {
+                                           runtime.h
+    : runtime.h
+    : #define TRAIN_WINDOW 1024 // training cache size, NOT memory size
+      runtime.h : #define TRAIN_WARMUP TRAIN_WINDOW // warmup cache size
+                      runtime.h : typedef struct {
   runtime.h : ReplayBuffer *rb;
   runtime.h : runtime.h : float *last_obs;
   runtime.h : float *last_pi;
