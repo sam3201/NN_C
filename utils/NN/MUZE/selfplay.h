@@ -20,10 +20,24 @@ typedef int (*selfplay_env_step_fn)(void *state, int action, float *obs,
 
 /* Self-play params */
 typedef struct {
-  int max_steps;      /* max steps per episode */
-  float gamma;        /* discount for returns */
-  float temperature;  /* sampling temperature during self-play (root) */
-  int total_episodes; /* how many episodes to run */
+  int max_steps;
+  float gamma;
+
+  // Temperature scheduling:
+  // - for early training, keep > 0 (explore)
+  // - later anneal toward low values (exploit)
+  float temp_start;        // e.g. 1.0
+  float temp_end;          // e.g. 0.25
+  int temp_decay_episodes; // e.g. 200
+
+  // Root exploration noise (MuZero-style)
+  float dirichlet_alpha; // e.g. 0.3 (for small action spaces)
+  float dirichlet_eps;   // e.g. 0.25
+
+  int total_episodes;
+
+  // logging
+  int log_every; // e.g. 10
 } SelfPlayParams;
 
 /* Run self-play episodes: each episode uses MCTS to choose actions (with
