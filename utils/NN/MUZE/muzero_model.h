@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include <.h>
+
 typedef struct {
   int obs_dim;
   int latent_dim;
