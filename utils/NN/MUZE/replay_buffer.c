@@ -74,146 +74,141 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
   rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs, /*done*/ 0);
 }
 
--- -a / replay_buffer.c++ +
-    b / replay_buffer.c @ @-size_t rb_push_full(ReplayBuffer *rb,
-                                                const float *obs,
-                                                const float *pi, -float z) {
-  size_t rb_push_full(ReplayBuffer * rb, +const float *obs, +const float *pi,
-                      float z, int action, float reward, const float *next_obs,
-                      +int done) {
-    if (!rb)
-      return 0;
+size_t rb_push_full(ReplayBuffer *rb, +const float *obs, +const float *pi,
+                    float z, int action, float reward, const float *next_obs,
+                    +int done) {
+  if (!rb)
+    return 0;
 
-    size_t idx = rb->write_idx;
-    // --- policy/value tuples ---
-    memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
-    memcpy(rb->pi_buf + idx * rb->action_count, pi,
-           sizeof(float) * rb->action_count);
-    rb->z_buf[idx] = z;
+  size_t idx = rb->write_idx;
+  // --- policy/value tuples ---
+  memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
+  memcpy(rb->pi_buf + idx * rb->action_count, pi,
+         sizeof(float) * rb->action_count);
+  rb->z_buf[idx] = z;
 
-    // --- transition tuples ---
-    rb->a_buf[idx] = action;
-    rb->r_buf[idx] = reward;
-    memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
-           +sizeof(float) * rb->obs_dim);
-    rb->done_buf[idx] = done ? 1 : 0;
+  // --- transition tuples ---
+  rb->a_buf[idx] = action;
+  rb->r_buf[idx] = reward;
+  memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
+         +sizeof(float) * rb->obs_dim);
+  rb->done_buf[idx] = done ? 1 : 0;
 
-    // advance head / size
-    rb->write_idx = (rb->write_idx + 1) % rb->capacity;
-    if (rb->size < rb->capacity)
-      rb->size++;
+  // advance head / size
+  rb->write_idx = (rb->write_idx + 1) % rb->capacity;
+  if (rb->size < rb->capacity)
+    rb->size++;
 
-    return idx;
-  }
-  void rb_push(ReplayBuffer * rb, const float *obs, const float *pi, float z) {
-    if (!rb || !obs || !pi)
-      return;
+  return idx;
+}
+void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
+  if (!rb || !obs || !pi)
+    return;
 
-    // Make transition fields valid too; safest default: next_obs = obs.
-    rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
-                 +/*next_obs*/ obs, /*done*/ 0);
-  }
-  void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
-                          float reward, const float *next_obs, int done) {
-    if (!rb || !obs || !next_obs)
-      return;
+  // Make transition fields valid too; safest default: next_obs = obs.
+  rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, +/*next_obs*/ obs,
+               /*done*/ 0);
+}
+void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
+                        float reward, const float *next_obs, int done) {
+  if (!rb || !obs || !next_obs)
+    return;
 
-    Default pi = one - hot(action),
-            z = reward(1 - step) float *tmp_pi =
-                (float *)malloc(sizeof(float) * (size_t)rb->action_count);
-    if (!tmp_pi)
-      return;
-    if (action >= 0 && action < rb->action_count)
-      tmp_pi[action] = 1.0f;
+  Default pi = one - hot(action),
+          z = reward(1 - step) float *tmp_pi =
+              (float *)malloc(sizeof(float) * (size_t)rb->action_count);
+  if (!tmp_pi)
+    return;
+  if (action >= 0 && action < rb->action_count)
+    tmp_pi[action] = 1.0f;
 
-    rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs,
-                 done);
+  rb_push_full(rb, obs, tmp_pi, /*z*/ reward, +action, reward, next_obs, done);
 
-    free(tmp_pi);
-  }
+  free(tmp_pi);
+}
 
-  void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
-                          float reward, const float *next_obs, int done) {
-    if (!rb || !obs || !next_obs)
-      return;
+void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
+                        float reward, const float *next_obs, int done) {
+  if (!rb || !obs || !next_obs)
+    return;
 
-    // Default pi = one-hot(action), z = reward (1-step)
-    float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
-    if (!tmp_pi)
-      return;
+  // Default pi = one-hot(action), z = reward (1-step)
+  float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
+  if (!tmp_pi)
+    return;
 
-    for (int i = 0; i < rb->action_count; i++)
-      tmp_pi[i] = 0.0f;
-    if (action >= 0 && action < rb->action_count)
-      tmp_pi[action] = 1.0f;
+  for (int i = 0; i < rb->action_count; i++)
+    tmp_pi[i] = 0.0f;
+  if (action >= 0 && action < rb->action_count)
+    tmp_pi[action] = 1.0f;
 
-    rb_push_full(rb, obs, tmp_pi, /*z*/ reward, action, reward, next_obs, done);
+  rb_push_full(rb, obs, tmp_pi, /*z*/ reward, action, reward, next_obs, done);
 
-    free(tmp_pi);
-  }
+  free(tmp_pi);
+}
 
-  static int rand_int(int n) {
-    return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
-  }
+static int rand_int(int n) {
+  return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
+}
 
-  int rb_sample(ReplayBuffer * rb, int batch, float *obs_batch, float *pi_batch,
-                float *z_batch) {
-    if (!rb || rb->size == 0)
-      return 0;
-    if (!obs_batch || !pi_batch || !z_batch)
-      return 0;
+int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
+              float *z_batch) {
+  if (!rb || rb->size == 0)
+    return 0;
+  if (!obs_batch || !pi_batch || !z_batch)
+    return 0;
 
-    int actual = batch;
-    if ((size_t)batch > rb->size)
-      actual = (int)rb->size;
+  int actual = batch;
+  if ((size_t)batch > rb->size)
+    actual = (int)rb->size;
 
-    for (int i = 0; i < actual; i++) {
-      int idx = rand_int((int)rb->size);
+  for (int i = 0; i < actual; i++) {
+    int idx = rand_int((int)rb->size);
 
-      memcpy(obs_batch + i * rb->obs_dim,
-             rb->obs_buf + (size_t)idx * (size_t)rb->obs_dim,
-             sizeof(float) * (size_t)rb->obs_dim);
+    memcpy(obs_batch + i * rb->obs_dim,
+           rb->obs_buf + (size_t)idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)rb->obs_dim);
 
-      memcpy(pi_batch + i * rb->action_count,
-             rb->pi_buf + (size_t)idx * (size_t)rb->action_count,
-             sizeof(float) * (size_t)rb->action_count);
+    memcpy(pi_batch + i * rb->action_count,
+           rb->pi_buf + (size_t)idx * (size_t)rb->action_count,
+           sizeof(float) * (size_t)rb->action_count);
 
-      z_batch[i] = rb->z_buf[idx];
-    }
-
-    return actual;
+    z_batch[i] = rb->z_buf[idx];
   }
 
-  int rb_sample_transition(ReplayBuffer * rb, int batch, float *obs_batch,
-                           int *a_batch, float *r_batch, float *next_obs_batch,
-                           int *done_batch) {
-    if (!rb || rb->size == 0)
-      return 0;
-    if (!obs_batch || !a_batch || !r_batch || !next_obs_batch || !done_batch)
-      return 0;
+  return actual;
+}
 
-    int actual = batch;
-    if ((size_t)batch > rb->size)
-      actual = (int)rb->size;
+int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
+                         int *a_batch, float *r_batch, float *next_obs_batch,
+                         int *done_batch) {
+  if (!rb || rb->size == 0)
+    return 0;
+  if (!obs_batch || !a_batch || !r_batch || !next_obs_batch || !done_batch)
+    return 0;
 
-    for (int i = 0; i < actual; i++) {
-      int idx = rand_int((int)rb->size);
+  int actual = batch;
+  if ((size_t)batch > rb->size)
+    actual = (int)rb->size;
 
-      memcpy(obs_batch + i * rb->obs_dim,
-             rb->obs_buf + (size_t)idx * (size_t)rb->obs_dim,
-             sizeof(float) * (size_t)rb->obs_dim);
+  for (int i = 0; i < actual; i++) {
+    int idx = rand_int((int)rb->size);
 
-      a_batch[i] = rb->a_buf[idx];
-      r_batch[i] = rb->r_buf[idx];
+    memcpy(obs_batch + i * rb->obs_dim,
+           rb->obs_buf + (size_t)idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)rb->obs_dim);
 
-      memcpy(next_obs_batch + i * rb->obs_dim,
-             rb->next_obs_buf + (size_t)idx * (size_t)rb->obs_dim,
-             sizeof(float) * (size_t)rb->obs_dim);
+    a_batch[i] = rb->a_buf[idx];
+    r_batch[i] = rb->r_buf[idx];
 
-      done_batch[i] = rb->done_buf[idx];
-    }
+    memcpy(next_obs_batch + i * rb->obs_dim,
+           rb->next_obs_buf + (size_t)idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)rb->obs_dim);
 
-    return actual;
+    done_batch[i] = rb->done_buf[idx];
   }
 
-  size_t rb_size(ReplayBuffer * rb) { return rb ? rb->size : 0; }
+  return actual;
+}
+
+size_t rb_size(ReplayBuffer *rb) { return rb ? rb->size : 0; }
