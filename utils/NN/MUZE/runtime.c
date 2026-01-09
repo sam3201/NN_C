@@ -122,8 +122,8 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model) {
   // you can tune these defaults later
   TrainerConfig tc = {
       .batch_size = 32,
-      .train_steps = 200, // smaller per call; call more often
-      .min_replay_size = 128,
+      .train_steps = 200,
+      .min_replay_size = TRAIN_WARMUP,
       .lr = 0.05f,
   };
 
