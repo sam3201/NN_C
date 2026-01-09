@@ -55,11 +55,6 @@ typedef struct {
 // If it’s an opaque pointer, use void*.
 
 // Destroy/free environment
-static void env_destroy(Env *e) {
-  // e.g. game_env_destroy(e);
-  game_env_destroy(e); // <-- EDIT
-}
-
 // Reset environment and return initial observation into out_obs.
 // Return observation length.
 static int env_reset(Env *e, float *out_obs, int max_obs) {
