@@ -90,7 +90,7 @@ void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
   float *pi = (float *)malloc(sizeof(float) * (size_t)A);
   if (!pi)
     return;
-  rb_push(... pi...);
+  rb_push(rt->rb, rt->last_obs, rt->last_pi, z);
   free(pi);
 
   for (int i = 0; i < model->cfg.action_count; i++)
