@@ -93,13 +93,13 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
 
 void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
                             float terminal_reward) {
+  if (!rt || !model)
+    return;
   if (!rt->has_last)
     return;
 
-  float pi[model->cfg.action_count];
-  memset(pi, 0, sizeof(pi));
-
-  rb_push(rt->rb, rt->last_obs, pi, terminal_reward);
+  // Push final state with whatever policy we cached for it.
+  rb_push(rt->rb, rt->last_obs, rt->last_pi, terminal_reward);
   rt->has_last = 0;
 }
 
