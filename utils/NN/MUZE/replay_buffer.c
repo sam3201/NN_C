@@ -61,7 +61,7 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
   if (!rb)
     return 0;
 
-  size_t idx = rb->write_idx; // wherever you write next
+  size_t idx = rb->write_idx;
   // copy obs -> rb->obs_buf[idx]
   memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
   memcpy(rb->pi_buf + idx * rb->action_count, pi,
