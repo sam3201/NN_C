@@ -33,7 +33,6 @@ typedef struct {
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
 void rb_free(ReplayBuffer *rb);
 
-/* NEW: one push that makes a slot valid for both samplers */
 // Push (obs, pi, z) and return the index written (for later overwrite).
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z);
