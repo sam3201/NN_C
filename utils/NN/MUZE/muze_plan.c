@@ -69,8 +69,8 @@ static size_t rand_uniform_index(size_t n) {
 
 /* ========================= */
 
-int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim,
-              size_t action_count) {
+int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim, size_t action_count,
+              MCTSRng *rng) {
   if (!cortex || !cortex->encode || !obs)
     return 0;
   if (obs_dim == 0 || action_count == 0)
