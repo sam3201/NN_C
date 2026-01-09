@@ -107,8 +107,7 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
 
     return idx;
   }
-  @ @ void rb_push(ReplayBuffer * rb, const float *obs, const float *pi,
-                   float z) {
+  void rb_push(ReplayBuffer * rb, const float *obs, const float *pi, float z) {
     if (!rb || !obs || !pi)
       return;
 
