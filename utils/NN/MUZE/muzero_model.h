@@ -59,6 +59,11 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
                               const float *pi_batch, const float *z_batch,
                               int B, float lr);
 
+void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
+                                       const int *a_batch, const float *r_batch,
+                                       const float *next_obs_batch, int B,
+                                       float lr);
+
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);
