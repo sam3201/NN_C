@@ -49,6 +49,46 @@ void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
   rt->last_action = action;
 }
 
+void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
+                             const float *pi, int action, float reward) {
+  if (!rt || !model || !obs)
+    return;
+
+  rt->total_steps++;
+
+  const int O = model->cfg.obs_dim;
+  const int A = model->cfg.action_count;
+
+  // First call just "primes" last_obs/last_action so next call can store a
+  // tuple. This matches the buffering behavior of mu_runtime_step().
+  if (!rt->has_last) {
+    memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
+    rt->last_action = action;
+    rt->has_last = 1;
+    return;
+  }
+
+  // One-step target (simple bootstrap like your existing runtime)
+  float z = reward;
+
+  // If caller didn't provide pi, fall back to one-hot of last_action.
+  if (!pi) {
+    float onehot[A];
+    for (int i = 0; i < A; i++)
+      onehot[i] = (i == rt->last_action) ? 1.0f : 0.0f;
+    rb_push(rt->rb, rt->last_obs, onehot, z);
+  } else {
+    // Use caller-provided policy target for the PREVIOUS state (rt->last_obs).
+    // Assumption: `pi` corresponds to the policy used when choosing
+    // rt->last_action.
+    rb_push(rt->rb, rt->last_obs, pi, z);
+  }
+
+  // Update last_* to current step's state/action for the next transition.
+  memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
+  rt->last_action = action;
+}
+
 void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
                             float terminal_reward) {
   if (!rt->has_last)
