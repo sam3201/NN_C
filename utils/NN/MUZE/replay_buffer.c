@@ -64,26 +64,28 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
   rb->z_buf[idx] = z;
 }
 
-size_t rb_push_full(ReplayBuffer *rb, +const float *obs, +const float *pi,
-                    float z, +int action, +float reward, const float *next_obs,
-                    +int done) {
+size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
+                    float z, int action, float reward, const float *next_obs,
+                    int done) {
   if (!rb)
     return 0;
   if (!obs || !pi || !next_obs)
-    +return 0;
+    return 0;
 
   size_t idx = rb->write_idx;
+
   // policy/value training fields
-  memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, +obs,
+  memcpy(rb->obs_buf + idx * (size_t)rb->obs_dim, obs,
          sizeof(float) * (size_t)rb->obs_dim);
-  memcpy(rb->pi_buf + idx * (size_t)rb->action_count, +pi,
+  memcpy(rb->pi_buf + idx * (size_t)rb->action_count, pi,
          sizeof(float) * (size_t)rb->action_count);
   rb->z_buf[idx] = z;
+
   // transition fields (for dynamics/reward training)
   rb->a_buf[idx] = action;
   rb->r_buf[idx] = reward;
-  memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, +next_obs,
-         +sizeof(float) * (size_t)rb->obs_dim);
+  memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, next_obs,
+         sizeof(float) * (size_t)rb->obs_dim);
   rb->done_buf[idx] = done ? 1 : 0;
 
   // advance head / size
@@ -92,6 +94,27 @@ size_t rb_push_full(ReplayBuffer *rb, +const float *obs, +const float *pi,
     rb->size++;
 
   return idx;
+}
+
+void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
+                        float reward, const float *next_obs, int done) {
+  if (!rb || !obs || !next_obs)
+    return;
+
+  float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
+  if (!tmp_pi)
+    return;
+
+  // IMPORTANT: zero init
+  for (int i = 0; i < rb->action_count; i++)
+    tmp_pi[i] = 0.0f;
+
+  if (action >= 0 && action < rb->action_count)
+    tmp_pi[action] = 1.0f;
+
+  rb_push_full(rb, obs, tmp_pi, reward, action, reward, next_obs, done);
+
+  free(tmp_pi);
 }
 
 void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
