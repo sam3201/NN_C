@@ -12,7 +12,7 @@
 #include "muzero_model.h"
 #include "replay_buffer.h"
 #include "runtime.h"
-#include "selfplay.h"
+#include "self_play.h"
 #include "toy_env.h"
 #include "trainer.h"
 #include "util.h"
