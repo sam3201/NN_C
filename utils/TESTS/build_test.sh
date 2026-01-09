@@ -55,6 +55,7 @@ lldb ./$OUT
 if [ "$?" -eq 0 ]; then 
   echo Run Success 
   rm "$OUT"
+  rm "a.sh"
   exit 0 
 else
   echo Run Failed
