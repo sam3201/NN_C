@@ -12,6 +12,12 @@ typedef struct TrainerConfig {
   int batch_size;
   int train_steps;     // SGD steps per call
   int min_replay_size; // warmup threshold
+  int unroll_steps;    // MuZero unroll steps
+  int bootstrap_steps; // n-step bootstrap length
+  float discount;      // bootstrap discount (gamma)
+  int use_per;         // 0/1 prioritized replay
+  float per_alpha;     // priority exponent
+  float per_eps;       // small constant for priority
   float lr;
 } TrainerConfig;
 

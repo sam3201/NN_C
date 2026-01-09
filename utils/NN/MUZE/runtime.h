@@ -17,6 +17,7 @@ typedef struct {
   int last_action;
   int has_last;
   float gamma;
+  float value_prefix;
   /* infinite logical memory */
   size_t total_steps;
   TrainerConfig cfg;

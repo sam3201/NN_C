@@ -10,6 +10,12 @@ static TrainerConfig trainer_default_cfg(void) {
       .batch_size = 32,
       .train_steps = 200,
       .min_replay_size = TRAIN_WARMUP,
+      .unroll_steps = 5,
+      .bootstrap_steps = 5,
+      .discount = 0.997f,
+      .use_per = 1,
+      .per_alpha = 0.6f,
+      .per_eps = 1e-3f,
       .lr = 0.05f,
   };
   return tc;
@@ -33,6 +39,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
 
   rt->has_last = 0;
   rt->gamma = gamma;
+  rt->value_prefix = 0.0f;
   rt->total_steps = 0;
 
   rt->cfg = trainer_default_cfg();
@@ -113,6 +120,7 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   const int A = model->cfg.action_count;
 
   if (!rt->has_last) {
+    rt->value_prefix = 0.0f;
     memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
     memcpy(rt->last_pi, pi, sizeof(float) * (size_t)A);
     rt->last_action = action;
@@ -124,9 +132,12 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   // and obs is the resulting next_obs.
   float z = reward; // keep your current 1-step target for now
 
-  rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z, rt->last_action, reward,
-               obs,
-               /*done*/ 0);
+  rt->value_prefix = rt->value_prefix * rt->gamma + reward;
+  size_t idx =
+      rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z, rt->last_action,
+                   reward, obs,
+                   /*done*/ 0);
+  rb_set_value_prefix(rt->rb, idx, rt->value_prefix);
 
   // cache current decision for next step
   memcpy(rt->last_obs, obs, sizeof(float) * (size_t)O);
@@ -143,15 +154,23 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 
   float z = terminal_reward;
 
-  rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z, rt->last_action,
-               terminal_reward,
-               rt->last_obs, // no next obs; reuse
-               /*done*/ 1);
+  rt->value_prefix = rt->value_prefix * rt->gamma + terminal_reward;
+  size_t idx = rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z,
+                            rt->last_action, terminal_reward,
+                            rt->last_obs, // no next obs; reuse
+                            /*done*/ 1);
+  rb_set_value_prefix(rt->rb, idx, rt->value_prefix);
 
   rt->has_last = 0;
+  rt->value_prefix = 0.0f;
 }
 
-void mu_runtime_reset_episode(MuRuntime *rt) { rt->has_last = 0; }
+void mu_runtime_reset_episode(MuRuntime *rt) {
+  if (!rt)
+    return;
+  rt->has_last = 0;
+  rt->value_prefix = 0.0f;
+}
 
 void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   if (!rt || !model)
@@ -173,7 +192,8 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
   trainer_train_from_replay(model, rt->rb, &tc);
 
   // dynamics/reward pass (obs,a,r,next_obs,done)
-  trainer_train_dynamics(model, rt->rb, &tc);
+  if (tc.unroll_steps <= 0)
+    trainer_train_dynamics(model, rt->rb, &tc);
 }
 
 static void normalize_probs(float *p, size_t n) {

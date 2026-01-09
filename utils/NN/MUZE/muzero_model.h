@@ -70,6 +70,14 @@ void muzero_model_train_dynamics_batch(
     float *out_latent_mse, // optional (can be NULL)
     float *out_reward_mse  // optional (can be NULL)
 );
+
+void muzero_model_train_unroll_batch(
+    MuModel *m, const float *obs_seq, const float *pi_seq,
+    const float *z_seq, const float *vprefix_seq, const int *a_seq,
+    const float *r_seq, const int *done_seq, int B, int unroll_steps,
+    int bootstrap_steps, float discount, float lr,
+    float *out_policy_loss, float *out_value_loss, float *out_reward_loss,
+    float *out_latent_loss);
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);

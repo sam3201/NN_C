@@ -100,6 +100,7 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
     // overwrite stored pi target
     memcpy(rb->pi_buf + (size_t)idx * (size_t)A, pi_tmp,
            sizeof(float) * (size_t)A);
+    rb->z_buf[idx] = root_v;
 
     avg_v += root_v;
     cnt++;
@@ -145,6 +146,16 @@ void muze_run_loop(MuModel *model, void *env_state,
     tc.train_steps = 200;
   if (tc.min_replay_size <= 0)
     tc.min_replay_size = 1024;
+  if (tc.unroll_steps <= 0)
+    tc.unroll_steps = 5;
+  if (tc.bootstrap_steps <= 0)
+    tc.bootstrap_steps = tc.unroll_steps;
+  if (tc.discount <= 0.0f)
+    tc.discount = 0.997f;
+  if (tc.per_alpha <= 0.0f)
+    tc.per_alpha = 0.6f;
+  if (tc.per_eps <= 0.0f)
+    tc.per_eps = 1e-3f;
   if (tc.lr <= 0.0f)
     tc.lr = 0.05f;
 
@@ -177,7 +188,9 @@ void muze_run_loop(MuModel *model, void *env_state,
     // ---- training ----
     printf("=== [loop] train_calls=%d ===\n", train_calls);
     for (int k = 0; k < train_calls; k++) {
-      trainer_train_unroll(model, rb, &tc, loop_cfg->unroll_steps);
+      trainer_train_from_replay(model, rb, &tc);
+      if (tc.unroll_steps <= 0)
+        trainer_train_dynamics(model, rb, &tc);
     }
 
     printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));

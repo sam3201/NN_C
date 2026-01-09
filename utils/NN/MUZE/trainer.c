@@ -128,20 +128,123 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
   float lr = cfg->lr;
   if (!(lr > 0.0f))
     return;
+  int K = cfg->unroll_steps;
+  int n_boot = cfg->bootstrap_steps;
+  float discount = cfg->discount;
+  if (!(discount > 0.0f))
+    discount = 0.997f;
+  int use_per = cfg->use_per;
+  float per_alpha = cfg->per_alpha;
+  float per_eps = cfg->per_eps;
+  if (per_alpha <= 0.0f)
+    per_alpha = 0.6f;
+  if (per_eps <= 0.0f)
+    per_eps = 1e-3f;
 
   int O = muzero_model_obs_dim(model);
   int A = muzero_model_action_count(model);
+  int L = model->cfg.latent_dim;
   if (O <= 0 || A <= 0)
     return;
+
+  if (K > 0) {
+    size_t steps_per = (size_t)K + 1;
+
+    float *obs_seq =
+        (float *)malloc(sizeof(float) * (size_t)B * steps_per * (size_t)O);
+    float *pi_seq =
+        (float *)malloc(sizeof(float) * (size_t)B * steps_per * (size_t)A);
+    float *z_seq =
+        (float *)malloc(sizeof(float) * (size_t)B * steps_per);
+    float *vprefix_seq =
+        (float *)malloc(sizeof(float) * (size_t)B * steps_per);
+    int *a_seq = (int *)malloc(sizeof(int) * (size_t)B * (size_t)K);
+    float *r_seq = (float *)malloc(sizeof(float) * (size_t)B * (size_t)K);
+    int *done_seq = (int *)malloc(sizeof(int) * (size_t)B * (size_t)K);
+    size_t *idx_out = (size_t *)malloc(sizeof(size_t) * (size_t)B);
+
+    if (!obs_seq || !pi_seq || !z_seq || !vprefix_seq || !a_seq || !r_seq ||
+        !done_seq || !idx_out) {
+      free(obs_seq);
+      free(pi_seq);
+      free(z_seq);
+      free(vprefix_seq);
+      free(a_seq);
+      free(r_seq);
+      free(done_seq);
+      free(idx_out);
+      return;
+    }
+
+    for (int t = 0; t < steps; t++) {
+      int actual = use_per
+                       ? rb_sample_sequence_per(
+                             rb, B, K, per_alpha, obs_seq, pi_seq, z_seq,
+                             vprefix_seq, a_seq, r_seq, done_seq, idx_out)
+                       : rb_sample_sequence_vprefix(rb, B, K, obs_seq, pi_seq,
+                                                    z_seq, vprefix_seq, a_seq,
+                                                    r_seq, done_seq);
+      if (actual <= 0)
+        break;
+
+      float policy_loss = 0.0f;
+      float value_loss = 0.0f;
+      float reward_loss = 0.0f;
+      float latent_loss = 0.0f;
+
+      muzero_model_train_unroll_batch(
+          model, obs_seq, pi_seq, z_seq, vprefix_seq, a_seq, r_seq, done_seq,
+          actual, K, n_boot, discount, lr, &policy_loss, &value_loss,
+          &reward_loss, &latent_loss);
+
+      if (use_per && L > 0) {
+        float *latent = (float *)malloc(sizeof(float) * (size_t)L);
+        float *logits = (float *)malloc(sizeof(float) * (size_t)A);
+        if (latent && logits) {
+          for (int i = 0; i < actual; i++) {
+            const float *obs0 =
+                obs_seq + (size_t)i * steps_per * (size_t)O;
+            mu_model_repr(model, obs0, latent);
+            float v_pred = 0.0f;
+            mu_model_predict(model, latent, logits, &v_pred);
+            float z_tgt = z_seq[(size_t)i * steps_per];
+            float td = fabsf(v_pred - z_tgt);
+            rb_set_priority(rb, idx_out[i], td + per_eps);
+          }
+        }
+        free(latent);
+        free(logits);
+      }
+
+      if (t == 0 || (t % 50) == 0) {
+        printf("[train unroll] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
+               "rew=%.6f lat=%.6f replay=%zu\n",
+               t + 1, steps, actual, K, policy_loss, value_loss, reward_loss,
+               latent_loss, n);
+      }
+    }
+
+    free(obs_seq);
+    free(pi_seq);
+    free(z_seq);
+    free(vprefix_seq);
+    free(a_seq);
+    free(r_seq);
+    free(done_seq);
+    free(idx_out);
+    return;
+  }
 
   float *obs_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
   float *pi_batch = (float *)malloc(sizeof(float) * (size_t)B * (size_t)A);
   float *z_batch = (float *)malloc(sizeof(float) * (size_t)B);
+  size_t *idx_out = (size_t *)malloc(sizeof(size_t) * (size_t)B);
 
-  if (!obs_batch || !pi_batch || !z_batch) {
+  if (!obs_batch || !pi_batch || !z_batch || !idx_out) {
     free(obs_batch);
     free(pi_batch);
     free(z_batch);
+    free(idx_out);
     return;
   }
 
@@ -150,7 +253,9 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
   float *v_pred = (float *)malloc(sizeof(float) * (size_t)B);
 
   for (int t = 0; t < steps; t++) {
-    int actual = rb_sample(rb, B, obs_batch, pi_batch, z_batch);
+    int actual = use_per ? rb_sample_per(rb, B, per_alpha, obs_batch, pi_batch,
+                                         z_batch, idx_out)
+                         : rb_sample(rb, B, obs_batch, pi_batch, z_batch);
     if (actual <= 0)
       break;
 
@@ -183,6 +288,22 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
       printf("[train pv] step=%d/%d batch=%d v_mse=%.6f replay=%zu\n", t + 1,
              steps, actual, (float)v_mse, n);
     }
+
+    if (use_per && L > 0) {
+      float *latent = (float *)malloc(sizeof(float) * (size_t)L);
+      float *logits = (float *)malloc(sizeof(float) * (size_t)A);
+      if (latent && logits) {
+        for (int i = 0; i < actual; i++) {
+          float v_pred = 0.0f;
+          mu_model_repr(model, obs_batch + (size_t)i * (size_t)O, latent);
+          mu_model_predict(model, latent, logits, &v_pred);
+          float td = fabsf(v_pred - z_batch[i]);
+          rb_set_priority(rb, idx_out[i], td + per_eps);
+        }
+      }
+      free(latent);
+      free(logits);
+    }
   }
 
   free(p_pred);
@@ -191,4 +312,5 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
   free(obs_batch);
   free(pi_batch);
   free(z_batch);
+  free(idx_out);
 }

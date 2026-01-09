@@ -22,6 +22,8 @@ typedef struct {
   float *obs_buf; /* capacity * obs_dim */
   float *pi_buf;  /* capacity * action_count */
   float *z_buf;   /* capacity */
+  float *vprefix_buf; /* capacity */
+  float *prio_buf; /* capacity */
 
   // Transition tuples
   int *a_buf;          /* capacity */
@@ -47,8 +49,27 @@ int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
                          int *a_batch, float *r_batch, float *next_obs_batch,
                          int *done_batch);
 
+int rb_sample_sequence(ReplayBuffer *rb, int batch, int unroll_steps,
+                       float *obs_seq, float *pi_seq, float *z_seq,
+                       int *a_seq, float *r_seq, int *done_seq);
+int rb_sample_sequence_vprefix(ReplayBuffer *rb, int batch, int unroll_steps,
+                               float *obs_seq, float *pi_seq, float *z_seq,
+                               float *vprefix_seq, int *a_seq, float *r_seq,
+                               int *done_seq);
+int rb_sample_per(ReplayBuffer *rb, int batch, float alpha, float *obs_batch,
+                  float *pi_batch, float *z_batch, size_t *idx_out);
+int rb_sample_sequence_per(ReplayBuffer *rb, int batch, int unroll_steps,
+                           float alpha, float *obs_seq, float *pi_seq,
+                           float *z_seq, float *vprefix_seq, int *a_seq,
+                           float *r_seq, int *done_seq, size_t *idx_out);
+
 size_t rb_size(ReplayBuffer *rb);
 void rb_set_z(ReplayBuffer *rb, size_t idx, float z);
+void rb_set_value_prefix(ReplayBuffer *rb, size_t idx, float vprefix);
+void rb_set_priority(ReplayBuffer *rb, size_t idx, float prio);
+
+int rb_save(ReplayBuffer *rb, const char *filename);
+ReplayBuffer *rb_load(const char *filename);
 
 #ifdef __cplusplus
 }
