@@ -134,9 +134,6 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   rt->last_action = action;
 }
 
-void mu_runtime_end_episode_with_nextobs(MuRuntime *rt, MuModel *model,
-                                         const float *next_obs) {}
-
 void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
                             float terminal_reward) {
   if (!rt || !model)
@@ -144,8 +141,13 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
   if (!rt->has_last)
     return;
 
-  // Push final state with the policy we cached for it.
-  rb_push(rt->rb, rt->last_obs, rt->last_pi, terminal_reward);
+  float z = terminal_reward;
+
+  rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z, rt->last_action,
+               terminal_reward,
+               rt->last_obs, // no next obs; reuse
+               /*done*/ 1);
+
   rt->has_last = 0;
 }
 
