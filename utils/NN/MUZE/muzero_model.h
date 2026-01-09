@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "runtime.h"
+#include "trainer.h"
 
 typedef struct {
   int obs_dim;
