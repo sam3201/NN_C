@@ -64,7 +64,7 @@ static size_t sample_from_probs(const float *p, size_t n) {
 static size_t rand_uniform_index(size_t n, MCTSRng *rng) {
   if (n == 0)
     return 0;
-  return (size_t)fmod((rng->rand01(&rng->ctx), (int)n));
+  return fmod(rng->rand01(&rng->ctx), (int)n));
 }
 
 /* ========================= */
