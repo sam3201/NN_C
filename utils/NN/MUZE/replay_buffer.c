@@ -126,23 +126,6 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
   rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
 }
 
-void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
-                        float reward, const float *next_obs, int done) {
-  if (!rb || !obs || !next_obs)
-    return;
-
-  // Default pi = one-hot(action), z = reward (1-step)
-  float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
-  if (!tmp_pi)
-    return;
-  if (action >= 0 && action < rb->action_count)
-    tmp_pi[action] = 1.0f;
-
-  rb_push_full(rb, obs, tmp_pi, reward, action, reward, next_obs, done);
-
-  free(tmp_pi);
-}
-
 static int rand_int(int n) {
   return (int)((double)rand() / ((double)RAND_MAX + 1.0) * n);
 }
