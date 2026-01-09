@@ -25,8 +25,10 @@ static void default_dynamics(MuModel *m, const float *latent_in, int action,
                              float *latent_out, float *reward_out) {
   int L = m->cfg.latent_dim;
 
-  float a = (float)action / (float)(m->cfg.action_count - 1); // 0..1
-  float a2 = a * 2.0f - 1.0f;                                 // -1..1
+  float a = (m->cfg.action_count > 1)
+                ? ((float)action / (float)(m->cfg.action_count - 1))
+                : 0.0f;
+  float a2 = a * 2.0f - 1.0f; // -1..1
 
   for (int i = 0; i < L; i++) {
     float sum = 0.f;
