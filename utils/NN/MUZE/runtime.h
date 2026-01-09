@@ -24,8 +24,8 @@ typedef struct {
   /* infinite logical memory */
   size_t total_steps;
 
-  TrainerConfig tcfg;
-  bool has_tcfg;
+  TrainerConfig cfg;
+  bool has_cfg;
 } MuRuntime;
 
 /* Runtime lifecycle */
