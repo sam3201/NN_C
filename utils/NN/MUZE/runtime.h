@@ -34,4 +34,11 @@ void mu_runtime_end_episode(MuRuntime *rt, MuModel *model,
 void mu_runtime_reset_episode(MuRuntime *rt);
 void mu_runtime_train(MuRuntime *rt, MuModel *model);
 
+// Chooses action + fills out_pi[A].
+// If cortex->use_mcts, uses MCTS (requires mcts_model).
+// Else uses cortex->encode + cortex->policy.
+// Applies policy_temperature + policy_epsilon.
+int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
+                       float *out_pi, size_t action_count, MCTSRng *rng);
+
 #endif
