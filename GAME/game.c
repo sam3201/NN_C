@@ -20,205 +20,6 @@
 #define SAVE_ROOT "saves"
 #endif
 
-/* =======================
-   ENUMS
-======================= */
-
-typedef enum {
-  STATE_TITLE = 0,
-  STATE_WORLD_SELECT,
-  STATE_WORLD_CREATE,
-  STATE_PLAYING,
-  STATE_PAUSED,
-  STATE_COUNT
-} GameStateType;
-
-typedef enum {
-  TOOL_HAND = 0,
-  TOOL_AXE = 1,
-  TOOL_PICKAXE = 2,
-  TOOL_SWORD = 3,
-  TOOL_ARMOR = 4,
-  TOOL_BOW = 5,
-  TOOL_COUNT = 6,
-  TOOL_NONE = -1
-} ToolType;
-
-typedef enum {
-  RES_TREE = 0,
-  RES_ROCK,
-  RES_GOLD,
-  RES_FOOD,
-  RES_NONE
-} ResourceType;
-
-typedef enum {
-  MOB_PIG = 0,
-  MOB_SHEEP,
-  MOB_SKELETON,
-  MOB_ZOMBIE,
-  MOB_COUNT
-} MobType;
-
-typedef enum {
-  INTENT_NONE = 0,
-  INTENT_ATTACK,
-  INTENT_HARVEST,
-  INTENT_COUNT
-} IntentType;
-
-typedef enum {
-  HIT_NONE = 0,
-  HIT_RESOURCE = 1,
-  HIT_MOB = 2,
-  HIT_BASE = 3
-} HitKind;
-
-typedef struct {
-  HitKind kind;
-  float t;         // distance along ray (world units)
-  int cx, cy;      // chunk coords of hit
-  int index;       // resource index OR mob index OR tribe index
-  Vector2 hit_pos; // world-space hit point
-} RayHit;
-
-typedef enum {
-  ACTION_UP = 0,
-  ACTION_DOWN,
-  ACTION_LEFT,
-  ACTION_RIGHT,
-  ACTION_ATTACK,
-  ACTION_FIRE,
-  ACTION_HARVEST,
-  ACTION_EAT,
-  // ACTION_CRAFT,
-  ACTION_CRAFT_AXE,
-  ACTION_CRAFT_PICKAXE,
-  ACTION_CRAFT_SWORD,
-  ACTION_CRAFT_ARMOR,
-  ACTION_CRAFT_BOW,
-  ACTION_CRAFT_ARROWS,
-  ACTION_NONE,
-  ACTION_COUNT
-} ActionType;
-
-typedef enum {
-  PROJ_OWNER_PLAYER = 0,
-  PROJ_OWNER_AGENT = 1,
-  PROJ_OWNER_MOB = 2
-} ProjOwner;
-
-typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
-
-static uint32_t g_world_seed = 0;
-
-// Forward declarations for functions used before their definitions (C99+)
-struct Chunk; // forward decl
-static inline float randf(float a, float b);
-static inline int is_night(void);
-static void init_tribes(void);
-static void init_agents(void);
-static void ensure_save_root(void);
-static inline Vector2 clamp_local_to_chunk(Vector2 p);
-static int find_free_mob_slot(struct Chunk *c);
-static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             int dmg, ProjOwner owner);
-Chunk *get_chunk(int cx, int cy);
-// ----------------------------------------------------------------------
-
-/* =======================
-   GLOBAL CONFIG
-======================= */
-#define WORLD_SIZE 128
-#define CHUNK_SIZE 32
-
-#define MAX_RESOURCES 512
-#define MAX_MOBS 64
-
-#define TRIBE_COUNT 2
-#define AGENT_PER_TRIBE 8
-#define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
-
-#define BASE_RADIUS 8
-
-#define HARVEST_DISTANCE 5.0f
-#define HARVEST_AMOUNT 1
-#define ATTACK_DISTANCE 3.0f
-#define ATTACK_DAMAGE 1
-
-#define PLAYER_HARVEST_DAMAGE 3
-#define PLAYER_ATTACK_DAMAGE 3
-#define PLAYER_TAKEN_DAMAGE 1
-#define AGENT_TAKEN_DAMAGE 1
-
-#define PLAYER_HARVEST_COOLDOWN 0.18f
-#define PLAYER_ATTACK_COOLDOWN 0.22f
-
-#define PLAYER_MINE_DAMAGE 3
-#define PLAYER_MINE_COOLDOWN 0.26f
-#define PLAYER_MINE_STAMINA_COST 3.0f
-
-#define STAMINA_REGEN_RATE 5.0f
-#define STAMINA_DRAIN_RATE 0.5f
-
-#define MAX_PICKUPS 256
-
-#define MOB_AGGRO_RANGE 10.0f
-#define MOB_ATTACK_RANGE 1.25f
-#define MOB_SPEED_PASSIVE 2.55f
-#define MOB_SPEED_SCARED (MOB_SPEED_PASSIVE * 2.0f)
-#define MOB_SPEED_HOSTILE 3.85f
-
-#define MAX_PROJECTILES 64
-// ---- Player bow charge ----
-#define BOW_CHARGE_TIME 0.75f // seconds to full charge
-#define BOW_CHARGE_MIN01                                                       \
-  0.12f // minimum charge required to fire (prevents tap-fizzle)
-#define PLAYER_FIRE_COOLDOWN 0.18f
-
-// agent continuous fire: one FIRE action keeps firing for a bit
-#define AGENT_FIRE_LATCH_TIME 0.85f // seconds of "auto-fire" after ACTION_FIRE
-#define AGENT_FIRE_CANCEL_ON_MOVE 1 // set 0 if you want strafing auto-fire
-
-#define BOW_SPEED_MIN 10.0f
-#define BOW_SPEED_MAX 22.0f
-#define BOW_TTL_MIN 1.10f
-#define BOW_TTL_MAX 2.20f
-#define BOW_DMG_MIN 8
-#define BOW_DMG_MAX 20
-
-// =======================
-// REWARD SHAPING
-// =======================
-#define R_SURVIVE_PER_TICK (0.0005f)
-
-#define R_ATTACK_HIT (0.015f)
-#define R_ATTACK_KILL (0.180f)
-#define R_ATTACK_WASTE (-0.020f) // attack when nothing hit
-
-#define R_HARVEST_HIT (0.008f)
-#define R_HARVEST_BREAK (0.060f)
-#define R_HARVEST_WASTE (-0.015f)      // harvest when nothing hit
-#define R_HARVEST_NO_STAMINA (-0.006f) // tried to harvest but couldn't afford
-
-#define R_FIRE_HIT (0.020f)
-#define R_FIRE_WASTE (-0.030f) // fired and had no mob in ray
-#define R_FIRE_NO_AMMO (-0.010f)
-
-#define R_EAT_GOOD (0.120f)
-#define R_EAT_WASTE (-0.040f) // ate when already basically full
-#define R_EAT_NO_FOOD (-0.010f)
-
-#define R_WANDER_PENALTY (-0.0008f); // punish random wandering
-
-#define R_DEATH (-1.000f)
-
-#define OBS_DIM 128
-#define TRAIN_INTERVAL 1
-
-#define MAX_WORLDS 4096
-#define WORLD_NAME_MAX 4096
-
 // ----- forward prototypes -----
 /* =======================
        STRUCTS
@@ -466,6 +267,205 @@ typedef struct {
   float ai_timer, aggro_timer, attack_cd, hurt_timer, lunge_timer;
 } SaveMob;
 #pragma pack(pop)
+
+/* =======================
+   ENUMS
+======================= */
+
+typedef enum {
+  STATE_TITLE = 0,
+  STATE_WORLD_SELECT,
+  STATE_WORLD_CREATE,
+  STATE_PLAYING,
+  STATE_PAUSED,
+  STATE_COUNT
+} GameStateType;
+
+typedef enum {
+  TOOL_HAND = 0,
+  TOOL_AXE = 1,
+  TOOL_PICKAXE = 2,
+  TOOL_SWORD = 3,
+  TOOL_ARMOR = 4,
+  TOOL_BOW = 5,
+  TOOL_COUNT = 6,
+  TOOL_NONE = -1
+} ToolType;
+
+typedef enum {
+  RES_TREE = 0,
+  RES_ROCK,
+  RES_GOLD,
+  RES_FOOD,
+  RES_NONE
+} ResourceType;
+
+typedef enum {
+  MOB_PIG = 0,
+  MOB_SHEEP,
+  MOB_SKELETON,
+  MOB_ZOMBIE,
+  MOB_COUNT
+} MobType;
+
+typedef enum {
+  INTENT_NONE = 0,
+  INTENT_ATTACK,
+  INTENT_HARVEST,
+  INTENT_COUNT
+} IntentType;
+
+typedef enum {
+  HIT_NONE = 0,
+  HIT_RESOURCE = 1,
+  HIT_MOB = 2,
+  HIT_BASE = 3
+} HitKind;
+
+typedef struct {
+  HitKind kind;
+  float t;         // distance along ray (world units)
+  int cx, cy;      // chunk coords of hit
+  int index;       // resource index OR mob index OR tribe index
+  Vector2 hit_pos; // world-space hit point
+} RayHit;
+
+typedef enum {
+  ACTION_UP = 0,
+  ACTION_DOWN,
+  ACTION_LEFT,
+  ACTION_RIGHT,
+  ACTION_ATTACK,
+  ACTION_FIRE,
+  ACTION_HARVEST,
+  ACTION_EAT,
+  // ACTION_CRAFT,
+  ACTION_CRAFT_AXE,
+  ACTION_CRAFT_PICKAXE,
+  ACTION_CRAFT_SWORD,
+  ACTION_CRAFT_ARMOR,
+  ACTION_CRAFT_BOW,
+  ACTION_CRAFT_ARROWS,
+  ACTION_NONE,
+  ACTION_COUNT
+} ActionType;
+
+typedef enum {
+  PROJ_OWNER_PLAYER = 0,
+  PROJ_OWNER_AGENT = 1,
+  PROJ_OWNER_MOB = 2
+} ProjOwner;
+
+typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
+
+static uint32_t g_world_seed = 0;
+
+// Forward declarations for functions used before their definitions (C99+)
+struct Chunk; // forward decl
+static inline float randf(float a, float b);
+static inline int is_night(void);
+static void init_tribes(void);
+static void init_agents(void);
+static void ensure_save_root(void);
+static inline Vector2 clamp_local_to_chunk(Vector2 p);
+static int find_free_mob_slot(struct Chunk *c);
+static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
+                             int dmg, ProjOwner owner);
+Chunk *get_chunk(int cx, int cy);
+// ----------------------------------------------------------------------
+
+/* =======================
+   GLOBAL CONFIG
+======================= */
+#define WORLD_SIZE 128
+#define CHUNK_SIZE 32
+
+#define MAX_RESOURCES 512
+#define MAX_MOBS 64
+
+#define TRIBE_COUNT 2
+#define AGENT_PER_TRIBE 8
+#define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
+
+#define BASE_RADIUS 8
+
+#define HARVEST_DISTANCE 5.0f
+#define HARVEST_AMOUNT 1
+#define ATTACK_DISTANCE 3.0f
+#define ATTACK_DAMAGE 1
+
+#define PLAYER_HARVEST_DAMAGE 3
+#define PLAYER_ATTACK_DAMAGE 3
+#define PLAYER_TAKEN_DAMAGE 1
+#define AGENT_TAKEN_DAMAGE 1
+
+#define PLAYER_HARVEST_COOLDOWN 0.18f
+#define PLAYER_ATTACK_COOLDOWN 0.22f
+
+#define PLAYER_MINE_DAMAGE 3
+#define PLAYER_MINE_COOLDOWN 0.26f
+#define PLAYER_MINE_STAMINA_COST 3.0f
+
+#define STAMINA_REGEN_RATE 5.0f
+#define STAMINA_DRAIN_RATE 0.5f
+
+#define MAX_PICKUPS 256
+
+#define MOB_AGGRO_RANGE 10.0f
+#define MOB_ATTACK_RANGE 1.25f
+#define MOB_SPEED_PASSIVE 2.55f
+#define MOB_SPEED_SCARED (MOB_SPEED_PASSIVE * 2.0f)
+#define MOB_SPEED_HOSTILE 3.85f
+
+#define MAX_PROJECTILES 64
+// ---- Player bow charge ----
+#define BOW_CHARGE_TIME 0.75f // seconds to full charge
+#define BOW_CHARGE_MIN01                                                       \
+  0.12f // minimum charge required to fire (prevents tap-fizzle)
+#define PLAYER_FIRE_COOLDOWN 0.18f
+
+// agent continuous fire: one FIRE action keeps firing for a bit
+#define AGENT_FIRE_LATCH_TIME 0.85f // seconds of "auto-fire" after ACTION_FIRE
+#define AGENT_FIRE_CANCEL_ON_MOVE 1 // set 0 if you want strafing auto-fire
+
+#define BOW_SPEED_MIN 10.0f
+#define BOW_SPEED_MAX 22.0f
+#define BOW_TTL_MIN 1.10f
+#define BOW_TTL_MAX 2.20f
+#define BOW_DMG_MIN 8
+#define BOW_DMG_MAX 20
+
+// =======================
+// REWARD SHAPING
+// =======================
+#define R_SURVIVE_PER_TICK (0.0005f)
+
+#define R_ATTACK_HIT (0.015f)
+#define R_ATTACK_KILL (0.180f)
+#define R_ATTACK_WASTE (-0.020f) // attack when nothing hit
+
+#define R_HARVEST_HIT (0.008f)
+#define R_HARVEST_BREAK (0.060f)
+#define R_HARVEST_WASTE (-0.015f)      // harvest when nothing hit
+#define R_HARVEST_NO_STAMINA (-0.006f) // tried to harvest but couldn't afford
+
+#define R_FIRE_HIT (0.020f)
+#define R_FIRE_WASTE (-0.030f) // fired and had no mob in ray
+#define R_FIRE_NO_AMMO (-0.010f)
+
+#define R_EAT_GOOD (0.120f)
+#define R_EAT_WASTE (-0.040f) // ate when already basically full
+#define R_EAT_NO_FOOD (-0.010f)
+
+#define R_WANDER_PENALTY (-0.0008f); // punish random wandering
+
+#define R_DEATH (-1.000f)
+
+#define OBS_DIM 128
+#define TRAIN_INTERVAL 1
+
+#define MAX_WORLDS 4096
+#define WORLD_NAME_MAX 4096
 
 /* =======================
    GLOBAL STATE
