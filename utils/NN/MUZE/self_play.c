@@ -178,6 +178,9 @@ void selfplay_run(MuModel *model, void *env_state,
     // ---- write proper discounted returns into replay (z targets) ----
     if (step > 0) {
       compute_discounted_returns(reward_buf, step, gamma, z_buf);
+      for (int i = 0; i < step; i++) {
+        rb_set_z(rb, idx_buf[i], z_buf[i]);
+      }
     }
 
     // metrics
