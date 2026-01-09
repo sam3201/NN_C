@@ -7,18 +7,20 @@
 extern "C" {
 #endif
 
+/*
 typedef struct {
-  GameState *obs;      // O
-  GameState *next_obs; // O
-  int action;
-  float reward;
-  int done;
+GameState *obs;      // O
+GameState *next_obs; // O
+int action;
+float reward;
+int done;
 
-  // optional MuZero targets (can be filled later):
-  float *pi;    // A  (policy target, e.g. from MCTS)
-  float z;      // scalar return/target value
-  float v_pred; // value estimate at time of storage (optional)
+// optional MuZero targets (can be filled later):
+float *pi;    // A  (policy target, e.g. from MCTS)
+float z;      // scalar return/target value
+float v_pred; // value estimate at time of storage (optional)
 } Transition;
+*/
 
 typedef struct ReplayBuffer ReplayBuffer;
 
