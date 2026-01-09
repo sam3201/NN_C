@@ -4,7 +4,7 @@
 #include "mcts.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
-#include "selfplay.h"
+#include "self_play.h"
 #include "trainer.h"
 
 #ifdef __cplusplus
