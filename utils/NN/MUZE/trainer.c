@@ -65,6 +65,7 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
                                         next_obs_batch, B, lr, &latent_mse,
                                         &reward_mse);
     }
+
     if ((step % 50) == 0) {
       printf("[dyn] step=%d lat_mse=%.6f rew_mse=%.6f replay=%zu\n", step,
              lat_mse, rew_mse, rb_size(rb));
