@@ -46,11 +46,11 @@ static void apply_temperature_to_probs(float *p, size_t n, float temperature) {
   renorm_probs(p, n);
 }
 
-static size_t sample_from_probs(const float *p, size_t n) {
+static size_t sample_from_probs(const float *p, size_t n, MCTSRng *rng) {
   if (!p || n == 0)
     return 0;
 
-  float r = (float)rand() / (float)RAND_MAX;
+  float r = / (float)RAND_MAX;
   float c = 0.0f;
 
   for (size_t i = 0; i + 1 < n; i++) {
