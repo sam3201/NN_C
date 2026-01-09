@@ -168,53 +168,60 @@ int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
   if (!cortex || !obs || !out_pi || action_count == 0)
     return -1;
 
-  // ---- MCTS path ----
+  // ---- Case 1: MCTS ----
   if (cortex->use_mcts) {
     if (!cortex->mcts_model)
       return -1;
 
+    // NOTE: match your actual signature:
+    // In your jump.c you used: mcts_run(model, obs, &params, &rng)
     MCTSResult mr =
         mcts_run(cortex->mcts_model, obs, &cortex->mcts_params, rng);
 
-    // copy mr.pi -> out_pi (clamp just in case)
+    // Copy pi out
     size_t n = action_count;
-    if ((size_t)mr.action_count < n)
-      n = (size_t)mr.action_count;
+    // If mr.pi is exactly action_count, this is fine. If not, clamp.
+    // (Assuming mr.pi length == action_count in your codebase.)
     memcpy(out_pi, mr.pi, sizeof(float) * n);
-    for (size_t i = n; i < action_count; i++)
-      out_pi[i] = 0.0f;
 
-    // optional: normalize/temperature/epsilon/sample (use your helpers)
-    // ... (keep your
-    // normalize_probs/apply_temperature/apply_epsilon_mix/sample_from_probs)
+    normalize_probs(out_pi, n);
+    apply_temperature(out_pi, n, cortex->policy_temperature);
+    apply_epsilon_mix(out_pi, n, cortex->policy_epsilon);
 
-    int a = mr.chosen_action;
+    int a = sample_from_probs(out_pi, n, rng);
+
     mcts_result_free(&mr);
     return a;
   }
 
-  // ---- Direct cortex policy path ----
+  // ---- Case 2: Direct policy (SAM bridge, etc.) ----
   if (!cortex->encode || !cortex->policy)
     return -1;
 
   long double **latent_seq = NULL;
   size_t seq_len = 0;
+
+  // encode may want non-const float*
   cortex->encode(cortex->brain, (float *)obs, obs_dim, &latent_seq, &seq_len);
 
   if (!latent_seq || seq_len == 0) {
     if (cortex->free_latent_seq)
       cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
+    // fallback to uniform
     float u = 1.0f / (float)action_count;
     for (size_t i = 0; i < action_count; i++)
       out_pi[i] = u;
-    // sample_from_probs(...)
-    return 0;
+    return sample_from_probs(out_pi, action_count, rng);
   }
 
   cortex->policy(cortex->brain, latent_seq, seq_len, out_pi, action_count);
+
   if (cortex->free_latent_seq)
     cortex->free_latent_seq(cortex->brain, latent_seq, seq_len);
 
-  // normalize/temperature/epsilon/sample...
-  return 0;
+  normalize_probs(out_pi, action_count);
+  apply_temperature(out_pi, action_count, cortex->policy_temperature);
+  apply_epsilon_mix(out_pi, action_count, cortex->policy_epsilon);
+
+  return sample_from_probs(out_pi, action_count, rng);
 }
