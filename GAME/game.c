@@ -4534,6 +4534,7 @@ void update_player(void) {
   bool moving = false;
   if (IsKeyDown(KEY_W)) {
     player.position.y -= move;
+    player.facing.y = -1.0f;
     moving = true;
   }
   if (IsKeyDown(KEY_S)) {
