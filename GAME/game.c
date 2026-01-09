@@ -199,132 +199,6 @@ typedef enum {
 typedef enum { PICK_FOOD = 0, PICK_SHARD, PICK_ARROW } PickupType;
 
 // ----- forward prototypes -----
-typedef struct Chunk Chunk; // forward decl (since Chunk is defined later)
-typedef struct Agent Agent;
-
-static inline float res_radius_world(ResourceType t);
-static inline float mob_radius_world(MobType t);
-static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
-                                    float radius, int self_cx, int self_cy);
-Chunk *get_chunk(int cx, int cy);
-// raids / day-night mob maintenance
-static void despawn_hostiles_if_day(Chunk *c);
-static void spawn_raid_wave(void);
-
-// you already define this later, but spawn_raid_wave will use it:
-static void spawn_mob_at_world(MobType type, Vector2 world_pos);
-// --- agent update (was deleted) ---
-void update_agent(Agent *a);
-static void on_mob_killed(MobType type, Vector2 mob_world_pos);
-static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
-                             ProjOwner owner, int damage);
-
-static void player_try_attack_forward(Vector2 facing_dir) {
-  if (player_attack_cd > 0.0f)
-    return;
-
-  Vector2 rd = Vector2Normalize(facing_dir);
-  if (Vector2Length(rd) < 1e-3f)
-    rd = (Vector2){1, 0};
-
-  float range = player_attack_range();
-  int dmg = player_attack_damage();
-
-  RayHit hit = raycast_world_objects(player.position, rd, range);
-  if (hit.kind != HIT_MOB) {
-    player_attack_cd = player_attack_cooldown() * 0.35f; // whiff cooldown
-    return;
-  }
-
-  Chunk *c = get_chunk(hit.cx, hit.cy);
-  pthread_rwlock_wrlock(&c->lock);
-
-  Mob *m = &c->mobs[hit.index];
-  if (m->health > 0) {
-    player_attack_cd = player_attack_cooldown();
-
-    m->health -= dmg;
-    m->hurt_timer = 0.18f;
-    m->aggro_timer = 3.0f;
-    m->lunge_timer = 0.10f;
-
-    cam_shake = fmaxf(cam_shake, 0.10f);
-
-    if (m->health <= 0) {
-      Vector2 mob_world_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
-                                        hit.cy * CHUNK_SIZE + m->position.y};
-      on_mob_killed(m->type, mob_world_pos);
-      m->health = 0;
-    }
-  }
-
-  pthread_rwlock_unlock(&c->lock);
-}
-static void player_try_attack_mob_in_chunk(Chunk *c, int cx, int cy) {
-  if (player_attack_cd > 0.0f)
-    return;
-
-  float range = player_attack_range();
-  int dmg = player_attack_damage();
-
-  Mob *best = NULL;
-  float bestD = 1e9f;
-
-  Vector2 origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
-  for (int i = 0; i < MAX_MOBS; i++) {
-    Mob *m = &c->mobs[i];
-    if (m->health <= 0)
-      continue;
-
-    Vector2 mw = Vector2Add(origin, m->position);
-    float d = Vector2Distance(player.position, mw);
-
-    if (d < range && d < bestD) {
-      bestD = d;
-      best = m;
-    }
-  }
-
-  if (!best)
-    return;
-
-  player_attack_cd = player_attack_cooldown();
-
-  best->health -= dmg;
-  best->hurt_timer = 0.18f;
-  best->aggro_timer = 3.0f;
-  best->lunge_timer = 0.10f;
-
-  cam_shake = fmaxf(cam_shake, 0.10f);
-
-  if (best->health <= 0) {
-    Vector2 mob_world_pos = (Vector2){cx * CHUNK_SIZE + best->position.x,
-                                      cy * CHUNK_SIZE + best->position.y};
-    on_mob_killed(best->type, mob_world_pos);
-    best->health = 0;
-  }
-}
-
-
-    // saving
-static void ensure_save_root(void);
-
-static GameStateType g_state = STATE_TITLE;
-
-// current world session
-static char g_world_name[4096] = "World1";
-static uint32_t g_world_seed = 1337;
-
-// UI typing buffers
-static int g_typing_name = 0;
-static int g_typing_seed = 0;
-static char g_seed_text[16] = "1337";
-
-// save directory
-static const char *SAVE_ROOT = "saves";
-
 /* =======================
        STRUCTS
     ======================= */
@@ -1885,7 +1759,9 @@ static const char *SAVE_ROOT = "saves";
       return 1;
     }
 
-    static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
+    Chunk *get_chunk(int cx, int cy);
+
+static RayHit raycast_world_objects(Vector2 ro, Vector2 rd, float maxT) {
       RayHit best = {0};
       best.kind = HIT_NONE;
       best.t = maxT;
