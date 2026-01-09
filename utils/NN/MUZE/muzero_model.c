@@ -1,7 +1,7 @@
 #include "muzero_model.h"
 #include "replay_buffer.h"
 #include "runtime.h"
-#include "traner.h"
+#include "trainer.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
