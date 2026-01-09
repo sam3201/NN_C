@@ -10,7 +10,8 @@
 extern "C" {
 #endif
 
-#define TRAIN_WINDOW 10000
+#define TRAIN_WINDOW 1024
+#define TRAIN_WARMUP TRAIN_WINDOW
 
 typedef struct {
   size_t capacity;
