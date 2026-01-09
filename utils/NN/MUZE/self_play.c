@@ -67,6 +67,9 @@ void selfplay_run(MuModel *model, void *env_state,
   int *act_buf = (int *)malloc(sizeof(int) * (size_t)max_steps);
 
   float *obs0 = (float *)malloc(sizeof(float) * (size_t)obs_dim);
+  size_t *idx_buf = (size_t *)malloc(sizeof(size_t) * (size_t)max_steps);
+  if (!idx_buf) { /* handle alloc fail */
+  }
 
   if (!obs_buf || !pi_buf || !reward_buf || !act_buf || !obs0) {
     free(obs_buf);
