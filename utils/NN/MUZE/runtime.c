@@ -72,34 +72,29 @@ void mu_runtime_free(MuRuntime *rt) {
   free(rt);
 }
 
+// runtime.c
 void mu_runtime_step(MuRuntime *rt, MuModel *model, const float *obs,
                      int action, float reward) {
-  rt->total_steps++;
-
-  if (!rt->has_last) {
-    memcpy(rt->last_obs, obs, sizeof(float) * model->cfg.obs_dim);
-    rt->last_action = action;
-    rt->has_last = 1;
+  if (!rt || !model || !obs)
     return;
-  }
 
-  /* One-step bootstrap target */
-  float z = reward;
+  const int O = model->cfg.obs_dim;
+  const int A = model->cfg.action_count;
 
-  int A = model->cfg.action_count;
+  // Build a one-hot pi for THIS decision (action taken at obs)
   float *pi = (float *)malloc(sizeof(float) * (size_t)A);
   if (!pi)
     return;
-  rb_push(rt->rb, rt->last_obs, rt->last_pi, z);
+
+  for (int i = 0; i < A; i++)
+    pi[i] = 0.0f;
+  if (action >= 0 && action < A)
+    pi[action] = 1.0f;
+
+  // Use the correct caching/pushing logic
+  mu_runtime_step_with_pi(rt, model, obs, pi, action, reward);
+
   free(pi);
-
-  for (int i = 0; i < model->cfg.action_count; i++)
-    pi[i] = (i == rt->last_action) ? 1.0f : 0.0f;
-
-  rb_push(rt->rb, rt->last_obs, pi, z);
-
-  memcpy(rt->last_obs, obs, sizeof(float) * model->cfg.obs_dim);
-  rt->last_action = action;
 }
 
 void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
