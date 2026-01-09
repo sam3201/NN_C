@@ -40,8 +40,8 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   if (!model || !rb || !cfg)
     return;
 
-  size_t n0 = rb_size(rb);
-  if ((int)n0 < cfg->min_replay_size)
+  size_t n = rb_size(rb);
+  if ((int)n < cfg->min_replay_size)
     return;
 
   int B = cfg->batch_size;
@@ -80,12 +80,6 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
     } else {
       muzero_model_train_dynamics_batch(model, obs, a, r, obs2, actual, lr,
                                         &lat_mse, &rew_mse);
-    }
-
-    if (!is_finite_float(lat_mse) || !is_finite_float(rew_mse)) {
-      printf("[dyn] NaN/Inf detected at step=%d (lat_mse=%f rew_mse=%f)\n",
-             +step, lat_mse, rew_mse);
-      break;
     }
 
     if ((step % 50) == 0) {
