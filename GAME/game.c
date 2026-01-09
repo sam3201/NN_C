@@ -4109,7 +4109,7 @@ case ACTION_CRAFT:
   */
   case ACTION_CRAFT_AXE:
     if (!agent_in_base(a, tr)) {
-      *reward += -0.006f;
+      reward += -0.006f;
       return;
     }
 
@@ -4118,7 +4118,7 @@ case ACTION_CRAFT:
       tr->stone -= 2;
       a->has_axe = true;
       a->last_craft_selected = TOOL_AXE;
-      *reward += 0.09f;
+      reward += 0.09f;
       return;
     }
     break;
