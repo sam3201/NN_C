@@ -1,4 +1,3 @@
-// runtime.c (top)
 #include "runtime.h"
 #include "trainer.h"
 #include <stdio.h>
