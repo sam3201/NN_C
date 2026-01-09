@@ -1,6 +1,7 @@
 #ifndef MUZE_RUNTIME_H
 #define MUZE_RUNTIME_H
 
+#include "muze_cortex.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
 #include <stdint.h>
