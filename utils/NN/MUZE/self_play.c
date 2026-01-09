@@ -175,6 +175,7 @@ void selfplay_run(MuModel *model, void *env_state,
 
     free(obs_cur);
 
+    // ---- write proper discounted returns into replay (z targets) ----
     // metrics
     float mean_root_v = (step > 0) ? (ep_root_v_sum / (float)step) : 0.0f;
 
