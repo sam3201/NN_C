@@ -56,6 +56,7 @@ if [ "$?" -eq 0 ]; then
   echo Run Success 
   rm "$OUT"
   rm "a.sh"
+  rm "a.sh.dSYM"
   exit 0 
 else
   echo Run Failed
