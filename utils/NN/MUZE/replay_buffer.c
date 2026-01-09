@@ -122,8 +122,8 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
         +rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
                       +/*next_obs*/ obs, /*done*/ 0);
   }
-  @ @ void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
-                              float reward, const float *next_obs, int done) {
+  void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
+                          float reward, const float *next_obs, int done) {
     if (!rb || !obs || !next_obs)
       return;
 
