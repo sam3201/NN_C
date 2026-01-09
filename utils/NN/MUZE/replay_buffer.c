@@ -112,15 +112,9 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
     if (!rb || !obs || !pi)
       return;
 
-    - // We MUST make transition fields valid too; use next_obs = obs as safe
-        - // default. (Trainer dynamics can still learn something; or you can
-          // skip
-        - // done=0.)
-        -rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f, obs,
-                      /*done*/ 0);
     + // Make transition fields valid too; safest default: next_obs = obs.
-        +rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
-                      +/*next_obs*/ obs, /*done*/ 0);
+        rb_push_full(rb, obs, pi, z, /*action*/ 0, /*reward*/ 0.0f,
+                     +/*next_obs*/ obs, /*done*/ 0);
   }
   void rb_push_transition(ReplayBuffer * rb, const float *obs, int action,
                           float reward, const float *next_obs, int done) {
