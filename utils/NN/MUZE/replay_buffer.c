@@ -125,7 +125,8 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
     float *tmp_pi = (float *)malloc(sizeof(float) * (size_t)rb->action_count);
     if (!tmp_pi)
       return;
-    @ @ if (action >= 0 && action < rb->action_count) tmp_pi[action] = 1.0f;
+    if (action >= 0 && action < rb->action_count)
+      tmp_pi[action] = 1.0f;
 
     rb_push_full(rb, obs, tmp_pi, reward, action, reward, next_obs, done);
 
