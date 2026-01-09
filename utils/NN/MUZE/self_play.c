@@ -76,6 +76,7 @@ void selfplay_run(MuModel *model, void *env_state,
     free(reward_buf);
     free(act_buf);
     free(obs0);
+    free(idx_buf);
     return;
   }
 
