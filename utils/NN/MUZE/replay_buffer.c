@@ -110,6 +110,7 @@ void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
     rb_push_full(rb, obs, pi, z, 0, 0.0f, obs, 0);
   }
 }
+
 void rb_push_transition(ReplayBuffer *rb, const float *obs, int action,
                         float reward, const float *next_obs, int done) {
   if (!rb || !obs || !next_obs)
