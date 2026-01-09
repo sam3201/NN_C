@@ -47,7 +47,7 @@ typedef struct {
 void selfplay_run(MuModel *model, void *env_state,
                   selfplay_env_reset_fn env_reset,
                   selfplay_env_step_fn env_step, MCTSParams *mcts_params,
-                  SelfPlayParams *sp_params, ReplayBuffer *rb);
+                  SelfPlayParams *sp_params, ReplayBuffer *rb, MCTSRng *rng);
 
 #ifdef __cplusplus
 }
