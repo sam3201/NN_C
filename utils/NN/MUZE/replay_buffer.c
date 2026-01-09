@@ -93,15 +93,15 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
            sizeof(float) * rb->action_count);
     rb->z_buf[idx] = z;
 
-    + // --- transition tuples ---
-        +rb->a_buf[idx] = action;
-    +rb->r_buf[idx] = reward;
-    +memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
-            +sizeof(float) * rb->obs_dim);
-    +rb->done_buf[idx] = done ? 1 : 0;
-    +
-        // advance head / size
-        rb->write_idx = (rb->write_idx + 1) % rb->capacity;
+    // --- transition tuples ---
+    +rb->a_buf[idx] = action;
+    rb->r_buf[idx] = reward;
+    memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
+           +sizeof(float) * rb->obs_dim);
+    rb->done_buf[idx] = done ? 1 : 0;
+
+    // advance head / size
+    rb->write_idx = (rb->write_idx + 1) % rb->capacity;
     if (rb->size < rb->capacity)
       rb->size++;
 
