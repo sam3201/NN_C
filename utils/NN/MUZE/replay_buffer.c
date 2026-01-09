@@ -85,16 +85,14 @@ void rb_push(ReplayBuffer *rb, const float *obs, const float *pi, float z) {
       return 0;
 
     size_t idx = rb->write_idx;
-    -       // copy obs -> rb->obs_buf[idx]
-        + + // --- policy/value tuples ---
-          memcpy(rb->obs_buf + idx * rb->obs_dim, obs,
-                 sizeof(float) * rb->obs_dim);
+    // --- policy/value tuples ---
+    memcpy(rb->obs_buf + idx * rb->obs_dim, obs, sizeof(float) * rb->obs_dim);
     memcpy(rb->pi_buf + idx * rb->action_count, pi,
            sizeof(float) * rb->action_count);
     rb->z_buf[idx] = z;
 
     // --- transition tuples ---
-    +rb->a_buf[idx] = action;
+    rb->a_buf[idx] = action;
     rb->r_buf[idx] = reward;
     memcpy(rb->next_obs_buf + idx * rb->obs_dim, next_obs,
            +sizeof(float) * rb->obs_dim);
