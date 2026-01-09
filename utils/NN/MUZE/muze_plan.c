@@ -133,7 +133,9 @@ int muze_plan(MuCortex *cortex, float *obs, size_t obs_dim, size_t action_count,
     eps = 1.0f;
 
   size_t chosen;
-  float u = (float)rand() / (float)RAND_MAX;
+  float u = (rng && rng->rand01) ? rng->rand01(rng->ctx)
+                                 : (float)rand() / (float)RAND_MAX;
+
   if (u < eps) {
     chosen = rand_uniform_index(action_count);
   } else {
