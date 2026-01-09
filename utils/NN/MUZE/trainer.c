@@ -35,11 +35,11 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
   int B = cfg->batch_size;
   int O = muzero_model_obs_dim(model);
 
-  float *obs = (float *)malloc(sizeof(float) * B * O);
-  float *obs2 = (float *)malloc(sizeof(float) * B * O);
-  int *a = (int *)malloc(sizeof(int) * B);
-  float *r = (float *)malloc(sizeof(float) * B);
-  int *done = (int *)malloc(sizeof(int) * B);
+  float *obs = (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
+  float *obs2 = (float *)malloc(sizeof(float) * (size_t)B * (size_t)O);
+  int *a = (int *)malloc(sizeof(int) * (size_t)B);
+  float *r = (float *)malloc(sizeof(float) * (size_t)B);
+  int *done = (int *)malloc(sizeof(int) * (size_t)B);
 
   if (!obs || !obs2 || !a || !r || !done) {
     free(obs);
@@ -50,20 +50,24 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
     return;
   }
 
+  float lr = cfg->lr;
+  if (!(lr > 0.0f))
+    lr = 0.05f;
+
   for (int step = 0; step < cfg->train_steps; step++) {
     int actual = rb_sample_transition(rb, B, obs, a, r, obs2, done);
     if (actual <= 0)
       break;
 
     float lat_mse = 0.0f, rew_mse = 0.0f;
+
     if (model->train_dynamics) {
-      // Your hook signature doesn't include the mse outs, so you just call it:
-      model->train_dynamics(model, obs_batch, a_batch, r_batch, next_obs_batch,
-                            B, lr);
+      // hook matches muzero_model.h: includes mse out params
+      model->train_dynamics(model, obs, a, r, obs2, actual, lr, &lat_mse,
+                            &rew_mse);
     } else {
-      muzero_model_train_dynamics_batch(model, obs_batch, a_batch, r_batch,
-                                        next_obs_batch, B, lr, &latent_mse,
-                                        &reward_mse);
+      muzero_model_train_dynamics_batch(model, obs, a, r, obs2, actual, lr,
+                                        &lat_mse, &rew_mse);
     }
 
     if ((step % 50) == 0) {
