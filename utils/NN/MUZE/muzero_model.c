@@ -358,7 +358,13 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
 void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
                                        const int *a_batch, const float *r_batch,
                                        const float *next_obs_batch, int B,
-                                       float lr) {
+                                       float lr, float *out_latent_mse,
+                                       float *out_reward_mse) {
+  if (out_latent_mse)
+    *out_latent_mse = 0.0f;
+  if (out_reward_mse)
+    *out_reward_mse = 0.0f;
+
   if (!m || !obs_batch || !a_batch || !r_batch || !next_obs_batch || B <= 0)
     return;
   if (lr <= 0.0f)
@@ -368,10 +374,11 @@ void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
   const int L = m->cfg.latent_dim;
   const int A = m->cfg.action_count;
 
-  float *h = (float *)malloc(sizeof(float) * L);
-  float *h2 = (float *)malloc(sizeof(float) * L);
-  float *h_tgt = (float *)malloc(sizeof(float) * L);
-  float *pre2 = (float *)malloc(sizeof(float) * L);
+  float *h = (float *)malloc(sizeof(float) * (size_t)L);
+  float *h2 = (float *)malloc(sizeof(float) * (size_t)L);
+  float *h_tgt = (float *)malloc(sizeof(float) * (size_t)L);
+  float *pre2 = (float *)malloc(sizeof(float) * (size_t)L);
+
   float *g_dyn = (float *)calloc((size_t)L * (size_t)(L + 1), sizeof(float));
   float *g_rewW = (float *)calloc((size_t)L, sizeof(float));
   float g_rewB = 0.0f;
@@ -386,9 +393,12 @@ void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
     return;
   }
 
+  float latent_mse_acc = 0.0f;
+  float reward_mse_acc = 0.0f;
+
   for (int i = 0; i < B; i++) {
-    const float *obs = obs_batch + i * O;
-    const float *obs2 = next_obs_batch + i * O;
+    const float *obs = obs_batch + (size_t)i * (size_t)O;
+    const float *obs2 = next_obs_batch + (size_t)i * (size_t)O;
     const int act = a_batch[i];
     const float r_tgt = r_batch[i];
 
@@ -396,11 +406,11 @@ void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
     mu_model_repr(m, obs, h);
     mu_model_repr(m, obs2, h_tgt);
 
-    // normalize action to [-1,1] like your dynamics
+    // normalize action to [-1,1]
     float a = (A > 1) ? (float)act / (float)(A - 1) : 0.0f;
     float a2 = a * 2.0f - 1.0f;
 
-    // forward dynamics: pre2, h2
+    // forward dynamics: pre2 -> h2
     for (int li = 0; li < L; li++) {
       float sum = 0.0f;
       const float *row = &m->dyn_W[li * (L + 1)];
@@ -417,35 +427,42 @@ void muzero_model_train_dynamics_batch(MuModel *m, const float *obs_batch,
       r_lin += m->rew_W[li] * h2[li];
     float r_pred = tanhf(r_lin);
 
-    // losses: mse(h2,h_tgt) + mse(r_pred, r_tgt)
-    // grads:
-    // dL/dh2 from latent mse:
-    //   2*(h2 - h_tgt)
-    // plus from reward mse through tanh:
-    //   dr = 2*(r_pred - r_tgt)
-    //   dr/drlin = (1-r_pred^2)
+    // accumulate losses (for logging)
+    // latent mse
+    for (int li = 0; li < L; li++) {
+      float d = h2[li] - h_tgt[li];
+      latent_mse_acc += d * d;
+    }
+    // reward mse
+    {
+      float dr = (r_pred - r_tgt);
+      reward_mse_acc += dr * dr;
+    }
+
+    // grads: reward mse through tanh
     float drlin = 2.0f * (r_pred - r_tgt) * (1.0f - r_pred * r_pred);
 
-    // reward head grads
     g_rewB += drlin;
     for (int li = 0; li < L; li++)
       g_rewW[li] += drlin * h2[li];
 
-    // backprop into h2 from reward head:
-    // dL/dh2 += drlin * rew_W
+    // backprop into dyn via h2
     for (int li = 0; li < L; li++) {
       float d_h2 = 2.0f * (h2[li] - h_tgt[li]) + drlin * m->rew_W[li];
-
-      // through tanh: dh2/dpre = (1 - h2^2)
       float d_pre = d_h2 * (1.0f - h2[li] * h2[li]);
 
-      // dyn_W grads: pre = sum_j h[j]*W + a2*W_action
       float *grow = &g_dyn[li * (L + 1)];
       for (int j = 0; j < L; j++)
         grow[j] += d_pre * h[j];
       grow[L] += d_pre * a2;
     }
   }
+
+  // mean losses
+  if (out_latent_mse)
+    *out_latent_mse = latent_mse_acc / (float)(B * L);
+  if (out_reward_mse)
+    *out_reward_mse = reward_mse_acc / (float)B;
 
   // SGD update (avg)
   float scale = lr / (float)B;
