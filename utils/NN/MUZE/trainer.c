@@ -11,8 +11,8 @@ static float mse(float a, float b) {
   return d * d;
 }
 
-loss = -sum_i pi_i * log_softmax(logits_i) static float cross_entropy_logits(
-                         const float *pi_target, const float *logits, int A) {
+static float cross_entropy_logits(const float *pi_target, const float *logits,
+                                  int A) {
   // find max logit for stability
   float m = logits[0];
   for (int i = 1; i < A; i++)
