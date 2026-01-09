@@ -18,7 +18,7 @@ static TrainerConfig trainer_default_cfg(void) {
 MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   MuRuntime *rt = calloc(1, sizeof(MuRuntime));
   if (!rt || !model)
-    return rt;
+    return NULL;
 
   rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
 
