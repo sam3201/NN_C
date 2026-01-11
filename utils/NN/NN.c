@@ -144,6 +144,14 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
 
   // Initialize parameters
   nn->learningRate = learningRate;
+  nn->baseLearningRate = learningRate;
+  nn->lr_sched_start = 1.0L;
+  nn->lr_sched_end = 1.0L;
+  nn->lr_sched_steps = 0;
+  nn->lr_sched_step = 0;
+  nn->global_grad_clip = 0.0L;
+  nn->grad_hook = NULL;
+  nn->grad_hook_ctx = NULL;
   nn->t = 1;
 
   // Set functions
@@ -266,6 +274,97 @@ void NN_destroy(NN_t *nn) {
   free(nn->activationFunctions);
   free(nn->activationDerivatives);
   free(nn);
+}
+
+void NN_set_base_lr(NN_t *nn, long double base_lr) {
+  if (!nn)
+    return;
+  nn->baseLearningRate = base_lr;
+  if (nn->lr_sched_steps == 0)
+    nn->learningRate = base_lr;
+}
+
+void NN_set_lr_schedule(NN_t *nn, long double mult_start, long double mult_end,
+                        size_t steps) {
+  if (!nn)
+    return;
+  nn->lr_sched_start = mult_start;
+  nn->lr_sched_end = mult_end;
+  nn->lr_sched_steps = steps;
+  nn->lr_sched_step = 0;
+  if (steps == 0)
+    nn->learningRate = nn->baseLearningRate * mult_start;
+}
+
+void NN_set_global_grad_clip(NN_t *nn, long double clip) {
+  if (!nn)
+    return;
+  nn->global_grad_clip = clip;
+}
+
+void NN_set_grad_hook(NN_t *nn, NNGradHook hook, void *ctx) {
+  if (!nn)
+    return;
+  nn->grad_hook = hook;
+  nn->grad_hook_ctx = ctx;
+}
+
+static void nn_apply_lr_schedule(NN_t *nn) {
+  if (!nn)
+    return;
+  if (nn->lr_sched_steps == 0) {
+    nn->learningRate = nn->baseLearningRate;
+    return;
+  }
+
+  size_t steps = nn->lr_sched_steps;
+  size_t step = nn->lr_sched_step;
+  if (steps <= 1)
+    step = 0;
+  else if (step >= steps)
+    step = steps - 1;
+
+  long double t =
+      (steps <= 1) ? 1.0L : ((long double)step / (long double)(steps - 1));
+  long double mult =
+      nn->lr_sched_start + (nn->lr_sched_end - nn->lr_sched_start) * t;
+  nn->learningRate = nn->baseLearningRate * mult;
+
+  if (nn->lr_sched_step < steps)
+    nn->lr_sched_step++;
+}
+
+static void nn_apply_global_grad_clip(NN_t *nn) {
+  if (!nn || !(nn->global_grad_clip > 0.0L))
+    return;
+
+  long double sumsq = 0.0L;
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+    for (size_t i = 0; i < wcount; i++) {
+      long double g = nn->weights_grad[l][i];
+      sumsq += g * g;
+    }
+    for (size_t j = 0; j < bcount; j++) {
+      long double g = nn->biases_grad[l][j];
+      sumsq += g * g;
+    }
+  }
+  if (sumsq <= 0.0L)
+    return;
+  long double norm = sqrtl(sumsq);
+  if (norm <= nn->global_grad_clip)
+    return;
+  long double scale = nn->global_grad_clip / norm;
+  for (size_t l = 0; l < nn->numLayers - 1; l++) {
+    size_t wcount = nn->layers[l] * nn->layers[l + 1];
+    size_t bcount = nn->layers[l + 1];
+    for (size_t i = 0; i < wcount; i++)
+      nn->weights_grad[l][i] *= scale;
+    for (size_t j = 0; j < bcount; j++)
+      nn->biases_grad[l][j] *= scale;
+  }
 }
 
 // Optimizer Functions
@@ -570,7 +669,12 @@ void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
     }
   }
 
+  if (nn->grad_hook)
+    nn->grad_hook(nn, nn->grad_hook_ctx);
+
   // Apply optimizer update
+  nn_apply_lr_schedule(nn);
+  nn_apply_global_grad_clip(nn);
   if (nn->optimizer)
     nn->optimizer(nn);
 
@@ -723,6 +827,11 @@ long double *NN_backprop_custom_delta_inputgrad(NN_t *nn, long double inputs[],
       }
     }
   }
+
+  nn_apply_lr_schedule(nn);
+  nn_apply_global_grad_clip(nn);
+  if (nn->grad_hook)
+    nn->grad_hook(nn, nn->grad_hook_ctx);
 
   if (nn->optimizer)
     nn->optimizer(nn);
@@ -1090,6 +1199,13 @@ int NN_save(NN_t *nn, const char *filename) {
     fwrite(nn->opt_v_b[l], sizeof(long double), bcount, f);
   }
 
+  fwrite(&nn->baseLearningRate, sizeof(long double), 1, f);
+  fwrite(&nn->lr_sched_start, sizeof(long double), 1, f);
+  fwrite(&nn->lr_sched_end, sizeof(long double), 1, f);
+  fwrite(&nn->lr_sched_steps, sizeof(size_t), 1, f);
+  fwrite(&nn->lr_sched_step, sizeof(size_t), 1, f);
+  fwrite(&nn->global_grad_clip, sizeof(long double), 1, f);
+
   fclose(f);
   return 0;
 }
@@ -1185,6 +1301,34 @@ NN_t *NN_load(const char *filename) {
     fread(nn->opt_v_b[l], sizeof(long double), bcount, f);
   }
 
+  nn->baseLearningRate = nn->learningRate;
+  nn->lr_sched_start = 1.0L;
+  nn->lr_sched_end = 1.0L;
+  nn->lr_sched_steps = 0;
+  nn->lr_sched_step = 0;
+  nn->global_grad_clip = 0.0L;
+  {
+    long double base_lr = 0.0L;
+    long double sched_start = 0.0L;
+    long double sched_end = 0.0L;
+    size_t sched_steps = 0;
+    size_t sched_step = 0;
+    long double gclip = 0.0L;
+    if (fread(&base_lr, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_start, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_end, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_steps, sizeof(size_t), 1, f) == 1 &&
+        fread(&sched_step, sizeof(size_t), 1, f) == 1 &&
+        fread(&gclip, sizeof(long double), 1, f) == 1) {
+      nn->baseLearningRate = base_lr;
+      nn->lr_sched_start = sched_start;
+      nn->lr_sched_end = sched_end;
+      nn->lr_sched_steps = sched_steps;
+      nn->lr_sched_step = sched_step;
+      nn->global_grad_clip = gclip;
+    }
+  }
+
   fclose(f);
   return nn;
 }
@@ -1249,6 +1393,19 @@ int NN_save_fp(NN_t *nn, FILE *f) {
     if (fwrite(nn->opt_v_b[l], sizeof(long double), bcount, f) != bcount)
       return -1;
   }
+
+  if (fwrite(&nn->baseLearningRate, sizeof(long double), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->lr_sched_start, sizeof(long double), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->lr_sched_end, sizeof(long double), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->lr_sched_steps, sizeof(size_t), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->lr_sched_step, sizeof(size_t), 1, f) != 1)
+    return -1;
+  if (fwrite(&nn->global_grad_clip, sizeof(long double), 1, f) != 1)
+    return -1;
 
   return 0;
 }
@@ -1406,6 +1563,34 @@ NN_t *NN_load_fp(FILE *f) {
     if (fread(nn->opt_v_b[l], sizeof(long double), bcount, f) != bcount) {
       NN_destroy(nn);
       return NULL;
+    }
+  }
+
+  nn->baseLearningRate = nn->learningRate;
+  nn->lr_sched_start = 1.0L;
+  nn->lr_sched_end = 1.0L;
+  nn->lr_sched_steps = 0;
+  nn->lr_sched_step = 0;
+  nn->global_grad_clip = 0.0L;
+  {
+    long double base_lr = 0.0L;
+    long double sched_start = 0.0L;
+    long double sched_end = 0.0L;
+    size_t sched_steps = 0;
+    size_t sched_step = 0;
+    long double gclip = 0.0L;
+    if (fread(&base_lr, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_start, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_end, sizeof(long double), 1, f) == 1 &&
+        fread(&sched_steps, sizeof(size_t), 1, f) == 1 &&
+        fread(&sched_step, sizeof(size_t), 1, f) == 1 &&
+        fread(&gclip, sizeof(long double), 1, f) == 1) {
+      nn->baseLearningRate = base_lr;
+      nn->lr_sched_start = sched_start;
+      nn->lr_sched_end = sched_end;
+      nn->lr_sched_steps = sched_steps;
+      nn->lr_sched_step = sched_step;
+      nn->global_grad_clip = gclip;
     }
   }
 

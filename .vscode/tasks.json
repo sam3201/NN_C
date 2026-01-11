@@ -21,6 +21,26 @@
             },
             // Use the standard MS compiler pattern to detect errors, warnings and infos
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-muzero-chase",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "utils/TESTS/build_muzero_chase.sh"
+            ],
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "run-muzero-chase",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "utils/TESTS/run_muzero_chase.sh"
+            ],
+            "group": "test",
+            "problemMatcher": "$gcc"
         }
     ]
 }

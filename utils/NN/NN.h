@@ -73,6 +73,7 @@ typedef long double (*LossFunction)(long double, long double);
 typedef long double (*LossDerivative)(long double, long double);
 typedef void (*OptimizerFunction)(NN_t *);
 typedef long double (*RegularizationFunction)(long double);
+typedef void (*NNGradHook)(NN_t *, void *);
 
 // Neural Network structure
 typedef struct NN_t {
@@ -91,7 +92,16 @@ typedef struct NN_t {
   long double **opt_v_b;
 
   long double learningRate; // Learning rate
+  long double baseLearningRate; // Base learning rate before scheduling
+  long double lr_sched_start;   // LR schedule multiplier start
+  long double lr_sched_end;     // LR schedule multiplier end
+  size_t lr_sched_steps;        // Number of schedule steps
+  size_t lr_sched_step;         // Current schedule step
+  long double global_grad_clip; // Global grad clip (L2 norm)
   size_t t;                 // Time step for Adam
+
+  NNGradHook grad_hook;
+  void *grad_hook_ctx;
 
   ActivationFunction *activationFunctions;
   ActivationDerivative *activationDerivatives;
@@ -109,6 +119,11 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
 
 NN_t *NN_init_random(size_t num_inputs, size_t num_outputs);
 void NN_destroy(NN_t *nn);
+void NN_set_base_lr(NN_t *nn, long double base_lr);
+void NN_set_lr_schedule(NN_t *nn, long double mult_start, long double mult_end,
+                        size_t steps);
+void NN_set_global_grad_clip(NN_t *nn, long double clip);
+void NN_set_grad_hook(NN_t *nn, NNGradHook hook, void *ctx);
 
 // Forward propagation
 long double **NN_forward_full(NN_t *nn, long double inputs[]);
