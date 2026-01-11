@@ -33,7 +33,7 @@ gcc -w -g sim.c $MUZE_SRC \
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the game..."
-    ./sim
+    lldb ./sim
 else
     echo "Compilation failed!"
     exit 1
