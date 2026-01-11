@@ -66,7 +66,7 @@ echo "Compiling game..."
 CC="${CC:-clang}"
 
 # Note: -w hides warnings. Consider removing once you're stable.
-"$CC" -w -g \
+"$CC" -g \
   game.c \
   $NN_SRC \
   $MUZE_SRC \
