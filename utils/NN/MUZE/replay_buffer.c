@@ -178,8 +178,11 @@ static float prio_weight(const ReplayBuffer *rb, size_t idx, float alpha) {
   return powf(p, alpha);
 }
 
-static size_t sample_index_per(const ReplayBuffer *rb, float alpha) {
+static int sample_index_per(const ReplayBuffer *rb, float alpha, size_t *idx_out,
+                            float *prob_out) {
   if (!rb || rb->size == 0)
+    return 0;
+  if (!idx_out || !prob_out)
     return 0;
 
   double sum = 0.0;
@@ -187,18 +190,30 @@ static size_t sample_index_per(const ReplayBuffer *rb, float alpha) {
     size_t idx = rb_logical_to_physical(rb, i);
     sum += (double)prio_weight(rb, idx, alpha);
   }
-  if (sum <= 0.0)
-    return rb_logical_to_physical(rb, 0);
+  if (sum <= 0.0) {
+    *idx_out = rb_logical_to_physical(rb, 0);
+    *prob_out = 1.0f / (float)rb->size;
+    return 1;
+  }
 
   double r = (double)rand() / ((double)RAND_MAX + 1.0) * sum;
   double acc = 0.0;
   for (size_t i = 0; i < rb->size; i++) {
     size_t idx = rb_logical_to_physical(rb, i);
-    acc += (double)prio_weight(rb, idx, alpha);
-    if (r <= acc)
-      return idx;
+    double w = (double)prio_weight(rb, idx, alpha);
+    acc += w;
+    if (r <= acc) {
+      *idx_out = idx;
+      *prob_out = (float)(w / sum);
+      return 1;
+    }
   }
-  return rb_logical_to_physical(rb, rb->size - 1);
+  {
+    size_t idx = rb_logical_to_physical(rb, rb->size - 1);
+    *idx_out = idx;
+    *prob_out = (float)(prio_weight(rb, idx, alpha) / sum);
+  }
+  return 1;
 }
 
 int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
@@ -323,10 +338,11 @@ int rb_sample_sequence_vprefix(ReplayBuffer *rb, int batch, int unroll_steps,
 }
 
 int rb_sample_per(ReplayBuffer *rb, int batch, float alpha, float *obs_batch,
-                  float *pi_batch, float *z_batch, size_t *idx_out) {
+                  float *pi_batch, float *z_batch, size_t *idx_out,
+                  float *prob_out) {
   if (!rb || rb->size == 0)
     return 0;
-  if (!obs_batch || !pi_batch || !z_batch || !idx_out)
+  if (!obs_batch || !pi_batch || !z_batch || !idx_out || !prob_out)
     return 0;
 
   int actual = batch;
@@ -334,8 +350,12 @@ int rb_sample_per(ReplayBuffer *rb, int batch, float alpha, float *obs_batch,
   int A = rb->action_count;
 
   for (int i = 0; i < actual; i++) {
-    size_t idx = sample_index_per(rb, alpha);
+    size_t idx = 0;
+    float p = 0.0f;
+    if (!sample_index_per(rb, alpha, &idx, &p))
+      return 0;
     idx_out[i] = idx;
+    prob_out[i] = p;
 
     memcpy(obs_batch + i * O, rb->obs_buf + idx * (size_t)O,
            sizeof(float) * (size_t)O);
@@ -350,11 +370,12 @@ int rb_sample_per(ReplayBuffer *rb, int batch, float alpha, float *obs_batch,
 int rb_sample_sequence_per(ReplayBuffer *rb, int batch, int unroll_steps,
                            float alpha, float *obs_seq, float *pi_seq,
                            float *z_seq, float *vprefix_seq, int *a_seq,
-                           float *r_seq, int *done_seq, size_t *idx_out) {
+                           float *r_seq, int *done_seq, size_t *idx_out,
+                           float *prob_out) {
   if (!rb || rb->size == 0)
     return 0;
   if (!obs_seq || !pi_seq || !z_seq || !vprefix_seq || !a_seq || !r_seq ||
-      !done_seq || !idx_out)
+      !done_seq || !idx_out || !prob_out)
     return 0;
   if (batch <= 0 || unroll_steps < 0)
     return 0;
@@ -368,7 +389,10 @@ int rb_sample_sequence_per(ReplayBuffer *rb, int batch, int unroll_steps,
   int A = rb->action_count;
 
   for (int b = 0; b < actual; b++) {
-    size_t start = sample_index_per(rb, alpha);
+    size_t start = 0;
+    float p = 0.0f;
+    if (!sample_index_per(rb, alpha, &start, &p))
+      return 0;
     size_t start_logical = 0;
     if (rb->size < rb->capacity) {
       start_logical = start;
@@ -379,6 +403,7 @@ int rb_sample_sequence_per(ReplayBuffer *rb, int batch, int unroll_steps,
         start_logical = rb->size - need;
     }
     idx_out[b] = rb_logical_to_physical(rb, start_logical);
+    prob_out[b] = p;
 
     for (size_t k = 0; k < need; k++) {
       size_t logical = start_logical + k;

@@ -154,10 +154,18 @@ void muze_run_loop(MuModel *model, void *env_state,
     tc.discount = 0.997f;
   if (tc.per_alpha <= 0.0f)
     tc.per_alpha = 0.6f;
+  if (tc.per_beta <= 0.0f)
+    tc.per_beta = 0.4f;
+  if (tc.per_beta_start <= 0.0f)
+    tc.per_beta_start = tc.per_beta;
+  if (tc.per_beta_end <= 0.0f)
+    tc.per_beta_end = 1.0f;
   if (tc.per_eps <= 0.0f)
     tc.per_eps = 1e-3f;
   if (tc.lr <= 0.0f)
     tc.lr = 0.05f;
+
+  int per_beta_step = 0;
 
   for (int it = 0; it < iters; it++) {
     // ---- self-play ----
@@ -188,6 +196,14 @@ void muze_run_loop(MuModel *model, void *env_state,
     // ---- training ----
     printf("=== [loop] train_calls=%d ===\n", train_calls);
     for (int k = 0; k < train_calls; k++) {
+      if (tc.per_beta_anneal_steps > 0) {
+        float t = (float)per_beta_step / (float)tc.per_beta_anneal_steps;
+        if (t > 1.0f)
+          t = 1.0f;
+        tc.per_beta =
+            tc.per_beta_start + t * (tc.per_beta_end - tc.per_beta_start);
+        per_beta_step++;
+      }
       trainer_train_from_replay(model, rb, &tc);
       if (tc.unroll_steps <= 0)
         trainer_train_dynamics(model, rb, &tc);

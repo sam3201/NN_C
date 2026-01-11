@@ -63,7 +63,7 @@ void muzero_model_forward_batch(MuModel *m, const float *obs_batch, int B,
 
 void muzero_model_train_batch(MuModel *m, const float *obs_batch,
                               const float *pi_batch, const float *z_batch,
-                              int B, float lr);
+                              const float *weights, int B, float lr);
 void muzero_model_train_dynamics_batch(
     MuModel *m, const float *obs_batch, const int *a_batch,
     const float *r_batch, const float *next_obs_batch, int B, float lr,
@@ -76,8 +76,8 @@ void muzero_model_train_unroll_batch(
     const float *z_seq, const float *vprefix_seq, const int *a_seq,
     const float *r_seq, const int *done_seq, int B, int unroll_steps,
     int bootstrap_steps, float discount, float lr,
-    float *out_policy_loss, float *out_value_loss, float *out_reward_loss,
-    float *out_latent_loss);
+    const float *weights, float *out_policy_loss, float *out_value_loss,
+    float *out_reward_loss, float *out_latent_loss);
 void mu_model_step(MuModel *m, const float *obs, int action, float reward);
 void mu_model_end_episode(MuModel *m, float terminal_reward);
 void mu_model_reset_episode(MuModel *m);

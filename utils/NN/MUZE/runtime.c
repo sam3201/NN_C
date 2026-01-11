@@ -15,6 +15,10 @@ static TrainerConfig trainer_default_cfg(void) {
       .discount = 0.997f,
       .use_per = 1,
       .per_alpha = 0.6f,
+      .per_beta = 0.4f,
+      .per_beta_start = 0.4f,
+      .per_beta_end = 1.0f,
+      .per_beta_anneal_steps = 10000,
       .per_eps = 1e-3f,
       .lr = 0.05f,
   };
@@ -40,6 +44,7 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   rt->has_last = 0;
   rt->gamma = gamma;
   rt->value_prefix = 0.0f;
+  rt->per_beta_step = 0;
   rt->total_steps = 0;
 
   rt->cfg = trainer_default_cfg();
@@ -187,6 +192,15 @@ void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg) {
     tc = rt->cfg;
   else
     tc = trainer_default_cfg();
+
+  if (tc.per_beta_anneal_steps > 0 && tc.per_beta_start > 0.0f &&
+      tc.per_beta_end > 0.0f) {
+    float t = (float)rt->per_beta_step / (float)tc.per_beta_anneal_steps;
+    if (t > 1.0f)
+      t = 1.0f;
+    tc.per_beta = tc.per_beta_start + t * (tc.per_beta_end - tc.per_beta_start);
+    rt->per_beta_step++;
+  }
 
   // policy/value pass (obs,pi,z)
   trainer_train_from_replay(model, rt->rb, &tc);

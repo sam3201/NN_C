@@ -57,11 +57,13 @@ int rb_sample_sequence_vprefix(ReplayBuffer *rb, int batch, int unroll_steps,
                                float *vprefix_seq, int *a_seq, float *r_seq,
                                int *done_seq);
 int rb_sample_per(ReplayBuffer *rb, int batch, float alpha, float *obs_batch,
-                  float *pi_batch, float *z_batch, size_t *idx_out);
+                  float *pi_batch, float *z_batch, size_t *idx_out,
+                  float *prob_out);
 int rb_sample_sequence_per(ReplayBuffer *rb, int batch, int unroll_steps,
                            float alpha, float *obs_seq, float *pi_seq,
                            float *z_seq, float *vprefix_seq, int *a_seq,
-                           float *r_seq, int *done_seq, size_t *idx_out);
+                           float *r_seq, int *done_seq, size_t *idx_out,
+                           float *prob_out);
 
 size_t rb_size(ReplayBuffer *rb);
 void rb_set_z(ReplayBuffer *rb, size_t idx, float z);

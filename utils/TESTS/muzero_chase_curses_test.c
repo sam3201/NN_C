@@ -116,19 +116,19 @@ static void enemy_chase_step(int w, int h, int px, int py, int *ex, int *ey) {
   *ey = ny;
 }
 
- typedef struct {
-   uint32_t s;
- } XorShift32;
+typedef struct {
+  uint32_t s;
+} XorShift32;
 
- static float rng01(void *ctx) {
-   XorShift32 *r = (XorShift32 *)ctx;
-   uint32_t x = r->s;
-   x ^= x << 13;
-   x ^= x >> 17;
-   x ^= x << 5;
-   r->s = x;
-   return (float)((double)x / (double)UINT32_MAX);
- }
+static float rng01(void *ctx) {
+  XorShift32 *r = (XorShift32 *)ctx;
+  uint32_t x = r->s;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  r->s = x;
+  return (float)((double)x / (double)UINT32_MAX);
+}
 
 static int rng_int(XorShift32 *r, int n) {
   if (n <= 0)
@@ -155,7 +155,8 @@ static void chase_env_reset(ChaseEnv *E, XorShift32 *rng) {
   do {
     E->ex = rng_int(rng, E->w);
     E->ey = rng_int(rng, E->h);
-  } while ((E->ex == E->px && E->ey == E->py) || (E->ex == E->gx && E->ey == E->gy));
+  } while ((E->ex == E->px && E->ey == E->py) ||
+           (E->ex == E->gx && E->ey == E->gy));
 
   E->step = 0;
   encode_obs(E->gs.obs, E->w, E->h, E->px, E->py, E->ex, E->ey, E->gx, E->gy);
@@ -261,6 +262,7 @@ int main(void) {
       .batch_size = 32,
       .train_steps = 250,
       .min_replay_size = 256,
+      .reward_target_is_vprefix = 1,
       .lr = 0.05f,
   };
 
@@ -344,8 +346,8 @@ int main(void) {
 
       memcpy(next_obs, E.gs.obs, sizeof(float) * (size_t)obs_dim);
 
-      size_t idx = rb_push_full(rb, obs, pi, /*z*/ r, action, r, next_obs,
-                                done);
+      size_t idx =
+          rb_push_full(rb, obs, pi, /*z*/ r, action, r, next_obs, done);
 
       ep_actions[t] = action;
       ep_rewards[t] = r;
@@ -356,7 +358,8 @@ int main(void) {
       clear();
       mvprintw(0, 0, "MuZero chase (learned)  q=quit  f=faster  s=slower");
       mvprintw(1, 0,
-               "ep=%d/%d step=%d/%d  action=%d  r=%.2f  return=%.2f  replay=%zu  delay=%dms",
+               "ep=%d/%d step=%d/%d  action=%d  r=%.2f  return=%.2f  "
+               "replay=%zu  delay=%dms",
                ep + 1, episodes, t + 1, E.max_steps, action, r, ep_ret,
                rb_size(rb), delay_ms);
       mvprintw(2, 0, "P=(%d,%d)  E=(%d,%d)  G=(%d,%d)", E.px, E.py, E.ex, E.ey,

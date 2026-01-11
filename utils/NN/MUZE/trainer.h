@@ -17,6 +17,10 @@ typedef struct TrainerConfig {
   float discount;      // bootstrap discount (gamma)
   int use_per;         // 0/1 prioritized replay
   float per_alpha;     // priority exponent
+  float per_beta;      // importance-sampling exponent
+  float per_beta_start; // schedule start (optional)
+  float per_beta_end;   // schedule end (optional)
+  int per_beta_anneal_steps; // schedule length in train steps
   float per_eps;       // small constant for priority
   float lr;
 } TrainerConfig;

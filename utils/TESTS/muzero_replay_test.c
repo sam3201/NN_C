@@ -101,7 +101,8 @@ int main(void) {
   SelfPlayParams sp = {
       .max_steps = 128,
       .gamma = 0.99f,
-      .temperature = 1.0f,
+      .temp_start = 1.0f,
+      .temp_end = 1.0f,
       .total_episodes = 200,
   };
 
@@ -110,6 +111,7 @@ int main(void) {
       .batch_size = 32,
       .train_steps = 1000,
       .min_replay_size = 128,
+      .reward_target_is_vprefix = 1,
       .lr = 0.05f, // tune later
   };
 
@@ -120,7 +122,8 @@ int main(void) {
   // ---- generate data ----
   ToyEnvState env = {.pos = 0, .size = 8};
   printf("Running selfplay to fill replay...\n");
-  selfplay_run(model, &env, toy_env_reset, toy_env_step, &mcts, &sp, rb);
+  selfplay_run(model, &env, toy_env_reset, toy_env_step, &mcts, &sp, rb, NULL,
+               NULL);
   printf("Replay size after selfplay: %zu\n", rb_size(rb));
 
   // ---- train ----

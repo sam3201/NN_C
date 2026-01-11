@@ -269,7 +269,7 @@ void muzero_model_forward_batch(MuModel *m, const float *obs_batch, int B,
 
 void muzero_model_train_batch(MuModel *m, const float *obs_batch,
                               const float *pi_batch, const float *z_batch,
-                              int B, float lr) {
+                              const float *weights, int B, float lr) {
   if (!m || !obs_batch || !pi_batch || !z_batch || B <= 0)
     return;
   if (lr <= 0.0f)
@@ -324,13 +324,15 @@ void muzero_model_train_batch(MuModel *m, const float *obs_batch,
     mu_model_predict(m, latent, logits, &v);
     softmaxf(logits, A, probs);
 
+    float w = weights ? weights[i] : 1.0f;
+
     // policy gradient: dL/dlogits = (p - pi_target)
     for (int a = 0; a < A; a++)
-      dlogits[a] = (probs[a] - pi_t[a]);
+      dlogits[a] = w * (probs[a] - pi_t[a]);
 
     // value gradient (MSE): v = tanh(v_lin)
     // d/dv = 2*(v - z); dv/dv_lin = (1 - v^2)
-    float dv_lin = 2.0f * (v - z_t) * (1.0f - v * v);
+    float dv_lin = w * 2.0f * (v - z_t) * (1.0f - v * v);
 
     // pred_W grads + dlatent from both heads
     for (int li = 0; li < L; li++)
@@ -514,8 +516,8 @@ void muzero_model_train_unroll_batch(
     MuModel *m, const float *obs_seq, const float *pi_seq, const float *z_seq,
     const float *vprefix_seq, const int *a_seq, const float *r_seq,
     const int *done_seq, int B, int unroll_steps, int bootstrap_steps,
-    float discount, float lr, float *out_policy_loss, float *out_value_loss,
-    float *out_reward_loss, float *out_latent_loss) {
+    float discount, float lr, const float *weights, float *out_policy_loss,
+    float *out_value_loss, float *out_reward_loss, float *out_latent_loss) {
   if (out_policy_loss)
     *out_policy_loss = 0.0f;
   if (out_value_loss)
@@ -651,6 +653,7 @@ void muzero_model_train_unroll_batch(
 
     memset(d_h, 0, sizeof(float) * steps * (size_t)L);
 
+    float w_sample = weights ? weights[b] : 1.0f;
     for (int k = K; k >= 0; k--) {
       float *h_k = h + (size_t)k * (size_t)L;
       float *d_h_k = d_h + (size_t)k * (size_t)L;
@@ -662,11 +665,11 @@ void muzero_model_train_unroll_batch(
         float *probs_k = probs + (size_t)k * (size_t)A;
         softmaxf(logits_k, A, probs_k);
 
-        policy_loss_acc += cross_entropy_logits(pi_k, logits_k, A);
+        policy_loss_acc += w_sample * cross_entropy_logits(pi_k, logits_k, A);
         policy_cnt += 1.0;
 
         for (int a = 0; a < A; a++) {
-          float dlog = probs_k[a] - pi_k[a];
+          float dlog = w_sample * (probs_k[a] - pi_k[a]);
           for (int j = 0; j < L; j++) {
             g_pred[a * L + j] += dlog * h_k[j];
             d_h_k[j] += dlog * m->pred_W[a * L + j];
@@ -704,8 +707,10 @@ void muzero_model_train_unroll_batch(
           target_v = G + gamma_pow * bootstrap;
         }
 
-        float dv_lin = 2.0f * (v - target_v) * (1.0f - v * v);
-        value_loss_acc += (double)(v - target_v) * (double)(v - target_v);
+        float dv_lin =
+            w_sample * 2.0f * (v - target_v) * (1.0f - v * v);
+        value_loss_acc +=
+            w_sample * (double)(v - target_v) * (double)(v - target_v);
         value_cnt += 1.0;
 
         int value_off = A * L;
@@ -732,9 +737,11 @@ void muzero_model_train_unroll_batch(
           }
           r_tgt = prefix;
         }
-        float dr_lin = 2.0f * (r_pred - r_tgt) * (1.0f - r_pred * r_pred);
+        float dr_lin =
+            w_sample * 2.0f * (r_pred - r_tgt) * (1.0f - r_pred * r_pred);
 
-        reward_loss_acc += (double)(r_pred - r_tgt) * (double)(r_pred - r_tgt);
+        reward_loss_acc +=
+            w_sample * (double)(r_pred - r_tgt) * (double)(r_pred - r_tgt);
         reward_cnt += 1.0;
 
         g_rewB += dr_lin;
@@ -747,9 +754,9 @@ void muzero_model_train_unroll_batch(
           float *h_t = h_tgt + (size_t)(k + 1) * (size_t)L;
           for (int j = 0; j < L; j++) {
             float d = h_k1[j] - h_t[j];
-            latent_loss_acc += (double)d * (double)d;
+            latent_loss_acc += w_sample * (double)d * (double)d;
             latent_cnt += 1.0;
-            d_h_k1[j] += 2.0f * d;
+            d_h_k1[j] += w_sample * 2.0f * d;
           }
         }
 

@@ -18,6 +18,7 @@ typedef struct {
   int has_last;
   float gamma;
   float value_prefix;
+  int per_beta_step;
   /* infinite logical memory */
   size_t total_steps;
   TrainerConfig cfg;
