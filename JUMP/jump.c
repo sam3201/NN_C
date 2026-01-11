@@ -1068,7 +1068,6 @@ static void update_agent(Agent *a) {
   if (!a->alive || a->episode_time >= a->episode_limit) {
     reset_agent_episode(a);
   }
-
 }
 
 // =======================
@@ -1299,8 +1298,7 @@ int main(void) {
              RAYWHITE);
     DrawText(TextFormat("LastAct: %d", ba->last_action), 20, 170, 20, RAYWHITE);
     DrawText(TextFormat("Eps: %.3f  Ep: %d",
-                        epsilon_schedule(ba->episodes_done),
-                        ba->episodes_done),
+                        epsilon_schedule(ba->episodes_done), ba->episodes_done),
              20, 195, 20, RAYWHITE);
 
     EndDrawing();
