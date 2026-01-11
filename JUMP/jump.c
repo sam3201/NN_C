@@ -927,19 +927,37 @@ static void update_agent(Agent *a) {
     // run MCTS on current obs
     MCTSRng rng = {.ctx = a, .rand01 = agent_rand01};
     MCTSParams mp = a->mcts_params;
-    pthread_mutex_lock(&g_model_mtx);
-    MCTSResult mr = mcts_run(g_model, a->last_obs.obs, &mp, &rng);
-    pthread_mutex_unlock(&g_model_mtx);
+    float pi_buf[ACTION_COUNT];
+    int have_mcts = 0;
 
-    // choose action by sampling from pi
-    float r = frand01(&a->rng);
-    float cum = 0.0f;
-    int chosen = 0;
-    for (int i = 0; i < ACTION_COUNT; i++) {
-      cum += mr.pi[i];
-      if (r <= cum) {
-        chosen = i;
-        break;
+    if (pthread_mutex_trylock(&g_model_mtx) == 0) {
+      MCTSResult mr = mcts_run(g_model, a->last_obs.obs, &mp, &rng);
+      pthread_mutex_unlock(&g_model_mtx);
+      for (int i = 0; i < ACTION_COUNT; i++)
+        pi_buf[i] = mr.pi[i];
+      mcts_result_free(&mr);
+      have_mcts = 1;
+    } else {
+      float u = 1.0f / (float)ACTION_COUNT;
+      for (int i = 0; i < ACTION_COUNT; i++)
+        pi_buf[i] = u;
+    }
+
+    int chosen = a->last_action;
+    if (chosen < 0 || chosen >= ACTION_COUNT)
+      chosen = rand() % ACTION_COUNT;
+
+    if (have_mcts) {
+      // choose action by sampling from pi
+      float r = frand01(&a->rng);
+      float cum = 0.0f;
+      chosen = 0;
+      for (int i = 0; i < ACTION_COUNT; i++) {
+        cum += pi_buf[i];
+        if (r <= cum) {
+          chosen = i;
+          break;
+        }
       }
     }
 
@@ -947,7 +965,7 @@ static void update_agent(Agent *a) {
     if (a->ep_t < EP_MAX_STEPS) {
       memcpy(a->ep.obs + a->ep_t * OBS_DIM, a->last_obs.obs,
              sizeof(float) * OBS_DIM);
-      memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, mr.pi,
+      memcpy(a->ep.pi + a->ep_t * ACTION_COUNT, pi_buf,
              sizeof(float) * ACTION_COUNT);
       a->ep.action[a->ep_t] = chosen;
       a->ep.done[a->ep_t] = 0;
@@ -959,9 +977,7 @@ static void update_agent(Agent *a) {
 
     // keep last_pi for debugging / optional logging
     for (int i = 0; i < ACTION_COUNT; i++)
-      a->last_pi[i] = mr.pi[i];
-
-    mcts_result_free(&mr);
+      a->last_pi[i] = pi_buf[i];
 
     // apply the chosen action for physics
     a->last_action = chosen;
