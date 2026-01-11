@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 // =======================
 // CONFIG
@@ -88,6 +89,9 @@ static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 static MuModel *g_model = NULL;
 static ReplayBuffer *g_rb = NULL;
 static pthread_mutex_t g_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t g_model_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t g_trainer_thread;
+static volatile int g_trainer_quit = 0;
 static MuzeConfig g_cfg;
 
 typedef enum { PLAT_RECT = 0, PLAT_RAMP = 1 } PlatKind;
@@ -249,6 +253,37 @@ static void init_muze_config(void) {
   g_cfg.mcts.dirichlet_eps = 0.25f;
   g_cfg.mcts.temperature = 1.0f;
   g_cfg.mcts.discount = 0.997f;
+
+  g_cfg.trainer.batch_size = 64;
+  g_cfg.trainer.train_steps = 50;
+  g_cfg.trainer.min_replay_size = 2048;
+  g_cfg.trainer.lr = 0.01f;
+}
+
+static void *trainer_thread_main(void *arg) {
+  (void)arg;
+  while (!g_trainer_quit) {
+    if (g_cfg.trainer.min_replay_size > 0 &&
+        (int)rb_size(g_rb) < g_cfg.trainer.min_replay_size) {
+      usleep(10000);
+      continue;
+    }
+    if (pthread_mutex_trylock(&g_rb_mtx) != 0) {
+      usleep(2000);
+      continue;
+    }
+    if (pthread_mutex_trylock(&g_model_mtx) != 0) {
+      pthread_mutex_unlock(&g_rb_mtx);
+      usleep(2000);
+      continue;
+    }
+    trainer_train_from_replay(g_model, g_rb, &g_cfg.trainer);
+    trainer_train_dynamics(g_model, g_rb, &g_cfg.trainer);
+    pthread_mutex_unlock(&g_model_mtx);
+    pthread_mutex_unlock(&g_rb_mtx);
+    usleep(10000);
+  }
+  return NULL;
 }
 
 pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -892,7 +927,9 @@ static void update_agent(Agent *a) {
     // run MCTS on current obs
     MCTSRng rng = {.ctx = a, .rand01 = agent_rand01};
     MCTSParams mp = a->mcts_params;
+    pthread_mutex_lock(&g_model_mtx);
     MCTSResult mr = mcts_run(g_model, a->last_obs.obs, &mp, &rng);
+    pthread_mutex_unlock(&g_model_mtx);
 
     // choose action by sampling from pi
     float r = frand01(&a->rng);
@@ -1214,6 +1251,7 @@ int main(void) {
   build_platforms();
   init_agents();
   start_workers();
+  pthread_create(&g_trainer_thread, NULL, trainer_thread_main, NULL);
 
   Camera2D cam = {0};
   cam.offset = (Vector2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f};
@@ -1226,23 +1264,6 @@ int main(void) {
 
     // simulate
     run_agent_jobs();
-
-    static int train_counter = 0;
-    train_counter++;
-
-    if ((train_counter % 2) == 0) {
-      TrainerConfig tc = {
-          .batch_size = 64,
-          .train_steps = 50,
-          .min_replay_size = 2048,
-          .lr = 0.01f,
-      };
-
-      pthread_mutex_lock(&g_rb_mtx);
-      trainer_train_from_replay(g_model, g_rb, &tc);
-      trainer_train_dynamics(g_model, g_rb, &tc);
-      pthread_mutex_unlock(&g_rb_mtx);
-    }
 
     // pick best agent
     int best_i = find_best_agent_index();
@@ -1305,6 +1326,8 @@ int main(void) {
   }
 
   stop_workers();
+  g_trainer_quit = 1;
+  pthread_join(g_trainer_thread, NULL);
 
   for (int i = 0; i < MAX_AGENTS; i++) {
     obs_free(&agents[i].last_obs);
