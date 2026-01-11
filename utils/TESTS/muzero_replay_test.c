@@ -81,6 +81,8 @@ int main(void) {
 
   // ---- replay ----
   ReplayBuffer *rb = rb_create(4096, cfg.obs_dim, cfg.action_count);
+  if (rb && model && model->use_value_support && model->support_size > 1)
+    rb_enable_value_support(rb, model->support_size);
   if (!rb) {
     printf("rb_create failed\n");
     mu_model_free(model);

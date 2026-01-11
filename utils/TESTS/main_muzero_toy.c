@@ -53,6 +53,8 @@ int main(void) {
 
   // Replay buffer
   ReplayBuffer *rb = rb_create(4096, (int)env.toy.size, 2);
+  if (rb && model && model->use_value_support && model->support_size > 1)
+    rb_enable_value_support(rb, model->support_size);
   GameReplay *gr = gr_create(128, 64, (int)env.toy.size, 2);
 
   // MCTS params
