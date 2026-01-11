@@ -1062,7 +1062,7 @@ static void update_agent(Agent *a) {
   }
 
   // update observation AFTER physics for next control tick
-  encode_observation_jk(a, &a->last_obs);
+  encode_observation(a, &a->last_obs);
 
   // TERMINATE
   if (!a->alive || a->episode_time >= a->episode_limit) {
