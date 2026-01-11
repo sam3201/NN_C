@@ -252,6 +252,7 @@ int main(void) {
   /*
   if (getenv("MUZE_HEADLESS"))
     headless = 1;
+  */
 
   if (!headless) {
     initscr();
