@@ -221,8 +221,8 @@ int main(void) {
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
 
-  const int w = 12;
-  const int h = 10;
+  const int w = 30;
+  const int h = 20;
 
   ChaseEnv E;
   memset(&E, 0, sizeof(E));
