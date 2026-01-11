@@ -9,6 +9,7 @@ extern "C" {
 
 typedef struct {
   int num_simulations;
+  int batch_simulations;
   float c_puct;
   int max_depth;
   float dirichlet_alpha;

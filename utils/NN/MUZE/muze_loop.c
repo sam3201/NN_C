@@ -1,5 +1,7 @@
 #include "muze_loop.h"
 #include <math.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +32,42 @@ static void normalize_probs(float *p, int n) {
   float inv = 1.0f / sum;
   for (int i = 0; i < n; i++)
     p[i] *= inv;
+}
+
+typedef struct {
+  MuModel *model;
+  void *env_state;
+  selfplay_env_reset_fn env_reset;
+  selfplay_env_step_fn env_step;
+  MCTSParams mcts_params;
+  SelfPlayParams sp_params;
+  ReplayBuffer *rb;
+  GameReplay *gr;
+  pthread_mutex_t *rb_mutex;
+  pthread_mutex_t *gr_mutex;
+  MCTSRng rng;
+  uint32_t rng_state;
+} ActorCtx;
+
+static float rng01_xorshift(void *ctx) {
+  uint32_t *s = (uint32_t *)ctx;
+  uint32_t x = *s;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *s = x;
+  return (float)(x / (double)UINT32_MAX);
+}
+
+static void *actor_thread_main(void *arg) {
+  ActorCtx *ctx = (ActorCtx *)arg;
+  if (!ctx)
+    return NULL;
+  selfplay_run_threadsafe(ctx->model, ctx->env_state, ctx->env_reset,
+                          ctx->env_step, &ctx->mcts_params, &ctx->sp_params,
+                          ctx->rb, ctx->gr, &ctx->rng, ctx->rb_mutex,
+                          ctx->gr_mutex);
+  return NULL;
 }
 
 static float cross_entropy_logits_local(const float *pi_target,
@@ -494,19 +532,45 @@ void muze_run_loop(MuModel *model, void *env_state,
     tc.lr = 0.05f;
 
   int per_beta_step = 0;
+  float best_score = -INFINITY;
 
   for (int it = 0; it < iters; it++) {
     // ---- self-play ----
-    SelfPlayParams sp = sp0;
-    sp.total_episodes = eps_per;
-
     printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
            eps_per);
-    selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr, rng);
+    int actors = loop_cfg->selfplay_actor_count > 0
+                     ? loop_cfg->selfplay_actor_count
+                     : 1;
+    if (actors <= 1) {
+      SelfPlayParams sp = sp0;
+      sp.total_episodes = eps_per;
+      selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr,
+                   rng);
+    } else {
+      int base = eps_per / actors;
+      int rem = eps_per % actors;
+      for (int a = 0; a < actors; a++) {
+        int episodes = base + (a < rem ? 1 : 0);
+        if (episodes <= 0)
+          continue;
+        SelfPlayParams sp = sp0;
+        sp.total_episodes = episodes;
+        selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr,
+                     rng);
+      }
+    }
 
     // ---- reanalyze (optional) ----
-    if (loop_cfg->use_reanalyze) {
+    int reanalyze_interval =
+        loop_cfg->reanalyze_interval > 0 ? loop_cfg->reanalyze_interval : 1;
+    int reanalyze_min =
+        loop_cfg->reanalyze_min_replay > 0 ? loop_cfg->reanalyze_min_replay : 0;
+    if (loop_cfg->use_reanalyze && ((it + 1) % reanalyze_interval) == 0 &&
+        (reanalyze_min == 0 || (int)rb_size(rb) >= reanalyze_min)) {
       int samples = loop_cfg->reanalyze_samples_per_iter;
+      if (loop_cfg->reanalyze_fraction > 0.0f) {
+        samples = (int)((float)rb_size(rb) * loop_cfg->reanalyze_fraction);
+      }
       if (samples <= 0)
         samples = 256;
 
@@ -550,13 +614,36 @@ void muze_run_loop(MuModel *model, void *env_state,
 
     printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
 
+    float eval_score = 0.0f;
     if (loop_cfg->eval_interval > 0 &&
         ((it + 1) % loop_cfg->eval_interval) == 0) {
       int eval_eps = loop_cfg->eval_episodes > 0 ? loop_cfg->eval_episodes : 10;
       int eval_steps =
           loop_cfg->eval_max_steps > 0 ? loop_cfg->eval_max_steps : sp0.max_steps;
-      eval_run(model, env_state, env_reset, env_step, &mp0, eval_eps, eval_steps,
-               sp0.gamma, rng);
+      eval_score = eval_run(model, env_state, env_reset, env_step, &mp0,
+                            eval_eps, eval_steps, sp0.gamma, rng);
+    }
+
+    if (loop_cfg->eval_best_model &&
+        (loop_cfg->best_checkpoint_prefix || loop_cfg->checkpoint_prefix) &&
+        eval_score > best_score) {
+      best_score = eval_score;
+      char path[512];
+      const char *prefix = loop_cfg->best_checkpoint_prefix
+                               ? loop_cfg->best_checkpoint_prefix
+                               : loop_cfg->checkpoint_prefix;
+      if (prefix) {
+        snprintf(path, sizeof(path), "%s_model_best.bin", prefix);
+        mu_model_save(model, path);
+        if (loop_cfg->best_save_replay) {
+          snprintf(path, sizeof(path), "%s_replay_best.bin", prefix);
+          rb_save(rb, path);
+        }
+        if (loop_cfg->best_save_games && gr) {
+          snprintf(path, sizeof(path), "%s_games_best.bin", prefix);
+          gr_save(gr, path);
+        }
+      }
     }
 
     if (loop_cfg->checkpoint_interval > 0 &&
@@ -593,6 +680,332 @@ void muze_run_loop(MuModel *model, void *env_state,
           if (loop_cfg->checkpoint_save_games && gr) {
             snprintf(path, sizeof(path), "%s_games_%04d.bin",
                      loop_cfg->checkpoint_prefix, old_iter);
+            remove(path);
+          }
+        }
+      }
+    }
+
+    if (loop_cfg->replay_shard_interval > 0 &&
+        loop_cfg->replay_shard_prefix &&
+        ((it + 1) % loop_cfg->replay_shard_interval) == 0) {
+      int shard_id = it + 1;
+      ReplayBuffer *save_rb = rb;
+      if (loop_cfg->replay_shard_max_entries > 0 &&
+          rb_size(rb) > loop_cfg->replay_shard_max_entries) {
+        save_rb = rb_compact_copy(rb, loop_cfg->replay_shard_max_entries);
+      }
+      if (save_rb) {
+        char path[512];
+        snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                 loop_cfg->replay_shard_prefix, shard_id);
+        rb_save(save_rb, path);
+        if (loop_cfg->replay_shard_save_games && gr) {
+          snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                   loop_cfg->replay_shard_prefix, shard_id);
+          gr_save(gr, path);
+        }
+        if (save_rb != rb)
+          rb_free(save_rb);
+      }
+
+      if (loop_cfg->replay_shard_keep_last > 0) {
+        int keep = loop_cfg->replay_shard_keep_last;
+        int old_iter = (it + 1) - keep * loop_cfg->replay_shard_interval;
+        if (old_iter > 0) {
+          char path[512];
+          snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                   loop_cfg->replay_shard_prefix, old_iter);
+          remove(path);
+          if (loop_cfg->replay_shard_save_games && gr) {
+            snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                     loop_cfg->replay_shard_prefix, old_iter);
+            remove(path);
+          }
+        }
+      }
+    }
+  }
+}
+
+void muze_run_loop_multi(MuModel *model, void *env_state,
+                         selfplay_env_reset_fn env_reset,
+                         selfplay_env_step_fn env_step,
+                         selfplay_env_clone_fn env_clone,
+                         selfplay_env_destroy_fn env_destroy, ReplayBuffer *rb,
+                         GameReplay *gr,
+                         const MCTSParams *base_mcts_params,
+                         const SelfPlayParams *base_sp_params,
+                         const MuLoopConfig *loop_cfg, MCTSRng *rng) {
+  if (!model || !rb || !env_reset || !env_step || !base_mcts_params ||
+      !base_sp_params || !loop_cfg) {
+    return;
+  }
+
+  int actors = loop_cfg->selfplay_actor_count > 0
+                   ? loop_cfg->selfplay_actor_count
+                   : 1;
+  if (actors <= 1 || !env_clone || !env_destroy ||
+      !loop_cfg->selfplay_use_threads) {
+    muze_run_loop(model, env_state, env_reset, env_step, rb, gr,
+                  base_mcts_params, base_sp_params, loop_cfg, rng);
+    return;
+  }
+
+  MCTSParams mp0 = *base_mcts_params;
+  SelfPlayParams sp0 = *base_sp_params;
+
+  int iters = loop_cfg->iterations > 0 ? loop_cfg->iterations : 1;
+  int eps_per = loop_cfg->selfplay_episodes_per_iter > 0
+                    ? loop_cfg->selfplay_episodes_per_iter
+                    : 10;
+  int train_calls =
+      loop_cfg->train_calls_per_iter > 0 ? loop_cfg->train_calls_per_iter : 1;
+
+  TrainerConfig tc = loop_cfg->train_cfg;
+
+  if (tc.batch_size <= 0)
+    tc.batch_size = 32;
+  if (tc.train_steps <= 0)
+    tc.train_steps = 200;
+  if (tc.min_replay_size <= 0)
+    tc.min_replay_size = 1024;
+  if (tc.unroll_steps <= 0)
+    tc.unroll_steps = 5;
+  if (tc.bootstrap_steps <= 0)
+    tc.bootstrap_steps = tc.unroll_steps;
+  if (tc.discount <= 0.0f)
+    tc.discount = 0.997f;
+  if (tc.per_alpha <= 0.0f)
+    tc.per_alpha = 0.6f;
+  if (tc.per_beta <= 0.0f)
+    tc.per_beta = 0.4f;
+  if (tc.per_beta_start <= 0.0f)
+    tc.per_beta_start = tc.per_beta;
+  if (tc.per_beta_end <= 0.0f)
+    tc.per_beta_end = 1.0f;
+  if (tc.per_eps <= 0.0f)
+    tc.per_eps = 1e-3f;
+  if (tc.train_reward_head < 0)
+    tc.train_reward_head = 0;
+  if (tc.reward_target_is_vprefix == 0 && tc.train_reward_head == 0)
+    tc.reward_target_is_vprefix = 1;
+  if (tc.lr <= 0.0f)
+    tc.lr = 0.05f;
+
+  int per_beta_step = 0;
+  float best_score = -INFINITY;
+
+  pthread_mutex_t rb_mutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_t gr_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+  for (int it = 0; it < iters; it++) {
+    printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
+           eps_per);
+    int base = eps_per / actors;
+    int rem = eps_per % actors;
+
+    pthread_t *threads =
+        (pthread_t *)malloc(sizeof(pthread_t) * (size_t)actors);
+    ActorCtx *ctxs =
+        (ActorCtx *)calloc((size_t)actors, sizeof(ActorCtx));
+    if (!threads || !ctxs) {
+      free(threads);
+      free(ctxs);
+      return;
+    }
+
+    int launched = 0;
+    for (int a = 0; a < actors; a++) {
+      int episodes = base + (a < rem ? 1 : 0);
+      if (episodes <= 0)
+        continue;
+
+      ctxs[a].model = model;
+      ctxs[a].env_state = env_clone(env_state);
+      ctxs[a].env_reset = env_reset;
+      ctxs[a].env_step = env_step;
+      ctxs[a].mcts_params = mp0;
+      ctxs[a].sp_params = sp0;
+      ctxs[a].sp_params.total_episodes = episodes;
+      ctxs[a].rb = rb;
+      ctxs[a].gr = gr;
+      ctxs[a].rb_mutex = &rb_mutex;
+      ctxs[a].gr_mutex = &gr_mutex;
+      ctxs[a].rng_state = (uint32_t)rand();
+      ctxs[a].rng.ctx = &ctxs[a].rng_state;
+      ctxs[a].rng.rand01 = rng01_xorshift;
+
+      pthread_create(&threads[launched], NULL, actor_thread_main, &ctxs[a]);
+      launched++;
+    }
+
+    for (int i = 0; i < launched; i++)
+      pthread_join(threads[i], NULL);
+
+    for (int a = 0; a < actors; a++) {
+      if (ctxs[a].env_state)
+        env_destroy(ctxs[a].env_state);
+    }
+    free(threads);
+    free(ctxs);
+
+    int reanalyze_interval =
+        loop_cfg->reanalyze_interval > 0 ? loop_cfg->reanalyze_interval : 1;
+    int reanalyze_min =
+        loop_cfg->reanalyze_min_replay > 0 ? loop_cfg->reanalyze_min_replay : 0;
+    if (loop_cfg->use_reanalyze && ((it + 1) % reanalyze_interval) == 0 &&
+        (reanalyze_min == 0 || (int)rb_size(rb) >= reanalyze_min)) {
+      int samples = loop_cfg->reanalyze_samples_per_iter;
+      if (loop_cfg->reanalyze_fraction > 0.0f) {
+        samples = (int)((float)rb_size(rb) * loop_cfg->reanalyze_fraction);
+      }
+      if (samples <= 0)
+        samples = 256;
+
+      MCTSParams mp = mp0;
+      mp.dirichlet_alpha = 0.0f;
+      mp.dirichlet_eps = 0.0f;
+      mp.temperature = 1.0f;
+
+      float rgamma =
+          (loop_cfg->reanalyze_gamma > 0.0f) ? loop_cfg->reanalyze_gamma
+                                             : tc.discount;
+      if (loop_cfg->reanalyze_full_games && gr && gr->game_count > 0) {
+        reanalyze_games(model, rb, gr, &mp, tc.bootstrap_steps, rgamma, rng);
+      } else {
+        reanalyze_replay(model, rb, &mp, samples, tc.unroll_steps,
+                         tc.bootstrap_steps, rgamma, rng);
+      }
+    }
+
+    printf("=== [loop] train_calls=%d ===\n", train_calls);
+    for (int k = 0; k < train_calls; k++) {
+      if (tc.per_beta_anneal_steps > 0) {
+        float t = (float)per_beta_step / (float)tc.per_beta_anneal_steps;
+        if (t > 1.0f)
+          t = 1.0f;
+        tc.per_beta =
+            tc.per_beta_start + t * (tc.per_beta_end - tc.per_beta_start);
+        per_beta_step++;
+      }
+      if (gr && tc.unroll_steps > 0)
+        trainer_train_from_replay_games(model, rb, gr, &tc);
+      else
+        trainer_train_from_replay(model, rb, &tc);
+      if (tc.unroll_steps <= 0)
+        trainer_train_dynamics(model, rb, &tc);
+    }
+
+    printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
+
+    float eval_score = 0.0f;
+    if (loop_cfg->eval_interval > 0 &&
+        ((it + 1) % loop_cfg->eval_interval) == 0) {
+      int eval_eps =
+          loop_cfg->eval_episodes > 0 ? loop_cfg->eval_episodes : 10;
+      int eval_steps =
+          loop_cfg->eval_max_steps > 0 ? loop_cfg->eval_max_steps : sp0.max_steps;
+      eval_score = eval_run(model, env_state, env_reset, env_step, &mp0,
+                            eval_eps, eval_steps, sp0.gamma, rng);
+    }
+
+    if (loop_cfg->eval_best_model &&
+        (loop_cfg->best_checkpoint_prefix || loop_cfg->checkpoint_prefix) &&
+        eval_score > best_score) {
+      best_score = eval_score;
+      char path[512];
+      const char *prefix = loop_cfg->best_checkpoint_prefix
+                               ? loop_cfg->best_checkpoint_prefix
+                               : loop_cfg->checkpoint_prefix;
+      if (prefix) {
+        snprintf(path, sizeof(path), "%s_model_best.bin", prefix);
+        mu_model_save(model, path);
+        if (loop_cfg->best_save_replay) {
+          snprintf(path, sizeof(path), "%s_replay_best.bin", prefix);
+          rb_save(rb, path);
+        }
+        if (loop_cfg->best_save_games && gr) {
+          snprintf(path, sizeof(path), "%s_games_best.bin", prefix);
+          gr_save(gr, path);
+        }
+      }
+    }
+
+    if (loop_cfg->checkpoint_interval > 0 &&
+        loop_cfg->checkpoint_prefix &&
+        ((it + 1) % loop_cfg->checkpoint_interval) == 0) {
+      char path[512];
+      snprintf(path, sizeof(path), "%s_model_%04d.bin",
+               loop_cfg->checkpoint_prefix, it + 1);
+      mu_model_save(model, path);
+
+      if (loop_cfg->checkpoint_save_replay) {
+        snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                 loop_cfg->checkpoint_prefix, it + 1);
+        rb_save(rb, path);
+      }
+      if (loop_cfg->checkpoint_save_games && gr) {
+        snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                 loop_cfg->checkpoint_prefix, it + 1);
+        gr_save(gr, path);
+      }
+
+      if (loop_cfg->checkpoint_keep_last > 0) {
+        int keep = loop_cfg->checkpoint_keep_last;
+        int old_iter = (it + 1) - keep * loop_cfg->checkpoint_interval;
+        if (old_iter > 0) {
+          snprintf(path, sizeof(path), "%s_model_%04d.bin",
+                   loop_cfg->checkpoint_prefix, old_iter);
+          remove(path);
+          if (loop_cfg->checkpoint_save_replay) {
+            snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                     loop_cfg->checkpoint_prefix, old_iter);
+            remove(path);
+          }
+          if (loop_cfg->checkpoint_save_games && gr) {
+            snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                     loop_cfg->checkpoint_prefix, old_iter);
+            remove(path);
+          }
+        }
+      }
+    }
+
+    if (loop_cfg->replay_shard_interval > 0 &&
+        loop_cfg->replay_shard_prefix &&
+        ((it + 1) % loop_cfg->replay_shard_interval) == 0) {
+      int shard_id = it + 1;
+      ReplayBuffer *save_rb = rb;
+      if (loop_cfg->replay_shard_max_entries > 0 &&
+          rb_size(rb) > loop_cfg->replay_shard_max_entries) {
+        save_rb = rb_compact_copy(rb, loop_cfg->replay_shard_max_entries);
+      }
+      if (save_rb) {
+        char path[512];
+        snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                 loop_cfg->replay_shard_prefix, shard_id);
+        rb_save(save_rb, path);
+        if (loop_cfg->replay_shard_save_games && gr) {
+          snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                   loop_cfg->replay_shard_prefix, shard_id);
+          gr_save(gr, path);
+        }
+        if (save_rb != rb)
+          rb_free(save_rb);
+      }
+
+      if (loop_cfg->replay_shard_keep_last > 0) {
+        int keep = loop_cfg->replay_shard_keep_last;
+        int old_iter = (it + 1) - keep * loop_cfg->replay_shard_interval;
+        if (old_iter > 0) {
+          char path[512];
+          snprintf(path, sizeof(path), "%s_replay_%04d.bin",
+                   loop_cfg->replay_shard_prefix, old_iter);
+          remove(path);
+          if (loop_cfg->replay_shard_save_games && gr) {
+            snprintf(path, sizeof(path), "%s_games_%04d.bin",
+                     loop_cfg->replay_shard_prefix, old_iter);
             remove(path);
           }
         }

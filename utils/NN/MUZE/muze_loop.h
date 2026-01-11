@@ -40,6 +40,28 @@ typedef struct {
   int checkpoint_save_replay;   // 0/1 save replay buffer
   int checkpoint_save_games;    // 0/1 save game replay
   int checkpoint_keep_last;     // keep last N checkpoints (0 = keep all)
+
+  // multi-actor selfplay
+  int selfplay_actor_count; // number of actors (0/1 = single)
+  int selfplay_use_threads; // 0/1 use pthreads when supported
+
+  // reanalyze scheduling
+  int reanalyze_interval; // iterations between reanalyze runs (0 = every iter)
+  float reanalyze_fraction; // fraction of replay to reanalyze (0 = use samples)
+  int reanalyze_min_replay; // minimum replay size for reanalyze
+
+  // replay sharding
+  int replay_shard_interval;  // iterations between shard saves
+  int replay_shard_keep_last; // keep last N shards (0 = keep all)
+  size_t replay_shard_max_entries; // compact to last N entries (0 = full)
+  const char *replay_shard_prefix; // e.g. "replay/shard"
+  int replay_shard_save_games; // 0/1 save game replay with shard
+
+  // best model selection
+  int eval_best_model;             // 0/1 save best model by eval score
+  const char *best_checkpoint_prefix; // e.g. "checkpoints/muzero_best"
+  int best_save_replay;            // 0/1 save replay for best
+  int best_save_games;             // 0/1 save game replay for best
 } MuLoopConfig;
 
 /*
@@ -56,6 +78,16 @@ void muze_run_loop(MuModel *model, void *env_state,
                    const MCTSParams *base_mcts_params,
                    const SelfPlayParams *base_sp_params,
                    const MuLoopConfig *loop_cfg, MCTSRng *rng);
+
+void muze_run_loop_multi(MuModel *model, void *env_state,
+                         selfplay_env_reset_fn env_reset,
+                         selfplay_env_step_fn env_step,
+                         selfplay_env_clone_fn env_clone,
+                         selfplay_env_destroy_fn env_destroy,
+                         ReplayBuffer *rb, GameReplay *gr,
+                         const MCTSParams *base_mcts_params,
+                         const SelfPlayParams *base_sp_params,
+                         const MuLoopConfig *loop_cfg, MCTSRng *rng);
 
 #ifdef __cplusplus
 }

@@ -23,12 +23,16 @@ typedef struct Node {
   float *Q; /* mean value per action (W/N) */
   int *N;   /* visit counts */
   float *P; /* prior probs */
+  float *R; /* cached reward per action */
   struct Node **children;
 
   float *latent; /* latent state stored at node */
   int action_count;
   int support_size;
+  float V;          /* cached value at expansion */
+  float *value_dist; /* cached value support distribution */
   float *dist_sum; /* per-action support distribution sum */
+  float *reward_dist; /* per-action reward support distribution */
   int expanded;
 } Node;
 
@@ -46,27 +50,38 @@ static Node *node_create(int action_count, int latent_dim, int support_size) {
   n->Q = (float *)calloc((size_t)action_count, sizeof(float));
   n->N = (int *)calloc((size_t)action_count, sizeof(int));
   n->P = (float *)calloc((size_t)action_count, sizeof(float));
+  n->R = (float *)calloc((size_t)action_count, sizeof(float));
   n->children = (Node **)calloc((size_t)action_count, sizeof(Node *));
   n->latent = (float *)calloc((size_t)latent_dim, sizeof(float));
   if (support_size > 1) {
+    n->value_dist = (float *)calloc((size_t)support_size, sizeof(float));
     n->dist_sum = (float *)calloc((size_t)action_count * (size_t)support_size,
                                   sizeof(float));
+    n->reward_dist =
+        (float *)calloc((size_t)action_count * (size_t)support_size,
+                        sizeof(float));
   }
   n->expanded = 0;
 
-  if (!n->W || !n->Q || !n->N || !n->P || !n->children || !n->latent ||
-      (support_size > 1 && !n->dist_sum)) {
+  if (!n->W || !n->Q || !n->N || !n->P || !n->R || !n->children ||
+      !n->latent ||
+      (support_size > 1 &&
+       (!n->value_dist || !n->dist_sum || !n->reward_dist))) {
     free(n->W);
     free(n->Q);
     free(n->N);
     free(n->P);
+    free(n->R);
     free(n->children);
     free(n->latent);
+    free(n->value_dist);
     free(n->dist_sum);
+    free(n->reward_dist);
     free(n);
     return NULL;
   }
 
+  n->V = 0.0f;
   return n;
 }
 
@@ -83,9 +98,12 @@ static void node_free(Node *n) {
   free(n->Q);
   free(n->N);
   free(n->P);
+  free(n->R);
   free(n->children);
   free(n->latent);
+  free(n->value_dist);
   free(n->dist_sum);
+  free(n->reward_dist);
   free(n);
 }
 
@@ -201,6 +219,9 @@ static float expand_node(Node *node, MuModel *model, float *value_dist,
         if (value_dist) {
           memcpy(value_dist, v_probs, sizeof(float) * (size_t)out_bins);
         }
+        if (node->value_dist && out_bins == bins) {
+          memcpy(node->value_dist, v_probs, sizeof(float) * (size_t)out_bins);
+        }
         value = mu_model_support_expected(model, v_probs, out_bins);
       } else {
         value = mu_model_denorm_value(model, value);
@@ -214,6 +235,7 @@ static float expand_node(Node *node, MuModel *model, float *value_dist,
   }
   softmax(logits, A, pri);
   memcpy(node->P, pri, sizeof(float) * (size_t)A);
+  node->V = value;
   node->expanded = 1;
 
   free(pri);
@@ -250,6 +272,50 @@ static void project_value_dist(const float *in, int bins, float vmin, float vmax
         u = bins - 1;
       out[l] += in[i] * (1.0f - frac);
       out[u] += in[i] * frac;
+    }
+  }
+}
+
+static void project_reward_value_dist(const float *r_dist, const float *v_dist,
+                                      int bins, float vmin, float vmax,
+                                      float gamma, float *out) {
+  if (!r_dist || !v_dist || !out || bins <= 0)
+    return;
+  memset(out, 0, sizeof(float) * (size_t)bins);
+  if (bins == 1) {
+    out[0] = 1.0f;
+    return;
+  }
+
+  float delta = (vmax - vmin) / (float)(bins - 1);
+  for (int i = 0; i < bins; i++) {
+    float r = vmin + delta * (float)i;
+    float pr = r_dist[i];
+    if (pr <= 0.0f)
+      continue;
+    for (int j = 0; j < bins; j++) {
+      float z = vmin + delta * (float)j;
+      float pz = v_dist[j];
+      float p = pr * pz;
+      if (p <= 0.0f)
+        continue;
+      float tz = r + gamma * z;
+      if (tz <= vmin) {
+        out[0] += p;
+      } else if (tz >= vmax) {
+        out[bins - 1] += p;
+      } else {
+        float b = (tz - vmin) / delta;
+        int l = (int)floorf(b);
+        int u = l + 1;
+        float frac = b - (float)l;
+        if (l < 0)
+          l = 0;
+        if (u >= bins)
+          u = bins - 1;
+        out[l] += p * (1.0f - frac);
+        out[u] += p * frac;
+      }
     }
   }
 }
@@ -293,7 +359,8 @@ static void backup_with_discount_dist(Node **path, const int *actions,
                                       const float *rewards, int depth,
                                       const float *leaf_dist, int bins,
                                       float vmin, float vmax, float gamma,
-                                      float *dist_buf, float *proj_buf) {
+                                      float *dist_buf, float *proj_buf,
+                                      int use_reward_support) {
   if (!path || !actions || !rewards || !leaf_dist || !dist_buf || !proj_buf)
     return;
   if (depth <= 0 || bins <= 0)
@@ -301,7 +368,22 @@ static void backup_with_discount_dist(Node **path, const int *actions,
 
   memcpy(dist_buf, leaf_dist, sizeof(float) * (size_t)bins);
   for (int i = depth - 1; i >= 0; i--) {
-    project_value_dist(dist_buf, bins, vmin, vmax, rewards[i], gamma, proj_buf);
+    if (use_reward_support) {
+      Node *n = path[i];
+      int a = actions[i];
+      const float *r_dist =
+          n->reward_dist ? n->reward_dist + (size_t)a * (size_t)bins : NULL;
+      if (r_dist) {
+        project_reward_value_dist(r_dist, dist_buf, bins, vmin, vmax, gamma,
+                                  proj_buf);
+      } else {
+        project_value_dist(dist_buf, bins, vmin, vmax, rewards[i], gamma,
+                           proj_buf);
+      }
+    } else {
+      project_value_dist(dist_buf, bins, vmin, vmax, rewards[i], gamma,
+                         proj_buf);
+    }
 
     Node *n = path[i];
     int a = actions[i];
@@ -357,8 +439,13 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
       (model->use_value_support && model->support_size > 1)
           ? model->support_size
           : 0;
+  const int reward_bins =
+      (model->use_reward_support && model->support_size > 1)
+          ? model->support_size
+          : 0;
+  const int support_bins = (bins > reward_bins) ? bins : reward_bins;
 
-  Node *root = node_create(A, L, bins);
+  Node *root = node_create(A, L, support_bins);
   if (!root)
     return res;
 
@@ -375,10 +462,20 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
 
   int max_depth = (params->max_depth > 0) ? params->max_depth : 64;
 
-  int *actions = (int *)malloc(sizeof(int) * (size_t)max_depth);
-  float *rewards = (float *)malloc(sizeof(float) * (size_t)max_depth);
-  float *h_cur = (float *)malloc(sizeof(float) * (size_t)L);
-  Node **path = (Node **)malloc(sizeof(Node *) * (size_t)(max_depth + 1));
+  int batch = params->batch_simulations;
+  if (batch <= 0)
+    batch = 1;
+  if (batch > params->num_simulations)
+    batch = params->num_simulations;
+
+  int *actions = (int *)malloc(sizeof(int) * (size_t)batch * (size_t)max_depth);
+  float *rewards =
+      (float *)malloc(sizeof(float) * (size_t)batch * (size_t)max_depth);
+  float *h_cur = (float *)malloc(sizeof(float) * (size_t)batch * (size_t)L);
+  Node **path =
+      (Node **)malloc(sizeof(Node *) * (size_t)batch * (size_t)(max_depth + 1));
+  Node **leaf_nodes = (Node **)malloc(sizeof(Node *) * (size_t)batch);
+  int *depths = (int *)malloc(sizeof(int) * (size_t)batch);
   float *leaf_dist =
       (bins > 0) ? (float *)malloc(sizeof(float) * (size_t)bins) : NULL;
   float *dist_buf =
@@ -386,12 +483,14 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
   float *proj_buf =
       (bins > 0) ? (float *)malloc(sizeof(float) * (size_t)bins) : NULL;
 
-  if (!actions || !rewards || !h_cur || !path ||
+  if (!actions || !rewards || !h_cur || !path || !leaf_nodes || !depths ||
       (bins > 0 && (!leaf_dist || !dist_buf || !proj_buf))) {
     free(actions);
     free(rewards);
     free(h_cur);
     free(path);
+    free(leaf_nodes);
+    free(depths);
     free(leaf_dist);
     free(dist_buf);
     free(proj_buf);
@@ -399,51 +498,101 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
     return res;
   }
 
-  for (int sim = 0; sim < params->num_simulations; sim++) {
-    Node *node = root;
-    int depth = 0;
+  int sim = 0;
+  while (sim < params->num_simulations) {
+    int bcount = batch;
+    if (sim + bcount > params->num_simulations)
+      bcount = params->num_simulations - sim;
 
-    memcpy(h_cur, root->latent, sizeof(float) * (size_t)L);
-    path[0] = root;
+    for (int b = 0; b < bcount; b++) {
+      Node *node = root;
+      int depth = 0;
 
-    while (node->expanded && depth < max_depth) {
-      int a = select_puct(node, params->c_puct);
-      actions[depth] = a;
+      float *h = h_cur + (size_t)b * (size_t)L;
+      memcpy(h, root->latent, sizeof(float) * (size_t)L);
 
-      if (!node->children[a]) {
-        Node *child = node_create(A, L, bins);
-        if (!child)
+      Node **path_b = path + (size_t)b * (size_t)(max_depth + 1);
+      int *actions_b = actions + (size_t)b * (size_t)max_depth;
+      float *rewards_b = rewards + (size_t)b * (size_t)max_depth;
+
+      path_b[0] = root;
+      leaf_nodes[b] = NULL;
+      depths[b] = 0;
+
+      while (node->expanded && depth < max_depth) {
+        int a = select_puct(node, params->c_puct);
+        actions_b[depth] = a;
+
+        if (!node->children[a]) {
+          Node *child = node_create(A, L, support_bins);
+          if (!child)
+            break;
+          node->children[a] = child;
+
+          float r = 0.0f;
+          mu_model_dynamics(model, h, a, child->latent, &r);
+          node->R[a] = r;
+          rewards_b[depth] = r;
+          if (reward_bins > 0 && node->reward_dist) {
+            if (mu_model_predict_reward_support(
+                    model, child->latent,
+                    node->reward_dist + (size_t)a * (size_t)reward_bins,
+                    reward_bins) <= 0) {
+              float *rd =
+                  node->reward_dist + (size_t)a * (size_t)reward_bins;
+              for (int i = 0; i < reward_bins; i++)
+                rd[i] = 0.0f;
+            }
+          }
+          path_b[depth + 1] = child;
+          leaf_nodes[b] = child;
+          depths[b] = depth + 1;
           break;
-        node->children[a] = child;
-
-        float r = 0.0f;
-        mu_model_dynamics(model, h_cur, a, child->latent, &r);
-        rewards[depth] = r;
-        path[depth + 1] = child;
-
-        float leaf_value = expand_node(child, model, leaf_dist, bins);
-        if (bins > 0 && leaf_dist) {
-          backup_with_discount_dist(path, actions, rewards, depth + 1,
-                                    leaf_dist, bins, model->support_min,
-                                    model->support_max, params->discount,
-                                    dist_buf, proj_buf);
         } else {
-          backup_with_discount(path, actions, rewards, depth + 1, leaf_value,
-                               params->discount);
-        }
-        break;
-      } else {
-        Node *child = node->children[a];
-        float r = 0.0f;
-        mu_model_dynamics(model, h_cur, a, child->latent, &r);
-        rewards[depth] = r;
-        path[depth + 1] = child;
+          Node *child = node->children[a];
+          float r = node->R[a];
+          rewards_b[depth] = r;
+          path_b[depth + 1] = child;
 
-        memcpy(h_cur, child->latent, sizeof(float) * (size_t)L);
-        node = child;
-        depth++;
+          memcpy(h, child->latent, sizeof(float) * (size_t)L);
+          node = child;
+          depth++;
+        }
+      }
+
+      if (!leaf_nodes[b]) {
+        leaf_nodes[b] = node;
+        depths[b] = depth;
       }
     }
+
+    for (int b = 0; b < bcount; b++) {
+      Node *leaf = leaf_nodes[b];
+      if (leaf && !leaf->expanded)
+        expand_node(leaf, model, leaf_dist, bins);
+    }
+
+    for (int b = 0; b < bcount; b++) {
+      Node *leaf = leaf_nodes[b];
+      if (!leaf)
+        continue;
+      Node **path_b = path + (size_t)b * (size_t)(max_depth + 1);
+      int *actions_b = actions + (size_t)b * (size_t)max_depth;
+      float *rewards_b = rewards + (size_t)b * (size_t)max_depth;
+      int depth = depths[b];
+
+      if (bins > 0 && leaf->value_dist) {
+        backup_with_discount_dist(path_b, actions_b, rewards_b, depth,
+                                  leaf->value_dist, bins, model->support_min,
+                                  model->support_max, params->discount,
+                                  dist_buf, proj_buf, reward_bins > 0);
+      } else {
+        backup_with_discount(path_b, actions_b, rewards_b, depth, leaf->V,
+                             params->discount);
+      }
+    }
+
+    sim += bcount;
   }
 
   dbg_print_root("after simulations(root)", root);
@@ -482,6 +631,12 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
     free(actions);
     free(rewards);
     free(h_cur);
+    free(path);
+    free(leaf_nodes);
+    free(depths);
+    free(leaf_dist);
+    free(dist_buf);
+    free(proj_buf);
     node_free(root);
     return res;
   }
@@ -516,6 +671,8 @@ MCTSResult mcts_run_latent(MuModel *model, const float *latent,
   free(rewards);
   free(h_cur);
   free(path);
+  free(leaf_nodes);
+  free(depths);
   free(leaf_dist);
   free(dist_buf);
   free(proj_buf);

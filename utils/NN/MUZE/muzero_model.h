@@ -44,6 +44,22 @@ typedef struct {
   long double lr_vprefix;
   long double lr_reward;
 
+  long double lr_mult_repr_start;
+  long double lr_mult_repr_end;
+  size_t lr_mult_repr_steps;
+  long double lr_mult_dyn_start;
+  long double lr_mult_dyn_end;
+  size_t lr_mult_dyn_steps;
+  long double lr_mult_pred_start;
+  long double lr_mult_pred_end;
+  size_t lr_mult_pred_steps;
+  long double lr_mult_vprefix_start;
+  long double lr_mult_vprefix_end;
+  size_t lr_mult_vprefix_steps;
+  long double lr_mult_reward_start;
+  long double lr_mult_reward_end;
+  size_t lr_mult_reward_steps;
+
   size_t hidden_repr;
   size_t hidden_dyn;
   size_t hidden_pred;
@@ -65,6 +81,7 @@ typedef struct {
   float w_reward;
 
   float grad_clip;
+  float global_grad_clip;
 } MuNNConfig;
 
 struct MuModel {
@@ -153,6 +170,8 @@ float mu_model_value_transform(MuModel *m, float v);
 float mu_model_value_transform_inv(MuModel *m, float v_norm);
 int mu_model_predict_value_support(MuModel *m, const float *latent,
                                    float *out_probs, int max_bins);
+int mu_model_predict_reward_support(MuModel *m, const float *latent,
+                                    float *out_probs, int max_bins);
 float mu_model_support_expected(MuModel *m, const float *probs, int bins);
 
 /* ---- batch helpers used by trainer.c ---- */

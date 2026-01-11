@@ -78,6 +78,7 @@ void rb_set_value_prefix(ReplayBuffer *rb, size_t idx, float vprefix);
 void rb_set_priority(ReplayBuffer *rb, size_t idx, float prio);
 void rb_set_value_dist(ReplayBuffer *rb, size_t idx, const float *dist,
                        int bins);
+ReplayBuffer *rb_compact_copy(const ReplayBuffer *rb, size_t max_entries);
 
 int rb_save(ReplayBuffer *rb, const char *filename);
 ReplayBuffer *rb_load(const char *filename);

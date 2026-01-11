@@ -47,4 +47,5 @@ void mu_runtime_reset_episode(MuRuntime *rt);
 void mu_runtime_train(MuRuntime *rt, MuModel *model, const TrainerConfig *cfg);
 int muze_select_action(MuCortex *cortex, const float *obs, size_t obs_dim,
                        float *out_pi, size_t action_count, MCTSRng *rng);
+void muze_seed(uint32_t seed);
 #endif

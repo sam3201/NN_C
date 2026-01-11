@@ -537,6 +537,55 @@ int rb_sample_transition_per(ReplayBuffer *rb, int batch, float alpha,
 
 size_t rb_size(ReplayBuffer *rb) { return rb ? rb->size : 0; }
 
+ReplayBuffer *rb_compact_copy(const ReplayBuffer *rb, size_t max_entries) {
+  if (!rb)
+    return NULL;
+  if (rb->size == 0)
+    return rb_create(1, rb->obs_dim, rb->action_count);
+
+  size_t n = rb->size;
+  if (max_entries > 0 && max_entries < n)
+    n = max_entries;
+
+  ReplayBuffer *out = rb_create(n, rb->obs_dim, rb->action_count);
+  if (!out)
+    return NULL;
+  if (rb->support_size > 1)
+    rb_enable_value_support(out, rb->support_size);
+
+  out->size = n;
+  out->write_idx = (n < out->capacity) ? n : 0;
+
+  size_t start = rb->size - n;
+  for (size_t i = 0; i < n; i++) {
+    size_t logical = start + i;
+    size_t idx = rb_logical_to_physical(rb, logical);
+
+    memcpy(out->obs_buf + i * (size_t)out->obs_dim,
+           rb->obs_buf + idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)out->obs_dim);
+    memcpy(out->pi_buf + i * (size_t)out->action_count,
+           rb->pi_buf + idx * (size_t)rb->action_count,
+           sizeof(float) * (size_t)out->action_count);
+    out->z_buf[i] = rb->z_buf[idx];
+    out->vprefix_buf[i] = rb->vprefix_buf[idx];
+    out->prio_buf[i] = rb->prio_buf[idx];
+    out->a_buf[i] = rb->a_buf[idx];
+    out->r_buf[i] = rb->r_buf[idx];
+    memcpy(out->next_obs_buf + i * (size_t)out->obs_dim,
+           rb->next_obs_buf + idx * (size_t)rb->obs_dim,
+           sizeof(float) * (size_t)out->obs_dim);
+    out->done_buf[i] = rb->done_buf[idx];
+    if (out->value_dist_buf && rb->value_dist_buf) {
+      memcpy(out->value_dist_buf + i * (size_t)out->support_size,
+             rb->value_dist_buf + idx * (size_t)rb->support_size,
+             sizeof(float) * (size_t)out->support_size);
+    }
+  }
+
+  return out;
+}
+
 int rb_save(ReplayBuffer *rb, const char *filename) {
   if (!rb || !filename)
     return 0;

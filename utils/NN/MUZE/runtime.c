@@ -27,6 +27,8 @@ static TrainerConfig trainer_default_cfg(void) {
   return tc;
 }
 
+void muze_seed(uint32_t seed) { srand((unsigned)seed); }
+
 MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   MuRuntime *rt = calloc(1, sizeof(MuRuntime));
   if (!rt)

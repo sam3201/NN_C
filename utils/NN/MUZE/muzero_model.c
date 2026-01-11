@@ -143,6 +143,34 @@ int mu_model_predict_value_support(MuModel *m, const float *latent,
   return bins;
 }
 
+int mu_model_predict_reward_support(MuModel *m, const float *latent,
+                                    float *out_probs, int max_bins) {
+  if (!m || !latent || !out_probs)
+    return 0;
+  if (!m->use_reward_support || !m->use_nn || !m->nn_reward)
+    return 0;
+
+  int bins = m->support_size;
+  if (bins > max_bins)
+    bins = max_bins;
+  if (bins <= 0)
+    return 0;
+
+  float *tmp = (float *)malloc(sizeof(float) * (size_t)m->support_size);
+  if (!tmp)
+    return 0;
+
+  nn_forward_raw(m->nn_reward, latent, m->cfg.latent_dim, tmp, NULL);
+  softmax_f(tmp, m->support_size, out_probs);
+  if (bins < m->support_size) {
+    for (int i = bins; i < m->support_size; i++)
+      out_probs[i] = 0.0f;
+  }
+
+  free(tmp);
+  return bins;
+}
+
 float mu_model_support_expected(MuModel *m, const float *probs, int bins) {
   if (!m || !probs || bins <= 0)
     return 0.0f;
@@ -479,7 +507,7 @@ static void mu_model_train_policy_value_nn(
 
     clamp_ld(delta, A + vout, m->grad_clip);
 
-    m->nn_pred->learningRate = (long double)lr;
+    NN_set_base_lr(m->nn_pred, (long double)lr);
     long double *grad_latent =
         NN_backprop_custom_delta_inputgrad(m->nn_pred, latent_ld, delta);
 
@@ -491,7 +519,7 @@ static void mu_model_train_policy_value_nn(
           long double h = (long double)latent[j];
           delta_repr[j] = grad_latent[j] * (1.0L - h * h);
         }
-        m->nn_repr->learningRate = (long double)lr;
+        NN_set_base_lr(m->nn_repr, (long double)lr);
         NN_backprop_custom_delta(m->nn_repr, obs_ld, delta_repr);
         free(delta_repr);
       }
@@ -632,7 +660,7 @@ static void mu_model_train_dynamics_nn(
     }
 
     clamp_ld(delta_dyn, L, m->grad_clip);
-    m->nn_dyn->learningRate = (long double)lr;
+    NN_set_base_lr(m->nn_dyn, (long double)lr);
     NN_backprop_custom_delta(m->nn_dyn, dyn_in_ld, delta_dyn);
 
     if (train_reward_head && m->nn_reward) {
@@ -670,7 +698,7 @@ static void mu_model_train_dynamics_nn(
                              (r_probs[j] - (long double)r_dist[j]);
               }
               clamp_ld(r_delta, rout, m->grad_clip);
-              m->nn_reward->learningRate = (long double)lr;
+              NN_set_base_lr(m->nn_reward, (long double)lr);
               NN_backprop_custom_delta(m->nn_reward, h_pred_ld, r_delta);
             }
             free(r_logits);
@@ -684,7 +712,7 @@ static void mu_model_train_dynamics_nn(
             long double dr = (long double)w * (long double)m->w_reward * 2.0L * d;
             long double delta_rew = dr * (1.0L - r_pred * r_pred);
             clamp_ld(&delta_rew, 1, m->grad_clip);
-            m->nn_reward->learningRate = (long double)lr;
+            NN_set_base_lr(m->nn_reward, (long double)lr);
             NN_backprop_custom_delta(m->nn_reward, h_pred_ld, &delta_rew);
           }
           free(rew_raw);
@@ -980,7 +1008,7 @@ static void mu_model_train_unroll_nn(
       val_cnt += 1.0;
 
       clamp_ld(delta, A + vout, m->grad_clip);
-      m->nn_pred->learningRate = (long double)lr;
+      NN_set_base_lr(m->nn_pred, (long double)lr);
       long double *grad_h =
           NN_backprop_custom_delta_inputgrad(m->nn_pred, h_k_ld, delta);
       if (grad_h) {
@@ -1051,7 +1079,7 @@ static void mu_model_train_unroll_nn(
                 (long double)w * (long double)m->w_vprefix *
                 (vp_probs[j] - (long double)vp_dist[j]);
           clamp_ld(vp_delta, rout, m->grad_clip);
-          m->nn_vprefix->learningRate = (long double)lr;
+          NN_set_base_lr(m->nn_vprefix, (long double)lr);
           long double *grad_h =
               NN_backprop_custom_delta_inputgrad(m->nn_vprefix, h_k1_ld,
                                                  vp_delta);
@@ -1076,7 +1104,7 @@ static void mu_model_train_unroll_nn(
                    (double)w * (double)m->w_vprefix;
         rew_cnt += 1.0;
 
-        m->nn_vprefix->learningRate = (long double)lr;
+        NN_set_base_lr(m->nn_vprefix, (long double)lr);
         long double *grad_h =
             NN_backprop_custom_delta_inputgrad(m->nn_vprefix, h_k1_ld,
                                                &delta_vp);
@@ -1138,7 +1166,7 @@ static void mu_model_train_unroll_nn(
       long double *dyn_in_ld =
           ld_from_float(dyn_in, L + m->action_embed_dim);
       if (dyn_in_ld) {
-        m->nn_dyn->learningRate = (long double)lr;
+        NN_set_base_lr(m->nn_dyn, (long double)lr);
         long double *grad_in =
             NN_backprop_custom_delta_inputgrad(m->nn_dyn, dyn_in_ld,
                                                delta_dyn);
@@ -1163,7 +1191,7 @@ static void mu_model_train_unroll_nn(
           delta_repr[j] = dh[j] * (1.0L - h0 * h0);
         }
         clamp_ld(delta_repr, L, m->grad_clip);
-        m->nn_repr->learningRate = (long double)lr;
+        NN_set_base_lr(m->nn_repr, (long double)lr);
         NN_backprop_custom_delta(m->nn_repr, obs0_ld, delta_repr);
         free(delta_repr);
       }
@@ -1371,6 +1399,21 @@ static MuNNConfig mu_nn_default_cfg(const MuConfig *cfg) {
   c.lr_pred = 0.001L;
   c.lr_vprefix = 0.001L;
   c.lr_reward = 0.001L;
+  c.lr_mult_repr_start = 1.0L;
+  c.lr_mult_repr_end = 1.0L;
+  c.lr_mult_repr_steps = 0;
+  c.lr_mult_dyn_start = 1.0L;
+  c.lr_mult_dyn_end = 1.0L;
+  c.lr_mult_dyn_steps = 0;
+  c.lr_mult_pred_start = 1.0L;
+  c.lr_mult_pred_end = 1.0L;
+  c.lr_mult_pred_steps = 0;
+  c.lr_mult_vprefix_start = 1.0L;
+  c.lr_mult_vprefix_end = 1.0L;
+  c.lr_mult_vprefix_steps = 0;
+  c.lr_mult_reward_start = 1.0L;
+  c.lr_mult_reward_end = 1.0L;
+  c.lr_mult_reward_steps = 0;
   c.hidden_repr = cfg ? (size_t)cfg->latent_dim : 32;
   c.hidden_dyn = cfg ? (size_t)cfg->latent_dim : 32;
   c.hidden_pred = cfg ? (size_t)cfg->latent_dim : 32;
@@ -1392,6 +1435,7 @@ static MuNNConfig mu_nn_default_cfg(const MuConfig *cfg) {
   c.w_reward = 1.0f;
 
   c.grad_clip = 5.0f;
+  c.global_grad_clip = 0.0f;
   return c;
 }
 
@@ -1479,6 +1523,37 @@ MuModel *mu_model_create_nn_with_cfg(const MuConfig *cfg,
       !m->nn_reward) {
     mu_model_free(m);
     return NULL;
+  }
+
+  {
+    long double s = (c.lr_mult_repr_start > 0.0L) ? c.lr_mult_repr_start : 1.0L;
+    long double e = (c.lr_mult_repr_end > 0.0L) ? c.lr_mult_repr_end : s;
+    NN_set_lr_schedule(m->nn_repr, s, e, c.lr_mult_repr_steps);
+    NN_set_global_grad_clip(m->nn_repr, (long double)c.global_grad_clip);
+  }
+  {
+    long double s = (c.lr_mult_dyn_start > 0.0L) ? c.lr_mult_dyn_start : 1.0L;
+    long double e = (c.lr_mult_dyn_end > 0.0L) ? c.lr_mult_dyn_end : s;
+    NN_set_lr_schedule(m->nn_dyn, s, e, c.lr_mult_dyn_steps);
+    NN_set_global_grad_clip(m->nn_dyn, (long double)c.global_grad_clip);
+  }
+  {
+    long double s = (c.lr_mult_pred_start > 0.0L) ? c.lr_mult_pred_start : 1.0L;
+    long double e = (c.lr_mult_pred_end > 0.0L) ? c.lr_mult_pred_end : s;
+    NN_set_lr_schedule(m->nn_pred, s, e, c.lr_mult_pred_steps);
+    NN_set_global_grad_clip(m->nn_pred, (long double)c.global_grad_clip);
+  }
+  {
+    long double s = (c.lr_mult_vprefix_start > 0.0L) ? c.lr_mult_vprefix_start : 1.0L;
+    long double e = (c.lr_mult_vprefix_end > 0.0L) ? c.lr_mult_vprefix_end : s;
+    NN_set_lr_schedule(m->nn_vprefix, s, e, c.lr_mult_vprefix_steps);
+    NN_set_global_grad_clip(m->nn_vprefix, (long double)c.global_grad_clip);
+  }
+  {
+    long double s = (c.lr_mult_reward_start > 0.0L) ? c.lr_mult_reward_start : 1.0L;
+    long double e = (c.lr_mult_reward_end > 0.0L) ? c.lr_mult_reward_end : s;
+    NN_set_lr_schedule(m->nn_reward, s, e, c.lr_mult_reward_steps);
+    NN_set_global_grad_clip(m->nn_reward, (long double)c.global_grad_clip);
   }
 
   m->runtime = mu_runtime_create(m, 0.95f);

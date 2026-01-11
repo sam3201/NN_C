@@ -5,6 +5,7 @@
 #include "muzero_model.h"
 #include "game_replay.h"
 #include "replay_buffer.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +19,8 @@ extern "C" {
 typedef void (*selfplay_env_reset_fn)(void *env_state, float *obs_out);
 typedef int (*selfplay_env_step_fn)(void *state, int action, float *obs,
                                     float *reward, int *done);
+typedef void *(*selfplay_env_clone_fn)(void *env_state);
+typedef void (*selfplay_env_destroy_fn)(void *env_state);
 
 /* Self-play params */
 typedef struct {
@@ -50,6 +53,15 @@ void selfplay_run(MuModel *model, void *env_state,
                   selfplay_env_step_fn env_step, MCTSParams *mcts_params,
                   SelfPlayParams *sp_params, ReplayBuffer *rb,
                   GameReplay *gr, MCTSRng *rng);
+
+void selfplay_run_threadsafe(MuModel *model, void *env_state,
+                             selfplay_env_reset_fn env_reset,
+                             selfplay_env_step_fn env_step,
+                             MCTSParams *mcts_params,
+                             SelfPlayParams *sp_params, ReplayBuffer *rb,
+                             GameReplay *gr, MCTSRng *rng,
+                             pthread_mutex_t *rb_mutex,
+                             pthread_mutex_t *gr_mutex);
 
 #ifdef __cplusplus
 }
