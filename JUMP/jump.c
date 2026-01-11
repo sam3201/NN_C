@@ -819,7 +819,7 @@ static void reset_agent_episode(Agent *a) {
   a->best_alt = 0.0f;
 
   // seed initial obs
-  encode_observation_jk(a, &a->last_obs);
+  encode_observation(a, &a->last_obs);
 
   a->last_action = ACT_NONE;
 
