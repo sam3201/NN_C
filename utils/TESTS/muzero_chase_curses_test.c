@@ -248,6 +248,8 @@ static void chase_env_destroy(void *state) {
 
 int main(void) {
   int headless = 0;
+
+  /*
   if (getenv("MUZE_HEADLESS"))
     headless = 1;
 
