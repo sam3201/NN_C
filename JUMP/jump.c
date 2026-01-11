@@ -590,7 +590,7 @@ static void solve_player_platforms(PlayerJK *p) {
 // =======================
 // OBS
 // =======================
-static void encode_observation_jk(const Agent *a, ObsDyn *out) {
+static void encode_observation(const Agent *a, ObsDyn *out) {
   out->n = 0;
 
   // Clear ONLY the grid portion
