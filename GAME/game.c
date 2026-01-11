@@ -2,6 +2,8 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -557,6 +559,37 @@ static float cam_shake = 0.0f;
 // store last hand positions (screen space) for cooldown rings
 static Vector2 g_handL = {0}, g_handR = {0};
 static float g_dt = 1.0f / 60.0f;
+static float g_player_yaw = 0.0f;
+static float g_player_yaw_target = 0.0f;
+static int g_use_3d = 1;
+
+typedef enum {
+  BIND_MOVE_FORWARD = 0,
+  BIND_MOVE_BACK,
+  BIND_MOVE_LEFT,
+  BIND_MOVE_RIGHT,
+  BIND_PAUSE,
+  BIND_ATTACK,
+  BIND_HARVEST,
+  BIND_FIRE,
+  BIND_COUNT
+} BindAction;
+
+typedef struct {
+  const char *name;
+  KeyboardKey primary;
+  KeyboardKey secondary;
+} Keybind;
+
+static Keybind g_keybinds[BIND_COUNT] = {
+    {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
+    {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+    {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
+    {"Harvest", KEY_E, KEY_NULL},    {"Fire", KEY_SPACE, KEY_NULL},
+};
+
+static int g_pause_page = 0;
+static int g_rebind_index = -1;
 
 // raid
 static float raid_timer = 0.0f;
@@ -574,6 +607,175 @@ static Recipe recipes[] = {
 };
 
 static int recipe_count = sizeof(recipes) / sizeof(recipes[0]);
+
+static float wrap_pi(float a) {
+  while (a > PI)
+    a -= 2.0f * PI;
+  while (a < -PI)
+    a += 2.0f * PI;
+  return a;
+}
+
+static const char *bind_action_ids[BIND_COUNT] = {
+    "move_forward", "move_back", "move_left", "move_right",
+    "pause",        "attack",    "harvest",   "fire",
+};
+
+static const char *key_name(KeyboardKey k) {
+  if (k >= KEY_A && k <= KEY_Z) {
+    static char buf[8];
+    buf[0] = 'K';
+    buf[1] = 'E';
+    buf[2] = 'Y';
+    buf[3] = '_';
+    buf[4] = (char)('A' + (k - KEY_A));
+    buf[5] = '\0';
+    return buf;
+  }
+  if (k >= KEY_ONE && k <= KEY_ZERO) {
+    static char buf[8];
+    buf[0] = 'K';
+    buf[1] = 'E';
+    buf[2] = 'Y';
+    buf[3] = '_';
+    buf[4] = (char)('1' + (k - KEY_ONE));
+    buf[5] = '\0';
+    return buf;
+  }
+  switch (k) {
+  case KEY_UP:
+    return "KEY_UP";
+  case KEY_DOWN:
+    return "KEY_DOWN";
+  case KEY_LEFT:
+    return "KEY_LEFT";
+  case KEY_RIGHT:
+    return "KEY_RIGHT";
+  case KEY_SPACE:
+    return "KEY_SPACE";
+  case KEY_TAB:
+    return "KEY_TAB";
+  case KEY_ENTER:
+    return "KEY_ENTER";
+  case KEY_BACKSPACE:
+    return "KEY_BACKSPACE";
+  case KEY_ESCAPE:
+    return "KEY_ESCAPE";
+  case KEY_MINUS:
+    return "KEY_MINUS";
+  case KEY_EQUAL:
+    return "KEY_EQUAL";
+  case KEY_F5:
+    return "KEY_F5";
+  case KEY_NULL:
+    return "KEY_NULL";
+  default:
+    return "KEY_UNKNOWN";
+  }
+}
+
+static KeyboardKey key_from_name(const char *s) {
+  if (!s || !s[0])
+    return KEY_NULL;
+  if (strncmp(s, "KEY_", 4) == 0 && s[4] >= 'A' && s[4] <= 'Z' && !s[5]) {
+    return (KeyboardKey)(KEY_A + (s[4] - 'A'));
+  }
+  if (strncmp(s, "KEY_", 4) == 0 && s[4] >= '1' && s[4] <= '9' && !s[5]) {
+    return (KeyboardKey)(KEY_ONE + (s[4] - '1'));
+  }
+  if (strcmp(s, "KEY_UP") == 0)
+    return KEY_UP;
+  if (strcmp(s, "KEY_DOWN") == 0)
+    return KEY_DOWN;
+  if (strcmp(s, "KEY_LEFT") == 0)
+    return KEY_LEFT;
+  if (strcmp(s, "KEY_RIGHT") == 0)
+    return KEY_RIGHT;
+  if (strcmp(s, "KEY_SPACE") == 0)
+    return KEY_SPACE;
+  if (strcmp(s, "KEY_TAB") == 0)
+    return KEY_TAB;
+  if (strcmp(s, "KEY_ENTER") == 0)
+    return KEY_ENTER;
+  if (strcmp(s, "KEY_BACKSPACE") == 0)
+    return KEY_BACKSPACE;
+  if (strcmp(s, "KEY_ESCAPE") == 0)
+    return KEY_ESCAPE;
+  if (strcmp(s, "KEY_MINUS") == 0)
+    return KEY_MINUS;
+  if (strcmp(s, "KEY_EQUAL") == 0)
+    return KEY_EQUAL;
+  if (strcmp(s, "KEY_F5") == 0)
+    return KEY_F5;
+  if (strcmp(s, "KEY_NULL") == 0)
+    return KEY_NULL;
+  return KEY_NULL;
+}
+
+static void save_keybinds(void) {
+  FILE *f = fopen("keybinds.cfg", "w");
+  if (!f)
+    return;
+  for (int i = 0; i < BIND_COUNT; i++) {
+    fprintf(f, "%s=%s,%s\n", bind_action_ids[i],
+            key_name(g_keybinds[i].primary), key_name(g_keybinds[i].secondary));
+  }
+  fclose(f);
+}
+
+static void load_keybinds(void) {
+  FILE *f = fopen("keybinds.cfg", "r");
+  if (!f)
+    return;
+  char line[128];
+  while (fgets(line, sizeof(line), f)) {
+    char *eq = strchr(line, '=');
+    if (!eq)
+      continue;
+    *eq = '\0';
+    char *val = eq + 1;
+    char *comma = strchr(val, ',');
+    if (comma) {
+      *comma = '\0';
+    }
+    char *newline = strchr(val, '\n');
+    if (newline)
+      *newline = '\0';
+    if (comma) {
+      char *newline2 = strchr(comma + 1, '\n');
+      if (newline2)
+        *newline2 = '\0';
+    }
+    for (int i = 0; i < BIND_COUNT; i++) {
+      if (strcmp(line, bind_action_ids[i]) == 0) {
+        g_keybinds[i].primary = key_from_name(val);
+        g_keybinds[i].secondary = comma ? key_from_name(comma + 1) : KEY_NULL;
+        break;
+      }
+    }
+  }
+  fclose(f);
+}
+
+static int bind_down(BindAction a) {
+  KeyboardKey p = g_keybinds[a].primary;
+  KeyboardKey s = g_keybinds[a].secondary;
+  return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+}
+
+static int bind_pressed(BindAction a) {
+  KeyboardKey p = g_keybinds[a].primary;
+  KeyboardKey s = g_keybinds[a].secondary;
+  return (p != KEY_NULL && IsKeyPressed(p)) ||
+         (s != KEY_NULL && IsKeyPressed(s));
+}
+
+static int bind_released(BindAction a) {
+  KeyboardKey p = g_keybinds[a].primary;
+  KeyboardKey s = g_keybinds[a].secondary;
+  return (p != KEY_NULL && IsKeyReleased(p)) ||
+         (s != KEY_NULL && IsKeyReleased(s));
+}
 
 static int can_afford(const Recipe *r) {
   return inv_wood >= r->wood && inv_stone >= r->stone && inv_gold >= r->gold &&
@@ -4517,30 +4719,39 @@ void update_player(void) {
   player.stamina = fminf(100.0f, player.stamina + STAMINA_REGEN_RATE * dt);
 
   // --- movement ---
-  float speed = 0.6f;
-  float move = speed; // (or speed * dt * 60.0f for true time-based)
+  if (g_use_3d) {
+    Vector2 md = GetMouseDelta();
+    float sens = 0.0045f;
+    g_player_yaw += md.x * sens;
+    g_player_yaw = wrap_pi(g_player_yaw);
+    g_player_yaw_target = g_player_yaw;
+  }
 
-  bool moving = false;
-  if (IsKeyDown(KEY_W)) {
-    player.position.y -= move;
-    player.facing.y = -1.0f;
-    moving = true;
+  float speed = 0.6f;
+  float move = speed;
+
+  Vector2 fwd = (Vector2){sinf(g_player_yaw), -cosf(g_player_yaw)};
+  Vector2 right = (Vector2){cosf(g_player_yaw), sinf(g_player_yaw)};
+  Vector2 wish = (Vector2){0, 0};
+
+  if (bind_down(BIND_MOVE_FORWARD))
+    wish = Vector2Add(wish, fwd);
+  if (bind_down(BIND_MOVE_BACK))
+    wish = Vector2Subtract(wish, fwd);
+  if (bind_down(BIND_MOVE_RIGHT))
+    wish = Vector2Add(wish, right);
+  if (bind_down(BIND_MOVE_LEFT))
+    wish = Vector2Subtract(wish, right);
+
+  bool moving = (fabsf(wish.x) > 0.001f || fabsf(wish.y) > 0.001f);
+  if (moving) {
+    wish = Vector2Normalize(wish);
+    player.position.x += wish.x * move;
+    player.position.y += wish.y * move;
   }
-  if (IsKeyDown(KEY_S)) {
-    player.position.y += move;
-    player.facing.y = 1.0f;
-    moving = true;
-  }
-  if (IsKeyDown(KEY_A)) {
-    player.position.x -= move;
-    player.facing.x = -1.0f;
-    moving = true;
-  }
-  if (IsKeyDown(KEY_D)) {
-    player.position.x += move;
-    player.facing.x = 1.0f;
-    moving = true;
-  }
+
+  player.facing.x = fwd.x;
+  player.facing.y = fwd.y;
   // --- zoom controls ---
   if (IsKeyDown(KEY_EQUAL))
     target_world_scale += 60.0f * dt;
@@ -4601,14 +4812,14 @@ void update_player(void) {
   // =========================
   // Hold F to charge, release F to fire (if enough charge).
   if (has_bow) {
-    if (IsKeyDown(KEY_F)) {
+    if (bind_down(BIND_FIRE)) {
       bow_charging = 1;
       bow_charge01 += dt / BOW_CHARGE_TIME;
       bow_charge01 = clamp01(bow_charge01);
     }
 
     // Release to fire (continuous-ready through player_fire_cd)
-    if (bow_charging && IsKeyReleased(KEY_F)) {
+    if (bow_charging && bind_released(BIND_FIRE)) {
       bow_charging = 0;
 
       if (player_fire_cd <= 0.0f && inv_arrows > 0 &&
@@ -5360,7 +5571,6 @@ typedef struct {
   int index_count;
 } Mesh;
 
-static int g_use_3d = 1;
 static int g_3d_ready = 0;
 static GLuint g_shader = 0;
 static GLint g_u_mvp = -1;
@@ -5370,6 +5580,14 @@ static GLint g_u_light = -1;
 static Mesh g_mesh_ground = {0};
 static Mesh g_mesh_sphere = {0};
 static Mesh g_mesh_cylinder = {0};
+static GLuint g_ui_shader = 0;
+static GLuint g_ui_vao = 0;
+static GLuint g_ui_vbo = 0;
+static GLuint g_ui_white_tex = 0;
+static GLint g_ui_u_screen = -1;
+static GLint g_ui_u_color = -1;
+static GLint g_ui_u_tex = -1;
+static TTF_Font *g_ui_font = NULL;
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -5396,6 +5614,12 @@ static Vec3 vec3_norm(Vec3 a) {
 static Vec3 vec3_cross(Vec3 a, Vec3 b) {
   return vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
               a.x * b.y - a.y * b.x);
+}
+
+static Vec3 vec3_rotate_y(Vec3 v, float a) {
+  float c = cosf(a);
+  float s = sinf(a);
+  return vec3(v.x * c + v.z * s, v.y, -v.x * s + v.z * c);
 }
 
 static Mat4 mat4_identity(void) {
@@ -5430,6 +5654,17 @@ static Mat4 mat4_scale(Vec3 s) {
   m.m[0] = s.x;
   m.m[5] = s.y;
   m.m[10] = s.z;
+  return m;
+}
+
+static Mat4 mat4_rotate_y(float a) {
+  Mat4 m = mat4_identity();
+  float c = cosf(a);
+  float s = sinf(a);
+  m.m[0] = c;
+  m.m[2] = s;
+  m.m[8] = -s;
+  m.m[10] = c;
   return m;
 }
 
@@ -5667,6 +5902,227 @@ static void build_cylinder_mesh(int slices) {
   free(idx);
 }
 
+static const char *ui_font_path(void) {
+  const char *p = getenv("SDL_FONT_PATH");
+  if (p && p[0])
+    return p;
+  return "/System/Library/Fonts/Supplemental/Arial.ttf";
+}
+
+static void init_ui_gl(void) {
+  if (g_ui_shader)
+    return;
+  const char *vs = "#version 330 core\n"
+                   "layout(location=0) in vec2 aPos;\n"
+                   "layout(location=1) in vec2 aUV;\n"
+                   "uniform vec2 uScreen;\n"
+                   "out vec2 vUV;\n"
+                   "void main(){\n"
+                   "  vec2 ndc = vec2((aPos.x / uScreen.x) * 2.0 - 1.0,\n"
+                   "                  1.0 - (aPos.y / uScreen.y) * 2.0);\n"
+                   "  gl_Position = vec4(ndc, 0.0, 1.0);\n"
+                   "  vUV = aUV;\n"
+                   "}\n";
+  const char *fs = "#version 330 core\n"
+                   "in vec2 vUV;\n"
+                   "uniform sampler2D uTex;\n"
+                   "uniform vec4 uColor;\n"
+                   "out vec4 FragColor;\n"
+                   "void main(){\n"
+                   "  vec4 tex = texture(uTex, vUV);\n"
+                   "  FragColor = tex * uColor;\n"
+                   "}\n";
+  g_ui_shader = make_program(vs, fs);
+  g_ui_u_screen = glGetUniformLocation(g_ui_shader, "uScreen");
+  g_ui_u_color = glGetUniformLocation(g_ui_shader, "uColor");
+  g_ui_u_tex = glGetUniformLocation(g_ui_shader, "uTex");
+
+  glGenVertexArrays(1, &g_ui_vao);
+  glGenBuffers(1, &g_ui_vbo);
+  glBindVertexArray(g_ui_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_ui_vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void *)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
+                        (void *)(sizeof(float) * 2));
+  glBindVertexArray(0);
+
+  glGenTextures(1, &g_ui_white_tex);
+  glBindTexture(GL_TEXTURE_2D, g_ui_white_tex);
+  unsigned int white = 0xffffffff;
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               &white);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  g_ui_font = TTF_OpenFont(ui_font_path(), 18);
+}
+
+static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
+                         Color color) {
+  init_ui_gl();
+  int sw = GetScreenWidth();
+  int sh = GetScreenHeight();
+  if (sw <= 0 || sh <= 0)
+    return;
+  float verts[] = {
+      x, y, 0.0f, 0.0f, x + w, y,     1.0f, 0.0f, x + w, y + h, 1.0f, 1.0f,
+      x, y, 0.0f, 0.0f, x + w, y + h, 1.0f, 1.0f, x,     y + h, 0.0f, 1.0f,
+  };
+  glUseProgram(g_ui_shader);
+  glUniform2f(g_ui_u_screen, (float)sw, (float)sh);
+  glUniform4f(g_ui_u_color, color.r / 255.0f, color.g / 255.0f,
+              color.b / 255.0f, color.a / 255.0f);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glUniform1i(g_ui_u_tex, 0);
+  glBindVertexArray(g_ui_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_ui_vbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glBindVertexArray(0);
+}
+
+static void ui_draw_rect(float x, float y, float w, float h, Color color) {
+  ui_draw_quad(x, y, w, h, g_ui_white_tex, color);
+}
+
+static void ui_draw_text(float x, float y, const char *text, Color color) {
+  if (!text || !text[0])
+    return;
+  init_ui_gl();
+  if (!g_ui_font)
+    return;
+
+  SDL_Color c = {color.r, color.g, color.b, color.a};
+  size_t len = strlen(text);
+  SDL_Surface *surf = TTF_RenderText_Blended(g_ui_font, text, len, c);
+  if (!surf)
+    return;
+  SDL_Surface *rgba = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_RGBA32);
+  SDL_DestroySurface(surf);
+  if (!rgba)
+    return;
+
+  int tw = rgba->w;
+  int th = rgba->h;
+
+  GLuint tex = 0;
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               rgba->pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  SDL_DestroySurface(rgba);
+
+  ui_draw_quad(x, y, (float)tw, (float)th, tex, WHITE);
+  glDeleteTextures(1, &tex);
+}
+
+static KeyboardKey poll_any_key_pressed(void) {
+  KeyboardKey keys[] = {
+      KEY_A,     KEY_B,      KEY_C,        KEY_D,     KEY_E,     KEY_F,
+      KEY_G,     KEY_H,      KEY_I,        KEY_J,     KEY_K,     KEY_L,
+      KEY_M,     KEY_N,      KEY_O,        KEY_P,     KEY_Q,     KEY_R,
+      KEY_S,     KEY_T,      KEY_U,        KEY_V,     KEY_W,     KEY_X,
+      KEY_Y,     KEY_Z,      KEY_ONE,      KEY_TWO,   KEY_THREE, KEY_FOUR,
+      KEY_FIVE,  KEY_SIX,    KEY_SEVEN,    KEY_EIGHT, KEY_NINE,  KEY_ZERO,
+      KEY_UP,    KEY_DOWN,   KEY_LEFT,     KEY_RIGHT, KEY_SPACE, KEY_TAB,
+      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE};
+  for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
+    if (IsKeyPressed(keys[i]))
+      return keys[i];
+  }
+  return KEY_NULL;
+}
+
+static void draw_pause_menu_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){0, 0, 0, 140});
+  ui_draw_text(w * 0.5f - 60, h * 0.25f, "PAUSED", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.40f, "1) Resume", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.48f, "2) Keybinds", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.56f, "3) Back to Title", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.64f, "4) Save", RAYWHITE);
+  glEnable(GL_DEPTH_TEST);
+
+  if (IsKeyPressed(KEY_ONE)) {
+    g_state = STATE_PLAYING;
+  } else if (IsKeyPressed(KEY_TWO)) {
+    g_pause_page = 1;
+  } else if (IsKeyPressed(KEY_THREE)) {
+    g_state = STATE_TITLE;
+    g_pause_page = 0;
+    g_rebind_index = -1;
+  } else if (IsKeyPressed(KEY_FOUR)) {
+    save_current_world_session();
+  }
+}
+
+static void draw_keybinds_menu_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){0, 0, 0, 160});
+  ui_draw_text(40, 40, "Keybinds (TAB toggles primary/secondary)", RAYWHITE);
+
+  float y = 90.0f;
+  for (int i = 0; i < BIND_COUNT; i++) {
+    char line[128];
+    snprintf(line, sizeof(line), "%d) %s: %s / %s", i + 1, g_keybinds[i].name,
+             key_name(g_keybinds[i].primary),
+             key_name(g_keybinds[i].secondary));
+    ui_draw_text(40, y, line, (i == g_rebind_index) ? ORANGE : RAYWHITE);
+    y += 28.0f;
+  }
+
+  if (g_rebind_index >= 0) {
+    ui_draw_text(40, y + 20,
+                 g_rebind_index >= 0 ? "Press a key (ESC cancels)" : "",
+                 RAYWHITE);
+    KeyboardKey k = poll_any_key_pressed();
+    if (k == KEY_ESCAPE) {
+      g_rebind_index = -1;
+    } else if (k != KEY_NULL && k != KEY_TAB) {
+      if (g_pause_page == 2) {
+        g_keybinds[g_rebind_index].secondary = k;
+      } else {
+        g_keybinds[g_rebind_index].primary = k;
+      }
+      g_rebind_index = -1;
+      save_keybinds();
+    }
+  } else {
+    if (IsKeyPressed(KEY_TAB)) {
+      g_pause_page = (g_pause_page == 1) ? 2 : 1;
+    }
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+      g_pause_page = 0;
+      g_rebind_index = -1;
+    }
+    for (int i = 0; i < BIND_COUNT && i < 8; i++) {
+      KeyboardKey k = (KeyboardKey)(KEY_ONE + i);
+      if (IsKeyPressed(k)) {
+        g_rebind_index = i;
+        break;
+      }
+    }
+  }
+
+  glEnable(GL_DEPTH_TEST);
+}
+
 static void init_3d_renderer(void) {
   if (g_3d_ready)
     return;
@@ -5733,7 +6189,8 @@ static void render_scene_3d(void) {
   float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   Vec3 player_pos = vec3(player.position.x, 0.0f, player.position.y);
-  Vec3 eye = vec3_add(player_pos, vec3(-6.5f, 5.0f, 8.0f));
+  Vec3 cam_offset = vec3_rotate_y(vec3(0.0f, 5.0f, 8.0f), g_player_yaw);
+  Vec3 eye = vec3_add(player_pos, cam_offset);
   Vec3 target = vec3_add(player_pos, vec3(0.0f, 1.0f, 0.0f));
   Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
   Mat4 view_proj = mat4_mul(proj, view);
@@ -5743,12 +6200,16 @@ static void render_scene_3d(void) {
                mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
   render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.45f, 0.22f));
 
-  Mat4 body = mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
-                       mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
+  Mat4 body =
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
+                        mat4_rotate_y(g_player_yaw)),
+               mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
   render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
 
-  Mat4 head = mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
-                       mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
+  Mat4 head =
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
+                        mat4_rotate_y(g_player_yaw)),
+               mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
   render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
@@ -5802,6 +6263,7 @@ int main(void) {
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
+  load_keybinds();
   init_tribes();
   init_agents();
   init_player();
@@ -5834,53 +6296,75 @@ int main(void) {
     }
     WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
 
-    update_player();
-    update_visible_world(dt);
-    update_projectiles(dt);
-    update_daynight(dt);
-    collect_nearby_pickups();
+    if (g_state == STATE_PLAYING) {
+      update_player();
+      update_visible_world(dt);
+      update_projectiles(dt);
+      update_daynight(dt);
+      collect_nearby_pickups();
 
-    update_visible_world(dt);
+      update_visible_world(dt);
 
-    g_dt = dt;
-    run_agent_jobs();
+      g_dt = dt;
+      run_agent_jobs();
 
-    // detect transition night->day for reward
-    int now_night = is_night_cached;
-    if (was_night && !now_night) {
-      // dawn reward: shards + small base repair
-      inv_shards += 5;
-      for (int t = 0; t < TRIBE_COUNT; t++) {
-        tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
+      // detect transition night->day for reward
+      int now_night = is_night_cached;
+      if (was_night && !now_night) {
+        // dawn reward: shards + small base repair
+        inv_shards += 5;
+        for (int t = 0; t < TRIBE_COUNT; t++) {
+          tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
+        }
+      }
+      was_night = now_night;
+
+      // raid spawner
+      if (is_night_cached) {
+        raid_timer -= dt;
+        if (raid_timer <= 0.0f) {
+          raid_timer = raid_interval;
+          spawn_raid_wave();
+        }
+      } else {
+        raid_timer = 1.5f;
+      }
+
+      for (int i = 0; i < MAX_AGENTS; i++) {
+        if (!agents[i].alive)
+          continue;
+        int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+        int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+        (void)get_chunk(acx, acy);
+      }
+
+      update_pickups(dt);
+    }
+
+    SetRelativeMouseMode(g_use_3d && g_state == STATE_PLAYING);
+
+    if (bind_pressed(BIND_PAUSE)) {
+      if (g_state == STATE_PLAYING) {
+        g_state = STATE_PAUSED;
+        g_pause_page = 0;
+        g_rebind_index = -1;
+      } else if (g_state == STATE_PAUSED) {
+        g_state = STATE_PLAYING;
+        g_pause_page = 0;
+        g_rebind_index = -1;
       }
     }
-    was_night = now_night;
-
-    // raid spawner
-    if (is_night_cached) {
-      raid_timer -= dt;
-      if (raid_timer <= 0.0f) {
-        raid_timer = raid_interval;
-        spawn_raid_wave();
-      }
-    } else {
-      raid_timer = 1.5f;
-    }
-
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      if (!agents[i].alive)
-        continue;
-      int acx = (int)(agents[i].position.x / CHUNK_SIZE);
-      int acy = (int)(agents[i].position.y / CHUNK_SIZE);
-      (void)get_chunk(acx, acy);
-    }
-
-    update_pickups(dt);
 
     BeginDrawing();
     ClearBackground(BLACK);
     if (g_use_3d) {
       render_scene_3d();
+      if (g_state == STATE_PAUSED) {
+        if (g_pause_page == 0)
+          draw_pause_menu_3d();
+        else
+          draw_keybinds_menu_3d();
+      }
       EndDrawing();
       continue;
     }
@@ -5893,7 +6377,7 @@ int main(void) {
       // quick save hotkey
       if (IsKeyPressed(KEY_F5))
         save_world_to_disk(g_world_name);
-      if (IsKeyPressed(KEY_P))
+      if (bind_pressed(BIND_PAUSE))
         g_state = STATE_PAUSED;
     } else if (g_state == STATE_TITLE) {
 
