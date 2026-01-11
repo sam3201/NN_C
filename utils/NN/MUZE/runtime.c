@@ -144,10 +144,9 @@ void mu_runtime_step_with_pi(MuRuntime *rt, MuModel *model, const float *obs,
   float z = reward; // keep your current 1-step target for now
 
   rt->value_prefix = rt->value_prefix * rt->gamma + reward;
-  size_t idx =
-      rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z, rt->last_action,
-                   reward, obs,
-                   /*done*/ 0);
+  size_t idx = rb_push_full(rt->rb, rt->last_obs, rt->last_pi, z,
+                            rt->last_action, reward, obs,
+                            /*done*/ 0);
   rb_set_value_prefix(rt->rb, idx, rt->value_prefix);
 
   // cache current decision for next step
