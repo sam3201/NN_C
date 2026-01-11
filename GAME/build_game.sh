@@ -77,5 +77,5 @@ status=$?
 
 echo "Game exited with status $status"
 rm -f ./game
-rm -f ./game.dSYM
+rm -f game.dSYM
 exit "$status"
