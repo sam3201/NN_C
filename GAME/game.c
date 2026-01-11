@@ -1,6 +1,7 @@
 #include "../SAM/SAM.h"
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/SDL3/SDL3_compat.h"
+#include <OpenGL/gl3.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -4038,9 +4039,8 @@ void update_agent(Agent *a) {
   pthread_rwlock_unlock(&c->lock);
 
   // --- MuZero chooses action ---
-  int action =
-      muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT,
-                NULL);
+  int action = muze_plan(a->cortex, obs.data, (size_t)obs.size,
+                         (size_t)ACTION_COUNT, NULL);
 
   obs_free(&obs);
 
@@ -5344,11 +5344,456 @@ static void stop_workers(void) {
   }
 }
 
+// ------------------- 3D RENDERER (minimal) -------------------
+typedef struct {
+  float x, y, z;
+} Vec3;
+
+typedef struct {
+  float m[16];
+} Mat4;
+
+typedef struct {
+  GLuint vao;
+  GLuint vbo;
+  GLuint ebo;
+  int index_count;
+} Mesh;
+
+static int g_use_3d = 1;
+static int g_3d_ready = 0;
+static GLuint g_shader = 0;
+static GLint g_u_mvp = -1;
+static GLint g_u_model = -1;
+static GLint g_u_color = -1;
+static GLint g_u_light = -1;
+static Mesh g_mesh_ground = {0};
+static Mesh g_mesh_sphere = {0};
+static Mesh g_mesh_cylinder = {0};
+
+static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
+static Vec3 vec3_add(Vec3 a, Vec3 b) {
+  return vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+static Vec3 vec3_sub(Vec3 a, Vec3 b) {
+  return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+static Vec3 vec3_scale(Vec3 a, float s) {
+  return vec3(a.x * s, a.y * s, a.z * s);
+}
+static float vec3_len(Vec3 a) {
+  return sqrtf(a.x * a.x + a.y * a.y + a.z * a.z);
+}
+static float vec3_dot(Vec3 a, Vec3 b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+static Vec3 vec3_norm(Vec3 a) {
+  float l = vec3_len(a);
+  if (l < 1e-6f)
+    return vec3(0, 0, 0);
+  return vec3_scale(a, 1.0f / l);
+}
+static Vec3 vec3_cross(Vec3 a, Vec3 b) {
+  return vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
+              a.x * b.y - a.y * b.x);
+}
+
+static Mat4 mat4_identity(void) {
+  Mat4 m = {0};
+  m.m[0] = m.m[5] = m.m[10] = m.m[15] = 1.0f;
+  return m;
+}
+
+static Mat4 mat4_mul(Mat4 a, Mat4 b) {
+  Mat4 r = {0};
+  for (int col = 0; col < 4; col++) {
+    for (int row = 0; row < 4; row++) {
+      r.m[col * 4 + row] = a.m[0 * 4 + row] * b.m[col * 4 + 0] +
+                           a.m[1 * 4 + row] * b.m[col * 4 + 1] +
+                           a.m[2 * 4 + row] * b.m[col * 4 + 2] +
+                           a.m[3 * 4 + row] * b.m[col * 4 + 3];
+    }
+  }
+  return r;
+}
+
+static Mat4 mat4_translate(Vec3 t) {
+  Mat4 m = mat4_identity();
+  m.m[12] = t.x;
+  m.m[13] = t.y;
+  m.m[14] = t.z;
+  return m;
+}
+
+static Mat4 mat4_scale(Vec3 s) {
+  Mat4 m = mat4_identity();
+  m.m[0] = s.x;
+  m.m[5] = s.y;
+  m.m[10] = s.z;
+  return m;
+}
+
+static Mat4 mat4_perspective(float fov_deg, float aspect, float n, float f) {
+  float fov = fov_deg * (PI / 180.0f);
+  float t = tanf(fov * 0.5f);
+  Mat4 m = {0};
+  m.m[0] = 1.0f / (aspect * t);
+  m.m[5] = 1.0f / t;
+  m.m[10] = -(f + n) / (f - n);
+  m.m[11] = -1.0f;
+  m.m[14] = -(2.0f * f * n) / (f - n);
+  return m;
+}
+
+static Mat4 mat4_lookat(Vec3 eye, Vec3 center, Vec3 up) {
+  Vec3 f = vec3_norm(vec3_sub(center, eye));
+  Vec3 s = vec3_norm(vec3_cross(f, up));
+  Vec3 u = vec3_cross(s, f);
+  Mat4 m = mat4_identity();
+  m.m[0] = s.x;
+  m.m[4] = s.y;
+  m.m[8] = s.z;
+  m.m[1] = u.x;
+  m.m[5] = u.y;
+  m.m[9] = u.z;
+  m.m[2] = -f.x;
+  m.m[6] = -f.y;
+  m.m[10] = -f.z;
+  m.m[12] = -vec3_dot(s, eye);
+  m.m[13] = -vec3_dot(u, eye);
+  m.m[14] = vec3_dot(f, eye);
+  return m;
+}
+
+static GLuint compile_shader(GLenum type, const char *src) {
+  GLuint s = glCreateShader(type);
+  glShaderSource(s, 1, &src, NULL);
+  glCompileShader(s);
+  GLint ok = 0;
+  glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+  if (!ok) {
+    char log[1024];
+    glGetShaderInfoLog(s, sizeof(log), NULL, log);
+    fprintf(stderr, "GL shader compile error: %s\n", log);
+  }
+  return s;
+}
+
+static GLuint make_program(const char *vs, const char *fs) {
+  GLuint v = compile_shader(GL_VERTEX_SHADER, vs);
+  GLuint f = compile_shader(GL_FRAGMENT_SHADER, fs);
+  GLuint p = glCreateProgram();
+  glAttachShader(p, v);
+  glAttachShader(p, f);
+  glLinkProgram(p);
+  glDeleteShader(v);
+  glDeleteShader(f);
+  return p;
+}
+
+static void mesh_init(Mesh *m, const float *verts, int vcount,
+                      const unsigned int *indices, int icount) {
+  glGenVertexArrays(1, &m->vao);
+  glGenBuffers(1, &m->vbo);
+  glGenBuffers(1, &m->ebo);
+  glBindVertexArray(m->vao);
+  glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vcount * 6, verts,
+               GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * icount, indices,
+               GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void *)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6,
+                        (void *)(sizeof(float) * 3));
+  glBindVertexArray(0);
+  m->index_count = icount;
+}
+
+static void build_ground_mesh(void) {
+  float verts[] = {
+      -0.5f, 0.0f, -0.5f, 0, 1, 0, 0.5f,  0.0f, -0.5f, 0, 1, 0,
+      0.5f,  0.0f, 0.5f,  0, 1, 0, -0.5f, 0.0f, 0.5f,  0, 1, 0,
+  };
+  unsigned int idx[] = {0, 1, 2, 0, 2, 3};
+  mesh_init(&g_mesh_ground, verts, 4, idx, 6);
+}
+
+static void build_sphere_mesh(int stacks, int slices) {
+  int vcount = (stacks + 1) * (slices + 1);
+  int icount = stacks * slices * 6;
+  float *verts = malloc(sizeof(float) * vcount * 6);
+  unsigned int *idx = malloc(sizeof(unsigned int) * icount);
+  if (!verts || !idx) {
+    free(verts);
+    free(idx);
+    return;
+  }
+  int vi = 0;
+  for (int i = 0; i <= stacks; i++) {
+    float v = (float)i / (float)stacks;
+    float phi = v * PI;
+    for (int j = 0; j <= slices; j++) {
+      float u = (float)j / (float)slices;
+      float theta = u * PI * 2.0f;
+      float x = sinf(phi) * cosf(theta);
+      float y = cosf(phi);
+      float z = sinf(phi) * sinf(theta);
+      verts[vi++] = x;
+      verts[vi++] = y;
+      verts[vi++] = z;
+      verts[vi++] = x;
+      verts[vi++] = y;
+      verts[vi++] = z;
+    }
+  }
+  int ii = 0;
+  for (int i = 0; i < stacks; i++) {
+    for (int j = 0; j < slices; j++) {
+      int a = i * (slices + 1) + j;
+      int b = a + slices + 1;
+      idx[ii++] = a;
+      idx[ii++] = b;
+      idx[ii++] = a + 1;
+      idx[ii++] = b;
+      idx[ii++] = b + 1;
+      idx[ii++] = a + 1;
+    }
+  }
+  mesh_init(&g_mesh_sphere, verts, vcount, idx, icount);
+  free(verts);
+  free(idx);
+}
+
+static void build_cylinder_mesh(int slices) {
+  int vcount = (slices + 1) * 2 + (slices + 1) * 2 + 2;
+  int icount = slices * 6 + slices * 3 * 2;
+  float *verts = malloc(sizeof(float) * vcount * 6);
+  unsigned int *idx = malloc(sizeof(unsigned int) * icount);
+  if (!verts || !idx) {
+    free(verts);
+    free(idx);
+    return;
+  }
+  int vi = 0;
+  for (int i = 0; i <= slices; i++) {
+    float t = (float)i / (float)slices * PI * 2.0f;
+    float x = cosf(t);
+    float z = sinf(t);
+    verts[vi++] = x;
+    verts[vi++] = -0.5f;
+    verts[vi++] = z;
+    verts[vi++] = x;
+    verts[vi++] = 0.0f;
+    verts[vi++] = z;
+    verts[vi++] = x;
+    verts[vi++] = 0.5f;
+    verts[vi++] = z;
+    verts[vi++] = x;
+    verts[vi++] = 0.0f;
+    verts[vi++] = z;
+  }
+  int base_top = (slices + 1) * 2;
+  for (int i = 0; i <= slices; i++) {
+    float t = (float)i / (float)slices * PI * 2.0f;
+    float x = cosf(t);
+    float z = sinf(t);
+    verts[vi++] = x;
+    verts[vi++] = 0.5f;
+    verts[vi++] = z;
+    verts[vi++] = 0.0f;
+    verts[vi++] = 1.0f;
+    verts[vi++] = 0.0f;
+  }
+  int base_bottom = base_top + (slices + 1);
+  for (int i = 0; i <= slices; i++) {
+    float t = (float)i / (float)slices * PI * 2.0f;
+    float x = cosf(t);
+    float z = sinf(t);
+    verts[vi++] = x;
+    verts[vi++] = -0.5f;
+    verts[vi++] = z;
+    verts[vi++] = 0.0f;
+    verts[vi++] = -1.0f;
+    verts[vi++] = 0.0f;
+  }
+  verts[vi++] = 0.0f;
+  verts[vi++] = 0.5f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = 1.0f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = -0.5f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = 0.0f;
+  verts[vi++] = -1.0f;
+  verts[vi++] = 0.0f;
+
+  int ii = 0;
+  for (int i = 0; i < slices; i++) {
+    int a = i * 2;
+    int b = a + 1;
+    int c = a + 2;
+    int d = a + 3;
+    idx[ii++] = a;
+    idx[ii++] = b;
+    idx[ii++] = c;
+    idx[ii++] = b;
+    idx[ii++] = d;
+    idx[ii++] = c;
+  }
+  for (int i = 0; i < slices; i++) {
+    int a = base_top + i;
+    int b = base_top + i + 1;
+    int center = base_bottom + (slices + 1) * 2;
+    idx[ii++] = center;
+    idx[ii++] = a;
+    idx[ii++] = b;
+  }
+  for (int i = 0; i < slices; i++) {
+    int a = base_bottom + i;
+    int b = base_bottom + i + 1;
+    int center = base_bottom + (slices + 1) * 2 + 1;
+    idx[ii++] = center;
+    idx[ii++] = b;
+    idx[ii++] = a;
+  }
+
+  mesh_init(&g_mesh_cylinder, verts, vcount, idx, icount);
+  free(verts);
+  free(idx);
+}
+
+static void init_3d_renderer(void) {
+  if (g_3d_ready)
+    return;
+
+  const char *vs = "#version 330 core\n"
+                   "layout(location=0) in vec3 aPos;\n"
+                   "layout(location=1) in vec3 aNormal;\n"
+                   "uniform mat4 uMVP;\n"
+                   "uniform mat4 uModel;\n"
+                   "out vec3 vNormal;\n"
+                   "void main(){\n"
+                   "  vNormal = mat3(uModel)*aNormal;\n"
+                   "  gl_Position = uMVP*vec4(aPos,1.0);\n"
+                   "}\n";
+  const char *fs = "#version 330 core\n"
+                   "in vec3 vNormal;\n"
+                   "uniform vec3 uColor;\n"
+                   "uniform vec3 uLightDir;\n"
+                   "out vec4 FragColor;\n"
+                   "void main(){\n"
+                   "  float diff = max(dot(normalize(vNormal), "
+                   "normalize(-uLightDir)), 0.25);\n"
+                   "  vec3 color = uColor * diff;\n"
+                   "  FragColor = vec4(color,1.0);\n"
+                   "}\n";
+  g_shader = make_program(vs, fs);
+  g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
+  g_u_model = glGetUniformLocation(g_shader, "uModel");
+  g_u_color = glGetUniformLocation(g_shader, "uColor");
+  g_u_light = glGetUniformLocation(g_shader, "uLightDir");
+
+  build_ground_mesh();
+  build_sphere_mesh(10, 16);
+  build_cylinder_mesh(16);
+  g_3d_ready = 1;
+}
+
+static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
+  Mat4 mvp = mat4_mul(view_proj, model);
+  glUseProgram(g_shader);
+  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+  glUniform3f(g_u_color, color.x, color.y, color.z);
+  glBindVertexArray(m->vao);
+  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+}
+
+static Vec3 color_to_vec3(Color c) {
+  return vec3(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f);
+}
+
+static void render_scene_3d(void) {
+  init_3d_renderer();
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  glViewport(0, 0, w, h);
+  glUseProgram(g_shader);
+  glUniform3f(g_u_light, -0.6f, -1.0f, -0.4f);
+
+  float aspect = (float)w / (float)h;
+  Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
+  Vec3 player_pos = vec3(player.position.x, 0.0f, player.position.y);
+  Vec3 eye = vec3_add(player_pos, vec3(-6.5f, 5.0f, 8.0f));
+  Vec3 target = vec3_add(player_pos, vec3(0.0f, 1.0f, 0.0f));
+  Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
+  Mat4 view_proj = mat4_mul(proj, view);
+
+  Mat4 ground =
+      mat4_mul(mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
+               mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
+  render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.45f, 0.22f));
+
+  Mat4 body = mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
+                       mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
+  render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
+
+  Mat4 head = mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
+                       mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
+  render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
+
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+  if (c) {
+    pthread_rwlock_rdlock(&c->lock);
+    int drawn = 0;
+    for (int i = 0; i < MAX_RESOURCES && drawn < 20; i++) {
+      Resource *r = &c->resources[i];
+      if (r->health <= 0)
+        continue;
+      Vec3 rp = vec3(cx * CHUNK_SIZE + r->position.x, 0.0f,
+                     cy * CHUNK_SIZE + r->position.y);
+      if (r->type == RES_TREE) {
+        Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, 0.8f, rp.z)),
+                              mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
+        render_mesh(&g_mesh_cylinder, trunk, view_proj,
+                    vec3(0.35f, 0.22f, 0.12f));
+        Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, 2.2f, rp.z)),
+                               mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
+        render_mesh(&g_mesh_sphere, canopy, view_proj,
+                    vec3(0.18f, 0.55f, 0.22f));
+      } else {
+        Vec3 col = color_to_vec3(resource_colors[r->type]);
+        float s = (r->type == RES_ROCK) ? 0.8f : 0.6f;
+        Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, 0.5f, rp.z)),
+                             mat4_scale(vec3(s, s, s)));
+        render_mesh(&g_mesh_sphere, rock, view_proj, col);
+      }
+      drawn++;
+    }
+    pthread_rwlock_unlock(&c->lock);
+  }
+}
+
 /* =======================
    MAIN
 ======================= */
 int main(void) {
   srand(time(NULL));
+
+  if (g_use_3d) {
+    SDL3_SetUseGL(1);
+  }
 
   InitWindow(1280, 800, "MUZE Tribal Simulation");
   SetExitKey(KEY_NULL); // <- ESC will NOT close the window anymore
@@ -5434,6 +5879,11 @@ int main(void) {
 
     BeginDrawing();
     ClearBackground(BLACK);
+    if (g_use_3d) {
+      render_scene_3d();
+      EndDrawing();
+      continue;
+    }
 
     if (g_state == STATE_PLAYING) {
       // ---- your current game draw/update ----

@@ -68,6 +68,7 @@ FLAGS="${FLAGS:-} -g"
   $SDL_CFLAGS \
   $SDL_LIBS \
   -pthread -lm \
+  -framework OpenGL \
   -arch arm64 \
   -o game 
 
@@ -77,5 +78,5 @@ status=$?
 
 echo "Game exited with status $status"
 rm -f ./game
-rm -f game.dSYM
+rm -rf game.dSYM
 exit "$status"
