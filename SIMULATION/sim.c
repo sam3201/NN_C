@@ -33,6 +33,10 @@
 
 #define LATENT_MAX 64
 
+typedef struct {
+  uint32_t s;
+} SimRng;
+
 typedef enum {
   ACTION_NONE = 0,
   ACTION_MOVE_LEFT,
@@ -62,6 +66,8 @@ typedef struct {
   size_t input_size;
   float latent[LATENT_MAX];
   bool has_latent;
+  SimRng rng_state;
+  MCTSRng rng;
 
 } Agent;
 
@@ -89,7 +95,71 @@ typedef struct {
   long double *vision_inputs;
   int next_agent_id;
   unsigned int num_active_agents;
-} GameState;
+  MuzeConfig muze_cfg;
+} SimulationState;
+
+static float sim_rng01(void *ctx) {
+  SimRng *r = (SimRng *)ctx;
+  uint32_t x = r->s ? r->s : 0x12345678u;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  r->s = x;
+  return (float)(x & 0xFFFFFFu) / (float)0x1000000u;
+}
+
+static void init_muze_config(MuzeConfig *cfg, int obs_dim) {
+  if (!cfg)
+    return;
+  memset(cfg, 0, sizeof(*cfg));
+
+  cfg->model.obs_dim = obs_dim;
+  cfg->model.latent_dim = 32;
+  cfg->model.action_count = ACTION_COUNT;
+
+  cfg->nn.opt_repr = ADAM;
+  cfg->nn.opt_dyn = ADAM;
+  cfg->nn.opt_pred = ADAM;
+  cfg->nn.opt_vprefix = ADAM;
+  cfg->nn.opt_reward = ADAM;
+  cfg->nn.loss_repr = MSE;
+  cfg->nn.loss_dyn = MSE;
+  cfg->nn.loss_pred = MSE;
+  cfg->nn.loss_vprefix = MSE;
+  cfg->nn.loss_reward = MSE;
+  cfg->nn.lossd_repr = MSE_DERIVATIVE;
+  cfg->nn.lossd_dyn = MSE_DERIVATIVE;
+  cfg->nn.lossd_pred = MSE_DERIVATIVE;
+  cfg->nn.lossd_vprefix = MSE_DERIVATIVE;
+  cfg->nn.lossd_reward = MSE_DERIVATIVE;
+  cfg->nn.lr_repr = 0.001L;
+  cfg->nn.lr_dyn = 0.001L;
+  cfg->nn.lr_pred = 0.001L;
+  cfg->nn.lr_vprefix = 0.001L;
+  cfg->nn.lr_reward = 0.001L;
+  cfg->nn.hidden_repr = 64;
+  cfg->nn.hidden_dyn = 64;
+  cfg->nn.hidden_pred = 64;
+  cfg->nn.hidden_vprefix = 64;
+  cfg->nn.hidden_reward = 64;
+  cfg->nn.use_value_support = 1;
+  cfg->nn.use_reward_support = 1;
+  cfg->nn.support_size = 21;
+  cfg->nn.support_min = -2.0f;
+  cfg->nn.support_max = 2.0f;
+  cfg->nn.action_embed_dim = 32;
+  cfg->nn.grad_clip = 5.0f;
+  cfg->nn.global_grad_clip = 1.0f;
+
+  cfg->mcts.num_simulations = 25;
+  cfg->mcts.batch_simulations = 0;
+  cfg->mcts.c_puct = 1.2f;
+  cfg->mcts.max_depth = 16;
+  cfg->mcts.dirichlet_alpha = 0.3f;
+  cfg->mcts.dirichlet_eps = 0.25f;
+  cfg->mcts.temperature = 1.0f;
+  cfg->mcts.discount = 0.99f;
+}
 
 // --- MEMORY ---
 size_t get_total_input_size() {
@@ -119,7 +189,7 @@ void update_agent_color(Agent *agent) {
   agent->color = (Color){red, green, blue, 255};
 }
 
-void init_agent(Agent *agent, int id) {
+void init_agent(Agent *agent, int id, const MuzeConfig *cfg) {
   agent->level = 0;
   agent->total_xp = 0;
   agent->size = INITIAL_AGENT_SIZE;
@@ -138,18 +208,22 @@ void init_agent(Agent *agent, int id) {
   agent->input_size = get_total_input_size();
   update_agent_color(agent);
 
-  MuConfig cfg = {.obs_dim = (int)agent->input_size,
-                  .latent_dim = 32,
-                  .action_count = ACTION_COUNT};
-  agent->brain = mu_model_create(&cfg);
+  MuConfig model_cfg = cfg->model;
+  model_cfg.obs_dim = (int)agent->input_size;
+  model_cfg.action_count = ACTION_COUNT;
+  agent->brain = mu_model_create_nn_with_cfg(&model_cfg, &cfg->nn);
   init_memory(&agent->memory, 100, (int)agent->input_size);
   agent->has_latent = false;
-  assert(cfg.latent_dim <= LATENT_MAX);
+  assert(model_cfg.latent_dim <= LATENT_MAX);
+
+  agent->rng_state.s = (uint32_t)time(NULL) ^ (0x9e3779b9u * (uint32_t)id);
+  agent->rng.ctx = &agent->rng_state;
+  agent->rng.rand01 = sim_rng01;
 }
 
 // --- VISION ENCODING ---
 /*
-void encode_vision(GameState *game, int agent_idx, long double *vision_output) {
+void encode_vision(SimulationState *game, int agent_idx, long double *vision_output) {
   Agent *self = &game->agents[agent_idx];
 
   // Clear vision
@@ -225,7 +299,7 @@ Action get_action_from_output(long double *outputs) {
   return (Action)max_idx;
 }
 
-bool can_move_to_agent(GameState *game, Agent *agent, Vector2 new_pos) {
+bool can_move_to_agent(SimulationState *game, Agent *agent, Vector2 new_pos) {
   Rectangle new_rect = {new_pos.x, new_pos.y, agent->rect.width,
                         agent->rect.height};
   if (new_pos.x < 0 || new_pos.x + agent->size > SCREEN_WIDTH ||
@@ -241,7 +315,7 @@ bool can_move_to_agent(GameState *game, Agent *agent, Vector2 new_pos) {
   return true;
 }
 
-void move_agent(GameState *game, Agent *agent, Action action) {
+void move_agent(SimulationState *game, Agent *agent, Action action) {
   Vector2 new_pos = agent->position;
   switch (action) {
   case ACTION_MOVE_LEFT:
@@ -350,7 +424,7 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
 }
 
 // Call this inside update_agent or update_game to handle breeding
-void handle_breeding(GameState *game) {
+void handle_breeding(SimulationState *game) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     for (int j = i + 1; j < POPULATION_SIZE - MAX_GROUNDSKEEPERS; j++) {
       static float train_timer = 0;
@@ -381,7 +455,7 @@ void handle_breeding(GameState *game) {
   }
 }
 // --- EVOLUTION CHECK ---
-void check_evolution(GameState *game) {
+void check_evolution(SimulationState *game) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     Agent *a = &game->agents[i];
     if (a->total_xp >= (a->level + 1) * XP_PER_LEVEL) {
@@ -401,12 +475,12 @@ void check_evolution(GameState *game) {
   }
 }
 
-void execute_agent_action(GameState *game, int agent_idx, Action action) {
+void execute_agent_action(SimulationState *game, int agent_idx, Action action) {
   Agent *agent = &game->agents[agent_idx];
   move_agent(game, agent, action);
 }
 
-void gather_agent_inputs(GameState *state, Agent *agent, long double *inputs) {
+void gather_agent_inputs(SimulationState *state, Agent *agent, long double *inputs) {
   int idx = 0;
 
   // Self
@@ -466,7 +540,7 @@ float compute_reward(Agent *a, int old_xp, int old_level) {
   return r;
 }
 
-int decide_action(Agent *agent, long double *inputs) {
+int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts) {
   MuModel *brain = agent->brain;
 
   int obs_dim = brain->cfg.obs_dim;
@@ -479,15 +553,12 @@ int decide_action(Agent *agent, long double *inputs) {
     agent->has_latent = true;
   }
 
-  MCTSParams mcts = {.num_simulations = 25,
-                     .c_puct = 1.2f,
-                     .discount = 0.99f,
-                     .temperature = 1.0f};
-
-  MCTSResult res = mcts_run_latent(brain, agent->latent, &mcts);
+  const MCTSParams *mp = mcts ? mcts : NULL;
+  MCTSResult res = mcts_run(brain, obs, mp, &agent->rng);
   int action = res.chosen_action;
   mcts_result_free(&res);
-
+  if (action < 0)
+    action = rand() % ACTION_COUNT;
   return action;
 }
 
@@ -507,7 +578,7 @@ void update_latent_after_step(Agent *agent, long double *obs, int action,
   memcpy(agent->latent, next_latent, sizeof(float) * L);
 }
 
-void step_agent(GameState *state, Agent *agent, int action) {
+void step_agent(SimulationState *state, Agent *agent, int action) {
   Vector2 old_pos = agent->position;
 
   switch (action) {
@@ -555,7 +626,7 @@ void step_agent(GameState *state, Agent *agent, int action) {
 }
 
 /*
-void update_agent(GameState *game, int agent_idx) {
+void update_agent(SimulationState *game, int agent_idx) {
   Agent *agent = &game->agents[agent_idx];
   agent->time_alive += GetFrameTime();
 
@@ -577,7 +648,7 @@ void update_agent(GameState *game, int agent_idx) {
 }
 */
 
-void update_agents(GameState *state, float dt) {
+void update_agents(SimulationState *state, float dt) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     Agent *agent = &state->agents[i];
     agent->time_alive += dt;
@@ -590,7 +661,7 @@ void update_agents(GameState *state, float dt) {
     int old_level = agent->level;
 
     // Decide
-    int action = decide_action(agent, inputs);
+    int action = decide_action(agent, inputs, &state->muze_cfg.mcts);
 
     // Step environment
     step_agent(state, agent, action);
@@ -628,7 +699,7 @@ void init_groundkeeper(Groundkeeper *gk) {
                          INITIAL_AGENT_SIZE};
 }
 
-bool can_move_to_gk(GameState *game, Groundkeeper *gk, Vector2 new_pos) {
+bool can_move_to_gk(SimulationState *game, Groundkeeper *gk, Vector2 new_pos) {
   Rectangle new_rect = {new_pos.x, new_pos.y, gk->rect.width, gk->rect.height};
   if (new_pos.x < 0 || new_pos.x + gk->rect.width > SCREEN_WIDTH ||
       new_pos.y < 0 || new_pos.y + gk->rect.height > SCREEN_HEIGHT)
@@ -636,7 +707,7 @@ bool can_move_to_gk(GameState *game, Groundkeeper *gk, Vector2 new_pos) {
   return true;
 }
 
-void update_groundkeeper(GameState *game, int idx) {
+void update_groundkeeper(SimulationState *game, int idx) {
   Groundkeeper *gk = &game->gks[idx];
   if (gk->punishment_timer > 0)
     gk->punishment_timer -= GetFrameTime();
@@ -686,7 +757,7 @@ void spawn_food(Food *food) {
 }
 
 // --- GAME ---
-void update_game(GameState *game) {
+void update_game(SimulationState *game) {
   for (int i = 0; i < MAX_FOOD; i++)
     if (game->food[i].rect.width == 0 &&
         ((float)rand() / RAND_MAX) < FOOD_SPAWN_CHANCE)
@@ -713,17 +784,18 @@ void update_game(GameState *game) {
   }
 }
 
-void init_game(GameState *state) {
+void init_game(SimulationState *state) {
   state->over = false;
   state->paused = false;
   state->evolution_timer = 0;
   state->current_generation = 0;
   state->next_agent_id = 0;
   state->num_active_agents = POPULATION_SIZE - MAX_GROUNDSKEEPERS;
+  init_muze_config(&state->muze_cfg, (int)get_total_input_size());
 
   // Initialize agents
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-    init_agent(&state->agents[i], state->next_agent_id++);
+    init_agent(&state->agents[i], state->next_agent_id++, &state->muze_cfg);
   }
 
   // Initialize groundkeepers
@@ -752,7 +824,7 @@ void init_game(GameState *state) {
   state->vision_inputs = malloc(sizeof(long double) * get_total_input_size());
 }
 
-void free_game(GameState *game) {
+void free_game(SimulationState *game) {
   free(game->vision_inputs);
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     mu_model_free(game->agents[i].brain);
@@ -760,7 +832,7 @@ void free_game(GameState *game) {
   }
 }
 
-void save_game(GameState *game, const char *filename) {
+void save_game(SimulationState *game, const char *filename) {
   FILE *file = fopen(filename, "wb");
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
     NN_save(game->agents[i].brain, file);
@@ -790,14 +862,14 @@ void save_game(GameState *game, const char *filename) {
 
   fwrite(game->last_actions, sizeof(Action), POPULATION_SIZE, file);
 
-  fwrite(game, sizeof(GameState), 1, file);
+  fwrite(game, sizeof(SimulationState), 1, file);
 
   fclose(file);
 }
 
-void load_game(GameState *game, const char *filename) {
+void load_game(SimulationState *game, const char *filename) {
   FILE *file = fopen(filename, "rb");
-  fread(game, sizeof(GameState), 1, file);
+  fread(game, sizeof(SimulationState), 1, file);
   fclose(file);
 }
 
@@ -807,7 +879,7 @@ int main(void) {
   SetTargetFPS(FRAME_RATE);
   srand(time(NULL));
 
-  GameState game = {0};
+  SimulationState game = {0};
   init_game(&game);
 
   while (!WindowShouldClose()) {
