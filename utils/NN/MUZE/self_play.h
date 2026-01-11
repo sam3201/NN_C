@@ -3,6 +3,7 @@
 
 #include "mcts.h"
 #include "muzero_model.h"
+#include "game_replay.h"
 #include "replay_buffer.h"
 
 #ifdef __cplusplus
@@ -47,7 +48,8 @@ typedef struct {
 void selfplay_run(MuModel *model, void *env_state,
                   selfplay_env_reset_fn env_reset,
                   selfplay_env_step_fn env_step, MCTSParams *mcts_params,
-                  SelfPlayParams *sp_params, ReplayBuffer *rb, MCTSRng *rng);
+                  SelfPlayParams *sp_params, ReplayBuffer *rb,
+                  GameReplay *gr, MCTSRng *rng);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,8 @@ static int sample_from_probs_rng(const float *p, int n, MCTSRng *rng) {
 void selfplay_run(MuModel *model, void *env_state,
                   selfplay_env_reset_fn env_reset,
                   selfplay_env_step_fn env_step, MCTSParams *mcts_params,
-                  SelfPlayParams *sp_params, ReplayBuffer *rb, MCTSRng *rng) {
+                  SelfPlayParams *sp_params, ReplayBuffer *rb, GameReplay *gr,
+                  MCTSRng *rng) {
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
 
@@ -89,6 +90,8 @@ void selfplay_run(MuModel *model, void *env_state,
 
   for (int ep = 0; ep < sp_params->total_episodes; ep++) {
     env_reset(env_state, obs0);
+    if (gr)
+      gr_start_episode(gr);
 
     int step = 0;
     int done = 0;
@@ -158,6 +161,14 @@ void selfplay_run(MuModel *model, void *env_state,
       float z_placeholder = reward; // quick default
       idx_buf[step] = rb_push_full(rb, obs_cur, mr.pi, z_placeholder, chosen,
                                    reward, next_obs, done_flag);
+      if (mr.root_value_dist && mr.root_value_bins > 0) {
+        rb_set_value_dist(rb, idx_buf[step], mr.root_value_dist,
+                          mr.root_value_bins);
+      }
+      if (gr) {
+        gr_add_step(gr, obs_cur, mr.pi, chosen, reward, done_flag,
+                    idx_buf[step]);
+      }
 
       reward_buf[step] = reward;
       ep_return += reward;
@@ -178,10 +189,17 @@ void selfplay_run(MuModel *model, void *env_state,
     // ---- write proper discounted returns into replay (z targets) ----
     if (step > 0) {
       compute_discounted_returns(reward_buf, step, gamma, z_buf);
+      float prefix = 0.0f;
+      float gamma_pow = 1.0f;
       for (int i = 0; i < step; i++) {
         rb_set_z(rb, idx_buf[i], z_buf[i]);
+        prefix += gamma_pow * reward_buf[i];
+        rb_set_value_prefix(rb, idx_buf[i], prefix);
+        gamma_pow *= gamma;
       }
     }
+    if (gr)
+      gr_end_episode(gr);
 
     // metrics
     float mean_root_v = (step > 0) ? (ep_root_v_sum / (float)step) : 0.0f;

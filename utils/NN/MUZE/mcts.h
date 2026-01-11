@@ -22,6 +22,8 @@ typedef struct {
   int action_count;
   float *pi;        // visit-count policy, caller frees
   float root_value; // estimated root value
+  float *root_value_dist; // support distribution, caller frees
+  int root_value_bins;
 } MCTSResult;
 
 typedef struct {

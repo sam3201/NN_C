@@ -17,6 +17,7 @@ typedef struct {
 
   int obs_dim;
   int action_count;
+  int support_size;
 
   // MuZero tuples
   float *obs_buf; /* capacity * obs_dim */
@@ -24,6 +25,7 @@ typedef struct {
   float *z_buf;   /* capacity */
   float *vprefix_buf; /* capacity */
   float *prio_buf; /* capacity */
+  float *value_dist_buf; /* capacity * support_size */
 
   // Transition tuples
   int *a_buf;          /* capacity */
@@ -34,6 +36,7 @@ typedef struct {
 
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count);
 void rb_free(ReplayBuffer *rb);
+int rb_enable_value_support(ReplayBuffer *rb, int support_size);
 
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z, int action, float reward, const float *next_obs,
@@ -48,6 +51,10 @@ int rb_sample(ReplayBuffer *rb, int batch, float *obs_batch, float *pi_batch,
 int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
                          int *a_batch, float *r_batch, float *next_obs_batch,
                          int *done_batch);
+int rb_sample_transition_per(ReplayBuffer *rb, int batch, float alpha,
+                              float *obs_batch, int *a_batch, float *r_batch,
+                              float *next_obs_batch, int *done_batch,
+                              size_t *idx_out, float *prob_out);
 
 int rb_sample_sequence(ReplayBuffer *rb, int batch, int unroll_steps,
                        float *obs_seq, float *pi_seq, float *z_seq,
@@ -69,6 +76,8 @@ size_t rb_size(ReplayBuffer *rb);
 void rb_set_z(ReplayBuffer *rb, size_t idx, float z);
 void rb_set_value_prefix(ReplayBuffer *rb, size_t idx, float vprefix);
 void rb_set_priority(ReplayBuffer *rb, size_t idx, float prio);
+void rb_set_value_dist(ReplayBuffer *rb, size_t idx, const float *dist,
+                       int bins);
 
 int rb_save(ReplayBuffer *rb, const char *filename);
 ReplayBuffer *rb_load(const char *filename);

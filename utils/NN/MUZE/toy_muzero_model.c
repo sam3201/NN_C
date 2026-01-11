@@ -34,6 +34,11 @@ MuModel *mu_model_create_toy(int size, int action_count) {
   // no weights needed for the toy model
   m->repr_W = m->dyn_W = m->pred_W = NULL;
   m->repr_W_count = m->dyn_W_count = m->pred_W_count = 0;
+  m->vprefix_W = NULL;
+  m->vprefix_W_count = 0;
+  m->value_norm_enabled = 0;
+  m->value_min = -1.0f;
+  m->value_max = 1.0f;
   m->runtime = NULL;
 
   // plug in real MuZero functions

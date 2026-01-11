@@ -9,7 +9,7 @@
 
 enum {
   RB_MAGIC = 0x52425631u, /* "RBV1" */
-  RB_VERSION = 3u
+  RB_VERSION = 4u
 };
 
 ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count) {
@@ -22,12 +22,14 @@ ReplayBuffer *rb_create(size_t capacity, int obs_dim, int action_count) {
   rb->write_idx = 0;
   rb->obs_dim = obs_dim;
   rb->action_count = action_count;
+  rb->support_size = 1;
 
   rb->obs_buf = (float *)malloc(sizeof(float) * capacity * (size_t)obs_dim);
   rb->pi_buf = (float *)malloc(sizeof(float) * capacity * (size_t)action_count);
   rb->z_buf = (float *)malloc(sizeof(float) * capacity);
   rb->vprefix_buf = (float *)malloc(sizeof(float) * capacity);
   rb->prio_buf = (float *)malloc(sizeof(float) * capacity);
+  rb->value_dist_buf = NULL;
 
   rb->a_buf = (int *)malloc(sizeof(int) * capacity);
   rb->r_buf = (float *)malloc(sizeof(float) * capacity);
@@ -64,11 +66,29 @@ void rb_free(ReplayBuffer *rb) {
   free(rb->z_buf);
   free(rb->vprefix_buf);
   free(rb->prio_buf);
+  free(rb->value_dist_buf);
   free(rb->a_buf);
   free(rb->r_buf);
   free(rb->next_obs_buf);
   free(rb->done_buf);
   free(rb);
+}
+
+int rb_enable_value_support(ReplayBuffer *rb, int support_size) {
+  if (!rb || support_size <= 1)
+    return 0;
+  if (rb->support_size == support_size && rb->value_dist_buf)
+    return 1;
+
+  free(rb->value_dist_buf);
+  rb->value_dist_buf = (float *)calloc(
+      rb->capacity * (size_t)support_size, sizeof(float));
+  if (!rb->value_dist_buf) {
+    rb->support_size = 1;
+    return 0;
+  }
+  rb->support_size = support_size;
+  return 1;
 }
 
 void rb_set_z(ReplayBuffer *rb, size_t idx, float z) {
@@ -95,6 +115,18 @@ void rb_set_priority(ReplayBuffer *rb, size_t idx, float prio) {
   rb->prio_buf[idx] = (prio > 0.0f) ? prio : 1e-6f;
 }
 
+void rb_set_value_dist(ReplayBuffer *rb, size_t idx, const float *dist,
+                       int bins) {
+  if (!rb || !dist)
+    return;
+  if (!rb->value_dist_buf || rb->support_size <= 1)
+    return;
+  if (idx >= rb->capacity || bins != rb->support_size)
+    return;
+  memcpy(rb->value_dist_buf + idx * (size_t)rb->support_size, dist,
+         sizeof(float) * (size_t)rb->support_size);
+}
+
 size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
                     float z, int action, float reward, const float *next_obs,
                     int done) {
@@ -113,6 +145,10 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
   rb->z_buf[idx] = z;
   rb->vprefix_buf[idx] = 0.0f;
   rb->prio_buf[idx] = 1.0f;
+  if (rb->value_dist_buf && rb->support_size > 1) {
+    memset(rb->value_dist_buf + idx * (size_t)rb->support_size, 0,
+           sizeof(float) * (size_t)rb->support_size);
+  }
 
   // transition fields (for dynamics/reward training)
   rb->a_buf[idx] = action;
@@ -120,6 +156,10 @@ size_t rb_push_full(ReplayBuffer *rb, const float *obs, const float *pi,
   memcpy(rb->next_obs_buf + idx * (size_t)rb->obs_dim, next_obs,
          sizeof(float) * (size_t)rb->obs_dim);
   rb->done_buf[idx] = done ? 1 : 0;
+  if (rb->value_dist_buf && rb->support_size > 1) {
+    memset(rb->value_dist_buf + idx * (size_t)rb->support_size, 0,
+           sizeof(float) * (size_t)rb->support_size);
+  }
 
   // advance head / size
   rb->write_idx = (rb->write_idx + 1) % rb->capacity;
@@ -459,6 +499,42 @@ int rb_sample_transition(ReplayBuffer *rb, int batch, float *obs_batch,
   return actual;
 }
 
+int rb_sample_transition_per(ReplayBuffer *rb, int batch, float alpha,
+                              float *obs_batch, int *a_batch, float *r_batch,
+                              float *next_obs_batch, int *done_batch,
+                              size_t *idx_out, float *prob_out) {
+  if (!rb || rb->size == 0)
+    return 0;
+  if (!obs_batch || !a_batch || !r_batch || !next_obs_batch || !done_batch ||
+      !idx_out || !prob_out)
+    return 0;
+
+  int actual = batch;
+  if ((size_t)batch > rb->size)
+    actual = (int)rb->size;
+
+  int O = rb->obs_dim;
+
+  for (int i = 0; i < actual; i++) {
+    size_t idx = 0;
+    float p = 0.0f;
+    if (!sample_index_per(rb, alpha, &idx, &p))
+      return 0;
+    idx_out[i] = idx;
+    prob_out[i] = p;
+
+    memcpy(obs_batch + i * O, rb->obs_buf + idx * (size_t)O,
+           sizeof(float) * (size_t)O);
+    a_batch[i] = rb->a_buf[idx];
+    r_batch[i] = rb->r_buf[idx];
+    memcpy(next_obs_batch + i * O, rb->next_obs_buf + idx * (size_t)O,
+           sizeof(float) * (size_t)O);
+    done_batch[i] = rb->done_buf[idx];
+  }
+
+  return actual;
+}
+
 size_t rb_size(ReplayBuffer *rb) { return rb ? rb->size : 0; }
 
 int rb_save(ReplayBuffer *rb, const char *filename) {
@@ -481,7 +557,8 @@ int rb_save(ReplayBuffer *rb, const char *filename) {
       fwrite(&rb->size, sizeof(size_t), 1, f) != 1 ||
       fwrite(&rb->write_idx, sizeof(size_t), 1, f) != 1 ||
       fwrite(&rb->obs_dim, sizeof(int), 1, f) != 1 ||
-      fwrite(&rb->action_count, sizeof(int), 1, f) != 1) {
+      fwrite(&rb->action_count, sizeof(int), 1, f) != 1 ||
+      fwrite(&rb->support_size, sizeof(int), 1, f) != 1) {
     fclose(f);
     return 0;
   }
@@ -492,6 +569,10 @@ int rb_save(ReplayBuffer *rb, const char *filename) {
   size_t z_bytes = sizeof(float) * rb->capacity;
   size_t vprefix_bytes = sizeof(float) * rb->capacity;
   size_t prio_bytes = sizeof(float) * rb->capacity;
+  size_t dist_bytes =
+      (rb->value_dist_buf && rb->support_size > 1)
+          ? sizeof(float) * rb->capacity * (size_t)rb->support_size
+          : 0;
   size_t a_bytes = sizeof(int) * rb->capacity;
   size_t r_bytes = sizeof(float) * rb->capacity;
   size_t next_obs_bytes = sizeof(float) * rb->capacity * (size_t)rb->obs_dim;
@@ -508,6 +589,12 @@ int rb_save(ReplayBuffer *rb, const char *filename) {
       fwrite(rb->done_buf, 1, done_bytes, f) != done_bytes) {
     fclose(f);
     return 0;
+  }
+  if (dist_bytes > 0) {
+    if (fwrite(rb->value_dist_buf, 1, dist_bytes, f) != dist_bytes) {
+      fclose(f);
+      return 0;
+    }
   }
 
   fclose(f);
@@ -531,7 +618,8 @@ ReplayBuffer *rb_load(const char *filename) {
   }
 
   if (magic != RB_MAGIC || version != RB_VERSION) {
-    if (magic != RB_MAGIC || (version != 1u && version != 2u)) {
+    if (magic != RB_MAGIC ||
+        (version != 1u && version != 2u && version != 3u)) {
       fclose(f);
       return NULL;
     }
@@ -542,12 +630,14 @@ ReplayBuffer *rb_load(const char *filename) {
   size_t write_idx = 0;
   int obs_dim = 0;
   int action_count = 0;
+  int support_size = 1;
 
   if (fread(&capacity, sizeof(size_t), 1, f) != 1 ||
       fread(&size, sizeof(size_t), 1, f) != 1 ||
       fread(&write_idx, sizeof(size_t), 1, f) != 1 ||
       fread(&obs_dim, sizeof(int), 1, f) != 1 ||
-      fread(&action_count, sizeof(int), 1, f) != 1) {
+      fread(&action_count, sizeof(int), 1, f) != 1 ||
+      (version >= 4u && fread(&support_size, sizeof(int), 1, f) != 1)) {
     fclose(f);
     return NULL;
   }
@@ -563,6 +653,8 @@ ReplayBuffer *rb_load(const char *filename) {
     fclose(f);
     return NULL;
   }
+  if (support_size > 1)
+    rb_enable_value_support(rb, support_size);
 
   rb->size = size;
   rb->write_idx = write_idx;
@@ -572,6 +664,10 @@ ReplayBuffer *rb_load(const char *filename) {
   size_t z_bytes = sizeof(float) * capacity;
   size_t vprefix_bytes = sizeof(float) * capacity;
   size_t prio_bytes = sizeof(float) * capacity;
+  size_t dist_bytes =
+      (rb->value_dist_buf && rb->support_size > 1)
+          ? sizeof(float) * capacity * (size_t)rb->support_size
+          : 0;
   size_t a_bytes = sizeof(int) * capacity;
   size_t r_bytes = sizeof(float) * capacity;
   size_t next_obs_bytes = sizeof(float) * capacity * (size_t)obs_dim;
@@ -615,6 +711,13 @@ ReplayBuffer *rb_load(const char *filename) {
     rb_free(rb);
     fclose(f);
     return NULL;
+  }
+  if (version >= 4u && dist_bytes > 0) {
+    if (fread(rb->value_dist_buf, 1, dist_bytes, f) != dist_bytes) {
+      rb_free(rb);
+      fclose(f);
+      return NULL;
+    }
   }
 
   fclose(f);

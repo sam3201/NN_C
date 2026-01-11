@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "game_replay.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
 
@@ -22,6 +23,8 @@ typedef struct TrainerConfig {
   float per_beta_end;   // schedule end (optional)
   int per_beta_anneal_steps; // schedule length in train steps
   float per_eps;       // small constant for priority
+  int train_reward_head; // 0/1 train reward head in dynamics
+  int reward_target_is_vprefix; // 0/1 use value prefix as reward target
   float lr;
 } TrainerConfig;
 
@@ -29,6 +32,9 @@ void trainer_train_dynamics(MuModel *model, ReplayBuffer *rb,
                             const TrainerConfig *cfg);
 void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
                                const TrainerConfig *cfg);
+void trainer_train_from_replay_games(MuModel *model, ReplayBuffer *rb,
+                                     GameReplay *gr,
+                                     const TrainerConfig *cfg);
 
 #ifdef __cplusplus
 }

@@ -3,6 +3,7 @@
 #define MUZE_ALL_H
 
 #include "ewc.h"
+#include "game_replay.h"
 #include "game_env.h"
 #include "growth.h"
 #include "mcts.h"

@@ -20,6 +20,8 @@ static TrainerConfig trainer_default_cfg(void) {
       .per_beta_end = 1.0f,
       .per_beta_anneal_steps = 10000,
       .per_eps = 1e-3f,
+      .train_reward_head = 0,
+      .reward_target_is_vprefix = 1,
       .lr = 0.05f,
   };
   return tc;
@@ -36,6 +38,8 @@ MuRuntime *mu_runtime_create(MuModel *model, float gamma) {
   }
 
   rt->rb = rb_create(TRAIN_WINDOW, model->cfg.obs_dim, model->cfg.action_count);
+  if (rt->rb && model->use_value_support && model->support_size > 1)
+    rb_enable_value_support(rt->rb, model->support_size);
   rt->last_obs = malloc(sizeof(float) * (size_t)model->cfg.obs_dim);
   rt->last_pi = malloc(sizeof(float) * (size_t)model->cfg.action_count);
   if (rt->last_pi)
