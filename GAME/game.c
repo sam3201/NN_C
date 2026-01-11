@@ -1,7 +1,6 @@
 #include "../SAM/SAM.h"
 #include "../utils/NN/MUZE/all.h"
-#include "../utils/Raylib/src/raylib.h"
-#include "../utils/Raylib/src/raymath.h"
+#include "../utils/SDL3/SDL3_compat.h"
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -338,7 +337,7 @@ typedef struct {
 typedef struct {
   const char *name;
   int wood, stone, gold, food;
-  int *unlock_flag; // set to 1 on craft
+  bool *unlock_flag; // set to true on craft
 } Recipe;
 
 typedef struct {
@@ -458,6 +457,11 @@ typedef struct {
 #pragma pack(pop)
 
 static uint32_t g_world_seed = 0;
+static GameStateType g_state = STATE_TITLE;
+static char g_world_name[WORLD_NAME_MAX] = {0};
+static char g_seed_text[64] = {0};
+static int g_typing_name = 0;
+static int g_typing_seed = 0;
 
 // Forward declarations for functions used before their definitions (C99+)
 struct Chunk; // forward decl
@@ -583,7 +587,7 @@ static void craft(const Recipe *r) {
   inv_gold -= r->gold;
   inv_food -= r->food;
   if (r->unlock_flag)
-    *r->unlock_flag = 1;
+    *r->unlock_flag = true;
 }
 
 static void make_world_path(char *out, size_t cap, const char *world_name) {
@@ -1171,19 +1175,10 @@ static int save_models_to_disk(const char *world_name) {
     char path[256];
     make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
 
-    FILE *f = fopen(path, "wb");
-    if (!f)
-      continue;
-
-    // DO THIS (real API):
-    if (!SAM_save(f, a->sam)) {
+    if (!SAM_save(a->sam, path)) {
       fprintf(stderr, "Failed to save model for agent %d\n", a->agent_id);
-
-      fclose(f);
       return 1;
     }
-
-    fclose(f);
   }
   return 1;
 }
@@ -1197,14 +1192,7 @@ static int load_models_from_disk(const char *world_name) {
     char path[256];
     make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
 
-    FILE *f = fopen(path, "rb");
-    if (!f)
-      continue;
-
-    // DO THIS (real API):
-    a->sam = SAM_load(f);
-
-    fclose(f);
+    a->sam = SAM_load(path);
   }
   return 1;
 }
@@ -3715,7 +3703,7 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   //   - nearest distance (normalized)
   //   - nearest direction (x,y) normalized
   //   - availability bit (1 if found)
-  const int R_TYPES = 4;
+  enum { R_TYPES = 4 };
   float best_d[R_TYPES];
   Vector2 best_dir[R_TYPES];
   int found[R_TYPES];
@@ -4051,7 +4039,8 @@ void update_agent(Agent *a) {
 
   // --- MuZero chooses action ---
   int action =
-      muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT);
+      muze_plan(a->cortex, obs.data, (size_t)obs.size, (size_t)ACTION_COUNT,
+                NULL);
 
   obs_free(&obs);
 
