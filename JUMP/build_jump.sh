@@ -34,28 +34,19 @@ echo "Collecting sources..."
 # Core NN sources (explicit)
 NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
 
-# MUZE + SAM sources (deduped)
+# MUZE sources (deduped)
 MUZE_SRC="$(find ../utils/NN/MUZE -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
-SAM_SRC="$(find ../SAM -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
 
 # Trim leading/trailing spaces
 MUZE_SRC="$(printf "%s" "$MUZE_SRC" | sed 's/^ *//; s/ *$//')"
-SAM_SRC="$(printf "%s" "$SAM_SRC" | sed 's/^ *//; s/ *$//')"
 
 if [ -z "$MUZE_SRC" ]; then
   echo "ERROR: No MUZE .c files found under ../utils/NN/MUZE"
   exit 1
 fi
 
-if [ -z "$SAM_SRC" ]; then
-  echo "ERROR: No SAM .c files found under ../SAM"
-  exit 1
-fi
-
 echo "MUZE files:"
 printf "  %s\n" $MUZE_SRC
-echo "SAM files:"
-printf "  %s\n" $SAM_SRC
 
 # ---------------------------
 # Compile
@@ -66,10 +57,9 @@ CC="${CC:-cc}"
 
 # NOTE: -w hides warnings; remove once stable.
 "$CC" -w \
-  jump.c $NN_SRC $MUZE_SRC $SAM_SRC \
+  jump.c $NN_SRC $MUZE_SRC \
   -I../utils/NN \
   -I../utils/NN/MUZE \
-  -I../SAM \
   -I"$RAYLIB_SRC" \
   -L"$RAYLIB_SRC" -lraylib \
   -pthread \
@@ -87,4 +77,3 @@ status=$?
 echo "Game exited with status $status"
 rm -f ./jump
 exit "$status"
-

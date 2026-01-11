@@ -1,5 +1,5 @@
-#include "../SAM/SAM.h"
 #include "../utils/NN/MUZE/all.h"
+#include "../utils/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <math.h>
 #include <pthread.h>
@@ -88,6 +88,7 @@ static int OBS_DIM = 0;  // OBS_GRID + OBS_EXTRA
 static MuModel *g_model = NULL;
 static ReplayBuffer *g_rb = NULL;
 static pthread_mutex_t g_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
+static MuzeConfig g_cfg;
 
 typedef enum { PLAT_RECT = 0, PLAT_RAMP = 1 } PlatKind;
 
@@ -159,8 +160,7 @@ typedef struct {
   float best_alt; // best height this episode (higher is better)
 
   // decision / brain
-  void *sam;        // or SAM* if you have a type
-  MuCortex *cortex; // from MUZE/muze_cortex.h
+  void *sam; // reserved for future SAM integration
 
   MCTSParams mcts_params; // if you want per-agent params
 
@@ -192,9 +192,6 @@ typedef struct {
 
   float reward_accumulator;
 
-  float last_obs[OBS_DIM];
-  int has_last_obs;
-
 } Agent;
 
 // =======================
@@ -203,6 +200,56 @@ typedef struct {
 // static int SCREEN_WIDTH = 1280;
 // static int SCREEN_HEIGHT = 800;
 static float g_dt = 1.0f / FPS;
+
+static void init_muze_config(void) {
+  memset(&g_cfg, 0, sizeof(g_cfg));
+  g_cfg.model.obs_dim = OBS_DIM;
+  g_cfg.model.latent_dim = 64;
+  g_cfg.model.action_count = ACTION_COUNT;
+
+  g_cfg.nn.opt_repr = ADAM;
+  g_cfg.nn.opt_dyn = ADAM;
+  g_cfg.nn.opt_pred = ADAM;
+  g_cfg.nn.opt_vprefix = ADAM;
+  g_cfg.nn.opt_reward = ADAM;
+  g_cfg.nn.loss_repr = MSE;
+  g_cfg.nn.loss_dyn = MSE;
+  g_cfg.nn.loss_pred = MSE;
+  g_cfg.nn.loss_vprefix = MSE;
+  g_cfg.nn.loss_reward = MSE;
+  g_cfg.nn.lossd_repr = MSE_DERIVATIVE;
+  g_cfg.nn.lossd_dyn = MSE_DERIVATIVE;
+  g_cfg.nn.lossd_pred = MSE_DERIVATIVE;
+  g_cfg.nn.lossd_vprefix = MSE_DERIVATIVE;
+  g_cfg.nn.lossd_reward = MSE_DERIVATIVE;
+  g_cfg.nn.lr_repr = 0.001L;
+  g_cfg.nn.lr_dyn = 0.001L;
+  g_cfg.nn.lr_pred = 0.001L;
+  g_cfg.nn.lr_vprefix = 0.001L;
+  g_cfg.nn.lr_reward = 0.001L;
+  g_cfg.nn.hidden_repr = 128;
+  g_cfg.nn.hidden_dyn = 128;
+  g_cfg.nn.hidden_pred = 128;
+  g_cfg.nn.hidden_vprefix = 128;
+  g_cfg.nn.hidden_reward = 128;
+  g_cfg.nn.use_value_support = 1;
+  g_cfg.nn.use_reward_support = 1;
+  g_cfg.nn.support_size = 21;
+  g_cfg.nn.support_min = -2.0f;
+  g_cfg.nn.support_max = 2.0f;
+  g_cfg.nn.action_embed_dim = 64;
+  g_cfg.nn.grad_clip = 5.0f;
+  g_cfg.nn.global_grad_clip = 1.0f;
+
+  g_cfg.mcts.num_simulations = 80;
+  g_cfg.mcts.batch_simulations = 8;
+  g_cfg.mcts.c_puct = 1.25f;
+  g_cfg.mcts.max_depth = 16;
+  g_cfg.mcts.dirichlet_alpha = 0.3f;
+  g_cfg.mcts.dirichlet_eps = 0.25f;
+  g_cfg.mcts.temperature = 1.0f;
+  g_cfg.mcts.discount = 0.997f;
+}
 
 pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t job_cv = PTHREAD_COND_INITIALIZER;
@@ -705,6 +752,8 @@ static void encode_observation_jk(const Agent *a, ObsDyn *out) {
 // AGENTS
 // =======================
 static void reset_agent_episode(Agent *a) {
+  float discount = (g_cfg.selfplay.gamma > 0.0f) ? g_cfg.selfplay.gamma
+                                                 : g_cfg.mcts.discount;
   // ---- finalize last step reward/done (if episode has steps) ----
   if (a->ep_t > 0) {
     // assign reward to the last stored step
@@ -717,7 +766,7 @@ static void reset_agent_episode(Agent *a) {
     if (z) {
       float G = 0.0f;
       for (int t = T - 1; t >= 0; t--) {
-        G = a->ep.rewards[t] + discount * G;
+        G = a->ep.reward[t] + discount * G;
         z[t] = G;
       }
 
@@ -742,17 +791,6 @@ static void reset_agent_episode(Agent *a) {
     }
   }
 
-  // ---- optional online learner hook (terminal) ----
-  if (a->cortex && a->has_last_transition) {
-    a->cortex->learn(a->cortex->brain, a->last_obs.obs, (size_t)OBS_DIM,
-                     a->last_action, a->pending_reward, 1);
-  }
-
-  // ---- new episode exploration schedule ----
-  if (a->cortex) {
-    a->cortex->policy_epsilon = epsilon_schedule(a->episodes_done);
-    a->cortex->policy_temperature = 1.0f;
-  }
   a->episodes_done++;
 
   // ---- reset episode bookkeeping ----
@@ -782,12 +820,8 @@ static void reset_agent_episode(Agent *a) {
 
   // seed initial obs
   encode_observation_jk(a, &a->last_obs);
-  memcpy(a->last_obs, obs.data, sizeof(float) * OBS_DIM);
-  a->has_last_obs = 1;
 
-  int action =
-      muze_plan(a->cortex, a->last_obs, (size_t)OBS_DIM, (size_t)ACTION_COUNT);
-  a->last_action = action;
+  a->last_action = ACT_NONE;
 
   // keep last_pi clean
   for (int i = 0; i < ACTION_COUNT; i++)
@@ -795,10 +829,8 @@ static void reset_agent_episode(Agent *a) {
 }
 
 static void init_agents(void) {
-  MuConfig cfg = {
-      .obs_dim = OBS_DIM, .latent_dim = 64, .action_count = ACTION_COUNT};
-
-  g_model = mu_model_create(&cfg);
+  init_muze_config();
+  g_model = mu_model_create_nn_with_cfg(&g_cfg.model, &g_cfg.nn);
   g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT); // capacity tune as you want
 
   int cols = 16;
@@ -831,34 +863,8 @@ static void init_agents(void) {
     a->pending_reward = 0.0f;
     a->has_last_transition = 0;
 
-    a->cortex = SAM_as_MUZE(a->sam);
-
-    a->cortex->use_mcts = true;
-    a->cortex->mcts_model = g_model; // REQUIRED if MCTS is on
-    a->cortex->mcts_params.num_simulations = 50;
-    a->cortex->mcts_params.max_depth = 16;
-    a->cortex->mcts_params.discount = 0.997f;
-    a->cortex->mcts_params.c_puct = 1.25f;
-    a->cortex->mcts_params.temperature = 1.0f;
-    a->cortex->mcts_params.dirichlet_alpha = 0.3f;
-    a->cortex->mcts_params.dirichlet_eps = 0.25f;
-
     // Default MCTS params (store them in Agent so update_agent can use them)
-    a->mcts_params.num_simulations = 80;
-    a->mcts_params.max_depth = 16;
-    a->mcts_params.discount = 0.997f;
-    a->mcts_params.c_puct = 1.25f;
-    a->mcts_params.temperature = 1.0f;
-    a->mcts_params.dirichlet_alpha = 0.3f;
-    a->mcts_params.dirichlet_eps = 0.25f;
-
-    if (a->cortex) {
-      a->cortex->use_mcts = true;
-      a->cortex->mcts_model = g_model;
-      a->cortex->mcts_params = a->mcts_params; // keep them consistent
-      a->cortex->policy_temperature = 1.0f;
-      a->cortex->policy_epsilon = epsilon_schedule(0);
-    }
+    a->mcts_params = g_cfg.mcts;
 
     reset_agent_episode(a);
   }
@@ -1063,12 +1069,6 @@ static void update_agent(Agent *a) {
     reset_agent_episode(a);
   }
 
-  int terminal = (!a->alive) ? 1 : 0;
-
-  if (a->cortex && a->has_last_obs) {
-    a->cortex->learn(a->cortex->brain, a->last_obs, (size_t)OBS_DIM, action,
-                     reward, terminal);
-  }
 }
 
 // =======================
@@ -1299,7 +1299,7 @@ int main(void) {
              RAYWHITE);
     DrawText(TextFormat("LastAct: %d", ba->last_action), 20, 170, 20, RAYWHITE);
     DrawText(TextFormat("Eps: %.3f  Ep: %d",
-                        ba->cortex ? ba->cortex->policy_epsilon : 0.0f,
+                        epsilon_schedule(ba->episodes_done),
                         ba->episodes_done),
              20, 195, 20, RAYWHITE);
 
