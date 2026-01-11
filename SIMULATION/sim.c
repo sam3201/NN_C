@@ -223,8 +223,8 @@ void init_agent(Agent *agent, int id, const MuzeConfig *cfg) {
 
 // --- VISION ENCODING ---
 /*
-void encode_vision(SimulationState *game, int agent_idx, long double *vision_output) {
-  Agent *self = &game->agents[agent_idx];
+void encode_vision(SimulationState *game, int agent_idx, long double
+*vision_output) { Agent *self = &game->agents[agent_idx];
 
   // Clear vision
   for (int i = 0; i < get_total_input_size(); i++)
@@ -480,7 +480,8 @@ void execute_agent_action(SimulationState *game, int agent_idx, Action action) {
   move_agent(game, agent, action);
 }
 
-void gather_agent_inputs(SimulationState *state, Agent *agent, long double *inputs) {
+void gather_agent_inputs(SimulationState *state, Agent *agent,
+                         long double *inputs) {
   int idx = 0;
 
   // Self
