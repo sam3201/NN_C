@@ -897,9 +897,10 @@ int main(void) {
 
     for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
       Agent *a = &game.agents[i];
-      DrawRectangleRec(a->rect, a->color);
+      float r = 3.0f;
+      DrawCircle((int)a->position.x, (int)a->position.y, r, a->color);
       if (a->is_breeding)
-        DrawRectangleLinesEx(a->rect, 2, PINK);
+        DrawCircleLines((int)a->position.x, (int)a->position.y, r + 2.0f, PINK);
       DrawText("AG", a->rect.x, a->rect.y - LABEL_SIZE - 2, LABEL_SIZE, WHITE);
     }
 
