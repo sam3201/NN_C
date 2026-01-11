@@ -3,6 +3,7 @@
 #include "../NN/MUZE/replay_buffer.h"
 #include "../NN/MUZE/runtime.h"
 #include "../NN/MUZE/trainer.h"
+#include "../NN/NN.h"
 
 #include <curses.h>
 #include <stdint.h>
@@ -243,7 +244,34 @@ int main(void) {
       .latent_dim = 64,
       .action_count = 5,
   };
-  MuModel *model = mu_model_create(&cfg);
+  MuNNConfig nn_cfg = {
+      .opt_repr = ADAM,
+      .opt_dyn = ADAM,
+      .opt_pred = ADAM,
+      .opt_vprefix = ADAM,
+      .opt_reward = ADAM,
+      .loss_repr = MSE,
+      .loss_dyn = MSE,
+      .loss_pred = MSE,
+      .loss_vprefix = MSE,
+      .loss_reward = MSE,
+      .lossd_repr = MSE_DERIVATIVE,
+      .lossd_dyn = MSE_DERIVATIVE,
+      .lossd_pred = MSE_DERIVATIVE,
+      .lossd_vprefix = MSE_DERIVATIVE,
+      .lossd_reward = MSE_DERIVATIVE,
+      .lr_repr = 0.001L,
+      .lr_dyn = 0.001L,
+      .lr_pred = 0.001L,
+      .lr_vprefix = 0.001L,
+      .lr_reward = 0.001L,
+      .hidden_repr = 128,
+      .hidden_dyn = 128,
+      .hidden_pred = 128,
+      .hidden_vprefix = 128,
+      .hidden_reward = 128,
+  };
+  MuModel *model = mu_model_create_nn_with_cfg(&cfg, &nn_cfg);
   if (!model) {
     game_state_destroy(&E.gs);
     endwin();
