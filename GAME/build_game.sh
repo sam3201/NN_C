@@ -82,7 +82,7 @@ FLAGS="${FLAGS:-} -g -fmax-errors=10000000"
   -o game 
 
 echo "Compilation successful! Running the game..."
-./game
+lldb ./game
 status=$?
 
 echo "Game exited with status $status"
