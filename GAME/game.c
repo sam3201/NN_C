@@ -227,7 +227,7 @@ typedef enum {
   ACTION_FIRE,
   ACTION_HARVEST,
   ACTION_EAT,
-  // ACTION_CRAFT,
+  ACTION_CRAFT,
   ACTION_CRAFT_AXE,
   ACTION_CRAFT_PICKAXE,
   ACTION_CRAFT_SWORD,
@@ -560,6 +560,7 @@ static inline float randf(float a, float b);
 static inline int is_night(void);
 static void init_tribes(void);
 static void init_agents(void);
+static void ensure_agents_ready_on_enter(void);
 static void ensure_save_root(void);
 static inline Vector2 clamp_local_to_chunk(Vector2 p);
 static int find_free_mob_slot(struct Chunk *c);
@@ -583,6 +584,9 @@ static int job_next_agent = 0;
 static int job_done_workers = 0;
 static int job_active = 0;
 static int job_quit = 0;
+
+// Global quit flag for graceful shutdown
+static int g_should_quit = 0;
 
 Chunk world[WORLD_SIZE][WORLD_SIZE];
 Tribe tribes[TRIBE_COUNT];
@@ -702,6 +706,7 @@ static Recipe recipes[] = {
     {"Sword (Stone+Gold)", 0, 4, 2, 0, &has_sword},
     {"Armor (Stone+Gold)", 0, 5, 2, 0, &has_armor},
     {"Bow (Wood+Gold)", 4, 0, 1, 0, &has_bow},
+    {"Arrows (Wood+Shards)", 1, 0, 0, 0, NULL}, // Special case for arrows
 };
 
 static int recipe_count = sizeof(recipes) / sizeof(recipes[0]);
@@ -967,6 +972,10 @@ static int bind_released(BindAction a) {
 }
 
 static int can_afford(const Recipe *r) {
+  // Special case for arrows that requires shards
+  if (strcmp(r->name, "Arrows (Wood+Shards)") == 0) {
+    return inv_wood >= r->wood && inv_shards >= 1;
+  }
   return inv_wood >= r->wood && inv_stone >= r->stone && inv_gold >= r->gold &&
          inv_food >= r->food;
 }
@@ -978,8 +987,14 @@ static void craft(const Recipe *r) {
   inv_stone -= r->stone;
   inv_gold -= r->gold;
   inv_food -= r->food;
-  if (r->unlock_flag)
+  
+  // Special case for arrows
+  if (strcmp(r->name, "Arrows (Wood+Shards)") == 0) {
+    inv_shards -= 1; // Consume 1 shard
+    inv_arrows += 5; // Craft 5 arrows per recipe
+  } else if (r->unlock_flag) {
     *r->unlock_flag = true;
+  }
 }
 
 static void make_world_path(char *out, size_t cap, const char *world_name) {
@@ -1924,6 +1939,98 @@ static inline float player_resource_stamina_cost(ResourceType t) {
 static inline int agent_in_base(const Agent *a, const Tribe *tr) {
   float d = Vector2Distance(a->position, tr->base.position);
   return (d < tr->base.radius + 0.35f);
+}
+
+static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
+  if (!agent_in_base(a, tr)) {
+    if (reward)
+      *reward += -0.006f;
+    return 0;
+  }
+
+  // AI logic: craft what we need most
+  // Priority: 1) Bow if we don't have one, 2) Arrows if low, 3) Tools we don't have
+  
+  // Check if we can craft a bow (highest priority for ranged combat)
+  if (!a->has_bow && tr->wood >= 4 && tr->gold >= 1) {
+    tr->wood -= 4;
+    tr->gold -= 1;
+    a->has_bow = true;
+    a->last_craft_selected = TOOL_BOW;
+    if (reward)
+      *reward += 0.15f; // High reward for getting bow
+    return 1;
+  }
+  
+  // Craft arrows if we have bow and are low on arrows
+  if (a->has_bow && a->inv_arrows < 10 && tr->shards >= 1 && tr->wood >= 1) {
+    tr->shards -= 1;
+    tr->wood -= 1;
+    int made = 6;
+    tr->arrows += made;
+    a->inv_arrows += made;
+    if (reward)
+      *reward += 0.08f;
+    return 1;
+  }
+  
+  // Craft tools we don't have, in order of utility
+  if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
+    tr->wood -= 3;
+    tr->stone -= 2;
+    a->has_axe = true;
+    a->last_craft_selected = TOOL_AXE;
+    if (reward)
+      *reward += 0.10f;
+    return 1;
+  }
+  
+  if (!a->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
+    tr->wood -= 3;
+    tr->stone -= 3;
+    a->has_pickaxe = true;
+    a->last_craft_selected = TOOL_PICKAXE;
+    if (reward)
+      *reward += 0.10f;
+    return 1;
+  }
+  
+  if (!a->has_sword && tr->stone >= 4 && tr->gold >= 2) {
+    tr->stone -= 4;
+    tr->gold -= 2;
+    a->has_sword = true;
+    a->last_craft_selected = TOOL_SWORD;
+    if (reward)
+      *reward += 0.12f;
+    return 1;
+  }
+  
+  if (!a->has_armor && tr->stone >= 5 && tr->gold >= 2) {
+    tr->stone -= 5;
+    tr->gold -= 2;
+    a->has_armor = true;
+    a->last_craft_selected = TOOL_ARMOR;
+    if (reward)
+      *reward += 0.12f;
+    return 1;
+  }
+  
+  // Craft more arrows if we have resources
+  if (a->has_bow && tr->shards >= 1 && tr->wood >= 1) {
+    tr->shards -= 1;
+    tr->wood -= 1;
+    int made = 6;
+    tr->arrows += made;
+    a->inv_arrows += made;
+    if (reward)
+      *reward += 0.05f;
+    return 1;
+  }
+  
+  // Nothing to craft
+  if (reward)
+    *reward += -0.002f;
+  return 0;
 }
 
 static int agent_try_craft_action(Agent *a, Tribe *tr, ActionType craft_action,
@@ -5099,12 +5206,10 @@ void update_agent(Agent *a) {
     agent_try_harvest_forward(a, tr, &reward);
     break;
 
-  /*
-case ACTION_CRAFT:
-  // agent_try_craft(a, tr, &reward);
+  case ACTION_CRAFT:
+    agent_try_general_craft(a, tr, &reward);
+    break;
 
-  break;
-  */
   case ACTION_CRAFT_AXE:
   case ACTION_CRAFT_PICKAXE:
   case ACTION_CRAFT_SWORD:
@@ -5809,6 +5914,9 @@ static void draw_ui(void) {
 
 static void draw_hover_label(void) {
   int hp = -1;
+  Vector2 focus_pos = {0};
+  float focus_radius = 0;
+  bool has_focus = false;
 
   // find nearest in current chunk within a small radius
   int cx = (int)(player.position.x / CHUNK_SIZE);
@@ -5830,6 +5938,9 @@ static void draw_hover_label(void) {
       bestD = d;
       label = res_name(r->type);
       hp = r->health;
+      focus_pos = world_to_screen(rw);
+      focus_radius = 12.0f;
+      has_focus = true;
     }
   }
 
@@ -5845,7 +5956,18 @@ static void draw_hover_label(void) {
       bestD = d;
       label = mob_name(m->type);
       hp = m->health;
+      focus_pos = world_to_screen(mw);
+      focus_radius = 15.0f;
+      has_focus = true;
     }
+  }
+
+  // Draw focus box around the targeted object
+  if (has_focus) {
+    DrawRectangleLines((int)(focus_pos.x - focus_radius), 
+                      (int)(focus_pos.y - focus_radius),
+                      (int)(focus_radius * 2), (int)(focus_radius * 2),
+                      (Color){255, 255, 0, 180}); // Yellow focus box
   }
 
   if (label) {
@@ -7801,6 +7923,20 @@ static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
   ui_draw_text_size(r.x + 10, r.y + 10, buf, 20, RAYWHITE);
 }
 
+static void draw_crosshair_2d(void) {
+  Vector2 m = GetMousePosition();
+  DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
+  DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
+           (Color){0, 0, 0, 200});
+  DrawLine((int)m.x, (int)m.y - 14, (int)m.x, (int)m.y + 14,
+           (Color){0, 0, 0, 200});
+  DrawCircleLines((int)m.x, (int)m.y, 8, (Color){240, 240, 240, 220});
+  DrawLine((int)m.x - 10, (int)m.y, (int)m.x + 10, (int)m.y,
+           (Color){240, 240, 240, 220});
+  DrawLine((int)m.x, (int)m.y - 10, (int)m.x, (int)m.y + 10,
+           (Color){240, 240, 240, 220});
+}
+
 static void draw_crosshair_3d(void) {
   int w = GetScreenWidth();
   int h = GetScreenHeight();
@@ -8270,7 +8406,7 @@ static void draw_title_screen_3d(void) {
   if (ui_button_gl(b2, "Create World", 20))
     g_state = STATE_WORLD_CREATE;
   if (ui_button_gl(b3, "Quit", 20))
-    CloseWindow();
+    g_should_quit = 1;
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
@@ -9080,7 +9216,16 @@ static void render_scene_3d(void) {
 /* =======================
    MAIN
 ======================= */
-int main(void) {
+int main(int argc, char *argv[]) {
+  // Parse command line arguments for verbose control
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
+      muze_set_verbose(0);
+    } else if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+      muze_set_verbose(1);
+    }
+  }
+
   srand(time(NULL));
 
   if (g_use_3d) {
@@ -9140,7 +9285,7 @@ int main(void) {
   for (int i = 0; i < MAX_PROJECTILES; i++)
     projectiles[i].alive = false;
 
-  while (!WindowShouldClose()) {
+  while (!WindowShouldClose() && !g_should_quit) {
     float dt = GetFrameTime();
     double frame_start_ms = prof_now_ms();
 
@@ -9330,7 +9475,7 @@ int main(void) {
       if (ui_button(b2, "Create World"))
         g_state = STATE_WORLD_CREATE;
       if (ui_button(b3, "Quit"))
-        CloseWindow();
+        g_should_quit = 1;
     } else if (g_state == STATE_WORLD_CREATE) {
 
       DrawText("Create World", 60, 50, 34, RAYWHITE);
@@ -9405,6 +9550,11 @@ int main(void) {
     draw_daynight_overlay(); // AFTER world draw, before EndDrawing
     draw_hurt_vignette();
     draw_crafting_ui();
+    
+    // Draw crosshair in 2D mode
+    if (g_state == STATE_PLAYING) {
+      draw_crosshair_2d();
+    }
 
     DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
     DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
