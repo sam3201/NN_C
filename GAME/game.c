@@ -5607,10 +5607,10 @@ static int g_mesh_resource_loaded[RES_COUNT] = {0};
 #define ASSET_SHEEP_GLB "Assets/Sheep.glb"
 #define ASSET_SKELETON_GLB "Assets/Skeleton.glb"
 #define ASSET_ZOMBIE_GLB "Assets/Zombie.glb"
-#define ASSET_TREE_GLB "Assets/Res_Tree.glb"
-#define ASSET_ROCK_GLB "Assets/Res_Rock.glb"
-#define ASSET_GOLD_GLB "Assets/Res_Gold.glb"
-#define ASSET_FOOD_GLB "Assets/Res_Food.glb"
+#define ASSET_TREE_GLB "Assets/Tree.glb"
+#define ASSET_ROCK_GLB "Assets/Rock.glb"
+#define ASSET_GOLD_GLB "Assets/Gold.glb"
+#define ASSET_FOOD_GLB "Assets/Food.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
