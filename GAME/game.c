@@ -568,6 +568,8 @@ static float g_player_yaw_target = 0.0f;
 static float g_player_pitch = 0.0f;
 static int g_use_3d = 1;
 static int g_mouse_locked = 0;
+typedef enum { CAM_THIRD_PERSON = 0, CAM_FIRST_PERSON } CameraMode;
+static CameraMode g_camera_mode = CAM_FIRST_PERSON;
 
 typedef enum {
   BIND_MOVE_FORWARD = 0,
@@ -5586,6 +5588,8 @@ static GLint g_u_model = -1;
 static GLint g_u_color = -1;
 static GLint g_u_light = -1;
 static Mesh g_mesh_ground = {0};
+static Mesh g_mesh_ground_tile = {0};
+static Mesh g_mesh_ground_perlin = {0};
 static Mesh g_mesh_sphere = {0};
 static Mesh g_mesh_cylinder = {0};
 static GLuint g_ui_shader = 0;
@@ -5602,6 +5606,9 @@ static Mesh g_mesh_resources[RES_COUNT] = {0};
 static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
 static int g_mesh_resource_loaded[RES_COUNT] = {0};
+static int g_mesh_ground_tile_loaded = 0;
+static int g_mesh_ground_perlin_ready = 0;
+static int g_use_perlin_ground = 1;
 
 #define ASSET_PLAYER_GLB "Assets/Player.glb"
 #define ASSET_PIG_GLB "Assets/Pig.glb"
@@ -5612,6 +5619,7 @@ static int g_mesh_resource_loaded[RES_COUNT] = {0};
 #define ASSET_ROCK_GLB "Assets/Rock.glb"
 #define ASSET_GOLD_GLB "Assets/Gold.glb"
 #define ASSET_FOOD_GLB "Assets/Food.glb"
+#define ASSET_TERRAIN_GLB "Assets/terrain_tile.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -6390,6 +6398,8 @@ static void init_3d_renderer(void) {
       load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
   g_mesh_resource_loaded[RES_FOOD] =
       load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
+  g_mesh_ground_tile_loaded =
+      load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
   g_3d_ready = 1;
 }
 
@@ -6497,19 +6507,43 @@ static void render_scene_3d(void) {
   float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   Vec3 player_pos = vec3(player.position.x, 0.0f, player.position.y);
-  Vec3 cam_offset = vec3_rotate_y(vec3(0.0f, 5.0f, 8.0f), g_player_yaw);
-  Vec3 eye = vec3_add(player_pos, cam_offset);
   Vec3 forward =
       vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
            cosf(g_player_pitch) * -cosf(g_player_yaw));
+  Vec3 eye = vec3_add(
+      player_pos,
+      vec3(0.0f, (g_camera_mode == CAM_FIRST_PERSON) ? 1.7f : 0.0f, 0.0f));
+  if (g_camera_mode == CAM_THIRD_PERSON) {
+    float dist = 8.0f;
+    float height = 2.5f;
+    Vec3 back = vec3_scale(forward, -dist);
+    eye = vec3_add(player_pos, back);
+    eye.y += height;
+  }
   Vec3 target = vec3_add(eye, forward);
   Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
   Mat4 view_proj = mat4_mul(proj, view);
 
-  Mat4 ground =
-      mat4_mul(mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
-               mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
-  render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
+  if (g_mesh_ground_tile_loaded) {
+    const float tile_size = 16.0f;
+    int tile_radius = 4;
+    int base_tx = (int)floorf(player_pos.x / tile_size);
+    int base_tz = (int)floorf(player_pos.z / tile_size);
+    for (int tz = base_tz - tile_radius; tz <= base_tz + tile_radius; tz++) {
+      for (int tx = base_tx - tile_radius; tx <= base_tx + tile_radius; tx++) {
+        float cx = tx * tile_size + tile_size * 0.5f;
+        float cz = tz * tile_size + tile_size * 0.5f;
+        Mat4 tile = mat4_translate(vec3(cx, 0.0f, cz));
+        render_mesh(&g_mesh_ground_tile, tile, view_proj,
+                    vec3(0.18f, 0.55f, 0.22f));
+      }
+    }
+  } else {
+    Mat4 ground = mat4_mul(
+        mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
+        mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
+    render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
+  }
 
   render_player_3d(player_pos, view_proj);
 
@@ -6701,6 +6735,11 @@ int main(void) {
         SetMouseVisible(1);
         g_mouse_locked = 0;
       }
+    }
+
+    if (g_use_3d && IsKeyPressed(KEY_V)) {
+      g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
+                                                          : CAM_THIRD_PERSON;
     }
 
     if (bind_pressed(BIND_PAUSE)) {
