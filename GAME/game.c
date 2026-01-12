@@ -5648,6 +5648,51 @@ static Vec3 vec3_cross(Vec3 a, Vec3 b) {
               a.x * b.y - a.y * b.x);
 }
 
+// ------------------- Perlin-ish terrain -------------------
+static float hash2d(int x, int y) {
+  int n = x * 374761393 + y * 668265263;
+  n = (n ^ (n >> 13)) * 1274126177;
+  n = n ^ (n >> 16);
+  return (n & 0x7fffffff) / 2147483647.0f;
+}
+
+static float lerp_f(float a, float b, float t) { return a + (b - a) * t; }
+
+static float fade(float t) { return t * t * (3.0f - 2.0f * t); }
+
+static float value_noise(float x, float y) {
+  int x0 = (int)floorf(x);
+  int y0 = (int)floorf(y);
+  int x1 = x0 + 1;
+  int y1 = y0 + 1;
+
+  float sx = fade(x - (float)x0);
+  float sy = fade(y - (float)y0);
+
+  float n00 = hash2d(x0, y0);
+  float n10 = hash2d(x1, y0);
+  float n01 = hash2d(x0, y1);
+  float n11 = hash2d(x1, y1);
+
+  float ix0 = lerp_f(n00, n10, sx);
+  float ix1 = lerp_f(n01, n11, sx);
+  return lerp_f(ix0, ix1, sy);
+}
+
+static float terrain_height(float x, float z) {
+  float scale = 0.035f; // lower = wider hills
+  float h = 0.0f;
+  float amp = 6.5f;
+  float freq = 1.0f;
+  for (int i = 0; i < 4; i++) {
+    float n = value_noise(x * scale * freq, z * scale * freq);
+    h += (n * 2.0f - 1.0f) * amp;
+    amp *= 0.5f;
+    freq *= 2.0f;
+  }
+  return h;
+}
+
 static Vec3 vec3_rotate_y(Vec3 v, float a) {
   float c = cosf(a);
   float s = sinf(a);
