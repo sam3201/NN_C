@@ -5601,7 +5601,7 @@ static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
 
 #define ASSET_PLAYER_GLB "Assets/Player.glb"
-#define ASSET_PIG_GLB "Assets/Pib.glb"
+#define ASSET_PIG_GLB "Assets/Pig.glb"
 #define ASSET_SHEEP_GLB "Assets/Sheep.glb"
 #define ASSET_SKELETON_GLB "Assets/Skeleton.glb"
 #define ASSET_ZOMBIE_GLB "Assets/Zombie.glb"
