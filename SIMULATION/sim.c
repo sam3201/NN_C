@@ -444,8 +444,7 @@ void handle_breeding(SimulationState *game) {
         for (int k = 0; k < POPULATION_SIZE - MAX_GROUNDSKEEPERS; k++) {
           if (game->agents[k].level == 0 && game->agents[k].time_alive == 0) {
             game->agents[k] =
-                spawn_offspring(a1, a2, game->next_agent_id++,
-                                &game->muze_cfg);
+                spawn_offspring(a1, a2, game->next_agent_id++, &game->muze_cfg);
             break;
           }
         }
