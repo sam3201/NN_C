@@ -28,6 +28,7 @@
 static int g_use_perlin_ground;
 static float hash2d(int x, int y);
 static float terrain_height(float x, float z);
+static float terrain_height_raw(float x, float z);
 static void grass_enqueue_job(int cx, int cy);
 static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
                          Color color);
@@ -507,6 +508,8 @@ static char g_world_name[WORLD_NAME_MAX] = {0};
 static char g_seed_text[64] = {0};
 static int g_typing_name = 0;
 static int g_typing_seed = 0;
+static int g_tribes_ready = 0;
+static float g_base_flat_height[TRIBE_COUNT] = {0};
 
 // Forward declarations for functions used before their definitions (C99+)
 struct Chunk; // forward decl
@@ -4044,7 +4047,10 @@ void init_tribes(void) {
                   WORLD_SIZE / 2 + sinf(t * 2 * PI / TRIBE_COUNT) * spacing};
     tr->base.radius = BASE_RADIUS;
     tr->integrity = 100.0f;
+    g_base_flat_height[t] =
+        terrain_height_raw(tr->base.position.x, tr->base.position.y);
   }
+  g_tribes_ready = 1;
 }
 
 void init_agents(void) {
@@ -6135,7 +6141,7 @@ static float value_noise(float x, float y) {
   return lerp_f(ix0, ix1, sy);
 }
 
-static float terrain_height(float x, float z) {
+static float terrain_height_raw(float x, float z) {
   float base_scale = 0.03125f;
   float n = value_noise(x * base_scale, z * base_scale);
   float hill = (n - 0.6f) / 0.4f; // only top 40% become hills
@@ -6145,6 +6151,33 @@ static float terrain_height(float x, float z) {
   hill = clamp01(hill);
   // Broader, gentle hills on a flat plane.
   return hill * hill * 12.0f;
+}
+
+static float terrain_height(float x, float z) {
+  float h = terrain_height_raw(x, z);
+  if (!g_tribes_ready) {
+    return h;
+  }
+
+  // Flatten terrain around bases so they sit flush and the area is walkable.
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 bp = tribes[t].base.position;
+    float dx = x - bp.x;
+    float dz = z - bp.y;
+    float dist = sqrtf(dx * dx + dz * dz);
+    float inner = tribes[t].base.radius * 1.4f;
+    float outer = tribes[t].base.radius * 2.4f;
+    float base_h = g_base_flat_height[t];
+    if (dist <= inner) {
+      return base_h;
+    }
+    if (dist < outer) {
+      float t01 = (dist - inner) / (outer - inner);
+      return lerp_f(base_h, h, t01);
+    }
+  }
+
+  return h;
 }
 
 static Vec3 vec3_rotate_y(Vec3 v, float a) {
@@ -8131,8 +8164,8 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
         }
 
         float s = mob_radius_world(m->type) * 1.6f;
-        float mpy =
-            (g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f) + s * 0.5f;
+        float ground_y = g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f;
+        float mpy = ground_y + s * 0.35f;
         Vec3 mp = vec3(mpx, mpy, mpz);
         float dxp = mp.x - player_pos.x;
         float dzp = mp.z - player_pos.z;
@@ -8162,13 +8195,17 @@ static void render_bases_3d(Mat4 view_proj) {
   Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Vector2 bp = tribes[t].base.position;
-    float h = g_use_perlin_ground ? terrain_height(bp.x, bp.y) : 0.0f;
+    float h = 0.0f;
+    if (g_use_perlin_ground) {
+      h = g_tribes_ready ? g_base_flat_height[t] : terrain_height(bp.x, bp.y);
+    }
     Vector2 to_center =
         (Vector2){world_center.x - bp.x, world_center.y - bp.y};
     float yaw = atan2f(to_center.x, -to_center.y);
     Vec3 tint = color_to_vec3(tribes[t].color);
     float s = tribes[t].base.radius * 0.35f * 1.25f;
-    Vec3 pos = vec3(bp.x, h + s * 0.02f, bp.y);
+    float base_drop = -0.45f * s; // align dome base to ground
+    Vec3 pos = vec3(bp.x, h + base_drop, bp.y);
     Mat4 model = mat4_mul(
         mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
         mat4_scale(vec3(s, s, s)));
