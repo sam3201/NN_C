@@ -5680,17 +5680,15 @@ static float value_noise(float x, float y) {
 }
 
 static float terrain_height(float x, float z) {
-  float scale = 0.035f; // lower = wider hills
-  float h = 0.0f;
-  float amp = 6.5f;
-  float freq = 1.0f;
-  for (int i = 0; i < 4; i++) {
-    float n = value_noise(x * scale * freq, z * scale * freq);
-    h += (n * 2.0f - 1.0f) * amp;
-    amp *= 0.5f;
-    freq *= 2.0f;
+  float base_scale = 0.02f;
+  float n = value_noise(x * base_scale, z * base_scale);
+  float hill = (n - 0.6f) / 0.4f; // only top 40% become hills
+  if (hill < 0.0f) {
+    return 0.0f;
   }
-  return h;
+  hill = clamp01(hill);
+  // Broader, gentle hills on a flat plane.
+  return hill * hill * 8.0f;
 }
 
 static Vec3 vec3_rotate_y(Vec3 v, float a) {
@@ -6005,6 +6003,74 @@ static void build_ground_mesh(void) {
   };
   unsigned int idx[] = {0, 1, 2, 0, 2, 3};
   mesh_init(&g_mesh_ground, verts, 4, idx, 6);
+}
+
+static void build_ground_perlin_mesh(void) {
+  int res = WORLD_SIZE;
+  int vcount = (res + 1) * (res + 1);
+  int icount = res * res * 6;
+  float *verts = (float *)malloc(sizeof(float) * vcount * 6);
+  unsigned int *idx = (unsigned int *)malloc(sizeof(unsigned int) * icount);
+  if (!verts || !idx) {
+    free(verts);
+    free(idx);
+    return;
+  }
+
+  int vi = 0;
+  for (int z = 0; z <= res; z++) {
+    for (int x = 0; x <= res; x++) {
+      float fx = (float)x;
+      float fz = (float)z;
+      float h = terrain_height(fx, fz);
+      verts[vi * 6 + 0] = fx;
+      verts[vi * 6 + 1] = h;
+      verts[vi * 6 + 2] = fz;
+      verts[vi * 6 + 3] = 0.0f;
+      verts[vi * 6 + 4] = 1.0f;
+      verts[vi * 6 + 5] = 0.0f;
+      vi++;
+    }
+  }
+
+  int ii = 0;
+  for (int z = 0; z < res; z++) {
+    for (int x = 0; x < res; x++) {
+      unsigned int i0 = (unsigned int)(z * (res + 1) + x);
+      unsigned int i1 = i0 + 1;
+      unsigned int i2 = i0 + (unsigned int)(res + 1);
+      unsigned int i3 = i2 + 1;
+      idx[ii++] = i0;
+      idx[ii++] = i2;
+      idx[ii++] = i1;
+      idx[ii++] = i1;
+      idx[ii++] = i2;
+      idx[ii++] = i3;
+    }
+  }
+
+  float *pos = (float *)malloc(sizeof(float) * vcount * 3);
+  float *nrm = (float *)malloc(sizeof(float) * vcount * 3);
+  if (pos && nrm) {
+    for (int i = 0; i < vcount; i++) {
+      pos[i * 3 + 0] = verts[i * 6 + 0];
+      pos[i * 3 + 1] = verts[i * 6 + 1];
+      pos[i * 3 + 2] = verts[i * 6 + 2];
+    }
+    compute_normals_from_indices(pos, nrm, vcount, idx, icount);
+    for (int i = 0; i < vcount; i++) {
+      verts[i * 6 + 3] = nrm[i * 3 + 0];
+      verts[i * 6 + 4] = nrm[i * 3 + 1];
+      verts[i * 6 + 5] = nrm[i * 3 + 2];
+    }
+  }
+  free(pos);
+  free(nrm);
+
+  mesh_init(&g_mesh_ground_perlin, verts, vcount, idx, icount);
+  free(verts);
+  free(idx);
+  g_mesh_ground_perlin_ready = 1;
 }
 
 static void build_sphere_mesh(int stacks, int slices) {
@@ -6424,6 +6490,12 @@ static void init_3d_renderer(void) {
   g_u_light = glGetUniformLocation(g_shader, "uLightDir");
 
   build_ground_mesh();
+  if (g_use_perlin_ground) {
+    build_ground_perlin_mesh();
+  } else {
+    g_mesh_ground_tile_loaded =
+        load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
+  }
   build_sphere_mesh(10, 16);
   build_cylinder_mesh(16);
   g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
@@ -6443,8 +6515,6 @@ static void init_3d_renderer(void) {
       load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
   g_mesh_resource_loaded[RES_FOOD] =
       load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
-  g_mesh_ground_tile_loaded =
-      load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
   g_3d_ready = 1;
 }
 
@@ -6466,7 +6536,7 @@ static Vec3 color_to_vec3(Color c) {
 static void render_player_3d(Vec3 player_pos, Mat4 view_proj) {
   if (g_mesh_player_loaded) {
     Mat4 model = mat4_mul(
-        mat4_mul(mat4_translate(vec3(player_pos.x, 0.0f, player_pos.z)),
+        mat4_mul(mat4_translate(vec3(player_pos.x, player_pos.y, player_pos.z)),
                  mat4_rotate_y(g_player_yaw)),
         mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
     render_mesh(&g_mesh_player, model, view_proj, vec3(0.85f, 0.75f, 0.65f));
@@ -6474,13 +6544,17 @@ static void render_player_3d(Vec3 player_pos, Mat4 view_proj) {
   }
 
   Mat4 body =
-      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
+      mat4_mul(mat4_mul(mat4_translate(
+                            vec3(player_pos.x, player_pos.y + 1.0f,
+                                 player_pos.z)),
                         mat4_rotate_y(g_player_yaw)),
                mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
   render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
 
   Mat4 head =
-      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
+      mat4_mul(mat4_mul(mat4_translate(
+                            vec3(player_pos.x, player_pos.y + 2.4f,
+                                 player_pos.z)),
                         mat4_rotate_y(g_player_yaw)),
                mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
   render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
@@ -6506,8 +6580,10 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
         Mob *m = &c->mobs[i];
         if (m->health <= 0)
           continue;
-        Vec3 mp = vec3((cx + dx) * CHUNK_SIZE + m->position.x, 0.0f,
-                       (cy + dy) * CHUNK_SIZE + m->position.y);
+        float mpx = (cx + dx) * CHUNK_SIZE + m->position.x;
+        float mpz = (cy + dy) * CHUNK_SIZE + m->position.y;
+        float mpy = g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f;
+        Vec3 mp = vec3(mpx, mpy, mpz);
         float dxp = mp.x - player_pos.x;
         float dzp = mp.z - player_pos.z;
         if (dxp * dxp + dzp * dzp > max_dist2)
@@ -6520,7 +6596,7 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
         }
 
         float s = mob_radius_world(m->type) * 1.6f;
-        Mat4 model = mat4_mul(mat4_mul(mat4_translate(vec3(mp.x, 0.0f, mp.z)),
+        Mat4 model = mat4_mul(mat4_mul(mat4_translate(vec3(mp.x, mp.y, mp.z)),
                                        mat4_rotate_y(yaw)),
                               mat4_scale(vec3(s, s, s)));
         Vec3 tint = color_to_vec3(mob_colors[m->type]);
@@ -6551,7 +6627,10 @@ static void render_scene_3d(void) {
 
   float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
-  Vec3 player_pos = vec3(player.position.x, 0.0f, player.position.y);
+  float player_h = g_use_perlin_ground ? terrain_height(player.position.x,
+                                                        player.position.y)
+                                       : 0.0f;
+  Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
   Vec3 forward =
       vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
            cosf(g_player_pitch) * -cosf(g_player_yaw));
@@ -6569,7 +6648,13 @@ static void render_scene_3d(void) {
   Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
   Mat4 view_proj = mat4_mul(proj, view);
 
-  if (g_mesh_ground_tile_loaded) {
+  if (g_use_perlin_ground && g_mesh_ground_perlin_ready) {
+    Mat4 ground =
+        mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
+                 mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+    render_mesh(&g_mesh_ground_perlin, ground, view_proj,
+                vec3(0.18f, 0.55f, 0.22f));
+  } else if (g_mesh_ground_tile_loaded) {
     const float tile_size = 16.0f;
     int tile_radius = 4;
     int base_tx = (int)floorf(player_pos.x / tile_size);
@@ -6611,8 +6696,10 @@ static void render_scene_3d(void) {
         Resource *r = &c->resources[i];
         if (r->health <= 0)
           continue;
-        Vec3 rp = vec3((cx + dx) * CHUNK_SIZE + r->position.x, 0.0f,
-                       (cy + dy) * CHUNK_SIZE + r->position.y);
+        float rpx = (cx + dx) * CHUNK_SIZE + r->position.x;
+        float rpz = (cy + dy) * CHUNK_SIZE + r->position.y;
+        float rpy = g_use_perlin_ground ? terrain_height(rpx, rpz) : 0.0f;
+        Vec3 rp = vec3(rpx, rpy, rpz);
         float dxp = rp.x - player_pos.x;
         float dzp = rp.z - player_pos.z;
         if (dxp * dxp + dzp * dzp > max_dist2)
@@ -6639,22 +6726,22 @@ static void render_scene_3d(void) {
         if (r->type >= 0 && r->type < RES_COUNT &&
             g_mesh_resource_loaded[r->type]) {
           Vec3 col = color_to_vec3(resource_colors[r->type]);
-          Mat4 model = mat4_mul(mat4_translate(vec3(rp.x, 0.0f, rp.z)),
+          Mat4 model = mat4_mul(mat4_translate(vec3(rp.x, rp.y, rp.z)),
                                 mat4_scale(vec3(s, s, s)));
           render_mesh(&g_mesh_resources[r->type], model, view_proj, col);
         } else if (r->type == RES_TREE) {
-          Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, 0.8f, rp.z)),
+          Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 0.8f, rp.z)),
                                 mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
           render_mesh(&g_mesh_cylinder, trunk, view_proj,
                       vec3(0.35f, 0.22f, 0.12f));
-          Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, 2.2f, rp.z)),
+          Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 2.2f, rp.z)),
                                  mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
           render_mesh(&g_mesh_sphere, canopy, view_proj,
                       vec3(0.18f, 0.55f, 0.22f));
         } else {
           Vec3 col = color_to_vec3(resource_colors[r->type]);
           float rs = (r->type == RES_ROCK) ? 0.8f : 0.6f;
-          Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, 0.5f, rp.z)),
+          Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 0.5f, rp.z)),
                                mat4_scale(vec3(rs, rs, rs)));
           render_mesh(&g_mesh_sphere, rock, view_proj, col);
         }
