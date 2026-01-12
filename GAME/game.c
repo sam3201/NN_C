@@ -1713,33 +1713,27 @@ static void vision_id_map_init_defaults(void) {
   g_vision_id_map.base_odd_variant = 1;
 
   g_vision_id_map.mob_base = 4;
-  g_vision_id_map.res_base =
-      g_vision_id_map.mob_base + g_vision_id_map.mob_stride * MOB_COUNT;
-  g_vision_id_map.base_base =
-      g_vision_id_map.res_base + g_vision_id_map.res_stride * RES_COUNT;
+  g_vision_id_map.res_base = g_vision_id_map.mob_base;
+  g_vision_id_map.base_base = g_vision_id_map.mob_base;
   g_vision_id_map.use_overrides = 1;
 
+  int next_id = 4;
   for (int i = 0; i < MOB_COUNT; i++) {
-    g_vision_id_map.mob_even[i] =
-        g_vision_id_map.mob_base + g_vision_id_map.mob_stride * i;
-    g_vision_id_map.mob_odd[i] =
-        g_vision_id_map.mob_even[i] + g_vision_id_map.mob_odd_hostile;
+    g_vision_id_map.mob_even[i] = next_id++;
+    g_vision_id_map.mob_odd[i] = next_id++;
   }
+  g_vision_id_map.res_base = next_id;
   for (int i = 0; i < RES_COUNT; i++) {
-    g_vision_id_map.res_even[i] =
-        g_vision_id_map.res_base + g_vision_id_map.res_stride * i;
-    g_vision_id_map.res_odd[i] =
-        g_vision_id_map.res_even[i] + g_vision_id_map.res_odd_variant;
+    g_vision_id_map.res_even[i] = next_id++;
+    g_vision_id_map.res_odd[i] = next_id++;
   }
+  g_vision_id_map.base_base = next_id;
   for (int i = 0; i < TRIBE_COUNT; i++) {
-    g_vision_id_map.base_even[i] =
-        g_vision_id_map.base_base + g_vision_id_map.base_stride * i;
-    g_vision_id_map.base_odd[i] =
-        g_vision_id_map.base_even[i] + g_vision_id_map.base_odd_variant;
+    g_vision_id_map.base_even[i] = next_id++;
+    g_vision_id_map.base_odd[i] = next_id++;
   }
 
-  g_vision_id_max =
-      g_vision_id_map.base_base + g_vision_id_map.base_stride * TRIBE_COUNT;
+  g_vision_id_max = next_id;
 }
 
 static inline int vision_id_self(void) { return g_vision_id_map.self_id; }
@@ -2820,6 +2814,55 @@ static void draw_health_bar(Vector2 sp, float w, float h, float t01,
                      (Color){0, 0, 0, 220});
 }
 
+static void obs_stamp_entity(Vector2 chunk_origin, float cell,
+                             Vector2 world_pos, float radius, int pri, int idv,
+                             int classv, float sizev, float shapev, float ent_h,
+                             int *cell_id, int *cell_class, float *cell_size,
+                             float *cell_shape, float *cell_ent_h,
+                             float *cell_dist, int *cell_pri) {
+  if (radius <= 0.0f)
+    return;
+  float lx = world_pos.x - chunk_origin.x;
+  float lz = world_pos.y - chunk_origin.y;
+  int gx0 = (int)floorf((lx - radius) / cell);
+  int gx1 = (int)floorf((lx + radius) / cell);
+  int gz0 = (int)floorf((lz - radius) / cell);
+  int gz1 = (int)floorf((lz + radius) / cell);
+  if (gx0 < 0)
+    gx0 = 0;
+  if (gz0 < 0)
+    gz0 = 0;
+  if (gx1 >= OBS_GRID_W)
+    gx1 = OBS_GRID_W - 1;
+  if (gz1 >= OBS_GRID_H)
+    gz1 = OBS_GRID_H - 1;
+
+  float r2 = radius * radius;
+  for (int gz = gz0; gz <= gz1; gz++) {
+    for (int gx = gx0; gx <= gx1; gx++) {
+      Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                        chunk_origin.y + (gz + 0.5f) * cell};
+      float dx = center.x - world_pos.x;
+      float dz = center.y - world_pos.y;
+      float d2 = dx * dx + dz * dz;
+      if (d2 > r2)
+        continue;
+      float dist = sqrtf(d2);
+      size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+      if (pri > cell_pri[idx] ||
+          (pri == cell_pri[idx] && dist < cell_dist[idx])) {
+        cell_pri[idx] = pri;
+        cell_id[idx] = idv;
+        cell_class[idx] = classv;
+        cell_size[idx] = sizev;
+        cell_shape[idx] = shapev;
+        cell_ent_h[idx] = ent_h;
+        cell_dist[idx] = dist;
+      }
+    }
+  }
+}
+
 static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
                                         Vector2 chunk_origin, float agent_h) {
   if (!g_obs_tokens || !g_obs_token_buf || g_obs_token_count == 0)
@@ -2869,34 +2912,16 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
 
   const int id_max = (g_vision_id_max > 0) ? g_vision_id_max : 1;
 
-#define UPDATE_CELL(idx, pri, idv, classv, sizev, shapev, enth, distv)         \
-  do {                                                                         \
-    if ((pri) > cell_pri[(idx)] ||                                             \
-        ((pri) == cell_pri[(idx)] && (distv) < cell_dist[(idx)])) {            \
-      cell_pri[(idx)] = (pri);                                                 \
-      cell_id[(idx)] = (idv);                                                  \
-      cell_class[(idx)] = (classv);                                            \
-      cell_size[(idx)] = (sizev);                                              \
-      cell_shape[(idx)] = (shapev);                                            \
-      cell_ent_h[(idx)] = (enth);                                              \
-      cell_dist[(idx)] = (distv);                                              \
-    }                                                                          \
-  } while (0)
+#define STAMP_ENTITY(wpos, radius, pri, idv, classv, sizev, shapev, enth)      \
+  obs_stamp_entity(chunk_origin, cell, (wpos), (radius), (pri), (idv),         \
+                   (classv), (sizev), (shapev), (enth), cell_id, cell_class,   \
+                   cell_size, cell_shape, cell_ent_h, cell_dist, cell_pri)
 
   // self
   {
-    float lx = a->position.x - chunk_origin.x;
-    float lz = a->position.y - chunk_origin.y;
-    int gx = (int)(lx / cell);
-    int gz = (int)(lz / cell);
-    if (gx >= 0 && gx < OBS_GRID_W && gz >= 0 && gz < OBS_GRID_H) {
-      size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
-      Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
-                        chunk_origin.y + (gz + 0.5f) * cell};
-      float dist = Vector2Distance(center, a->position);
-      UPDATE_CELL(idx, 5, vision_id_self(), 1, agent_radius_world(), 0.0f,
-                  agent_h, dist);
-    }
+    float sizev = agent_radius_world();
+    STAMP_ENTITY(a->position, sizev, 5, vision_id_self(), 1, sizev, 0.0f,
+                 agent_h + sizev);
   }
 
   // other agents
@@ -2911,23 +2936,14 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
     int cy = (int)(a->position.y / CHUNK_SIZE);
     if (ocx != cx || ocy != cy)
       continue;
-    float lx = o->position.x - chunk_origin.x;
-    float lz = o->position.y - chunk_origin.y;
-    int gx = (int)(lx / cell);
-    int gz = (int)(lz / cell);
-    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
-      continue;
-    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
-    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
-                      chunk_origin.y + (gz + 0.5f) * cell};
-    float dist = Vector2Distance(center, o->position);
     int tribe = o->agent_id / AGENT_PER_TRIBE;
     int idv = vision_id_agent(tribe == my_tribe);
+    float sizev = agent_radius_world();
     float eh = g_use_perlin_ground
                    ? terrain_height(o->position.x, o->position.y)
                    : 0.0f;
-    UPDATE_CELL(idx, 4, idv, 1, agent_radius_world(),
-                (float)tribe / (float)(TRIBE_COUNT - 1), eh, dist);
+    STAMP_ENTITY(o->position, sizev, 4, idv, 1, sizev,
+                 (float)tribe / (float)(TRIBE_COUNT - 1), eh + sizev);
   }
 
   // mobs
@@ -2935,21 +2951,14 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
     Mob *m = &c->mobs[i];
     if (m->health <= 0)
       continue;
-    int gx = (int)(m->position.x / cell);
-    int gz = (int)(m->position.y / cell);
-    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
-      continue;
-    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
-    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
-                      chunk_origin.y + (gz + 0.5f) * cell};
     Vector2 world_pos = Vector2Add(chunk_origin, m->position);
-    float dist = Vector2Distance(center, world_pos);
     int hostile = mob_is_hostile(m->type) ? 1 : 0;
     int idv = vision_id_mob(m->type, hostile);
     float eh =
         g_use_perlin_ground ? terrain_height(world_pos.x, world_pos.y) : 0.0f;
-    UPDATE_CELL(idx, 3, idv, 2, mob_radius_world(m->type),
-                (float)m->type / (float)(MOB_COUNT - 1), eh, dist);
+    float sizev = mob_radius_world(m->type);
+    STAMP_ENTITY(world_pos, sizev, 3, idv, 2, sizev,
+                 (float)m->type / (float)(MOB_COUNT - 1), eh + sizev);
   }
 
   // resources
@@ -2957,20 +2966,13 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
     Resource *r = &c->resources[i];
     if (r->health <= 0)
       continue;
-    int gx = (int)(r->position.x / cell);
-    int gz = (int)(r->position.y / cell);
-    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
-      continue;
-    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
-    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
-                      chunk_origin.y + (gz + 0.5f) * cell};
     Vector2 world_pos = Vector2Add(chunk_origin, r->position);
-    float dist = Vector2Distance(center, world_pos);
     int idv = vision_id_resource(r->type, 0);
     float eh =
         g_use_perlin_ground ? terrain_height(world_pos.x, world_pos.y) : 0.0f;
-    UPDATE_CELL(idx, 2, idv, 3, res_radius_world(r->type),
-                (float)r->type / (float)(RES_COUNT - 1), eh, dist);
+    float sizev = res_radius_world(r->type);
+    STAMP_ENTITY(world_pos, sizev, 2, idv, 3, sizev,
+                 (float)r->type / (float)(RES_COUNT - 1), eh + sizev);
   }
 
   // bases
@@ -2982,23 +2984,14 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
     int cy = (int)(a->position.y / CHUNK_SIZE);
     if (bcx != cx || bcy != cy)
       continue;
-    float lx = bp.x - chunk_origin.x;
-    float lz = bp.y - chunk_origin.y;
-    int gx = (int)(lx / cell);
-    int gz = (int)(lz / cell);
-    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
-      continue;
-    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
-    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
-                      chunk_origin.y + (gz + 0.5f) * cell};
-    float dist = Vector2Distance(center, bp);
     int idv = vision_id_base(t, 0);
     float eh = g_use_perlin_ground ? terrain_height(bp.x, bp.y) : 0.0f;
-    UPDATE_CELL(idx, 1, idv, 4, tribes[t].base.radius,
-                (float)t / (float)(TRIBE_COUNT - 1), eh, dist);
+    float sizev = tribes[t].base.radius;
+    STAMP_ENTITY(bp, sizev, 1, idv, 4, sizev,
+                 (float)t / (float)(TRIBE_COUNT - 1), eh + sizev);
   }
 
-#undef UPDATE_CELL
+#undef STAMP_ENTITY
 
   size_t max_tokens = (size_t)OBS_GRID_W * (size_t)OBS_GRID_H;
   size_t token_count =
