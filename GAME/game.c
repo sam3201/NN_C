@@ -29,6 +29,8 @@ static int g_use_perlin_ground;
 static float hash2d(int x, int y);
 static float terrain_height(float x, float z);
 static void grass_enqueue_job(int cx, int cy);
+static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
+                         Color color);
 
 /* =======================
    GLOBAL CONFIG
@@ -93,11 +95,13 @@ static void grass_enqueue_job(int cx, int cy);
 #define GRASS_PATCH_DENSITY 600
 #define GRASS_PATCH_CELL 7.0f
 #define GRASS_PATCH_THRESHOLD 0.55f
-#define GRASS_CHUNK_RADIUS 2
+#define GRASS_CHUNK_RADIUS 3
 #define GRASS_STRIDE_NEAR 1
 #define GRASS_STRIDE_MID 3
 #define GRASS_STRIDE_FAR 6
-#define GRASS_MAX_DRAW 3000
+#define GRASS_MAX_CHUNK_NEAR 900
+#define GRASS_MAX_CHUNK_MID 450
+#define GRASS_MAX_CHUNK_FAR 220
 
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
@@ -717,6 +721,10 @@ static const char *key_name(KeyboardKey k) {
     return "KEY_LEFT_SHIFT";
   case KEY_F5:
     return "KEY_F5";
+  case KEY_F6:
+    return "KEY_F6";
+  case KEY_F7:
+    return "KEY_F7";
   case KEY_NULL:
     return "KEY_NULL";
   default:
@@ -759,10 +767,42 @@ static KeyboardKey key_from_name(const char *s) {
     return KEY_LEFT_SHIFT;
   if (strcmp(s, "KEY_F5") == 0)
     return KEY_F5;
+  if (strcmp(s, "KEY_F6") == 0)
+    return KEY_F6;
+  if (strcmp(s, "KEY_F7") == 0)
+    return KEY_F7;
   if (strcmp(s, "KEY_NULL") == 0)
     return KEY_NULL;
   return KEY_NULL;
 }
+
+typedef enum {
+  GFX_LOW = 0,
+  GFX_MED,
+  GFX_HIGH,
+  GFX_CUSTOM,
+  GFX_COUNT
+} GraphicsQuality;
+
+static GraphicsQuality g_gfx_quality = GFX_HIGH;
+static int g_enable_grass = 0;
+static int g_enable_ground_tex = 1;
+static float g_ground_tex_scale = 0.06f;
+static int g_grass_stride_near = GRASS_STRIDE_NEAR;
+static int g_grass_stride_mid = GRASS_STRIDE_MID;
+static int g_grass_stride_far = GRASS_STRIDE_FAR;
+static int g_grass_max_chunk_near = GRASS_MAX_CHUNK_NEAR;
+static int g_grass_max_chunk_mid = GRASS_MAX_CHUNK_MID;
+static int g_grass_max_chunk_far = GRASS_MAX_CHUNK_FAR;
+static int g_minimap_cells_normal = 40;
+static int g_minimap_cells_zoom = 56;
+static int g_profiler_enabled = 0;
+static double g_prof_update_ms = 0.0;
+static double g_prof_render_ms = 0.0;
+static double g_prof_ui_ms = 0.0;
+static double g_prof_total_ms = 0.0;
+static int g_prof_draw_calls = 0;
+static int g_prof_triangles = 0;
 
 static void save_keybinds(void) {
   FILE *f = fopen("keybinds.cfg", "w");
@@ -771,6 +811,57 @@ static void save_keybinds(void) {
   for (int i = 0; i < BIND_COUNT; i++) {
     fprintf(f, "%s=%s,%s\n", bind_action_ids[i],
             key_name(g_keybinds[i].primary), key_name(g_keybinds[i].secondary));
+  }
+  fclose(f);
+}
+
+static void rebuild_ground_perlin_mesh(void);
+
+static double prof_now_ms(void) { return GetTime() * 1000.0; }
+
+static void prof_smooth(double *dst, double v) {
+  if (!dst)
+    return;
+  if (*dst <= 0.0)
+    *dst = v;
+  else
+    *dst = *dst * 0.90 + v * 0.10;
+}
+
+static void save_graphics_config(void) {
+  FILE *f = fopen("graphics.cfg", "w");
+  if (!f)
+    return;
+  fprintf(f, "quality=%d\n", (int)g_gfx_quality);
+  fprintf(f, "enable_grass=%d\n", g_enable_grass ? 1 : 0);
+  fprintf(f, "enable_ground_tex=%d\n", g_enable_ground_tex ? 1 : 0);
+  fprintf(f, "ground_tex_scale=%.4f\n", g_ground_tex_scale);
+  fclose(f);
+}
+
+static void load_graphics_config(void) {
+  FILE *f = fopen("graphics.cfg", "r");
+  if (!f)
+    return;
+  char line[128];
+  while (fgets(line, sizeof(line), f)) {
+    char *eq = strchr(line, '=');
+    if (!eq)
+      continue;
+    *eq = '\0';
+    char *val = eq + 1;
+    char *newline = strchr(val, '\n');
+    if (newline)
+      *newline = '\0';
+    if (strcmp(line, "quality") == 0) {
+      g_gfx_quality = (GraphicsQuality)atoi(val);
+    } else if (strcmp(line, "enable_grass") == 0) {
+      g_enable_grass = atoi(val) ? 1 : 0;
+    } else if (strcmp(line, "enable_ground_tex") == 0) {
+      g_enable_ground_tex = atoi(val) ? 1 : 0;
+    } else if (strcmp(line, "ground_tex_scale") == 0) {
+      g_ground_tex_scale = (float)atof(val);
+    }
   }
   fclose(f);
 }
@@ -863,6 +954,8 @@ static void make_agent_model_path(char *out, size_t cap, const char *world_name,
            agent_id);
 }
 
+static Vector2 spawn_player_in_base(void);
+
 static void world_reset(uint32_t seed) {
   srand(seed);
 
@@ -882,9 +975,11 @@ static void world_reset(uint32_t seed) {
     }
   }
 
-  // reset player (spawn near center)
-  player.position = (Vector2){(WORLD_SIZE * CHUNK_SIZE) * 0.5f,
-                              (WORLD_SIZE * CHUNK_SIZE) * 0.5f};
+  init_tribes();
+  init_agents();
+
+  // reset player (spawn inside base)
+  player.position = spawn_player_in_base();
   player.health = 100.0f;
   player.stamina = 100.0f;
 
@@ -896,9 +991,6 @@ static void world_reset(uint32_t seed) {
   inv_shards = inv_arrows = 0;
 
   has_axe = has_pickaxe = has_sword = has_armor = has_bow = false;
-
-  init_tribes();
-  init_agents();
 }
 
 static int save_world_to_disk(const char *world_name) {
@@ -4816,14 +4908,25 @@ static void draw_crafting_ui(void) {
 /* =======================
    PLAYER
 ======================= */
+static Vector2 spawn_player_in_base(void) {
+  if (TRIBE_COUNT > 0) {
+    Tribe *tr = &tribes[0];
+    float d = fmaxf(0.75f, tr->base.radius * 0.25f);
+    return (Vector2){tr->base.position.x + d, tr->base.position.y};
+  }
+  return (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+}
+
 void init_player(void) {
-  player.position = (Vector2){WORLD_SIZE / 2, WORLD_SIZE / 2};
+  player.position = spawn_player_in_base();
   player.facing = (Vector2){0, 0};
   player.health = 100;
   player.stamina = 100;
   g_player_y_offset = 0.0f;
   g_player_vy = 0.0f;
   g_player_on_ground = 1;
+  g_player_yaw = 0.0f;
+  g_player_yaw_target = 0.0f;
 }
 
 void update_player(void) {
@@ -5729,6 +5832,7 @@ static GrassJob g_grass_jobs[GRASS_JOB_CAP];
 static int g_grass_head = 0;
 static int g_grass_tail = 0;
 static int g_grass_quit = 0;
+static int g_grass_thread_started = 0;
 
 static void grass_enqueue_job(int cx, int cy) {
   pthread_mutex_lock(&g_grass_mtx);
@@ -5835,15 +5939,24 @@ static void *grass_worker(void *arg) {
 }
 
 static void start_grass_worker(void) {
+  if (g_grass_thread_started)
+    return;
+  g_grass_quit = 0;
+  g_grass_head = 0;
+  g_grass_tail = 0;
   pthread_create(&g_grass_thread, NULL, grass_worker, NULL);
+  g_grass_thread_started = 1;
 }
 
 static void stop_grass_worker(void) {
+  if (!g_grass_thread_started)
+    return;
   pthread_mutex_lock(&g_grass_mtx);
   g_grass_quit = 1;
   pthread_cond_broadcast(&g_grass_cv);
   pthread_mutex_unlock(&g_grass_mtx);
   pthread_join(g_grass_thread, NULL);
+  g_grass_thread_started = 0;
 }
 
 // ------------------- 3D RENDERER (minimal) -------------------
@@ -5862,12 +5975,34 @@ typedef struct {
   int index_count;
 } Mesh;
 
+static void mesh_destroy(Mesh *m) {
+  if (!m)
+    return;
+  if (m->ebo) {
+    glDeleteBuffers(1, &m->ebo);
+    m->ebo = 0;
+  }
+  if (m->vbo) {
+    glDeleteBuffers(1, &m->vbo);
+    m->vbo = 0;
+  }
+  if (m->vao) {
+    glDeleteVertexArrays(1, &m->vao);
+    m->vao = 0;
+  }
+  m->index_count = 0;
+}
+
 static int g_3d_ready = 0;
 static GLuint g_shader = 0;
 static GLint g_u_mvp = -1;
 static GLint g_u_model = -1;
 static GLint g_u_color = -1;
 static GLint g_u_light = -1;
+static GLint g_u_use_tex = -1;
+static GLint g_u_tex = -1;
+static GLint g_u_tex_scale = -1;
+static GLuint g_ground_tex = 0;
 static Mesh g_mesh_ground = {0};
 static Mesh g_mesh_ground_tile = {0};
 static Mesh g_mesh_ground_perlin = {0};
@@ -5882,6 +6017,12 @@ static GLint g_ui_u_screen = -1;
 static GLint g_ui_u_color = -1;
 static GLint g_ui_u_tex = -1;
 static TTF_Font *g_ui_font = NULL;
+typedef struct {
+  int size;
+  TTF_Font *font;
+} UiFontEntry;
+
+static UiFontEntry g_ui_fonts[8] = {0};
 
 typedef struct {
   char text[64];
@@ -5893,15 +6034,36 @@ typedef struct {
 
 static UiTextCache g_hud_hp = {"", {0}, 0, 0, 0};
 static UiTextCache g_hud_st = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_player = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_hp = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_st = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_wood = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_gold = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_shards = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_base[TRIBE_COUNT];
+static UiTextCache g_ui_cache_minimap_title = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_minimap_mobs = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_daynight = {"", {0}, 0, 0, 0};
+static UiTextCache g_ui_cache_time = {"", {0}, 0, 0, 0};
+static double g_ui_cache_last_update = 0.0;
+static int g_ui_cache_last_zoomed = -1;
+static GLuint g_minimap_tex = 0;
+static int g_minimap_tex_cells = 0;
+static int g_minimap_tex_zoomed = -1;
+static double g_minimap_tex_last = 0.0;
+static int g_minimap_zoomed = 0;
 static Mesh g_mesh_player = {0};
 static Mesh g_mesh_mobs[MOB_COUNT] = {0};
 static Mesh g_mesh_resources[RES_COUNT] = {0};
+static Mesh g_mesh_base = {0};
 static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
 static int g_mesh_resource_loaded[RES_COUNT] = {0};
+static int g_mesh_base_loaded = 0;
 static int g_mesh_ground_tile_loaded = 0;
 static int g_mesh_ground_perlin_ready = 0;
 static int g_use_perlin_ground = 1;
+static int g_ground_step = 8;
 
 #define ASSET_PLAYER_GLB "Assets/Player.glb"
 #define ASSET_PIG_GLB "Assets/Pig.glb"
@@ -5913,6 +6075,7 @@ static int g_use_perlin_ground = 1;
 #define ASSET_GOLD_GLB "Assets/Gold.glb"
 #define ASSET_FOOD_GLB "Assets/Food.glb"
 #define ASSET_TERRAIN_GLB "Assets/terrain_tile.glb"
+#define ASSET_BASE_GLB "Assets/Base.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -6103,6 +6266,159 @@ static GLuint make_program(const char *vs, const char *fs) {
   glDeleteShader(v);
   glDeleteShader(f);
   return p;
+}
+
+static unsigned int hash_u32(unsigned int x) {
+  x ^= x >> 16;
+  x *= 0x7feb352dU;
+  x ^= x >> 15;
+  x *= 0x846ca68bU;
+  x ^= x >> 16;
+  return x;
+}
+
+static float hash2f(int x, int y) {
+  unsigned int h = hash_u32((unsigned int)x * 374761393U +
+                            (unsigned int)y * 668265263U);
+  return (float)(h & 0x00ffffffU) / (float)0x01000000U;
+}
+
+static GLuint create_ground_texture(int size) {
+  if (size <= 0)
+    size = 256;
+  unsigned char *pixels = (unsigned char *)malloc((size_t)size * size * 3);
+  if (!pixels)
+    return 0;
+
+  for (int y = 0; y < size; y++) {
+    for (int x = 0; x < size; x++) {
+      float nx = (float)x / (float)size;
+      float ny = (float)y / (float)size;
+      float n0 = hash2f(x, y);
+      float n1 = hash2f(x / 4, y / 4);
+      float n2 = hash2f(x / 16, y / 16);
+      float n = 0.55f * n0 + 0.30f * n1 + 0.15f * n2;
+      float dirt = clamp01((n - 0.45f) * 2.2f);
+
+      float r = 0.16f + 0.10f * n;
+      float g = 0.55f + 0.25f * n;
+      float b = 0.18f + 0.08f * n;
+
+      float dr = 0.42f + 0.10f * n1;
+      float dg = 0.33f + 0.08f * n1;
+      float db = 0.22f + 0.06f * n1;
+
+      r = r * (1.0f - dirt) + dr * dirt;
+      g = g * (1.0f - dirt) + dg * dirt;
+      b = b * (1.0f - dirt) + db * dirt;
+
+      int idx = (y * size + x) * 3;
+      pixels[idx + 0] = (unsigned char)fminf(fmaxf(r, 0.0f), 1.0f) * 255;
+      pixels[idx + 1] = (unsigned char)fminf(fmaxf(g, 0.0f), 1.0f) * 255;
+      pixels[idx + 2] = (unsigned char)fminf(fmaxf(b, 0.0f), 1.0f) * 255;
+    }
+  }
+
+  GLuint tex = 0;
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size, size, 0, GL_RGB,
+               GL_UNSIGNED_BYTE, pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  free(pixels);
+  return tex;
+}
+
+static const char *gfx_quality_label(GraphicsQuality q) {
+  switch (q) {
+    case GFX_LOW:
+      return "Low";
+    case GFX_MED:
+      return "Medium";
+    case GFX_HIGH:
+      return "High";
+    case GFX_CUSTOM:
+      return "Custom";
+    default:
+      return "Custom";
+  }
+}
+
+static void apply_graphics_quality(GraphicsQuality q) {
+  if (q == GFX_CUSTOM) {
+    return;
+  }
+  g_gfx_quality = q;
+  int want_grass = 0;
+  switch (q) {
+    case GFX_LOW:
+      g_enable_ground_tex = 0;
+      g_ground_tex_scale = 0.08f;
+      want_grass = 0;
+      g_ground_step = 20;
+      g_grass_stride_near = 6;
+      g_grass_stride_mid = 10;
+      g_grass_stride_far = 14;
+      g_grass_max_chunk_near = 120;
+      g_grass_max_chunk_mid = 80;
+      g_grass_max_chunk_far = 40;
+      g_minimap_cells_normal = 24;
+      g_minimap_cells_zoom = 32;
+      break;
+    case GFX_MED:
+      g_enable_ground_tex = 1;
+      g_ground_tex_scale = 0.07f;
+      want_grass = 1;
+      g_ground_step = 12;
+      g_grass_stride_near = 3;
+      g_grass_stride_mid = 6;
+      g_grass_stride_far = 10;
+      g_grass_max_chunk_near = 420;
+      g_grass_max_chunk_mid = 220;
+      g_grass_max_chunk_far = 120;
+      g_minimap_cells_normal = 32;
+      g_minimap_cells_zoom = 44;
+      break;
+    case GFX_HIGH:
+    default:
+      g_enable_ground_tex = 1;
+      g_ground_tex_scale = 0.06f;
+      want_grass = 1;
+      g_ground_step = 8;
+      g_grass_stride_near = GRASS_STRIDE_NEAR;
+      g_grass_stride_mid = GRASS_STRIDE_MID;
+      g_grass_stride_far = GRASS_STRIDE_FAR;
+      g_grass_max_chunk_near = GRASS_MAX_CHUNK_NEAR;
+      g_grass_max_chunk_mid = GRASS_MAX_CHUNK_MID;
+      g_grass_max_chunk_far = GRASS_MAX_CHUNK_FAR;
+      g_minimap_cells_normal = 40;
+      g_minimap_cells_zoom = 56;
+      break;
+  }
+
+  if (g_use_perlin_ground) {
+    rebuild_ground_perlin_mesh();
+  }
+
+  if (want_grass && !g_enable_grass) {
+    g_enable_grass = 1;
+    start_grass_worker();
+  } else if (!want_grass && g_enable_grass) {
+    g_enable_grass = 0;
+    stop_grass_worker();
+  }
+}
+
+static void apply_graphics_custom_runtime(void) {
+  if (g_enable_grass && !g_grass_thread_started) {
+    start_grass_worker();
+  } else if (!g_enable_grass && g_grass_thread_started) {
+    stop_grass_worker();
+  }
 }
 
 static void mesh_init(Mesh *m, const float *verts, int vcount,
@@ -6311,7 +6627,7 @@ static void build_ground_mesh(void) {
 
 static void build_ground_perlin_mesh(void) {
   int world_span = WORLD_SIZE * CHUNK_SIZE;
-  int step = 8; // world units between vertices
+  int step = g_ground_step; // world units between vertices
   int res = world_span / step;
   int vcount = (res + 1) * (res + 1);
   int icount = res * res * 6;
@@ -6377,6 +6693,14 @@ static void build_ground_perlin_mesh(void) {
   free(verts);
   free(idx);
   g_mesh_ground_perlin_ready = 1;
+}
+
+static void rebuild_ground_perlin_mesh(void) {
+  if (g_mesh_ground_perlin_ready) {
+    mesh_destroy(&g_mesh_ground_perlin);
+    g_mesh_ground_perlin_ready = 0;
+  }
+  build_ground_perlin_mesh();
 }
 
 static void build_grass_mesh(void) {
@@ -6599,6 +6923,77 @@ static void init_ui_gl(void) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+static TTF_Font *ui_get_font(int size) {
+  if (size <= 0)
+    size = 18;
+  for (int i = 0; i < (int)(sizeof(g_ui_fonts) / sizeof(g_ui_fonts[0])); i++) {
+    if (g_ui_fonts[i].font && g_ui_fonts[i].size == size) {
+      return g_ui_fonts[i].font;
+    }
+  }
+
+  for (int i = 0; i < (int)(sizeof(g_ui_fonts) / sizeof(g_ui_fonts[0])); i++) {
+    if (!g_ui_fonts[i].font) {
+      g_ui_fonts[i].font = TTF_OpenFont(ui_font_path(), size);
+      g_ui_fonts[i].size = size;
+      return g_ui_fonts[i].font;
+    }
+  }
+
+  return g_ui_fonts[0].font ? g_ui_fonts[0].font
+                            : (g_ui_font ? g_ui_font
+                                         : TTF_OpenFont(ui_font_path(), size));
+}
+
+static int ui_measure_text_size(const char *text, int size) {
+  if (!text || !text[0])
+    return 0;
+  TTF_Font *font = ui_get_font(size);
+  if (!font)
+    return 0;
+  int w = 0;
+  int h = 0;
+  size_t len = strlen(text);
+  if (!TTF_GetStringSize(font, text, len, &w, &h))
+    return 0;
+  return w;
+}
+
+static void ui_draw_text_size(float x, float y, const char *text, int size,
+                              Color color) {
+  if (!text || !text[0])
+    return;
+  init_ui_gl();
+  TTF_Font *font = ui_get_font(size);
+  if (!font)
+    return;
+
+  SDL_Color c = {color.r, color.g, color.b, color.a};
+  size_t len = strlen(text);
+  SDL_Surface *surf = TTF_RenderText_Blended(font, text, len, c);
+  if (!surf)
+    return;
+  SDL_Surface *rgba = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_RGBA32);
+  SDL_DestroySurface(surf);
+  if (!rgba)
+    return;
+
+  int tw = rgba->w;
+  int th = rgba->h;
+
+  GLuint tex = 0;
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               rgba->pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  SDL_DestroySurface(rgba);
+
+  ui_draw_quad(x, y, (float)tw, (float)th, tex, WHITE);
+  glDeleteTextures(1, &tex);
+}
+
 static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
                          Color color) {
   init_ui_gl();
@@ -6721,6 +7116,69 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
   ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
 
+static int ui_button_gl(Rectangle r, const char *text, int font_size) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
+  ui_draw_rect(r.x, r.y, r.width, r.height, bg);
+  ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f,
+               (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height,
+               (Color){0, 0, 0, 160});
+
+  int tw = ui_measure_text_size(text, font_size);
+  float tx = r.x + (r.width - (float)tw) * 0.5f;
+  float ty = r.y + (r.height - (float)font_size) * 0.5f;
+  ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
+  return hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+}
+
+static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
+                          int digits_only) {
+  Vector2 m = GetMousePosition();
+  int hot = CheckCollisionPointRec(m, r);
+  if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 1;
+  if (!hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    *active = 0;
+
+  Color bg = *active ? (Color){35, 35, 45, 220} : (Color){25, 25, 35, 210};
+  ui_draw_rect(r.x, r.y, r.width, r.height, bg);
+  ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 170});
+  ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f,
+               (Color){0, 0, 0, 170});
+  ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 170});
+  ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height,
+               (Color){0, 0, 0, 170});
+
+  if (*active) {
+    int key = GetCharPressed();
+    while (key > 0) {
+      int len = (int)strlen(buf);
+      if (key == 32 || (key >= 33 && key <= 126)) {
+        if (digits_only && !(key >= '0' && key <= '9')) {
+          key = GetCharPressed();
+          continue;
+        }
+        if (len < cap - 1) {
+          buf[len] = (char)key;
+          buf[len + 1] = 0;
+        }
+      }
+      key = GetCharPressed();
+    }
+    if (IsKeyPressed(KEY_BACKSPACE)) {
+      int len = (int)strlen(buf);
+      if (len > 0)
+        buf[len - 1] = 0;
+    }
+  }
+
+  ui_draw_text_size(r.x + 10, r.y + 10, buf, 20, RAYWHITE);
+}
+
 static void draw_crosshair_3d(void) {
   int w = GetScreenWidth();
   int h = GetScreenHeight();
@@ -6748,7 +7206,8 @@ static KeyboardKey poll_any_key_pressed(void) {
       KEY_Y,     KEY_Z,      KEY_ONE,       KEY_TWO,       KEY_THREE, KEY_FOUR,
       KEY_FIVE,  KEY_SIX,    KEY_SEVEN,     KEY_EIGHT,     KEY_NINE,  KEY_ZERO,
       KEY_UP,    KEY_DOWN,   KEY_LEFT,      KEY_RIGHT,     KEY_SPACE, KEY_TAB,
-      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT};
+      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT, KEY_F5,   KEY_F6,
+      KEY_F7};
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
     if (IsKeyPressed(keys[i]))
       return keys[i];
@@ -6767,8 +7226,12 @@ static void draw_pause_menu_3d(void) {
   ui_draw_text(w * 0.5f - 60, h * 0.25f, "PAUSED", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.40f, "1) Resume", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.48f, "2) Keybinds", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.56f, "3) Back to Title", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.64f, "4) Save", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.56f, "3) Graphics", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.64f, "4) Back to Title", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.72f, "5) Save", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.80f,
+               TextFormat("F6) Graphics: %s", gfx_quality_label(g_gfx_quality)),
+               RAYWHITE);
   glEnable(GL_DEPTH_TEST);
 
   if (IsKeyPressed(KEY_ONE)) {
@@ -6776,10 +7239,13 @@ static void draw_pause_menu_3d(void) {
   } else if (IsKeyPressed(KEY_TWO)) {
     g_pause_page = 1;
   } else if (IsKeyPressed(KEY_THREE)) {
+    g_pause_page = 3;
+    g_rebind_index = -1;
+  } else if (IsKeyPressed(KEY_FOUR)) {
     g_state = STATE_TITLE;
     g_pause_page = 0;
     g_rebind_index = -1;
-  } else if (IsKeyPressed(KEY_FOUR)) {
+  } else if (IsKeyPressed(KEY_FIVE)) {
     save_current_world_session();
   }
 }
@@ -6793,6 +7259,7 @@ static void draw_hud_3d(void) {
   init_ui_gl();
   char line[64];
   glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
   float panel_x = 14.0f;
   float panel_y = 12.0f;
   float panel_w = 170.0f;
@@ -6810,6 +7277,545 @@ static void draw_hud_3d(void) {
   snprintf(line, sizeof(line), "ST: %d", (int)player.stamina);
   ui_text_cache_update(&g_hud_st, line, (Color){200, 220, 255, 255});
   ui_draw_text_cached(20, 42, &g_hud_st);
+  ui_draw_text_size(20, 64, TextFormat("GFX: %s", gfx_quality_label(g_gfx_quality)),
+                    16, (Color){210, 210, 210, 220});
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
+static void draw_daynight_overlay_3d(void) {
+  float t = time_of_day;
+  float midnight_dist = fabsf(t - 0.0f);
+  midnight_dist = fminf(midnight_dist, fabsf(t - 1.0f));
+  float noon_dist = fabsf(t - 0.5f);
+
+  float night01 = clamp01((0.5f - noon_dist) * 2.0f);
+  night01 = 1.0f - night01;
+
+  unsigned char a = (unsigned char)(150 * night01);
+  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+               (Color){10, 20, 40, a});
+  double now = GetTime();
+  if (now - g_ui_cache_last_update > 0.25) {
+    ui_text_cache_update(&g_ui_cache_daynight, is_night_cached ? "Night" : "Day",
+                         RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_time,
+                         TextFormat("Time: %0.2f", time_of_day), RAYWHITE);
+  }
+  ui_draw_text_cached(20, 210, &g_ui_cache_daynight);
+  ui_draw_text_cached(20, 235, &g_ui_cache_time);
+}
+
+static void draw_hurt_vignette_3d(void) {
+  if (player_hurt_timer <= 0.0f)
+    return;
+  float t = clamp01(player_hurt_timer / 0.18f);
+  unsigned char a = (unsigned char)(120 * t);
+  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+               (Color){120, 0, 0, a});
+}
+
+static void draw_minimap_3d(void) {
+  int size = g_minimap_zoomed ? 240 : 160;
+  int x = 310;
+  int y = 14;
+  float radius = g_minimap_zoomed ? 18.0f : 28.0f;
+  int cells = g_minimap_zoomed ? g_minimap_cells_zoom : g_minimap_cells_normal;
+  float cell = (float)size / (float)cells;
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect((float)x, (float)y, (float)size, (float)size,
+               (Color){0, 0, 0, 110});
+  ui_draw_rect((float)x, (float)y, (float)size, 1.0f,
+               (Color){0, 0, 0, 220});
+  ui_draw_rect((float)x, (float)(y + size - 1), (float)size, 1.0f,
+               (Color){0, 0, 0, 220});
+  ui_draw_rect((float)x, (float)y, 1.0f, (float)size,
+               (Color){0, 0, 0, 220});
+  ui_draw_rect((float)(x + size - 1), (float)y, 1.0f, (float)size,
+               (Color){0, 0, 0, 220});
+
+  double now = GetTime();
+  int need_tex_update =
+      !g_minimap_tex || g_minimap_tex_cells != cells ||
+      g_minimap_tex_zoomed != g_minimap_zoomed ||
+      (now - g_minimap_tex_last) > 0.25;
+  if (need_tex_update) {
+    if (!g_minimap_tex || g_minimap_tex_cells != cells) {
+      if (g_minimap_tex) {
+        glDeleteTextures(1, &g_minimap_tex);
+        g_minimap_tex = 0;
+      }
+      glGenTextures(1, &g_minimap_tex);
+      glBindTexture(GL_TEXTURE_2D, g_minimap_tex);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cells, cells, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, NULL);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      g_minimap_tex_cells = cells;
+    }
+
+    unsigned char *pixels =
+        (unsigned char *)malloc((size_t)cells * cells * 4);
+    if (pixels) {
+      for (int gy = 0; gy < cells; gy++) {
+        for (int gx = 0; gx < cells; gx++) {
+          float nx = ((float)gx / (float)(cells - 1)) * 2.0f - 1.0f;
+          float ny = ((float)gy / (float)(cells - 1)) * 2.0f - 1.0f;
+          Vector2 wp = (Vector2){player.position.x + nx * radius,
+                                 player.position.y + ny * radius};
+          int cx = (int)(wp.x / CHUNK_SIZE);
+          int cy = (int)(wp.y / CHUNK_SIZE);
+          Chunk *c = get_chunk(cx, cy);
+          Color bc = c ? Fade(biome_colors[c->biome_type], 0.85f)
+                       : (Color){0, 0, 0, 255};
+          int idx = (gy * cells + gx) * 4;
+          pixels[idx + 0] = bc.r;
+          pixels[idx + 1] = bc.g;
+          pixels[idx + 2] = bc.b;
+          pixels[idx + 3] = 255;
+        }
+      }
+      glBindTexture(GL_TEXTURE_2D, g_minimap_tex);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, cells, cells, GL_RGBA,
+                      GL_UNSIGNED_BYTE, pixels);
+      free(pixels);
+    }
+    g_minimap_tex_last = now;
+    g_minimap_tex_zoomed = g_minimap_zoomed;
+  }
+
+  if (g_minimap_tex) {
+    ui_draw_quad((float)x, (float)y, (float)size, (float)size, g_minimap_tex,
+                 WHITE);
+  }
+
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
+    if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+      continue;
+    float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+    float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+    ui_draw_rect(x + pxm - 2.0f, y + pym - 2.0f, 4.0f, 4.0f, tribes[t].color);
+  }
+
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  int mob_count = 0;
+  for (int dx = -2; dx <= 2; dx++) {
+    for (int dy = -2; dy <= 2; dy++) {
+      int cx = pcx + dx;
+      int cy = pcy + dy;
+      Chunk *c = get_chunk(cx, cy);
+      Vector2 origin =
+          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        Vector2 mw = Vector2Add(origin, m->position);
+        Vector2 d = Vector2Subtract(mw, player.position);
+        if (fabsf(d.x) > radius || fabsf(d.y) > radius)
+          continue;
+        float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+        float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+        ui_draw_rect(x + pxm, y + pym, 2.0f, 2.0f,
+                     (Color){240, 80, 80, 255});
+        mob_count++;
+      }
+    }
+  }
+
+  ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f,
+               RAYWHITE);
+
+  if (g_ui_cache_last_zoomed != g_minimap_zoomed ||
+      now - g_ui_cache_last_update > 0.25) {
+    ui_text_cache_update(&g_ui_cache_minimap_title,
+                         g_minimap_zoomed ? "Minimap (M) - Zoomed"
+                                          : "Minimap (M)",
+                         (Color){210, 210, 210, 220});
+    ui_text_cache_update(&g_ui_cache_minimap_mobs,
+                         TextFormat("Mobs nearby: %d", mob_count),
+                         (Color){210, 190, 190, 210});
+    g_ui_cache_last_zoomed = g_minimap_zoomed;
+  }
+  ui_draw_text_cached((float)x, (float)(y + size + 6),
+                      &g_ui_cache_minimap_title);
+  ui_draw_text_cached((float)x, (float)(y + size + 26),
+                      &g_ui_cache_minimap_mobs);
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
+static void draw_ui_3d_full(void) {
+  float panel_x = 14.0f;
+  float panel_y = 12.0f;
+  float panel_w = 280.0f;
+  float panel_h = 140.0f;
+
+  double now = GetTime();
+  if (now - g_ui_cache_last_update > 0.25) {
+    ui_text_cache_update(&g_ui_cache_player, "Player", RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_hp,
+                         TextFormat("HP: %d", (int)player.health), RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_st,
+                         TextFormat("ST: %d", (int)player.stamina), RAYWHITE);
+    ui_text_cache_update(
+        &g_ui_cache_wood,
+        TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), RAYWHITE);
+    ui_text_cache_update(
+        &g_ui_cache_gold,
+        TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), RAYWHITE);
+    ui_text_cache_update(
+        &g_ui_cache_shards,
+        TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows),
+        RAYWHITE);
+    for (int t = 0; t < TRIBE_COUNT; t++) {
+      ui_text_cache_update(&g_ui_cache_base[t], TextFormat("Base %d", t),
+                           tribes[t].color);
+    }
+    g_ui_cache_last_update = now;
+  }
+
+  ui_draw_rect(panel_x, panel_y, panel_w, panel_h, (Color){0, 0, 0, 110});
+  ui_draw_rect(panel_x, panel_y, panel_w, 1.0f, (Color){0, 0, 0, 200});
+  ui_draw_rect(panel_x, panel_y + panel_h - 1.0f, panel_w, 1.0f,
+               (Color){0, 0, 0, 200});
+  ui_draw_rect(panel_x, panel_y, 1.0f, panel_h, (Color){0, 0, 0, 200});
+  ui_draw_rect(panel_x + panel_w - 1.0f, panel_y, 1.0f, panel_h,
+               (Color){0, 0, 0, 200});
+
+  float hp01 = clamp01(player.health / 100.0f);
+  float st01 = clamp01(player.stamina / 100.0f);
+
+  ui_draw_text_cached(panel_x + 10, panel_y + 6, &g_ui_cache_player);
+  ui_draw_text_cached(panel_x + 10, panel_y + 30, &g_ui_cache_hp);
+  ui_draw_text_cached(panel_x + 10, panel_y + 50, &g_ui_cache_st);
+
+  ui_draw_rect(panel_x + 106, panel_y + 32, 160.0f, 12.0f,
+               (Color){0, 0, 0, 140});
+  ui_draw_rect(panel_x + 106, panel_y + 32, 160.0f * hp01, 12.0f,
+               (Color){80, 220, 80, 255});
+
+  ui_draw_rect(panel_x + 106, panel_y + 52, 160.0f, 12.0f,
+               (Color){0, 0, 0, 140});
+  ui_draw_rect(panel_x + 106, panel_y + 52, 160.0f * st01, 12.0f,
+               (Color){80, 160, 255, 255});
+
+  ui_draw_text_cached(panel_x + 10, panel_y + 76, &g_ui_cache_wood);
+  ui_draw_text_cached(panel_x + 10, panel_y + 96, &g_ui_cache_gold);
+  ui_draw_text_cached(panel_x + 10, panel_y + 116, &g_ui_cache_shards);
+
+  int y0 = (int)(panel_y + panel_h + 6.0f);
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    float v = clamp01(tribes[t].integrity / 100.0f);
+    ui_draw_text_cached(panel_x + 10, y0 + t * 22, &g_ui_cache_base[t]);
+    ui_draw_rect(panel_x + 76, y0 + 4 + t * 22, 140.0f, 10.0f,
+                 (Color){0, 0, 0, 140});
+    ui_draw_rect(panel_x + 76, y0 + 4 + t * 22, 140.0f * v, 10.0f,
+                 tribes[t].color);
+  }
+}
+
+static void draw_profiler_3d(void) {
+  int w = GetScreenWidth();
+  if (w <= 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+
+  float x = (float)(w - 280);
+  float y = 14.0f;
+  float bw = 260.0f;
+  float bh = 120.0f;
+  ui_draw_rect(x, y, bw, bh, (Color){0, 0, 0, 140});
+  ui_draw_rect(x, y, bw, 1.0f, (Color){0, 0, 0, 220});
+  ui_draw_rect(x, y + bh - 1.0f, bw, 1.0f, (Color){0, 0, 0, 220});
+  ui_draw_text_size(x + 8, y + 6, "Profiler (F7)", 16, RAYWHITE);
+
+  ui_draw_text_size(x + 8, y + 28,
+                    TextFormat("Frame: %.2f ms", g_prof_total_ms), 16,
+                    RAYWHITE);
+  ui_draw_text_size(x + 8, y + 46,
+                    TextFormat("Update: %.2f ms", g_prof_update_ms), 14,
+                    (Color){210, 210, 210, 220});
+  ui_draw_text_size(x + 8, y + 62,
+                    TextFormat("Render: %.2f ms", g_prof_render_ms), 14,
+                    (Color){210, 210, 210, 220});
+  ui_draw_text_size(x + 8, y + 78, TextFormat("UI: %.2f ms", g_prof_ui_ms), 14,
+                    (Color){210, 210, 210, 220});
+  ui_draw_text_size(x + 8, y + 96,
+                    TextFormat("Draws: %d  Tris: %d", g_prof_draw_calls,
+                               g_prof_triangles),
+                    14, (Color){200, 200, 200, 220});
+
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
+static void draw_hover_label_3d(void) {
+  int hp = -1;
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  Chunk *c = get_chunk(cx, cy);
+
+  const char *label = NULL;
+  if (c) {
+    float best_d = 3.5f;
+    pthread_rwlock_rdlock(&c->lock);
+    for (int i = 0; i < c->resource_count; i++) {
+      Resource *r = &c->resources[i];
+      if (r->health <= 0)
+        continue;
+      Vector2 d = Vector2Subtract(r->position, player.position);
+      float dist = Vector2Length(d);
+      if (dist < best_d) {
+        best_d = dist;
+        label = res_name(r->type);
+        hp = r->health;
+      }
+    }
+    for (int i = 0; i < MAX_MOBS; i++) {
+      Mob *m = &c->mobs[i];
+      if (m->health <= 0)
+        continue;
+      Vector2 d = Vector2Subtract(m->position, player.position);
+      float dist = Vector2Length(d);
+      if (dist < best_d) {
+        best_d = dist;
+        label = mob_name(m->type);
+        hp = m->health;
+      }
+    }
+    pthread_rwlock_unlock(&c->lock);
+  }
+
+  if (label) {
+    char line[80];
+    if (hp > 0)
+      snprintf(line, sizeof(line), "%s (%d)", label, hp);
+    else
+      snprintf(line, sizeof(line), "%s", label);
+    ui_draw_text_size(20, 170, line, 16, RAYWHITE);
+  }
+}
+
+static void draw_crafting_ui_3d(void) {
+  if (!crafting_open)
+    return;
+  float x = 20.0f;
+  float y = 260.0f;
+  float w = 360.0f;
+  float h = 180.0f;
+  ui_draw_rect(x, y, w, h, (Color){0, 0, 0, 120});
+  ui_draw_rect(x, y, w, 1.0f, (Color){0, 0, 0, 220});
+  ui_draw_rect(x, y + h - 1.0f, w, 1.0f, (Color){0, 0, 0, 220});
+  ui_draw_rect(x, y, 1.0f, h, (Color){0, 0, 0, 220});
+  ui_draw_rect(x + w - 1.0f, y, 1.0f, h, (Color){0, 0, 0, 220});
+  ui_draw_text_size(x + 10, y + 6, "Crafting (TAB)", 18, RAYWHITE);
+
+  float ty = y + 32.0f;
+  for (int i = 0; i < recipe_count; i++) {
+    Recipe *r = &recipes[i];
+    if (!r->name)
+      continue;
+    ui_draw_text_size(
+        x + 10, ty,
+        TextFormat("%d) %s  [W%d S%d G%d F%d]%s", i + 1, r->name, r->wood,
+                   r->stone, r->gold, r->food,
+                   (r->unlock_flag && *r->unlock_flag) ? " (OWNED)" : ""),
+        16, RAYWHITE);
+    ty += 22.0f;
+    if (ty > y + h - 20.0f)
+      break;
+  }
+}
+
+static void draw_title_screen_3d(void) {
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+               (Color){18, 18, 28, 255});
+  ui_draw_text_size(40, 40, "SAMCRAFT", 52, RAYWHITE);
+  ui_draw_text_size(44, 100, "F5 = Save while playing", 18,
+                    (Color){200, 200, 200, 180});
+
+  Rectangle b1 = (Rectangle){60, 160, 260, 50};
+  Rectangle b2 = (Rectangle){60, 220, 260, 50};
+  Rectangle b3 = (Rectangle){60, 280, 260, 50};
+
+  if (ui_button_gl(b1, "Play (Load/Select)", 20))
+    g_state = STATE_WORLD_SELECT;
+  if (ui_button_gl(b2, "Create World", 20))
+    g_state = STATE_WORLD_CREATE;
+  if (ui_button_gl(b3, "Quit", 20))
+    CloseWindow();
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
+static void draw_world_create_3d(void) {
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+               (Color){18, 18, 28, 255});
+  ui_draw_text_size(60, 50, "Create World", 34, RAYWHITE);
+  ui_draw_text_size(60, 120, "World Name", 18, RAYWHITE);
+  ui_textbox_gl((Rectangle){60, 145, 360, 45}, g_world_name,
+                sizeof(g_world_name), &g_typing_name, 0);
+  ui_draw_text_size(60, 205, "Seed", 18, RAYWHITE);
+  ui_textbox_gl((Rectangle){60, 230, 200, 45}, g_seed_text,
+                sizeof(g_seed_text), &g_typing_seed, 1);
+
+  if (ui_button_gl((Rectangle){60, 300, 200, 50}, "Create & Play", 20)) {
+    g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
+    world_reset(g_world_seed);
+    save_world_to_disk(g_world_name);
+    g_state = STATE_PLAYING;
+  }
+  if (ui_button_gl((Rectangle){280, 300, 140, 50}, "Back", 20)) {
+    g_state = STATE_TITLE;
+  }
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
+static void draw_world_select_3d(void) {
+  static int initialized = 0;
+  if (!initialized) {
+    world_list_refresh(&g_world_list);
+    initialized = 1;
+  }
+
+  world_list_ensure_valid(&g_world_list);
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+               (Color){18, 18, 28, 255});
+  ui_draw_text_size(40, 30, "Select World", 44, RAYWHITE);
+
+  Rectangle listBox = {40, 100, 520, (float)SCREEN_HEIGHT - 180};
+  ui_draw_rect(listBox.x, listBox.y, listBox.width, listBox.height,
+               (Color){25, 25, 40, 255});
+  ui_draw_rect(listBox.x, listBox.y, listBox.width, 1.0f,
+               (Color){0, 0, 0, 160});
+  ui_draw_rect(listBox.x, listBox.y + listBox.height - 1.0f, listBox.width,
+               1.0f, (Color){0, 0, 0, 160});
+  ui_draw_rect(listBox.x, listBox.y, 1.0f, listBox.height,
+               (Color){0, 0, 0, 160});
+  ui_draw_rect(listBox.x + listBox.width - 1.0f, listBox.y, 1.0f,
+               listBox.height, (Color){0, 0, 0, 160});
+
+  int itemH = 44;
+  int visible = (int)(listBox.height / itemH);
+  if (visible < 1)
+    visible = 1;
+
+  float wheel = GetMouseWheelMove();
+  if (wheel != 0.0f && g_world_list.count > 0) {
+    g_world_list.scroll -= (int)wheel;
+    if (g_world_list.scroll < 0)
+      g_world_list.scroll = 0;
+    int maxScroll =
+        (g_world_list.count > visible) ? (g_world_list.count - visible) : 0;
+    if (g_world_list.scroll > maxScroll)
+      g_world_list.scroll = maxScroll;
+  }
+
+  if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
+    g_world_list.selected--;
+  if (IsKeyPressed(KEY_DOWN) && g_world_list.selected < g_world_list.count - 1)
+    g_world_list.selected++;
+
+  if (g_world_list.selected >= 0) {
+    if (g_world_list.selected < g_world_list.scroll)
+      g_world_list.scroll = g_world_list.selected;
+    if (g_world_list.selected >= g_world_list.scroll + visible)
+      g_world_list.scroll = g_world_list.selected - visible + 1;
+  }
+
+  for (int i = 0; i < visible; i++) {
+    int idx = g_world_list.scroll + i;
+    if (idx >= g_world_list.count)
+      break;
+
+    Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
+                     listBox.width - 20, (float)itemH - 6};
+    int hot = CheckCollisionPointRec(GetMousePosition(), row);
+
+    Color bg = (Color){35, 35, 55, 255};
+    if (idx == g_world_list.selected)
+      bg = (Color){60, 60, 95, 255};
+    else if (hot)
+      bg = (Color){45, 45, 70, 255};
+
+    ui_draw_rect(row.x, row.y, row.width, row.height, bg);
+    ui_draw_text_size(row.x + 12, row.y + 10, g_world_list.names[idx], 22,
+                      RAYWHITE);
+
+    if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      g_world_list.selected = idx;
+    }
+  }
+
+  Rectangle rPlay = {600, 140, 260, 54};
+  Rectangle rDelete = {600, 210, 260, 54};
+  Rectangle rCreate = {600, 280, 260, 54};
+  Rectangle rBack = {600, 350, 260, 54};
+
+  int hasSelection = (g_world_list.selected >= 0 &&
+                      g_world_list.selected < g_world_list.count);
+
+  if (ui_button_gl(rPlay, hasSelection ? "Play Selected" : "Play (no world)",
+                   20)) {
+    if (hasSelection) {
+      snprintf(g_world_name, sizeof(g_world_name), "%s",
+               g_world_list.names[g_world_list.selected]);
+      if (!load_world_from_disk(g_world_name)) {
+        world_reset(g_world_seed);
+        save_world_to_disk(g_world_name);
+        save_models_to_disk(g_world_name);
+      } else {
+        load_models_from_disk(g_world_name);
+      }
+      g_state = STATE_PLAYING;
+    }
+  }
+
+  if (ui_button_gl(rDelete,
+                   hasSelection ? "Delete World" : "Delete (no world)", 20)) {
+    if (hasSelection) {
+      const char *wname = g_world_list.names[g_world_list.selected];
+      delete_world_by_name(wname);
+      world_list_refresh(&g_world_list);
+      world_list_ensure_valid(&g_world_list);
+    }
+  }
+
+  if (ui_button_gl(rCreate, "Create New World", 20)) {
+    g_state = STATE_WORLD_CREATE;
+  }
+
+  if (ui_button_gl(rBack, "Back", 20)) {
+    g_state = STATE_TITLE;
+  }
+
+  if (hasSelection && IsKeyPressed(KEY_ENTER)) {
+    snprintf(g_world_name, sizeof(g_world_name), "%s",
+             g_world_list.names[g_world_list.selected]);
+    if (!load_world_from_disk(g_world_name)) {
+      world_reset(g_world_seed);
+      save_world_to_disk(g_world_name);
+    }
+    g_state = STATE_PLAYING;
+  }
+  glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -6869,6 +7875,87 @@ static void draw_keybinds_menu_3d(void) {
   glEnable(GL_DEPTH_TEST);
 }
 
+static void draw_graphics_menu_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){0, 0, 0, 160});
+  ui_draw_text(40, 40, "Graphics", RAYWHITE);
+  ui_draw_text(40, 68, "F6 cycles Low/Medium/High", (Color){200, 200, 200, 200});
+
+  float y = 120.0f;
+  float bx = 60.0f;
+  float bw = 180.0f;
+  float bh = 46.0f;
+  int changed = 0;
+
+  ui_draw_text((int)bx, (int)(y - 26.0f), "Quality Presets", RAYWHITE);
+  if (ui_button_gl((Rectangle){bx, y, bw, bh}, "Low", 20)) {
+    apply_graphics_quality(GFX_LOW);
+    changed = 1;
+  }
+  if (ui_button_gl((Rectangle){bx + bw + 16, y, bw, bh}, "Medium", 20)) {
+    apply_graphics_quality(GFX_MED);
+    changed = 1;
+  }
+  if (ui_button_gl((Rectangle){bx + (bw + 16) * 2, y, bw, bh}, "High", 20)) {
+    apply_graphics_quality(GFX_HIGH);
+    changed = 1;
+  }
+
+  y += 80.0f;
+  ui_draw_text((int)bx, (int)(y - 26.0f), "Toggles", RAYWHITE);
+  if (ui_button_gl((Rectangle){bx, y, bw + 40, bh},
+                   g_enable_grass ? "Grass: ON" : "Grass: OFF", 20)) {
+    g_enable_grass = !g_enable_grass;
+    g_gfx_quality = GFX_CUSTOM;
+    apply_graphics_custom_runtime();
+    changed = 1;
+  }
+  if (ui_button_gl((Rectangle){bx + bw + 60, y, bw + 60, bh},
+                   g_enable_ground_tex ? "Ground Tex: ON" : "Ground Tex: OFF",
+                   20)) {
+    g_enable_ground_tex = !g_enable_ground_tex;
+    g_gfx_quality = GFX_CUSTOM;
+    changed = 1;
+  }
+
+  y += 80.0f;
+  ui_draw_text((int)bx, (int)(y - 26.0f), "Texture Scale", RAYWHITE);
+  if (ui_button_gl((Rectangle){bx, y, 44, bh}, "-", 24)) {
+    g_ground_tex_scale = fmaxf(0.02f, g_ground_tex_scale - 0.01f);
+    g_gfx_quality = GFX_CUSTOM;
+    changed = 1;
+  }
+  ui_draw_text_size(bx + 64, y + 10,
+                    TextFormat("%.3f", g_ground_tex_scale), 20, RAYWHITE);
+  if (ui_button_gl((Rectangle){bx + 160, y, 44, bh}, "+", 24)) {
+    g_ground_tex_scale = fminf(0.20f, g_ground_tex_scale + 0.01f);
+    g_gfx_quality = GFX_CUSTOM;
+    changed = 1;
+  }
+
+  y += 90.0f;
+  if (ui_button_gl((Rectangle){bx, y, 180, 46}, "Back", 20)) {
+    g_pause_page = 0;
+    changed = 1;
+  }
+  if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+    g_pause_page = 0;
+    changed = 1;
+  }
+
+  if (changed) {
+    save_graphics_config();
+  }
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
 static void init_3d_renderer(void) {
   if (g_3d_ready)
     return;
@@ -6879,28 +7966,45 @@ static void init_3d_renderer(void) {
                    "uniform mat4 uMVP;\n"
                    "uniform mat4 uModel;\n"
                    "out vec3 vNormal;\n"
+                   "out vec3 vWorldPos;\n"
                    "void main(){\n"
+                   "  vec4 world = uModel * vec4(aPos,1.0);\n"
+                   "  vWorldPos = world.xyz;\n"
                    "  vNormal = mat3(uModel)*aNormal;\n"
                    "  gl_Position = uMVP*vec4(aPos,1.0);\n"
                    "}\n";
   const char *fs = "#version 330 core\n"
                    "in vec3 vNormal;\n"
+                   "in vec3 vWorldPos;\n"
                    "uniform vec3 uColor;\n"
                    "uniform vec3 uLightDir;\n"
+                   "uniform int uUseTex;\n"
+                   "uniform sampler2D uTex;\n"
+                   "uniform float uTexScale;\n"
                    "out vec4 FragColor;\n"
                    "void main(){\n"
                    "  float diff = max(dot(normalize(vNormal), "
                    "normalize(-uLightDir)), 0.25);\n"
-                   "  vec3 color = uColor * diff;\n"
-                   "  FragColor = vec4(color,1.0);\n"
+                   "  vec3 color = uColor;\n"
+                   "  if (uUseTex == 1) {\n"
+                   "    vec2 uv = vWorldPos.xz * uTexScale;\n"
+                   "    vec3 tex = texture(uTex, uv).rgb;\n"
+                   "    color *= tex;\n"
+                   "    diff *= 0.85 + 0.15 * tex.r;\n"
+                   "  }\n"
+                   "  FragColor = vec4(color * diff,1.0);\n"
                    "}\n";
   g_shader = make_program(vs, fs);
   g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
   g_u_model = glGetUniformLocation(g_shader, "uModel");
   g_u_color = glGetUniformLocation(g_shader, "uColor");
   g_u_light = glGetUniformLocation(g_shader, "uLightDir");
+  g_u_use_tex = glGetUniformLocation(g_shader, "uUseTex");
+  g_u_tex = glGetUniformLocation(g_shader, "uTex");
+  g_u_tex_scale = glGetUniformLocation(g_shader, "uTexScale");
 
   build_ground_mesh();
+  g_ground_tex = create_ground_texture(256);
   if (g_use_perlin_ground) {
     build_ground_perlin_mesh();
   } else {
@@ -6927,6 +8031,7 @@ static void init_3d_renderer(void) {
       load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
   g_mesh_resource_loaded[RES_FOOD] =
       load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
+  g_mesh_base_loaded = load_glb_mesh(ASSET_BASE_GLB, &g_mesh_base);
   g_3d_ready = 1;
 }
 
@@ -6936,9 +8041,36 @@ static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
   glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
   glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
   glUniform3f(g_u_color, color.x, color.y, color.z);
+  if (g_u_use_tex >= 0)
+    glUniform1i(g_u_use_tex, 0);
   glBindVertexArray(m->vao);
   glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
+  g_prof_draw_calls++;
+  g_prof_triangles += m->index_count / 3;
+}
+
+static void render_mesh_textured(const Mesh *m, Mat4 model, Mat4 view_proj,
+                                 Vec3 color, GLuint tex, float tex_scale) {
+  Mat4 mvp = mat4_mul(view_proj, model);
+  glUseProgram(g_shader);
+  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+  glUniform3f(g_u_color, color.x, color.y, color.z);
+  if (g_u_use_tex >= 0)
+    glUniform1i(g_u_use_tex, 1);
+  if (g_u_tex_scale >= 0)
+    glUniform1f(g_u_tex_scale, tex_scale);
+  if (g_u_tex >= 0) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glUniform1i(g_u_tex, 0);
+  }
+  glBindVertexArray(m->vao);
+  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+  g_prof_draw_calls++;
+  g_prof_triangles += m->index_count / 3;
 }
 
 static Vec3 color_to_vec3(Color c) {
@@ -7024,11 +8156,24 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
   }
 }
 
+static void render_bases_3d(Mat4 view_proj) {
+  if (!g_mesh_base_loaded)
+    return;
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 bp = tribes[t].base.position;
+    float h = g_use_perlin_ground ? terrain_height(bp.x, bp.y) : 0.0f;
+    Vec3 pos = vec3(bp.x, h, bp.y);
+    Vec3 tint = color_to_vec3(tribes[t].color);
+    float s = tribes[t].base.radius * 0.35f;
+    Mat4 model = mat4_mul(mat4_translate(pos), mat4_scale(vec3(s, s, s)));
+    render_mesh(&g_mesh_base, model, view_proj, tint);
+  }
+}
+
 static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
   (void)tnow;
   int pcx = (int)(player_pos.x / CHUNK_SIZE);
   int pcz = (int)(player_pos.z / CHUNK_SIZE);
-  int drawn = 0;
 
   for (int cz = pcz - GRASS_CHUNK_RADIUS; cz <= pcz + GRASS_CHUNK_RADIUS;
        cz++) {
@@ -7038,8 +8183,6 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
          cx++) {
       if (cx < 0 || cx >= WORLD_SIZE)
         continue;
-      if (drawn >= GRASS_MAX_DRAW)
-        return;
 
       Chunk *c = get_chunk(cx, cz);
       if (!c)
@@ -7063,17 +8206,22 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
       int dist = abs(dx);
       if (abs(dz) > dist)
         dist = abs(dz);
-      int stride = GRASS_STRIDE_FAR;
+      int stride = g_grass_stride_far;
       if (dist <= 1)
-        stride = GRASS_STRIDE_NEAR;
+        stride = g_grass_stride_near;
       else if (dist == 2)
-        stride = GRASS_STRIDE_MID;
+        stride = g_grass_stride_mid;
       if (stride < 1)
         stride = 1;
 
-      for (int i = 0; i < count; i += stride) {
-        if (drawn >= GRASS_MAX_DRAW)
-          return;
+      int max_draw = g_grass_max_chunk_far;
+      if (dist <= 1)
+        max_draw = g_grass_max_chunk_near;
+      else if (dist == 2)
+        max_draw = g_grass_max_chunk_mid;
+
+      int drawn = 0;
+      for (int i = 0; i < count && drawn < max_draw; i += stride) {
         float px = blades[i].x;
         float py = blades[i].y;
         float pz = blades[i].z;
@@ -7130,8 +8278,14 @@ static void render_scene_3d(void) {
   if (g_use_perlin_ground && g_mesh_ground_perlin_ready) {
     Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
                            mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
-    render_mesh(&g_mesh_ground_perlin, ground, view_proj,
-                vec3(0.18f, 0.55f, 0.22f));
+    if (g_enable_ground_tex && g_ground_tex) {
+      render_mesh_textured(&g_mesh_ground_perlin, ground, view_proj,
+                           vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
+                           g_ground_tex_scale);
+    } else {
+      render_mesh(&g_mesh_ground_perlin, ground, view_proj,
+                  vec3(0.18f, 0.55f, 0.22f));
+    }
   } else if (g_mesh_ground_tile_loaded) {
     const float tile_size = 16.0f;
     int tile_radius = 4;
@@ -7142,19 +8296,35 @@ static void render_scene_3d(void) {
         float cx = tx * tile_size + tile_size * 0.5f;
         float cz = tz * tile_size + tile_size * 0.5f;
         Mat4 tile = mat4_translate(vec3(cx, 0.0f, cz));
-        render_mesh(&g_mesh_ground_tile, tile, view_proj,
-                    vec3(0.18f, 0.55f, 0.22f));
+        if (g_enable_ground_tex && g_ground_tex) {
+          render_mesh_textured(&g_mesh_ground_tile, tile, view_proj,
+                               vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
+                               g_ground_tex_scale);
+        } else {
+          render_mesh(&g_mesh_ground_tile, tile, view_proj,
+                      vec3(0.18f, 0.55f, 0.22f));
+        }
       }
     }
   } else {
     Mat4 ground = mat4_mul(
         mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
         mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
-    render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
+    if (g_enable_ground_tex && g_ground_tex) {
+      render_mesh_textured(&g_mesh_ground, ground, view_proj,
+                           vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
+                           g_ground_tex_scale);
+    } else {
+      render_mesh(&g_mesh_ground, ground, view_proj,
+                  vec3(0.18f, 0.55f, 0.22f));
+    }
   }
 
   render_player_3d(player_pos, view_proj);
-  render_grass_3d(player_pos, view_proj, tnow);
+  render_bases_3d(view_proj);
+  if (g_enable_grass) {
+    render_grass_3d(player_pos, view_proj, tnow);
+  }
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
@@ -7247,22 +8417,33 @@ int main(void) {
   if (TTF_Init() != 0) {
     printf("TTF_Init failed: %s\n", SDL_GetError());
   }
-  SetExitKey(KEY_ESCAPE);
+  SetExitKey(KEY_NULL);
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
   SetTargetFPS(60);
 
   load_keybinds();
+  load_graphics_config();
   init_tribes();
   init_agents();
   init_player();
   if (g_use_3d) {
-    g_state = STATE_PLAYING;
+    g_state = STATE_TITLE;
+  }
+
+  if (g_gfx_quality == GFX_LOW || g_gfx_quality == GFX_MED ||
+      g_gfx_quality == GFX_HIGH) {
+    apply_graphics_quality(g_gfx_quality);
+  } else {
+    g_gfx_quality = GFX_CUSTOM;
+    apply_graphics_custom_runtime();
   }
 
   start_workers();
-  start_grass_worker();
+  if (g_enable_grass) {
+    start_grass_worker();
+  }
 
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
@@ -7283,6 +8464,7 @@ int main(void) {
 
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
+    double frame_start_ms = prof_now_ms();
 
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
     camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
@@ -7295,14 +8477,13 @@ int main(void) {
     }
     WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
 
+    double update_start_ms = prof_now_ms();
     if (g_state == STATE_PLAYING) {
       update_player();
       update_visible_world(dt);
       update_projectiles(dt);
       update_daynight(dt);
       collect_nearby_pickups();
-
-      update_visible_world(dt);
 
       g_dt = dt;
       run_agent_jobs();
@@ -7339,6 +8520,7 @@ int main(void) {
 
       update_pickups(dt);
     }
+    double update_ms = prof_now_ms() - update_start_ms;
 
     if (g_use_3d) {
       if (g_state == STATE_PLAYING && !g_mouse_locked) {
@@ -7361,6 +8543,23 @@ int main(void) {
       g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
                                                           : CAM_THIRD_PERSON;
     }
+    if (g_use_3d && g_state == STATE_PLAYING && IsKeyPressed(KEY_M)) {
+      g_minimap_zoomed = !g_minimap_zoomed;
+    }
+    if (g_use_3d && IsKeyPressed(KEY_F6)) {
+      GraphicsQuality next = GFX_LOW;
+      if (g_gfx_quality == GFX_LOW)
+        next = GFX_MED;
+      else if (g_gfx_quality == GFX_MED)
+        next = GFX_HIGH;
+      else
+        next = GFX_LOW;
+      apply_graphics_quality(next);
+      save_graphics_config();
+    }
+    if (g_use_3d && IsKeyPressed(KEY_F7)) {
+      g_profiler_enabled = !g_profiler_enabled;
+    }
 
     if (bind_pressed(BIND_PAUSE)) {
       if (g_state == STATE_PLAYING) {
@@ -7377,16 +8576,52 @@ int main(void) {
     BeginDrawing();
     ClearBackground((Color){135, 206, 235, 255});
     if (g_use_3d) {
-      render_scene_3d();
-      draw_hud_3d();
-      if (g_state == STATE_PLAYING) {
-        draw_crosshair_3d();
+      g_prof_draw_calls = 0;
+      g_prof_triangles = 0;
+      double render_start_ms = prof_now_ms();
+      if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+        render_scene_3d();
       }
+      double render_ms = prof_now_ms() - render_start_ms;
+
+      double ui_start_ms = prof_now_ms();
+      if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+        draw_ui_3d_full();
+        draw_minimap_3d();
+        draw_daynight_overlay_3d();
+        draw_hurt_vignette_3d();
+        draw_crafting_ui_3d();
+        draw_hover_label_3d();
+        if (g_state == STATE_PLAYING) {
+          draw_crosshair_3d();
+        }
+      }
+
       if (g_state == STATE_PAUSED) {
         if (g_pause_page == 0)
           draw_pause_menu_3d();
+        else if (g_pause_page == 3)
+          draw_graphics_menu_3d();
         else
           draw_keybinds_menu_3d();
+      } else if (g_state == STATE_TITLE) {
+        draw_title_screen_3d();
+      } else if (g_state == STATE_WORLD_CREATE) {
+        draw_world_create_3d();
+      } else if (g_state == STATE_WORLD_SELECT) {
+        draw_world_select_3d();
+      }
+
+      double ui_ms = prof_now_ms() - ui_start_ms;
+      double total_ms = prof_now_ms() - frame_start_ms;
+
+      prof_smooth(&g_prof_update_ms, update_ms);
+      prof_smooth(&g_prof_render_ms, render_ms);
+      prof_smooth(&g_prof_ui_ms, ui_ms);
+      prof_smooth(&g_prof_total_ms, total_ms);
+
+      if (g_profiler_enabled) {
+        draw_profiler_3d();
       }
       EndDrawing();
       continue;
@@ -7497,14 +8732,39 @@ int main(void) {
     EndDrawing();
   }
 
-  stop_grass_worker();
+  if (g_enable_grass) {
+    stop_grass_worker();
+  }
   stop_workers();
 
   ui_text_cache_clear(&g_hud_hp);
   ui_text_cache_clear(&g_hud_st);
+  ui_text_cache_clear(&g_ui_cache_player);
+  ui_text_cache_clear(&g_ui_cache_hp);
+  ui_text_cache_clear(&g_ui_cache_st);
+  ui_text_cache_clear(&g_ui_cache_wood);
+  ui_text_cache_clear(&g_ui_cache_gold);
+  ui_text_cache_clear(&g_ui_cache_shards);
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    ui_text_cache_clear(&g_ui_cache_base[t]);
+  }
+  ui_text_cache_clear(&g_ui_cache_minimap_title);
+  ui_text_cache_clear(&g_ui_cache_minimap_mobs);
+  ui_text_cache_clear(&g_ui_cache_daynight);
+  ui_text_cache_clear(&g_ui_cache_time);
+  for (int i = 0; i < (int)(sizeof(g_ui_fonts) / sizeof(g_ui_fonts[0])); i++) {
+    if (g_ui_fonts[i].font) {
+      TTF_CloseFont(g_ui_fonts[i].font);
+      g_ui_fonts[i].font = NULL;
+    }
+  }
   if (g_ui_font) {
     TTF_CloseFont(g_ui_font);
     g_ui_font = NULL;
+  }
+  if (g_minimap_tex) {
+    glDeleteTextures(1, &g_minimap_tex);
+    g_minimap_tex = 0;
   }
   TTF_Quit();
 
