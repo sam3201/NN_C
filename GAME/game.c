@@ -1,4 +1,3 @@
-#include "../SAM/SAM.h"
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
@@ -48,7 +47,7 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 #define AGENT_PER_TRIBE 8
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
-#define BASE_RADIUS 8
+#define BASE_RADIUS 24
 
 #define HARVEST_DISTANCE 5.0f
 #define HARVEST_AMOUNT 1
@@ -137,7 +136,14 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 
 #define R_DEATH (-1.000f)
 
-#define OBS_DIM 128
+#define OBS_BASE_DIM 84
+#define OBS_GRID_W 8
+#define OBS_GRID_H 8
+#define OBS_HEIGHT_BINS 3
+#define OBS_CELL_TYPES 9
+#define OBS_TOKEN_DIM 16
+#define OBS_EMBED_DIM 16
+#define OBS_DIM (OBS_BASE_DIM + OBS_EMBED_DIM)
 #define TRAIN_INTERVAL 1
 
 #define MAX_WORLDS 4096
@@ -335,8 +341,6 @@ typedef struct Agent {
   bool alive;
   float flash_timer;
   int agent_start;
-  SAM_t *sam;
-  MuCortex *cortex;
   float reward_accumulator;
   int age;
   int last_action;
@@ -362,6 +366,7 @@ typedef struct Agent {
   int fire_latched;       // 0/1
   float fire_latch_timer; // seconds remaining to keep trying
 
+  uint32_t rng_state;
 } Agent;
 
 typedef struct {
@@ -510,6 +515,36 @@ static int g_typing_name = 0;
 static int g_typing_seed = 0;
 static int g_tribes_ready = 0;
 static float g_base_flat_height[TRIBE_COUNT] = {0};
+static const float g_base_open_half_angle = 0.61f; // ~35 deg
+static MuzeConfig g_muze_cfg;
+static MuModel *g_muze_model = NULL;
+static ReplayBuffer *g_muze_rb = NULL;
+static pthread_mutex_t g_muze_model_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t g_muze_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
+static MuzeLoopThread g_muze_loop;
+static uint32_t g_muze_loop_rng_state = 0;
+static int g_muze_loop_started = 0;
+static int g_use_obs_transformer = 1;
+static Transformer_t *g_obs_transformer = NULL;
+static long double *g_obs_token_buf = NULL;
+static long double **g_obs_tokens = NULL;
+static size_t g_obs_token_count = 0;
+typedef struct {
+  int self_id;
+  int agent_same_id;
+  int agent_other_id;
+  int mob_base;
+  int res_base;
+  int base_base;
+  int mob_stride;
+  int res_stride;
+  int base_stride;
+  int mob_odd_hostile;
+  int res_odd_variant;
+  int base_odd_variant;
+} VisionIdMap;
+static VisionIdMap g_vision_id_map = {0};
+static int g_vision_id_max = 0;
 
 // Forward declarations for functions used before their definitions (C99+)
 struct Chunk; // forward decl
@@ -951,10 +986,9 @@ static void make_models_dir(char *out, size_t cap, const char *world_name) {
   snprintf(out, cap, "%s/%s/models", SAVE_ROOT, world_name);
 }
 
-static void make_agent_model_path(char *out, size_t cap, const char *world_name,
-                                  int agent_id) {
-  snprintf(out, cap, "%s/%s/models/agent_%03d.bin", SAVE_ROOT, world_name,
-           agent_id);
+static void make_global_model_path(char *out, size_t cap,
+                                   const char *world_name) {
+  snprintf(out, cap, "%s/%s/models/muze_model.bin", SAVE_ROOT, world_name);
 }
 
 static Vector2 spawn_player_in_base(void);
@@ -1376,6 +1410,7 @@ static int load_world_from_disk(const char *world_name) {
     a->tool_selected = sa.tool_selected;
     a->last_craft_selected = sa.last_craft_selected;
   }
+  ensure_agents_ready_on_enter();
 
   // ---- pickups ONCE ----
   for (int i = 0; i < MAX_PICKUPS; i++)
@@ -1517,33 +1552,32 @@ static int save_models_to_disk(const char *world_name) {
   make_models_dir(dir, sizeof(dir), world_name);
   mkdir(dir, 0755);
 
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &agents[i];
-    if (!a->sam)
-      continue;
-
-    char path[256];
-    make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
-
-    if (!SAM_save(a->sam, path)) {
-      fprintf(stderr, "Failed to save model for agent %d\n", a->agent_id);
-      return 1;
-    }
+  if (!g_muze_model)
+    return 1;
+  char path[256];
+  make_global_model_path(path, sizeof(path), world_name);
+  pthread_mutex_lock(&g_muze_model_mtx);
+  if (!mu_model_save(g_muze_model, path)) {
+    fprintf(stderr, "Failed to save Muze model\n");
+    pthread_mutex_unlock(&g_muze_model_mtx);
+    return 1;
   }
+  pthread_mutex_unlock(&g_muze_model_mtx);
   return 1;
 }
 
 static int load_models_from_disk(const char *world_name) {
-  for (int i = 0; i < MAX_AGENTS; i++) {
-    Agent *a = &agents[i];
-    if (!a->sam)
-      continue;
-
-    char path[256];
-    make_agent_model_path(path, sizeof(path), world_name, a->agent_id);
-
-    a->sam = SAM_load(path);
+  char path[256];
+  make_global_model_path(path, sizeof(path), world_name);
+  pthread_mutex_lock(&g_muze_model_mtx);
+  MuModel *loaded = mu_model_load(path);
+  if (loaded) {
+    if (g_muze_model)
+      mu_model_free(g_muze_model);
+    g_muze_model = loaded;
+    g_muze_loop.model = g_muze_model;
   }
+  pthread_mutex_unlock(&g_muze_model_mtx);
   return 1;
 }
 
@@ -1610,6 +1644,92 @@ static inline float lerp_angle(float a, float b, float t) {
 static inline int wrap(int v) { return (v + WORLD_SIZE) % WORLD_SIZE; }
 static inline float randf(float a, float b) {
   return a + (float)rand() / RAND_MAX * (b - a);
+}
+
+static inline uint32_t xorshift32(uint32_t *s) {
+  uint32_t x = *s;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *s = x;
+  return x;
+}
+
+static float agent_rng01(void *ctx) {
+  Agent *a = (Agent *)ctx;
+  uint32_t x = a->rng_state ? a->rng_state : 0x12345678u;
+  x = xorshift32(&x);
+  a->rng_state = x;
+  return (float)(x & 0xFFFFFFu) / (float)0x1000000u;
+}
+
+static float loop_rng01(void *ctx) {
+  uint32_t *s = (uint32_t *)ctx;
+  uint32_t x = *s ? *s : 0x12345678u;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *s = x;
+  return (float)(x & 0xFFFFFFu) / (float)0x1000000u;
+}
+
+static int sample_action(const float *pi, int n, float r) {
+  float c = 0.0f;
+  for (int i = 0; i < n; i++) {
+    c += pi[i];
+    if (r <= c)
+      return i;
+  }
+  return (n > 0) ? (n - 1) : 0;
+}
+
+static void transformer_seq_free(long double **seq, size_t T) {
+  if (!seq)
+    return;
+  for (size_t t = 0; t < T; t++)
+    free(seq[t]);
+  free(seq);
+}
+
+static void vision_id_map_init_defaults(void) {
+  // 0 = empty, 1 = self, 2/3 = agents (same/other tribe), then even/odd pairs
+  g_vision_id_map.self_id = 1;
+  g_vision_id_map.agent_same_id = 2;
+  g_vision_id_map.agent_other_id = 3;
+
+  g_vision_id_map.mob_stride = 2;
+  g_vision_id_map.res_stride = 2;
+  g_vision_id_map.base_stride = 2;
+
+  g_vision_id_map.mob_odd_hostile = 1;
+  g_vision_id_map.res_odd_variant = 1;
+  g_vision_id_map.base_odd_variant = 1;
+
+  g_vision_id_map.mob_base = 4;
+  g_vision_id_map.res_base =
+      g_vision_id_map.mob_base + g_vision_id_map.mob_stride * MOB_COUNT;
+  g_vision_id_map.base_base =
+      g_vision_id_map.res_base + g_vision_id_map.res_stride * RES_COUNT;
+  g_vision_id_max =
+      g_vision_id_map.base_base + g_vision_id_map.base_stride * TRIBE_COUNT;
+}
+
+static inline int vision_id_self(void) { return g_vision_id_map.self_id; }
+static inline int vision_id_agent(int same_tribe) {
+  return same_tribe ? g_vision_id_map.agent_same_id
+                    : g_vision_id_map.agent_other_id;
+}
+static inline int vision_id_mob(MobType t, int hostile) {
+  return g_vision_id_map.mob_base + g_vision_id_map.mob_stride * (int)t +
+         (hostile ? g_vision_id_map.mob_odd_hostile : 0);
+}
+static inline int vision_id_resource(ResourceType t, int variant) {
+  return g_vision_id_map.res_base + g_vision_id_map.res_stride * (int)t +
+         (variant ? g_vision_id_map.res_odd_variant : 0);
+}
+static inline int vision_id_base(int tribe, int variant) {
+  return g_vision_id_map.base_base + g_vision_id_map.base_stride * tribe +
+         (variant ? g_vision_id_map.base_odd_variant : 0);
 }
 
 static inline float clamp01(float x) {
@@ -1866,6 +1986,24 @@ static int agent_try_craft_action(Agent *a, Tribe *tr, ActionType craft_action,
   return 0;
 
 #undef TRY_CRAFT
+}
+
+static void ensure_agents_ready_on_enter(void) {
+  int alive = 0;
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    if (agents[i].alive)
+      alive++;
+  }
+  if (alive == 0) {
+    init_agents();
+    return;
+  }
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    if (agents[i].rng_state == 0) {
+      agents[i].rng_state =
+          (uint32_t)time(NULL) ^ (0x9e3779b9u * (uint32_t)(i + 1));
+    }
+  }
 }
 
 static void spawn_projectile(Vector2 pos, Vector2 dir, float speed, float ttl,
@@ -2640,6 +2778,230 @@ static void draw_health_bar(Vector2 sp, float w, float h, float t01,
                      (Color){0, 0, 0, 220});
 }
 
+static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
+                                        Vector2 chunk_origin, float agent_h) {
+  if (!g_obs_tokens || !g_obs_token_buf || g_obs_token_count == 0)
+    return;
+  if (OBS_TOKEN_DIM < 16)
+    return;
+
+  memset(g_obs_token_buf, 0,
+         g_obs_token_count * (size_t)OBS_TOKEN_DIM * sizeof(long double));
+
+  const float cell = (float)CHUNK_SIZE / (float)OBS_GRID_W;
+  const float hmax = 12.0f;
+  const float hstep = hmax / (float)OBS_HEIGHT_BINS;
+  const float size_norm_max = 10.0f;
+
+  size_t cells = (size_t)OBS_GRID_W * (size_t)OBS_GRID_H;
+  int cell_id[cells];
+  int cell_class[cells];
+  float cell_size[cells];
+  float cell_shape[cells];
+  float cell_ent_h[cells];
+  float cell_height[cells];
+  float cell_dist[cells];
+  int cell_pri[cells];
+
+  for (size_t i = 0; i < cells; i++) {
+    cell_id[i] = 0;
+    cell_class[i] = 0;
+    cell_size[i] = 0.0f;
+    cell_shape[i] = 0.0f;
+    cell_ent_h[i] = 0.0f;
+    cell_height[i] = 0.0f;
+    cell_dist[i] = 1e9f;
+    cell_pri[i] = 0;
+  }
+
+  for (int gz = 0; gz < OBS_GRID_H; gz++) {
+    for (int gx = 0; gx < OBS_GRID_W; gx++) {
+      size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+      float wx = chunk_origin.x + (gx + 0.5f) * cell;
+      float wz = chunk_origin.y + (gz + 0.5f) * cell;
+      float h = g_use_perlin_ground ? terrain_height(wx, wz) : 0.0f;
+      cell_height[idx] = h;
+      cell_ent_h[idx] = h;
+    }
+  }
+
+  const int id_max = (g_vision_id_max > 0) ? g_vision_id_max : 1;
+
+#define UPDATE_CELL(idx, pri, idv, classv, sizev, shapev, enth, distv)         \
+  do {                                                                         \
+    if ((pri) > cell_pri[(idx)] ||                                             \
+        ((pri) == cell_pri[(idx)] && (distv) < cell_dist[(idx)])) {            \
+      cell_pri[(idx)] = (pri);                                                 \
+      cell_id[(idx)] = (idv);                                                  \
+      cell_class[(idx)] = (classv);                                            \
+      cell_size[(idx)] = (sizev);                                              \
+      cell_shape[(idx)] = (shapev);                                            \
+      cell_ent_h[(idx)] = (enth);                                              \
+      cell_dist[(idx)] = (distv);                                              \
+    }                                                                          \
+  } while (0)
+
+  // self
+  {
+    float lx = a->position.x - chunk_origin.x;
+    float lz = a->position.y - chunk_origin.y;
+    int gx = (int)(lx / cell);
+    int gz = (int)(lz / cell);
+    if (gx >= 0 && gx < OBS_GRID_W && gz >= 0 && gz < OBS_GRID_H) {
+      size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+      Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                        chunk_origin.y + (gz + 0.5f) * cell};
+      float dist = Vector2Distance(center, a->position);
+      UPDATE_CELL(idx, 5, vision_id_self(), 1, agent_radius_world(), 0.0f,
+                  agent_h, dist);
+    }
+  }
+
+  // other agents
+  int my_tribe = a->agent_id / AGENT_PER_TRIBE;
+  for (int i = 0; i < MAX_AGENTS; i++) {
+    Agent *o = &agents[i];
+    if (!o->alive || o == a)
+      continue;
+    int ocx = (int)(o->position.x / CHUNK_SIZE);
+    int ocy = (int)(o->position.y / CHUNK_SIZE);
+    int cx = (int)(a->position.x / CHUNK_SIZE);
+    int cy = (int)(a->position.y / CHUNK_SIZE);
+    if (ocx != cx || ocy != cy)
+      continue;
+    float lx = o->position.x - chunk_origin.x;
+    float lz = o->position.y - chunk_origin.y;
+    int gx = (int)(lx / cell);
+    int gz = (int)(lz / cell);
+    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
+      continue;
+    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                      chunk_origin.y + (gz + 0.5f) * cell};
+    float dist = Vector2Distance(center, o->position);
+    int tribe = o->agent_id / AGENT_PER_TRIBE;
+    int idv = vision_id_agent(tribe == my_tribe);
+    float eh = g_use_perlin_ground
+                   ? terrain_height(o->position.x, o->position.y)
+                   : 0.0f;
+    UPDATE_CELL(idx, 4, idv, 1, agent_radius_world(),
+                (float)tribe / (float)(TRIBE_COUNT - 1), eh, dist);
+  }
+
+  // mobs
+  for (int i = 0; i < MAX_MOBS; i++) {
+    Mob *m = &c->mobs[i];
+    if (m->health <= 0)
+      continue;
+    int gx = (int)(m->position.x / cell);
+    int gz = (int)(m->position.y / cell);
+    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
+      continue;
+    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                      chunk_origin.y + (gz + 0.5f) * cell};
+    Vector2 world_pos = Vector2Add(chunk_origin, m->position);
+    float dist = Vector2Distance(center, world_pos);
+    int hostile = mob_is_hostile(m->type) ? 1 : 0;
+    int idv = vision_id_mob(m->type, hostile);
+    float eh =
+        g_use_perlin_ground ? terrain_height(world_pos.x, world_pos.y) : 0.0f;
+    UPDATE_CELL(idx, 3, idv, 2, mob_radius_world(m->type),
+                (float)m->type / (float)(MOB_COUNT - 1), eh, dist);
+  }
+
+  // resources
+  for (int i = 0; i < c->resource_count; i++) {
+    Resource *r = &c->resources[i];
+    if (r->health <= 0)
+      continue;
+    int gx = (int)(r->position.x / cell);
+    int gz = (int)(r->position.y / cell);
+    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
+      continue;
+    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                      chunk_origin.y + (gz + 0.5f) * cell};
+    Vector2 world_pos = Vector2Add(chunk_origin, r->position);
+    float dist = Vector2Distance(center, world_pos);
+    int idv = vision_id_resource(r->type, 0);
+    float eh =
+        g_use_perlin_ground ? terrain_height(world_pos.x, world_pos.y) : 0.0f;
+    UPDATE_CELL(idx, 2, idv, 3, res_radius_world(r->type),
+                (float)r->type / (float)(RES_COUNT - 1), eh, dist);
+  }
+
+  // bases
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 bp = tribes[t].base.position;
+    int bcx = (int)(bp.x / CHUNK_SIZE);
+    int bcy = (int)(bp.y / CHUNK_SIZE);
+    int cx = (int)(a->position.x / CHUNK_SIZE);
+    int cy = (int)(a->position.y / CHUNK_SIZE);
+    if (bcx != cx || bcy != cy)
+      continue;
+    float lx = bp.x - chunk_origin.x;
+    float lz = bp.y - chunk_origin.y;
+    int gx = (int)(lx / cell);
+    int gz = (int)(lz / cell);
+    if (gx < 0 || gx >= OBS_GRID_W || gz < 0 || gz >= OBS_GRID_H)
+      continue;
+    size_t idx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+    Vector2 center = {chunk_origin.x + (gx + 0.5f) * cell,
+                      chunk_origin.y + (gz + 0.5f) * cell};
+    float dist = Vector2Distance(center, bp);
+    int idv = vision_id_base(t, 0);
+    float eh = g_use_perlin_ground ? terrain_height(bp.x, bp.y) : 0.0f;
+    UPDATE_CELL(idx, 1, idv, 4, tribes[t].base.radius,
+                (float)t / (float)(TRIBE_COUNT - 1), eh, dist);
+  }
+
+#undef UPDATE_CELL
+
+  size_t max_tokens = (size_t)OBS_GRID_W * (size_t)OBS_GRID_H;
+  size_t token_count =
+      (g_obs_token_count < max_tokens) ? g_obs_token_count : max_tokens;
+
+  for (int gz = 0; gz < OBS_GRID_H; gz++) {
+    for (int gx = 0; gx < OBS_GRID_W; gx++) {
+      size_t tidx = (size_t)gz * (size_t)OBS_GRID_W + (size_t)gx;
+      if (tidx >= token_count)
+        continue;
+      long double *tok = g_obs_tokens[tidx];
+
+      size_t idx = tidx;
+      float h = cell_height[idx];
+      int hbin = (int)clampf(h / hstep, 0.0f, (float)(OBS_HEIGHT_BINS - 1));
+      float nx = ((float)gx + 0.5f) / (float)OBS_GRID_W;
+      float nz = ((float)gz + 0.5f) / (float)OBS_GRID_H;
+      float dist01 = clamp01(cell_dist[idx] / (float)CHUNK_SIZE);
+      float size01 = clamp01(cell_size[idx] / size_norm_max);
+      float id_norm =
+          (id_max > 0) ? ((float)cell_id[idx] / (float)id_max) : 0.0f;
+      float class_norm = (float)cell_class[idx] / 4.0f;
+      float hcell01 = clamp01(h / hmax);
+      float hent01 = clamp01(cell_ent_h[idx] / hmax);
+
+      tok[0] = (long double)id_norm;
+      tok[1] = (long double)class_norm;
+      tok[2] = (long double)cell_shape[idx];
+      tok[3] = (long double)size01;
+      tok[4] = (long double)hent01;
+      tok[5] = (long double)hcell01;
+      tok[6] = (long double)((nx * 2.0f) - 1.0f);
+      tok[7] = (long double)((nz * 2.0f) - 1.0f);
+      tok[8] = (long double)dist01;
+      tok[9] = (long double)((OBS_HEIGHT_BINS > 1)
+                                 ? ((float)hbin / (float)(OBS_HEIGHT_BINS - 1))
+                                 : 0.0f);
+      tok[10] =
+          (long double)clampf((cell_ent_h[idx] - agent_h) / 6.0f, -1.0f, 1.0f);
+      tok[11] = (long double)((cell_id[idx] == 0) ? 0.0f : 1.0f);
+      tok[15] = 1.0L;
+    }
+  }
+}
+
 /* =======================
    WORLD
 ======================= */
@@ -3027,6 +3389,18 @@ static inline float resource_radius_world(ResourceType t) {
   }
 }
 
+static int base_allows_entry(Vector2 base_pos, float yaw, Vector2 pos) {
+  Vector2 to = {pos.x - base_pos.x, pos.y - base_pos.y};
+  float d2 = to.x * to.x + to.y * to.y;
+  if (d2 <= 1e-6f) {
+    return 1;
+  }
+  float d = sqrtf(d2);
+  Vector2 open_dir = {sinf(yaw), -cosf(yaw)};
+  float dot = (to.x * open_dir.x + to.y * open_dir.y) / d;
+  return dot >= cosf(g_base_open_half_angle);
+}
+
 static void push_out(Vector2 *pos, Vector2 center, float radius) {
   float dx = pos->x - center.x;
   float dy = pos->y - center.y;
@@ -3046,6 +3420,23 @@ static void resolve_player_collisions(void) {
   int pcx = (int)(player.position.x / CHUNK_SIZE);
   int pcy = (int)(player.position.y / CHUNK_SIZE);
   float pr = PLAYER_RADIUS;
+
+  // Keep player outside base collision radius.
+  Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 bp = tribes[t].base.position;
+    Vector2 to_center = {world_center.x - bp.x, world_center.y - bp.y};
+    float yaw = atan2f(to_center.x, -to_center.y);
+    float d = Vector2Distance(player.position, bp);
+    if (d < tribes[t].base.radius - pr) {
+      continue;
+    }
+    if (base_allows_entry(bp, yaw, player.position)) {
+      continue;
+    }
+    float br = tribes[t].base.radius + pr;
+    push_out(&player.position, bp, br);
+  }
 
   for (int dy = -1; dy <= 1; dy++) {
     for (int dx = -1; dx <= 1; dx++) {
@@ -3092,6 +3483,21 @@ static void resolve_player_collisions(void) {
 static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius, int self_cx, int self_cy) {
   const float padding = 0.25f; // extra spacing so things don't touch
+
+  // Bases are solid obstacles.
+  Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 bp = tribes[t].base.position;
+    Vector2 to_center = {world_center.x - bp.x, world_center.y - bp.y};
+    float yaw = atan2f(to_center.x, -to_center.y);
+    if (base_allows_entry(bp, yaw, worldPos)) {
+      continue;
+    }
+    float br = tribes[t].base.radius + radius + padding;
+    if (Vector2Distance(worldPos, bp) < br) {
+      return 1;
+    }
+  }
 
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
@@ -4033,7 +4439,7 @@ static void draw_agent(const Agent *a, Vector2 sp, Color tribeColor) {
 ======================= */
 void init_tribes(void) {
   Color colors[] = {RED, BLUE, GREEN, ORANGE};
-  float spacing = 24.0f;
+  float spacing = 80.0f;
 
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Tribe *tr = &tribes[t];
@@ -4053,10 +4459,84 @@ void init_tribes(void) {
   g_tribes_ready = 1;
 }
 
+static void init_muze_runtime(void) {
+  if (g_muze_model)
+    return;
+  muze_config_init_defaults(&g_muze_cfg, OBS_DIM, ACTION_COUNT);
+  g_muze_cfg.model.latent_dim = 64;
+  g_muze_cfg.nn.hidden_repr = 128;
+  g_muze_cfg.nn.hidden_dyn = 128;
+  g_muze_cfg.nn.hidden_pred = 128;
+  g_muze_cfg.nn.hidden_vprefix = 128;
+  g_muze_cfg.nn.hidden_reward = 128;
+  g_muze_cfg.nn.action_embed_dim = 64;
+
+  g_muze_cfg.mcts.num_simulations = 80;
+  g_muze_cfg.mcts.batch_simulations = 8;
+  g_muze_cfg.mcts.c_puct = 1.25f;
+  g_muze_cfg.mcts.max_depth = 16;
+  g_muze_cfg.mcts.dirichlet_alpha = 0.3f;
+  g_muze_cfg.mcts.dirichlet_eps = 0.25f;
+  g_muze_cfg.mcts.temperature = 1.0f;
+  g_muze_cfg.mcts.discount = 0.997f;
+
+  g_muze_cfg.trainer.batch_size = 64;
+  g_muze_cfg.trainer.train_steps = 50;
+  g_muze_cfg.trainer.min_replay_size = 2048;
+
+  g_muze_cfg.loop.iterations = 0;
+  g_muze_cfg.loop.selfplay_episodes_per_iter = 0;
+  g_muze_cfg.loop.selfplay_disable = 1;
+  g_muze_cfg.loop.train_calls_per_iter = 1;
+  g_muze_cfg.loop.use_reanalyze = 0;
+  g_muze_cfg.loop.eval_interval = 0;
+  g_muze_cfg.loop.checkpoint_interval = 0;
+  g_muze_cfg.loop.selfplay_actor_count = 2;
+  g_muze_cfg.loop.selfplay_use_threads = 1;
+
+  g_muze_model = mu_model_create_nn_with_cfg(&g_muze_cfg.model, &g_muze_cfg.nn);
+  g_muze_rb = rb_create(200000, g_muze_cfg.model.obs_dim,
+                        g_muze_cfg.model.action_count);
+  if (g_muze_cfg.nn.support_size > 1 && g_muze_rb)
+    rb_enable_value_support(g_muze_rb, g_muze_cfg.nn.support_size);
+
+  memset(&g_muze_loop, 0, sizeof(g_muze_loop));
+  g_muze_loop.model = g_muze_model;
+  g_muze_loop.rb = g_muze_rb;
+  g_muze_loop.gr = NULL;
+  g_muze_loop.mcts = g_muze_cfg.mcts;
+  g_muze_loop.selfplay = g_muze_cfg.selfplay;
+  g_muze_loop.loop = g_muze_cfg.loop;
+  g_muze_loop.env = muze_env_make_stub();
+  g_muze_loop.use_multi = 1;
+  g_muze_loop.model_mutex = &g_muze_model_mtx;
+  g_muze_loop.rb_mutex = &g_muze_rb_mtx;
+  g_muze_loop.gr_mutex = NULL;
+  g_muze_loop_rng_state = (uint32_t)time(NULL);
+  g_muze_loop.rng.ctx = &g_muze_loop_rng_state;
+  g_muze_loop.rng.rand01 = loop_rng01;
+
+  if (g_vision_id_max == 0) {
+    vision_id_map_init_defaults();
+  }
+
+  if (g_use_obs_transformer && !g_obs_transformer) {
+    g_obs_transformer = TRANSFORMER_init(OBS_TOKEN_DIM, 4, 2);
+    g_obs_token_count = (size_t)OBS_GRID_W * (size_t)OBS_GRID_H;
+    g_obs_token_buf = (long double *)calloc(g_obs_token_count * OBS_TOKEN_DIM,
+                                            sizeof(long double));
+    g_obs_tokens =
+        (long double **)calloc(g_obs_token_count, sizeof(long double *));
+    if (g_obs_token_buf && g_obs_tokens) {
+      for (size_t i = 0; i < g_obs_token_count; i++) {
+        g_obs_tokens[i] = g_obs_token_buf + i * OBS_TOKEN_DIM;
+      }
+    }
+  }
+}
+
 void init_agents(void) {
-  MuConfig cfg = {.obs_dim = OBS_DIM, // expandable, not fixed memory
-                  .latent_dim = 64,
-                  .action_count = ACTION_COUNT};
+  init_muze_runtime();
 
   for (int i = 0; i < MAX_AGENTS; i++) {
     Agent *a = &agents[i];
@@ -4086,10 +4566,8 @@ void init_agents(void) {
     a->tool_selected = TOOL_HAND;
     a->last_craft_selected = -1;
 
-    a->sam = SAM_init(cfg.obs_dim, cfg.action_count, 4, 0);
-    a->cortex = SAM_as_MUZE(a->sam);
-
     a->last_action = ACTION_COUNT;
+    a->rng_state = (uint32_t)time(NULL) ^ (0x9e3779b9u * (uint32_t)(i + 1));
 
     Tribe *tr = &tribes[i / AGENT_PER_TRIBE];
     float ang = randf(0, 2 * PI);
@@ -4104,10 +4582,16 @@ void init_agents(void) {
 ======================= */
 void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   Tribe *tr = &tribes[a->agent_id / AGENT_PER_TRIBE];
+  int cx = (int)(a->position.x / CHUNK_SIZE);
+  int cy = (int)(a->position.y / CHUNK_SIZE);
+  Vector2 chunk_origin =
+      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
 
   // --- self status ---
   obs_push(obs, clamp01(a->health / 100.0f));
   obs_push(obs, clamp01(a->stamina / 100.0f));
+  obs_push(obs, a->facing.x);
+  obs_push(obs, a->facing.y);
 
   // --- base features ---
   Vector2 to_base = Vector2Subtract(tr->base.position, a->position);
@@ -4119,6 +4603,30 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, base_dir_x);
   obs_push(obs, base_dir_y);
   obs_push(obs, (dbase < tr->base.radius) ? 1.0f : 0.0f); // in base
+
+  // --- terrain context (3D) ---
+  float h0 =
+      g_use_perlin_ground ? terrain_height(a->position.x, a->position.y) : 0.0f;
+  obs_push(obs, clamp01(h0 / 12.0f));
+  float step = 6.0f;
+  float hx[8];
+  if (g_use_perlin_ground) {
+    hx[0] = terrain_height(a->position.x + step, a->position.y);
+    hx[1] = terrain_height(a->position.x - step, a->position.y);
+    hx[2] = terrain_height(a->position.x, a->position.y + step);
+    hx[3] = terrain_height(a->position.x, a->position.y - step);
+    hx[4] = terrain_height(a->position.x + step, a->position.y + step);
+    hx[5] = terrain_height(a->position.x - step, a->position.y - step);
+    hx[6] = terrain_height(a->position.x + step, a->position.y - step);
+    hx[7] = terrain_height(a->position.x - step, a->position.y + step);
+  } else {
+    for (int i = 0; i < 8; i++)
+      hx[i] = 0.0f;
+  }
+  for (int i = 0; i < 8; i++) {
+    float dh = clampf((hx[i] - h0) / 6.0f, -1.0f, 1.0f);
+    obs_push(obs, dh);
+  }
 
   // --- chunk density ---
   obs_push(obs, clamp01((float)c->resource_count / (float)MAX_RESOURCES));
@@ -4141,11 +4649,6 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
 
   // We need this chunk's world origin
   // NOTE: c is the chunk agent is currently in, so:
-  int cx = (int)(a->position.x / CHUNK_SIZE);
-  int cy = (int)(a->position.y / CHUNK_SIZE);
-  Vector2 chunk_origin =
-      (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-
   for (int i = 0; i < c->resource_count; i++) {
     Resource *r = &c->resources[i];
     if (r->health <= 0)
@@ -4375,6 +4878,34 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
   obs_push(obs, clamp01(a->harvest_cd / agent_harvest_cooldown()));
   obs_push(obs, clamp01(a->fire_cd / agent_fire_cooldown()));
 
+  if (g_use_obs_transformer && g_obs_transformer && g_obs_tokens &&
+      g_obs_token_count > 0) {
+    obs_fill_transformer_tokens(a, c, chunk_origin, h0);
+
+    long double **out =
+        TRANSFORMER_forward(g_obs_transformer, g_obs_tokens, g_obs_token_count);
+    if (out) {
+      size_t model_dim = g_obs_transformer->model_dim;
+      size_t embed_dim =
+          (model_dim < (size_t)OBS_EMBED_DIM) ? model_dim : OBS_EMBED_DIM;
+      for (size_t d = 0; d < embed_dim; d++) {
+        long double sum = 0.0L;
+        for (size_t t = 0; t < g_obs_token_count; t++)
+          sum += out[t][d];
+        obs_push(obs, (float)(sum / (long double)g_obs_token_count));
+      }
+      for (size_t d = embed_dim; d < (size_t)OBS_EMBED_DIM; d++)
+        obs_push(obs, 0.0f);
+      transformer_seq_free(out, g_obs_token_count);
+    } else {
+      for (int i = 0; i < OBS_EMBED_DIM; i++)
+        obs_push(obs, 0.0f);
+    }
+  } else {
+    for (int i = 0; i < OBS_EMBED_DIM; i++)
+      obs_push(obs, 0.0f);
+  }
+
   // bias
   obs_push(obs, 1.0f);
 
@@ -4463,10 +4994,27 @@ void update_agent(Agent *a) {
   pthread_rwlock_unlock(&c->lock);
 
   // --- MuZero chooses action ---
-  int action = muze_plan(a->cortex, obs.data, (size_t)obs.size,
-                         (size_t)ACTION_COUNT, NULL);
+  float pi[ACTION_COUNT];
+  int action = 0;
+  int have_mcts = 0;
+  for (int i = 0; i < ACTION_COUNT; i++)
+    pi[i] = 1.0f / (float)ACTION_COUNT;
 
-  obs_free(&obs);
+  if (pthread_mutex_trylock(&g_muze_model_mtx) == 0 && g_muze_model) {
+    MCTSRng rng = {.ctx = a, .rand01 = agent_rng01};
+    MCTSParams mp = g_muze_cfg.mcts;
+    MCTSResult mr = mcts_run(g_muze_model, obs.data, &mp, &rng);
+    pthread_mutex_unlock(&g_muze_model_mtx);
+    for (int i = 0; i < ACTION_COUNT; i++)
+      pi[i] = mr.pi[i];
+    action = sample_action(pi, ACTION_COUNT, agent_rng01(a));
+    mcts_result_free(&mr);
+    have_mcts = 1;
+  }
+
+  if (!have_mcts) {
+    action = rand() % ACTION_COUNT;
+  }
 
   a->last_action = action;
 
@@ -4522,34 +5070,12 @@ case ACTION_CRAFT:
   break;
   */
   case ACTION_CRAFT_AXE:
-    if (!agent_in_base(a, tr)) {
-      reward += -0.006f;
-      return;
-    }
-
-    if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
-      tr->wood -= 3;
-      tr->stone -= 2;
-      a->has_axe = true;
-      a->last_craft_selected = TOOL_AXE;
-      reward += 0.09f;
-      return;
-    }
-    break;
-
   case ACTION_CRAFT_PICKAXE:
-    break;
-
   case ACTION_CRAFT_SWORD:
-    break;
-
   case ACTION_CRAFT_ARMOR:
-    break;
-
   case ACTION_CRAFT_BOW:
-    break;
-
   case ACTION_CRAFT_ARROWS:
+    agent_try_craft_action(a, tr, (ActionType)action, &reward);
     break;
 
   case ACTION_FIRE: {
@@ -4608,6 +5134,30 @@ case ACTION_CRAFT:
   } else {
     reward += R_SURVIVE_PER_TICK;
   }
+
+  int done_flag = a->alive ? 0 : 1;
+
+  // --- push replay sample ---
+  if (g_muze_rb) {
+    ObsBuffer next_obs;
+    obs_init(&next_obs);
+    int ncx = (int)(a->position.x / CHUNK_SIZE);
+    int ncy = (int)(a->position.y / CHUNK_SIZE);
+    Chunk *nc = get_chunk(ncx, ncy);
+    pthread_rwlock_rdlock(&nc->lock);
+    encode_observation(a, nc, &next_obs);
+    pthread_rwlock_unlock(&nc->lock);
+
+    pthread_mutex_lock(&g_muze_rb_mtx);
+    size_t idx = rb_push_full(g_muze_rb, obs.data, pi, reward, action, reward,
+                              next_obs.data, done_flag);
+    rb_set_value_prefix(g_muze_rb, idx, reward);
+    pthread_mutex_unlock(&g_muze_rb_mtx);
+
+    obs_free(&next_obs);
+  }
+
+  obs_free(&obs);
 
   a->reward_accumulator += reward;
   a->age++;
@@ -5703,6 +6253,7 @@ static void do_world_select_screen(void) {
         load_models_from_disk(g_world_name);
       }
       g_state = STATE_PLAYING;
+      ensure_agents_ready_on_enter();
     }
   }
 
@@ -5734,6 +6285,7 @@ static void do_world_select_screen(void) {
       save_world_to_disk(g_world_name);
     }
     g_state = STATE_PLAYING;
+    ensure_agents_ready_on_enter();
   }
 }
 
@@ -6311,8 +6863,8 @@ static unsigned int hash_u32(unsigned int x) {
 }
 
 static float hash2f(int x, int y) {
-  unsigned int h = hash_u32((unsigned int)x * 374761393U +
-                            (unsigned int)y * 668265263U);
+  unsigned int h =
+      hash_u32((unsigned int)x * 374761393U + (unsigned int)y * 668265263U);
   return (float)(h & 0x00ffffffU) / (float)0x01000000U;
 }
 
@@ -6357,7 +6909,8 @@ static GLuint create_ground_texture(int size) {
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size, size, 0, GL_RGB,
                GL_UNSIGNED_BYTE, pixels);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -6368,16 +6921,16 @@ static GLuint create_ground_texture(int size) {
 
 static const char *gfx_quality_label(GraphicsQuality q) {
   switch (q) {
-    case GFX_LOW:
-      return "Low";
-    case GFX_MED:
-      return "Medium";
-    case GFX_HIGH:
-      return "High";
-    case GFX_CUSTOM:
-      return "Custom";
-    default:
-      return "Custom";
+  case GFX_LOW:
+    return "Low";
+  case GFX_MED:
+    return "Medium";
+  case GFX_HIGH:
+    return "High";
+  case GFX_CUSTOM:
+    return "Custom";
+  default:
+    return "Custom";
   }
 }
 
@@ -6388,49 +6941,49 @@ static void apply_graphics_quality(GraphicsQuality q) {
   g_gfx_quality = q;
   int want_grass = 0;
   switch (q) {
-    case GFX_LOW:
-      g_enable_ground_tex = 0;
-      g_ground_tex_scale = 0.08f;
-      want_grass = 0;
-      g_ground_step = 20;
-      g_grass_stride_near = 6;
-      g_grass_stride_mid = 10;
-      g_grass_stride_far = 14;
-      g_grass_max_chunk_near = 120;
-      g_grass_max_chunk_mid = 80;
-      g_grass_max_chunk_far = 40;
-      g_minimap_cells_normal = 24;
-      g_minimap_cells_zoom = 32;
-      break;
-    case GFX_MED:
-      g_enable_ground_tex = 1;
-      g_ground_tex_scale = 0.07f;
-      want_grass = 1;
-      g_ground_step = 12;
-      g_grass_stride_near = 3;
-      g_grass_stride_mid = 6;
-      g_grass_stride_far = 10;
-      g_grass_max_chunk_near = 420;
-      g_grass_max_chunk_mid = 220;
-      g_grass_max_chunk_far = 120;
-      g_minimap_cells_normal = 32;
-      g_minimap_cells_zoom = 44;
-      break;
-    case GFX_HIGH:
-    default:
-      g_enable_ground_tex = 1;
-      g_ground_tex_scale = 0.06f;
-      want_grass = 1;
-      g_ground_step = 8;
-      g_grass_stride_near = GRASS_STRIDE_NEAR;
-      g_grass_stride_mid = GRASS_STRIDE_MID;
-      g_grass_stride_far = GRASS_STRIDE_FAR;
-      g_grass_max_chunk_near = GRASS_MAX_CHUNK_NEAR;
-      g_grass_max_chunk_mid = GRASS_MAX_CHUNK_MID;
-      g_grass_max_chunk_far = GRASS_MAX_CHUNK_FAR;
-      g_minimap_cells_normal = 40;
-      g_minimap_cells_zoom = 56;
-      break;
+  case GFX_LOW:
+    g_enable_ground_tex = 0;
+    g_ground_tex_scale = 0.08f;
+    want_grass = 0;
+    g_ground_step = 20;
+    g_grass_stride_near = 6;
+    g_grass_stride_mid = 10;
+    g_grass_stride_far = 14;
+    g_grass_max_chunk_near = 120;
+    g_grass_max_chunk_mid = 80;
+    g_grass_max_chunk_far = 40;
+    g_minimap_cells_normal = 24;
+    g_minimap_cells_zoom = 32;
+    break;
+  case GFX_MED:
+    g_enable_ground_tex = 1;
+    g_ground_tex_scale = 0.07f;
+    want_grass = 1;
+    g_ground_step = 12;
+    g_grass_stride_near = 3;
+    g_grass_stride_mid = 6;
+    g_grass_stride_far = 10;
+    g_grass_max_chunk_near = 420;
+    g_grass_max_chunk_mid = 220;
+    g_grass_max_chunk_far = 120;
+    g_minimap_cells_normal = 32;
+    g_minimap_cells_zoom = 44;
+    break;
+  case GFX_HIGH:
+  default:
+    g_enable_ground_tex = 1;
+    g_ground_tex_scale = 0.06f;
+    want_grass = 1;
+    g_ground_step = 8;
+    g_grass_stride_near = GRASS_STRIDE_NEAR;
+    g_grass_stride_mid = GRASS_STRIDE_MID;
+    g_grass_stride_far = GRASS_STRIDE_FAR;
+    g_grass_max_chunk_near = GRASS_MAX_CHUNK_NEAR;
+    g_grass_max_chunk_mid = GRASS_MAX_CHUNK_MID;
+    g_grass_max_chunk_far = GRASS_MAX_CHUNK_FAR;
+    g_minimap_cells_normal = 40;
+    g_minimap_cells_zoom = 56;
+    break;
   }
 
   if (g_use_perlin_ground) {
@@ -6973,9 +7526,9 @@ static TTF_Font *ui_get_font(int size) {
     }
   }
 
-  return g_ui_fonts[0].font ? g_ui_fonts[0].font
-                            : (g_ui_font ? g_ui_font
-                                         : TTF_OpenFont(ui_font_path(), size));
+  return g_ui_fonts[0].font
+             ? g_ui_fonts[0].font
+             : (g_ui_font ? g_ui_font : TTF_OpenFont(ui_font_path(), size));
 }
 
 static int ui_measure_text_size(const char *text, int size) {
@@ -7232,14 +7785,14 @@ static void draw_crosshair_3d(void) {
 
 static KeyboardKey poll_any_key_pressed(void) {
   KeyboardKey keys[] = {
-      KEY_A,     KEY_B,      KEY_C,         KEY_D,         KEY_E,     KEY_F,
-      KEY_G,     KEY_H,      KEY_I,         KEY_J,         KEY_K,     KEY_L,
-      KEY_M,     KEY_N,      KEY_O,         KEY_P,         KEY_Q,     KEY_R,
-      KEY_S,     KEY_T,      KEY_U,         KEY_V,         KEY_W,     KEY_X,
-      KEY_Y,     KEY_Z,      KEY_ONE,       KEY_TWO,       KEY_THREE, KEY_FOUR,
-      KEY_FIVE,  KEY_SIX,    KEY_SEVEN,     KEY_EIGHT,     KEY_NINE,  KEY_ZERO,
-      KEY_UP,    KEY_DOWN,   KEY_LEFT,      KEY_RIGHT,     KEY_SPACE, KEY_TAB,
-      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT, KEY_F5,   KEY_F6,
+      KEY_A,     KEY_B,      KEY_C,         KEY_D,          KEY_E,     KEY_F,
+      KEY_G,     KEY_H,      KEY_I,         KEY_J,          KEY_K,     KEY_L,
+      KEY_M,     KEY_N,      KEY_O,         KEY_P,          KEY_Q,     KEY_R,
+      KEY_S,     KEY_T,      KEY_U,         KEY_V,          KEY_W,     KEY_X,
+      KEY_Y,     KEY_Z,      KEY_ONE,       KEY_TWO,        KEY_THREE, KEY_FOUR,
+      KEY_FIVE,  KEY_SIX,    KEY_SEVEN,     KEY_EIGHT,      KEY_NINE,  KEY_ZERO,
+      KEY_UP,    KEY_DOWN,   KEY_LEFT,      KEY_RIGHT,      KEY_SPACE, KEY_TAB,
+      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT, KEY_F5,    KEY_F6,
       KEY_F7};
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
     if (IsKeyPressed(keys[i]))
@@ -7310,8 +7863,9 @@ static void draw_hud_3d(void) {
   snprintf(line, sizeof(line), "ST: %d", (int)player.stamina);
   ui_text_cache_update(&g_hud_st, line, (Color){200, 220, 255, 255});
   ui_draw_text_cached(20, 42, &g_hud_st);
-  ui_draw_text_size(20, 64, TextFormat("GFX: %s", gfx_quality_label(g_gfx_quality)),
-                    16, (Color){210, 210, 210, 220});
+  ui_draw_text_size(20, 64,
+                    TextFormat("GFX: %s", gfx_quality_label(g_gfx_quality)), 16,
+                    (Color){210, 210, 210, 220});
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
@@ -7330,8 +7884,8 @@ static void draw_daynight_overlay_3d(void) {
                (Color){10, 20, 40, a});
   double now = GetTime();
   if (now - g_ui_cache_last_update > 0.25) {
-    ui_text_cache_update(&g_ui_cache_daynight, is_night_cached ? "Night" : "Day",
-                         RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_daynight,
+                         is_night_cached ? "Night" : "Day", RAYWHITE);
     ui_text_cache_update(&g_ui_cache_time,
                          TextFormat("Time: %0.2f", time_of_day), RAYWHITE);
   }
@@ -7360,20 +7914,17 @@ static void draw_minimap_3d(void) {
   glDisable(GL_CULL_FACE);
   ui_draw_rect((float)x, (float)y, (float)size, (float)size,
                (Color){0, 0, 0, 110});
-  ui_draw_rect((float)x, (float)y, (float)size, 1.0f,
-               (Color){0, 0, 0, 220});
+  ui_draw_rect((float)x, (float)y, (float)size, 1.0f, (Color){0, 0, 0, 220});
   ui_draw_rect((float)x, (float)(y + size - 1), (float)size, 1.0f,
                (Color){0, 0, 0, 220});
-  ui_draw_rect((float)x, (float)y, 1.0f, (float)size,
-               (Color){0, 0, 0, 220});
+  ui_draw_rect((float)x, (float)y, 1.0f, (float)size, (Color){0, 0, 0, 220});
   ui_draw_rect((float)(x + size - 1), (float)y, 1.0f, (float)size,
                (Color){0, 0, 0, 220});
 
   double now = GetTime();
-  int need_tex_update =
-      !g_minimap_tex || g_minimap_tex_cells != cells ||
-      g_minimap_tex_zoomed != g_minimap_zoomed ||
-      (now - g_minimap_tex_last) > 0.25;
+  int need_tex_update = !g_minimap_tex || g_minimap_tex_cells != cells ||
+                        g_minimap_tex_zoomed != g_minimap_zoomed ||
+                        (now - g_minimap_tex_last) > 0.25;
   if (need_tex_update) {
     if (!g_minimap_tex || g_minimap_tex_cells != cells) {
       if (g_minimap_tex) {
@@ -7391,8 +7942,7 @@ static void draw_minimap_3d(void) {
       g_minimap_tex_cells = cells;
     }
 
-    unsigned char *pixels =
-        (unsigned char *)malloc((size_t)cells * cells * 4);
+    unsigned char *pixels = (unsigned char *)malloc((size_t)cells * cells * 4);
     if (pixels) {
       for (int gy = 0; gy < cells; gy++) {
         for (int gx = 0; gx < cells; gx++) {
@@ -7455,15 +8005,13 @@ static void draw_minimap_3d(void) {
           continue;
         float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
         float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-        ui_draw_rect(x + pxm, y + pym, 2.0f, 2.0f,
-                     (Color){240, 80, 80, 255});
+        ui_draw_rect(x + pxm, y + pym, 2.0f, 2.0f, (Color){240, 80, 80, 255});
         mob_count++;
       }
     }
   }
 
-  ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f,
-               RAYWHITE);
+  ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f, RAYWHITE);
 
   if (g_ui_cache_last_zoomed != g_minimap_zoomed ||
       now - g_ui_cache_last_update > 0.25) {
@@ -7497,16 +8045,15 @@ static void draw_ui_3d_full(void) {
                          TextFormat("HP: %d", (int)player.health), RAYWHITE);
     ui_text_cache_update(&g_ui_cache_st,
                          TextFormat("ST: %d", (int)player.stamina), RAYWHITE);
-    ui_text_cache_update(
-        &g_ui_cache_wood,
-        TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone), RAYWHITE);
-    ui_text_cache_update(
-        &g_ui_cache_gold,
-        TextFormat("Gold: %d  Food: %d", inv_gold, inv_food), RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_wood,
+                         TextFormat("Wood: %d  Stone: %d", inv_wood, inv_stone),
+                         RAYWHITE);
+    ui_text_cache_update(&g_ui_cache_gold,
+                         TextFormat("Gold: %d  Food: %d", inv_gold, inv_food),
+                         RAYWHITE);
     ui_text_cache_update(
         &g_ui_cache_shards,
-        TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows),
-        RAYWHITE);
+        TextFormat("Shards: %d  Arrows: %d", inv_shards, inv_arrows), RAYWHITE);
     for (int t = 0; t < TRIBE_COUNT; t++) {
       ui_text_cache_update(&g_ui_cache_base[t], TextFormat("Base %d", t),
                            tribes[t].color);
@@ -7582,10 +8129,10 @@ static void draw_profiler_3d(void) {
                     (Color){210, 210, 210, 220});
   ui_draw_text_size(x + 8, y + 78, TextFormat("UI: %.2f ms", g_prof_ui_ms), 14,
                     (Color){210, 210, 210, 220});
-  ui_draw_text_size(x + 8, y + 96,
-                    TextFormat("Draws: %d  Tris: %d", g_prof_draw_calls,
-                               g_prof_triangles),
-                    14, (Color){200, 200, 200, 220});
+  ui_draw_text_size(
+      x + 8, y + 96,
+      TextFormat("Draws: %d  Tris: %d", g_prof_draw_calls, g_prof_triangles),
+      14, (Color){200, 200, 200, 220});
 
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
@@ -7702,14 +8249,15 @@ static void draw_world_create_3d(void) {
   ui_textbox_gl((Rectangle){60, 145, 360, 45}, g_world_name,
                 sizeof(g_world_name), &g_typing_name, 0);
   ui_draw_text_size(60, 205, "Seed", 18, RAYWHITE);
-  ui_textbox_gl((Rectangle){60, 230, 200, 45}, g_seed_text,
-                sizeof(g_seed_text), &g_typing_seed, 1);
+  ui_textbox_gl((Rectangle){60, 230, 200, 45}, g_seed_text, sizeof(g_seed_text),
+                &g_typing_seed, 1);
 
   if (ui_button_gl((Rectangle){60, 300, 200, 50}, "Create & Play", 20)) {
     g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
     world_reset(g_world_seed);
     save_world_to_disk(g_world_name);
     g_state = STATE_PLAYING;
+    ensure_agents_ready_on_enter();
   }
   if (ui_button_gl((Rectangle){280, 300, 140, 50}, "Back", 20)) {
     g_state = STATE_TITLE;
@@ -7818,11 +8366,12 @@ static void draw_world_select_3d(void) {
         load_models_from_disk(g_world_name);
       }
       g_state = STATE_PLAYING;
+      ensure_agents_ready_on_enter();
     }
   }
 
-  if (ui_button_gl(rDelete,
-                   hasSelection ? "Delete World" : "Delete (no world)", 20)) {
+  if (ui_button_gl(rDelete, hasSelection ? "Delete World" : "Delete (no world)",
+                   20)) {
     if (hasSelection) {
       const char *wname = g_world_list.names[g_world_list.selected];
       delete_world_by_name(wname);
@@ -7847,6 +8396,7 @@ static void draw_world_select_3d(void) {
       save_world_to_disk(g_world_name);
     }
     g_state = STATE_PLAYING;
+    ensure_agents_ready_on_enter();
   }
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
@@ -7918,7 +8468,8 @@ static void draw_graphics_menu_3d(void) {
   glDisable(GL_CULL_FACE);
   ui_draw_rect(0, 0, (float)w, (float)h, (Color){0, 0, 0, 160});
   ui_draw_text(40, 40, "Graphics", RAYWHITE);
-  ui_draw_text(40, 68, "F6 cycles Low/Medium/High", (Color){200, 200, 200, 200});
+  ui_draw_text(40, 68, "F6 cycles Low/Medium/High",
+               (Color){200, 200, 200, 200});
 
   float y = 120.0f;
   float bx = 60.0f;
@@ -7964,8 +8515,8 @@ static void draw_graphics_menu_3d(void) {
     g_gfx_quality = GFX_CUSTOM;
     changed = 1;
   }
-  ui_draw_text_size(bx + 64, y + 10,
-                    TextFormat("%.3f", g_ground_tex_scale), 20, RAYWHITE);
+  ui_draw_text_size(bx + 64, y + 10, TextFormat("%.3f", g_ground_tex_scale), 20,
+                    RAYWHITE);
   if (ui_button_gl((Rectangle){bx + 160, y, 44, bh}, "+", 24)) {
     g_ground_tex_scale = fminf(0.20f, g_ground_tex_scale + 0.01f);
     g_gfx_quality = GFX_CUSTOM;
@@ -8189,9 +8740,54 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
   }
 }
 
+static void render_agents_3d(Vec3 player_pos, Mat4 view_proj) {
+  int drawn = 0;
+  int max_draw = 60;
+  float max_dist = 30.0f;
+  float max_dist2 = max_dist * max_dist;
+
+  for (int i = 0; i < MAX_AGENTS && drawn < max_draw; i++) {
+    Agent *a = &agents[i];
+    if (!a->alive)
+      continue;
+    float ax = a->position.x;
+    float az = a->position.y;
+    float ay = g_use_perlin_ground ? terrain_height(ax, az) : 0.0f;
+    Vec3 ap = vec3(ax, ay, az);
+    float dxp = ap.x - player_pos.x;
+    float dzp = ap.z - player_pos.z;
+    if (dxp * dxp + dzp * dzp > max_dist2)
+      continue;
+
+    float yaw = 0.0f;
+    float flen = sqrtf(a->facing.x * a->facing.x + a->facing.y * a->facing.y);
+    if (flen > 1e-3f) {
+      yaw = atan2f(a->facing.x, -a->facing.y);
+    }
+
+    Color tc = tribes[a->agent_id / AGENT_PER_TRIBE].color;
+    Vec3 tint = color_to_vec3(tc);
+    float s = 0.85f;
+    Mat4 model = mat4_mul(mat4_mul(mat4_translate(ap), mat4_rotate_y(yaw)),
+                          mat4_scale(vec3(s, s, s)));
+    if (g_mesh_player_loaded) {
+      render_mesh(&g_mesh_player, model, view_proj, tint);
+    } else {
+      Mat4 body = mat4_mul(mat4_translate(vec3(ap.x, ap.y + 1.0f, ap.z)),
+                           mat4_scale(vec3(0.5f, 1.3f, 0.5f)));
+      render_mesh(&g_mesh_cylinder, body, view_proj, tint);
+      Mat4 head = mat4_mul(mat4_translate(vec3(ap.x, ap.y + 2.2f, ap.z)),
+                           mat4_scale(vec3(0.45f, 0.45f, 0.45f)));
+      render_mesh(&g_mesh_sphere, head, view_proj, tint);
+    }
+    drawn++;
+  }
+}
+
 static void render_bases_3d(Mat4 view_proj) {
   if (!g_mesh_base_loaded)
     return;
+  glDisable(GL_CULL_FACE); // render interior faces so base isn't see-through
   Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Vector2 bp = tribes[t].base.position;
@@ -8199,18 +8795,17 @@ static void render_bases_3d(Mat4 view_proj) {
     if (g_use_perlin_ground) {
       h = g_tribes_ready ? g_base_flat_height[t] : terrain_height(bp.x, bp.y);
     }
-    Vector2 to_center =
-        (Vector2){world_center.x - bp.x, world_center.y - bp.y};
+    Vector2 to_center = (Vector2){world_center.x - bp.x, world_center.y - bp.y};
     float yaw = atan2f(to_center.x, -to_center.y);
     Vec3 tint = color_to_vec3(tribes[t].color);
     float s = tribes[t].base.radius * 0.35f * 1.25f;
-    float base_drop = -0.45f * s; // align dome base to ground
+    float base_drop = -0.85f * s; // align dome base to ground
     Vec3 pos = vec3(bp.x, h + base_drop, bp.y);
-    Mat4 model = mat4_mul(
-        mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
-        mat4_scale(vec3(s, s, s)));
+    Mat4 model = mat4_mul(mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
+                          mat4_scale(vec3(s, s, s)));
     render_mesh(&g_mesh_base, model, view_proj, tint);
   }
+  glEnable(GL_CULL_FACE);
 }
 
 static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
@@ -8358,12 +8953,12 @@ static void render_scene_3d(void) {
                            vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
                            g_ground_tex_scale);
     } else {
-      render_mesh(&g_mesh_ground, ground, view_proj,
-                  vec3(0.18f, 0.55f, 0.22f));
+      render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
     }
   }
 
   render_player_3d(player_pos, view_proj);
+  render_agents_3d(player_pos, view_proj);
   render_bases_3d(view_proj);
   if (g_enable_grass) {
     render_grass_3d(player_pos, view_proj, tnow);
@@ -8471,6 +9066,10 @@ int main(void) {
   init_tribes();
   init_agents();
   init_player();
+  if (!g_muze_loop_started) {
+    muze_loop_thread_start(&g_muze_loop);
+    g_muze_loop_started = 1;
+  }
   if (g_use_3d) {
     g_state = STATE_TITLE;
   }
@@ -8713,6 +9312,7 @@ int main(void) {
         world_reset(g_world_seed);
         save_world_to_disk(g_world_name); // create initial save
         g_state = STATE_PLAYING;
+        ensure_agents_ready_on_enter();
       }
 
       if (ui_button((Rectangle){280, 300, 140, 50}, "Back")) {
@@ -8728,6 +9328,7 @@ int main(void) {
         if (load_world_from_disk(g_world_name))
           load_models_from_disk(g_world_name);
         g_state = STATE_PLAYING;
+        ensure_agents_ready_on_enter();
       }
 
       if (ui_button((Rectangle){60, 200, 260, 50}, "Back"))
@@ -8779,6 +9380,31 @@ int main(void) {
     stop_grass_worker();
   }
   stop_workers();
+  if (g_muze_loop_started) {
+    muze_loop_thread_stop(&g_muze_loop);
+    g_muze_loop_started = 0;
+  }
+  if (g_muze_rb) {
+    rb_free(g_muze_rb);
+    g_muze_rb = NULL;
+  }
+  if (g_muze_model) {
+    mu_model_free(g_muze_model);
+    g_muze_model = NULL;
+  }
+  if (g_obs_transformer) {
+    TRANSFORMER_destroy(g_obs_transformer);
+    g_obs_transformer = NULL;
+  }
+  if (g_obs_tokens) {
+    free(g_obs_tokens);
+    g_obs_tokens = NULL;
+  }
+  if (g_obs_token_buf) {
+    free(g_obs_token_buf);
+    g_obs_token_buf = NULL;
+  }
+  g_obs_token_count = 0;
 
   ui_text_cache_clear(&g_hud_hp);
   ui_text_cache_clear(&g_hud_st);
