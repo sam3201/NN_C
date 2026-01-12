@@ -82,6 +82,8 @@
 #define PLAYER_JUMP_SPEED 8.5f
 #define PLAYER_GRAVITY 24.0f
 #define PLAYER_RADIUS 0.6f
+#define GRASS_PATCH_SIZE 3.0f
+#define GRASS_PATCH_DENSITY 200
 
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
@@ -6771,51 +6773,63 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
 }
 
 static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
-  float cell = 1.1f;
-  int radius = 16;
+  float patch_cell = 7.0f;
+  int patch_radius = 6;
+  float patch_radius_world = GRASS_PATCH_SIZE;
   float wind = sinf(tnow * 1.2f) * 0.25f;
   float fan_radius = 2.0f;
 
-  int base_x = (int)floorf(player_pos.x / cell);
-  int base_z = (int)floorf(player_pos.z / cell);
+  int base_px = (int)floorf(player_pos.x / patch_cell);
+  int base_pz = (int)floorf(player_pos.z / patch_cell);
   int drawn = 0;
-  int max_draw = 100000;
+  int max_draw = 2200;
 
-  for (int dz = -radius; dz <= radius && drawn < max_draw; dz++) {
-    for (int dx = -radius; dx <= radius && drawn < max_draw; dx++) {
-      int gx = base_x + dx;
-      int gz = base_z + dz;
+  for (int dz = -patch_radius; dz <= patch_radius && drawn < max_draw; dz++) {
+    for (int dx = -patch_radius; dx <= patch_radius && drawn < max_draw; dx++) {
+      int gx = base_px + dx;
+      int gz = base_pz + dz;
       float h = hash2d(gx, gz);
-      if (h < 0.45f)
+      if (h < 0.55f)
         continue;
 
-      float px = gx * cell + cell * 0.5f;
-      float pz = gz * cell + cell * 0.5f;
-      float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+      float cx = gx * patch_cell + patch_cell * 0.5f;
+      float cz = gz * patch_cell + patch_cell * 0.5f;
+      int count = (int)(GRASS_PATCH_DENSITY * 0.5f) +
+                  (int)(hash2d(gx + 91, gz - 37) * GRASS_PATCH_DENSITY);
 
-      float dx = px - player_pos.x;
-      float dz = pz - player_pos.z;
-      float d2 = dx * dx + dz * dz;
-      float fan = 0.0f;
-      if (d2 < fan_radius * fan_radius) {
-        float d = sqrtf(d2);
-        fan = clamp01(1.0f - d / fan_radius);
+      for (int i = 0; i < count && drawn < max_draw; i++) {
+        float jx = hash2d(gx * 131 + i * 7, gz * 173 - i * 11) * 2.0f - 1.0f;
+        float jz = hash2d(gx * 197 - i * 5, gz * 149 + i * 13) * 2.0f - 1.0f;
+        float px = cx + jx * patch_radius_world;
+        float pz = cz + jz * patch_radius_world;
+        float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+
+        float dxp = px - player_pos.x;
+        float dzp = pz - player_pos.z;
+        float d2 = dxp * dxp + dzp * dzp;
+        float fan = 0.0f;
+        if (d2 < fan_radius * fan_radius) {
+          float d = sqrtf(d2);
+          fan = clamp01(1.0f - d / fan_radius);
+        }
+
+        float seed = hash2d(gx + i * 3, gz - i * 5);
+        float sway = sinf(tnow * 2.0f + seed * 6.28f) * 0.2f + wind;
+        float bend = sway + fan * 0.9f;
+        float yaw = seed * 6.28f;
+        float scale = 0.7f + seed * 0.5f;
+
+        float away = atan2f(dzp, dxp);
+        Mat4 tilt =
+            mat4_mul(mat4_rotate_y(away),
+                     mat4_mul(mat4_rotate_x(bend), mat4_rotate_y(-away)));
+
+        Mat4 model = mat4_mul(
+            mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
+            mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
+        render_mesh(&g_mesh_grass, model, view_proj, vec3(0.55f, 0.86f, 0.55f));
+        drawn++;
       }
-
-      float sway = sinf(tnow * 2.0f + h * 6.28f) * 0.2f + wind;
-      float bend = sway + fan * 0.8f;
-      float yaw = h * 6.28f;
-      float scale = 0.75f + h * 0.45f;
-
-      float away = atan2f(dz, dx);
-      Mat4 tilt = mat4_mul(mat4_rotate_y(away),
-                           mat4_mul(mat4_rotate_x(bend), mat4_rotate_y(-away)));
-
-      Mat4 model = mat4_mul(
-          mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
-          mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
-      render_mesh(&g_mesh_grass, model, view_proj, vec3(0.55f, 0.86f, 0.55f));
-      drawn++;
     }
   }
 }
