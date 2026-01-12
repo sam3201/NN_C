@@ -8124,13 +8124,6 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
           continue;
         float mpx = (cx + dx) * CHUNK_SIZE + m->position.x;
         float mpz = (cy + dy) * CHUNK_SIZE + m->position.y;
-        float mpy = g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f;
-        Vec3 mp = vec3(mpx, mpy, mpz);
-        float dxp = mp.x - player_pos.x;
-        float dzp = mp.z - player_pos.z;
-        if (dxp * dxp + dzp * dzp > max_dist2)
-          continue;
-
         float yaw = 0.0f;
         float vlen = sqrtf(m->vel.x * m->vel.x + m->vel.y * m->vel.y);
         if (vlen > 1e-3f) {
@@ -8138,6 +8131,13 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
         }
 
         float s = mob_radius_world(m->type) * 1.6f;
+        float mpy =
+            (g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f) + s * 0.5f;
+        Vec3 mp = vec3(mpx, mpy, mpz);
+        float dxp = mp.x - player_pos.x;
+        float dzp = mp.z - player_pos.z;
+        if (dxp * dxp + dzp * dzp > max_dist2)
+          continue;
         Mat4 model = mat4_mul(mat4_mul(mat4_translate(vec3(mp.x, mp.y, mp.z)),
                                        mat4_rotate_y(yaw)),
                               mat4_scale(vec3(s, s, s)));
@@ -8159,13 +8159,19 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
 static void render_bases_3d(Mat4 view_proj) {
   if (!g_mesh_base_loaded)
     return;
+  Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Vector2 bp = tribes[t].base.position;
     float h = g_use_perlin_ground ? terrain_height(bp.x, bp.y) : 0.0f;
-    Vec3 pos = vec3(bp.x, h, bp.y);
+    Vector2 to_center =
+        (Vector2){world_center.x - bp.x, world_center.y - bp.y};
+    float yaw = atan2f(to_center.x, -to_center.y);
     Vec3 tint = color_to_vec3(tribes[t].color);
-    float s = tribes[t].base.radius * 0.35f;
-    Mat4 model = mat4_mul(mat4_translate(pos), mat4_scale(vec3(s, s, s)));
+    float s = tribes[t].base.radius * 0.35f * 1.25f;
+    Vec3 pos = vec3(bp.x, h + s * 0.02f, bp.y);
+    Mat4 model = mat4_mul(
+        mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
+        mat4_scale(vec3(s, s, s)));
     render_mesh(&g_mesh_base, model, view_proj, tint);
   }
 }
