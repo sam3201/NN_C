@@ -7,6 +7,7 @@
 #include "replay_buffer.h"
 #include "self_play.h"
 #include "trainer.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +63,7 @@ typedef struct {
   const char *best_checkpoint_prefix; // e.g. "checkpoints/muzero_best"
   int best_save_replay;            // 0/1 save replay for best
   int best_save_games;             // 0/1 save game replay for best
+  int selfplay_disable;            // 0/1 disable selfplay even if eps set
 } MuLoopConfig;
 
 /*
@@ -88,6 +90,30 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
                          const MCTSParams *base_mcts_params,
                          const SelfPlayParams *base_sp_params,
                          const MuLoopConfig *loop_cfg, MCTSRng *rng);
+
+void muze_run_loop_locked(MuModel *model, void *env_state,
+                          selfplay_env_reset_fn env_reset,
+                          selfplay_env_step_fn env_step, ReplayBuffer *rb,
+                          GameReplay *gr,
+                          const MCTSParams *base_mcts_params,
+                          const SelfPlayParams *base_sp_params,
+                          const MuLoopConfig *loop_cfg, MCTSRng *rng,
+                          pthread_mutex_t *model_mutex,
+                          pthread_mutex_t *rb_mutex,
+                          pthread_mutex_t *gr_mutex);
+
+void muze_run_loop_multi_locked(MuModel *model, void *env_state,
+                                selfplay_env_reset_fn env_reset,
+                                selfplay_env_step_fn env_step,
+                                selfplay_env_clone_fn env_clone,
+                                selfplay_env_destroy_fn env_destroy,
+                                ReplayBuffer *rb, GameReplay *gr,
+                                const MCTSParams *base_mcts_params,
+                                const SelfPlayParams *base_sp_params,
+                                const MuLoopConfig *loop_cfg, MCTSRng *rng,
+                                pthread_mutex_t *model_mutex,
+                                pthread_mutex_t *rb_mutex,
+                                pthread_mutex_t *gr_mutex);
 
 #ifdef __cplusplus
 }

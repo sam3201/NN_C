@@ -232,7 +232,8 @@ void selfplay_run_threadsafe(MuModel *model, void *env_state,
                              SelfPlayParams *sp_params, ReplayBuffer *rb,
                              GameReplay *gr, MCTSRng *rng,
                              pthread_mutex_t *rb_mutex,
-                             pthread_mutex_t *gr_mutex) {
+                             pthread_mutex_t *gr_mutex,
+                             pthread_mutex_t *model_mutex) {
   if (!model || !env_reset || !env_step || !mcts_params || !sp_params || !rb)
     return;
 
@@ -315,7 +316,11 @@ void selfplay_run_threadsafe(MuModel *model, void *env_state,
         mp.dirichlet_eps = sp_params->dirichlet_eps;
       }
 
+      if (model_mutex)
+        pthread_mutex_lock(model_mutex);
       MCTSResult mr = mcts_run(model, obs_cur, &mp, rng);
+      if (model_mutex)
+        pthread_mutex_unlock(model_mutex);
       ep_root_v_sum += mr.root_value;
 
       memcpy(obs_buf + (size_t)step * (size_t)obs_dim, obs_cur,

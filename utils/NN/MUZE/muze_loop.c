@@ -6,6 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+static pthread_mutex_t *g_muze_model_mutex = NULL;
+static pthread_mutex_t *g_muze_rb_mutex = NULL;
+static pthread_mutex_t *g_muze_gr_mutex = NULL;
+
+static void lock_mtx(pthread_mutex_t *mtx) {
+  if (mtx)
+    pthread_mutex_lock(mtx);
+}
+
+static void unlock_mtx(pthread_mutex_t *mtx) {
+  if (mtx)
+    pthread_mutex_unlock(mtx);
+}
+
 /* -------- helpers -------- */
 
 static float clampf(float x, float lo, float hi) {
@@ -45,6 +59,7 @@ typedef struct {
   GameReplay *gr;
   pthread_mutex_t *rb_mutex;
   pthread_mutex_t *gr_mutex;
+  pthread_mutex_t *model_mutex;
   MCTSRng rng;
   uint32_t rng_state;
 } ActorCtx;
@@ -66,7 +81,7 @@ static void *actor_thread_main(void *arg) {
   selfplay_run_threadsafe(ctx->model, ctx->env_state, ctx->env_reset,
                           ctx->env_step, &ctx->mcts_params, &ctx->sp_params,
                           ctx->rb, ctx->gr, &ctx->rng, ctx->rb_mutex,
-                          ctx->gr_mutex);
+                          ctx->gr_mutex, ctx->model_mutex);
   return NULL;
 }
 
@@ -89,7 +104,8 @@ static float cross_entropy_logits_local(const float *pi_target,
 }
 
 static float priority_from_obs_local(MuModel *model, const float *obs,
-                                     const float *pi_tgt, float z_tgt, int A) {
+                                     const float *pi_tgt, float z_tgt, int A,
+                                     pthread_mutex_t *model_mutex) {
   if (!model || !obs || !pi_tgt || A <= 0)
     return 0.0f;
 
@@ -102,8 +118,10 @@ static float priority_from_obs_local(MuModel *model, const float *obs,
     return 0.0f;
   }
   float v_pred = 0.0f;
+  lock_mtx(model_mutex);
   mu_model_repr(model, obs, latent);
   mu_model_predict(model, latent, logits, &v_pred);
+  unlock_mtx(model_mutex);
   float pol_loss = cross_entropy_logits_local(pi_tgt, logits, A);
   float val_loss = (v_pred - z_tgt) * (v_pred - z_tgt);
   free(latent);
@@ -133,9 +151,13 @@ static size_t rb_logical_to_physical_local(const ReplayBuffer *rb,
 static void reanalyze_one(MuModel *model, const float *obs, float *pi_out,
                           float *out_root_v, float *out_root_dist,
                           int dist_bins, const MCTSParams *mp,
-                          MCTSRng *rng) {
+                          MCTSRng *rng, pthread_mutex_t *model_mutex) {
 
+  if (model_mutex)
+    pthread_mutex_lock(model_mutex);
   MCTSResult mr = mcts_run(model, obs, mp, rng);
+  if (model_mutex)
+    pthread_mutex_unlock(model_mutex);
   memcpy(pi_out, mr.pi, sizeof(float) * (size_t)mr.action_count);
   normalize_probs(pi_out, mr.action_count);
 
@@ -159,7 +181,9 @@ static void reanalyze_one(MuModel *model, const float *obs, float *pi_out,
 */
 static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
                              const MCTSParams *mp, int samples, int unroll,
-                             int bootstrap_steps, float gamma, MCTSRng *rng) {
+                             int bootstrap_steps, float gamma, MCTSRng *rng,
+                             pthread_mutex_t *rb_mutex,
+                             pthread_mutex_t *model_mutex) {
 
   if (!model || !rb || rb->size == 0 || samples <= 0)
     return;
@@ -202,9 +226,13 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
                     (rb->value_dist_buf && rb->support_size > 1)
                         ? rb->value_dist_buf + idx * (size_t)rb->support_size
                         : NULL,
-                    rb->support_size, mp, rng);
+                    rb->support_size, mp, rng, model_mutex);
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       memcpy(rb->pi_buf + idx * (size_t)A, pi_tmp,
              sizeof(float) * (size_t)A);
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
     }
 
     // recompute value prefix + bootstrap targets
@@ -222,6 +250,8 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
         if (rb->done_buf[ii])
           break;
       }
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       rb->vprefix_buf[idx] = prefix;
 
       float G = 0.0f;
@@ -249,12 +279,18 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
         bootstrap = root_v[t_boot];
       }
       rb->z_buf[idx] = G + gamma_pow * bootstrap;
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
 
       const float *obs = rb->obs_buf + idx * (size_t)O;
       float prio =
           priority_from_obs_local(model, obs, rb->pi_buf + idx * (size_t)A,
-                                  rb->z_buf[idx], A);
+                                  rb->z_buf[idx], A, model_mutex);
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       rb_set_priority(rb, idx, prio + 1e-3f);
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
 
       avg_v += root_v[k];
       cnt++;
@@ -272,7 +308,10 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
 
 static void reanalyze_games(MuModel *model, ReplayBuffer *rb, GameReplay *gr,
                             const MCTSParams *mp, int bootstrap_steps,
-                            float gamma, MCTSRng *rng) {
+                            float gamma, MCTSRng *rng,
+                            pthread_mutex_t *rb_mutex,
+                            pthread_mutex_t *gr_mutex,
+                            pthread_mutex_t *model_mutex) {
   if (!model || !rb || !gr || gr->game_count == 0)
     return;
   if (!(gamma > 0.0f))
@@ -310,13 +349,21 @@ static void reanalyze_games(MuModel *model, ReplayBuffer *rb, GameReplay *gr,
       }
 
       reanalyze_one(model, obs, pi_tmp, &root_v[t],
-                    dist_out, rb->support_size, mp, rng);
+                    dist_out, rb->support_size, mp, rng, model_mutex);
+      if (gr_mutex)
+        pthread_mutex_lock(gr_mutex);
       memcpy(gr->pi_buf + off * (size_t)A, pi_tmp,
              sizeof(float) * (size_t)A);
+      if (gr_mutex)
+        pthread_mutex_unlock(gr_mutex);
 
       if (rb_idx < rb->capacity) {
+        if (rb_mutex)
+          pthread_mutex_lock(rb_mutex);
         memcpy(rb->pi_buf + rb_idx * (size_t)A, pi_tmp,
                sizeof(float) * (size_t)A);
+        if (rb_mutex)
+          pthread_mutex_unlock(rb_mutex);
       }
       avg_v += root_v[t];
       count++;
@@ -330,7 +377,11 @@ static void reanalyze_games(MuModel *model, ReplayBuffer *rb, GameReplay *gr,
       gamma_pow_prefix *= gamma;
 
       size_t rb_idx = gr->rb_idx_buf[off];
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       rb_set_value_prefix(rb, rb_idx, prefix);
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
     }
 
     for (int t = 0; t < T; t++) {
@@ -358,12 +409,20 @@ static void reanalyze_games(MuModel *model, ReplayBuffer *rb, GameReplay *gr,
 
       size_t off = ((size_t)g * (size_t)gr->max_steps + (size_t)t);
       size_t rb_idx = gr->rb_idx_buf[off];
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       rb_set_z(rb, rb_idx, G + gamma_pow * bootstrap);
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
       float prio =
           priority_from_obs_local(model, gr->obs_buf + off * (size_t)O,
                                   rb->pi_buf + rb_idx * (size_t)A,
-                                  rb->z_buf[rb_idx], A);
+                                  rb->z_buf[rb_idx], A, model_mutex);
+      if (rb_mutex)
+        pthread_mutex_lock(rb_mutex);
       rb_set_priority(rb, rb_idx, prio + 1e-3f);
+      if (rb_mutex)
+        pthread_mutex_unlock(rb_mutex);
     }
   }
 
@@ -415,7 +474,9 @@ static float eval_run(MuModel *model, void *env_state,
       mp.dirichlet_eps = 0.0f;
       mp.temperature = 0.0f;
 
+      lock_mtx(g_muze_model_mutex);
       MCTSResult mr = mcts_run(model, obs, &mp, rng);
+      unlock_mtx(g_muze_model_mutex);
 
       int best = 0;
       float bestp = mr.pi[0];
@@ -493,9 +554,12 @@ void muze_run_loop(MuModel *model, void *env_state,
   SelfPlayParams sp0 = *base_sp_params;
 
   int iters = loop_cfg->iterations > 0 ? loop_cfg->iterations : 1;
-  int eps_per = loop_cfg->selfplay_episodes_per_iter > 0
-                    ? loop_cfg->selfplay_episodes_per_iter
-                    : 10;
+  int eps_per = 0;
+  if (!loop_cfg->selfplay_disable) {
+    eps_per = loop_cfg->selfplay_episodes_per_iter > 0
+                  ? loop_cfg->selfplay_episodes_per_iter
+                  : 10;
+  }
   int train_calls =
       loop_cfg->train_calls_per_iter > 0 ? loop_cfg->train_calls_per_iter : 1;
 
@@ -535,28 +599,41 @@ void muze_run_loop(MuModel *model, void *env_state,
   float best_score = -INFINITY;
 
   for (int it = 0; it < iters; it++) {
-    // ---- self-play ----
-    printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
-           eps_per);
-    int actors = loop_cfg->selfplay_actor_count > 0
-                     ? loop_cfg->selfplay_actor_count
-                     : 1;
-    if (actors <= 1) {
-      SelfPlayParams sp = sp0;
-      sp.total_episodes = eps_per;
-      selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr,
-                   rng);
-    } else {
-      int base = eps_per / actors;
-      int rem = eps_per % actors;
-      for (int a = 0; a < actors; a++) {
-        int episodes = base + (a < rem ? 1 : 0);
-        if (episodes <= 0)
-          continue;
+    if (eps_per > 0) {
+      printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
+             eps_per);
+      int actors = loop_cfg->selfplay_actor_count > 0
+                       ? loop_cfg->selfplay_actor_count
+                       : 1;
+      if (actors <= 1) {
         SelfPlayParams sp = sp0;
-        sp.total_episodes = episodes;
-        selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr,
-                     rng);
+        sp.total_episodes = eps_per;
+        if (g_muze_model_mutex || g_muze_rb_mutex || g_muze_gr_mutex) {
+          selfplay_run_threadsafe(model, env_state, env_reset, env_step, &mp0,
+                                  &sp, rb, gr, rng, g_muze_rb_mutex,
+                                  g_muze_gr_mutex, g_muze_model_mutex);
+        } else {
+          selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb, gr,
+                       rng);
+        }
+      } else {
+        int base = eps_per / actors;
+        int rem = eps_per % actors;
+        for (int a = 0; a < actors; a++) {
+          int episodes = base + (a < rem ? 1 : 0);
+          if (episodes <= 0)
+            continue;
+          SelfPlayParams sp = sp0;
+          sp.total_episodes = episodes;
+          if (g_muze_model_mutex || g_muze_rb_mutex || g_muze_gr_mutex) {
+            selfplay_run_threadsafe(model, env_state, env_reset, env_step, &mp0,
+                                    &sp, rb, gr, rng, g_muze_rb_mutex,
+                                    g_muze_gr_mutex, g_muze_model_mutex);
+          } else {
+            selfplay_run(model, env_state, env_reset, env_step, &mp0, &sp, rb,
+                         gr, rng);
+          }
+        }
       }
     }
 
@@ -586,10 +663,12 @@ void muze_run_loop(MuModel *model, void *env_state,
           (loop_cfg->reanalyze_gamma > 0.0f) ? loop_cfg->reanalyze_gamma
                                              : tc.discount;
       if (loop_cfg->reanalyze_full_games && gr && gr->game_count > 0) {
-        reanalyze_games(model, rb, gr, &mp, tc.bootstrap_steps, rgamma, rng);
+        reanalyze_games(model, rb, gr, &mp, tc.bootstrap_steps, rgamma, rng,
+                        g_muze_rb_mutex, g_muze_gr_mutex, g_muze_model_mutex);
       } else {
         reanalyze_replay(model, rb, &mp, samples, tc.unroll_steps,
-                         tc.bootstrap_steps, rgamma, rng);
+                         tc.bootstrap_steps, rgamma, rng, g_muze_rb_mutex,
+                         g_muze_model_mutex);
       }
     }
 
@@ -604,12 +683,24 @@ void muze_run_loop(MuModel *model, void *env_state,
             tc.per_beta_start + t * (tc.per_beta_end - tc.per_beta_start);
         per_beta_step++;
       }
+      lock_mtx(g_muze_model_mutex);
+      lock_mtx(g_muze_rb_mutex);
+      lock_mtx(g_muze_gr_mutex);
+      lock_mtx(g_muze_model_mutex);
+      lock_mtx(g_muze_rb_mutex);
+      lock_mtx(g_muze_gr_mutex);
       if (gr && tc.unroll_steps > 0)
         trainer_train_from_replay_games(model, rb, gr, &tc);
       else
         trainer_train_from_replay(model, rb, &tc);
       if (tc.unroll_steps <= 0)
         trainer_train_dynamics(model, rb, &tc);
+      unlock_mtx(g_muze_gr_mutex);
+      unlock_mtx(g_muze_rb_mutex);
+      unlock_mtx(g_muze_model_mutex);
+      unlock_mtx(g_muze_gr_mutex);
+      unlock_mtx(g_muze_rb_mutex);
+      unlock_mtx(g_muze_model_mutex);
     }
 
     printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
@@ -756,9 +847,12 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
   SelfPlayParams sp0 = *base_sp_params;
 
   int iters = loop_cfg->iterations > 0 ? loop_cfg->iterations : 1;
-  int eps_per = loop_cfg->selfplay_episodes_per_iter > 0
-                    ? loop_cfg->selfplay_episodes_per_iter
-                    : 10;
+  int eps_per = 0;
+  if (!loop_cfg->selfplay_disable) {
+    eps_per = loop_cfg->selfplay_episodes_per_iter > 0
+                  ? loop_cfg->selfplay_episodes_per_iter
+                  : 10;
+  }
   int train_calls =
       loop_cfg->train_calls_per_iter > 0 ? loop_cfg->train_calls_per_iter : 1;
 
@@ -800,55 +894,58 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
   pthread_mutex_t gr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
   for (int it = 0; it < iters; it++) {
-    printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
-           eps_per);
-    int base = eps_per / actors;
-    int rem = eps_per % actors;
+    if (eps_per > 0) {
+      printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1,
+             iters, eps_per);
+      int base = eps_per / actors;
+      int rem = eps_per % actors;
 
-    pthread_t *threads =
-        (pthread_t *)malloc(sizeof(pthread_t) * (size_t)actors);
-    ActorCtx *ctxs =
-        (ActorCtx *)calloc((size_t)actors, sizeof(ActorCtx));
-    if (!threads || !ctxs) {
+      pthread_t *threads =
+          (pthread_t *)malloc(sizeof(pthread_t) * (size_t)actors);
+      ActorCtx *ctxs =
+          (ActorCtx *)calloc((size_t)actors, sizeof(ActorCtx));
+      if (!threads || !ctxs) {
+        free(threads);
+        free(ctxs);
+        return;
+      }
+
+      int launched = 0;
+      for (int a = 0; a < actors; a++) {
+        int episodes = base + (a < rem ? 1 : 0);
+        if (episodes <= 0)
+          continue;
+
+        ctxs[a].model = model;
+        ctxs[a].env_state = env_clone(env_state);
+        ctxs[a].env_reset = env_reset;
+        ctxs[a].env_step = env_step;
+        ctxs[a].mcts_params = mp0;
+        ctxs[a].sp_params = sp0;
+        ctxs[a].sp_params.total_episodes = episodes;
+        ctxs[a].rb = rb;
+        ctxs[a].gr = gr;
+        ctxs[a].rb_mutex = g_muze_rb_mutex ? g_muze_rb_mutex : &rb_mutex;
+        ctxs[a].gr_mutex = g_muze_gr_mutex ? g_muze_gr_mutex : &gr_mutex;
+        ctxs[a].model_mutex = g_muze_model_mutex;
+        ctxs[a].rng_state = (uint32_t)rand();
+        ctxs[a].rng.ctx = &ctxs[a].rng_state;
+        ctxs[a].rng.rand01 = rng01_xorshift;
+
+        pthread_create(&threads[launched], NULL, actor_thread_main, &ctxs[a]);
+        launched++;
+      }
+
+      for (int i = 0; i < launched; i++)
+        pthread_join(threads[i], NULL);
+
+      for (int a = 0; a < actors; a++) {
+        if (ctxs[a].env_state)
+          env_destroy(ctxs[a].env_state);
+      }
       free(threads);
       free(ctxs);
-      return;
     }
-
-    int launched = 0;
-    for (int a = 0; a < actors; a++) {
-      int episodes = base + (a < rem ? 1 : 0);
-      if (episodes <= 0)
-        continue;
-
-      ctxs[a].model = model;
-      ctxs[a].env_state = env_clone(env_state);
-      ctxs[a].env_reset = env_reset;
-      ctxs[a].env_step = env_step;
-      ctxs[a].mcts_params = mp0;
-      ctxs[a].sp_params = sp0;
-      ctxs[a].sp_params.total_episodes = episodes;
-      ctxs[a].rb = rb;
-      ctxs[a].gr = gr;
-      ctxs[a].rb_mutex = &rb_mutex;
-      ctxs[a].gr_mutex = &gr_mutex;
-      ctxs[a].rng_state = (uint32_t)rand();
-      ctxs[a].rng.ctx = &ctxs[a].rng_state;
-      ctxs[a].rng.rand01 = rng01_xorshift;
-
-      pthread_create(&threads[launched], NULL, actor_thread_main, &ctxs[a]);
-      launched++;
-    }
-
-    for (int i = 0; i < launched; i++)
-      pthread_join(threads[i], NULL);
-
-    for (int a = 0; a < actors; a++) {
-      if (ctxs[a].env_state)
-        env_destroy(ctxs[a].env_state);
-    }
-    free(threads);
-    free(ctxs);
 
     int reanalyze_interval =
         loop_cfg->reanalyze_interval > 0 ? loop_cfg->reanalyze_interval : 1;
@@ -872,10 +969,12 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
           (loop_cfg->reanalyze_gamma > 0.0f) ? loop_cfg->reanalyze_gamma
                                              : tc.discount;
       if (loop_cfg->reanalyze_full_games && gr && gr->game_count > 0) {
-        reanalyze_games(model, rb, gr, &mp, tc.bootstrap_steps, rgamma, rng);
+        reanalyze_games(model, rb, gr, &mp, tc.bootstrap_steps, rgamma, rng,
+                        g_muze_rb_mutex, g_muze_gr_mutex, g_muze_model_mutex);
       } else {
         reanalyze_replay(model, rb, &mp, samples, tc.unroll_steps,
-                         tc.bootstrap_steps, rgamma, rng);
+                         tc.bootstrap_steps, rgamma, rng, g_muze_rb_mutex,
+                         g_muze_model_mutex);
       }
     }
 
@@ -1012,4 +1111,47 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
       }
     }
   }
+}
+
+void muze_run_loop_locked(MuModel *model, void *env_state,
+                          selfplay_env_reset_fn env_reset,
+                          selfplay_env_step_fn env_step, ReplayBuffer *rb,
+                          GameReplay *gr,
+                          const MCTSParams *base_mcts_params,
+                          const SelfPlayParams *base_sp_params,
+                          const MuLoopConfig *loop_cfg, MCTSRng *rng,
+                          pthread_mutex_t *model_mutex,
+                          pthread_mutex_t *rb_mutex,
+                          pthread_mutex_t *gr_mutex) {
+  g_muze_model_mutex = model_mutex;
+  g_muze_rb_mutex = rb_mutex;
+  g_muze_gr_mutex = gr_mutex;
+  muze_run_loop(model, env_state, env_reset, env_step, rb, gr,
+                base_mcts_params, base_sp_params, loop_cfg, rng);
+  g_muze_model_mutex = NULL;
+  g_muze_rb_mutex = NULL;
+  g_muze_gr_mutex = NULL;
+}
+
+void muze_run_loop_multi_locked(MuModel *model, void *env_state,
+                                selfplay_env_reset_fn env_reset,
+                                selfplay_env_step_fn env_step,
+                                selfplay_env_clone_fn env_clone,
+                                selfplay_env_destroy_fn env_destroy,
+                                ReplayBuffer *rb, GameReplay *gr,
+                                const MCTSParams *base_mcts_params,
+                                const SelfPlayParams *base_sp_params,
+                                const MuLoopConfig *loop_cfg, MCTSRng *rng,
+                                pthread_mutex_t *model_mutex,
+                                pthread_mutex_t *rb_mutex,
+                                pthread_mutex_t *gr_mutex) {
+  g_muze_model_mutex = model_mutex;
+  g_muze_rb_mutex = rb_mutex;
+  g_muze_gr_mutex = gr_mutex;
+  muze_run_loop_multi(model, env_state, env_reset, env_step, env_clone,
+                      env_destroy, rb, gr, base_mcts_params, base_sp_params,
+                      loop_cfg, rng);
+  g_muze_model_mutex = NULL;
+  g_muze_rb_mutex = NULL;
+  g_muze_gr_mutex = NULL;
 }

@@ -61,7 +61,8 @@ void selfplay_run_threadsafe(MuModel *model, void *env_state,
                              SelfPlayParams *sp_params, ReplayBuffer *rb,
                              GameReplay *gr, MCTSRng *rng,
                              pthread_mutex_t *rb_mutex,
-                             pthread_mutex_t *gr_mutex);
+                             pthread_mutex_t *gr_mutex,
+                             pthread_mutex_t *model_mutex);
 
 #ifdef __cplusplus
 }
