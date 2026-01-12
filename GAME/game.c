@@ -25,9 +25,16 @@
 #define SAVE_ROOT "saves"
 #endif
 
+static int g_use_perlin_ground;
+static float hash2d(int x, int y);
+static float terrain_height(float x, float z);
+static void grass_enqueue_job(int cx, int cy);
+
 /* =======================
    GLOBAL CONFIG
 ======================= */
+#define FPS 60.0f
+
 #define WORLD_SIZE 128
 #define CHUNK_SIZE 32
 
@@ -84,6 +91,13 @@
 #define PLAYER_RADIUS 0.6f
 #define GRASS_PATCH_SIZE 3.0f
 #define GRASS_PATCH_DENSITY 600
+#define GRASS_PATCH_CELL 7.0f
+#define GRASS_PATCH_THRESHOLD 0.55f
+#define GRASS_CHUNK_RADIUS 2
+#define GRASS_STRIDE_NEAR 1
+#define GRASS_STRIDE_MID 3
+#define GRASS_STRIDE_FAR 6
+#define GRASS_MAX_DRAW 3000
 
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
@@ -267,6 +281,14 @@ typedef struct {
   ProjOwner owner;
 } Projectile;
 
+typedef struct {
+  float x;
+  float y;
+  float z;
+  float yaw;
+  float scale;
+} GrassBlade;
+
 typedef struct Chunk {
   int biome_type;
   int terrain[CHUNK_SIZE][CHUNK_SIZE];
@@ -275,6 +297,12 @@ typedef struct Chunk {
   Mob mobs[MAX_MOBS];
   bool generated;
   float mob_spawn_timer;
+
+  GrassBlade *grass;
+  int grass_count;
+  int grass_capacity;
+  int grass_ready;
+  int grass_building;
 
   pthread_rwlock_t lock;
 } Chunk;
@@ -2848,6 +2876,11 @@ Chunk *get_chunk(int cx, int cy) {
   }
 
   pthread_rwlock_unlock(&c->lock);
+  // Kick grass generation after chunk init
+  if (!c->grass_ready && !c->grass_building) {
+    c->grass_building = 1;
+    grass_enqueue_job(cx, cy);
+  }
   return c;
 }
 
@@ -5681,6 +5714,138 @@ static void stop_workers(void) {
   }
 }
 
+// ------------------- Grass build worker -------------------
+typedef struct {
+  int cx;
+  int cy;
+} GrassJob;
+
+#define GRASS_JOB_CAP (WORLD_SIZE * WORLD_SIZE)
+
+static pthread_t g_grass_thread;
+static pthread_mutex_t g_grass_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t g_grass_cv = PTHREAD_COND_INITIALIZER;
+static GrassJob g_grass_jobs[GRASS_JOB_CAP];
+static int g_grass_head = 0;
+static int g_grass_tail = 0;
+static int g_grass_quit = 0;
+
+static void grass_enqueue_job(int cx, int cy) {
+  pthread_mutex_lock(&g_grass_mtx);
+  int next_tail = (g_grass_tail + 1) % GRASS_JOB_CAP;
+  if (next_tail != g_grass_head) {
+    g_grass_jobs[g_grass_tail] = (GrassJob){cx, cy};
+    g_grass_tail = next_tail;
+    pthread_cond_signal(&g_grass_cv);
+  }
+  pthread_mutex_unlock(&g_grass_mtx);
+}
+
+static int grass_dequeue_job(GrassJob *out) {
+  pthread_mutex_lock(&g_grass_mtx);
+  while (g_grass_head == g_grass_tail && !g_grass_quit) {
+    pthread_cond_wait(&g_grass_cv, &g_grass_mtx);
+  }
+  if (g_grass_quit) {
+    pthread_mutex_unlock(&g_grass_mtx);
+    return 0;
+  }
+  *out = g_grass_jobs[g_grass_head];
+  g_grass_head = (g_grass_head + 1) % GRASS_JOB_CAP;
+  pthread_mutex_unlock(&g_grass_mtx);
+  return 1;
+}
+
+static void build_grass_for_chunk(int cx, int cy) {
+  float world_span = (float)(WORLD_SIZE * CHUNK_SIZE);
+  float patch_cell = GRASS_PATCH_CELL;
+  int max_ix = (int)floorf(world_span / patch_cell);
+
+  float x0 = cx * CHUNK_SIZE;
+  float x1 = x0 + CHUNK_SIZE;
+  float z0 = cy * CHUNK_SIZE;
+  float z1 = z0 + CHUNK_SIZE;
+  int min_x = (int)floorf(x0 / patch_cell);
+  int max_x = (int)floorf(x1 / patch_cell);
+  int min_z = (int)floorf(z0 / patch_cell);
+  int max_z = (int)floorf(z1 / patch_cell);
+  min_x = (int)clampf((float)min_x, 0.0f, (float)max_ix);
+  max_x = (int)clampf((float)max_x, 0.0f, (float)max_ix);
+  min_z = (int)clampf((float)min_z, 0.0f, (float)max_ix);
+  max_z = (int)clampf((float)max_z, 0.0f, (float)max_ix);
+
+  GrassBlade *tmp = NULL;
+  int count = 0;
+  int cap = 0;
+
+  for (int gz = min_z; gz <= max_z; gz++) {
+    for (int gx = min_x; gx <= max_x; gx++) {
+      float h = hash2d(gx, gz);
+      if (h < GRASS_PATCH_THRESHOLD)
+        continue;
+
+      float cxp = gx * patch_cell + patch_cell * 0.5f;
+      float czp = gz * patch_cell + patch_cell * 0.5f;
+      int blades =
+          (int)(GRASS_PATCH_DENSITY * 0.75f) +
+          (int)(hash2d(gx + 91, gz - 37) * (GRASS_PATCH_DENSITY * 0.5f));
+
+      for (int i = 0; i < blades; i++) {
+        float jx = hash2d(gx * 131 + i * 7, gz * 173 - i * 11) * 2.0f - 1.0f;
+        float jz = hash2d(gx * 197 - i * 5, gz * 149 + i * 13) * 2.0f - 1.0f;
+        float px = cxp + jx * GRASS_PATCH_SIZE;
+        float pz = czp + jz * GRASS_PATCH_SIZE;
+        if (px < 0.0f || pz < 0.0f || px > world_span || pz > world_span)
+          continue;
+        float seed = hash2d(gx + i * 3, gz - i * 5);
+        if (count == cap) {
+          cap = cap ? cap * 2 : 256;
+          tmp = (GrassBlade *)realloc(tmp, sizeof(GrassBlade) * cap);
+          if (!tmp) {
+            cap = 0;
+            count = 0;
+            break;
+          }
+        }
+        float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+        tmp[count++] =
+            (GrassBlade){px, py, pz, seed * 6.28f, 0.7f + seed * 0.5f};
+      }
+    }
+  }
+
+  Chunk *c = &world[cx][cy];
+  pthread_rwlock_wrlock(&c->lock);
+  free(c->grass);
+  c->grass = tmp;
+  c->grass_count = count;
+  c->grass_capacity = cap;
+  c->grass_ready = 1;
+  c->grass_building = 0;
+  pthread_rwlock_unlock(&c->lock);
+}
+
+static void *grass_worker(void *arg) {
+  (void)arg;
+  GrassJob job;
+  while (grass_dequeue_job(&job)) {
+    build_grass_for_chunk(job.cx, job.cy);
+  }
+  return NULL;
+}
+
+static void start_grass_worker(void) {
+  pthread_create(&g_grass_thread, NULL, grass_worker, NULL);
+}
+
+static void stop_grass_worker(void) {
+  pthread_mutex_lock(&g_grass_mtx);
+  g_grass_quit = 1;
+  pthread_cond_broadcast(&g_grass_cv);
+  pthread_mutex_unlock(&g_grass_mtx);
+  pthread_join(g_grass_thread, NULL);
+}
+
 // ------------------- 3D RENDERER (minimal) -------------------
 typedef struct {
   float x, y, z;
@@ -5717,6 +5882,17 @@ static GLint g_ui_u_screen = -1;
 static GLint g_ui_u_color = -1;
 static GLint g_ui_u_tex = -1;
 static TTF_Font *g_ui_font = NULL;
+
+typedef struct {
+  char text[64];
+  Color color;
+  GLuint tex;
+  int w;
+  int h;
+} UiTextCache;
+
+static UiTextCache g_hud_hp = {"", {0}, 0, 0, 0};
+static UiTextCache g_hud_st = {"", {0}, 0, 0, 0};
 static Mesh g_mesh_player = {0};
 static Mesh g_mesh_mobs[MOB_COUNT] = {0};
 static Mesh g_mesh_resources[RES_COUNT] = {0};
@@ -6419,6 +6595,8 @@ static void init_ui_gl(void) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   g_ui_font = TTF_OpenFont(ui_font_path(), 18);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
@@ -6481,6 +6659,66 @@ static void ui_draw_text(float x, float y, const char *text, Color color) {
 
   ui_draw_quad(x, y, (float)tw, (float)th, tex, WHITE);
   glDeleteTextures(1, &tex);
+}
+
+static void ui_text_cache_clear(UiTextCache *cache) {
+  if (!cache)
+    return;
+  if (cache->tex) {
+    glDeleteTextures(1, &cache->tex);
+    cache->tex = 0;
+  }
+  cache->text[0] = '\0';
+  cache->w = 0;
+  cache->h = 0;
+  cache->color = (Color){0, 0, 0, 0};
+}
+
+static void ui_text_cache_update(UiTextCache *cache, const char *text,
+                                 Color color) {
+  if (!cache || !text || !text[0])
+    return;
+  init_ui_gl();
+  if (!g_ui_font)
+    return;
+
+  if (strcmp(cache->text, text) == 0 &&
+      memcmp(&cache->color, &color, sizeof(Color)) == 0 && cache->tex) {
+    return;
+  }
+
+  ui_text_cache_clear(cache);
+
+  SDL_Color c = {color.r, color.g, color.b, color.a};
+  size_t len = strlen(text);
+  SDL_Surface *surf = TTF_RenderText_Blended(g_ui_font, text, len, c);
+  if (!surf)
+    return;
+  SDL_Surface *rgba = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_RGBA32);
+  SDL_DestroySurface(surf);
+  if (!rgba)
+    return;
+
+  cache->w = rgba->w;
+  cache->h = rgba->h;
+
+  glGenTextures(1, &cache->tex);
+  glBindTexture(GL_TEXTURE_2D, cache->tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cache->w, cache->h, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, rgba->pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  SDL_DestroySurface(rgba);
+
+  strncpy(cache->text, text, sizeof(cache->text) - 1);
+  cache->text[sizeof(cache->text) - 1] = '\0';
+  cache->color = color;
+}
+
+static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
+  if (!cache || !cache->tex || cache->w <= 0 || cache->h <= 0)
+    return;
+  ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
 
 static void draw_crosshair_3d(void) {
@@ -6552,12 +6790,26 @@ static void draw_hud_3d(void) {
   if (w <= 0 || h <= 0)
     return;
 
+  init_ui_gl();
   char line[64];
   glDisable(GL_DEPTH_TEST);
+  float panel_x = 14.0f;
+  float panel_y = 12.0f;
+  float panel_w = 170.0f;
+  float panel_h = 58.0f;
+  ui_draw_rect(panel_x, panel_y, panel_w, panel_h, (Color){0, 0, 0, 120});
+  float hp01 = clamp01(player.health / 100.0f);
+  float st01 = clamp01(player.stamina / 100.0f);
+  ui_draw_rect(panel_x + 8.0f, panel_y + 26.0f, 140.0f * hp01, 8.0f,
+               (Color){220, 80, 80, 220});
+  ui_draw_rect(panel_x + 8.0f, panel_y + 44.0f, 140.0f * st01, 8.0f,
+               (Color){120, 180, 255, 220});
   snprintf(line, sizeof(line), "HP: %d", (int)player.health);
-  ui_draw_text(20, 20, line, RAYWHITE);
+  ui_text_cache_update(&g_hud_hp, line, RAYWHITE);
+  ui_draw_text_cached(20, 20, &g_hud_hp);
   snprintf(line, sizeof(line), "ST: %d", (int)player.stamina);
-  ui_draw_text(20, 42, line, (Color){200, 220, 255, 255});
+  ui_text_cache_update(&g_hud_st, line, (Color){200, 220, 255, 255});
+  ui_draw_text_cached(20, 42, &g_hud_st);
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -6774,70 +7026,66 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
 
 static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
   (void)tnow;
-  float patch_cell = 7.0f;
-  float patch_radius_world = GRASS_PATCH_SIZE;
-  float world_span = (float)(WORLD_SIZE * CHUNK_SIZE);
-  int max_ix = (int)floorf(world_span / patch_cell);
-
   int pcx = (int)(player_pos.x / CHUNK_SIZE);
   int pcz = (int)(player_pos.z / CHUNK_SIZE);
-  int chunk_radius = 3;
+  int drawn = 0;
 
-  for (int cz = pcz - chunk_radius; cz <= pcz + chunk_radius; cz++) {
+  for (int cz = pcz - GRASS_CHUNK_RADIUS; cz <= pcz + GRASS_CHUNK_RADIUS;
+       cz++) {
     if (cz < 0 || cz >= WORLD_SIZE)
       continue;
-    float z0 = cz * CHUNK_SIZE;
-    float z1 = z0 + CHUNK_SIZE;
-    int min_z = (int)floorf(z0 / patch_cell);
-    int max_z = (int)floorf(z1 / patch_cell);
-    min_z = (int)clampf((float)min_z, 0.0f, (float)max_ix);
-    max_z = (int)clampf((float)max_z, 0.0f, (float)max_ix);
-
-    for (int cx = pcx - chunk_radius; cx <= pcx + chunk_radius; cx++) {
+    for (int cx = pcx - GRASS_CHUNK_RADIUS; cx <= pcx + GRASS_CHUNK_RADIUS;
+         cx++) {
       if (cx < 0 || cx >= WORLD_SIZE)
         continue;
-      float x0 = cx * CHUNK_SIZE;
-      float x1 = x0 + CHUNK_SIZE;
-      int min_x = (int)floorf(x0 / patch_cell);
-      int max_x = (int)floorf(x1 / patch_cell);
-      min_x = (int)clampf((float)min_x, 0.0f, (float)max_ix);
-      max_x = (int)clampf((float)max_x, 0.0f, (float)max_ix);
+      if (drawn >= GRASS_MAX_DRAW)
+        return;
 
-      for (int gz = min_z; gz <= max_z; gz++) {
-        for (int gx = min_x; gx <= max_x; gx++) {
-          float h = hash2d(gx, gz);
-          if (h < 0.55f)
-            continue;
+      Chunk *c = get_chunk(cx, cz);
+      if (!c)
+        continue;
+      pthread_rwlock_rdlock(&c->lock);
+      if (!c->grass_ready && !c->grass_building) {
+        c->grass_building = 1;
+        pthread_rwlock_unlock(&c->lock);
+        grass_enqueue_job(cx, cz);
+        continue;
+      }
 
-          float cxp = gx * patch_cell + patch_cell * 0.5f;
-          float czp = gz * patch_cell + patch_cell * 0.5f;
-          int count =
-              (int)(GRASS_PATCH_DENSITY * 0.75f) +
-              (int)(hash2d(gx + 91, gz - 37) * (GRASS_PATCH_DENSITY * 0.5f));
+      GrassBlade *blades = c->grass;
+      int count = c->grass_count;
+      pthread_rwlock_unlock(&c->lock);
+      if (!blades || count <= 0)
+        continue;
 
-          for (int i = 0; i < count; i++) {
-            float jx =
-                hash2d(gx * 131 + i * 7, gz * 173 - i * 11) * 2.0f - 1.0f;
-            float jz =
-                hash2d(gx * 197 - i * 5, gz * 149 + i * 13) * 2.0f - 1.0f;
-            float px = cxp + jx * patch_radius_world;
-            float pz = czp + jz * patch_radius_world;
-            if (px < 0.0f || pz < 0.0f || px > world_span || pz > world_span)
-              continue;
-            float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+      int dx = cx - pcx;
+      int dz = cz - pcz;
+      int dist = abs(dx);
+      if (abs(dz) > dist)
+        dist = abs(dz);
+      int stride = GRASS_STRIDE_FAR;
+      if (dist <= 1)
+        stride = GRASS_STRIDE_NEAR;
+      else if (dist == 2)
+        stride = GRASS_STRIDE_MID;
+      if (stride < 1)
+        stride = 1;
 
-            float seed = hash2d(gx + i * 3, gz - i * 5);
-            float yaw = seed * 6.28f;
-            float scale = 0.7f + seed * 0.5f;
-            Mat4 tilt = mat4_rotate_x(0.0f);
+      for (int i = 0; i < count; i += stride) {
+        if (drawn >= GRASS_MAX_DRAW)
+          return;
+        float px = blades[i].x;
+        float py = blades[i].y;
+        float pz = blades[i].z;
+        float yaw = blades[i].yaw;
+        float scale = blades[i].scale;
 
-            Mat4 model = mat4_mul(
-                mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
-                mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
-            render_mesh(&g_mesh_grass, model, view_proj,
-                        vec3(0.55f, 0.86f, 0.55f));
-          }
-        }
+        Mat4 model = mat4_mul(
+            mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
+            mat4_mul(mat4_rotate_x(0.0f),
+                     mat4_scale(vec3(scale, scale, scale))));
+        render_mesh(&g_mesh_grass, model, view_proj, vec3(0.55f, 0.86f, 0.55f));
+        drawn++;
       }
     }
   }
@@ -6996,7 +7244,10 @@ int main(void) {
   }
 
   InitWindow(1280, 800, "MUZE Tribal Simulation");
-  SetExitKey(KEY_NULL); // <- ESC will NOT close the window anymore
+  if (TTF_Init() != 0) {
+    printf("TTF_Init failed: %s\n", SDL_GetError());
+  }
+  SetExitKey(KEY_ESCAPE);
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
@@ -7011,6 +7262,7 @@ int main(void) {
   }
 
   start_workers();
+  start_grass_worker();
 
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
@@ -7018,6 +7270,11 @@ int main(void) {
       world[x][y].generated = false;
       world[x][y].resource_count = 0;
       world[x][y].mob_spawn_timer = 0.0f;
+      world[x][y].grass = NULL;
+      world[x][y].grass_count = 0;
+      world[x][y].grass_capacity = 0;
+      world[x][y].grass_ready = 0;
+      world[x][y].grass_building = 0;
     }
   }
 
@@ -7240,7 +7497,16 @@ int main(void) {
     EndDrawing();
   }
 
+  stop_grass_worker();
   stop_workers();
+
+  ui_text_cache_clear(&g_hud_hp);
+  ui_text_cache_clear(&g_hud_st);
+  if (g_ui_font) {
+    TTF_CloseFont(g_ui_font);
+    g_ui_font = NULL;
+  }
+  TTF_Quit();
 
   CloseWindow();
   return 0;
