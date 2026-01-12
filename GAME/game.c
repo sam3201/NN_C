@@ -542,6 +542,13 @@ typedef struct {
   int mob_odd_hostile;
   int res_odd_variant;
   int base_odd_variant;
+  int mob_even[MOB_COUNT];
+  int mob_odd[MOB_COUNT];
+  int res_even[RES_COUNT];
+  int res_odd[RES_COUNT];
+  int base_even[TRIBE_COUNT];
+  int base_odd[TRIBE_COUNT];
+  int use_overrides;
 } VisionIdMap;
 static VisionIdMap g_vision_id_map = {0};
 static int g_vision_id_max = 0;
@@ -1710,6 +1717,27 @@ static void vision_id_map_init_defaults(void) {
       g_vision_id_map.mob_base + g_vision_id_map.mob_stride * MOB_COUNT;
   g_vision_id_map.base_base =
       g_vision_id_map.res_base + g_vision_id_map.res_stride * RES_COUNT;
+  g_vision_id_map.use_overrides = 1;
+
+  for (int i = 0; i < MOB_COUNT; i++) {
+    g_vision_id_map.mob_even[i] =
+        g_vision_id_map.mob_base + g_vision_id_map.mob_stride * i;
+    g_vision_id_map.mob_odd[i] =
+        g_vision_id_map.mob_even[i] + g_vision_id_map.mob_odd_hostile;
+  }
+  for (int i = 0; i < RES_COUNT; i++) {
+    g_vision_id_map.res_even[i] =
+        g_vision_id_map.res_base + g_vision_id_map.res_stride * i;
+    g_vision_id_map.res_odd[i] =
+        g_vision_id_map.res_even[i] + g_vision_id_map.res_odd_variant;
+  }
+  for (int i = 0; i < TRIBE_COUNT; i++) {
+    g_vision_id_map.base_even[i] =
+        g_vision_id_map.base_base + g_vision_id_map.base_stride * i;
+    g_vision_id_map.base_odd[i] =
+        g_vision_id_map.base_even[i] + g_vision_id_map.base_odd_variant;
+  }
+
   g_vision_id_max =
       g_vision_id_map.base_base + g_vision_id_map.base_stride * TRIBE_COUNT;
 }
@@ -1720,14 +1748,28 @@ static inline int vision_id_agent(int same_tribe) {
                     : g_vision_id_map.agent_other_id;
 }
 static inline int vision_id_mob(MobType t, int hostile) {
-  return g_vision_id_map.mob_base + g_vision_id_map.mob_stride * (int)t +
+  int idx = (int)t;
+  if (g_vision_id_map.use_overrides && idx >= 0 && idx < MOB_COUNT) {
+    return hostile ? g_vision_id_map.mob_odd[idx]
+                   : g_vision_id_map.mob_even[idx];
+  }
+  return g_vision_id_map.mob_base + g_vision_id_map.mob_stride * idx +
          (hostile ? g_vision_id_map.mob_odd_hostile : 0);
 }
 static inline int vision_id_resource(ResourceType t, int variant) {
-  return g_vision_id_map.res_base + g_vision_id_map.res_stride * (int)t +
+  int idx = (int)t;
+  if (g_vision_id_map.use_overrides && idx >= 0 && idx < RES_COUNT) {
+    return variant ? g_vision_id_map.res_odd[idx]
+                   : g_vision_id_map.res_even[idx];
+  }
+  return g_vision_id_map.res_base + g_vision_id_map.res_stride * idx +
          (variant ? g_vision_id_map.res_odd_variant : 0);
 }
 static inline int vision_id_base(int tribe, int variant) {
+  if (g_vision_id_map.use_overrides && tribe >= 0 && tribe < TRIBE_COUNT) {
+    return variant ? g_vision_id_map.base_odd[tribe]
+                   : g_vision_id_map.base_even[tribe];
+  }
   return g_vision_id_map.base_base + g_vision_id_map.base_stride * tribe +
          (variant ? g_vision_id_map.base_odd_variant : 0);
 }
