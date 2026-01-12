@@ -80,8 +80,8 @@ int main(void) {
         return 0;
       }
 
-      int action = muze_select_action(cortex, obs, (size_t)obs_dim,
-                                      (size_t)action_count);
+      int action =
+          muze_plan(cortex, obs, (size_t)obs_dim, (size_t)action_count, NULL);
 
       float next_obs[obs_dim];
       float env_reward = 0.0f;
