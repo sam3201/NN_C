@@ -6779,7 +6779,7 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
   int base_x = (int)floorf(player_pos.x / cell);
   int base_z = (int)floorf(player_pos.z / cell);
   int drawn = 0;
-  int max_draw = 1200;
+  int max_draw = 100000;
 
   for (int dz = -radius; dz <= radius && drawn < max_draw; dz++) {
     for (int dx = -radius; dx <= radius && drawn < max_draw; dx++) {
