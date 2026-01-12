@@ -5597,14 +5597,20 @@ static GLint g_ui_u_tex = -1;
 static TTF_Font *g_ui_font = NULL;
 static Mesh g_mesh_player = {0};
 static Mesh g_mesh_mobs[MOB_COUNT] = {0};
+static Mesh g_mesh_resources[RES_COUNT] = {0};
 static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
+static int g_mesh_resource_loaded[RES_COUNT] = {0};
 
 #define ASSET_PLAYER_GLB "Assets/Player.glb"
 #define ASSET_PIG_GLB "Assets/Pig.glb"
 #define ASSET_SHEEP_GLB "Assets/Sheep.glb"
 #define ASSET_SKELETON_GLB "Assets/Skeleton.glb"
 #define ASSET_ZOMBIE_GLB "Assets/Zombie.glb"
+#define ASSET_TREE_GLB "Assets/Res_Tree.glb"
+#define ASSET_ROCK_GLB "Assets/Res_Rock.glb"
+#define ASSET_GOLD_GLB "Assets/Res_Gold.glb"
+#define ASSET_FOOD_GLB "Assets/Res_Food.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -6375,6 +6381,14 @@ static void init_3d_renderer(void) {
       load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
   g_mesh_mob_loaded[MOB_ZOMBIE] =
       load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
+  g_mesh_resource_loaded[RES_TREE] =
+      load_glb_mesh(ASSET_TREE_GLB, &g_mesh_resources[RES_TREE]);
+  g_mesh_resource_loaded[RES_ROCK] =
+      load_glb_mesh(ASSET_ROCK_GLB, &g_mesh_resources[RES_ROCK]);
+  g_mesh_resource_loaded[RES_GOLD] =
+      load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
+  g_mesh_resource_loaded[RES_FOOD] =
+      load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
   g_3d_ready = 1;
 }
 
@@ -6523,7 +6537,32 @@ static void render_scene_3d(void) {
         float dzp = rp.z - player_pos.z;
         if (dxp * dxp + dzp * dzp > max_dist2)
           continue;
-        if (r->type == RES_TREE) {
+        float s = 1.0f;
+        switch (r->type) {
+        case RES_TREE:
+          s = 1.6f;
+          break;
+        case RES_ROCK:
+          s = 1.0f;
+          break;
+        case RES_GOLD:
+          s = 0.9f;
+          break;
+        case RES_FOOD:
+          s = 0.8f;
+          break;
+        default:
+          s = 1.0f;
+          break;
+        }
+
+        if (r->type >= 0 && r->type < RES_COUNT &&
+            g_mesh_resource_loaded[r->type]) {
+          Vec3 col = color_to_vec3(resource_colors[r->type]);
+          Mat4 model = mat4_mul(mat4_translate(vec3(rp.x, 0.0f, rp.z)),
+                                mat4_scale(vec3(s, s, s)));
+          render_mesh(&g_mesh_resources[r->type], model, view_proj, col);
+        } else if (r->type == RES_TREE) {
           Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, 0.8f, rp.z)),
                                 mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
           render_mesh(&g_mesh_cylinder, trunk, view_proj,
@@ -6534,9 +6573,9 @@ static void render_scene_3d(void) {
                       vec3(0.18f, 0.55f, 0.22f));
         } else {
           Vec3 col = color_to_vec3(resource_colors[r->type]);
-          float s = (r->type == RES_ROCK) ? 0.8f : 0.6f;
+          float rs = (r->type == RES_ROCK) ? 0.8f : 0.6f;
           Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, 0.5f, rp.z)),
-                               mat4_scale(vec3(s, s, s)));
+                               mat4_scale(vec3(rs, rs, rs)));
           render_mesh(&g_mesh_sphere, rock, view_proj, col);
         }
         drawn++;
