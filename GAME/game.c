@@ -152,7 +152,8 @@ typedef enum {
   RES_ROCK,
   RES_GOLD,
   RES_FOOD,
-  RES_NONE
+  RES_NONE,
+  RES_COUNT
 } ResourceType;
 
 typedef enum {
