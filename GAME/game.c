@@ -79,6 +79,10 @@
 #define AGENT_FIRE_LATCH_TIME 0.85f // seconds of "auto-fire" after ACTION_FIRE
 #define AGENT_FIRE_CANCEL_ON_MOVE 1 // set 0 if you want strafing auto-fire
 
+#define PLAYER_JUMP_SPEED 8.5f
+#define PLAYER_GRAVITY 24.0f
+#define PLAYER_RADIUS 0.6f
+
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
 #define BOW_TTL_MIN 1.10f
@@ -566,6 +570,9 @@ static float g_dt = 1.0f / 60.0f;
 static float g_player_yaw = 0.0f;
 static float g_player_yaw_target = 0.0f;
 static float g_player_pitch = 0.0f;
+static float g_player_y_offset = 0.0f;
+static float g_player_vy = 0.0f;
+static int g_player_on_ground = 1;
 static int g_use_3d = 1;
 static int g_mouse_locked = 0;
 typedef enum { CAM_THIRD_PERSON = 0, CAM_FIRST_PERSON } CameraMode;
@@ -576,6 +583,8 @@ typedef enum {
   BIND_MOVE_BACK,
   BIND_MOVE_LEFT,
   BIND_MOVE_RIGHT,
+  BIND_JUMP,
+  BIND_SPRINT,
   BIND_PAUSE,
   BIND_ATTACK,
   BIND_HARVEST,
@@ -592,6 +601,7 @@ typedef struct {
 static Keybind g_keybinds[BIND_COUNT] = {
     {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
     {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+    {"Jump", KEY_SPACE, KEY_NULL},   {"Sprint", KEY_LEFT_SHIFT, KEY_NULL},
     {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
     {"Harvest", KEY_E, KEY_NULL},    {"Fire", KEY_SPACE, KEY_NULL},
 };
@@ -625,8 +635,8 @@ static float wrap_pi(float a) {
 }
 
 static const char *bind_action_ids[BIND_COUNT] = {
-    "move_forward", "move_back", "move_left", "move_right",
-    "pause",        "attack",    "harvest",   "fire",
+    "move_forward", "move_back", "move_left", "move_right", "jump",
+    "sprint",       "pause",     "attack",    "harvest",    "fire",
 };
 
 static const char *key_name(KeyboardKey k) {
@@ -673,6 +683,8 @@ static const char *key_name(KeyboardKey k) {
     return "KEY_MINUS";
   case KEY_EQUAL:
     return "KEY_EQUAL";
+  case KEY_LEFT_SHIFT:
+    return "KEY_LEFT_SHIFT";
   case KEY_F5:
     return "KEY_F5";
   case KEY_NULL:
@@ -713,6 +725,8 @@ static KeyboardKey key_from_name(const char *s) {
     return KEY_MINUS;
   if (strcmp(s, "KEY_EQUAL") == 0)
     return KEY_EQUAL;
+  if (strcmp(s, "KEY_LEFT_SHIFT") == 0)
+    return KEY_LEFT_SHIFT;
   if (strcmp(s, "KEY_F5") == 0)
     return KEY_F5;
   if (strcmp(s, "KEY_NULL") == 0)
@@ -2868,6 +2882,73 @@ static inline float mob_radius_world(MobType t) {
   }
 }
 
+static inline float resource_radius_world(ResourceType t) {
+  switch (t) {
+  case RES_TREE:
+    return 1.2f;
+  case RES_ROCK:
+    return 0.9f;
+  case RES_GOLD:
+    return 0.8f;
+  case RES_FOOD:
+    return 0.7f;
+  default:
+    return 0.8f;
+  }
+}
+
+static void push_out(Vector2 *pos, Vector2 center, float radius) {
+  float dx = pos->x - center.x;
+  float dy = pos->y - center.y;
+  float d2 = dx * dx + dy * dy;
+  if (d2 <= 1e-6f)
+    d2 = 1e-6f;
+  float d = sqrtf(d2);
+  if (d < radius) {
+    float push = radius - d;
+    float inv = 1.0f / d;
+    pos->x += dx * inv * push;
+    pos->y += dy * inv * push;
+  }
+}
+
+static void resolve_player_collisions(void) {
+  int pcx = (int)(player.position.x / CHUNK_SIZE);
+  int pcy = (int)(player.position.y / CHUNK_SIZE);
+  float pr = PLAYER_RADIUS;
+
+  for (int dy = -1; dy <= 1; dy++) {
+    for (int dx = -1; dx <= 1; dx++) {
+      Chunk *c = get_chunk(pcx + dx, pcy + dy);
+      if (!c)
+        continue;
+      pthread_rwlock_rdlock(&c->lock);
+
+      for (int i = 0; i < MAX_RESOURCES; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+        Vector2 rp = {(pcx + dx) * CHUNK_SIZE + r->position.x,
+                      (pcy + dy) * CHUNK_SIZE + r->position.y};
+        float rr = resource_radius_world(r->type) + pr;
+        push_out(&player.position, rp, rr);
+      }
+
+      for (int i = 0; i < MAX_MOBS; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        Vector2 mp = {(pcx + dx) * CHUNK_SIZE + m->position.x,
+                      (pcy + dy) * CHUNK_SIZE + m->position.y};
+        float mr = mob_radius_world(m->type) + pr;
+        push_out(&player.position, mp, mr);
+      }
+
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+}
+
 // ---- Spacing test: is "worldPos" too close to ANY resource/mob nearby?
 // ---- IMPORTANT: we do NOT call get_chunk() here (avoids recursive
 // generation). We only check chunks that are already generated.
@@ -4705,6 +4786,9 @@ void init_player(void) {
   player.facing = (Vector2){0, 0};
   player.health = 100;
   player.stamina = 100;
+  g_player_y_offset = 0.0f;
+  g_player_vy = 0.0f;
+  g_player_on_ground = 1;
 }
 
 void update_player(void) {
@@ -4738,6 +4822,10 @@ void update_player(void) {
   }
 
   float speed = 0.6f;
+  int sprinting = g_use_3d && bind_down(BIND_SPRINT) && player.stamina > 1.0f;
+  if (sprinting) {
+    speed *= 1.8f;
+  }
   float move = speed;
 
   Vector2 fwd = (Vector2){sinf(g_player_yaw), -cosf(g_player_yaw)};
@@ -4762,6 +4850,14 @@ void update_player(void) {
 
   player.facing.x = fwd.x;
   player.facing.y = fwd.y;
+
+  if (g_use_3d) {
+    float world_span = (float)(WORLD_SIZE * CHUNK_SIZE);
+    player.position.x = clampf(player.position.x, 0.0f, world_span);
+    player.position.y = clampf(player.position.y, 0.0f, world_span);
+  }
+
+  resolve_player_collisions();
   // --- zoom controls ---
   if (IsKeyDown(KEY_EQUAL))
     target_world_scale += 60.0f * dt;
@@ -4771,7 +4867,25 @@ void update_player(void) {
 
   // optional: tiny stamina drain while moving
   if (moving) {
-    player.stamina = fmaxf(0.0f, player.stamina - STAMINA_DRAIN_RATE * dt);
+    float drain = STAMINA_DRAIN_RATE;
+    if (sprinting)
+      drain *= 3.0f;
+    player.stamina = fmaxf(0.0f, player.stamina - drain * dt);
+  }
+
+  if (g_use_3d && bind_pressed(BIND_JUMP) && g_player_on_ground) {
+    g_player_vy = PLAYER_JUMP_SPEED;
+    g_player_on_ground = 0;
+  }
+
+  if (g_use_3d) {
+    g_player_vy -= PLAYER_GRAVITY * dt;
+    g_player_y_offset += g_player_vy * dt;
+    if (g_player_y_offset <= 0.0f) {
+      g_player_y_offset = 0.0f;
+      g_player_vy = 0.0f;
+      g_player_on_ground = 1;
+    }
   }
 
   // --- crafting toggle ---
@@ -5590,6 +5704,7 @@ static GLint g_u_light = -1;
 static Mesh g_mesh_ground = {0};
 static Mesh g_mesh_ground_tile = {0};
 static Mesh g_mesh_ground_perlin = {0};
+static Mesh g_mesh_grass = {0};
 static Mesh g_mesh_sphere = {0};
 static Mesh g_mesh_cylinder = {0};
 static GLuint g_ui_shader = 0;
@@ -5680,7 +5795,7 @@ static float value_noise(float x, float y) {
 }
 
 static float terrain_height(float x, float z) {
-  float base_scale = 0.02f;
+  float base_scale = 0.03125f;
   float n = value_noise(x * base_scale, z * base_scale);
   float hill = (n - 0.6f) / 0.4f; // only top 40% become hills
   if (hill < 0.0f) {
@@ -5688,7 +5803,7 @@ static float terrain_height(float x, float z) {
   }
   hill = clamp01(hill);
   // Broader, gentle hills on a flat plane.
-  return hill * hill * 8.0f;
+  return hill * hill * 12.0f;
 }
 
 static Vec3 vec3_rotate_y(Vec3 v, float a) {
@@ -5739,6 +5854,17 @@ static Mat4 mat4_rotate_y(float a) {
   m.m[0] = c;
   m.m[2] = s;
   m.m[8] = -s;
+  m.m[10] = c;
+  return m;
+}
+
+static Mat4 mat4_rotate_x(float a) {
+  Mat4 m = mat4_identity();
+  float c = cosf(a);
+  float s = sinf(a);
+  m.m[5] = c;
+  m.m[6] = -s;
+  m.m[9] = s;
   m.m[10] = c;
   return m;
 }
@@ -6006,7 +6132,9 @@ static void build_ground_mesh(void) {
 }
 
 static void build_ground_perlin_mesh(void) {
-  int res = WORLD_SIZE;
+  int world_span = WORLD_SIZE * CHUNK_SIZE;
+  int step = 8; // world units between vertices
+  int res = world_span / step;
   int vcount = (res + 1) * (res + 1);
   int icount = res * res * 6;
   float *verts = (float *)malloc(sizeof(float) * vcount * 6);
@@ -6020,8 +6148,8 @@ static void build_ground_perlin_mesh(void) {
   int vi = 0;
   for (int z = 0; z <= res; z++) {
     for (int x = 0; x <= res; x++) {
-      float fx = (float)x;
-      float fz = (float)z;
+      float fx = (float)(x * step);
+      float fz = (float)(z * step);
       float h = terrain_height(fx, fz);
       verts[vi * 6 + 0] = fx;
       verts[vi * 6 + 1] = h;
@@ -6071,6 +6199,20 @@ static void build_ground_perlin_mesh(void) {
   free(verts);
   free(idx);
   g_mesh_ground_perlin_ready = 1;
+}
+
+static void build_grass_mesh(void) {
+  float w = 0.035f;
+  float h = 0.7f;
+  float bend = 0.16f;
+  float verts[] = {
+      -w,       0.0f, 0.0f,     0, 1, 0, w,         0.0f, 0.0f,      0, 1, 0,
+      w + bend, h,    0.0f,     0, 1, 0, -w + bend, h,    0.0f,      0, 1, 0,
+      0.0f,     0.0f, -w,       0, 1, 0, 0.0f,      0.0f, w,         0, 1, 0,
+      0.0f,     h,    w + bend, 0, 1, 0, 0.0f,      h,    -w + bend, 0, 1, 0,
+  };
+  unsigned int idx[] = {0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7};
+  mesh_init(&g_mesh_grass, verts, 8, idx, 12);
 }
 
 static void build_sphere_mesh(int stacks, int slices) {
@@ -6359,14 +6501,14 @@ static void draw_crosshair_3d(void) {
 
 static KeyboardKey poll_any_key_pressed(void) {
   KeyboardKey keys[] = {
-      KEY_A,     KEY_B,      KEY_C,        KEY_D,     KEY_E,     KEY_F,
-      KEY_G,     KEY_H,      KEY_I,        KEY_J,     KEY_K,     KEY_L,
-      KEY_M,     KEY_N,      KEY_O,        KEY_P,     KEY_Q,     KEY_R,
-      KEY_S,     KEY_T,      KEY_U,        KEY_V,     KEY_W,     KEY_X,
-      KEY_Y,     KEY_Z,      KEY_ONE,      KEY_TWO,   KEY_THREE, KEY_FOUR,
-      KEY_FIVE,  KEY_SIX,    KEY_SEVEN,    KEY_EIGHT, KEY_NINE,  KEY_ZERO,
-      KEY_UP,    KEY_DOWN,   KEY_LEFT,     KEY_RIGHT, KEY_SPACE, KEY_TAB,
-      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE};
+      KEY_A,     KEY_B,      KEY_C,         KEY_D,         KEY_E,     KEY_F,
+      KEY_G,     KEY_H,      KEY_I,         KEY_J,         KEY_K,     KEY_L,
+      KEY_M,     KEY_N,      KEY_O,         KEY_P,         KEY_Q,     KEY_R,
+      KEY_S,     KEY_T,      KEY_U,         KEY_V,         KEY_W,     KEY_X,
+      KEY_Y,     KEY_Z,      KEY_ONE,       KEY_TWO,       KEY_THREE, KEY_FOUR,
+      KEY_FIVE,  KEY_SIX,    KEY_SEVEN,     KEY_EIGHT,     KEY_NINE,  KEY_ZERO,
+      KEY_UP,    KEY_DOWN,   KEY_LEFT,      KEY_RIGHT,     KEY_SPACE, KEY_TAB,
+      KEY_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT};
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
     if (IsKeyPressed(keys[i]))
       return keys[i];
@@ -6400,6 +6542,21 @@ static void draw_pause_menu_3d(void) {
   } else if (IsKeyPressed(KEY_FOUR)) {
     save_current_world_session();
   }
+}
+
+static void draw_hud_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  char line[64];
+  glDisable(GL_DEPTH_TEST);
+  snprintf(line, sizeof(line), "HP: %d", (int)player.health);
+  ui_draw_text(20, 20, line, RAYWHITE);
+  snprintf(line, sizeof(line), "ST: %d", (int)player.stamina);
+  ui_draw_text(20, 42, line, (Color){200, 220, 255, 255});
+  glEnable(GL_DEPTH_TEST);
 }
 
 static void draw_keybinds_menu_3d(void) {
@@ -6496,6 +6653,7 @@ static void init_3d_renderer(void) {
     g_mesh_ground_tile_loaded =
         load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
   }
+  build_grass_mesh();
   build_sphere_mesh(10, 16);
   build_cylinder_mesh(16);
   g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
@@ -6544,17 +6702,15 @@ static void render_player_3d(Vec3 player_pos, Mat4 view_proj) {
   }
 
   Mat4 body =
-      mat4_mul(mat4_mul(mat4_translate(
-                            vec3(player_pos.x, player_pos.y + 1.0f,
-                                 player_pos.z)),
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, player_pos.y + 1.0f,
+                                            player_pos.z)),
                         mat4_rotate_y(g_player_yaw)),
                mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
   render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
 
   Mat4 head =
-      mat4_mul(mat4_mul(mat4_translate(
-                            vec3(player_pos.x, player_pos.y + 2.4f,
-                                 player_pos.z)),
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, player_pos.y + 2.4f,
+                                            player_pos.z)),
                         mat4_rotate_y(g_player_yaw)),
                mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
   render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
@@ -6614,12 +6770,63 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
   }
 }
 
+static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
+  float cell = 1.1f;
+  int radius = 16;
+  float wind = sinf(tnow * 1.2f) * 0.25f;
+  float fan_radius = 2.0f;
+
+  int base_x = (int)floorf(player_pos.x / cell);
+  int base_z = (int)floorf(player_pos.z / cell);
+  int drawn = 0;
+  int max_draw = 1200;
+
+  for (int dz = -radius; dz <= radius && drawn < max_draw; dz++) {
+    for (int dx = -radius; dx <= radius && drawn < max_draw; dx++) {
+      int gx = base_x + dx;
+      int gz = base_z + dz;
+      float h = hash2d(gx, gz);
+      if (h < 0.45f)
+        continue;
+
+      float px = gx * cell + cell * 0.5f;
+      float pz = gz * cell + cell * 0.5f;
+      float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+
+      float dx = px - player_pos.x;
+      float dz = pz - player_pos.z;
+      float d2 = dx * dx + dz * dz;
+      float fan = 0.0f;
+      if (d2 < fan_radius * fan_radius) {
+        float d = sqrtf(d2);
+        fan = clamp01(1.0f - d / fan_radius);
+      }
+
+      float sway = sinf(tnow * 2.0f + h * 6.28f) * 0.2f + wind;
+      float bend = sway + fan * 0.8f;
+      float yaw = h * 6.28f;
+      float scale = 0.75f + h * 0.45f;
+
+      float away = atan2f(dz, dx);
+      Mat4 tilt = mat4_mul(mat4_rotate_y(away),
+                           mat4_mul(mat4_rotate_x(bend), mat4_rotate_y(-away)));
+
+      Mat4 model = mat4_mul(
+          mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
+          mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
+      render_mesh(&g_mesh_grass, model, view_proj, vec3(0.55f, 0.86f, 0.55f));
+      drawn++;
+    }
+  }
+}
+
 static void render_scene_3d(void) {
   init_3d_renderer();
   int w = GetScreenWidth();
   int h = GetScreenHeight();
   if (w <= 0 || h <= 0)
     return;
+  float tnow = (float)GetTime();
 
   glViewport(0, 0, w, h);
   glUseProgram(g_shader);
@@ -6627,9 +6834,10 @@ static void render_scene_3d(void) {
 
   float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
-  float player_h = g_use_perlin_ground ? terrain_height(player.position.x,
-                                                        player.position.y)
-                                       : 0.0f;
+  float player_h = g_use_perlin_ground
+                       ? terrain_height(player.position.x, player.position.y)
+                       : 0.0f;
+  player_h += g_player_y_offset;
   Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
   Vec3 forward =
       vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
@@ -6649,9 +6857,8 @@ static void render_scene_3d(void) {
   Mat4 view_proj = mat4_mul(proj, view);
 
   if (g_use_perlin_ground && g_mesh_ground_perlin_ready) {
-    Mat4 ground =
-        mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
-                 mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+    Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
+                           mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
     render_mesh(&g_mesh_ground_perlin, ground, view_proj,
                 vec3(0.18f, 0.55f, 0.22f));
   } else if (g_mesh_ground_tile_loaded) {
@@ -6676,6 +6883,7 @@ static void render_scene_3d(void) {
   }
 
   render_player_3d(player_pos, view_proj);
+  render_grass_3d(player_pos, view_proj, tnow);
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
@@ -6890,6 +7098,7 @@ int main(void) {
     ClearBackground((Color){135, 206, 235, 255});
     if (g_use_3d) {
       render_scene_3d();
+      draw_hud_3d();
       if (g_state == STATE_PLAYING) {
         draw_crosshair_3d();
       }
