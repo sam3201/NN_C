@@ -83,7 +83,7 @@
 #define PLAYER_GRAVITY 24.0f
 #define PLAYER_RADIUS 0.6f
 #define GRASS_PATCH_SIZE 3.0f
-#define GRASS_PATCH_DENSITY 200
+#define GRASS_PATCH_DENSITY 600
 
 #define BOW_SPEED_MIN 10.0f
 #define BOW_SPEED_MAX 22.0f
@@ -6205,7 +6205,7 @@ static void build_ground_perlin_mesh(void) {
 
 static void build_grass_mesh(void) {
   float w = 0.035f;
-  float h = 0.7f;
+  float h = 1.1f;
   float bend = 0.16f;
   float verts[] = {
       -w,       0.0f, 0.0f,     0, 1, 0, w,         0.0f, 0.0f,      0, 1, 0,
@@ -6773,62 +6773,71 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
 }
 
 static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
+  (void)tnow;
   float patch_cell = 7.0f;
-  int patch_radius = 6;
   float patch_radius_world = GRASS_PATCH_SIZE;
-  float wind = sinf(tnow * 1.2f) * 0.25f;
-  float fan_radius = 2.0f;
+  float world_span = (float)(WORLD_SIZE * CHUNK_SIZE);
+  int max_ix = (int)floorf(world_span / patch_cell);
 
-  int base_px = (int)floorf(player_pos.x / patch_cell);
-  int base_pz = (int)floorf(player_pos.z / patch_cell);
-  int drawn = 0;
-  int max_draw = 2200;
+  int pcx = (int)(player_pos.x / CHUNK_SIZE);
+  int pcz = (int)(player_pos.z / CHUNK_SIZE);
+  int chunk_radius = 3;
 
-  for (int dz = -patch_radius; dz <= patch_radius && drawn < max_draw; dz++) {
-    for (int dx = -patch_radius; dx <= patch_radius && drawn < max_draw; dx++) {
-      int gx = base_px + dx;
-      int gz = base_pz + dz;
-      float h = hash2d(gx, gz);
-      if (h < 0.55f)
+  for (int cz = pcz - chunk_radius; cz <= pcz + chunk_radius; cz++) {
+    if (cz < 0 || cz >= WORLD_SIZE)
+      continue;
+    float z0 = cz * CHUNK_SIZE;
+    float z1 = z0 + CHUNK_SIZE;
+    int min_z = (int)floorf(z0 / patch_cell);
+    int max_z = (int)floorf(z1 / patch_cell);
+    min_z = (int)clampf((float)min_z, 0.0f, (float)max_ix);
+    max_z = (int)clampf((float)max_z, 0.0f, (float)max_ix);
+
+    for (int cx = pcx - chunk_radius; cx <= pcx + chunk_radius; cx++) {
+      if (cx < 0 || cx >= WORLD_SIZE)
         continue;
+      float x0 = cx * CHUNK_SIZE;
+      float x1 = x0 + CHUNK_SIZE;
+      int min_x = (int)floorf(x0 / patch_cell);
+      int max_x = (int)floorf(x1 / patch_cell);
+      min_x = (int)clampf((float)min_x, 0.0f, (float)max_ix);
+      max_x = (int)clampf((float)max_x, 0.0f, (float)max_ix);
 
-      float cx = gx * patch_cell + patch_cell * 0.5f;
-      float cz = gz * patch_cell + patch_cell * 0.5f;
-      int count = (int)(GRASS_PATCH_DENSITY * 0.5f) +
-                  (int)(hash2d(gx + 91, gz - 37) * GRASS_PATCH_DENSITY);
+      for (int gz = min_z; gz <= max_z; gz++) {
+        for (int gx = min_x; gx <= max_x; gx++) {
+          float h = hash2d(gx, gz);
+          if (h < 0.55f)
+            continue;
 
-      for (int i = 0; i < count && drawn < max_draw; i++) {
-        float jx = hash2d(gx * 131 + i * 7, gz * 173 - i * 11) * 2.0f - 1.0f;
-        float jz = hash2d(gx * 197 - i * 5, gz * 149 + i * 13) * 2.0f - 1.0f;
-        float px = cx + jx * patch_radius_world;
-        float pz = cz + jz * patch_radius_world;
-        float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+          float cxp = gx * patch_cell + patch_cell * 0.5f;
+          float czp = gz * patch_cell + patch_cell * 0.5f;
+          int count =
+              (int)(GRASS_PATCH_DENSITY * 0.75f) +
+              (int)(hash2d(gx + 91, gz - 37) * (GRASS_PATCH_DENSITY * 0.5f));
 
-        float dxp = px - player_pos.x;
-        float dzp = pz - player_pos.z;
-        float d2 = dxp * dxp + dzp * dzp;
-        float fan = 0.0f;
-        if (d2 < fan_radius * fan_radius) {
-          float d = sqrtf(d2);
-          fan = clamp01(1.0f - d / fan_radius);
+          for (int i = 0; i < count; i++) {
+            float jx =
+                hash2d(gx * 131 + i * 7, gz * 173 - i * 11) * 2.0f - 1.0f;
+            float jz =
+                hash2d(gx * 197 - i * 5, gz * 149 + i * 13) * 2.0f - 1.0f;
+            float px = cxp + jx * patch_radius_world;
+            float pz = czp + jz * patch_radius_world;
+            if (px < 0.0f || pz < 0.0f || px > world_span || pz > world_span)
+              continue;
+            float py = g_use_perlin_ground ? terrain_height(px, pz) : 0.0f;
+
+            float seed = hash2d(gx + i * 3, gz - i * 5);
+            float yaw = seed * 6.28f;
+            float scale = 0.7f + seed * 0.5f;
+            Mat4 tilt = mat4_rotate_x(0.0f);
+
+            Mat4 model = mat4_mul(
+                mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
+                mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
+            render_mesh(&g_mesh_grass, model, view_proj,
+                        vec3(0.55f, 0.86f, 0.55f));
+          }
         }
-
-        float seed = hash2d(gx + i * 3, gz - i * 5);
-        float sway = sinf(tnow * 2.0f + seed * 6.28f) * 0.2f + wind;
-        float bend = sway + fan * 0.9f;
-        float yaw = seed * 6.28f;
-        float scale = 0.7f + seed * 0.5f;
-
-        float away = atan2f(dzp, dxp);
-        Mat4 tilt =
-            mat4_mul(mat4_rotate_y(away),
-                     mat4_mul(mat4_rotate_x(bend), mat4_rotate_y(-away)));
-
-        Mat4 model = mat4_mul(
-            mat4_mul(mat4_translate(vec3(px, py, pz)), mat4_rotate_y(yaw)),
-            mat4_mul(tilt, mat4_scale(vec3(scale, scale, scale))));
-        render_mesh(&g_mesh_grass, model, view_proj, vec3(0.55f, 0.86f, 0.55f));
-        drawn++;
       }
     }
   }
