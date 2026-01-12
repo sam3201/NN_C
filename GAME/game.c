@@ -5600,11 +5600,11 @@ static Mesh g_mesh_mobs[MOB_COUNT] = {0};
 static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
 
-#define ASSET_PLAYER_GLB "Assets/player.glb"
-#define ASSET_PIG_GLB "Assets/mob_pig.glb"
-#define ASSET_SHEEP_GLB "Assets/mob_sheep.glb"
-#define ASSET_SKELETON_GLB "Assets/mob_skeleton.glb"
-#define ASSET_ZOMBIE_GLB "Assets/mob_zombie.glb"
+#define ASSET_PLAYER_GLB "Assets/Player.glb"
+#define ASSET_PIG_GLB "Assets/Pib.glb"
+#define ASSET_SHEEP_GLB "Assets/Sheep.glb"
+#define ASSET_SKELETON_GLB "Assets/Skeleton.glb"
+#define ASSET_ZOMBIE_GLB "Assets/Zombie.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
