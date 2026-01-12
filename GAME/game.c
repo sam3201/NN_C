@@ -17,6 +17,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#define CGLTF_IMPLEMENTATION
+#include "../utils/Raylib/src/external/cgltf.h"
+
 // ------------------- Compile helpers / forward decls -------------------
 #ifndef SAVE_ROOT
 #define SAVE_ROOT "saves"
@@ -561,7 +564,9 @@ static Vector2 g_handL = {0}, g_handR = {0};
 static float g_dt = 1.0f / 60.0f;
 static float g_player_yaw = 0.0f;
 static float g_player_yaw_target = 0.0f;
+static float g_player_pitch = 0.0f;
 static int g_use_3d = 1;
+static int g_mouse_locked = 0;
 
 typedef enum {
   BIND_MOVE_FORWARD = 0,
@@ -4725,6 +4730,8 @@ void update_player(void) {
     g_player_yaw += md.x * sens;
     g_player_yaw = wrap_pi(g_player_yaw);
     g_player_yaw_target = g_player_yaw;
+    g_player_pitch += -md.y * sens;
+    g_player_pitch = clampf(g_player_pitch, -1.2f, 1.2f);
   }
 
   float speed = 0.6f;
@@ -5588,6 +5595,16 @@ static GLint g_ui_u_screen = -1;
 static GLint g_ui_u_color = -1;
 static GLint g_ui_u_tex = -1;
 static TTF_Font *g_ui_font = NULL;
+static Mesh g_mesh_player = {0};
+static Mesh g_mesh_mobs[MOB_COUNT] = {0};
+static int g_mesh_player_loaded = 0;
+static int g_mesh_mob_loaded[MOB_COUNT] = {0};
+
+#define ASSET_PLAYER_GLB "Assets/player.glb"
+#define ASSET_PIG_GLB "Assets/mob_pig.glb"
+#define ASSET_SHEEP_GLB "Assets/mob_sheep.glb"
+#define ASSET_SKELETON_GLB "Assets/mob_skeleton.glb"
+#define ASSET_ZOMBIE_GLB "Assets/mob_zombie.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -5745,6 +5762,180 @@ static void mesh_init(Mesh *m, const float *verts, int vcount,
                         (void *)(sizeof(float) * 3));
   glBindVertexArray(0);
   m->index_count = icount;
+}
+
+static void normalize_vec3_f(float *x, float *y, float *z) {
+  float len = sqrtf((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
+  if (len <= 1e-6f) {
+    *x = 0.0f;
+    *y = 1.0f;
+    *z = 0.0f;
+    return;
+  }
+  float inv = 1.0f / len;
+  *x *= inv;
+  *y *= inv;
+  *z *= inv;
+}
+
+static void compute_normals_from_indices(const float *positions, float *normals,
+                                         int vcount,
+                                         const unsigned int *indices,
+                                         int icount) {
+  for (int i = 0; i < vcount * 3; i++) {
+    normals[i] = 0.0f;
+  }
+  for (int i = 0; i + 2 < icount; i += 3) {
+    unsigned int ia = indices[i + 0];
+    unsigned int ib = indices[i + 1];
+    unsigned int ic = indices[i + 2];
+    if (ia >= (unsigned int)vcount || ib >= (unsigned int)vcount ||
+        ic >= (unsigned int)vcount) {
+      continue;
+    }
+    Vec3 a = vec3(positions[ia * 3 + 0], positions[ia * 3 + 1],
+                  positions[ia * 3 + 2]);
+    Vec3 b = vec3(positions[ib * 3 + 0], positions[ib * 3 + 1],
+                  positions[ib * 3 + 2]);
+    Vec3 c = vec3(positions[ic * 3 + 0], positions[ic * 3 + 1],
+                  positions[ic * 3 + 2]);
+    Vec3 e1 = vec3_sub(b, a);
+    Vec3 e2 = vec3_sub(c, a);
+    Vec3 n = vec3_cross(e1, e2);
+    normals[ia * 3 + 0] += n.x;
+    normals[ia * 3 + 1] += n.y;
+    normals[ia * 3 + 2] += n.z;
+    normals[ib * 3 + 0] += n.x;
+    normals[ib * 3 + 1] += n.y;
+    normals[ib * 3 + 2] += n.z;
+    normals[ic * 3 + 0] += n.x;
+    normals[ic * 3 + 1] += n.y;
+    normals[ic * 3 + 2] += n.z;
+  }
+  for (int i = 0; i < vcount; i++) {
+    normalize_vec3_f(&normals[i * 3 + 0], &normals[i * 3 + 1],
+                     &normals[i * 3 + 2]);
+  }
+}
+
+static int load_glb_mesh(const char *path, Mesh *out) {
+  cgltf_options options = {0};
+  cgltf_data *data = NULL;
+  cgltf_result res = cgltf_parse_file(&options, path, &data);
+  if (res != cgltf_result_success) {
+    fprintf(stderr, "glb load failed: %s\n", path);
+    return 0;
+  }
+  res = cgltf_load_buffers(&options, data, path);
+  if (res != cgltf_result_success) {
+    fprintf(stderr, "glb buffers failed: %s\n", path);
+    cgltf_free(data);
+    return 0;
+  }
+  if (data->meshes_count == 0 || data->meshes[0].primitives_count == 0) {
+    fprintf(stderr, "glb has no meshes: %s\n", path);
+    cgltf_free(data);
+    return 0;
+  }
+
+  cgltf_primitive *prim = &data->meshes[0].primitives[0];
+  if (prim->type != cgltf_primitive_type_triangles) {
+    fprintf(stderr, "glb primitive not triangles: %s\n", path);
+    cgltf_free(data);
+    return 0;
+  }
+
+  cgltf_accessor *pos_acc = NULL;
+  cgltf_accessor *norm_acc = NULL;
+  for (cgltf_size i = 0; i < prim->attributes_count; i++) {
+    cgltf_attribute *attr = &prim->attributes[i];
+    if (attr->type == cgltf_attribute_type_position) {
+      pos_acc = attr->data;
+    } else if (attr->type == cgltf_attribute_type_normal) {
+      norm_acc = attr->data;
+    }
+  }
+  if (!pos_acc) {
+    fprintf(stderr, "glb missing positions: %s\n", path);
+    cgltf_free(data);
+    return 0;
+  }
+
+  int vcount = (int)pos_acc->count;
+  float *positions = (float *)malloc(sizeof(float) * vcount * 3);
+  float *normals = (float *)calloc((size_t)vcount * 3, sizeof(float));
+  if (!positions || !normals) {
+    fprintf(stderr, "glb oom: %s\n", path);
+    free(positions);
+    free(normals);
+    cgltf_free(data);
+    return 0;
+  }
+  cgltf_accessor_unpack_floats(pos_acc, positions, (cgltf_size)vcount * 3);
+  if (norm_acc) {
+    cgltf_accessor_unpack_floats(norm_acc, normals, (cgltf_size)vcount * 3);
+  }
+
+  unsigned int *indices = NULL;
+  int icount = 0;
+  if (prim->indices) {
+    icount = (int)prim->indices->count;
+    indices = (unsigned int *)malloc(sizeof(unsigned int) * icount);
+    if (!indices) {
+      fprintf(stderr, "glb oom indices: %s\n", path);
+      free(positions);
+      free(normals);
+      cgltf_free(data);
+      return 0;
+    }
+    for (int i = 0; i < icount; i++) {
+      indices[i] = (unsigned int)cgltf_accessor_read_index(prim->indices, i);
+    }
+  } else {
+    icount = vcount;
+    indices = (unsigned int *)malloc(sizeof(unsigned int) * icount);
+    if (!indices) {
+      fprintf(stderr, "glb oom indices: %s\n", path);
+      free(positions);
+      free(normals);
+      cgltf_free(data);
+      return 0;
+    }
+    for (int i = 0; i < icount; i++) {
+      indices[i] = (unsigned int)i;
+    }
+  }
+
+  if (!norm_acc) {
+    compute_normals_from_indices(positions, normals, vcount, indices, icount);
+  }
+
+  float *verts = (float *)malloc(sizeof(float) * vcount * 6);
+  if (!verts) {
+    fprintf(stderr, "glb oom verts: %s\n", path);
+    free(positions);
+    free(normals);
+    free(indices);
+    cgltf_free(data);
+    return 0;
+  }
+  for (int i = 0; i < vcount; i++) {
+    verts[i * 6 + 0] = positions[i * 3 + 0];
+    verts[i * 6 + 1] = positions[i * 3 + 1];
+    verts[i * 6 + 2] = positions[i * 3 + 2];
+    verts[i * 6 + 3] = normals[i * 3 + 0];
+    verts[i * 6 + 4] = normals[i * 3 + 1];
+    verts[i * 6 + 5] = normals[i * 3 + 2];
+  }
+
+  mesh_init(out, verts, vcount, indices, icount);
+
+  free(verts);
+  free(positions);
+  free(normals);
+  free(indices);
+  cgltf_free(data);
+  return 1;
 }
 
 static void build_ground_mesh(void) {
@@ -6022,6 +6213,24 @@ static void ui_draw_text(float x, float y, const char *text, Color color) {
   glDeleteTextures(1, &tex);
 }
 
+static void draw_crosshair_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  float cx = w * 0.5f;
+  float cy = h * 0.5f;
+  float size = 8.0f;
+  float thick = 2.0f;
+  Color c = (Color){240, 240, 240, 220};
+
+  glDisable(GL_DEPTH_TEST);
+  ui_draw_rect(cx - size, cy - thick * 0.5f, size * 2.0f, thick, c);
+  ui_draw_rect(cx - thick * 0.5f, cy - size, thick, size * 2.0f, c);
+  glEnable(GL_DEPTH_TEST);
+}
+
 static KeyboardKey poll_any_key_pressed(void) {
   KeyboardKey keys[] = {
       KEY_A,     KEY_B,      KEY_C,        KEY_D,     KEY_E,     KEY_F,
@@ -6157,6 +6366,15 @@ static void init_3d_renderer(void) {
   build_ground_mesh();
   build_sphere_mesh(10, 16);
   build_cylinder_mesh(16);
+  g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
+  g_mesh_mob_loaded[MOB_PIG] =
+      load_glb_mesh(ASSET_PIG_GLB, &g_mesh_mobs[MOB_PIG]);
+  g_mesh_mob_loaded[MOB_SHEEP] =
+      load_glb_mesh(ASSET_SHEEP_GLB, &g_mesh_mobs[MOB_SHEEP]);
+  g_mesh_mob_loaded[MOB_SKELETON] =
+      load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
+  g_mesh_mob_loaded[MOB_ZOMBIE] =
+      load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
   g_3d_ready = 1;
 }
 
@@ -6175,6 +6393,81 @@ static Vec3 color_to_vec3(Color c) {
   return vec3(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f);
 }
 
+static void render_player_3d(Vec3 player_pos, Mat4 view_proj) {
+  if (g_mesh_player_loaded) {
+    Mat4 model = mat4_mul(
+        mat4_mul(mat4_translate(vec3(player_pos.x, 0.0f, player_pos.z)),
+                 mat4_rotate_y(g_player_yaw)),
+        mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
+    render_mesh(&g_mesh_player, model, view_proj, vec3(0.85f, 0.75f, 0.65f));
+    return;
+  }
+
+  Mat4 body =
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
+                        mat4_rotate_y(g_player_yaw)),
+               mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
+  render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
+
+  Mat4 head =
+      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
+                        mat4_rotate_y(g_player_yaw)),
+               mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
+  render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
+}
+
+static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
+  int cx = (int)(player.position.x / CHUNK_SIZE);
+  int cy = (int)(player.position.y / CHUNK_SIZE);
+  int drawn = 0;
+  int max_draw = 50;
+  float max_dist = 30.0f;
+  float max_dist2 = max_dist * max_dist;
+
+  for (int dy = -2; dy <= 2; dy++) {
+    for (int dx = -2; dx <= 2; dx++) {
+      if (drawn >= max_draw)
+        break;
+      Chunk *c = get_chunk(cx + dx, cy + dy);
+      if (!c)
+        continue;
+      pthread_rwlock_rdlock(&c->lock);
+      for (int i = 0; i < MAX_MOBS && drawn < max_draw; i++) {
+        Mob *m = &c->mobs[i];
+        if (m->health <= 0)
+          continue;
+        Vec3 mp = vec3((cx + dx) * CHUNK_SIZE + m->position.x, 0.0f,
+                       (cy + dy) * CHUNK_SIZE + m->position.y);
+        float dxp = mp.x - player_pos.x;
+        float dzp = mp.z - player_pos.z;
+        if (dxp * dxp + dzp * dzp > max_dist2)
+          continue;
+
+        float yaw = 0.0f;
+        float vlen = sqrtf(m->vel.x * m->vel.x + m->vel.y * m->vel.y);
+        if (vlen > 1e-3f) {
+          yaw = atan2f(m->vel.x, -m->vel.y);
+        }
+
+        float s = mob_radius_world(m->type) * 1.6f;
+        Mat4 model = mat4_mul(mat4_mul(mat4_translate(vec3(mp.x, 0.0f, mp.z)),
+                                       mat4_rotate_y(yaw)),
+                              mat4_scale(vec3(s, s, s)));
+        Vec3 tint = color_to_vec3(mob_colors[m->type]);
+
+        if (m->type >= 0 && m->type < MOB_COUNT && g_mesh_mob_loaded[m->type]) {
+          render_mesh(&g_mesh_mobs[m->type], model, view_proj, tint);
+        } else {
+          Mat4 body = mat4_mul(model, mat4_scale(vec3(0.7f, 0.7f, 0.7f)));
+          render_mesh(&g_mesh_sphere, body, view_proj, tint);
+        }
+        drawn++;
+      }
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+}
+
 static void render_scene_3d(void) {
   init_3d_renderer();
   int w = GetScreenWidth();
@@ -6191,59 +6484,68 @@ static void render_scene_3d(void) {
   Vec3 player_pos = vec3(player.position.x, 0.0f, player.position.y);
   Vec3 cam_offset = vec3_rotate_y(vec3(0.0f, 5.0f, 8.0f), g_player_yaw);
   Vec3 eye = vec3_add(player_pos, cam_offset);
-  Vec3 target = vec3_add(player_pos, vec3(0.0f, 1.0f, 0.0f));
+  Vec3 forward =
+      vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
+           cosf(g_player_pitch) * -cosf(g_player_yaw));
+  Vec3 target = vec3_add(eye, forward);
   Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
   Mat4 view_proj = mat4_mul(proj, view);
 
   Mat4 ground =
       mat4_mul(mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
                mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
-  render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.45f, 0.22f));
+  render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
 
-  Mat4 body =
-      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 1.0f, player_pos.z)),
-                        mat4_rotate_y(g_player_yaw)),
-               mat4_scale(vec3(0.6f, 1.5f, 0.6f)));
-  render_mesh(&g_mesh_cylinder, body, view_proj, vec3(0.75f, 0.55f, 0.45f));
-
-  Mat4 head =
-      mat4_mul(mat4_mul(mat4_translate(vec3(player_pos.x, 2.4f, player_pos.z)),
-                        mat4_rotate_y(g_player_yaw)),
-               mat4_scale(vec3(0.6f, 0.6f, 0.6f)));
-  render_mesh(&g_mesh_sphere, head, view_proj, vec3(0.85f, 0.75f, 0.65f));
+  render_player_3d(player_pos, view_proj);
 
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
-  Chunk *c = get_chunk(cx, cy);
-  if (c) {
-    pthread_rwlock_rdlock(&c->lock);
-    int drawn = 0;
-    for (int i = 0; i < MAX_RESOURCES && drawn < 20; i++) {
-      Resource *r = &c->resources[i];
-      if (r->health <= 0)
+  int drawn = 0;
+  int max_draw = 80;
+  float max_dist = 35.0f;
+  float max_dist2 = max_dist * max_dist;
+
+  for (int dy = -2; dy <= 2; dy++) {
+    for (int dx = -2; dx <= 2; dx++) {
+      if (drawn >= max_draw)
+        break;
+      Chunk *c = get_chunk(cx + dx, cy + dy);
+      if (!c)
         continue;
-      Vec3 rp = vec3(cx * CHUNK_SIZE + r->position.x, 0.0f,
-                     cy * CHUNK_SIZE + r->position.y);
-      if (r->type == RES_TREE) {
-        Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, 0.8f, rp.z)),
-                              mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
-        render_mesh(&g_mesh_cylinder, trunk, view_proj,
-                    vec3(0.35f, 0.22f, 0.12f));
-        Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, 2.2f, rp.z)),
-                               mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
-        render_mesh(&g_mesh_sphere, canopy, view_proj,
-                    vec3(0.18f, 0.55f, 0.22f));
-      } else {
-        Vec3 col = color_to_vec3(resource_colors[r->type]);
-        float s = (r->type == RES_ROCK) ? 0.8f : 0.6f;
-        Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, 0.5f, rp.z)),
-                             mat4_scale(vec3(s, s, s)));
-        render_mesh(&g_mesh_sphere, rock, view_proj, col);
+      pthread_rwlock_rdlock(&c->lock);
+      for (int i = 0; i < MAX_RESOURCES && drawn < max_draw; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
+        Vec3 rp = vec3((cx + dx) * CHUNK_SIZE + r->position.x, 0.0f,
+                       (cy + dy) * CHUNK_SIZE + r->position.y);
+        float dxp = rp.x - player_pos.x;
+        float dzp = rp.z - player_pos.z;
+        if (dxp * dxp + dzp * dzp > max_dist2)
+          continue;
+        if (r->type == RES_TREE) {
+          Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, 0.8f, rp.z)),
+                                mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
+          render_mesh(&g_mesh_cylinder, trunk, view_proj,
+                      vec3(0.35f, 0.22f, 0.12f));
+          Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, 2.2f, rp.z)),
+                                 mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
+          render_mesh(&g_mesh_sphere, canopy, view_proj,
+                      vec3(0.18f, 0.55f, 0.22f));
+        } else {
+          Vec3 col = color_to_vec3(resource_colors[r->type]);
+          float s = (r->type == RES_ROCK) ? 0.8f : 0.6f;
+          Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, 0.5f, rp.z)),
+                               mat4_scale(vec3(s, s, s)));
+          render_mesh(&g_mesh_sphere, rock, view_proj, col);
+        }
+        drawn++;
       }
-      drawn++;
+      pthread_rwlock_unlock(&c->lock);
     }
-    pthread_rwlock_unlock(&c->lock);
   }
+
+  render_mobs_3d(player_pos, view_proj);
 }
 
 /* =======================
@@ -6267,6 +6569,9 @@ int main(void) {
   init_tribes();
   init_agents();
   init_player();
+  if (g_use_3d) {
+    g_state = STATE_PLAYING;
+  }
 
   start_workers();
 
@@ -6341,7 +6646,22 @@ int main(void) {
       update_pickups(dt);
     }
 
-    SetRelativeMouseMode(g_use_3d && g_state == STATE_PLAYING);
+    if (g_use_3d) {
+      if (g_state == STATE_PLAYING && !g_mouse_locked) {
+        SetRelativeMouseMode(1);
+        SetMouseVisible(0);
+        int mw = GetScreenWidth();
+        int mh = GetScreenHeight();
+        if (mw > 0 && mh > 0) {
+          SetMousePosition(mw / 2, mh / 2);
+        }
+        g_mouse_locked = 1;
+      } else if (g_state != STATE_PLAYING && g_mouse_locked) {
+        SetRelativeMouseMode(0);
+        SetMouseVisible(1);
+        g_mouse_locked = 0;
+      }
+    }
 
     if (bind_pressed(BIND_PAUSE)) {
       if (g_state == STATE_PLAYING) {
@@ -6356,9 +6676,12 @@ int main(void) {
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground((Color){135, 206, 235, 255});
     if (g_use_3d) {
       render_scene_3d();
+      if (g_state == STATE_PLAYING) {
+        draw_crosshair_3d();
+      }
       if (g_state == STATE_PAUSED) {
         if (g_pause_page == 0)
           draw_pause_menu_3d();

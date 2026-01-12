@@ -242,3 +242,191 @@ void mu_ewc_accumulate(MuEWC *ewc, MuModel *m, long double scale) {
   ewc_accumulate_nn(ewc->vprefix, m->nn_vprefix, scale);
   ewc_accumulate_nn(ewc->reward, m->nn_reward, scale);
 }
+
+static size_t pick_src(const size_t *src_map, size_t src_len, size_t idx,
+                       size_t old_n) {
+  if (src_map && idx < src_len)
+    return src_map[idx] % old_n;
+  return (size_t)(rand() % (int)old_n);
+}
+
+int mu_ewc_net2wider_nn(NN_t *nn, size_t layer_index, size_t delta,
+                        const size_t *src_map, size_t src_len) {
+  if (!nn || delta == 0)
+    return 0;
+  if (layer_index == 0 || layer_index + 1 >= nn->numLayers)
+    return 0;
+
+  size_t old_n = nn->layers[layer_index];
+  size_t new_n = old_n + delta;
+  size_t in_size = nn->layers[layer_index - 1];
+  size_t out_size = nn->layers[layer_index + 1];
+
+  size_t *src = (size_t *)malloc(sizeof(size_t) * new_n);
+  size_t *count = (size_t *)calloc(old_n, sizeof(size_t));
+  if (!src || !count) {
+    free(src);
+    free(count);
+    return 0;
+  }
+  for (size_t i = 0; i < old_n; i++) {
+    src[i] = i;
+    count[i] = 1;
+  }
+  for (size_t j = old_n; j < new_n; j++) {
+    size_t u = pick_src(src_map, src_len, j - old_n, old_n);
+    src[j] = u;
+    count[u]++;
+  }
+
+  long double *W_in_new =
+      (long double *)malloc(sizeof(long double) * in_size * new_n);
+  long double *b_new =
+      (long double *)malloc(sizeof(long double) * new_n);
+  long double *W_out_new =
+      (long double *)malloc(sizeof(long double) * new_n * out_size);
+  long double *W_in_grad_new =
+      (long double *)calloc(in_size * new_n, sizeof(long double));
+  long double *b_grad_new =
+      (long double *)calloc(new_n, sizeof(long double));
+  long double *W_out_grad_new =
+      (long double *)calloc(new_n * out_size, sizeof(long double));
+  long double *opt_m_w_in_new =
+      (long double *)calloc(in_size * new_n, sizeof(long double));
+  long double *opt_v_w_in_new =
+      (long double *)calloc(in_size * new_n, sizeof(long double));
+  long double *opt_m_b_new =
+      (long double *)calloc(new_n, sizeof(long double));
+  long double *opt_v_b_new =
+      (long double *)calloc(new_n, sizeof(long double));
+  long double *opt_m_w_out_new =
+      (long double *)calloc(new_n * out_size, sizeof(long double));
+  long double *opt_v_w_out_new =
+      (long double *)calloc(new_n * out_size, sizeof(long double));
+
+  if (!W_in_new || !b_new || !W_out_new || !W_in_grad_new || !b_grad_new ||
+      !W_out_grad_new || !opt_m_w_in_new || !opt_v_w_in_new ||
+      !opt_m_b_new || !opt_v_b_new || !opt_m_w_out_new || !opt_v_w_out_new) {
+    free(src);
+    free(count);
+    free(W_in_new);
+    free(b_new);
+    free(W_out_new);
+    free(W_in_grad_new);
+    free(b_grad_new);
+    free(W_out_grad_new);
+    free(opt_m_w_in_new);
+    free(opt_v_w_in_new);
+    free(opt_m_b_new);
+    free(opt_v_b_new);
+    free(opt_m_w_out_new);
+    free(opt_v_w_out_new);
+    return 0;
+  }
+
+  for (size_t i = 0; i < old_n; i++) {
+    for (size_t c = 0; c < in_size; c++) {
+      size_t old_idx = c * old_n + i;
+      size_t new_idx = c * new_n + i;
+      W_in_new[new_idx] = nn->weights[layer_index - 1][old_idx];
+      opt_m_w_in_new[new_idx] = nn->opt_m_w[layer_index - 1][old_idx];
+      opt_v_w_in_new[new_idx] = nn->opt_v_w[layer_index - 1][old_idx];
+    }
+    b_new[i] = nn->biases[layer_index - 1][i];
+    opt_m_b_new[i] = nn->opt_m_b[layer_index - 1][i];
+    opt_v_b_new[i] = nn->opt_v_b[layer_index - 1][i];
+  }
+
+  for (size_t j = old_n; j < new_n; j++) {
+    size_t u = src[j];
+    for (size_t c = 0; c < in_size; c++) {
+      size_t old_idx = c * old_n + u;
+      size_t new_idx = c * new_n + j;
+      W_in_new[new_idx] = nn->weights[layer_index - 1][old_idx];
+      opt_m_w_in_new[new_idx] = nn->opt_m_w[layer_index - 1][old_idx];
+      opt_v_w_in_new[new_idx] = nn->opt_v_w[layer_index - 1][old_idx];
+    }
+    b_new[j] = nn->biases[layer_index - 1][u];
+    opt_m_b_new[j] = nn->opt_m_b[layer_index - 1][u];
+    opt_v_b_new[j] = nn->opt_v_b[layer_index - 1][u];
+  }
+
+  for (size_t u = 0; u < old_n; u++) {
+    long double inv = 1.0L / (long double)count[u];
+    for (size_t k = 0; k < out_size; k++) {
+      size_t old_idx = u * out_size + k;
+      size_t new_idx = u * out_size + k;
+      long double w = nn->weights[layer_index][old_idx];
+      W_out_new[new_idx] = w * inv;
+      opt_m_w_out_new[new_idx] =
+          nn->opt_m_w[layer_index][old_idx] * inv;
+      opt_v_w_out_new[new_idx] =
+          nn->opt_v_w[layer_index][old_idx] * inv;
+    }
+  }
+  for (size_t j = old_n; j < new_n; j++) {
+    size_t u = src[j];
+    for (size_t k = 0; k < out_size; k++) {
+      size_t base_idx = u * out_size + k;
+      size_t new_idx = j * out_size + k;
+      W_out_new[new_idx] = W_out_new[base_idx];
+      opt_m_w_out_new[new_idx] = opt_m_w_out_new[base_idx];
+      opt_v_w_out_new[new_idx] = opt_v_w_out_new[base_idx];
+    }
+  }
+
+  free(nn->weights[layer_index - 1]);
+  free(nn->biases[layer_index - 1]);
+  free(nn->weights_grad[layer_index - 1]);
+  free(nn->biases_grad[layer_index - 1]);
+  free(nn->opt_m_w[layer_index - 1]);
+  free(nn->opt_v_w[layer_index - 1]);
+  free(nn->opt_m_b[layer_index - 1]);
+  free(nn->opt_v_b[layer_index - 1]);
+
+  free(nn->weights[layer_index]);
+  free(nn->weights_grad[layer_index]);
+  free(nn->opt_m_w[layer_index]);
+  free(nn->opt_v_w[layer_index]);
+
+  nn->weights[layer_index - 1] = W_in_new;
+  nn->biases[layer_index - 1] = b_new;
+  nn->weights_grad[layer_index - 1] = W_in_grad_new;
+  nn->biases_grad[layer_index - 1] = b_grad_new;
+  nn->opt_m_w[layer_index - 1] = opt_m_w_in_new;
+  nn->opt_v_w[layer_index - 1] = opt_v_w_in_new;
+  nn->opt_m_b[layer_index - 1] = opt_m_b_new;
+  nn->opt_v_b[layer_index - 1] = opt_v_b_new;
+
+  nn->weights[layer_index] = W_out_new;
+  nn->weights_grad[layer_index] = W_out_grad_new;
+  nn->opt_m_w[layer_index] = opt_m_w_out_new;
+  nn->opt_v_w[layer_index] = opt_v_w_out_new;
+
+  nn->layers[layer_index] = new_n;
+
+  free(src);
+  free(count);
+  return 1;
+}
+
+int mu_ewc_net2wider_model(MuModel *m, size_t layer_index, size_t delta) {
+  if (!m || !m->use_nn)
+    return 0;
+  if (m->nn_repr &&
+      !mu_ewc_net2wider_nn(m->nn_repr, layer_index, delta, NULL, 0))
+    return 0;
+  if (m->nn_dyn &&
+      !mu_ewc_net2wider_nn(m->nn_dyn, layer_index, delta, NULL, 0))
+    return 0;
+  if (m->nn_pred &&
+      !mu_ewc_net2wider_nn(m->nn_pred, layer_index, delta, NULL, 0))
+    return 0;
+  if (m->nn_vprefix &&
+      !mu_ewc_net2wider_nn(m->nn_vprefix, layer_index, delta, NULL, 0))
+    return 0;
+  if (m->nn_reward &&
+      !mu_ewc_net2wider_nn(m->nn_reward, layer_index, delta, NULL, 0))
+    return 0;
+  return 1;
+}

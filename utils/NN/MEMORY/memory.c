@@ -10,7 +10,7 @@ void init_memory(Memory *memory, int initial_capacity, int input_size) {
   memory->index = 0;
 
   memory->buffer =
-      (MemoryEntry *)malloc(initial_capacity * sizeof(MemoryEntry));
+      (MemoryEntry *)calloc((size_t)initial_capacity, sizeof(MemoryEntry));
 
   if (memory->buffer == NULL) {
     fprintf(stderr, "Failed to allocate memory buffer\n");
@@ -28,6 +28,8 @@ void store_memory(Memory *m, const long double *x, int action, float reward,
   if (!m->buffer[idx].vision_inputs) {
     m->buffer[idx].vision_inputs =
         (long double *)malloc(sizeof(long double) * m->input_size);
+    if (!m->buffer[idx].vision_inputs)
+      return;
   }
 
   memcpy(m->buffer[idx].vision_inputs, x, sizeof(long double) * m->input_size);

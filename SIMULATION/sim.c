@@ -6,10 +6,12 @@
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #define POPULATION_SIZE 10
 #define MAX_FOOD 100
@@ -97,6 +99,10 @@ typedef struct {
   unsigned int num_active_agents;
   MuzeConfig muze_cfg;
 } SimulationState;
+
+static pthread_t sim_trainer_thread;
+static pthread_mutex_t sim_model_mtx = PTHREAD_MUTEX_INITIALIZER;
+static volatile int sim_trainer_quit = 0;
 
 static float sim_rng01(void *ctx) {
   SimRng *r = (SimRng *)ctx;
@@ -390,7 +396,8 @@ bool can_breed(Agent *a1, Agent *a2) {
          CheckCollisionRecs(a1->rect, a2->rect);
 }
 
-Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
+Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id,
+                      const MuzeConfig *cfg) {
   Agent child;
   child.level = 0;
   child.total_xp = XP_FROM_OFFSPRING;
@@ -411,10 +418,10 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
   update_agent_color(&child);
   child.has_latent = false;
 
-  MuConfig cfg = {.obs_dim = (int)child.input_size,
-                  .latent_dim = 32,
-                  .action_count = ACTION_COUNT};
-  child.brain = mu_model_create(&cfg);
+  MuConfig model_cfg = cfg->model;
+  model_cfg.obs_dim = (int)child.input_size;
+  model_cfg.action_count = ACTION_COUNT;
+  child.brain = mu_model_create_nn_with_cfg(&model_cfg, &cfg->nn);
   init_memory(&child.memory, 100, (int)child.input_size);
 
   parent1->num_offsprings++;
@@ -427,16 +434,6 @@ Agent spawn_offspring(Agent *parent1, Agent *parent2, int new_id) {
 void handle_breeding(SimulationState *game) {
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
     for (int j = i + 1; j < POPULATION_SIZE - MAX_GROUNDSKEEPERS; j++) {
-      static float train_timer = 0;
-      train_timer += GetFrameTime();
-
-      if (train_timer > 1.0f) {
-        for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-          mu_model_train(game->agents[i].brain);
-        }
-        train_timer = 0;
-      }
-
       Agent *a1 = &game->agents[i];
       Agent *a2 = &game->agents[j];
       if (can_breed(a1, a2)) {
@@ -446,7 +443,9 @@ void handle_breeding(SimulationState *game) {
         // Replace first inactive agent with offspring
         for (int k = 0; k < POPULATION_SIZE - MAX_GROUNDSKEEPERS; k++) {
           if (game->agents[k].level == 0 && game->agents[k].time_alive == 0) {
-            game->agents[k] = spawn_offspring(a1, a2, game->next_agent_id++);
+            game->agents[k] =
+                spawn_offspring(a1, a2, game->next_agent_id++,
+                                &game->muze_cfg);
             break;
           }
         }
@@ -541,7 +540,8 @@ float compute_reward(Agent *a, int old_xp, int old_level) {
   return r;
 }
 
-int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts) {
+int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts,
+                  int fallback_action) {
   MuModel *brain = agent->brain;
 
   int obs_dim = brain->cfg.obs_dim;
@@ -549,6 +549,11 @@ int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts) {
   for (int i = 0; i < obs_dim; i++)
     obs[i] = (float)inputs[i];
 
+  if (pthread_mutex_trylock(&sim_model_mtx) != 0) {
+    if (fallback_action >= 0 && fallback_action < ACTION_COUNT)
+      return fallback_action;
+    return rand() % ACTION_COUNT;
+  }
   if (!agent->has_latent) {
     mu_model_repr(brain, obs, agent->latent);
     agent->has_latent = true;
@@ -556,6 +561,7 @@ int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts) {
 
   const MCTSParams *mp = mcts ? mcts : NULL;
   MCTSResult res = mcts_run(brain, obs, mp, &agent->rng);
+  pthread_mutex_unlock(&sim_model_mtx);
   int action = res.chosen_action;
   mcts_result_free(&res);
   if (action < 0)
@@ -572,8 +578,11 @@ void update_latent_after_step(Agent *agent, long double *obs, int action,
   float next_latent[LATENT_MAX];
   float predicted_reward;
 
+  if (pthread_mutex_trylock(&sim_model_mtx) != 0)
+    return;
   mu_model_dynamics(agent->brain, agent->latent, action, next_latent,
                     &predicted_reward);
+  pthread_mutex_unlock(&sim_model_mtx);
 
   int L = agent->brain->cfg.latent_dim;
   memcpy(agent->latent, next_latent, sizeof(float) * L);
@@ -662,7 +671,9 @@ void update_agents(SimulationState *state, float dt) {
     int old_level = agent->level;
 
     // Decide
-    int action = decide_action(agent, inputs, &state->muze_cfg.mcts);
+    int action = decide_action(agent, inputs, &state->muze_cfg.mcts,
+                               state->last_actions[i]);
+    state->last_actions[i] = action;
 
     // Step environment
     step_agent(state, agent, action);
@@ -825,6 +836,22 @@ void init_game(SimulationState *state) {
   state->vision_inputs = malloc(sizeof(long double) * get_total_input_size());
 }
 
+static void *sim_trainer_main(void *arg) {
+  SimulationState *state = (SimulationState *)arg;
+  while (!sim_trainer_quit) {
+    if (pthread_mutex_trylock(&sim_model_mtx) != 0) {
+      usleep(2000);
+      continue;
+    }
+    for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
+      mu_model_train(state->agents[i].brain);
+    }
+    pthread_mutex_unlock(&sim_model_mtx);
+    usleep(50000);
+  }
+  return NULL;
+}
+
 void free_game(SimulationState *game) {
   free(game->vision_inputs);
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
@@ -882,6 +909,7 @@ int main(void) {
 
   SimulationState game = {0};
   init_game(&game);
+  pthread_create(&sim_trainer_thread, NULL, sim_trainer_main, &game);
 
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_SPACE))
@@ -920,6 +948,8 @@ int main(void) {
     EndDrawing();
   }
 
+  sim_trainer_quit = 1;
+  pthread_join(sim_trainer_thread, NULL);
   free_game(&game);
   CloseWindow();
   return 0;
