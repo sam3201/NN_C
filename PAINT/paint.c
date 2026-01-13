@@ -24,7 +24,7 @@
 #define BG_COLOR BLACK
 
 #define BRUSH_SIZE 5
-#define BRUSH_COLOR RED
+#define BRUSH_SIZE RED
 
 int main(void) {
 
@@ -38,13 +38,13 @@ int main(void) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawCircle(x, y, BRUSH_COLOR, RED);
+      DrawCircle(x, y, BRUSH_SIZE, RED);
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawCircle(x, y, BRUSH_COLOR, BLUE);
+      DrawCircle(x, y, BRUSH_SIZE, BLUE);
     }
 
     BeginDrawing();
