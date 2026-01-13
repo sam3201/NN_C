@@ -23,6 +23,8 @@
 
 #define MAX_PATH_LENGTH 1024
 
+#define BG_COLOR BLACK
+
 int main(void) {
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
