@@ -32,6 +32,12 @@ int main(void) {
     if (IsKeyPressed(KEY_ESCAPE))
       break;
 
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      int x = GetMouseX();
+      int y = GetMouseY();
+      DrawCircle(x, y, brush_size, RED);
+    }
+
     BeginDrawing();
     ClearBackground(BLACK);
     EndDrawing();
