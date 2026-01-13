@@ -43,7 +43,7 @@ int main(void) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
+      DrawBrush(x, y);
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
