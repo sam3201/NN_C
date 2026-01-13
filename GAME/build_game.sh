@@ -72,11 +72,11 @@ FLAGS="${FLAGS:-} -g"
   -arch arm64 \
   -o game 
 
-# echo "Compilation successful! Running the game..."
-# lldb ./game
-# status=$?
+echo "Compilation successful! Running the game..."
+lldb ./game
+status=$?
 
-# echo "Game exited with status $status"
-# rm -f ./game
-# rm -rf game.dSYM
-# exit "$status"
+echo "Game exited with status $status"
+rm -f ./game
+rm -rf game.dSYM
+exit "$status"
