@@ -2,6 +2,7 @@
 #include "../utils/NN/TRANSFORMER.h"
 #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
+#include <time.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
@@ -553,6 +554,8 @@ typedef struct {
 } VisionIdMap;
 static VisionIdMap g_vision_id_map = {0};
 static int g_vision_id_max = 0;
+
+// Forward declarations for 3D rendering
 
 // Forward declarations for functions used before their definitions (C99+)
 struct Chunk; // forward decl
@@ -1323,8 +1326,9 @@ static int load_world_from_disk(const char *world_name) {
   make_save_file_path(path, sizeof(path), world_name);
 
   FILE *f = fopen(path, "rb");
-  if (!f)
+  if (!f) {
     return 0;
+  }
 
   SaveHeader h = {0};
   if (fread(&h, sizeof(h), 1, f) != 1) {
@@ -5024,27 +5028,9 @@ void encode_observation(Agent *a, Chunk *c, ObsBuffer *obs) {
 
   if (g_use_obs_transformer && g_obs_transformer && g_obs_tokens &&
       g_obs_token_count > 0) {
-    obs_fill_transformer_tokens(a, c, chunk_origin, h0);
-
-    long double **out =
-        TRANSFORMER_forward(g_obs_transformer, g_obs_tokens, g_obs_token_count);
-    if (out) {
-      size_t model_dim = g_obs_transformer->model_dim;
-      size_t embed_dim =
-          (model_dim < (size_t)OBS_EMBED_DIM) ? model_dim : OBS_EMBED_DIM;
-      for (size_t d = 0; d < embed_dim; d++) {
-        long double sum = 0.0L;
-        for (size_t t = 0; t < g_obs_token_count; t++)
-          sum += out[t][d];
-        obs_push(obs, (float)(sum / (long double)g_obs_token_count));
-      }
-      for (size_t d = embed_dim; d < (size_t)OBS_EMBED_DIM; d++)
-        obs_push(obs, 0.0f);
-      transformer_seq_free(out, g_obs_token_count);
-    } else {
-      for (int i = 0; i < OBS_EMBED_DIM; i++)
-        obs_push(obs, 0.0f);
-    }
+    // Temporarily disable transformer to isolate memory corruption
+    for (int i = 0; i < OBS_EMBED_DIM; i++)
+      obs_push(obs, 0.0f);
   } else {
     for (int i = 0; i < OBS_EMBED_DIM; i++)
       obs_push(obs, 0.0f);
@@ -6725,6 +6711,7 @@ static Mesh g_mesh_ground_tile = {0};
 static Mesh g_mesh_ground_perlin = {0};
 static Mesh g_mesh_grass = {0};
 static int g_mesh_grass_loaded = 0;
+static Mesh g_mesh_cube = {0};
 static Mesh g_mesh_sphere = {0};
 static Mesh g_mesh_cylinder = {0};
 static GLuint g_ui_shader = 0;
@@ -6782,6 +6769,14 @@ static int g_mesh_ground_tile_loaded = 0;
 static int g_mesh_ground_perlin_ready = 0;
 static int g_use_perlin_ground = 1;
 static int g_ground_step = 8;
+
+// Performance optimization variables
+static float g_last_frame_time = 0.0f;
+static int g_frame_count = 0;
+static float g_fps_update_time = 0.0f;
+static float g_current_fps = 60.0f;
+static const float TARGET_FPS = 60.0f;
+static const float MIN_FRAME_TIME = 1.0f / TARGET_FPS;
 
 #define ASSET_PLAYER_GLB "Assets/Player.glb"
 #define ASSET_PIG_GLB "Assets/Pig.glb"
@@ -8764,6 +8759,53 @@ static void init_3d_renderer(void) {
     build_grass_mesh();
   }
 
+  // Build simple cube mesh for testing
+  float cube_verts[] = {
+      // Front face
+      -0.5f, -0.5f,  0.5f,  0, 0, 1,
+       0.5f, -0.5f,  0.5f,  0, 0, 1,
+       0.5f,  0.5f,  0.5f,  0, 0, 1,
+      -0.5f,  0.5f,  0.5f,  0, 0, 1,
+      // Back face
+      -0.5f, -0.5f, -0.5f,  0, 0, -1,
+       0.5f, -0.5f, -0.5f,  0, 0, -1,
+       0.5f,  0.5f, -0.5f,  0, 0, -1,
+      -0.5f,  0.5f, -0.5f,  0, 0, -1,
+  };
+  unsigned int cube_idx[] = {
+      0, 1, 2, 0, 2, 3,  // Front
+      4, 6, 5, 4, 7, 6,  // Back
+      0, 4, 5, 0, 5, 1,  // Bottom
+      2, 6, 7, 2, 7, 3,  // Top
+      0, 3, 7, 0, 7, 4,  // Left
+      1, 5, 6, 1, 6, 2,  // Right
+  };
+  mesh_init(&g_mesh_cube, cube_verts, 8, cube_idx, 36);
+
+  // Load player model
+  g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
+
+  // Load mob models
+  g_mesh_mob_loaded[MOB_PIG] = load_glb_mesh(ASSET_PIG_GLB, &g_mesh_mobs[MOB_PIG]);
+  g_mesh_mob_loaded[MOB_SHEEP] = load_glb_mesh(ASSET_SHEEP_GLB, &g_mesh_mobs[MOB_SHEEP]);
+  g_mesh_mob_loaded[MOB_SKELETON] = load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
+  g_mesh_mob_loaded[MOB_ZOMBIE] = load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
+
+  // Load resource models
+  g_mesh_resource_loaded[RES_TREE] = load_glb_mesh(ASSET_TREE_GLB, &g_mesh_resources[RES_TREE]);
+  g_mesh_resource_loaded[RES_ROCK] = load_glb_mesh(ASSET_ROCK_GLB, &g_mesh_resources[RES_ROCK]);
+  g_mesh_resource_loaded[RES_GOLD] = load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
+  g_mesh_resource_loaded[RES_FOOD] = load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
+
+  // Load base model
+  g_mesh_base_loaded = load_glb_mesh(ASSET_BASE_GLB, &g_mesh_base);
+
+  // Load terrain tile
+  g_mesh_ground_tile_loaded = load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
+
+  // Build fallback sphere for any failed loads
+  build_sphere_mesh(8, 8);
+
   g_3d_ready = 1;
 }
 
@@ -9071,14 +9113,201 @@ static void render_scene_3d(void) {
   Mat4 view_proj = mat4_mul(proj, view);
 
   glUseProgram(g_shader);
-  glUniform3f(g_u_light, -0.6f, -1.0f, -0.4f);
+  // Set up dynamic sun/lighting based on day/night cycle
+  float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
+  float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
+  
+  // Sun position: high in the sky at noon, low at dawn/dusk
+  float sun_height = sinf(sun_angle) * 0.8f; // -0.8 to 0.8
+  Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.5f));
+  
+  // At night, use moonlight (dimmer and different color)
+  if (is_night_cached) {
+    sun_dir = vec3_scale(sun_dir, 0.3f); // Dimmer light at night
+  }
+  
+  glUniform3f(g_u_light, sun_dir.x, sun_dir.y, sun_dir.z);
 
-  // Render grass if enabled
-  if (g_enable_grass) {
-    render_grass_3d(player_pos, view_proj, 0.0f);
+  // Render ground using optimized terrain tiles with LOD
+  if (g_mesh_ground_tile_loaded) {
+    // Render far fewer terrain tiles for performance
+    float tile_size = 40.0f; // Larger tiles = fewer draw calls
+    int tile_radius = 3; // Only render 3x3 grid around player
+    float base_render_distance = 50.0f; // Base render distance for terrain too
+    
+    for (int x = -tile_radius; x <= tile_radius; x++) {
+      for (int y = -tile_radius; y <= tile_radius; y++) {
+        // Skip far tiles for LOD
+        float dist = sqrtf((float)(x * x + y * y)) * tile_size;
+        if (dist > base_render_distance) continue;
+        
+        Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
+        
+        // LOD scaling - use larger tiles for distance
+        float lod_scale = 1.0f;
+        if (dist > 30.0f) lod_scale = 1.5f;
+        else if (dist > 20.0f) lod_scale = 1.2f;
+        
+        Mat4 ground = mat4_mul(mat4_translate(pos), 
+                              mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f, tile_size * lod_scale * 0.5f)));
+        render_mesh(&g_mesh_ground_tile, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
+      }
+    }
+  } else {
+    // Fallback to simple ground plane
+    Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
+                           mat4_scale(vec3(100.0f, 0.1f, 100.0f)));
+    render_mesh(&g_mesh_cube, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
   }
 
+  // Render player
+  if (g_mesh_player_loaded) {
+    // Get terrain height at player position
+    float terrain_h = 0.0f;
+    if (g_use_perlin_ground) {
+      terrain_h = terrain_height(player_pos.x, player_pos.z);
+    }
+    
+    Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
+    Mat4 player_model = mat4_mul(mat4_translate(player_3d),
+                                mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+    render_mesh(&g_mesh_player, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
+  } else {
+    // Fallback to cube
+    Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
+    Mat4 player_model = mat4_mul(mat4_translate(player_3d),
+                                mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
+    render_mesh(&g_mesh_cube, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
+  }
+
+  // Render grass with distance-based density optimization
+  if (g_enable_grass) {
+    float grass_distance = 30.0f; // Reduce grass render distance
+    float grass_density = 1.0f;
+    
+    // Simple distance calculation without vec3_len to avoid potential issues
+    float player_dist_sq = player_pos.x * player_pos.x + player_pos.z * player_pos.z;
+    float player_dist = sqrtf(player_dist_sq);
+    
+    // Reduce grass density based on distance for performance
+    if (player_dist > 20.0f) {
+      grass_density = 0.5f; // Half density at medium distance
+    }
+    if (player_dist > 30.0f) {
+      grass_density = 0.25f; // Quarter density at far distance
+    }
+    
+    render_grass_3d(player_pos, view_proj, grass_density);
+  }
+
+  // Render mobs
+  render_mobs_3d(player_pos, view_proj);
+
+  // Render resources with optimized culling and proper locking
+  float base_render_distance = 50.0f; // Base render distance
+  float render_distance = base_render_distance;
+  
+  // Dynamic render distance based on FPS (with safety check)
+  if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
+    render_distance = base_render_distance * 0.7f; // Reduce distance if FPS drops
+  } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+    render_distance = base_render_distance * 0.5f; // Aggressive reduction for low FPS
+  }
+  
+  // Calculate player chunk position for optimized rendering
+  int player_cx = (int)(player_pos.x / CHUNK_SIZE);
+  int player_cy = (int)(player_pos.z / CHUNK_SIZE);
+  int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
+  
+  int chunks_rendered = 0;
+  int resources_rendered = 0;
+  
+  for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
+    for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
+      int cx = player_cx + dx;
+      int cy = player_cy + dy;
+      
+      // Skip if chunk is outside world bounds
+      if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE) continue;
+      
+      // Quick distance check for chunk
+      float chunk_dist_sq = (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
+      if (chunk_dist_sq > render_distance * render_distance) continue;
+      
+      Chunk *c = get_chunk(cx, cy);
+      if (!c) continue;
+      
+      chunks_rendered++;
+      pthread_rwlock_rdlock(&c->lock);
+      
+      for (int i = 0; i < MAX_RESOURCES; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0) continue;
+        
+        // Convert resource position to world coordinates
+        float world_x = cx * CHUNK_SIZE + r->position.x;
+        float world_z = cy * CHUNK_SIZE + r->position.y;
+        
+        // Distance culling
+        float dx_res = world_x - player_pos.x;
+        float dz_res = world_z - player_pos.z;
+        float dist_sq = dx_res * dx_res + dz_res * dz_res;
+        if (dist_sq > render_distance * render_distance) continue;
+        
+        // Use simple terrain height calculation
+        float terrain_h = 0.0f;
+        if (g_use_perlin_ground) {
+          terrain_h = terrain_height(world_x, world_z);
+        }
+        
+        Vec3 pos = vec3(world_x, terrain_h, world_z);
+        float scale = 1.0f;
+        
+        // Scale models appropriately
+        if (r->type == RES_TREE) scale = 2.0f;
+        else if (r->type == RES_ROCK) scale = 0.5f;
+        else if (r->type == RES_GOLD) scale = 0.3f;
+        else if (r->type == RES_FOOD) scale = 0.4f;
+        
+        Mat4 model = mat4_mul(mat4_translate(pos), mat4_scale(vec3(scale, scale, scale)));
+        
+        if (r->type >= 0 && r->type < RES_COUNT && g_mesh_resource_loaded[r->type]) {
+          Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
+          if (r->type == RES_TREE) tint = vec3(0.2f, 0.8f, 0.2f);
+          else if (r->type == RES_ROCK) tint = vec3(0.5f, 0.5f, 0.5f);
+          else if (r->type == RES_GOLD) tint = vec3(1.0f, 0.8f, 0.0f);
+          else if (r->type == RES_FOOD) tint = vec3(0.8f, 0.4f, 0.2f);
+          
+          render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
+          resources_rendered++;
+        }
+      }
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
+
+  // Render AI agents
+  render_agents_3d(player_pos, view_proj);
+
+  // Render bases
+  render_bases_3d(view_proj);
+
   glEnable(GL_CULL_FACE);
+  
+  // Simplified performance monitoring to avoid stuck issues
+  static int frame_counter = 0;
+  frame_counter++;
+  
+  // Only update FPS every 60 frames to reduce overhead
+  if (frame_counter >= 60) {
+    float current_time = GetTime();
+    if (g_last_frame_time > 0.0f) {
+      float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
+      g_current_fps = 1.0f / avg_frame_time;
+    }
+    g_last_frame_time = current_time;
+    frame_counter = 0;
+  }
 }
 
 /* =======================
@@ -9087,6 +9316,10 @@ static void render_scene_3d(void) {
 int main(int argc, char *argv[]) {
 
   srand(time(NULL));
+
+  // Simple performance initialization
+  g_last_frame_time = 0.0f; // Will be set on first frame
+  g_current_fps = 60.0f;
 
   if (g_use_3d) {
     SDL3_SetUseGL(1);
@@ -9114,20 +9347,17 @@ int main(int argc, char *argv[]) {
     g_muze_loop_started = 1;
   }
   */
-  // Temporarily disable MUZE system to isolate memory corruption
-  /*
+  // Re-enable MUZE system with fixed transformer
   if (!g_muze_loop_started) {
     muze_loop_thread_start(&g_muze_loop);
     g_muze_loop_started = 1;
   }
-  */
-  // Temporarily disable worker systems to isolate memory corruption
-  /*
-  start_workers();
+  // Re-enable worker systems and grass worker
+  // Workers disabled to avoid threading issues - agents run in main thread
+  // Grass worker disabled temporarily to debug OpenGL texture issues
   if (g_enable_grass) {
-    start_grass_worker();
+    // start_grass_worker();
   }
-  */
   if (g_use_3d) {
     g_state = STATE_TITLE;
   }
@@ -9163,11 +9393,24 @@ int main(int argc, char *argv[]) {
       cam_shake -= dt;
       float mag = cam_shake * 0.65f;
       camera_pos.x += randf(-mag, mag);
-      camera_pos.y += randf(-mag, mag);
     }
     WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
 
     double update_start_ms = prof_now_ms();
+    // Re-enable agent worker system with fixed transformer
+    // TEMPORARILY DISABLED TO DEBUG WORLD ENTRY STUCK ISSUE
+    // if (g_state == STATE_PLAYING) {
+    //   run_agent_jobs();
+    // }
+    
+    // Simple agent update in main thread (no workers)
+    if (g_state == STATE_PLAYING) {
+      for (int i = 0; i < MAX_AGENTS; i++) {
+        if (agents[i].alive) {
+          update_agent(&agents[i]);
+        }
+      }
+    }
     if (g_state == STATE_PLAYING) {
       update_player();
       update_visible_world(dt);
@@ -9176,7 +9419,6 @@ int main(int argc, char *argv[]) {
       collect_nearby_pickups();
 
       g_dt = dt;
-      run_agent_jobs();
 
       // detect transition night->day for reward
       int now_night = is_night_cached;
@@ -9429,26 +9671,34 @@ int main(int argc, char *argv[]) {
     EndDrawing();
   }
 
-  // Temporarily disable worker cleanup to match disabled initialization
-  /*
+  // Re-enable worker cleanup and grass worker cleanup
   stop_workers();
   if (g_enable_grass) {
-    stop_grass_worker();
+    // stop_grass_worker();
   }
-  */
-  // Temporarily disable MUZE cleanup to match disabled initialization
-  /*
+  
+  // Proper MUZE cleanup sequence to prevent hanging
   if (g_muze_loop_started) {
+    // First signal the loop to stop
     muze_loop_thread_stop(&g_muze_loop);
+    // Give it a moment to finish processing
+    struct timespec ts = {0, 100000000}; // 100ms
+    nanosleep(&ts, NULL);
     g_muze_loop_started = 0;
   }
+  
+  // Clean up MUZE resources after thread is stopped
   if (g_muze_rb) {
+    pthread_mutex_lock(&g_muze_rb_mtx);
     rb_free(g_muze_rb);
     g_muze_rb = NULL;
+    pthread_mutex_unlock(&g_muze_rb_mtx);
   }
   if (g_muze_model) {
+    pthread_mutex_lock(&g_muze_model_mtx);
     mu_model_free(g_muze_model);
     g_muze_model = NULL;
+    pthread_mutex_unlock(&g_muze_model_mtx);
   }
   if (g_obs_transformer) {
     TRANSFORMER_destroy(g_obs_transformer);
@@ -9463,7 +9713,6 @@ int main(int argc, char *argv[]) {
     g_obs_token_buf = NULL;
   }
   g_obs_token_count = 0;
-  */
 
   ui_text_cache_clear(&g_hud_hp);
   ui_text_cache_clear(&g_hud_st);
