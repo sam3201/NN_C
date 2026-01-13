@@ -28,5 +28,13 @@ int main(void) {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
   SetTargetFPS(FPS);
 
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    EndDrawing();
+  }
+
+  CloseWindow();
+
   return 0;
 }
