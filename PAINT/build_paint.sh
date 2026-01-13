@@ -8,10 +8,11 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
 # -----------------------
-# Raylib deps 
+# SDL3 deps 
 # -----------------------
-RAYLIB_CFLAGS="$(pkg-config --cflags raylib)" 
-RAYLIB_LIBS="$(pkg-config --RAYLIB_LIBS
+SDL_CFLAGS="$(pkg-config --cflags sdl3 sdl3-ttf)" 
+SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
+
 # -----------------------
 # Collect sources (dedupe)
 # -----------------------
@@ -75,7 +76,7 @@ echo "Compilation successful! Running the paint..."
 ./paint
 status=$?
 
-echo "Game exited with status $status"
+echo "Paint exited with status $status"
 rm -f ./paint
 rm -rf paint.dSYM
 exit "$status"
