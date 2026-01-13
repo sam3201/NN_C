@@ -21,4 +21,6 @@
 #define SCREEN_HEIGHT 600
 #define FPS 60
 
+#define MAX_PATH_LENGTH 1024
+
 int main(void) { return 0; }
