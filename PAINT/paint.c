@@ -29,7 +29,9 @@
 
 void draw_color_palette() { DrawRectangle(0, 0, 100, 100, BRUSH_COLOR); }
 
-void DrawBrush(int x, int y) { DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR); }
+void DrawBrush(int x, int y, Color color) {
+  DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
+}
 
 int main(void) {
 
