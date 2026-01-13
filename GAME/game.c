@@ -6724,6 +6724,7 @@ static Mesh g_mesh_ground = {0};
 static Mesh g_mesh_ground_tile = {0};
 static Mesh g_mesh_ground_perlin = {0};
 static Mesh g_mesh_grass = {0};
+static int g_mesh_grass_loaded = 0;
 static Mesh g_mesh_sphere = {0};
 static Mesh g_mesh_cylinder = {0};
 static GLuint g_ui_shader = 0;
@@ -6793,6 +6794,7 @@ static int g_ground_step = 8;
 #define ASSET_FOOD_GLB "Assets/Food.glb"
 #define ASSET_TERRAIN_GLB "Assets/terrain_tile.glb"
 #define ASSET_BASE_GLB "Assets/Base.glb"
+#define ASSET_GRASS_GLB "Assets/grass.glb"
 
 static Vec3 vec3(float x, float y, float z) { return (Vec3){x, y, z}; }
 static Vec3 vec3_add(Vec3 a, Vec3 b) {
@@ -8713,17 +8715,89 @@ static void init_3d_renderer(void) {
   if (g_3d_ready)
     return;
 
-  // Temporarily disable mesh loading to test
+  const char *vs = "#version 330 core\n"
+                   "layout(location = 0) in vec3 aPos;\n"
+                   "layout(location = 1) in vec3 aNormal;\n"
+                   "uniform mat4 uMVP;\n"
+                   "uniform mat4 uModel;\n"
+                   "out vec3 FragPos;\n"
+                   "out vec3 Normal;\n"
+                   "void main() {\n"
+                   "  FragPos = vec3(uModel * vec4(aPos, 1.0));\n"
+                   "  Normal = mat3(transpose(inverse(uModel))) * aNormal;\n"
+                   "  gl_Position = uMVP * vec4(aPos, 1.0);\n"
+                   "}\n";
+
+  const char *fs = "#version 330 core\n"
+                   "in vec3 FragPos;\n"
+                   "in vec3 Normal;\n"
+                   "uniform vec3 uColor;\n"
+                   "uniform vec3 uLightDir;\n"
+                   "uniform int uUseTex;\n"
+                   "uniform sampler2D uTex;\n"
+                   "uniform float uTexScale;\n"
+                   "out vec4 FragColor;\n"
+                   "void main() {\n"
+                   "  vec3 norm = normalize(Normal);\n"
+                   "  float diff = max(dot(norm, normalize(uLightDir)), 0.0);\n"
+                   "  vec3 diffuse = diff * vec3(1.0, 1.0, 1.0);\n"
+                   "  vec3 color = uColor * (0.3 + diffuse * 0.7);\n"
+                   "  if (uUseTex == 1) {\n"
+                   "    vec2 uv = FragPos.xz * uTexScale;\n"
+                   "    color *= texture(uTex, uv).rgb;\n"
+                   "  }\n"
+                   "  FragColor = vec4(color * diff,1.0);\n"
+                   "}\n";
+  g_shader = make_program(vs, fs);
+  g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
+  g_u_model = glGetUniformLocation(g_shader, "uModel");
+  g_u_color = glGetUniformLocation(g_shader, "uColor");
+  g_u_light = glGetUniformLocation(g_shader, "uLightDir");
+  g_u_use_tex = glGetUniformLocation(g_shader, "uUseTex");
+  g_u_tex = glGetUniformLocation(g_shader, "uTex");
+  g_u_tex_scale = glGetUniformLocation(g_shader, "uTexScale");
+
+  // Load grass mesh from GLB file
+  g_mesh_grass_loaded = load_glb_mesh(ASSET_GRASS_GLB, &g_mesh_grass);
+  if (!g_mesh_grass_loaded) {
+    // Fallback to procedural grass if GLB fails to load
+    build_grass_mesh();
+  }
+
   g_3d_ready = 1;
 }
 
 static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
-  // Do nothing for testing
+  Mat4 mvp = mat4_mul(view_proj, model);
+  glUseProgram(g_shader);
+  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+  glUniform3f(g_u_color, color.x, color.y, color.z);
+  if (g_u_use_tex >= 0)
+    glUniform1i(g_u_use_tex, 0);
+  glBindVertexArray(m->vao);
+  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+  g_prof_draw_calls++;
 }
 
 static void render_mesh_textured(const Mesh *m, Mat4 model, Mat4 view_proj,
                                  Vec3 color, GLuint tex, float tex_scale) {
-  // Do nothing for testing
+  Mat4 mvp = mat4_mul(view_proj, model);
+  glUseProgram(g_shader);
+  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+  glUniform3f(g_u_color, color.x, color.y, color.z);
+  if (g_u_use_tex >= 0)
+    glUniform1i(g_u_use_tex, 1);
+  glUniform1f(g_u_tex_scale, tex_scale);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glUniform1i(g_u_tex, 0);
+  glBindVertexArray(m->vao);
+  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+  g_prof_draw_calls++;
 }
 
 static Vec3 color_to_vec3(Color c) {
@@ -8971,6 +9045,8 @@ static void render_scene_3d(void) {
   glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Set up camera and projection
+  float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   float player_h = g_use_perlin_ground
                        ? terrain_height(player.position.x, player.position.y)
@@ -8994,147 +9070,21 @@ static void render_scene_3d(void) {
   Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
   Mat4 view_proj = mat4_mul(proj, view);
 
-  if (g_use_perlin_ground && g_mesh_ground_perlin_ready) {
-    Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
-                           mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
-    if (g_enable_ground_tex && g_ground_tex) {
-      render_mesh_textured(&g_mesh_ground_perlin, ground, view_proj,
-                           vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
-                           g_ground_tex_scale);
-    } else {
-      render_mesh(&g_mesh_ground_perlin, ground, view_proj,
-                  vec3(0.18f, 0.55f, 0.22f));
-    }
-  } else if (g_mesh_ground_tile_loaded) {
-    const float tile_size = 16.0f;
-    int tile_radius = 4;
-    int base_tx = (int)floorf(player_pos.x / tile_size);
-    int base_tz = (int)floorf(player_pos.z / tile_size);
-    for (int tz = base_tz - tile_radius; tz <= base_tz + tile_radius; tz++) {
-      for (int tx = base_tx - tile_radius; tx <= base_tx + tile_radius; tx++) {
-        float cx = tx * tile_size + tile_size * 0.5f;
-        float cz = tz * tile_size + tile_size * 0.5f;
-        Mat4 tile = mat4_translate(vec3(cx, 0.0f, cz));
-        if (g_enable_ground_tex && g_ground_tex) {
-          render_mesh_textured(&g_mesh_ground_tile, tile, view_proj,
-                               vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
-                               g_ground_tex_scale);
-        } else {
-          render_mesh(&g_mesh_ground_tile, tile, view_proj,
-                      vec3(0.18f, 0.55f, 0.22f));
-        }
-      }
-    }
-  } else {
-    Mat4 ground = mat4_mul(
-        mat4_translate(vec3(WORLD_SIZE * 0.5f, 0.0f, WORLD_SIZE * 0.5f)),
-        mat4_scale(vec3(WORLD_SIZE, 1.0f, WORLD_SIZE)));
-    if (g_enable_ground_tex && g_ground_tex) {
-      render_mesh_textured(&g_mesh_ground, ground, view_proj,
-                           vec3(0.35f, 0.75f, 0.35f), g_ground_tex,
-                           g_ground_tex_scale);
-    } else {
-      render_mesh(&g_mesh_ground, ground, view_proj, vec3(0.18f, 0.55f, 0.22f));
-    }
-  }
+  glUseProgram(g_shader);
+  glUniform3f(g_u_light, -0.6f, -1.0f, -0.4f);
 
-  render_player_3d(player_pos, view_proj);
-  render_agents_3d(player_pos, view_proj);
-  render_bases_3d(view_proj);
+  // Render grass if enabled
   if (g_enable_grass) {
-    render_grass_3d(player_pos, view_proj, tnow);
+    render_grass_3d(player_pos, view_proj, 0.0f);
   }
 
-  int cx = (int)(player.position.x / CHUNK_SIZE);
-  int cy = (int)(player.position.y / CHUNK_SIZE);
-  int drawn = 0;
-  int max_draw = 80;
-  float max_dist = 35.0f;
-  float max_dist2 = max_dist * max_dist;
-
-  for (int dy = -2; dy <= 2; dy++) {
-    for (int dx = -2; dx <= 2; dx++) {
-      if (drawn >= max_draw)
-        break;
-      Chunk *c = get_chunk(cx + dx, cy + dy);
-      if (!c)
-        continue;
-      pthread_rwlock_rdlock(&c->lock);
-      for (int i = 0; i < MAX_RESOURCES && drawn < max_draw; i++) {
-        Resource *r = &c->resources[i];
-        if (r->health <= 0)
-          continue;
-        float rpx = (cx + dx) * CHUNK_SIZE + r->position.x;
-        float rpz = (cy + dy) * CHUNK_SIZE + r->position.y;
-        float rpy = g_use_perlin_ground ? terrain_height(rpx, rpz) : 0.0f;
-        Vec3 rp = vec3(rpx, rpy, rpz);
-        float dxp = rp.x - player_pos.x;
-        float dzp = rp.z - player_pos.z;
-        if (dxp * dxp + dzp * dzp > max_dist2)
-          continue;
-        float s = 1.0f;
-        switch (r->type) {
-        case RES_TREE:
-          s = 1.6f;
-          break;
-        case RES_ROCK:
-          s = 1.0f;
-          break;
-        case RES_GOLD:
-          s = 0.9f;
-          break;
-        case RES_FOOD:
-          s = 0.8f;
-          break;
-        default:
-          s = 1.0f;
-          break;
-        }
-
-        if (r->type >= 0 && r->type < RES_COUNT &&
-            g_mesh_resource_loaded[r->type]) {
-          Vec3 col = color_to_vec3(resource_colors[r->type]);
-          Mat4 model = mat4_mul(mat4_translate(vec3(rp.x, rp.y, rp.z)),
-                                mat4_scale(vec3(s, s, s)));
-          render_mesh(&g_mesh_resources[r->type], model, view_proj, col);
-        } else if (r->type == RES_TREE) {
-          Mat4 trunk = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 0.8f, rp.z)),
-                                mat4_scale(vec3(0.25f, 1.6f, 0.25f)));
-          render_mesh(&g_mesh_cylinder, trunk, view_proj,
-                      vec3(0.35f, 0.22f, 0.12f));
-          Mat4 canopy = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 2.2f, rp.z)),
-                                 mat4_scale(vec3(0.9f, 0.9f, 0.9f)));
-          render_mesh(&g_mesh_sphere, canopy, view_proj,
-                      vec3(0.18f, 0.55f, 0.22f));
-        } else {
-          Vec3 col = color_to_vec3(resource_colors[r->type]);
-          float rs = (r->type == RES_ROCK) ? 0.8f : 0.6f;
-          Mat4 rock = mat4_mul(mat4_translate(vec3(rp.x, rp.y + 0.5f, rp.z)),
-                               mat4_scale(vec3(rs, rs, rs)));
-          render_mesh(&g_mesh_sphere, rock, view_proj, col);
-        }
-        drawn++;
-      }
-      pthread_rwlock_unlock(&c->lock);
-    }
-  }
-
-  render_mobs_3d(player_pos, view_proj);
+  glEnable(GL_CULL_FACE);
 }
 
 /* =======================
    MAIN
 ======================= */
 int main(int argc, char *argv[]) {
-  // Parse command line arguments for verbose control
-  for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
-      muze_set_verbose(0);
-    } else if (strcmp(argv[i], "--verbose") == 0 ||
-               strcmp(argv[i], "-v") == 0) {
-      muze_set_verbose(1);
-    }
-  }
 
   srand(time(NULL));
 
@@ -9164,15 +9114,16 @@ int main(int argc, char *argv[]) {
     g_muze_loop_started = 1;
   }
   */
-  // Re-enable MUZE system to test
+  // Temporarily disable MUZE system to isolate memory corruption
+  /*
   if (!g_muze_loop_started) {
     muze_loop_thread_start(&g_muze_loop);
     g_muze_loop_started = 1;
   }
-  // Re-enable worker system to test
-  start_workers();
-  // Temporarily disable grass worker to isolate 3D crash
+  */
+  // Temporarily disable worker systems to isolate memory corruption
   /*
+  start_workers();
   if (g_enable_grass) {
     start_grass_worker();
   }
@@ -9478,15 +9429,15 @@ int main(int argc, char *argv[]) {
     EndDrawing();
   }
 
-  // Re-enable worker cleanup to match initialization
-  stop_workers();
-  // Temporarily disable grass worker cleanup to match initialization
+  // Temporarily disable worker cleanup to match disabled initialization
   /*
+  stop_workers();
   if (g_enable_grass) {
     stop_grass_worker();
   }
   */
-  // Re-enable MUZE cleanup to match initialization
+  // Temporarily disable MUZE cleanup to match disabled initialization
+  /*
   if (g_muze_loop_started) {
     muze_loop_thread_stop(&g_muze_loop);
     g_muze_loop_started = 0;
@@ -9512,6 +9463,7 @@ int main(int argc, char *argv[]) {
     g_obs_token_buf = NULL;
   }
   g_obs_token_count = 0;
+  */
 
   ui_text_cache_clear(&g_hud_hp);
   ui_text_cache_clear(&g_hud_st);
