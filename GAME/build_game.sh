@@ -72,6 +72,7 @@ FLAGS="${FLAGS:-} -g"
   -arch arm64 \
   -o game 
 
+"""
 echo "Compilation successful! Running the game..."
 lldb ./game
 status=$?
