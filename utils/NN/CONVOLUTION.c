@@ -1,4 +1,4 @@
-#include "CONV.h"
+#include "CONVOLUTION.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,9 +55,7 @@ struct ConvNet {
   int last_output_size;
 };
 
-static float frand_uniform(void) {
-  return (float)rand() / (float)RAND_MAX;
-}
+static float frand_uniform(void) { return (float)rand() / (float)RAND_MAX; }
 
 static float he_scale(int fan_in) {
   if (fan_in <= 0)
@@ -573,8 +571,9 @@ static void conv2d_backward(ConvLayer *l, const float *grad_out,
   int stride = l->stride;
   int pad = l->pad;
 
-  memset(l->dweights, 0, sizeof(float) * (size_t)out_c * (size_t)in_c *
-                               (size_t)k_h * (size_t)k_w);
+  memset(l->dweights, 0,
+         sizeof(float) * (size_t)out_c * (size_t)in_c * (size_t)k_h *
+             (size_t)k_w);
   memset(l->dbiases, 0, sizeof(float) * (size_t)out_c);
   memset(grad_in, 0, sizeof(float) * (size_t)l->input_size);
 
@@ -657,8 +656,8 @@ static void depthwise_conv2d_backward(ConvLayer *l, const float *grad_out,
   int pad = l->pad;
   int depth_mult = l->depth_mult;
 
-  memset(l->dweights, 0, sizeof(float) * (size_t)out_c * (size_t)k_h *
-                               (size_t)k_w);
+  memset(l->dweights, 0,
+         sizeof(float) * (size_t)out_c * (size_t)k_h * (size_t)k_w);
   memset(l->dbiases, 0, sizeof(float) * (size_t)out_c);
   memset(grad_in, 0, sizeof(float) * (size_t)l->input_size);
 
@@ -970,8 +969,8 @@ static void dense_forward(ConvLayer *l, const float *in) {
 
 static void dense_backward(ConvLayer *l, const float *grad_out,
                            float *grad_in) {
-  memset(l->dweights, 0, sizeof(float) * (size_t)l->out_dim *
-                              (size_t)l->in_dim);
+  memset(l->dweights, 0,
+         sizeof(float) * (size_t)l->out_dim * (size_t)l->in_dim);
   memset(l->dbiases, 0, sizeof(float) * (size_t)l->out_dim);
   memset(grad_in, 0, sizeof(float) * (size_t)l->in_dim);
   for (int o = 0; o < l->out_dim; o++) {
@@ -1099,8 +1098,8 @@ float *convnet_backward(ConvNet *net, const float *grad_out) {
   float **skip_grads = NULL;
 
   int last = net->count - 1;
-  cur_grad = (float *)calloc((size_t)net->layers[last]->output_size,
-                             sizeof(float));
+  cur_grad =
+      (float *)calloc((size_t)net->layers[last]->output_size, sizeof(float));
   if (!cur_grad)
     return NULL;
   memcpy(cur_grad, grad_out,
@@ -1344,8 +1343,7 @@ int convnet_save(const ConvNet *net, const char *path) {
           !write_bytes(f, l->bn_beta, sizeof(float) * (size_t)l->in_c) ||
           !write_bytes(f, l->bn_running_mean,
                        sizeof(float) * (size_t)l->in_c) ||
-          !write_bytes(f, l->bn_running_var,
-                       sizeof(float) * (size_t)l->in_c)) {
+          !write_bytes(f, l->bn_running_var, sizeof(float) * (size_t)l->in_c)) {
         fclose(f);
         return 0;
       }
@@ -1362,8 +1360,7 @@ ConvNet *convnet_load(const char *path) {
   if (!f)
     return NULL;
   char magic[4];
-  if (!read_bytes(f, magic, sizeof(magic)) ||
-      memcmp(magic, "CNV1", 4) != 0) {
+  if (!read_bytes(f, magic, sizeof(magic)) || memcmp(magic, "CNV1", 4) != 0) {
     fclose(f);
     return NULL;
   }
@@ -1479,8 +1476,7 @@ ConvNet *convnet_load(const char *path) {
       fclose(f);
       return NULL;
     }
-    if (type == LAYER_DENSE &&
-        (l->in_dim != in_dim || l->out_dim != out_dim)) {
+    if (type == LAYER_DENSE && (l->in_dim != in_dim || l->out_dim != out_dim)) {
       convnet_free(net);
       fclose(f);
       return NULL;
@@ -1513,10 +1509,8 @@ ConvNet *convnet_load(const char *path) {
     } else if (type == LAYER_BATCHNORM) {
       if (!read_bytes(f, l->bn_gamma, sizeof(float) * (size_t)l->in_c) ||
           !read_bytes(f, l->bn_beta, sizeof(float) * (size_t)l->in_c) ||
-          !read_bytes(f, l->bn_running_mean,
-                      sizeof(float) * (size_t)l->in_c) ||
-          !read_bytes(f, l->bn_running_var,
-                      sizeof(float) * (size_t)l->in_c)) {
+          !read_bytes(f, l->bn_running_mean, sizeof(float) * (size_t)l->in_c) ||
+          !read_bytes(f, l->bn_running_var, sizeof(float) * (size_t)l->in_c)) {
         convnet_free(net);
         fclose(f);
         return NULL;
@@ -1566,7 +1560,9 @@ int CONV_add_avgpool2d(CONVNet *net, int pool_h, int pool_w, int stride) {
   return convnet_add_avgpool2d(net, pool_h, pool_w, stride);
 }
 
-int CONV_add_dropout(CONVNet *net, float p) { return convnet_add_dropout(net, p); }
+int CONV_add_dropout(CONVNet *net, float p) {
+  return convnet_add_dropout(net, p);
+}
 
 int CONV_add_residual(CONVNet *net, int from_index) {
   return convnet_add_residual(net, from_index);

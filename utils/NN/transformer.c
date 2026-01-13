@@ -289,6 +289,15 @@ long double **transformer_mha_forward(MultiHeadAttention *mha,
     long double *K = NN_forward(mha->K_proj, input_seq[t]);
     long double *V = NN_forward(mha->V_proj, input_seq[t]);
 
+    // Check for null pointers from NN_forward to prevent crashes
+    if (!Q || !K || !V) {
+      // Clean up any successfully allocated memory
+      if (Q) free(Q);
+      if (K) free(K);
+      if (V) free(V);
+      return NULL;
+    }
+
     memcpy(&mha->Q_cache[t * D], Q, D * sizeof(long double));
     memcpy(&mha->K_cache[t * D], K, D * sizeof(long double));
     memcpy(&mha->V_cache[t * D], V, D * sizeof(long double));
