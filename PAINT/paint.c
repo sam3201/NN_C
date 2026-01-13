@@ -23,4 +23,10 @@
 
 #define MAX_PATH_LENGTH 1024
 
-int main(void) { return 0; }
+int main(void) {
+
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
+  SetTargetFPS(FPS);
+
+  return 0;
+}
