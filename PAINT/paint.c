@@ -56,7 +56,7 @@ int main(void) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawBrush(x, y, PREVIOUS_COLOR);
+      DrawBrush(x, y, invert(BRUSH_COLOR));
     }
 
     BeginDrawing();
