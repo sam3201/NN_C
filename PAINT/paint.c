@@ -38,13 +38,13 @@ int main(void) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawCircle(x, y, brush_size, RED);
+      DrawCircle(x, y, BRUSH_COLOR, RED);
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawCircle(x, y, brush_size, BLUE);
+      DrawCircle(x, y, BRUSH_COLOR, BLUE);
     }
 
     BeginDrawing();
