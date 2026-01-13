@@ -636,6 +636,18 @@ static float player_fire_cd = 0.0f;
 static int bow_charging = 0;
 static float bow_charge01 = 0.0f; // 0..1
 
+// Damage number system
+typedef struct {
+  Vector2 pos;
+  float value;
+  float timer;
+  Color color;
+} DamageNumber;
+
+#define MAX_DAMAGE_NUMBERS 32
+static DamageNumber damage_numbers[MAX_DAMAGE_NUMBERS];
+static int damage_number_count = 0;
+
 bool crafting_open = false;
 
 bool has_axe = false;
@@ -3291,6 +3303,17 @@ static void player_try_attack_forward(Vector2 facing_dir) {
     m->lunge_timer = 0.10f;
 
     cam_shake = fmaxf(cam_shake, 0.10f);
+    
+    // Add damage number for successful hit
+    if (damage_number_count < MAX_DAMAGE_NUMBERS) {
+      Vector2 mob_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
+                                   hit.cy * CHUNK_SIZE + m->position.y};
+      damage_numbers[damage_number_count].pos = mob_pos;
+      damage_numbers[damage_number_count].value = (float)dmg;
+      damage_numbers[damage_number_count].timer = 2.0f;
+      damage_numbers[damage_number_count].color = (Color){255, 100, 100, 255};
+      damage_number_count++;
+    }
 
     if (m->health <= 0) {
       Vector2 mob_world_pos = (Vector2){hit.cx * CHUNK_SIZE + m->position.x,
@@ -5749,8 +5772,8 @@ void update_player(void) {
   // CONTINUOUS HOLD ACTIONS
   // =========================
 
-  // (A) Continuous melee attack (hold LEFT mouse)
-  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+  // (A) Continuous melee attack (hold LEFT mouse or attack keybind)
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || bind_down(BIND_ATTACK)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
     Chunk *c = get_chunk(cx, cy);
@@ -5761,8 +5784,8 @@ void update_player(void) {
     pthread_rwlock_unlock(&c->lock);
   }
 
-  // (B) Continuous harvest/mine (hold RIGHT mouse)
-  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+  // (B) Continuous harvest/mine (hold RIGHT mouse or harvest keybind)
+  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || bind_down(BIND_HARVEST)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
     Chunk *c = get_chunk(cx, cy);
@@ -5804,6 +5827,15 @@ void update_player(void) {
         // consume ammo + set cooldown
         inv_arrows--;
         player_fire_cd = PLAYER_FIRE_COOLDOWN;
+        
+        // Add damage number for arrow shot
+        if (damage_number_count < MAX_DAMAGE_NUMBERS) {
+          damage_numbers[damage_number_count].pos = player.position;
+          damage_numbers[damage_number_count].value = 10.0f; // Arrow damage
+          damage_numbers[damage_number_count].timer = 2.0f;
+          damage_numbers[damage_number_count].color = (Color){255, 255, 100, 255};
+          damage_number_count++;
+        }
 
         // uses your existing charged fire helper
         player_fire_bow_charged(dir, bow_charge01);
@@ -5857,10 +5889,27 @@ static void update_visible_world(float dt) {
       pthread_rwlock_unlock(&c->lock);
     }
   }
-}
 
-static void draw_ui(void) {
-  // panel
+  // Update damage numbers
+  for (int i = 0; i < damage_number_count; i++) {
+    damage_numbers[i].timer -= dt;
+    // Move damage numbers upward and fade out
+    damage_numbers[i].pos.y -= dt * 30.0f; // Float upward
+  }
+  
+  // Remove expired damage numbers
+  for (int i = 0; i < damage_number_count; i++) {
+    if (damage_numbers[i].timer <= 0.0f) {
+      // Shift remaining numbers down
+      for (int j = i; j < damage_number_count - 1; j++) {
+        damage_numbers[j] = damage_numbers[j + 1];
+      }
+      damage_number_count--;
+      i--; // Check the same index again
+    } else {
+      break;
+    }
+  }
   DrawRectangle(14, 14, 280, 128, (Color){0, 0, 0, 110});
   DrawRectangleLines(14, 14, 280, 128, (Color){0, 0, 0, 200});
 
@@ -7884,6 +7933,17 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
 static int ui_button_gl(Rectangle r, const char *text, int font_size) {
   Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
+  int pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+  int released = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+  int down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+  int clicked = hot && pressed;
+  
+  // Debug only when mouse is near button or clicked
+  if (hot || clicked) {
+    printf("Button '%s': mouse(%.1f,%.1f), rect(%.1f,%.1f,%.1f,%.1f), hot=%d, pressed=%d, released=%d, down=%d, clicked=%d\n", 
+           text, m.x, m.y, r.x, r.y, r.width, r.height, hot, pressed, released, down, clicked);
+  }
+  
   Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
   ui_draw_rect(r.x, r.y, r.width, r.height, bg);
   ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
@@ -7897,7 +7957,8 @@ static int ui_button_gl(Rectangle r, const char *text, int font_size) {
   float tx = r.x + (r.width - (float)tw) * 0.5f;
   float ty = r.y + (r.height - (float)font_size) * 0.5f;
   ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
-  return hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+  
+  return clicked;
 }
 
 static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
@@ -7959,41 +8020,30 @@ static void draw_crosshair_2d(void) {
 }
 
 static void draw_crosshair_3d(void) {
-  // Test: Use basic Raylib text to test if any 2D rendering works
-  DrawText("CROSSHAIR TEST", 200, 200, 20, GREEN);
-
+  // Test with minimap-style approach
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  
+  // Draw test crosshair using UI drawing functions
   int w = GetScreenWidth();
   int h = GetScreenHeight();
-  if (w <= 0 || h <= 0)
+  if (w <= 0 || h <= 0) {
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     return;
+  }
 
   float cx = w * 0.5f;
   float cy = h * 0.5f;
-  float size = 15.0f;                    // Even bigger
-  float thick = 4.0f;                    // Even thicker
-  Color c = (Color){255, 255, 255, 255}; // Pure white
-  Color outline = (Color){0, 0, 0, 255}; // Black outline
-
-  // Draw outer outline for maximum visibility
-  ui_draw_rect(cx - size - 2, cy - thick * 0.5f - 2, size * 2.0f + 4, thick + 4,
-               outline);
-  ui_draw_rect(cx - thick * 0.5f - 2, cy - size - 2, thick + 4, size * 2.0f + 4,
-               outline);
-  ui_draw_rect(cx + size - 2, cy - thick * 0.5f - 2, thick + 4, size * 2.0f + 4,
-               outline);
-  ui_draw_rect(cx - thick * 0.5f - 2, cy + size - 2, thick + 4, size * 2.0f + 4,
-               outline);
-  ui_draw_rect(cx + size - 2, cy + size - 2, thick + 4, size * 2.0f + 4,
-               outline);
-
-  // Draw inner bright crosshair
-  ui_draw_rect(cx - size, cy - thick * 0.5f, size * 2.0f, thick, c);
-  ui_draw_rect(cx - thick * 0.5f, cy - size, thick, size * 2.0f, c);
-  ui_draw_rect(cx - thick * 0.5f, cy + size, thick, size * 2.0f, c);
-  ui_draw_rect(cx + size, cy - thick * 0.5f, thick, size * 2.0f, c);
-
-  // Draw center dot
-  ui_draw_rect(cx - 3, cy - 3, 6, 6, c);
+  
+  // Draw a simple crosshair
+  ui_draw_rect(cx - 15.0f, cy - 2.0f, 30.0f, 4.0f, BLACK);
+  ui_draw_rect(cx - 2.0f, cy - 15.0f, 4.0f, 30.0f, BLACK);
+  ui_draw_rect(cx - 12.0f, cy - 1.0f, 24.0f, 2.0f, WHITE);
+  ui_draw_rect(cx - 1.0f, cy - 12.0f, 2.0f, 24.0f, WHITE);
+  
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
 }
 
 static KeyboardKey poll_any_key_pressed(void) {
@@ -8028,12 +8078,14 @@ static void draw_pause_menu_3d(void) {
   ui_draw_text(w * 0.5f - 140, h * 0.56f, "3) Graphics", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.64f, "4) Back to Title", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.72f, "5) Save", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.80f,
+  ui_draw_text(w * 0.5f - 140, h * 0.80f, "ESC) Resume", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.88f, "Q) Quit Game", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.96f,
                TextFormat("F6) Graphics: %s", gfx_quality_label(g_gfx_quality)),
                RAYWHITE);
   glEnable(GL_DEPTH_TEST);
 
-  if (IsKeyPressed(KEY_ONE)) {
+  if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_ESCAPE)) {
     g_state = STATE_PLAYING;
   } else if (IsKeyPressed(KEY_TWO)) {
     g_pause_page = 1;
@@ -8046,6 +8098,8 @@ static void draw_pause_menu_3d(void) {
     g_rebind_index = -1;
   } else if (IsKeyPressed(KEY_FIVE)) {
     save_current_world_session();
+  } else if (IsKeyPressed(KEY_Q)) {
+    g_should_quit = true;
   }
 }
 
@@ -8212,13 +8266,14 @@ static void draw_minimap_3d(void) {
 }
 
 static void draw_ui_3d_full(void) {
-  // Test: Use basic Raylib text to test if any 2D rendering works
-  DrawText("HUD TEST", 10, 10, 20, RED);
+  // Use the same OpenGL state management as the working minimap
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
 
   float panel_x = 14.0f;
   float panel_y = 12.0f;
   float panel_w = 280.0f;
-  float panel_h = 140.0f;
+  float panel_h = 170.0f;
 
   double now = GetTime();
   if (now - g_ui_cache_last_update > 0.25) {
@@ -8243,6 +8298,7 @@ static void draw_ui_3d_full(void) {
     g_ui_cache_last_update = now;
   }
 
+  // Draw main HUD panel
   ui_draw_rect(panel_x, panel_y, panel_w, panel_h, (Color){0, 0, 0, 110});
   ui_draw_rect(panel_x, panel_y, panel_w, 1.0f, (Color){0, 0, 0, 200});
   ui_draw_rect(panel_x, panel_y + panel_h - 1.0f, panel_w, 1.0f,
@@ -8258,29 +8314,29 @@ static void draw_ui_3d_full(void) {
   ui_draw_text_cached(panel_x + 10, panel_y + 30, &g_ui_cache_hp);
   ui_draw_text_cached(panel_x + 10, panel_y + 50, &g_ui_cache_st);
 
-  ui_draw_rect(panel_x + 106, panel_y + 32, 160.0f, 12.0f,
+  // Health bar (moved below stats)
+  ui_draw_rect(panel_x + 10, panel_y + 75, 160.0f, 12.0f,
                (Color){0, 0, 0, 140});
-  ui_draw_rect(panel_x + 106, panel_y + 32, 160.0f * hp01, 12.0f,
+  ui_draw_rect(panel_x + 10, panel_y + 75, 160.0f * hp01, 12.0f,
                (Color){80, 220, 80, 255});
 
-  ui_draw_rect(panel_x + 106, panel_y + 52, 160.0f, 12.0f,
+  // Stamina bar (moved below health bar)
+  ui_draw_rect(panel_x + 10, panel_y + 92, 160.0f, 12.0f,
                (Color){0, 0, 0, 140});
-  ui_draw_rect(panel_x + 106, panel_y + 52, 160.0f * st01, 12.0f,
-               (Color){80, 160, 255, 255});
+  ui_draw_rect(panel_x + 10, panel_y + 92, 160.0f * st01, 12.0f,
+               (Color){220, 220, 80, 255});
 
-  ui_draw_text_cached(panel_x + 10, panel_y + 76, &g_ui_cache_wood);
-  ui_draw_text_cached(panel_x + 10, panel_y + 96, &g_ui_cache_gold);
-  ui_draw_text_cached(panel_x + 10, panel_y + 116, &g_ui_cache_shards);
+  ui_draw_text_cached(panel_x + 10, panel_y + 112, &g_ui_cache_wood);
+  ui_draw_text_cached(panel_x + 10, panel_y + 128, &g_ui_cache_gold);
+  ui_draw_text_cached(panel_x + 10, panel_y + 144, &g_ui_cache_shards);
 
-  int y0 = (int)(panel_y + panel_h + 6.0f);
+  // Tribe base indicators
   for (int t = 0; t < TRIBE_COUNT; t++) {
-    float v = clamp01(tribes[t].integrity / 100.0f);
-    ui_draw_text_cached(panel_x + 10, y0 + t * 22, &g_ui_cache_base[t]);
-    ui_draw_rect(panel_x + 76, y0 + 4 + t * 22, 140.0f, 10.0f,
-                 (Color){0, 0, 0, 140});
-    ui_draw_rect(panel_x + 76, y0 + 4 + t * 22, 140.0f * v, 10.0f,
-                 tribes[t].color);
+    ui_draw_text_cached(panel_x + 150, panel_y + 112 + t * 20, &g_ui_cache_base[t]);
   }
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
 }
 
 static void draw_profiler_3d(void) {
@@ -8321,6 +8377,10 @@ static void draw_profiler_3d(void) {
 }
 
 static void draw_hover_label_3d(void) {
+  // Disable 3D rendering state for 2D UI drawing
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  
   int hp = -1;
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
@@ -8394,6 +8454,10 @@ static void draw_hover_label_3d(void) {
                    health_color);
     }
   }
+  
+  // Re-enable 3D rendering state
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
 }
 
 static void draw_crafting_ui_3d(void) {
@@ -8428,17 +8492,34 @@ static void draw_crafting_ui_3d(void) {
 }
 
 static void draw_title_screen_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  // Test: Make buttons cover entire screen to test click detection
+  Rectangle b1 = (Rectangle){0, 0, w, h/3}; // Top third
+  Rectangle b2 = (Rectangle){0, h/3, w, h/3}; // Middle third  
+  Rectangle b3 = (Rectangle){0, 2*h/3, w, h/3}; // Bottom third
+
+  printf("Screen: %dx%d, Test buttons covering screen\n", w, h);
+
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
+  ui_draw_rect(0, 0, (float)w, (float)h,
                (Color){18, 18, 28, 255});
   ui_draw_text_size(40, 40, "SAMCRAFT", 52, RAYWHITE);
   ui_draw_text_size(44, 100, "F5 = Save while playing", 18,
                     (Color){200, 200, 200, 180});
 
-  Rectangle b1 = (Rectangle){60, 160, 260, 50};
-  Rectangle b2 = (Rectangle){60, 220, 260, 50};
-  Rectangle b3 = (Rectangle){60, 280, 260, 50};
+  // Draw button areas for visualization
+  ui_draw_rect(0, 0, (float)w, h/3.0f, (Color){70, 70, 90, 100});
+  ui_draw_rect(0, h/3.0f, (float)w, h/3.0f, (Color){70, 90, 70, 100});
+  ui_draw_rect(0, 2*h/3.0f, (float)w, h/3.0f, (Color){90, 70, 70, 100});
+
+  ui_draw_text_size(w/2 - 100, h/6 - 10, "PLAY", 24, RAYWHITE);
+  ui_draw_text_size(w/2 - 100, h/2 - 10, "CREATE", 24, RAYWHITE);
+  ui_draw_text_size(w/2 - 100, 5*h/6 - 10, "QUIT", 24, RAYWHITE);
 
   if (ui_button_gl(b1, "Play (Load/Select)", 20))
     g_state = STATE_WORLD_SELECT;
@@ -9012,6 +9093,31 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
           Mat4 body = mat4_mul(model, mat4_scale(vec3(0.7f, 0.7f, 0.7f)));
           render_mesh(&g_mesh_sphere, body, view_proj, tint);
         }
+        
+        // Draw health bar above mob
+        if (m->health < 100) {
+          float hp_percent = (float)m->health / 100.0f;
+          float bar_width = 1.2f;
+          float bar_height = 0.15f;
+          float bar_y = mp.y + s + 0.5f; // Above mob
+          
+          Vec3 bar_pos = vec3(mp.x, bar_y, mp.z);
+          Mat4 bar_model = mat4_mul(mat4_translate(bar_pos), 
+                                         mat4_scale(vec3(bar_width, bar_height, 0.01f)));
+          
+          // Background
+          render_mesh(&g_mesh_cube, bar_model, view_proj, vec3(0.2f, 0.2f, 0.2f));
+          
+          // Health fill
+          float health_width = bar_width * hp_percent;
+          Mat4 health_model = mat4_mul(mat4_translate(vec3(mp.x - bar_width/2 + health_width/2, bar_y, mp.z)),
+                                             mat4_scale(vec3(health_width, bar_height, 0.01f)));
+          Vec3 health_color_vec3 = hp_percent > 0.5f ? 
+              vec3(80.0f/255.0f, 220.0f/255.0f, 80.0f/255.0f) : 
+              vec3(220.0f/255.0f, 80.0f/255.0f, 80.0f/255.0f);
+          render_mesh(&g_mesh_cube, health_model, view_proj, health_color_vec3);
+        }
+        
         drawn++;
       }
       pthread_rwlock_unlock(&c->lock);
@@ -9059,6 +9165,31 @@ static void render_agents_3d(Vec3 player_pos, Mat4 view_proj) {
                            mat4_scale(vec3(0.45f, 0.45f, 0.45f)));
       render_mesh(&g_mesh_sphere, head, view_proj, tint);
     }
+    
+    // Draw action indicator above agent
+    if (a->last_action >= 0 && a->last_action < ACTION_COUNT) {
+      const char *action_names[] = {
+        "↑", "↓", "←", "→", "ATTACK", "HARVEST", "CRAFT", 
+        "AXE", "PICK", "SWORD", "ARMOR", "BOW", "ARROWS", "EAT", "JUMP"
+      };
+      const char *action_name = (a->last_action < sizeof(action_names)/sizeof(action_names[0])) 
+                           ? action_names[a->last_action] : "?";
+      
+      // Animated floating indicator above agent
+      float time = GetTime();
+      float bounce = sinf(time * 8.0f) * 0.1f; // Bounce animation
+      float text_y = ap.y + s + 1.0f + bounce;
+      Vec3 text_pos = vec3(ap.x, text_y, ap.z);
+      Mat4 text_model = mat4_mul(mat4_translate(text_pos), 
+                                       mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
+      
+      // Pulsing color effect
+      float pulse = (sinf(time * 6.0f) + 1.0f) * 0.5f;
+      Color action_color = (Color){255, (unsigned char)(255 * pulse), (unsigned char)(100 * pulse), 255};
+      Vec3 action_tint = vec3(action_color.r/255.0f, action_color.g/255.0f, action_color.b/255.0f);
+      render_mesh(&g_mesh_cube, text_model, view_proj, action_tint);
+    }
+    
     drawn++;
   }
 }
@@ -9422,6 +9553,30 @@ static void render_scene_3d(void) {
 
   // Render AI agents
   render_agents_3d(player_pos, view_proj);
+  
+  // Render damage numbers
+  for (int i = 0; i < damage_number_count; i++) {
+    float alpha = damage_numbers[i].timer / 2.0f; // Fade out over 2 seconds
+    if (alpha > 0.0f) {
+      Vec3 dmg_pos = vec3(damage_numbers[i].pos.x, 
+                             g_use_perlin_ground ? terrain_height(damage_numbers[i].pos.x, damage_numbers[i].pos.y) + 2.0f : 2.0f, 
+                             damage_numbers[i].pos.y);
+      Mat4 dmg_model = mat4_mul(mat4_translate(dmg_pos), 
+                                       mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
+      
+      Color dmg_color = damage_numbers[i].color;
+      dmg_color.a = (unsigned char)(255 * alpha); // Apply fade
+      
+      // Animated floating effect
+      float time = GetTime();
+      float bounce = sinf(time * 10.0f) * 0.05f; // Small bounce
+      float scale = 1.0f + bounce; // Pulse effect
+      
+      Mat4 animated_model = mat4_mul(dmg_model, mat4_scale(vec3(scale, scale, 0.01f)));
+      Vec3 dmg_tint = vec3(dmg_color.r/255.0f, dmg_color.g/255.0f, dmg_color.b/255.0f);
+      render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
+    }
+  }
 
   // Render bases
   render_bases_3d(view_proj);
@@ -9464,6 +9619,11 @@ int main(int argc, char *argv[]) {
     printf("TTF_Init failed: %s\n", SDL_GetError());
   }
   SetExitKey(KEY_NULL);
+  
+  // Initialize mouse state for UI
+  SetRelativeMouseMode(0);
+  SetMouseVisible(1);
+  g_mouse_locked = 0;
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
@@ -9518,6 +9678,18 @@ int main(int argc, char *argv[]) {
 
   while (!WindowShouldClose() && !g_should_quit) {
     float dt = GetFrameTime();
+    
+    // Safety check to prevent infinite loops
+    if (dt <= 0.0f || dt > 1.0f) {
+      dt = 1.0f / 60.0f; // Default to 60 FPS
+    }
+    
+    // Check window close button more frequently
+    if (WindowShouldClose()) {
+      g_should_quit = true;
+      break;
+    }
+    
     double frame_start_ms = prof_now_ms();
 
     camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
@@ -9598,7 +9770,15 @@ int main(int argc, char *argv[]) {
           SetMousePosition(mw / 2, mh / 2);
         }
         g_mouse_locked = 1;
-      } else if (g_state != STATE_PLAYING && g_mouse_locked) {
+      } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
+        SetRelativeMouseMode(0);
+        SetMouseVisible(1);
+        g_mouse_locked = 0;
+      }
+      
+      // Ensure mouse is always visible and not in relative mode for UI screens
+      if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT || 
+          g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
         SetRelativeMouseMode(0);
         SetMouseVisible(1);
         g_mouse_locked = 0;
@@ -9627,7 +9807,7 @@ int main(int argc, char *argv[]) {
       g_profiler_enabled = !g_profiler_enabled;
     }
 
-    if (bind_pressed(BIND_PAUSE)) {
+    if (bind_pressed(BIND_PAUSE) || IsKeyPressed(KEY_ESCAPE)) {
       if (g_state == STATE_PLAYING) {
         g_state = STATE_PAUSED;
         g_pause_page = 0;
@@ -9652,8 +9832,7 @@ int main(int argc, char *argv[]) {
 
       double ui_start_ms = prof_now_ms();
       if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
-        // Disable 3D shader and switch to 2D rendering
-        glUseProgram(0);
+        glUseProgram(0);  // Disable 3D shader before 2D drawing
         
         draw_ui_3d_full();
         draw_minimap_3d();
@@ -9790,10 +9969,12 @@ int main(int argc, char *argv[]) {
     draw_bow_charge_fx();
 
     // UI + debug
-    draw_ui();
-    draw_hover_label();
-    draw_minimap();
-    draw_daynight_overlay(); // AFTER world draw, before EndDrawing
+    draw_ui_3d_full();
+    draw_minimap_3d();
+    draw_daynight_overlay_3d();
+    draw_hurt_vignette_3d();
+    draw_crafting_ui_3d();
+    draw_hover_label_3d();
     draw_hurt_vignette();
     draw_crafting_ui();
 
