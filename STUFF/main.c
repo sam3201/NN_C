@@ -10,5 +10,7 @@ int main(void) {
     EndDrawing();
   }
 
+  CloseWindow();
+
   return 0;
 }
