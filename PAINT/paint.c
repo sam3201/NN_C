@@ -35,7 +35,7 @@ void DrawBrush(int x, int y, Color color) {
 }
 
 Color invert(Color color) {
-  return (Color){color.b, color.g, color.r, color.a};
+  return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
 }
 
 int main(void) {
