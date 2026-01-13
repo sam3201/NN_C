@@ -28,7 +28,7 @@
 
 void DrawColorWheel() {
   DrawCircleLines(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 1, BG_COLOR);
-  DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 1, BRUSH_COLOR);
+  DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0, BRUSH_COLOR);
 }
 
 void DrawBrush(int x, int y, Color color) {
