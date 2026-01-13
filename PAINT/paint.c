@@ -26,6 +26,9 @@
 #define BRUSH_SIZE 5
 #define BRUSH_COLOR RED
 
+Color invert(Color color) {
+  return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
+}
 void DrawColorWheel() {
   DrawCircleLines(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 1, BG_COLOR);
   DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0, invert(BG_COLOR));
@@ -34,10 +37,6 @@ void DrawColorWheel() {
 void DrawBrush(int x, int y, Color color) {
   DrawCircleLines(x, y, 1, BG_COLOR);
   DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
-}
-
-Color invert(Color color) {
-  return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
 }
 
 int main(void) {
