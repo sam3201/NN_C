@@ -25,7 +25,6 @@
 
 #define BRUSH_SIZE 5
 #define BRUSH_COLOR RED
-#define PREVIOUS_COLOR BG_COLOR
 
 void draw_color_palette() { DrawRectangle(0, 0, 100, 100, BRUSH_COLOR); }
 
