@@ -8971,6 +8971,7 @@ static void render_scene_3d(void) {
   glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   float player_h = g_use_perlin_ground
                        ? terrain_height(player.position.x, player.position.y)
