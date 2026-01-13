@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 int main(void) {
-  InitWinow(800, 450, "Neural Network");
+  InitWindow(800, 450, "Neural Network");
 
   while (!WindowShouldClose()) {
     BeginDrawing();
