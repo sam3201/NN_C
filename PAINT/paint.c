@@ -14,6 +14,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define brush_size 5
+
 int main(void) {
   printf("hello world\n");
 
