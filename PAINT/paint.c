@@ -29,6 +29,7 @@
 Color invert(Color color) {
   return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
 }
+
 void DrawColorWheel() {
   DrawCircleLines(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 1, BG_COLOR);
   DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0, invert(BG_COLOR));
