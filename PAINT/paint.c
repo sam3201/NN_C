@@ -34,9 +34,7 @@ void DrawBrush(int x, int y, Color color) {
   DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
 }
 
-Color invert(Color color) {
-  return (Color){color.b, color.g, color.r, color.a};
-}
+Color invert(Color color) { return {color.b, color.g, color.r, color.a}; }
 
 int main(void) {
 
