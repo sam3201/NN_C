@@ -23,7 +23,4 @@
 
 #define MAX_PATH_LENGTH 1024
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
 int main(void) { return 0; }
