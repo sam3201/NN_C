@@ -5680,9 +5680,21 @@ void update_player(void) {
     Vector2 md = GetMouseDelta();
     float sens = 0.0045f;
 
-    // Debug mouse delta when locked
-    if (g_mouse_locked && (md.x != 0 || md.y != 0)) {
-      printf("Mouse delta: (%.3f, %.3f)\n", md.x, md.y);
+    // If mouse is locked but delta is 0, try manual position tracking
+    if (g_mouse_locked && (md.x == 0 && md.y == 0)) {
+      static Vector2 last_mouse_pos = {0};
+      Vector2 current_pos = GetMousePosition();
+      if (last_mouse_pos.x != 0 && last_mouse_pos.y != 0) {
+        md.x = current_pos.x - last_mouse_pos.x;
+        md.y = current_pos.y - last_mouse_pos.y;
+        // Reset mouse to center
+        int mw = GetScreenWidth();
+        int mh = GetScreenHeight();
+        if (mw > 0 && mh > 0) {
+          SetMousePosition(mw / 2, mh / 2);
+        }
+      }
+      last_mouse_pos = GetMousePosition();
     }
 
     g_player_yaw += md.x * sens;
@@ -5745,6 +5757,9 @@ void update_player(void) {
   }
 
   if (g_use_3d && bind_pressed(BIND_JUMP) && g_player_on_ground) {
+    printf("DEBUG: Jump detected - bind_pressed=%d, SPACE=%d, on_ground=%d\n",
+           bind_pressed(BIND_JUMP), IsKeyPressed(KEY_SPACE),
+           g_player_on_ground);
     g_player_vy = PLAYER_JUMP_SPEED;
     g_player_on_ground = 0;
   }
@@ -8084,21 +8099,18 @@ static void draw_pause_menu_3d(void) {
   glDisable(GL_DEPTH_TEST);
   ui_draw_rect(0, 0, (float)w, (float)h, (Color){0, 0, 0, 140});
   ui_draw_text(w * 0.5f - 60, h * 0.25f, "PAUSED", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.40f, "1) Resume", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.40f, "ESC) Resume", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.48f, "2) Keybinds", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.56f, "3) Graphics", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.64f, "4) Back to Title", RAYWHITE);
   ui_draw_text(w * 0.5f - 140, h * 0.72f, "5) Save", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.80f, "ESC) Resume", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.88f, "Q) Quit Game", RAYWHITE);
-  ui_draw_text(w * 0.5f - 140, h * 0.96f,
+  ui_draw_text(w * 0.5f - 140, h * 0.80f, "Q) Quit Game", RAYWHITE);
+  ui_draw_text(w * 0.5f - 140, h * 0.88f,
                TextFormat("F6) Graphics: %s", gfx_quality_label(g_gfx_quality)),
                RAYWHITE);
   glEnable(GL_DEPTH_TEST);
 
-  if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_ESCAPE)) {
-    g_state = STATE_PLAYING;
-  } else if (IsKeyPressed(KEY_TWO)) {
+  if (IsKeyPressed(KEY_TWO)) {
     g_pause_page = 1;
   } else if (IsKeyPressed(KEY_THREE)) {
     g_pause_page = 3;
@@ -9701,10 +9713,17 @@ int main(int argc, char *argv[]) {
   while (!WindowShouldClose() && !g_should_quit) {
     float dt = GetFrameTime();
 
+    // Debug: Test basic key detection
+    if (IsKeyPressed(KEY_P))
+      printf("KEY_P pressed\n");
+    if (IsKeyPressed(KEY_SPACE))
+      printf("KEY_SPACE pressed\n");
+    if (IsKeyPressed(KEY_ESCAPE))
+      printf("KEY_ESCAPE pressed\n");
+
     // Safety check to prevent infinite loops
-    if (dt <= 0.0f || dt > 1.0f) {
+    if (dt <= 0.0f || dt > 1.0f)
       dt = 1.0f / 60.0f; // Default to 60 FPS
-    }
 
     // Check window close button more frequently
     if (WindowShouldClose()) {
@@ -9791,7 +9810,7 @@ int main(int argc, char *argv[]) {
 
       // Only lock mouse when playing AND user clicks (not immediately on entry)
       if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
-        SetRelativeMouseMode(1);
+        // Try without relative mode first
         SetMouseVisible(0);
         int mw = GetScreenWidth();
         int mh = GetScreenHeight();
@@ -9799,37 +9818,26 @@ int main(int argc, char *argv[]) {
           SetMousePosition(mw / 2, mh / 2);
         }
         g_mouse_locked = 1;
-        printf("Mouse locked for gameplay - click detected\n");
       } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
-        SetRelativeMouseMode(0);
         SetMouseVisible(1);
         g_mouse_locked = 0;
-        printf("Mouse unlocked for UI\n");
       }
 
       // Allow manual unlock with TAB key
       if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
-        SetRelativeMouseMode(0);
         SetMouseVisible(1);
         g_mouse_locked = 0;
-        printf("Mouse manually unlocked with TAB\n");
-      }
-
-      // Force relative mouse mode every frame when locked
-      if (g_state == STATE_PLAYING && g_mouse_locked) {
-        SetRelativeMouseMode(1);
-        SetMouseVisible(0);
       }
 
       // Ensure mouse is always visible and not in relative mode for UI screens
       if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
           g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
-        SetRelativeMouseMode(0);
         SetMouseVisible(1);
         g_mouse_locked = 0;
       }
     }
 
+    // ...
     if (g_use_3d && IsKeyPressed(KEY_V)) {
       g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
                                                           : CAM_THIRD_PERSON;
@@ -9852,15 +9860,19 @@ int main(int argc, char *argv[]) {
       g_profiler_enabled = !g_profiler_enabled;
     }
 
-    if (bind_pressed(BIND_PAUSE) || IsKeyPressed(KEY_ESCAPE)) {
+    if (bind_pressed(BIND_PAUSE) || IsKeyPressed(KEY_ESCAPE) ||
+        IsKeyPressed(KEY_P)) {
+      printf("DEBUG: Pause detected - bind_pressed=%d, ESC=%d, P=%d\n",
+             bind_pressed(BIND_PAUSE), IsKeyPressed(KEY_ESCAPE),
+             IsKeyPressed(KEY_P));
       if (g_state == STATE_PLAYING) {
         g_state = STATE_PAUSED;
         g_pause_page = 0;
-        g_rebind_index = -1;
+        // Unlock mouse when paused
+        SetMouseVisible(1);
+        g_mouse_locked = 0;
       } else if (g_state == STATE_PAUSED) {
         g_state = STATE_PLAYING;
-        g_pause_page = 0;
-        g_rebind_index = -1;
       }
     }
 
