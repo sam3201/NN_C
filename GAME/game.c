@@ -7959,8 +7959,8 @@ static void draw_crosshair_2d(void) {
 }
 
 static void draw_crosshair_3d(void) {
-  // Test: Use Raylib drawing to bypass custom UI shader
-  DrawRectangle(200, 200, 50, 50, GREEN);
+  // Test: Use basic Raylib text to test if any 2D rendering works
+  DrawText("CROSSHAIR TEST", 200, 200, 20, GREEN);
 
   int w = GetScreenWidth();
   int h = GetScreenHeight();
@@ -8212,8 +8212,8 @@ static void draw_minimap_3d(void) {
 }
 
 static void draw_ui_3d_full(void) {
-  // Test: Use Raylib drawing to bypass custom UI shader
-  DrawRectangle(50, 50, 100, 50, RED);
+  // Test: Use basic Raylib text to test if any 2D rendering works
+  DrawText("HUD TEST", 10, 10, 20, RED);
 
   float panel_x = 14.0f;
   float panel_y = 12.0f;
@@ -9652,6 +9652,9 @@ int main(int argc, char *argv[]) {
 
       double ui_start_ms = prof_now_ms();
       if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+        // Disable 3D shader and switch to 2D rendering
+        glUseProgram(0);
+        
         draw_ui_3d_full();
         draw_minimap_3d();
         draw_daynight_overlay_3d();
