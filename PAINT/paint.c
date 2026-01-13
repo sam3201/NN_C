@@ -24,7 +24,7 @@
 #define BG_COLOR BLACK
 
 #define BRUSH_SIZE 5
-#define BRUSH_SIZE RED
+#define BRUSH_COLOR RED
 
 int main(void) {
 
