@@ -48,8 +48,6 @@ int main(void) {
       DrawCircle(x, y, BRUSH_SIZE, PREVIOUS_COLOR);
     }
 
-    if (IsKeyPressed(KEY_SPACE) 
-      
     BeginDrawing();
     ClearBackground(BG_COLOR);
     EndDrawing();
