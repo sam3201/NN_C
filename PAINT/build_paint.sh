@@ -10,8 +10,8 @@ cd "$ROOT_DIR"
 # -----------------------
 # Raylib deps 
 # -----------------------
-SDL_CFLAGS="$(pkg-config --cflags ttf)"
-SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
+RAYLIB_CFLAGS="$(pkg-config --cflags ttf)"
+RAYLIB_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
 
 # -----------------------
 # Collect sources (dedupe)
