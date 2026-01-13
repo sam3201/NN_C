@@ -7939,13 +7939,29 @@ static void draw_crosshair_3d(void) {
 
   float cx = w * 0.5f;
   float cy = h * 0.5f;
-  float size = 8.0f;
-  float thick = 2.0f;
-  Color c = (Color){240, 240, 240, 220};
+  float size = 15.0f; // Even bigger
+  float thick = 4.0f; // Even thicker
+  Color c = (Color){255, 255, 255, 255}; // Pure white
+  Color outline = (Color){0, 0, 0, 255}; // Black outline
 
   glDisable(GL_DEPTH_TEST);
+  
+  // Draw outer outline for maximum visibility
+  ui_draw_rect(cx - size - 2, cy - thick * 0.5f - 2, size * 2.0f + 4, thick + 4, outline);
+  ui_draw_rect(cx - thick * 0.5f - 2, cy - size - 2, thick + 4, size * 2.0f + 4, outline);
+  ui_draw_rect(cx + size - 2, cy - thick * 0.5f - 2, thick + 4, size * 2.0f + 4, outline);
+  ui_draw_rect(cx - thick * 0.5f - 2, cy + size - 2, thick + 4, size * 2.0f + 4, outline);
+  ui_draw_rect(cx + size - 2, cy + size - 2, thick + 4, size * 2.0f + 4, outline);
+  
+  // Draw inner bright crosshair
   ui_draw_rect(cx - size, cy - thick * 0.5f, size * 2.0f, thick, c);
   ui_draw_rect(cx - thick * 0.5f, cy - size, thick, size * 2.0f, c);
+  ui_draw_rect(cx - thick * 0.5f, cy + size, thick, size * 2.0f, c);
+  ui_draw_rect(cx + size, cy - thick * 0.5f, thick, size * 2.0f, c);
+  
+  // Draw center dot
+  ui_draw_rect(cx - 3, cy - 3, 6, 6, c);
+  
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -8065,7 +8081,7 @@ static void draw_hurt_vignette_3d(void) {
   float t = clamp01(player_hurt_timer / 0.18f);
   unsigned char a = (unsigned char)(120 * t);
   ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
-               (Color){120, 0, 0, a});
+               (Color){220, 80, 80, a});
 }
 
 static void draw_minimap_3d(void) {
@@ -8080,11 +8096,7 @@ static void draw_minimap_3d(void) {
   glDisable(GL_CULL_FACE);
   ui_draw_rect((float)x, (float)y, (float)size, (float)size,
                (Color){0, 0, 0, 110});
-  ui_draw_rect((float)x, (float)y, (float)size, 1.0f, (Color){0, 0, 0, 220});
-  ui_draw_rect((float)x, (float)(y + size - 1), (float)size, 1.0f,
-               (Color){0, 0, 0, 220});
-  ui_draw_rect((float)x, (float)y, 1.0f, (float)size, (Color){0, 0, 0, 220});
-  ui_draw_rect((float)(x + size - 1), (float)y, 1.0f, (float)size,
+  ui_draw_rect((float)x, (float)y, (float)size, (float)size,
                (Color){0, 0, 0, 220});
 
   double now = GetTime();
@@ -8142,39 +8154,25 @@ static void draw_minimap_3d(void) {
                  WHITE);
   }
 
-  for (int t = 0; t < TRIBE_COUNT; t++) {
-    Vector2 d = Vector2Subtract(tribes[t].base.position, player.position);
-    if (fabsf(d.x) > radius || fabsf(d.y) > radius)
-      continue;
-    float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
-    float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-    ui_draw_rect(x + pxm - 2.0f, y + pym - 2.0f, 4.0f, 4.0f, tribes[t].color);
-  }
+  // draw player position indicator
+  Vector2 minimap_center = (Vector2){x + size / 2, y + size / 2};
+  Vector2 d = Vector2Subtract(player.position,
+                            (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
+                                     (WORLD_SIZE * CHUNK_SIZE) / 2});
+  float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
+  float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
+  ui_draw_rect(x + pxm - 2.0f, y + pym - 2.0f, 4.0f, 4.0f, RAYWHITE);
 
-  int pcx = (int)(player.position.x / CHUNK_SIZE);
-  int pcy = (int)(player.position.y / CHUNK_SIZE);
-  int mob_count = 0;
-  for (int dx = -2; dx <= 2; dx++) {
-    for (int dy = -2; dy <= 2; dy++) {
-      int cx = pcx + dx;
-      int cy = pcy + dy;
-      Chunk *c = get_chunk(cx, cy);
-      Vector2 origin =
-          (Vector2){(float)(cx * CHUNK_SIZE), (float)(cy * CHUNK_SIZE)};
-      for (int i = 0; i < MAX_MOBS; i++) {
-        Mob *m = &c->mobs[i];
-        if (m->health <= 0)
-          continue;
-        Vector2 mw = Vector2Add(origin, m->position);
-        Vector2 d = Vector2Subtract(mw, player.position);
-        if (fabsf(d.x) > radius || fabsf(d.y) > radius)
-          continue;
-        float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
-        float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
-        ui_draw_rect(x + pxm, y + pym, 2.0f, 2.0f, (Color){240, 80, 80, 255});
-        mob_count++;
-      }
-    }
+  // draw tribe bases
+  for (int t = 0; t < TRIBE_COUNT; t++) {
+    Vector2 base_pos = (Vector2){tribes[t].base_x, tribes[t].base_y};
+    Vector2 base_d = Vector2Subtract(base_pos,
+                               (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
+                                        (WORLD_SIZE * CHUNK_SIZE) / 2});
+    float bx = (base_d.x / (radius * 2.0f) + 0.5f) * size;
+    float by = (base_d.y / (radius * 2.0f) + 0.5f) * size;
+    ui_draw_rect(x + bx - 2.0f, y + by - 2.0f, 4.0f, 4.0f,
+                 tribes[t].color);
   }
 
   ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f, RAYWHITE);
@@ -8191,11 +8189,12 @@ static void draw_minimap_3d(void) {
     g_ui_cache_last_zoomed = g_minimap_zoomed;
   }
   ui_draw_text_cached((float)x, (float)(y + size + 6),
-                      &g_ui_cache_minimap_title);
-  ui_draw_text_cached((float)x, (float)(y + size + 26),
-                      &g_ui_cache_minimap_mobs);
-  glEnable(GL_CULL_FACE);
+                    &g_ui_cache_minimap_title);
+  ui_draw_text_cached((float)(x + size + 10), (float)(y + size + 26),
+                    &g_ui_cache_minimap_mobs);
+
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
 }
 
 static void draw_ui_3d_full(void) {
@@ -8347,7 +8346,42 @@ static void draw_hover_label_3d(void) {
       snprintf(line, sizeof(line), "%s (%d)", label, hp);
     else
       snprintf(line, sizeof(line), "%s", label);
-    ui_draw_text_size(20, 170, line, 16, RAYWHITE);
+    Vector2 mouse = GetMousePosition();
+    
+    // Position label above cursor with offset
+    float label_x = mouse.x + 20.0f;
+    float label_y = mouse.y - 40.0f;
+    
+    // Draw background with better visibility
+    ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 200});
+    ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 220});
+    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
+    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
+    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
+    
+    // Draw text
+    ui_draw_text_size(label_x, label_y + 5, line, 18, RAYWHITE);
+    
+    // Draw health bar if entity has health
+    if (hp > 0) {
+      float hp_percent = (float)hp / 100.0f;
+      float bar_width = 160.0f;
+      float bar_height = 8.0f;
+      float bar_y = label_y + 25.0f;
+      
+      // Health bar background
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height, (Color){0, 0, 0, 200});
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height, (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
+      
+      // Health bar fill (green to red gradient)
+      Color health_color = hp > 50 ? (Color){80, 220, 80, 255} : (Color){220, 80, 80, 255};
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height, (Color){0, 0, 0, 200});
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height, (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
+    }
   }
 }
 
@@ -9117,16 +9151,29 @@ static void render_scene_3d(void) {
   float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
   float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
   
-  // Sun position: high in the sky at noon, low at dawn/dusk
-  float sun_height = sinf(sun_angle) * 0.8f; // -0.8 to 0.8
-  Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.5f));
+  // Enhanced sun position: higher arc for better lighting
+  float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
+  Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
   
-  // At night, use moonlight (dimmer and different color)
+  // Brighter ambient light during day
+  float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
+  float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
+  
+  // At night, use moonlight (dimmer but with blue tint)
   if (is_night_cached) {
-    sun_dir = vec3_scale(sun_dir, 0.3f); // Dimmer light at night
+    sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
+    sun_dir.x += 0.05f; // Slight blue tint for moon
+    sun_dir.y += 0.02f;
+  } else {
+    // During day, add more dynamic intensity based on sun position
+    sun_intensity = sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
   }
   
-  glUniform3f(g_u_light, sun_dir.x, sun_dir.y, sun_dir.z);
+  // Combine ambient and directional light
+  Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base), 
+                        vec3_scale(sun_dir, sun_intensity));
+  
+  glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
 
   // Render ground using optimized terrain tiles with LOD
   if (g_mesh_ground_tile_loaded) {
