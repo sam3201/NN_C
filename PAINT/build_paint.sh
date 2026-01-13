@@ -48,7 +48,7 @@ printf "  %s\n" $SAM_SRC
 # -----------------------
 # Compile
 # -----------------------
-echo "Compiling game..."
+echo "Compiling paint..."
 
 # Use clang on macOS if you want; gcc often maps to clang anyway.
 CC="${CC:-gcc}"
@@ -56,7 +56,7 @@ FLAGS="${FLAGS:-} -g"
 
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" $FLAGS \
-  game.c \
+  paint.c \
   $SDL_COMPAT_SRC \
   $NN_SRC \
   $MUZE_SRC \
@@ -70,13 +70,13 @@ FLAGS="${FLAGS:-} -g"
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
-  -o game 
+  -o paint 
 
-echo "Compilation successful! Running the game..."
-lldb ./game
+echo "Compilation successful! Running the paint..."
+lldb ./paint
 status=$?
 
 echo "Game exited with status $status"
-rm -f ./game
-rm -rf game.dSYM
+rm -f ./paint
+rm -rf paint.dSYM
 exit "$status"
