@@ -1,4 +1,4 @@
-#include "../utils/NN/.h"
+#include "../utils/NN/CONVOLUTION.h"
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/NN/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
