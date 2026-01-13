@@ -2,7 +2,6 @@
 #include "../utils/NN/TRANSFORMER.h"
 #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
-#include <time.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
@@ -7939,29 +7938,34 @@ static void draw_crosshair_3d(void) {
 
   float cx = w * 0.5f;
   float cy = h * 0.5f;
-  float size = 15.0f; // Even bigger
-  float thick = 4.0f; // Even thicker
+  float size = 15.0f;                    // Even bigger
+  float thick = 4.0f;                    // Even thicker
   Color c = (Color){255, 255, 255, 255}; // Pure white
   Color outline = (Color){0, 0, 0, 255}; // Black outline
 
   glDisable(GL_DEPTH_TEST);
-  
+
   // Draw outer outline for maximum visibility
-  ui_draw_rect(cx - size - 2, cy - thick * 0.5f - 2, size * 2.0f + 4, thick + 4, outline);
-  ui_draw_rect(cx - thick * 0.5f - 2, cy - size - 2, thick + 4, size * 2.0f + 4, outline);
-  ui_draw_rect(cx + size - 2, cy - thick * 0.5f - 2, thick + 4, size * 2.0f + 4, outline);
-  ui_draw_rect(cx - thick * 0.5f - 2, cy + size - 2, thick + 4, size * 2.0f + 4, outline);
-  ui_draw_rect(cx + size - 2, cy + size - 2, thick + 4, size * 2.0f + 4, outline);
-  
+  ui_draw_rect(cx - size - 2, cy - thick * 0.5f - 2, size * 2.0f + 4, thick + 4,
+               outline);
+  ui_draw_rect(cx - thick * 0.5f - 2, cy - size - 2, thick + 4, size * 2.0f + 4,
+               outline);
+  ui_draw_rect(cx + size - 2, cy - thick * 0.5f - 2, thick + 4, size * 2.0f + 4,
+               outline);
+  ui_draw_rect(cx - thick * 0.5f - 2, cy + size - 2, thick + 4, size * 2.0f + 4,
+               outline);
+  ui_draw_rect(cx + size - 2, cy + size - 2, thick + 4, size * 2.0f + 4,
+               outline);
+
   // Draw inner bright crosshair
   ui_draw_rect(cx - size, cy - thick * 0.5f, size * 2.0f, thick, c);
   ui_draw_rect(cx - thick * 0.5f, cy - size, thick, size * 2.0f, c);
   ui_draw_rect(cx - thick * 0.5f, cy + size, thick, size * 2.0f, c);
   ui_draw_rect(cx + size, cy - thick * 0.5f, thick, size * 2.0f, c);
-  
+
   // Draw center dot
   ui_draw_rect(cx - 3, cy - 3, 6, 6, c);
-  
+
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -8156,9 +8160,9 @@ static void draw_minimap_3d(void) {
 
   // draw player position indicator
   Vector2 minimap_center = (Vector2){x + size / 2, y + size / 2};
-  Vector2 d = Vector2Subtract(player.position,
-                            (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
-                                     (WORLD_SIZE * CHUNK_SIZE) / 2});
+  Vector2 d = Vector2Subtract(
+      player.position,
+      (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2, (WORLD_SIZE * CHUNK_SIZE) / 2});
   float pxm = (d.x / (radius * 2.0f) + 0.5f) * size;
   float pym = (d.y / (radius * 2.0f) + 0.5f) * size;
   ui_draw_rect(x + pxm - 2.0f, y + pym - 2.0f, 4.0f, 4.0f, RAYWHITE);
@@ -8166,13 +8170,12 @@ static void draw_minimap_3d(void) {
   // draw tribe bases
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Vector2 base_pos = (Vector2){tribes[t].base_x, tribes[t].base_y};
-    Vector2 base_d = Vector2Subtract(base_pos,
-                               (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
-                                        (WORLD_SIZE * CHUNK_SIZE) / 2});
+    Vector2 base_d =
+        Vector2Subtract(base_pos, (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
+                                            (WORLD_SIZE * CHUNK_SIZE) / 2});
     float bx = (base_d.x / (radius * 2.0f) + 0.5f) * size;
     float by = (base_d.y / (radius * 2.0f) + 0.5f) * size;
-    ui_draw_rect(x + bx - 2.0f, y + by - 2.0f, 4.0f, 4.0f,
-                 tribes[t].color);
+    ui_draw_rect(x + bx - 2.0f, y + by - 2.0f, 4.0f, 4.0f, tribes[t].color);
   }
 
   ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f, RAYWHITE);
@@ -8189,9 +8192,9 @@ static void draw_minimap_3d(void) {
     g_ui_cache_last_zoomed = g_minimap_zoomed;
   }
   ui_draw_text_cached((float)x, (float)(y + size + 6),
-                    &g_ui_cache_minimap_title);
+                      &g_ui_cache_minimap_title);
   ui_draw_text_cached((float)(x + size + 10), (float)(y + size + 26),
-                    &g_ui_cache_minimap_mobs);
+                      &g_ui_cache_minimap_mobs);
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -8347,40 +8350,49 @@ static void draw_hover_label_3d(void) {
     else
       snprintf(line, sizeof(line), "%s", label);
     Vector2 mouse = GetMousePosition();
-    
+
     // Position label above cursor with offset
     float label_x = mouse.x + 20.0f;
     float label_y = mouse.y - 40.0f;
-    
+
     // Draw background with better visibility
     ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 200});
     ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 220});
     ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
     ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
     ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
-    
+
     // Draw text
     ui_draw_text_size(label_x, label_y + 5, line, 18, RAYWHITE);
-    
+
     // Draw health bar if entity has health
     if (hp > 0) {
       float hp_percent = (float)hp / 100.0f;
       float bar_width = 160.0f;
       float bar_height = 8.0f;
       float bar_y = label_y + 25.0f;
-      
+
       // Health bar background
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height, (Color){0, 0, 0, 200});
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height, (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
-      
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height,
+                   (Color){0, 0, 0, 200});
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height,
+                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
+                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
+                   (Color){0, 0, 0, 220});
+
       // Health bar fill (green to red gradient)
-      Color health_color = hp > 50 ? (Color){80, 220, 80, 255} : (Color){220, 80, 80, 255};
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height, (Color){0, 0, 0, 200});
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height, (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height, (Color){0, 0, 0, 220});
+      Color health_color =
+          hp > 50 ? (Color){80, 220, 80, 255} : (Color){220, 80, 80, 255};
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height,
+                   (Color){0, 0, 0, 200});
+      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height,
+                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
+                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
+                   (Color){0, 0, 0, 220});
     }
   }
 }
@@ -8796,23 +8808,63 @@ static void init_3d_renderer(void) {
   // Build simple cube mesh for testing
   float cube_verts[] = {
       // Front face
-      -0.5f, -0.5f,  0.5f,  0, 0, 1,
-       0.5f, -0.5f,  0.5f,  0, 0, 1,
-       0.5f,  0.5f,  0.5f,  0, 0, 1,
-      -0.5f,  0.5f,  0.5f,  0, 0, 1,
+      -0.5f,
+      -0.5f,
+      0.5f,
+      0,
+      0,
+      1,
+      0.5f,
+      -0.5f,
+      0.5f,
+      0,
+      0,
+      1,
+      0.5f,
+      0.5f,
+      0.5f,
+      0,
+      0,
+      1,
+      -0.5f,
+      0.5f,
+      0.5f,
+      0,
+      0,
+      1,
       // Back face
-      -0.5f, -0.5f, -0.5f,  0, 0, -1,
-       0.5f, -0.5f, -0.5f,  0, 0, -1,
-       0.5f,  0.5f, -0.5f,  0, 0, -1,
-      -0.5f,  0.5f, -0.5f,  0, 0, -1,
+      -0.5f,
+      -0.5f,
+      -0.5f,
+      0,
+      0,
+      -1,
+      0.5f,
+      -0.5f,
+      -0.5f,
+      0,
+      0,
+      -1,
+      0.5f,
+      0.5f,
+      -0.5f,
+      0,
+      0,
+      -1,
+      -0.5f,
+      0.5f,
+      -0.5f,
+      0,
+      0,
+      -1,
   };
   unsigned int cube_idx[] = {
-      0, 1, 2, 0, 2, 3,  // Front
-      4, 6, 5, 4, 7, 6,  // Back
-      0, 4, 5, 0, 5, 1,  // Bottom
-      2, 6, 7, 2, 7, 3,  // Top
-      0, 3, 7, 0, 7, 4,  // Left
-      1, 5, 6, 1, 6, 2,  // Right
+      0, 1, 2, 0, 2, 3, // Front
+      4, 6, 5, 4, 7, 6, // Back
+      0, 4, 5, 0, 5, 1, // Bottom
+      2, 6, 7, 2, 7, 3, // Top
+      0, 3, 7, 0, 7, 4, // Left
+      1, 5, 6, 1, 6, 2, // Right
   };
   mesh_init(&g_mesh_cube, cube_verts, 8, cube_idx, 36);
 
@@ -8820,22 +8872,31 @@ static void init_3d_renderer(void) {
   g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
 
   // Load mob models
-  g_mesh_mob_loaded[MOB_PIG] = load_glb_mesh(ASSET_PIG_GLB, &g_mesh_mobs[MOB_PIG]);
-  g_mesh_mob_loaded[MOB_SHEEP] = load_glb_mesh(ASSET_SHEEP_GLB, &g_mesh_mobs[MOB_SHEEP]);
-  g_mesh_mob_loaded[MOB_SKELETON] = load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
-  g_mesh_mob_loaded[MOB_ZOMBIE] = load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
+  g_mesh_mob_loaded[MOB_PIG] =
+      load_glb_mesh(ASSET_PIG_GLB, &g_mesh_mobs[MOB_PIG]);
+  g_mesh_mob_loaded[MOB_SHEEP] =
+      load_glb_mesh(ASSET_SHEEP_GLB, &g_mesh_mobs[MOB_SHEEP]);
+  g_mesh_mob_loaded[MOB_SKELETON] =
+      load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
+  g_mesh_mob_loaded[MOB_ZOMBIE] =
+      load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
 
   // Load resource models
-  g_mesh_resource_loaded[RES_TREE] = load_glb_mesh(ASSET_TREE_GLB, &g_mesh_resources[RES_TREE]);
-  g_mesh_resource_loaded[RES_ROCK] = load_glb_mesh(ASSET_ROCK_GLB, &g_mesh_resources[RES_ROCK]);
-  g_mesh_resource_loaded[RES_GOLD] = load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
-  g_mesh_resource_loaded[RES_FOOD] = load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
+  g_mesh_resource_loaded[RES_TREE] =
+      load_glb_mesh(ASSET_TREE_GLB, &g_mesh_resources[RES_TREE]);
+  g_mesh_resource_loaded[RES_ROCK] =
+      load_glb_mesh(ASSET_ROCK_GLB, &g_mesh_resources[RES_ROCK]);
+  g_mesh_resource_loaded[RES_GOLD] =
+      load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
+  g_mesh_resource_loaded[RES_FOOD] =
+      load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
 
   // Load base model
   g_mesh_base_loaded = load_glb_mesh(ASSET_BASE_GLB, &g_mesh_base);
 
   // Load terrain tile
-  g_mesh_ground_tile_loaded = load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
+  g_mesh_ground_tile_loaded =
+      load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
 
   // Build fallback sphere for any failed loads
   build_sphere_mesh(8, 8);
@@ -9150,54 +9211,61 @@ static void render_scene_3d(void) {
   // Set up dynamic sun/lighting based on day/night cycle
   float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
   float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
-  
+
   // Enhanced sun position: higher arc for better lighting
   float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
   Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
-  
+
   // Brighter ambient light during day
   float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
   float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
-  
+
   // At night, use moonlight (dimmer but with blue tint)
   if (is_night_cached) {
     sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
-    sun_dir.x += 0.05f; // Slight blue tint for moon
+    sun_dir.x += 0.05f;                  // Slight blue tint for moon
     sun_dir.y += 0.02f;
   } else {
     // During day, add more dynamic intensity based on sun position
-    sun_intensity = sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
+    sun_intensity =
+        sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
   }
-  
+
   // Combine ambient and directional light
-  Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base), 
-                        vec3_scale(sun_dir, sun_intensity));
-  
+  Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base),
+                              vec3_scale(sun_dir, sun_intensity));
+
   glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
 
   // Render ground using optimized terrain tiles with LOD
   if (g_mesh_ground_tile_loaded) {
     // Render far fewer terrain tiles for performance
-    float tile_size = 40.0f; // Larger tiles = fewer draw calls
-    int tile_radius = 3; // Only render 3x3 grid around player
+    float tile_size = 40.0f;            // Larger tiles = fewer draw calls
+    int tile_radius = 3;                // Only render 3x3 grid around player
     float base_render_distance = 50.0f; // Base render distance for terrain too
-    
+
     for (int x = -tile_radius; x <= tile_radius; x++) {
       for (int y = -tile_radius; y <= tile_radius; y++) {
         // Skip far tiles for LOD
         float dist = sqrtf((float)(x * x + y * y)) * tile_size;
-        if (dist > base_render_distance) continue;
-        
+        if (dist > base_render_distance)
+          continue;
+
         Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
-        
+
         // LOD scaling - use larger tiles for distance
         float lod_scale = 1.0f;
-        if (dist > 30.0f) lod_scale = 1.5f;
-        else if (dist > 20.0f) lod_scale = 1.2f;
-        
-        Mat4 ground = mat4_mul(mat4_translate(pos), 
-                              mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f, tile_size * lod_scale * 0.5f)));
-        render_mesh(&g_mesh_ground_tile, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
+        if (dist > 30.0f)
+          lod_scale = 1.5f;
+        else if (dist > 20.0f)
+          lod_scale = 1.2f;
+
+        Mat4 ground =
+            mat4_mul(mat4_translate(pos),
+                     mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f,
+                                     tile_size * lod_scale * 0.5f)));
+        render_mesh(&g_mesh_ground_tile, ground, view_proj,
+                    vec3(0.35f, 0.75f, 0.35f));
       }
     }
   } else {
@@ -9214,16 +9282,17 @@ static void render_scene_3d(void) {
     if (g_use_perlin_ground) {
       terrain_h = terrain_height(player_pos.x, player_pos.z);
     }
-    
+
     Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
-    Mat4 player_model = mat4_mul(mat4_translate(player_3d),
-                                mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
-    render_mesh(&g_mesh_player, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
+    Mat4 player_model =
+        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+    render_mesh(&g_mesh_player, player_model, view_proj,
+                vec3(0.8f, 0.4f, 0.2f));
   } else {
     // Fallback to cube
     Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
-    Mat4 player_model = mat4_mul(mat4_translate(player_3d),
-                                mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
+    Mat4 player_model =
+        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
     render_mesh(&g_mesh_cube, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
   }
 
@@ -9231,11 +9300,12 @@ static void render_scene_3d(void) {
   if (g_enable_grass) {
     float grass_distance = 30.0f; // Reduce grass render distance
     float grass_density = 1.0f;
-    
+
     // Simple distance calculation without vec3_len to avoid potential issues
-    float player_dist_sq = player_pos.x * player_pos.x + player_pos.z * player_pos.z;
+    float player_dist_sq =
+        player_pos.x * player_pos.x + player_pos.z * player_pos.z;
     float player_dist = sqrtf(player_dist_sq);
-    
+
     // Reduce grass density based on distance for performance
     if (player_dist > 20.0f) {
       grass_density = 0.5f; // Half density at medium distance
@@ -9243,7 +9313,7 @@ static void render_scene_3d(void) {
     if (player_dist > 30.0f) {
       grass_density = 0.25f; // Quarter density at far distance
     }
-    
+
     render_grass_3d(player_pos, view_proj, grass_density);
   }
 
@@ -9253,78 +9323,96 @@ static void render_scene_3d(void) {
   // Render resources with optimized culling and proper locking
   float base_render_distance = 50.0f; // Base render distance
   float render_distance = base_render_distance;
-  
+
   // Dynamic render distance based on FPS (with safety check)
   if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
-    render_distance = base_render_distance * 0.7f; // Reduce distance if FPS drops
+    render_distance =
+        base_render_distance * 0.7f; // Reduce distance if FPS drops
   } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
-    render_distance = base_render_distance * 0.5f; // Aggressive reduction for low FPS
+    render_distance =
+        base_render_distance * 0.5f; // Aggressive reduction for low FPS
   }
-  
+
   // Calculate player chunk position for optimized rendering
   int player_cx = (int)(player_pos.x / CHUNK_SIZE);
   int player_cy = (int)(player_pos.z / CHUNK_SIZE);
   int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
-  
+
   int chunks_rendered = 0;
   int resources_rendered = 0;
-  
+
   for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
     for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
       int cx = player_cx + dx;
       int cy = player_cy + dy;
-      
+
       // Skip if chunk is outside world bounds
-      if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE) continue;
-      
+      if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE)
+        continue;
+
       // Quick distance check for chunk
-      float chunk_dist_sq = (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
-      if (chunk_dist_sq > render_distance * render_distance) continue;
-      
+      float chunk_dist_sq =
+          (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
+      if (chunk_dist_sq > render_distance * render_distance)
+        continue;
+
       Chunk *c = get_chunk(cx, cy);
-      if (!c) continue;
-      
+      if (!c)
+        continue;
+
       chunks_rendered++;
       pthread_rwlock_rdlock(&c->lock);
-      
+
       for (int i = 0; i < MAX_RESOURCES; i++) {
         Resource *r = &c->resources[i];
-        if (r->health <= 0) continue;
-        
+        if (r->health <= 0)
+          continue;
+
         // Convert resource position to world coordinates
         float world_x = cx * CHUNK_SIZE + r->position.x;
         float world_z = cy * CHUNK_SIZE + r->position.y;
-        
+
         // Distance culling
         float dx_res = world_x - player_pos.x;
         float dz_res = world_z - player_pos.z;
         float dist_sq = dx_res * dx_res + dz_res * dz_res;
-        if (dist_sq > render_distance * render_distance) continue;
-        
+        if (dist_sq > render_distance * render_distance)
+          continue;
+
         // Use simple terrain height calculation
         float terrain_h = 0.0f;
         if (g_use_perlin_ground) {
           terrain_h = terrain_height(world_x, world_z);
         }
-        
+
         Vec3 pos = vec3(world_x, terrain_h, world_z);
         float scale = 1.0f;
-        
+
         // Scale models appropriately
-        if (r->type == RES_TREE) scale = 2.0f;
-        else if (r->type == RES_ROCK) scale = 0.5f;
-        else if (r->type == RES_GOLD) scale = 0.3f;
-        else if (r->type == RES_FOOD) scale = 0.4f;
-        
-        Mat4 model = mat4_mul(mat4_translate(pos), mat4_scale(vec3(scale, scale, scale)));
-        
-        if (r->type >= 0 && r->type < RES_COUNT && g_mesh_resource_loaded[r->type]) {
+        if (r->type == RES_TREE)
+          scale = 2.0f;
+        else if (r->type == RES_ROCK)
+          scale = 0.5f;
+        else if (r->type == RES_GOLD)
+          scale = 0.3f;
+        else if (r->type == RES_FOOD)
+          scale = 0.4f;
+
+        Mat4 model = mat4_mul(mat4_translate(pos),
+                              mat4_scale(vec3(scale, scale, scale)));
+
+        if (r->type >= 0 && r->type < RES_COUNT &&
+            g_mesh_resource_loaded[r->type]) {
           Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
-          if (r->type == RES_TREE) tint = vec3(0.2f, 0.8f, 0.2f);
-          else if (r->type == RES_ROCK) tint = vec3(0.5f, 0.5f, 0.5f);
-          else if (r->type == RES_GOLD) tint = vec3(1.0f, 0.8f, 0.0f);
-          else if (r->type == RES_FOOD) tint = vec3(0.8f, 0.4f, 0.2f);
-          
+          if (r->type == RES_TREE)
+            tint = vec3(0.2f, 0.8f, 0.2f);
+          else if (r->type == RES_ROCK)
+            tint = vec3(0.5f, 0.5f, 0.5f);
+          else if (r->type == RES_GOLD)
+            tint = vec3(1.0f, 0.8f, 0.0f);
+          else if (r->type == RES_FOOD)
+            tint = vec3(0.8f, 0.4f, 0.2f);
+
           render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
           resources_rendered++;
         }
@@ -9340,11 +9428,11 @@ static void render_scene_3d(void) {
   render_bases_3d(view_proj);
 
   glEnable(GL_CULL_FACE);
-  
+
   // Simplified performance monitoring to avoid stuck issues
   static int frame_counter = 0;
   frame_counter++;
-  
+
   // Only update FPS every 60 frames to reduce overhead
   if (frame_counter >= 60) {
     float current_time = GetTime();
@@ -9449,7 +9537,7 @@ int main(int argc, char *argv[]) {
     // if (g_state == STATE_PLAYING) {
     //   run_agent_jobs();
     // }
-    
+
     // Simple agent update in main thread (no workers)
     if (g_state == STATE_PLAYING) {
       for (int i = 0; i < MAX_AGENTS; i++) {
@@ -9723,7 +9811,7 @@ int main(int argc, char *argv[]) {
   if (g_enable_grass) {
     // stop_grass_worker();
   }
-  
+
   // Proper MUZE cleanup sequence to prevent hanging
   if (g_muze_loop_started) {
     // First signal the loop to stop
@@ -9733,7 +9821,7 @@ int main(int argc, char *argv[]) {
     nanosleep(&ts, NULL);
     g_muze_loop_started = 0;
   }
-  
+
   // Clean up MUZE resources after thread is stopped
   if (g_muze_rb) {
     pthread_mutex_lock(&g_muze_rb_mtx);
