@@ -5679,6 +5679,12 @@ void update_player(void) {
   if (g_use_3d) {
     Vector2 md = GetMouseDelta();
     float sens = 0.0045f;
+
+    // Debug mouse delta when locked
+    if (g_mouse_locked && (md.x != 0 || md.y != 0)) {
+      printf("Mouse delta: (%.3f, %.3f)\n", md.x, md.y);
+    }
+
     g_player_yaw += md.x * sens;
     g_player_yaw = wrap_pi(g_player_yaw);
     g_player_yaw_target = g_player_yaw;
