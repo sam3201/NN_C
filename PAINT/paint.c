@@ -5757,7 +5757,7 @@ void update_player(void) {
   }
 
   if (g_use_3d && bind_pressed(BIND_JUMP) && g_player_on_ground) {
-    printf("DEBUG: Jump - bind_pressed=%d, on_ground=%d\n", 
+    printf("DEBUG: Jump - bind_pressed=%d, on_ground=%d\n",
            bind_pressed(BIND_JUMP), g_player_on_ground);
     g_player_vy = PLAYER_JUMP_SPEED;
     g_player_on_ground = 0;
@@ -5794,7 +5794,7 @@ void update_player(void) {
 
   // (A) Continuous melee attack (hold LEFT mouse or attack keybind)
   if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || bind_down(BIND_ATTACK)) {
-    printf("DEBUG: Attack - mouse_down=%d, bind_down=%d\n", 
+    printf("DEBUG: Attack - mouse_down=%d, bind_down=%d\n",
            IsMouseButtonDown(MOUSE_BUTTON_LEFT), bind_down(BIND_ATTACK));
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
@@ -9854,7 +9854,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (bind_pressed(BIND_PAUSE) || IsKeyPressed(KEY_ESCAPE)) {
-      printf("DEBUG: Pause - bind_pressed=%d, ESC=%d\n", 
+      printf("DEBUG: Pause - bind_pressed=%d, ESC=%d\n",
              bind_pressed(BIND_PAUSE), IsKeyPressed(KEY_ESCAPE));
       if (g_state == STATE_PLAYING) {
         g_state = STATE_PAUSED;
