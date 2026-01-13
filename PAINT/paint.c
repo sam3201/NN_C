@@ -19,8 +19,4 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
-int main(void) {
-  printf("hello world\n");
-
-  return 0;
-}
+int main(void) { return 0; }
