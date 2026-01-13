@@ -23,12 +23,15 @@
 
 #define MAX_PATH_LENGTH 1024
 
+void draw() {}
+
 int main(void) {
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
   SetTargetFPS(FPS);
 
   while (!WindowShouldClose()) {
+
     BeginDrawing();
     ClearBackground(BLACK);
     EndDrawing();
