@@ -29,6 +29,8 @@ int main(void) {
   SetTargetFPS(FPS);
 
   while (!WindowShouldClose()) {
+    if (IsKeyPressed(KEY_ESCAPE))
+      break;
 
     BeginDrawing();
     ClearBackground(BLACK);
