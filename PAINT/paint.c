@@ -47,7 +47,7 @@ int main(void) {
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground(BG_COLOR);
     EndDrawing();
   }
 
