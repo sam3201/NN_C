@@ -26,47 +26,44 @@
 #define BRUSH_SIZE 5
 #define BRUSH_COLOR RED
 
-void draw_color_wheel() {
-  void DrawBrush(int x, int y, Color color) {
-    DrawCircleLines(x, y, 1, BG_COLOR);
-  }
+void draw_color_wheel() { DrawCircleLines(x, y, 1, BG_COLOR); }
 
-  void DrawBrush(int x, int y, Color color) {
-    DrawCircleLines(x, y, 1, BG_COLOR);
-    DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
-  }
+void DrawBrush(int x, int y, Color color) {
+  DrawCircleLines(x, y, 1, BG_COLOR);
+  DrawCircle(x, y, BRUSH_SIZE, BRUSH_COLOR);
+}
 
-  Color invert(Color color) {
-    return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
-  }
+Color invert(Color color) {
+  return (Color){255 - color.r, 255 - color.g, 255 - color.b, color.a};
+}
 
-  int main(void) {
+int main(void) {
 
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
-    SetTargetFPS(FPS);
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
+  SetTargetFPS(FPS);
 
-    while (!WindowShouldClose()) {
-      if (IsKeyPressed(KEY_ESCAPE))
-        break;
+  while (!WindowShouldClose()) {
+    if (IsKeyPressed(KEY_ESCAPE))
+      break;
 
-      if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        int x = GetMouseX();
-        int y = GetMouseY();
-        DrawBrush(x, y, BRUSH_COLOR);
-      }
-
-      if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-        int x = GetMouseX();
-        int y = GetMouseY();
-        DrawBrush(x, y, invert(BRUSH_COLOR));
-      }
-
-      BeginDrawing();
-      ClearBackground(BG_COLOR);
-      EndDrawing();
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      int x = GetMouseX();
+      int y = GetMouseY();
+      DrawBrush(x, y, BRUSH_COLOR);
     }
 
-    CloseWindow();
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+      int x = GetMouseX();
+      int y = GetMouseY();
+      DrawBrush(x, y, invert(BRUSH_COLOR));
+    }
 
-    return 0;
+    BeginDrawing();
+    ClearBackground(BG_COLOR);
+    EndDrawing();
   }
+
+  CloseWindow();
+
+  return 0;
+}
