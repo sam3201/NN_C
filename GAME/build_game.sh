@@ -74,6 +74,7 @@ FLAGS="${FLAGS:-} -g"
 
 echo "Compilation successful! Running the game..."
 lldb ./game
+run
 status=$?
 
 echo "Game exited with status $status"
