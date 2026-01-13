@@ -8,9 +8,9 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
 # -----------------------
-# SDL3 deps
+# Raylib deps 
 # -----------------------
-SDL_CFLAGS="$(pkg-config --cflags sdl3 sdl3-ttf)"
+SDL_CFLAGS="$(pkg-config --cflags ttf)"
 SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
 
 # -----------------------
