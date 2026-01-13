@@ -25,6 +25,9 @@
 
 #define BG_COLOR BLACK
 
+#define BRUSH_SIZE 5
+#define BRUSH_COLOR RED
+
 int main(void) {
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Paint");
