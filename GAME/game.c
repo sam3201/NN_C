@@ -7930,19 +7930,23 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
   ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
 
+// Manual click tracking to bypass input issues
+static int g_last_mouse_down = 0;
+static int g_manual_click = 0;
+
 static int ui_button_gl(Rectangle r, const char *text, int font_size) {
   Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
-  int pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
-  int released = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
   int down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-  int clicked = hot && pressed;
   
-  // Debug only when mouse is near button or clicked
-  if (hot || clicked) {
-    printf("Button '%s': mouse(%.1f,%.1f), rect(%.1f,%.1f,%.1f,%.1f), hot=%d, pressed=%d, released=%d, down=%d, clicked=%d\n", 
-           text, m.x, m.y, r.x, r.y, r.width, r.height, hot, pressed, released, down, clicked);
+  // Manual click detection: track when mouse goes from up to down
+  g_manual_click = 0;
+  if (down && !g_last_mouse_down) {
+    g_manual_click = 1;
   }
+  g_last_mouse_down = down;
+  
+  int clicked = hot && g_manual_click;
   
   Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
   ui_draw_rect(r.x, r.y, r.width, r.height, bg);
@@ -8497,12 +8501,16 @@ static void draw_title_screen_3d(void) {
   if (w <= 0 || h <= 0)
     return;
 
-  // Test: Make buttons cover entire screen to test click detection
-  Rectangle b1 = (Rectangle){0, 0, w, h/3}; // Top third
-  Rectangle b2 = (Rectangle){0, h/3, w, h/3}; // Middle third  
-  Rectangle b3 = (Rectangle){0, 2*h/3, w, h/3}; // Bottom third
+  // Use screen-relative positioning
+  float button_width = 260.0f;
+  float button_height = 50.0f;
+  float button_x = w * 0.1f; // 10% from left
+  float button_spacing = 60.0f;
+  float start_y = h * 0.3f; // Start at 30% from top
 
-  printf("Screen: %dx%d, Test buttons covering screen\n", w, h);
+  Rectangle b1 = (Rectangle){button_x, start_y, button_width, button_height};
+  Rectangle b2 = (Rectangle){button_x, start_y + button_spacing, button_width, button_height};
+  Rectangle b3 = (Rectangle){button_x, start_y + button_spacing * 2, button_width, button_height};
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
@@ -8511,15 +8519,6 @@ static void draw_title_screen_3d(void) {
   ui_draw_text_size(40, 40, "SAMCRAFT", 52, RAYWHITE);
   ui_draw_text_size(44, 100, "F5 = Save while playing", 18,
                     (Color){200, 200, 200, 180});
-
-  // Draw button areas for visualization
-  ui_draw_rect(0, 0, (float)w, h/3.0f, (Color){70, 70, 90, 100});
-  ui_draw_rect(0, h/3.0f, (float)w, h/3.0f, (Color){70, 90, 70, 100});
-  ui_draw_rect(0, 2*h/3.0f, (float)w, h/3.0f, (Color){90, 70, 70, 100});
-
-  ui_draw_text_size(w/2 - 100, h/6 - 10, "PLAY", 24, RAYWHITE);
-  ui_draw_text_size(w/2 - 100, h/2 - 10, "CREATE", 24, RAYWHITE);
-  ui_draw_text_size(w/2 - 100, 5*h/6 - 10, "QUIT", 24, RAYWHITE);
 
   if (ui_button_gl(b1, "Play (Load/Select)", 20))
     g_state = STATE_WORLD_SELECT;
@@ -9761,7 +9760,14 @@ int main(int argc, char *argv[]) {
     double update_ms = prof_now_ms() - update_start_ms;
 
     if (g_use_3d) {
-      if (g_state == STATE_PLAYING && !g_mouse_locked) {
+      // Use manual click detection for mouse locking
+      static int last_mouse_down = 0;
+      int current_mouse_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+      int mouse_clicked = current_mouse_down && !last_mouse_down;
+      last_mouse_down = current_mouse_down;
+      
+      // Only lock mouse when playing AND user clicks (not immediately on entry)
+      if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
         SetRelativeMouseMode(1);
         SetMouseVisible(0);
         int mw = GetScreenWidth();
@@ -9770,10 +9776,26 @@ int main(int argc, char *argv[]) {
           SetMousePosition(mw / 2, mh / 2);
         }
         g_mouse_locked = 1;
+        printf("Mouse locked for gameplay - click detected\n");
       } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
         SetRelativeMouseMode(0);
         SetMouseVisible(1);
         g_mouse_locked = 0;
+        printf("Mouse unlocked for UI\n");
+      }
+      
+      // Allow manual unlock with TAB key
+      if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
+        SetRelativeMouseMode(0);
+        SetMouseVisible(1);
+        g_mouse_locked = 0;
+        printf("Mouse manually unlocked with TAB\n");
+      }
+      
+      // Force relative mouse mode every frame when locked
+      if (g_state == STATE_PLAYING && g_mouse_locked) {
+        SetRelativeMouseMode(1);
+        SetMouseVisible(0);
       }
       
       // Ensure mouse is always visible and not in relative mode for UI screens
