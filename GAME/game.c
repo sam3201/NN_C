@@ -7742,6 +7742,11 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
       x, y, 0.0f, 0.0f, x + w, y,     1.0f, 0.0f, x + w, y + h, 1.0f, 1.0f,
       x, y, 0.0f, 0.0f, x + w, y + h, 1.0f, 1.0f, x,     y + h, 0.0f, 1.0f,
   };
+
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   glUseProgram(g_ui_shader);
   glUniform2f(g_ui_u_screen, (float)sw, (float)sh);
   glUniform4f(g_ui_u_color, color.r / 255.0f, color.g / 255.0f,
@@ -7754,6 +7759,8 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
+
+  glEnable(GL_DEPTH_TEST);
 }
 
 static void ui_draw_rect(float x, float y, float w, float h, Color color) {
@@ -7943,8 +7950,6 @@ static void draw_crosshair_3d(void) {
   Color c = (Color){255, 255, 255, 255}; // Pure white
   Color outline = (Color){0, 0, 0, 255}; // Black outline
 
-  glDisable(GL_DEPTH_TEST);
-
   // Draw outer outline for maximum visibility
   ui_draw_rect(cx - size - 2, cy - thick * 0.5f - 2, size * 2.0f + 4, thick + 4,
                outline);
@@ -7965,8 +7970,6 @@ static void draw_crosshair_3d(void) {
 
   // Draw center dot
   ui_draw_rect(cx - 3, cy - 3, 6, 6, c);
-
-  glEnable(GL_DEPTH_TEST);
 }
 
 static KeyboardKey poll_any_key_pressed(void) {
@@ -8169,7 +8172,7 @@ static void draw_minimap_3d(void) {
 
   // draw tribe bases
   for (int t = 0; t < TRIBE_COUNT; t++) {
-    Vector2 base_pos = (Vector2){tribes[t].base_x, tribes[t].base_y};
+    Vector2 base_pos = tribes[t].base.position;
     Vector2 base_d =
         Vector2Subtract(base_pos, (Vector2){(WORLD_SIZE * CHUNK_SIZE) / 2,
                                             (WORLD_SIZE * CHUNK_SIZE) / 2});
@@ -8179,22 +8182,6 @@ static void draw_minimap_3d(void) {
   }
 
   ui_draw_rect(x + size / 2 - 2.0f, y + size / 2 - 2.0f, 4.0f, 4.0f, RAYWHITE);
-
-  if (g_ui_cache_last_zoomed != g_minimap_zoomed ||
-      now - g_ui_cache_last_update > 0.25) {
-    ui_text_cache_update(&g_ui_cache_minimap_title,
-                         g_minimap_zoomed ? "Minimap (M) - Zoomed"
-                                          : "Minimap (M)",
-                         (Color){210, 210, 210, 220});
-    ui_text_cache_update(&g_ui_cache_minimap_mobs,
-                         TextFormat("Mobs nearby: %d", mob_count),
-                         (Color){210, 190, 190, 210});
-    g_ui_cache_last_zoomed = g_minimap_zoomed;
-  }
-  ui_draw_text_cached((float)x, (float)(y + size + 6),
-                      &g_ui_cache_minimap_title);
-  ui_draw_text_cached((float)(x + size + 10), (float)(y + size + 26),
-                      &g_ui_cache_minimap_mobs);
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -8356,11 +8343,8 @@ static void draw_hover_label_3d(void) {
     float label_y = mouse.y - 40.0f;
 
     // Draw background with better visibility
-    ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 200});
-    ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 220});
-    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
-    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
-    ui_draw_rect(label_x - 8, label_y - 8, 1.0f, 28.0f, (Color){0, 0, 0, 220});
+    ui_draw_rect(label_x - 8, label_y - 8, 180, 28, (Color){0, 0, 0, 180});
+    ui_draw_rect(label_x - 6, label_y - 6, 176, 24, (Color){0, 0, 0, 120});
 
     // Draw text
     ui_draw_text_size(label_x, label_y + 5, line, 18, RAYWHITE);
@@ -8373,26 +8357,14 @@ static void draw_hover_label_3d(void) {
       float bar_y = label_y + 25.0f;
 
       // Health bar background
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height,
-                   (Color){0, 0, 0, 200});
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width, bar_height,
-                   (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
-                   (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
-                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 4, bar_width, bar_height,
+                   (Color){0, 0, 0, 180});
 
       // Health bar fill (green to red gradient)
       Color health_color =
           hp > 50 ? (Color){80, 220, 80, 255} : (Color){220, 80, 80, 255};
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height,
-                   (Color){0, 0, 0, 200});
-      ui_draw_rect(label_x - 8, bar_y - 8, bar_width * hp_percent, bar_height,
-                   (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
-                   (Color){0, 0, 0, 220});
-      ui_draw_rect(label_x - 8, bar_y - 8, 1.0f, bar_height,
-                   (Color){0, 0, 0, 220});
+      ui_draw_rect(label_x - 8, bar_y - 4, bar_width * hp_percent, bar_height,
+                   health_color);
     }
   }
 }
