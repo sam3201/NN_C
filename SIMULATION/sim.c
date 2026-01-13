@@ -709,9 +709,8 @@ void update_agents(SimulationState *state, float dt) {
 
     if (state->replay) {
       pthread_mutex_lock(&sim_rb_mtx);
-      size_t idx =
-          rb_push_full(state->replay, obs_f, pi, reward, action, reward,
-                       next_obs_f, done_flag);
+      size_t idx = rb_push_full(state->replay, obs_f, pi, reward, action,
+                                reward, next_obs_f, done_flag);
       rb_set_value_prefix(state->replay, idx, reward);
       pthread_mutex_unlock(&sim_rb_mtx);
     }
@@ -826,9 +825,8 @@ void init_game(SimulationState *state) {
   init_muze_config(&state->muze_cfg, (int)get_total_input_size());
   state->muze_model =
       mu_model_create_nn_with_cfg(&state->muze_cfg.model, &state->muze_cfg.nn);
-  state->replay =
-      rb_create(200000, state->muze_cfg.model.obs_dim,
-                state->muze_cfg.model.action_count);
+  state->replay = rb_create(200000, state->muze_cfg.model.obs_dim,
+                            state->muze_cfg.model.action_count);
 
   memset(&sim_loop, 0, sizeof(sim_loop));
   sim_loop.model = state->muze_model;
@@ -933,7 +931,8 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
       muze_set_verbose(0);
-    } else if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+    } else if (strcmp(argv[i], "--verbose") == 0 ||
+               strcmp(argv[i], "-v") == 0) {
       muze_set_verbose(1);
     }
   }
