@@ -27,7 +27,7 @@
 #define BRUSH_COLOR RED
 
 void draw_color_wheel() {
-  DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 100, RED);
+  DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 100, BLACK);
 }
 
 void DrawBrush(int x, int y, Color color) {
