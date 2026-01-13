@@ -234,6 +234,7 @@ typedef enum {
   ACTION_CRAFT_ARMOR,
   ACTION_CRAFT_BOW,
   ACTION_CRAFT_ARROWS,
+  ACTION_JUMP,
   ACTION_NONE,
   ACTION_COUNT
 } ActionType;
@@ -366,6 +367,10 @@ typedef struct Agent {
   // --- continuous actions (latches) ---
   int fire_latched;       // 0/1
   float fire_latch_timer; // seconds remaining to keep trying
+
+  // --- jumping ---
+  float jump_timer;
+  float jump_velocity;
 
   uint32_t rng_state;
 } Agent;
@@ -4703,6 +4708,10 @@ void init_agents(void) {
     a->fire_latched = 0;
     a->fire_latch_timer = 0.0f;
 
+    // Initialize jump fields
+    a->jump_timer = 0.0f;
+    a->jump_velocity = 0.0f;
+
     a->inv_food = 0;
     a->inv_arrows = 0;
     a->inv_shards = 0;
@@ -5091,6 +5100,8 @@ void update_agent(Agent *a) {
     a->fire_cd -= dt;
   if (a->flash_timer > 0.0f)
     a->flash_timer -= dt;
+  if (a->jump_timer > 0.0f)
+    a->jump_timer -= dt;
   if (a->fire_latch_timer > 0.0f) {
     a->fire_latch_timer -= dt;
     if (a->fire_latch_timer <= 0.0f) {
@@ -5215,6 +5226,16 @@ void update_agent(Agent *a) {
 
   case ACTION_EAT:
     agent_try_eat(a, &reward);
+    break;
+
+  case ACTION_JUMP:
+    // Agent jump - similar to player jump
+    if (a->jump_timer <= 0.0f && a->stamina >= 15.0f) {
+      a->jump_timer = 0.8f;
+      a->jump_velocity = 6.5f;
+      a->stamina -= 15.0f;
+      reward += 0.05f; // Small reward for jumping
+    }
     break;
 
   default:
@@ -7938,6 +7959,9 @@ static void draw_crosshair_2d(void) {
 }
 
 static void draw_crosshair_3d(void) {
+  // Test: Use Raylib drawing to bypass custom UI shader
+  DrawRectangle(200, 200, 50, 50, GREEN);
+
   int w = GetScreenWidth();
   int h = GetScreenHeight();
   if (w <= 0 || h <= 0)
@@ -8188,6 +8212,9 @@ static void draw_minimap_3d(void) {
 }
 
 static void draw_ui_3d_full(void) {
+  // Test: Use Raylib drawing to bypass custom UI shader
+  DrawRectangle(50, 50, 100, 50, RED);
+
   float panel_x = 14.0f;
   float panel_y = 12.0f;
   float panel_w = 280.0f;
