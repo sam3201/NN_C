@@ -30,7 +30,7 @@ int main(void) {
 
   while (!WindowShouldClose()) {
     BeginDrawing();
-    ClearBackground(RAYBLACK);
+    ClearBackground(BLACK);
     EndDrawing();
   }
 
