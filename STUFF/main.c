@@ -2,7 +2,13 @@
 #include <stdio.h>
 
 int main(void) {
-  printf("Hello, world!\n");
+  InitWinow(800, 450, "Neural Network");
+
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    EndDrawing();
+  }
 
   return 0;
 }
