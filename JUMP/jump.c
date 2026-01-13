@@ -90,9 +90,9 @@ static MuModel *g_model = NULL;
 static ReplayBuffer *g_rb = NULL;
 static pthread_mutex_t g_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_model_mtx = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t g_trainer_thread;
-static volatile int g_trainer_quit = 0;
 static MuzeConfig g_cfg;
+static MuzeLoopThread g_muze_loop;
+static uint32_t g_muze_loop_rng_state = 0;
 
 typedef enum { PLAT_RECT = 0, PLAT_RAMP = 1 } PlatKind;
 
@@ -206,44 +206,15 @@ typedef struct {
 static float g_dt = 1.0f / FPS;
 
 static void init_muze_config(void) {
-  memset(&g_cfg, 0, sizeof(g_cfg));
-  g_cfg.model.obs_dim = OBS_DIM;
-  g_cfg.model.latent_dim = 64;
-  g_cfg.model.action_count = ACTION_COUNT;
+  muze_config_init_defaults(&g_cfg, OBS_DIM, ACTION_COUNT);
 
-  g_cfg.nn.opt_repr = ADAM;
-  g_cfg.nn.opt_dyn = ADAM;
-  g_cfg.nn.opt_pred = ADAM;
-  g_cfg.nn.opt_vprefix = ADAM;
-  g_cfg.nn.opt_reward = ADAM;
-  g_cfg.nn.loss_repr = MSE;
-  g_cfg.nn.loss_dyn = MSE;
-  g_cfg.nn.loss_pred = MSE;
-  g_cfg.nn.loss_vprefix = MSE;
-  g_cfg.nn.loss_reward = MSE;
-  g_cfg.nn.lossd_repr = MSE_DERIVATIVE;
-  g_cfg.nn.lossd_dyn = MSE_DERIVATIVE;
-  g_cfg.nn.lossd_pred = MSE_DERIVATIVE;
-  g_cfg.nn.lossd_vprefix = MSE_DERIVATIVE;
-  g_cfg.nn.lossd_reward = MSE_DERIVATIVE;
-  g_cfg.nn.lr_repr = 0.001L;
-  g_cfg.nn.lr_dyn = 0.001L;
-  g_cfg.nn.lr_pred = 0.001L;
-  g_cfg.nn.lr_vprefix = 0.001L;
-  g_cfg.nn.lr_reward = 0.001L;
+  g_cfg.model.latent_dim = 64;
   g_cfg.nn.hidden_repr = 128;
   g_cfg.nn.hidden_dyn = 128;
   g_cfg.nn.hidden_pred = 128;
   g_cfg.nn.hidden_vprefix = 128;
   g_cfg.nn.hidden_reward = 128;
-  g_cfg.nn.use_value_support = 1;
-  g_cfg.nn.use_reward_support = 1;
-  g_cfg.nn.support_size = 21;
-  g_cfg.nn.support_min = -2.0f;
-  g_cfg.nn.support_max = 2.0f;
   g_cfg.nn.action_embed_dim = 64;
-  g_cfg.nn.grad_clip = 5.0f;
-  g_cfg.nn.global_grad_clip = 1.0f;
 
   g_cfg.mcts.num_simulations = 80;
   g_cfg.mcts.batch_simulations = 8;
@@ -258,32 +229,16 @@ static void init_muze_config(void) {
   g_cfg.trainer.train_steps = 50;
   g_cfg.trainer.min_replay_size = 2048;
   g_cfg.trainer.lr = 0.01f;
-}
 
-static void *trainer_thread_main(void *arg) {
-  (void)arg;
-  while (!g_trainer_quit) {
-    if (g_cfg.trainer.min_replay_size > 0 &&
-        (int)rb_size(g_rb) < g_cfg.trainer.min_replay_size) {
-      usleep(10000);
-      continue;
-    }
-    if (pthread_mutex_trylock(&g_rb_mtx) != 0) {
-      usleep(2000);
-      continue;
-    }
-    if (pthread_mutex_trylock(&g_model_mtx) != 0) {
-      pthread_mutex_unlock(&g_rb_mtx);
-      usleep(2000);
-      continue;
-    }
-    trainer_train_from_replay(g_model, g_rb, &g_cfg.trainer);
-    trainer_train_dynamics(g_model, g_rb, &g_cfg.trainer);
-    pthread_mutex_unlock(&g_model_mtx);
-    pthread_mutex_unlock(&g_rb_mtx);
-    usleep(10000);
-  }
-  return NULL;
+  g_cfg.loop.iterations = 0;
+  g_cfg.loop.selfplay_episodes_per_iter = 0;
+  g_cfg.loop.selfplay_disable = 1;
+  g_cfg.loop.train_calls_per_iter = 1;
+  g_cfg.loop.use_reanalyze = 0;
+  g_cfg.loop.eval_interval = 0;
+  g_cfg.loop.checkpoint_interval = 0;
+  g_cfg.loop.selfplay_actor_count = 2;
+  g_cfg.loop.selfplay_use_threads = 1;
 }
 
 pthread_mutex_t job_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -317,6 +272,10 @@ static inline int irand(uint32_t *s, int n) {
 static float agent_rand01(void *ctx) {
   Agent *a = (Agent *)ctx;
   return frand01(&a->rng);
+}
+static float loop_rng01(void *ctx) {
+  uint32_t *s = (uint32_t *)ctx;
+  return frand01(s);
 }
 
 static inline float clampf(float x, float a, float b) {
@@ -868,6 +827,22 @@ static void init_agents(void) {
   g_model = mu_model_create_nn_with_cfg(&g_cfg.model, &g_cfg.nn);
   g_rb = rb_create(200000, OBS_DIM, ACTION_COUNT); // capacity tune as you want
 
+  memset(&g_muze_loop, 0, sizeof(g_muze_loop));
+  g_muze_loop.model = g_model;
+  g_muze_loop.rb = g_rb;
+  g_muze_loop.gr = NULL;
+  g_muze_loop.mcts = g_cfg.mcts;
+  g_muze_loop.selfplay = g_cfg.selfplay;
+  g_muze_loop.loop = g_cfg.loop;
+  g_muze_loop.env = muze_env_make_stub();
+  g_muze_loop.use_multi = 1;
+  g_muze_loop.model_mutex = &g_model_mtx;
+  g_muze_loop.rb_mutex = &g_rb_mtx;
+  g_muze_loop.gr_mutex = NULL;
+  g_muze_loop_rng_state = (uint32_t)time(NULL);
+  g_muze_loop.rng.ctx = &g_muze_loop_rng_state;
+  g_muze_loop.rng.rand01 = loop_rng01;
+
   int cols = 16;
   float spacing = 70.0f;
 
@@ -1243,7 +1218,16 @@ static int find_best_agent_index(void) {
 // =======================
 // MAIN
 // =======================
-int main(void) {
+int main(int argc, char *argv[]) {
+  // Parse command line arguments for verbose control
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
+      muze_set_verbose(0);
+    } else if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+      muze_set_verbose(1);
+    }
+  }
+
   srand((unsigned int)time(NULL));
 
   InitWindow(1280, 800, "Jump King (MUZE)");
@@ -1267,7 +1251,7 @@ int main(void) {
   build_platforms();
   init_agents();
   start_workers();
-  pthread_create(&g_trainer_thread, NULL, trainer_thread_main, NULL);
+  muze_loop_thread_start(&g_muze_loop);
 
   Camera2D cam = {0};
   cam.offset = (Vector2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f};
@@ -1342,8 +1326,7 @@ int main(void) {
   }
 
   stop_workers();
-  g_trainer_quit = 1;
-  pthread_join(g_trainer_thread, NULL);
+  muze_loop_thread_stop(&g_muze_loop);
 
   for (int i = 0; i < MAX_AGENTS; i++) {
     obs_free(&agents[i].last_obs);

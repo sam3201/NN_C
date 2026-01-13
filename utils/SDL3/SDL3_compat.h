@@ -87,7 +87,10 @@ typedef enum {
   KEY_RIGHT,
   KEY_MINUS,
   KEY_EQUAL,
-  KEY_F5
+  KEY_F5,
+  KEY_F6,
+  KEY_F7,
+  KEY_LEFT_SHIFT
 } KeyboardKey;
 
 typedef enum {

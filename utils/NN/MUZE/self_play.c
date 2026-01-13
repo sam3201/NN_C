@@ -1,4 +1,5 @@
 #include "self_play.h"
+#include "muze_verbose.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -209,7 +210,7 @@ void selfplay_run(MuModel *model, void *env_state,
     avg_count++;
 
     if ((ep % log_every) == 0) {
-      printf("[selfplay] ep=%d steps=%d return=%.3f avg_return=%.3f rootV=%.3f "
+      MUZE_PRINT_SELFPLAY("ep=%d steps=%d return=%.3f avg_return=%.3f rootV=%.3f "
              "avg_rootV=%.3f replay=%zu\n",
              ep, step, ep_return, (float)avg_return, mean_root_v,
              (float)avg_root_v, rb_size(rb));
@@ -416,7 +417,7 @@ void selfplay_run_threadsafe(MuModel *model, void *env_state,
       if (rb_mutex)
         pthread_mutex_unlock(rb_mutex);
 
-      printf("[selfplay] ep=%d steps=%d return=%.3f avg_return=%.3f rootV=%.3f "
+      MUZE_PRINT_SELFPLAY("ep=%d steps=%d return=%.3f avg_return=%.3f rootV=%.3f "
              "avg_rootV=%.3f replay=%zu\n",
              ep, step, ep_return, (float)avg_return, mean_root_v,
              (float)avg_root_v, replay_sz);

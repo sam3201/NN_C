@@ -98,6 +98,12 @@ static SDL_Scancode sdl_scancode_from_key(KeyboardKey key) {
     return SDL_SCANCODE_EQUALS;
   case KEY_F5:
     return SDL_SCANCODE_F5;
+  case KEY_F6:
+    return SDL_SCANCODE_F6;
+  case KEY_F7:
+    return SDL_SCANCODE_F7;
+  case KEY_LEFT_SHIFT:
+    return SDL_SCANCODE_LSHIFT;
   default:
     return SDL_SCANCODE_UNKNOWN;
   }

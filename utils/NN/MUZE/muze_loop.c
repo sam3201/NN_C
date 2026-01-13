@@ -1,4 +1,5 @@
 #include "muze_loop.h"
+#include "muze_verbose.h"
 #include <math.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -299,7 +300,7 @@ static void reanalyze_replay(MuModel *model, ReplayBuffer *rb,
 
   if (cnt > 0) {
     avg_v /= (double)cnt;
-    printf("[reanalyze] samples=%d avg_root_v=%.4f\n", cnt, (float)avg_v);
+    MUZE_PRINT_REANALYZE("samples=%d avg_root_v=%.4f\n", cnt, (float)avg_v);
   }
 
   free(pi_tmp);
@@ -428,7 +429,7 @@ static void reanalyze_games(MuModel *model, ReplayBuffer *rb, GameReplay *gr,
 
   if (count > 0) {
     avg_v /= (double)count;
-    printf("[reanalyze] games=%d avg_root_v=%.4f\n", gr->game_count,
+    MUZE_PRINT_REANALYZE("games=%d avg_root_v=%.4f\n", gr->game_count,
            (float)avg_v);
   }
 
@@ -529,7 +530,7 @@ static float eval_run(MuModel *model, void *env_state,
   free(obs);
   float mean_return = (episodes > 0) ? (float)(sum_return / episodes) : 0.0f;
   float mean_steps = (episodes > 0) ? (float)(sum_steps / episodes) : 0.0f;
-  printf("[eval] episodes=%d mean_return=%.3f min/max=%.3f/%.3f "
+  MUZE_PRINT_EVAL("episodes=%d mean_return=%.3f min/max=%.3f/%.3f "
          "mean_steps=%.2f min/max=%d/%d\n",
          episodes, mean_return, min_return, max_return, mean_steps, min_steps,
          max_steps_seen);
@@ -600,7 +601,7 @@ void muze_run_loop(MuModel *model, void *env_state,
 
   for (int it = 0; it < iters; it++) {
     if (eps_per > 0) {
-      printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
+      MUZE_PRINT_LOOP("iter=%d/%d selfplay_episodes=%d ===\n", it + 1, iters,
              eps_per);
       int actors = loop_cfg->selfplay_actor_count > 0
                        ? loop_cfg->selfplay_actor_count
@@ -673,7 +674,7 @@ void muze_run_loop(MuModel *model, void *env_state,
     }
 
     // ---- training ----
-    printf("=== [loop] train_calls=%d ===\n", train_calls);
+    MUZE_PRINT_LOOP("train_calls=%d ===\n", train_calls);
     for (int k = 0; k < train_calls; k++) {
       if (tc.per_beta_anneal_steps > 0) {
         float t = (float)per_beta_step / (float)tc.per_beta_anneal_steps;
@@ -703,7 +704,7 @@ void muze_run_loop(MuModel *model, void *env_state,
       unlock_mtx(g_muze_model_mutex);
     }
 
-    printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
+    MUZE_PRINT_LOOP("iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
 
     float eval_score = 0.0f;
     if (loop_cfg->eval_interval > 0 &&
@@ -895,7 +896,7 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
 
   for (int it = 0; it < iters; it++) {
     if (eps_per > 0) {
-      printf("\n=== [loop] iter=%d/%d selfplay_episodes=%d ===\n", it + 1,
+      MUZE_PRINT_LOOP("iter=%d/%d selfplay_episodes=%d ===\n", it + 1,
              iters, eps_per);
       int base = eps_per / actors;
       int rem = eps_per % actors;
@@ -978,7 +979,7 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
       }
     }
 
-    printf("=== [loop] train_calls=%d ===\n", train_calls);
+    MUZE_PRINT_LOOP("train_calls=%d ===\n", train_calls);
     for (int k = 0; k < train_calls; k++) {
       if (tc.per_beta_anneal_steps > 0) {
         float t = (float)per_beta_step / (float)tc.per_beta_anneal_steps;
@@ -996,7 +997,7 @@ void muze_run_loop_multi(MuModel *model, void *env_state,
         trainer_train_dynamics(model, rb, &tc);
     }
 
-    printf("=== [loop] iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
+    MUZE_PRINT_LOOP("iter=%d done replay=%zu ===\n", it + 1, rb_size(rb));
 
     float eval_score = 0.0f;
     if (loop_cfg->eval_interval > 0 &&

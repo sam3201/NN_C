@@ -1,4 +1,5 @@
 #include "trainer.h"
+#include "muze_verbose.h"
 #include "game_replay.h"
 #include "muzero_model.h"
 #include "replay_buffer.h"
@@ -518,12 +519,12 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
 
       if (t == 0 || (t % 50) == 0) {
         if (use_per) {
-          printf("[train unroll] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
+          MUZE_PRINT_TRAIN("unroll] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
                  "rew=%.6f lat=%.6f w[min/mean/max]=%.3f/%.3f/%.3f replay=%zu\n",
                  t + 1, steps, actual, K, policy_loss, value_loss, reward_loss,
                  latent_loss, w_min, w_sum / (float)actual, w_max, n);
         } else {
-          printf("[train unroll] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
+          MUZE_PRINT_TRAIN("unroll] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
                  "rew=%.6f lat=%.6f replay=%zu\n",
                  t + 1, steps, actual, K, policy_loss, value_loss, reward_loss,
                  latent_loss, n);
@@ -641,12 +642,12 @@ void trainer_train_from_replay(MuModel *model, ReplayBuffer *rb,
         v_mse /= (double)cnt;
 
       if (use_per) {
-        printf("[train pv] step=%d/%d batch=%d v_mse=%.6f "
+        MUZE_PRINT_TRAIN("pv] step=%d/%d batch=%d v_mse=%.6f "
                "w[min/mean/max]=%.3f/%.3f/%.3f replay=%zu\n",
                t + 1, steps, actual, (float)v_mse, w_min,
                w_sum / (float)actual, w_max, n);
       } else {
-        printf("[train pv] step=%d/%d batch=%d v_mse=%.6f replay=%zu\n", t + 1,
+        MUZE_PRINT_TRAIN("pv] step=%d/%d batch=%d v_mse=%.6f replay=%zu\n", t + 1,
                steps, actual, (float)v_mse, n);
       }
     }
@@ -825,7 +826,7 @@ void trainer_train_from_replay_games(MuModel *model, ReplayBuffer *rb,
     }
 
     if (t == 0 || (t % 50) == 0) {
-      printf("[train unroll/games] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
+      MUZE_PRINT_TRAIN("unroll/games] step=%d/%d batch=%d K=%d pol=%.6f val=%.6f "
              "rew=%.6f lat=%.6f replay=%zu\n",
              t + 1, steps, actual, K, policy_loss, value_loss, reward_loss,
              latent_loss, n);

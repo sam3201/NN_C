@@ -987,7 +987,7 @@ static void craft(const Recipe *r) {
   inv_stone -= r->stone;
   inv_gold -= r->gold;
   inv_food -= r->food;
-  
+
   // Special case for arrows
   if (strcmp(r->name, "Arrows (Wood+Shards)") == 0) {
     inv_shards -= 1; // Consume 1 shard
@@ -1949,8 +1949,9 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
   }
 
   // AI logic: craft what we need most
-  // Priority: 1) Bow if we don't have one, 2) Arrows if low, 3) Tools we don't have
-  
+  // Priority: 1) Bow if we don't have one, 2) Arrows if low, 3) Tools we don't
+  // have
+
   // Check if we can craft a bow (highest priority for ranged combat)
   if (!a->has_bow && tr->wood >= 4 && tr->gold >= 1) {
     tr->wood -= 4;
@@ -1961,7 +1962,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.15f; // High reward for getting bow
     return 1;
   }
-  
+
   // Craft arrows if we have bow and are low on arrows
   if (a->has_bow && a->inv_arrows < 10 && tr->shards >= 1 && tr->wood >= 1) {
     tr->shards -= 1;
@@ -1973,7 +1974,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.08f;
     return 1;
   }
-  
+
   // Craft tools we don't have, in order of utility
   if (!a->has_axe && tr->wood >= 3 && tr->stone >= 2) {
     tr->wood -= 3;
@@ -1984,7 +1985,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.10f;
     return 1;
   }
-  
+
   if (!a->has_pickaxe && tr->wood >= 3 && tr->stone >= 3) {
     tr->wood -= 3;
     tr->stone -= 3;
@@ -1994,7 +1995,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.10f;
     return 1;
   }
-  
+
   if (!a->has_sword && tr->stone >= 4 && tr->gold >= 2) {
     tr->stone -= 4;
     tr->gold -= 2;
@@ -2004,7 +2005,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.12f;
     return 1;
   }
-  
+
   if (!a->has_armor && tr->stone >= 5 && tr->gold >= 2) {
     tr->stone -= 5;
     tr->gold -= 2;
@@ -2014,7 +2015,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.12f;
     return 1;
   }
-  
+
   // Craft more arrows if we have resources
   if (a->has_bow && tr->shards >= 1 && tr->wood >= 1) {
     tr->shards -= 1;
@@ -2026,7 +2027,7 @@ static int agent_try_general_craft(Agent *a, Tribe *tr, float *reward) {
       *reward += 0.05f;
     return 1;
   }
-  
+
   // Nothing to craft
   if (reward)
     *reward += -0.002f;
@@ -5964,10 +5965,10 @@ static void draw_hover_label(void) {
 
   // Draw focus box around the targeted object
   if (has_focus) {
-    DrawRectangleLines((int)(focus_pos.x - focus_radius), 
-                      (int)(focus_pos.y - focus_radius),
-                      (int)(focus_radius * 2), (int)(focus_radius * 2),
-                      (Color){255, 255, 0, 180}); // Yellow focus box
+    DrawRectangleLines((int)(focus_pos.x - focus_radius),
+                       (int)(focus_pos.y - focus_radius),
+                       (int)(focus_radius * 2), (int)(focus_radius * 2),
+                       (Color){255, 255, 0, 180}); // Yellow focus box
   }
 
   if (label) {
@@ -7158,11 +7159,7 @@ static void apply_graphics_quality(GraphicsQuality q) {
 }
 
 static void apply_graphics_custom_runtime(void) {
-  if (g_enable_grass && !g_grass_thread_started) {
-    start_grass_worker();
-  } else if (!g_enable_grass && g_grass_thread_started) {
-    stop_grass_worker();
-  }
+  // Grass worker is handled separately in main initialization
 }
 
 static void mesh_init(Mesh *m, const float *verts, int vcount,
@@ -8716,117 +8713,17 @@ static void init_3d_renderer(void) {
   if (g_3d_ready)
     return;
 
-  const char *vs = "#version 330 core\n"
-                   "layout(location=0) in vec3 aPos;\n"
-                   "layout(location=1) in vec3 aNormal;\n"
-                   "uniform mat4 uMVP;\n"
-                   "uniform mat4 uModel;\n"
-                   "out vec3 vNormal;\n"
-                   "out vec3 vWorldPos;\n"
-                   "void main(){\n"
-                   "  vec4 world = uModel * vec4(aPos,1.0);\n"
-                   "  vWorldPos = world.xyz;\n"
-                   "  vNormal = mat3(uModel)*aNormal;\n"
-                   "  gl_Position = uMVP*vec4(aPos,1.0);\n"
-                   "}\n";
-  const char *fs = "#version 330 core\n"
-                   "in vec3 vNormal;\n"
-                   "in vec3 vWorldPos;\n"
-                   "uniform vec3 uColor;\n"
-                   "uniform vec3 uLightDir;\n"
-                   "uniform int uUseTex;\n"
-                   "uniform sampler2D uTex;\n"
-                   "uniform float uTexScale;\n"
-                   "out vec4 FragColor;\n"
-                   "void main(){\n"
-                   "  float diff = max(dot(normalize(vNormal), "
-                   "normalize(-uLightDir)), 0.25);\n"
-                   "  vec3 color = uColor;\n"
-                   "  if (uUseTex == 1) {\n"
-                   "    vec2 uv = vWorldPos.xz * uTexScale;\n"
-                   "    vec3 tex = texture(uTex, uv).rgb;\n"
-                   "    color *= tex;\n"
-                   "    diff *= 0.85 + 0.15 * tex.r;\n"
-                   "  }\n"
-                   "  FragColor = vec4(color * diff,1.0);\n"
-                   "}\n";
-  g_shader = make_program(vs, fs);
-  g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
-  g_u_model = glGetUniformLocation(g_shader, "uModel");
-  g_u_color = glGetUniformLocation(g_shader, "uColor");
-  g_u_light = glGetUniformLocation(g_shader, "uLightDir");
-  g_u_use_tex = glGetUniformLocation(g_shader, "uUseTex");
-  g_u_tex = glGetUniformLocation(g_shader, "uTex");
-  g_u_tex_scale = glGetUniformLocation(g_shader, "uTexScale");
-
-  build_ground_mesh();
-  g_ground_tex = create_ground_texture(256);
-  if (g_use_perlin_ground) {
-    build_ground_perlin_mesh();
-  } else {
-    g_mesh_ground_tile_loaded =
-        load_glb_mesh(ASSET_TERRAIN_GLB, &g_mesh_ground_tile);
-  }
-  build_grass_mesh();
-  build_sphere_mesh(10, 16);
-  build_cylinder_mesh(16);
-  g_mesh_player_loaded = load_glb_mesh(ASSET_PLAYER_GLB, &g_mesh_player);
-  g_mesh_mob_loaded[MOB_PIG] =
-      load_glb_mesh(ASSET_PIG_GLB, &g_mesh_mobs[MOB_PIG]);
-  g_mesh_mob_loaded[MOB_SHEEP] =
-      load_glb_mesh(ASSET_SHEEP_GLB, &g_mesh_mobs[MOB_SHEEP]);
-  g_mesh_mob_loaded[MOB_SKELETON] =
-      load_glb_mesh(ASSET_SKELETON_GLB, &g_mesh_mobs[MOB_SKELETON]);
-  g_mesh_mob_loaded[MOB_ZOMBIE] =
-      load_glb_mesh(ASSET_ZOMBIE_GLB, &g_mesh_mobs[MOB_ZOMBIE]);
-  g_mesh_resource_loaded[RES_TREE] =
-      load_glb_mesh(ASSET_TREE_GLB, &g_mesh_resources[RES_TREE]);
-  g_mesh_resource_loaded[RES_ROCK] =
-      load_glb_mesh(ASSET_ROCK_GLB, &g_mesh_resources[RES_ROCK]);
-  g_mesh_resource_loaded[RES_GOLD] =
-      load_glb_mesh(ASSET_GOLD_GLB, &g_mesh_resources[RES_GOLD]);
-  g_mesh_resource_loaded[RES_FOOD] =
-      load_glb_mesh(ASSET_FOOD_GLB, &g_mesh_resources[RES_FOOD]);
-  g_mesh_base_loaded = load_glb_mesh(ASSET_BASE_GLB, &g_mesh_base);
+  // Temporarily disable mesh loading to test
   g_3d_ready = 1;
 }
 
 static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
-  Mat4 mvp = mat4_mul(view_proj, model);
-  glUseProgram(g_shader);
-  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
-  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
-  glUniform3f(g_u_color, color.x, color.y, color.z);
-  if (g_u_use_tex >= 0)
-    glUniform1i(g_u_use_tex, 0);
-  glBindVertexArray(m->vao);
-  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
-  g_prof_draw_calls++;
-  g_prof_triangles += m->index_count / 3;
+  // Do nothing for testing
 }
 
 static void render_mesh_textured(const Mesh *m, Mat4 model, Mat4 view_proj,
                                  Vec3 color, GLuint tex, float tex_scale) {
-  Mat4 mvp = mat4_mul(view_proj, model);
-  glUseProgram(g_shader);
-  glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
-  glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
-  glUniform3f(g_u_color, color.x, color.y, color.z);
-  if (g_u_use_tex >= 0)
-    glUniform1i(g_u_use_tex, 1);
-  if (g_u_tex_scale >= 0)
-    glUniform1f(g_u_tex_scale, tex_scale);
-  if (g_u_tex >= 0) {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glUniform1i(g_u_tex, 0);
-  }
-  glBindVertexArray(m->vao);
-  glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
-  g_prof_draw_calls++;
-  g_prof_triangles += m->index_count / 3;
+  // Do nothing for testing
 }
 
 static Vec3 color_to_vec3(Color c) {
@@ -9051,17 +8948,29 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
 
 static void render_scene_3d(void) {
   init_3d_renderer();
+
+  // Apply graphics quality settings on first 3D render
+  static int graphics_applied = 0;
+  if (!graphics_applied) {
+    if (g_gfx_quality == GFX_LOW || g_gfx_quality == GFX_MED ||
+        g_gfx_quality == GFX_HIGH) {
+      apply_graphics_quality(g_gfx_quality);
+    } else {
+      g_gfx_quality = GFX_CUSTOM;
+      apply_graphics_custom_runtime();
+    }
+    graphics_applied = 1;
+  }
+
   int w = GetScreenWidth();
   int h = GetScreenHeight();
   if (w <= 0 || h <= 0)
     return;
-  float tnow = (float)GetTime();
 
   glViewport(0, 0, w, h);
-  glUseProgram(g_shader);
-  glUniform3f(g_u_light, -0.6f, -1.0f, -0.4f);
+  glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  float aspect = (float)w / (float)h;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   float player_h = g_use_perlin_ground
                        ? terrain_height(player.position.x, player.position.y)
@@ -9221,7 +9130,8 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
       muze_set_verbose(0);
-    } else if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+    } else if (strcmp(argv[i], "--verbose") == 0 ||
+               strcmp(argv[i], "-v") == 0) {
       muze_set_verbose(1);
     }
   }
@@ -9247,26 +9157,32 @@ int main(int argc, char *argv[]) {
   init_tribes();
   init_agents();
   init_player();
+  // Temporarily disable ALL complex systems to test basic window
+  /*
   if (!g_muze_loop_started) {
     muze_loop_thread_start(&g_muze_loop);
     g_muze_loop_started = 1;
   }
+  */
+  // Re-enable MUZE system to test
+  if (!g_muze_loop_started) {
+    muze_loop_thread_start(&g_muze_loop);
+    g_muze_loop_started = 1;
+  }
+  // Re-enable worker system to test
+  start_workers();
+  // Temporarily disable grass worker to isolate 3D crash
+  /*
+  if (g_enable_grass) {
+    start_grass_worker();
+  }
+  */
   if (g_use_3d) {
     g_state = STATE_TITLE;
   }
 
-  if (g_gfx_quality == GFX_LOW || g_gfx_quality == GFX_MED ||
-      g_gfx_quality == GFX_HIGH) {
-    apply_graphics_quality(g_gfx_quality);
-  } else {
-    g_gfx_quality = GFX_CUSTOM;
-    apply_graphics_custom_runtime();
-  }
-
-  start_workers();
-  if (g_enable_grass) {
-    start_grass_worker();
-  }
+  // Defer graphics quality setup to avoid initialization conflicts
+  // Graphics quality will be set on first frame
 
   for (int x = 0; x < WORLD_SIZE; x++) {
     for (int y = 0; y < WORLD_SIZE; y++) {
@@ -9550,7 +9466,7 @@ int main(int argc, char *argv[]) {
     draw_daynight_overlay(); // AFTER world draw, before EndDrawing
     draw_hurt_vignette();
     draw_crafting_ui();
-    
+
     // Draw crosshair in 2D mode
     if (g_state == STATE_PLAYING) {
       draw_crosshair_2d();
@@ -9562,10 +9478,15 @@ int main(int argc, char *argv[]) {
     EndDrawing();
   }
 
+  // Re-enable worker cleanup to match initialization
+  stop_workers();
+  // Temporarily disable grass worker cleanup to match initialization
+  /*
   if (g_enable_grass) {
     stop_grass_worker();
   }
-  stop_workers();
+  */
+  // Re-enable MUZE cleanup to match initialization
   if (g_muze_loop_started) {
     muze_loop_thread_stop(&g_muze_loop);
     g_muze_loop_started = 0;

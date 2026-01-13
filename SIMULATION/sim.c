@@ -98,11 +98,14 @@ typedef struct {
   int next_agent_id;
   unsigned int num_active_agents;
   MuzeConfig muze_cfg;
+  MuModel *muze_model;
+  ReplayBuffer *replay;
 } SimulationState;
 
-static pthread_t sim_trainer_thread;
 static pthread_mutex_t sim_model_mtx = PTHREAD_MUTEX_INITIALIZER;
-static volatile int sim_trainer_quit = 0;
+static pthread_mutex_t sim_rb_mtx = PTHREAD_MUTEX_INITIALIZER;
+static MuzeLoopThread sim_loop;
+static uint32_t sim_loop_rng_state = 0;
 
 static float sim_rng01(void *ctx) {
   SimRng *r = (SimRng *)ctx;
@@ -114,48 +117,28 @@ static float sim_rng01(void *ctx) {
   return (float)(x & 0xFFFFFFu) / (float)0x1000000u;
 }
 
+static float loop_rng01(void *ctx) {
+  uint32_t *s = (uint32_t *)ctx;
+  uint32_t x = *s ? *s : 0x12345678u;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *s = x;
+  return (float)(x & 0xFFFFFFu) / (float)0x1000000u;
+}
+
 static void init_muze_config(MuzeConfig *cfg, int obs_dim) {
   if (!cfg)
     return;
-  memset(cfg, 0, sizeof(*cfg));
+  muze_config_init_defaults(cfg, obs_dim, ACTION_COUNT);
 
-  cfg->model.obs_dim = obs_dim;
   cfg->model.latent_dim = 32;
-  cfg->model.action_count = ACTION_COUNT;
-
-  cfg->nn.opt_repr = ADAM;
-  cfg->nn.opt_dyn = ADAM;
-  cfg->nn.opt_pred = ADAM;
-  cfg->nn.opt_vprefix = ADAM;
-  cfg->nn.opt_reward = ADAM;
-  cfg->nn.loss_repr = MSE;
-  cfg->nn.loss_dyn = MSE;
-  cfg->nn.loss_pred = MSE;
-  cfg->nn.loss_vprefix = MSE;
-  cfg->nn.loss_reward = MSE;
-  cfg->nn.lossd_repr = MSE_DERIVATIVE;
-  cfg->nn.lossd_dyn = MSE_DERIVATIVE;
-  cfg->nn.lossd_pred = MSE_DERIVATIVE;
-  cfg->nn.lossd_vprefix = MSE_DERIVATIVE;
-  cfg->nn.lossd_reward = MSE_DERIVATIVE;
-  cfg->nn.lr_repr = 0.001L;
-  cfg->nn.lr_dyn = 0.001L;
-  cfg->nn.lr_pred = 0.001L;
-  cfg->nn.lr_vprefix = 0.001L;
-  cfg->nn.lr_reward = 0.001L;
   cfg->nn.hidden_repr = 64;
   cfg->nn.hidden_dyn = 64;
   cfg->nn.hidden_pred = 64;
   cfg->nn.hidden_vprefix = 64;
   cfg->nn.hidden_reward = 64;
-  cfg->nn.use_value_support = 1;
-  cfg->nn.use_reward_support = 1;
-  cfg->nn.support_size = 21;
-  cfg->nn.support_min = -2.0f;
-  cfg->nn.support_max = 2.0f;
   cfg->nn.action_embed_dim = 32;
-  cfg->nn.grad_clip = 5.0f;
-  cfg->nn.global_grad_clip = 1.0f;
 
   cfg->mcts.num_simulations = 25;
   cfg->mcts.batch_simulations = 0;
@@ -165,6 +148,20 @@ static void init_muze_config(MuzeConfig *cfg, int obs_dim) {
   cfg->mcts.dirichlet_eps = 0.25f;
   cfg->mcts.temperature = 1.0f;
   cfg->mcts.discount = 0.99f;
+
+  cfg->trainer.batch_size = 64;
+  cfg->trainer.train_steps = 50;
+  cfg->trainer.min_replay_size = 1024;
+
+  cfg->loop.iterations = 0;
+  cfg->loop.selfplay_episodes_per_iter = 0;
+  cfg->loop.selfplay_disable = 1;
+  cfg->loop.train_calls_per_iter = 1;
+  cfg->loop.use_reanalyze = 0;
+  cfg->loop.eval_interval = 0;
+  cfg->loop.checkpoint_interval = 0;
+  cfg->loop.selfplay_actor_count = 2;
+  cfg->loop.selfplay_use_threads = 1;
 }
 
 // --- MEMORY ---
@@ -195,7 +192,8 @@ void update_agent_color(Agent *agent) {
   agent->color = (Color){red, green, blue, 255};
 }
 
-void init_agent(Agent *agent, int id, const MuzeConfig *cfg) {
+void init_agent(Agent *agent, int id, const MuzeConfig *cfg,
+                MuModel *shared_model) {
   agent->level = 0;
   agent->total_xp = 0;
   agent->size = INITIAL_AGENT_SIZE;
@@ -214,13 +212,10 @@ void init_agent(Agent *agent, int id, const MuzeConfig *cfg) {
   agent->input_size = get_total_input_size();
   update_agent_color(agent);
 
-  MuConfig model_cfg = cfg->model;
-  model_cfg.obs_dim = (int)agent->input_size;
-  model_cfg.action_count = ACTION_COUNT;
-  agent->brain = mu_model_create_nn_with_cfg(&model_cfg, &cfg->nn);
+  agent->brain = shared_model;
   init_memory(&agent->memory, 100, (int)agent->input_size);
   agent->has_latent = false;
-  assert(model_cfg.latent_dim <= LATENT_MAX);
+  assert(cfg->model.latent_dim <= LATENT_MAX);
 
   agent->rng_state.s = (uint32_t)time(NULL) ^ (0x9e3779b9u * (uint32_t)id);
   agent->rng.ctx = &agent->rng_state;
@@ -540,7 +535,7 @@ float compute_reward(Agent *a, int old_xp, int old_level) {
 }
 
 int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts,
-                  int fallback_action) {
+                  int fallback_action, float *out_pi) {
   MuModel *brain = agent->brain;
 
   int obs_dim = brain->cfg.obs_dim;
@@ -549,6 +544,11 @@ int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts,
     obs[i] = (float)inputs[i];
 
   if (pthread_mutex_trylock(&sim_model_mtx) != 0) {
+    if (out_pi) {
+      float u = 1.0f / (float)ACTION_COUNT;
+      for (int i = 0; i < ACTION_COUNT; i++)
+        out_pi[i] = u;
+    }
     if (fallback_action >= 0 && fallback_action < ACTION_COUNT)
       return fallback_action;
     return rand() % ACTION_COUNT;
@@ -562,6 +562,10 @@ int decide_action(Agent *agent, long double *inputs, const MCTSParams *mcts,
   MCTSResult res = mcts_run(brain, obs, mp, &agent->rng);
   pthread_mutex_unlock(&sim_model_mtx);
   int action = res.chosen_action;
+  if (out_pi) {
+    for (int i = 0; i < ACTION_COUNT; i++)
+      out_pi[i] = res.pi[i];
+  }
   mcts_result_free(&res);
   if (action < 0)
     action = rand() % ACTION_COUNT;
@@ -666,12 +670,17 @@ void update_agents(SimulationState *state, float dt) {
     long double inputs[get_total_input_size()];
     gather_agent_inputs(state, agent, inputs);
 
+    float obs_f[agent->input_size];
+    for (int k = 0; k < (int)agent->input_size; k++)
+      obs_f[k] = (float)inputs[k];
+
     int old_xp = agent->total_xp;
     int old_level = agent->level;
 
     // Decide
+    float pi[ACTION_COUNT];
     int action = decide_action(agent, inputs, &state->muze_cfg.mcts,
-                               state->last_actions[i]);
+                               state->last_actions[i], pi);
     state->last_actions[i] = action;
 
     // Step environment
@@ -681,19 +690,31 @@ void update_agents(SimulationState *state, float dt) {
     // Compute reward
     float reward = compute_reward(agent, old_xp, old_level);
 
-    // TERMINAL CONDITION
-    if (agent->total_xp < 0) {
-      mu_model_end_episode(agent->brain, reward - 2.0f);
-      agent->has_latent = false;
-      mu_model_reset_episode(agent->brain);
-      continue; // skip latent update
-    }
+    int done_flag = (agent->total_xp < 0);
 
     // Update latent (non-terminal transition)
-    update_latent_after_step(agent, inputs, action, reward);
+    if (!done_flag)
+      update_latent_after_step(agent, inputs, action, reward);
+    else
+      agent->has_latent = false;
 
     // Optional logging memory (not required for MuZE)
     store_experience(agent, inputs, action, reward);
+
+    long double next_inputs[get_total_input_size()];
+    gather_agent_inputs(state, agent, next_inputs);
+    float next_obs_f[agent->input_size];
+    for (int k = 0; k < (int)agent->input_size; k++)
+      next_obs_f[k] = (float)next_inputs[k];
+
+    if (state->replay) {
+      pthread_mutex_lock(&sim_rb_mtx);
+      size_t idx =
+          rb_push_full(state->replay, obs_f, pi, reward, action, reward,
+                       next_obs_f, done_flag);
+      rb_set_value_prefix(state->replay, idx, reward);
+      pthread_mutex_unlock(&sim_rb_mtx);
+    }
 
     // Update color based on XP
     update_agent_color(agent);
@@ -803,10 +824,32 @@ void init_game(SimulationState *state) {
   state->next_agent_id = 0;
   state->num_active_agents = POPULATION_SIZE - MAX_GROUNDSKEEPERS;
   init_muze_config(&state->muze_cfg, (int)get_total_input_size());
+  state->muze_model =
+      mu_model_create_nn_with_cfg(&state->muze_cfg.model, &state->muze_cfg.nn);
+  state->replay =
+      rb_create(200000, state->muze_cfg.model.obs_dim,
+                state->muze_cfg.model.action_count);
+
+  memset(&sim_loop, 0, sizeof(sim_loop));
+  sim_loop.model = state->muze_model;
+  sim_loop.rb = state->replay;
+  sim_loop.gr = NULL;
+  sim_loop.mcts = state->muze_cfg.mcts;
+  sim_loop.selfplay = state->muze_cfg.selfplay;
+  sim_loop.loop = state->muze_cfg.loop;
+  sim_loop.env = muze_env_make_stub();
+  sim_loop.use_multi = 1;
+  sim_loop.model_mutex = &sim_model_mtx;
+  sim_loop.rb_mutex = &sim_rb_mtx;
+  sim_loop.gr_mutex = NULL;
+  sim_loop_rng_state = (uint32_t)time(NULL);
+  sim_loop.rng.ctx = &sim_loop_rng_state;
+  sim_loop.rng.rand01 = loop_rng01;
 
   // Initialize agents
   for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-    init_agent(&state->agents[i], state->next_agent_id++, &state->muze_cfg);
+    init_agent(&state->agents[i], state->next_agent_id++, &state->muze_cfg,
+               state->muze_model);
   }
 
   // Initialize groundkeepers
@@ -835,34 +878,18 @@ void init_game(SimulationState *state) {
   state->vision_inputs = malloc(sizeof(long double) * get_total_input_size());
 }
 
-static void *sim_trainer_main(void *arg) {
-  SimulationState *state = (SimulationState *)arg;
-  while (!sim_trainer_quit) {
-    if (pthread_mutex_trylock(&sim_model_mtx) != 0) {
-      usleep(2000);
-      continue;
-    }
-    for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-      mu_model_train(state->agents[i].brain);
-    }
-    pthread_mutex_unlock(&sim_model_mtx);
-    usleep(50000);
-  }
-  return NULL;
-}
-
 void free_game(SimulationState *game) {
   free(game->vision_inputs);
-  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++) {
-    mu_model_free(game->agents[i].brain);
+  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
     free(game->agents[i].memory.buffer);
-  }
+  rb_free(game->replay);
+  mu_model_free(game->muze_model);
 }
 
 void save_game(SimulationState *game, const char *filename) {
   FILE *file = fopen(filename, "wb");
-  for (int i = 0; i < POPULATION_SIZE - MAX_GROUNDSKEEPERS; i++)
-    NN_save(game->agents[i].brain, file);
+  if (game->muze_model)
+    NN_save(game->muze_model, file);
 
   for (int i = 0; i < MAX_FOOD; i++)
     fwrite(&game->food[i].position, sizeof(Vector2), 1, file);
@@ -901,14 +928,23 @@ void load_game(SimulationState *game, const char *filename) {
 }
 
 // --- MAIN ---
-int main(void) {
+int main(int argc, char *argv[]) {
+  // Parse command line arguments for verbose control
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
+      muze_set_verbose(0);
+    } else if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+      muze_set_verbose(1);
+    }
+  }
+
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Evolution Simulator");
   SetTargetFPS(FRAME_RATE);
   srand(time(NULL));
 
   SimulationState game = {0};
   init_game(&game);
-  pthread_create(&sim_trainer_thread, NULL, sim_trainer_main, &game);
+  muze_loop_thread_start(&sim_loop);
 
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_SPACE))
@@ -947,8 +983,7 @@ int main(void) {
     EndDrawing();
   }
 
-  sim_trainer_quit = 1;
-  pthread_join(sim_trainer_thread, NULL);
+  muze_loop_thread_stop(&sim_loop);
   free_game(&game);
   CloseWindow();
   return 0;
