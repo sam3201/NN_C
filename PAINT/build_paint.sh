@@ -73,7 +73,7 @@ FLAGS="${FLAGS:-} -w"
   -o paint 
 
 echo "Compilation successful! Running the paint..."
-lldb ./paint
+./paint
 status=$?
 
 echo "Game exited with status $status"
