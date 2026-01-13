@@ -1,8 +1,8 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/NN/TRANSFORMER.h"
 #include "../utils/SDL3/SDL3_compat.h"
+#include <../utils/SDL3/SDL.h>
 #include <OpenGL/gl3.h>
-#include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
 #include <errno.h>
