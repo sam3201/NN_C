@@ -1,7 +1,5 @@
 #include "../utils/NN/MUZE/all.h"
 #include "../utils/NN/TRANSFORMER.h"
-#include <OpenGL/gl3.h>
-#include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
