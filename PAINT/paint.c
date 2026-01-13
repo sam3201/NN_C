@@ -26,7 +26,9 @@
 #define BRUSH_SIZE 5
 #define BRUSH_COLOR RED
 
-void draw_color_palette() { DrawRectangle(0, 0, 100, 100, BRUSH_COLOR); }
+void draw_color_wheel() {
+  DrawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 100, RED);
+}
 
 void DrawBrush(int x, int y, Color color) {
   DrawCircleLines(x, y, 1, BG_COLOR);
