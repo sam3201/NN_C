@@ -81,3 +81,4 @@ echo "Game exited with status $status"
 rm -f ./game
 rm -rf game.dSYM
 exit "$status"
+"""
