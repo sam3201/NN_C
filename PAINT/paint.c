@@ -45,13 +45,13 @@ int main(void) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawBrush(x, y);
+      DrawBrush(x, y, BRUSH_COLOR);
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       int x = GetMouseX();
       int y = GetMouseY();
-      DrawBrush(x, y);
+      DrawBrush(x, y, PREVIOUS_COLOR);
     }
 
     BeginDrawing();
