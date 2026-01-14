@@ -27,6 +27,11 @@ SDL_INCLUDES="-I${SDL_SRC_DIR}/include -I${SDL_TTF_SRC_DIR}/include"
 SDL_LIBS="-L${SDL_BUILD_DIR} -lSDL3 -L${SDL_TTF_BUILD_DIR} -lSDL3_ttf"
 SDL_RPATH="-Wl,-rpath,${SDL_BUILD_DIR} -Wl,-rpath,${SDL_TTF_BUILD_DIR}"
 
+RAYLIB_DIR="../utils/Raylib"
+RAYLIB_LIB="${RAYLIB_DIR}/src/libraylib.a"
+RAYLIB_INCLUDES="-I${RAYLIB_DIR}/src"
+
+
 # -----------------------
 # Collect sources
 # -----------------------
