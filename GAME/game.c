@@ -10558,7 +10558,7 @@ int main(int argc, char *argv[]) {
       // Ensure mouse is always visible and not in relative mode for UI screens
       if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
           g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
-        SetMouseVisible(1);
+        SDL_ShowCursor(SDL_ENABLE);
         g_mouse_locked = 0;
       }
     }
