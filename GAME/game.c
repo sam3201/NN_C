@@ -10544,7 +10544,7 @@ int main(int argc, char *argv[]) {
         }
         g_mouse_locked = 1;
       } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
-        SDL_ShowCursor()(true);
+        SDL_ShowCursor();
         g_mouse_locked = 0;
       }
 
