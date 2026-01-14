@@ -10591,7 +10591,7 @@ int main(int argc, char *argv[]) {
         g_state = STATE_PAUSED;
         g_pause_page = 0;
         // Unlock mouse when paused
-        SetMouseVisible(1);
+        SDL_ShowCursor(SDL_ENABLE);
         g_mouse_locked = 0;
       } else if (g_state == STATE_PAUSED) {
         g_state = STATE_PLAYING;
