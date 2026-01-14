@@ -108,17 +108,17 @@ echo "Compilation successful!"
 # -----------------------
 # Run
 # -----------------------
-if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
-  lldb ./game
-else
-  ./game
-fi
+# if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
+  #lldb ./game
+#else
+ # ./game
+#fi
 
-status=$?
+#status=$?
 
-echo "Game exited with status $status"
+#echo "Game exited with status $status"
 
-rm -f ./game
-rm -rf ./game.dSYM
-exit "$status"
+#rm -f ./game
+#rm -rf ./game.dSYM
+#exit "$status"
 
