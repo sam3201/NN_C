@@ -4,6 +4,7 @@
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <OpenGL/gl3.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -6897,9 +6898,9 @@ typedef struct {
   GLuint vbo;
   GLuint ebo;
   int index_count;
-} Mesh;
+} GameMesh;
 
-static void mesh_destroy(Mesh *m) {
+static void mesh_destroy(GameMesh *m) {
   if (!m)
     return;
   if (m->ebo) {
@@ -6927,14 +6928,14 @@ static GLint g_u_use_tex = -1;
 static GLint g_u_tex = -1;
 static GLint g_u_tex_scale = -1;
 static GLuint g_ground_tex = 0;
-static Mesh g_mesh_ground = {0};
-static Mesh g_mesh_ground_tile = {0};
-static Mesh g_mesh_ground_perlin = {0};
-static Mesh g_mesh_grass = {0};
+static GameMesh g_mesh_ground = {0};
+static GameMesh g_mesh_ground_tile = {0};
+static GameMesh g_mesh_ground_perlin = {0};
+static GameMesh g_mesh_grass = {0};
 static int g_mesh_grass_loaded = 0;
-static Mesh g_mesh_cube = {0};
-static Mesh g_mesh_sphere = {0};
-static Mesh g_mesh_cylinder = {0};
+static GameMesh g_mesh_cube = {0};
+static GameMesh g_mesh_sphere = {0};
+static GameMesh g_mesh_cylinder = {0};
 static GLuint g_ui_shader = 0;
 static GLuint g_ui_vao = 0;
 static GLuint g_ui_vbo = 0;
@@ -6978,10 +6979,10 @@ static int g_minimap_tex_cells = 0;
 static int g_minimap_tex_zoomed = -1;
 static double g_minimap_tex_last = 0.0;
 static int g_minimap_zoomed = 0;
-static Mesh g_mesh_player = {0};
-static Mesh g_mesh_mobs[MOB_COUNT] = {0};
-static Mesh g_mesh_resources[RES_COUNT] = {0};
-static Mesh g_mesh_base = {0};
+static GameMesh g_mesh_player = {0};
+static GameMesh g_mesh_mobs[MOB_COUNT] = {0};
+static GameMesh g_mesh_resources[RES_COUNT] = {0};
+static GameMesh g_mesh_base = {0};
 static int g_mesh_player_loaded = 0;
 static int g_mesh_mob_loaded[MOB_COUNT] = {0};
 static int g_mesh_resource_loaded[RES_COUNT] = {0};
@@ -7380,7 +7381,7 @@ static void apply_graphics_custom_runtime(void) {
   // Grass worker is handled separately in main initialization
 }
 
-static void mesh_init(Mesh *m, const float *verts, int vcount,
+static void mesh_init(GameMesh *m, const float *verts, int vcount,
                       const unsigned int *indices, int icount) {
   glGenVertexArrays(1, &m->vao);
   glGenBuffers(1, &m->vbo);
@@ -7455,7 +7456,7 @@ static void compute_normals_from_indices(const float *positions, float *normals,
   }
 }
 
-static int load_glb_mesh(const char *path, Mesh *out) {
+static int load_glb_mesh(const char *path, GameMesh *out) {
   cgltf_options options = {0};
   cgltf_data *data = NULL;
   cgltf_result res = cgltf_parse_file(&options, path, &data);
@@ -9181,7 +9182,8 @@ static void init_3d_renderer(void) {
   g_3d_ready = 1;
 }
 
-static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
+static void render_mesh(const GameMesh *m, Mat4 model, Mat4 view_proj,
+                        Vec3 color) {
   Mat4 mvp = mat4_mul(view_proj, model);
   glUseProgram(g_shader);
   glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
@@ -9195,7 +9197,7 @@ static void render_mesh(const Mesh *m, Mat4 model, Mat4 view_proj, Vec3 color) {
   g_prof_draw_calls++;
 }
 
-static void render_mesh_textured(const Mesh *m, Mat4 model, Mat4 view_proj,
+static void render_mesh_textured(const GameMesh *m, Mat4 model, Mat4 view_proj,
                                  Vec3 color, GLuint tex, float tex_scale) {
   Mat4 mvp = mat4_mul(view_proj, model);
   glUseProgram(g_shader);
@@ -9820,14 +9822,17 @@ void start_ai_vs_ai_training(void) {
   g_ai_step_count = 0;
   g_ai_training_reward = 0.0f;
 
-  // Initialize RL agent with Dreamer and Soft Actor-Critic
+  // Create AI agent with default config
+  AgentConfig config = {.obs_size = 128,
+                        .action_size = 5, // Movement + harvest + attack
+                        .learning_rate = 0.001f,
+                        .batch_size = 32,
+                        .buffer_size = 10000};
+  g_ai_agent = rl_agent_create(&config);
   if (!g_ai_agent) {
-    g_ai_agent = rl_agent_create();
-    if (!g_ai_agent) {
-      printf("Failed to create RL agent!\n");
-      g_ai_training_active = 0;
-      return;
-    }
+    printf("Failed to create RL agent!\n");
+    g_ai_training_active = 0;
+    return;
     printf("Created RL agent with Dreamer world model and Soft Actor-Critic\n");
   }
 
@@ -9942,7 +9947,6 @@ void toggle_spectator_mode(void) {
     // Initialize spectator position to current player position
     g_spectator_pos.x = player.position.x;
     g_spectator_pos.y = player.position.y + 10.0f; // Start above player
-    g_spectator_pos.z = player.position.z;
 
     // Unlock mouse for free look
     SetMouseVisible(1);
