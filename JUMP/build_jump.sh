@@ -32,7 +32,7 @@ fi
 echo "Collecting sources..."
 
 # Core NN sources (explicit)
-NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
+NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c"
 
 # MUZE sources (deduped)
 MUZE_SRC="$(find ../utils/NN/MUZE -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
@@ -58,7 +58,7 @@ CC="${CC:-cc}"
 # NOTE: -w hides warnings; remove once stable.
 "$CC" -w \
   jump.c $NN_SRC $MUZE_SRC \
-  -I../utils/NN \
+  -I../utils/NN/NN \
   -I../utils/NN/MUZE \
   -I"$RAYLIB_SRC" \
   -L"$RAYLIB_SRC" -lraylib \

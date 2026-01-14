@@ -17,10 +17,10 @@ fi
 MUZE_SRC=$(find ../utils/NN/MUZE -name "*.c" | tr '\n' ' ')
 
 gcc -w sim.c $MUZE_SRC \
-    ../utils/NN/NN.c \
-    ../utils/NN/NEAT.c \
+    ../utils/NN/NN/NN.c \
+    ../utils/NN/NEAT/NEAT.c \
     ../utils/NN/MEMORY/MEMORY.c \
-    -I../utils/NN \
+    -I../utils/NN/NN \
     -I../utils/NN/MEMORY \
     -I../utils/Raylib/src \
     -L../utils/Raylib/src \

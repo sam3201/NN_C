@@ -5,7 +5,7 @@
 
 CC="gcc"
 CFLAGS="-Wall -O2 -std=c99"
-INCLUDES="-I../utils/Raylib/src -I../utils/Raylib/src/external/glfw/include -I../SAM -I../utils/NN"
+INCLUDES="-I../utils/Raylib/src -I../utils/Raylib/src/external/glfw/include -I../SAM -I../utils/NN/NN"
 DEFINES="-DPLATFORM_DESKTOP -D_GLFW_COCOA"
 
 # Check if we can use pre-built raylib
@@ -50,9 +50,9 @@ fi
 
 # SAM and NN source files
 SAM_SRC="../SAM/SAM.c"
-SAM_SRC="$SAM_SRC ../utils/NN/transformer.c"
-SAM_SRC="$SAM_SRC ../utils/NN/NEAT.c"
-SAM_SRC="$SAM_SRC ../utils/NN/NN.c"
+SAM_SRC="$SAM_SRC ../utils/NN/TRANSFORMER/TRANSFORMER.c"
+SAM_SRC="$SAM_SRC ../utils/NN/NEAT/NEAT.c"
+SAM_SRC="$SAM_SRC ../utils/NN/NN/NN.c"
 
 # Libraries and frameworks for macOS
 LIBS="-lm -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo"

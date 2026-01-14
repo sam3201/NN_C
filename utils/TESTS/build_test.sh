@@ -21,18 +21,18 @@ fi
 
 # ---- include dirs ----
 INCLUDES=(
-  -I../NN
+  -I../NN/NN
   -I../NN/MUZE
   -I../NN/MEMORY
   -I../NN/TOKENIZER
   -I../NN/TRANSFORMER
-  -I../../sAM
+  -I../../SAM
 )
 
 # ---- auto-discover sources ----
 MUZE_SRC=$(find ../NN/MUZE -type f -name "*.c" -print)
-NN_SRC=$(find ../NN -maxdepth 1 -type f -name "*.c" -print)
-SAM_SRC=$(find ../../sAM -type f -name "*.c" -print)
+NN_SRC=$(find ../NN -maxdepth 2 -type f -name "*.c" -print)
+SAM_SRC=$(find ../../SAM -type f -name "*.c" -print)
 
 # ---- build ----
 echo "======================================"

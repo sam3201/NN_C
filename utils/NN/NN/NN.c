@@ -539,15 +539,46 @@ void NN_destroy(NN_t *nn) {
   if (!nn)
     return;
 
-  for (size_t i = 0; i < nn->numLayers - 1; i++) {
-    free(nn->weights[i]);
-    free(nn->biases[i]);
-    free(nn->weights_grad[i]);
-    free(nn->biases_grad[i]);
-    free(nn->opt_m_w[i]);
-    free(nn->opt_v_w[i]);
-    free(nn->opt_m_b[i]);
-    free(nn->opt_v_b[i]);
+  // Only free individual arrays if they were allocated
+  if (nn->weights) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->weights[i]);
+    }
+  }
+  if (nn->biases) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->biases[i]);
+    }
+  }
+  if (nn->weights_grad) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->weights_grad[i]);
+    }
+  }
+  if (nn->biases_grad) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->biases_grad[i]);
+    }
+  }
+  if (nn->opt_m_w) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->opt_m_w[i]);
+    }
+  }
+  if (nn->opt_v_w) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->opt_v_w[i]);
+    }
+  }
+  if (nn->opt_m_b) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->opt_m_b[i]);
+    }
+  }
+  if (nn->opt_v_b) {
+    for (size_t i = 0; i < nn->numLayers - 1; i++) {
+      free(nn->opt_v_b[i]);
+    }
   }
 
   free(nn->weights);

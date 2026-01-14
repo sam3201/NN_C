@@ -1,5 +1,5 @@
 #include "FORERUNNER.h"
-#include "../utils/NN/TRANSFORMER.h"
+#include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include <math.h>
 
 // Initialize the ForeRunner model

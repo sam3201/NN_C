@@ -5,17 +5,17 @@
 echo "Building Hugging Face integration..."
 
 # Source files for trainer
-SRC_FILES_TRAINER="hf_trainer.c ../SAM/SAM.c ../utils/NN/transformer.c ../utils/NN/NEAT.c ../utils/NN/NN.c"
+SRC_FILES_TRAINER="hf_trainer.c ../SAM/SAM.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/NN/NN.c"
 
 # Source files for communicator
-SRC_FILES_COMM="sam_hf_bridge.c ../SAM/SAM.c ../utils/NN/transformer.c ../utils/NN/NEAT.c ../utils/NN/NN.c"
+SRC_FILES_COMM="sam_hf_bridge.c ../SAM/SAM.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/NN/NN.c"
 
 # Compile trainer
 echo "Building hf_trainer..."
 gcc -o hf_trainer $SRC_FILES_TRAINER \
     -I. \
     -I../SAM \
-    -I../utils/NN \
+    -I../utils/NN/NN \
     -lm \
     -O2 \
     -Wall
@@ -30,7 +30,7 @@ echo "Building sam_hf_bridge..."
 gcc -o sam_hf_bridge $SRC_FILES_COMM \
     -I. \
     -I../SAM \
-    -I../utils/NN \
+    -I../utils/NN/NN \
     -lm \
     -O2 \
     -Wall

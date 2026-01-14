@@ -8,9 +8,9 @@ echo "Building paint program with enhanced neural networks..."
 gcc -o paint \
     src/core/paint.c \
     ../utils/SDL3/SDL3_compat.c \
-    ../utils/NN/NN.c \
-    ../utils/NN/TRANSFORMER.c \
-    -Isrc -I../utils -I../utils/SDL3 -I../utils/NN \
+    ../utils/NN/NN/NN.c \
+    ../utils/NN/TRANSFORMER/TRANSFORMER.c \
+    -Isrc -I../utils -I../utils/SDL3 -I../utils/NN/NN \
     $(pkg-config --cflags --libs sdl3 sdl3-ttf 2>/dev/null) \
     -lm -pthread \
     -framework OpenGL \

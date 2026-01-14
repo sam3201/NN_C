@@ -2,7 +2,7 @@
 #include "replay_buffer.h"
 #include "runtime.h"
 #include "trainer.h"
-#include "../NN.h"
+#include "../NN/NN.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>

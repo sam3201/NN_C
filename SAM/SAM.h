@@ -2,8 +2,8 @@
 #define SAM_H
 
 #include "../utils/NN/MUZE/muze_cortex.h"
-#include "../utils/NN/NEAT.h"
-#include "../utils/NN/TRANSFORMER.h"
+#include "../utils/NN/NEAT/NEAT.h"
+#include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include <stdlib.h>
 
 // Forward declarations

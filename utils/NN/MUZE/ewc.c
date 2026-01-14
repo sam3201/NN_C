@@ -1,5 +1,5 @@
 #include "ewc.h"
-#include "../NN.h"
+#include "../NN/NN.h"
 #include <stdlib.h>
 #include <string.h>
 

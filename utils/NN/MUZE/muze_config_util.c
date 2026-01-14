@@ -1,5 +1,7 @@
 #include "muze_config_util.h"
-#include "../NN.h"
+#include "../NN/NN.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 void muze_config_init_defaults(MuzeConfig *cfg, int obs_dim, int action_count) {

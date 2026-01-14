@@ -1,8 +1,8 @@
 #ifndef FORERUNNER_H
 #define FORERUNNER_H
 
-#include "../utils/NN/NN.h"
-#include "../utils/NN/TRANSFORMER.h"
+#include "../utils/NN/NN/NN.h"
+#include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
