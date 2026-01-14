@@ -10373,7 +10373,7 @@ int main(int argc, char *argv[]) {
   printf("Game state initialized to: %d\n", g_state);
 
   // Initialize mouse state for UI
-  SDL_SetWindowRelativeMouseMode(, true);
+  SDL_SetWindowRelativeMouseMode(g_window, true);
   SDL_ShowCursor();
   g_mouse_locked = 0;
   SCREEN_WIDTH = GetScreenWidth();
