@@ -10545,7 +10545,7 @@ int main(int argc, char *argv[]) {
         }
         g_mouse_locked = 1;
       } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
-        SetMouseVisible(1);
+        SDL_ShowCursor(SDL_ENABLE);
         g_mouse_locked = 0;
       }
 
