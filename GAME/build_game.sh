@@ -64,7 +64,7 @@ FLAGS="${FLAGS:-} -g"
 # Note: -w hides warnings. Consider removing once you're stable.
 "$CC" $FLAGS \
   game.c \
-  # $SDL_COMPAT_SRC \
+  $SDL_COMPAT_SRC \
   $NN_SRC \
   $RL_AGENT_SRC \
   $MUZE_SRC \
