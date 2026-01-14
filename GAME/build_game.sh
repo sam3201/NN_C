@@ -80,7 +80,6 @@ FLAGS="${FLAGS:-} -g"
   $SDL_CFLAGS \
   $SDL_LIBS \
   -L"$SDL_BUILD_DIR" -lSDL3 \
-
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
