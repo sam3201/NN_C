@@ -19,8 +19,11 @@ SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
 echo "Collecting sources..."
 
 # Core NN sources (explicit, stable)
-NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c"
+NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/CONVOLUTION/CONVOLUTION.c"
 SDL_COMPAT_SRC="../utils/SDL3/SDL3_compat.c"
+
+# RL_AGENT sources (including all subdirectories, excluding test files)
+RL_AGENT_SRC="$(find ../RL_AGENT -type f -name '*.c' -print | grep -v test | sort -u | tr '\n' ' ')"
 
 # MUZE + SAM sources (deduped)
 MUZE_SRC="$(find ../utils/NN/MUZE -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
@@ -29,6 +32,7 @@ SAM_SRC="$(find ../SAM -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
 # Trim leading/trailing spaces (prevents phantom args)
 MUZE_SRC="$(printf "%s" "$MUZE_SRC" | sed 's/^ *//; s/ *$//')"
 SAM_SRC="$(printf "%s" "$SAM_SRC" | sed 's/^ *//; s/ *$//')"
+RL_AGENT_SRC="$(printf "%s" "$RL_AGENT_SRC" | sed 's/^ *//; s/ *$//')"
 
 if [ -z "$MUZE_SRC" ]; then
   echo "ERROR: No MUZE .c files found under ../utils/NN/MUZE"
@@ -44,6 +48,8 @@ echo "MUZE files:"
 printf "  %s\n" $MUZE_SRC
 echo "SAM files:"
 printf "  %s\n" $SAM_SRC
+echo "RL_AGENT files:"
+printf "  %s\n" $RL_AGENT_SRC
 
 # -----------------------
 # Compile
@@ -59,11 +65,14 @@ FLAGS="${FLAGS:-} -g"
   game.c \
   $SDL_COMPAT_SRC \
   $NN_SRC \
+  $RL_AGENT_SRC \
   $MUZE_SRC \
   $SAM_SRC \
   -I../utils/NN/NN \
+  -I../utils/NN/CONVOLUTION \
   -I../utils/NN/MUZE \
   -I../SAM \
+  -I../RL_AGENT \
   -I../utils/SDL3 \
   $SDL_CFLAGS \
   $SDL_LIBS \
