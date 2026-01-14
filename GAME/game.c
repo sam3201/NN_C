@@ -10368,15 +10368,13 @@ int main(int argc, char *argv[]) {
   }
 
   InitWindow(1280, 800, "MUZE Tribal Simulation");
-  if (!TTF_Init()) {
+  // Try to initialize TTF, but continue even if it fails
+  if (TTF_Init() != 0) {
     printf("TTF_Init failed: %s\n", SDL_GetError());
-    // Don't proceed with graphics setup if TTF fails
-    SetExitKey(KEY_NULL);
-    g_state = STATE_TITLE;
-  } else {
-    SetExitKey(KEY_NULL);
-    g_state = STATE_TITLE;
+    printf("Continuing without TTF support...\n");
   }
+  SetExitKey(KEY_NULL);
+  g_state = STATE_TITLE;
 
   // Initialize mouse state for UI
   SetRelativeMouseMode(0);
