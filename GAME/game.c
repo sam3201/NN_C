@@ -10374,7 +10374,7 @@ int main(int argc, char *argv[]) {
 
   // Initialize mouse state for UI
   SDL_SetWindowRelativeMouseMode(window, true);
-  SDL_ShowCursor()(true);
+  SDL_ShowCursor();
   g_mouse_locked = 0;
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
