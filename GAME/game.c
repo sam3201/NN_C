@@ -6676,12 +6676,11 @@ static void draw_pause_overlay(void) {
 
 // tiny button helper
 static int ui_button(Rectangle r, const char *text) {
+  // Hardcoded mouse detection - check if mouse is over button and left button
+  // is pressed
   Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
-  bool pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
-  printf("hot: %d, pressed: %d\n", hot, pressed);
-
-  int clicked = hot && pressed;
+  int clicked = hot && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
   Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
   DrawRectangleRounded(r, 0.25f, 8, bg);
@@ -10358,6 +10357,7 @@ int main(int argc, char *argv[]) {
 
   // Try to initialize TTF, but continue even if it fails
   if (TTF_Init() != 0) {
+    printf("TTF_Init failed: %s\n", TTF_GetError());
     printf("TTF_Init failed: %s\n", SDL_GetError());
     printf("Continuing without TTF support...\n");
   }
@@ -10428,11 +10428,11 @@ int main(int argc, char *argv[]) {
       dt = 1.0f / 60.0f; // Default to 60 FPS
     }
 
-    // Test mouse button detection - use IsMouseButtonPressed for single trigger
-    if (IsMouseButtonPressed(2)) { // 2 = LEFT MOUSE BUTTON (based on debug)
+    // Test mouse button detection with proper Raylib constants
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       printf("LEFT MOUSE BUTTON PRESSED\n");
     }
-    if (IsMouseButtonPressed(0)) { // 0 = RIGHT MOUSE BUTTON (based on debug)
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       printf("RIGHT MOUSE BUTTON PRESSED\n");
     }
 
