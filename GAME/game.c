@@ -10035,8 +10035,9 @@ static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
   } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
     render_distance =
         base_render_distance * 0.5f; // Aggressive reduction for low FPS
+  } else {
+    base_render_distance * 0.7f; // Reduce distance if FPS drops
   }
-  base_render_distance * 0.7f; // Reduce distance if FPS drops
 }
 else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
   render_distance =
