@@ -10234,7 +10234,8 @@ void toggle_spectator_mode(void) {
     g_spectator_pos.y = player.position.y + 10.0f; // Start above player
 
     // Unlock mouse for free look
-    SDL_ShowCursor() g_mouse_locked = 0;
+    SDL_ShowCursor();
+    g_mouse_locked = 0;
   } else {
     printf("Spectator mode DISABLED\n");
     // Restore normal mouse state
