@@ -29,6 +29,7 @@
 #include "../utils/NN/NN/NN.h"
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
+#include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
 #include <dirent.h>
 #include <errno.h>
