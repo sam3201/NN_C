@@ -258,6 +258,9 @@ Vector2 chunk_origin_to_world(int cx, int cy, Vector2 local_pos);
 #define CGLTF_IMPLEMENTATION
 #include "../utils/Raylib/src/external/cgltf.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../utils/Raylib/src/external/stb_image.h"
+
 // ------------------- Compile helpers / forward decls -------------------
 #ifndef SAVE_ROOT
 #define SAVE_ROOT "saves"
