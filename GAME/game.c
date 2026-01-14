@@ -3092,7 +3092,7 @@ static void obs_fill_transformer_tokens(Agent *a, Chunk *c,
     if (r->health <= 0)
       continue;
     Vector2 world_pos = Vector2Add(chunk_origin, r->position);
-    int idv = vision_id_resource(r->type, 0);
+    int idv = vision_id_resource(r->type);
     float eh =
         g_use_perlin_ground ? terrain_height(world_pos.x, world_pos.y) : 0.0f;
     float sizev = res_radius_world(r->type);
