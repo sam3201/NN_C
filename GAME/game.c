@@ -9883,312 +9883,304 @@ static void render_scene_3d(void) {
   if (w <= 0 || h <= 0)
     return;
 
-  static void init_3d_renderer(void) {
-    if (g_3d_initialized)
-      return;
-    g_3d_initialized = 1;
+  // Use current screen dimensions
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
 
-    // Use current screen dimensions
-    int w = GetScreenWidth();
-    int h = GetScreenHeight();
+  glViewport(0, 0, w, h);
+  glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  float aspect = (float)w / (float)h;
+  Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
+  float player_h = g_use_perlin_ground
+                       ? terrain_height(player.position.x, player.position.y)
+                       : 0.0f;
+  player_h += g_player_y_offset;
+  Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
+  Vec3 forward =
+      vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
+           cosf(g_player_pitch) * -cosf(g_player_yaw));
+  Vec3 eye = vec3_add(
+      player_pos,
+      vec3(0.0f, (g_camera_mode == CAM_FIRST_PERSON) ? 1.7f : 0.0f, 0.0f));
+  if (g_camera_mode == CAM_THIRD_PERSON) {
+    float dist = 8.0f;
+    float height = 2.5f;
+    Vec3 back = vec3_scale(forward, -dist);
+    eye = vec3_add(player_pos, back);
+    eye.y += height;
+  }
+  Vec3 target = vec3_add(eye, forward);
+  Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
+  Mat4 view_proj = mat4_mul(proj, view);
 
-    glViewport(0, 0, w, h);
-    glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    float aspect = (float)w / (float)h;
-    Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
-    float player_h = g_use_perlin_ground
-                         ? terrain_height(player.position.x, player.position.y)
-                         : 0.0f;
-    player_h += g_player_y_offset;
-    Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
-    Vec3 forward =
-        vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
-             cosf(g_player_pitch) * -cosf(g_player_yaw));
-    Vec3 eye = vec3_add(
-        player_pos,
-        vec3(0.0f, (g_camera_mode == CAM_FIRST_PERSON) ? 1.7f : 0.0f, 0.0f));
-    if (g_camera_mode == CAM_THIRD_PERSON) {
-      float dist = 8.0f;
-      float height = 2.5f;
-      Vec3 back = vec3_scale(forward, -dist);
-      eye = vec3_add(player_pos, back);
-      eye.y += height;
-    }
-    Vec3 target = vec3_add(eye, forward);
-    Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
-    Mat4 view_proj = mat4_mul(proj, view);
+  glUseProgram(g_shader);
+  // Set up dynamic sun/lighting based on day/night cycle
+  float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
+  float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
 
-    glUseProgram(g_shader);
-    // Set up dynamic sun/lighting based on day/night cycle
-    float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
-    float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
+  // Enhanced sun position: higher arc for better lighting
+  float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
+  Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
 
-    // Enhanced sun position: higher arc for better lighting
-    float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
-    Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
+  // Brighter ambient light during day
+  float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
+  float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
 
-    // Brighter ambient light during day
-    float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
-    float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
-
-    // At night, use moonlight (dimmer but with blue tint)
-    if (is_night_cached) {
-      sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
-      sun_dir.x += 0.05f;                  // Slight blue tint for moon
-      sun_dir.y += 0.02f;
-    } else {
-      // During day, add more dynamic intensity based on sun position
-      sun_intensity =
-          sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
-    }
-
-    // Combine ambient and directional light
-    Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base),
-                                vec3_scale(sun_dir, sun_intensity));
-
-    glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
-
-    // Render ground using optimized terrain tiles with LOD
-    if (g_mesh_ground_tile_loaded) {
-      // Render far fewer terrain tiles for performance
-      float tile_size = 40.0f; // Larger tiles = fewer draw calls
-      int tile_radius = 3;     // Only render 3x3 grid around player
-      float base_render_distance =
-          50.0f; // Base render distance for terrain too
-
-      for (int x = -tile_radius; x <= tile_radius; x++) {
-        for (int y = -tile_radius; y <= tile_radius; y++) {
-          // Skip far tiles for LOD
-          float dist = sqrtf((float)(x * x + y * y)) * tile_size;
-          if (dist > base_render_distance)
-            continue;
-
-          Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
-
-          // LOD scaling - use larger tiles for distance
-          float lod_scale = 1.0f;
-          if (dist > 30.0f)
-            lod_scale = 1.5f;
-          else if (dist > 20.0f)
-            lod_scale = 1.2f;
-
-          Mat4 ground =
-              mat4_mul(mat4_translate(pos),
-                       mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f,
-                                       tile_size * lod_scale * 0.5f)));
-          render_mesh(&g_mesh_ground_tile, ground, view_proj,
-                      vec3(0.35f, 0.75f, 0.35f));
-        }
-      }
-    } else {
-      // Fallback to simple ground plane
-      Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
-                             mat4_scale(vec3(100.0f, 0.1f, 100.0f)));
-      render_mesh(&g_mesh_cube, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
-    }
-
-    // Render player
-    if (g_mesh_player_loaded) {
-      // Get terrain height at player position
-      float terrain_h = 0.0f;
-      if (g_use_perlin_ground) {
-        terrain_h = terrain_height(player_pos.x, player_pos.z);
-      }
-
-      Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
-      Mat4 player_model = mat4_mul(mat4_translate(player_3d),
-                                   mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
-      render_mesh(&g_mesh_player, player_model, view_proj,
-                  vec3(0.8f, 0.4f, 0.2f));
-    } else {
-      // Fallback to cube
-      Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
-      Mat4 player_model = mat4_mul(mat4_translate(player_3d),
-                                   mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
-      render_mesh(&g_mesh_cube, player_model, view_proj,
-                  vec3(0.8f, 0.4f, 0.2f));
-    }
-
-    // Render grass with distance-based density optimization
-    if (g_enable_grass) {
-      render_grass_3d(player_pos, view_proj, 1.0f);
-      float player_dist_sq =
-          player_pos.x * player_pos.x + player_pos.z * player_pos.z;
-      float player_dist = sqrtf(player_dist_sq);
-
-      // Reduce grass density based on distance for performance
-      if (player_dist > 20.0f) {
-        grass_density = 0.5f; // Half density at medium distance
-      }
-      if (player_dist > 30.0f) {
-        grass_density = 0.25f; // Quarter density at far distance
-      }
-
-      render_grass_3d(player_pos, view_proj, grass_density);
-    }
+  // At night, use moonlight (dimmer but with blue tint)
+  if (is_night_cached) {
+    sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
+    sun_dir.x += 0.05f;                  // Slight blue tint for moon
+    sun_dir.y += 0.02f;
+  } else {
+    // During day, add more dynamic intensity based on sun position
+    sun_intensity =
+        sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
   }
 
-  // Render resources with optimized culling and proper locking
-  static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
-    float base_render_distance = 50.0f; // Base render distance
-    float render_distance = base_render_distance;
+  // Combine ambient and directional light
+  Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base),
+                              vec3_scale(sun_dir, sun_intensity));
 
-    // Dynamic render distance based on FPS (with safety check)
-    if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
-      render_distance =
-          base_render_distance * 0.7f; // Reduce distance if FPS drops
-    } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
-      render_distance =
-          base_render_distance * 0.5f; // Aggressive reduction for low FPS
+  glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
+
+  // Render ground using optimized terrain tiles with LOD
+  if (g_mesh_ground_tile_loaded) {
+    // Render far fewer terrain tiles for performance
+    float tile_size = 40.0f;            // Larger tiles = fewer draw calls
+    int tile_radius = 3;                // Only render 3x3 grid around player
+    float base_render_distance = 50.0f; // Base render distance for terrain too
+
+    for (int x = -tile_radius; x <= tile_radius; x++) {
+      for (int y = -tile_radius; y <= tile_radius; y++) {
+        // Skip far tiles for LOD
+        float dist = sqrtf((float)(x * x + y * y)) * tile_size;
+        if (dist > base_render_distance)
+          continue;
+
+        Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
+
+        // LOD scaling - use larger tiles for distance
+        float lod_scale = 1.0f;
+        if (dist > 30.0f)
+          lod_scale = 1.5f;
+        else if (dist > 20.0f)
+          lod_scale = 1.2f;
+
+        Mat4 ground =
+            mat4_mul(mat4_translate(pos),
+                     mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f,
+                                     tile_size * lod_scale * 0.5f)));
+        render_mesh(&g_mesh_ground_tile, ground, view_proj,
+                    vec3(0.35f, 0.75f, 0.35f));
+      }
     }
-    base_render_distance * 0.7f; // Reduce distance if FPS drops
+  } else {
+    // Fallback to simple ground plane
+    Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
+                           mat4_scale(vec3(100.0f, 0.1f, 100.0f)));
+    render_mesh(&g_mesh_cube, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
   }
-  else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+
+  // Render player
+  if (g_mesh_player_loaded) {
+    // Get terrain height at player position
+    float terrain_h = 0.0f;
+    if (g_use_perlin_ground) {
+      terrain_h = terrain_height(player_pos.x, player_pos.z);
+    }
+
+    Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
+    Mat4 player_model =
+        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+    render_mesh(&g_mesh_player, player_model, view_proj,
+                vec3(0.8f, 0.4f, 0.2f));
+  } else {
+    // Fallback to cube
+    Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
+    Mat4 player_model =
+        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
+    render_mesh(&g_mesh_cube, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
+  }
+
+  // Render grass with distance-based density optimization
+  if (g_enable_grass) {
+    render_grass_3d(player_pos, view_proj, 1.0f);
+    float player_dist_sq =
+        player_pos.x * player_pos.x + player_pos.z * player_pos.z;
+    float player_dist = sqrtf(player_dist_sq);
+
+    // Reduce grass density based on distance for performance
+    if (player_dist > 20.0f) {
+      grass_density = 0.5f; // Half density at medium distance
+    }
+    if (player_dist > 30.0f) {
+      grass_density = 0.25f; // Quarter density at far distance
+    }
+
+    render_grass_3d(player_pos, view_proj, grass_density);
+  }
+}
+
+// Render resources with optimized culling and proper locking
+static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
+  float base_render_distance = 50.0f; // Base render distance
+  float render_distance = base_render_distance;
+
+  // Dynamic render distance based on FPS (with safety check)
+  if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
+    render_distance =
+        base_render_distance * 0.7f; // Reduce distance if FPS drops
+  } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
     render_distance =
         base_render_distance * 0.5f; // Aggressive reduction for low FPS
   }
+  base_render_distance * 0.7f; // Reduce distance if FPS drops
+}
+else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+  render_distance =
+      base_render_distance * 0.5f; // Aggressive reduction for low FPS
+}
 
-  // Calculate player chunk position for optimized rendering
-  int player_cx = (int)(player_pos.x / CHUNK_SIZE);
-  int player_cy = (int)(player_pos.z / CHUNK_SIZE);
-  int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
+// Calculate player chunk position for optimized rendering
+int player_cx = (int)(player_pos.x / CHUNK_SIZE);
+int player_cy = (int)(player_pos.z / CHUNK_SIZE);
+int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
 
-  int chunks_rendered = 0;
-  int resources_rendered = 0;
+int chunks_rendered = 0;
+int resources_rendered = 0;
 
-  for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
-    for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
-      int cx = player_cx + dx;
-      int cy = player_cy + dy;
+for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
+  for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
+    int cx = player_cx + dx;
+    int cy = player_cy + dy;
 
-      // Skip if chunk is outside world bounds
-      if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE)
+    // Skip if chunk is outside world bounds
+    if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE)
+      continue;
+
+    // Quick distance check for chunk
+    float chunk_dist_sq = (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
+    if (chunk_dist_sq > render_distance * render_distance)
+      continue;
+
+    Chunk *c = get_chunk(cx, cy);
+    if (!c)
+      continue;
+
+    chunks_rendered++;
+    pthread_rwlock_rdlock(&c->lock);
+
+    for (int i = 0; i < MAX_RESOURCES; i++) {
+      Resource *r = &c->resources[i];
+      if (r->health <= 0)
         continue;
 
-      // Quick distance check for chunk
-      float chunk_dist_sq =
-          (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
-      if (chunk_dist_sq > render_distance * render_distance)
+      // Convert resource position to world coordinates
+      float world_x = cx * CHUNK_SIZE + r->position.x;
+      float world_z = cy * CHUNK_SIZE + r->position.y;
+
+      // Distance culling
+      float dx_res = world_x - player_pos.x;
+      float dz_res = world_z - player_pos.z;
+      float dist_sq = dx_res * dx_res + dz_res * dz_res;
+      if (dist_sq > render_distance * render_distance)
         continue;
 
-      Chunk *c = get_chunk(cx, cy);
-      if (!c)
-        continue;
-
-      chunks_rendered++;
-      pthread_rwlock_rdlock(&c->lock);
-
-      for (int i = 0; i < MAX_RESOURCES; i++) {
-        Resource *r = &c->resources[i];
-        if (r->health <= 0)
-          continue;
-
-        // Convert resource position to world coordinates
-        float world_x = cx * CHUNK_SIZE + r->position.x;
-        float world_z = cy * CHUNK_SIZE + r->position.y;
-
-        // Distance culling
-        float dx_res = world_x - player_pos.x;
-        float dz_res = world_z - player_pos.z;
-        float dist_sq = dx_res * dx_res + dz_res * dz_res;
-        if (dist_sq > render_distance * render_distance)
-          continue;
-
-        // Use simple terrain height calculation
-        float terrain_h = 0.0f;
-        if (g_use_perlin_ground) {
-          terrain_h = terrain_height(world_x, world_z);
-        }
-
-        Vec3 pos = vec3(world_x, terrain_h, world_z);
-        float scale = 1.0f;
-
-        // Scale models appropriately
-        if (r->type == RES_TREE)
-          scale = 2.0f;
-        else if (r->type == RES_ROCK)
-          scale = 0.5f;
-        else if (r->type == RES_GOLD)
-          scale = 0.3f;
-        else if (r->type == RES_FOOD)
-          scale = 0.4f;
-
-        Mat4 model = mat4_mul(mat4_translate(pos),
-                              mat4_scale(vec3(scale, scale, scale)));
-
-        if (r->type >= 0 && r->type < RES_COUNT &&
-            g_mesh_resource_loaded[r->type]) {
-          Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
-          if (r->type == RES_TREE)
-            tint = vec3(0.2f, 0.8f, 0.2f);
-          else if (r->type == RES_ROCK)
-            tint = vec3(0.5f, 0.5f, 0.5f);
-          else if (r->type == RES_GOLD)
-            tint = vec3(1.0f, 0.8f, 0.0f);
-          else if (r->type == RES_FOOD)
-            tint = vec3(0.8f, 0.4f, 0.2f);
-
-          render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
-          resources_rendered++;
-        }
+      // Use simple terrain height calculation
+      float terrain_h = 0.0f;
+      if (g_use_perlin_ground) {
+        terrain_h = terrain_height(world_x, world_z);
       }
-      pthread_rwlock_unlock(&c->lock);
+
+      Vec3 pos = vec3(world_x, terrain_h, world_z);
+      float scale = 1.0f;
+
+      // Scale models appropriately
+      if (r->type == RES_TREE)
+        scale = 2.0f;
+      else if (r->type == RES_ROCK)
+        scale = 0.5f;
+      else if (r->type == RES_GOLD)
+        scale = 0.3f;
+      else if (r->type == RES_FOOD)
+        scale = 0.4f;
+
+      Mat4 model =
+          mat4_mul(mat4_translate(pos), mat4_scale(vec3(scale, scale, scale)));
+
+      if (r->type >= 0 && r->type < RES_COUNT &&
+          g_mesh_resource_loaded[r->type]) {
+        Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
+        if (r->type == RES_TREE)
+          tint = vec3(0.2f, 0.8f, 0.2f);
+        else if (r->type == RES_ROCK)
+          tint = vec3(0.5f, 0.5f, 0.5f);
+        else if (r->type == RES_GOLD)
+          tint = vec3(1.0f, 0.8f, 0.0f);
+        else if (r->type == RES_FOOD)
+          tint = vec3(0.8f, 0.4f, 0.2f);
+
+        render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
+        resources_rendered++;
+      }
     }
+    pthread_rwlock_unlock(&c->lock);
   }
+}
 
-  // Render AI agents
-  render_agents_3d(player_pos, view_proj);
+// Render AI agents
+render_agents_3d(player_pos, view_proj);
 
-  // Render damage numbers
-  for (int i = 0; i < damage_number_count; i++) {
-    float alpha = damage_numbers[i].timer / 2.0f; // Fade out over 2 seconds
-    if (alpha > 0.0f) {
-      Vec3 dmg_pos =
-          vec3(damage_numbers[i].pos.x,
-               g_use_perlin_ground ? terrain_height(damage_numbers[i].pos.x,
-                                                    damage_numbers[i].pos.y) +
-                                         2.0f
-                                   : 2.0f,
-               damage_numbers[i].pos.y);
-      Mat4 dmg_model = mat4_mul(mat4_translate(dmg_pos),
-                                mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
+// Render damage numbers
+for (int i = 0; i < damage_number_count; i++) {
+  float alpha = damage_numbers[i].timer / 2.0f; // Fade out over 2 seconds
+  if (alpha > 0.0f) {
+    Vec3 dmg_pos =
+        vec3(damage_numbers[i].pos.x,
+             g_use_perlin_ground ? terrain_height(damage_numbers[i].pos.x,
+                                                  damage_numbers[i].pos.y) +
+                                       2.0f
+                                 : 2.0f,
+             damage_numbers[i].pos.y);
+    Mat4 dmg_model =
+        mat4_mul(mat4_translate(dmg_pos), mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
 
-      Color dmg_color = damage_numbers[i].color;
-      dmg_color.a = (unsigned char)(255 * alpha); // Apply fade
+    Color dmg_color = damage_numbers[i].color;
+    dmg_color.a = (unsigned char)(255 * alpha); // Apply fade
 
-      // Animated floating effect
-      float time = GetTime();
-      float bounce = sinf(time * 10.0f) * 0.05f; // Small bounce
-      float scale = 1.0f + bounce;               // Pulse effect
+    // Animated floating effect
+    float time = GetTime();
+    float bounce = sinf(time * 10.0f) * 0.05f; // Small bounce
+    float scale = 1.0f + bounce;               // Pulse effect
 
-      Mat4 animated_model =
-          mat4_mul(dmg_model, mat4_scale(vec3(scale, scale, 0.01f)));
-      Vec3 dmg_tint = vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f,
-                           dmg_color.b / 255.0f);
-      render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
-    }
+    Mat4 animated_model =
+        mat4_mul(dmg_model, mat4_scale(vec3(scale, scale, 0.01f)));
+    Vec3 dmg_tint =
+        vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f, dmg_color.b / 255.0f);
+    render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
   }
+}
 
-  // Render bases
-  render_bases_3d(view_proj);
+// Render bases
+render_bases_3d(view_proj);
 
-  glEnable(GL_CULL_FACE);
+glEnable(GL_CULL_FACE);
 
-  // Simplified performance monitoring to avoid stuck issues
-  static int frame_counter = 0;
-  frame_counter++;
+// Simplified performance monitoring to avoid stuck issues
+static int frame_counter = 0;
+frame_counter++;
 
-  // Only update FPS every 60 frames to reduce overhead
-  if (frame_counter >= 60) {
-    float current_time = GetTime();
-    if (g_last_frame_time > 0.0f) {
-      float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
-      g_current_fps = 1.0f / avg_frame_time;
-    }
-    g_last_frame_time = current_time;
-    frame_counter = 0;
+// Only update FPS every 60 frames to reduce overhead
+if (frame_counter >= 60) {
+  float current_time = GetTime();
+  if (g_last_frame_time > 0.0f) {
+    float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
+    g_current_fps = 1.0f / avg_frame_time;
   }
+  g_last_frame_time = current_time;
+  frame_counter = 0;
+}
 }
 
 /* =======================
