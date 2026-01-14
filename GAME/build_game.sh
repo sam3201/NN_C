@@ -77,6 +77,7 @@ SDL_BUILD_DIR="../utils/SDL/build"
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
   -I"$SDL_SRC_DIR/include" \
+  -I"$SDL_TTF_SRC_DIR/include"
   -L"$SDL_BUILD_DIR" -lSDL3 \
   -Wl,-rpath,"$SDL_BUILD_DIR" \
   -pthread -lm \
