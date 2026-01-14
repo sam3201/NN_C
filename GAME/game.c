@@ -10234,7 +10234,7 @@ void toggle_spectator_mode(void) {
     g_spectator_pos.y = player.position.y + 10.0f; // Start above player
 
     // Unlock mouse for free look
-    SDL_ShowCursor(SDL_TRUE);
+    SDL_ShowCursor(true);
     g_mouse_locked = 0;
   } else {
     printf("Spectator mode DISABLED\n");
@@ -10374,8 +10374,8 @@ int main(int argc, char *argv[]) {
   printf("Game state initialized to: %d\n", g_state);
 
   // Initialize mouse state for UI
-  SDL_SetWindowRelativeMouseMode(window, SDL_TRUE);
-  SDL_ShowCursor(SDL_TRUE);
+  SDL_SetWindowRelativeMouseMode(window, true);
+  SDL_ShowCursor(true);
   g_mouse_locked = 0;
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
@@ -10545,20 +10545,20 @@ int main(int argc, char *argv[]) {
         }
         g_mouse_locked = 1;
       } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
-        SDL_ShowCursor(SDL_TRUE);
+        SDL_ShowCursor(true);
         g_mouse_locked = 0;
       }
 
       // Allow manual unlock with TAB key
       if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
-        SDL_ShowCursor(SDL_TRUE);
+        SDL_ShowCursor(true);
         g_mouse_locked = 0;
       }
 
       // Ensure mouse is always visible and not in relative mode for UI screens
       if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
           g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
-        SDL_ShowCursor(SDL_TRUE);
+        SDL_ShowCursor(true);
         g_mouse_locked = 0;
       }
     }
@@ -10591,7 +10591,7 @@ int main(int argc, char *argv[]) {
         g_state = STATE_PAUSED;
         g_pause_page = 0;
         // Unlock mouse when paused
-        SDL_ShowCursor(SDL_TRUE);
+        SDL_ShowCursor(true);
         g_mouse_locked = 0;
       } else if (g_state == STATE_PAUSED) {
         g_state = STATE_PLAYING;
