@@ -24,7 +24,7 @@ SDL_TTF_SRC_DIR="../utils/SDL_ttf"
 SDL_TTF_BUILD_DIR="../utils/SDL_ttf/build"
 
 SDL_INCLUDES="-I${SDL_SRC_DIR}/include -I${SDL_TTF_SRC_DIR}/include"
-SDL_LIBS="-L${SDL_BUILD_DIR} -lSDL3 -L${SDL_TTF_BUILD_DIR} -lSDL3_ttf"
+SDL_LIBS="-F${SDL_BUILD_DIR} -framework SDL3 -L${SDL_TTF_BUILD_DIR} -lSDL3_ttf"
 SDL_RPATH="-Wl,-rpath,${SDL_BUILD_DIR} -Wl,-rpath,${SDL_TTF_BUILD_DIR}"
 
 # -----------------------
