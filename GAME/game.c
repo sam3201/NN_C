@@ -10536,7 +10536,7 @@ int main(int argc, char *argv[]) {
       // Only lock mouse when playing AND user clicks (not immediately on entry)
       if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
         // Try without relative mode first
-        SDL_ShowCursor()(false);
+        SDL_HideCursor();
         int mw = GetScreenWidth();
         int mh = GetScreenHeight();
         if (mw > 0 && mh > 0) {
