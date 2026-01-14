@@ -10550,7 +10550,7 @@ int main(int argc, char *argv[]) {
 
       // Allow manual unlock with TAB key
       if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
-        SDL_ShowCursor()(true);
+        SDL_ShowCursor();
         g_mouse_locked = 0;
       }
 
