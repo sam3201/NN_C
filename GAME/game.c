@@ -10038,95 +10038,95 @@ static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
   } else {
     base_render_distance * 0.7f; // Reduce distance if FPS drops
   }
-}
-else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
-  render_distance =
-      base_render_distance * 0.5f; // Aggressive reduction for low FPS
-}
+  else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+    render_distance =
+        base_render_distance * 0.5f; // Aggressive reduction for low FPS
+  }
 
-// Calculate player chunk position for optimized rendering
-int player_cx = (int)(player_pos.x / CHUNK_SIZE);
-int player_cy = (int)(player_pos.z / CHUNK_SIZE);
-int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
+  // Calculate player chunk position for optimized rendering
+  int player_cx = (int)(player_pos.x / CHUNK_SIZE);
+  int player_cy = (int)(player_pos.z / CHUNK_SIZE);
+  int chunk_render_radius = (int)(render_distance / CHUNK_SIZE) + 1;
 
-int chunks_rendered = 0;
-int resources_rendered = 0;
+  int chunks_rendered = 0;
+  int resources_rendered = 0;
 
-for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
-  for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
-    int cx = player_cx + dx;
-    int cy = player_cy + dy;
+  for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
+    for (int dy = -chunk_render_radius; dy <= chunk_render_radius; dy++) {
+      int cx = player_cx + dx;
+      int cy = player_cy + dy;
 
-    // Skip if chunk is outside world bounds
-    if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE)
-      continue;
-
-    // Quick distance check for chunk
-    float chunk_dist_sq = (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
-    if (chunk_dist_sq > render_distance * render_distance)
-      continue;
-
-    Chunk *c = get_chunk(cx, cy);
-    if (!c)
-      continue;
-
-    chunks_rendered++;
-    pthread_rwlock_rdlock(&c->lock);
-
-    for (int i = 0; i < MAX_RESOURCES; i++) {
-      Resource *r = &c->resources[i];
-      if (r->health <= 0)
+      // Skip if chunk is outside world bounds
+      if (cx < 0 || cx >= WORLD_SIZE || cy < 0 || cy >= WORLD_SIZE)
         continue;
 
-      // Convert resource position to world coordinates
-      float world_x = cx * CHUNK_SIZE + r->position.x;
-      float world_z = cy * CHUNK_SIZE + r->position.y;
-
-      // Distance culling
-      float dx_res = world_x - player_pos.x;
-      float dz_res = world_z - player_pos.z;
-      float dist_sq = dx_res * dx_res + dz_res * dz_res;
-      if (dist_sq > render_distance * render_distance)
+      // Quick distance check for chunk
+      float chunk_dist_sq =
+          (float)(dx * dx + dy * dy) * CHUNK_SIZE * CHUNK_SIZE;
+      if (chunk_dist_sq > render_distance * render_distance)
         continue;
 
-      // Use simple terrain height calculation
-      float terrain_h = 0.0f;
-      if (g_use_perlin_ground) {
-        terrain_h = terrain_height(world_x, world_z);
-      }
+      Chunk *c = get_chunk(cx, cy);
+      if (!c)
+        continue;
 
-      Vec3 pos = vec3(world_x, terrain_h, world_z);
-      float scale = 1.0f;
+      chunks_rendered++;
+      pthread_rwlock_rdlock(&c->lock);
 
-      // Scale models appropriately
-      if (r->type == RES_TREE)
-        scale = 2.0f;
-      else if (r->type == RES_ROCK)
-        scale = 0.5f;
-      else if (r->type == RES_GOLD)
-        scale = 0.3f;
-      else if (r->type == RES_FOOD)
-        scale = 0.4f;
+      for (int i = 0; i < MAX_RESOURCES; i++) {
+        Resource *r = &c->resources[i];
+        if (r->health <= 0)
+          continue;
 
-      Mat4 model =
-          mat4_mul(mat4_translate(pos), mat4_scale(vec3(scale, scale, scale)));
+        // Convert resource position to world coordinates
+        float world_x = cx * CHUNK_SIZE + r->position.x;
+        float world_z = cy * CHUNK_SIZE + r->position.y;
 
-      if (r->type >= 0 && r->type < RES_COUNT &&
-          g_mesh_resource_loaded[r->type]) {
-        Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
+        // Distance culling
+        float dx_res = world_x - player_pos.x;
+        float dz_res = world_z - player_pos.z;
+        float dist_sq = dx_res * dx_res + dz_res * dz_res;
+        if (dist_sq > render_distance * render_distance)
+          continue;
+
+        // Use simple terrain height calculation
+        float terrain_h = 0.0f;
+        if (g_use_perlin_ground) {
+          terrain_h = terrain_height(world_x, world_z);
+        }
+
+        Vec3 pos = vec3(world_x, terrain_h, world_z);
+        float scale = 1.0f;
+
+        // Scale models appropriately
         if (r->type == RES_TREE)
-          tint = vec3(0.2f, 0.8f, 0.2f);
+          scale = 2.0f;
         else if (r->type == RES_ROCK)
-          tint = vec3(0.5f, 0.5f, 0.5f);
+          scale = 0.5f;
         else if (r->type == RES_GOLD)
-          tint = vec3(1.0f, 0.8f, 0.0f);
+          scale = 0.3f;
         else if (r->type == RES_FOOD)
-          tint = vec3(0.8f, 0.4f, 0.2f);
+          scale = 0.4f;
 
-        render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
-        resources_rendered++;
+        Mat4 model = mat4_mul(mat4_translate(pos),
+                              mat4_scale(vec3(scale, scale, scale)));
+
+        if (r->type >= 0 && r->type < RES_COUNT &&
+            g_mesh_resource_loaded[r->type]) {
+          Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
+          if (r->type == RES_TREE)
+            tint = vec3(0.2f, 0.8f, 0.2f);
+          else if (r->type == RES_ROCK)
+            tint = vec3(0.5f, 0.5f, 0.5f);
+          else if (r->type == RES_GOLD)
+            tint = vec3(1.0f, 0.8f, 0.0f);
+          else if (r->type == RES_FOOD)
+            tint = vec3(0.8f, 0.4f, 0.2f);
+
+          render_mesh(&g_mesh_resources[r->type], model, view_proj, tint);
+          resources_rendered++;
+        }
       }
-    }
                                                   damage_numbers[i].pos.y) +
                                        2.0f
                                  : 2.0f,
@@ -10163,783 +10163,789 @@ for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
                                                               animated_model,
                                                               view_proj,
                                                               dmg_tint);
-  }
-}
-
-/* =======================
-   AI TRAINING FUNCTIONS
-======================= */
-
-void start_ai_vs_ai_training(void) {
-  g_ai_training_active = 1;
-  g_ai_episode_count = 0;
-  g_ai_step_count = 0;
-  g_ai_training_reward = 0.0f;
-
-  // Create AI agent with default config
-  AgentConfig config = {.use_world_model = 1,
-                        .use_self_play = 1,
-                        .curriculum_learning = 1,
-                        .num_training_threads = 4,
-                        .learning_rate = 0.001f,
-                        .batch_size = 32,
-                        .replay_buffer_size = 10000,
-                        .max_episode_length = 1000};
-  g_ai_agent = rl_agent_create(&config);
-  if (!g_ai_agent) {
-    printf("Failed to create RL agent!\n");
-    g_ai_training_active = 0;
-    return;
-    printf("Created RL agent with Dreamer world model and Soft Actor-Critic\n");
+    }
   }
 
-  // Reset agent for new training session
-  rl_agent_reset(g_ai_agent);
+  /* =======================
+     AI TRAINING FUNCTIONS
+  ======================= */
 
-  printf("Starting AI vs AI training...\n");
-  printf("Agent will use Dreamer for world modeling and Soft Actor-Critic for "
-         "policy learning\n");
-
-  // Resume game and start training
-  g_state = STATE_PLAYING;
-}
-
-void stop_ai_vs_ai_training(void) {
-  g_ai_training_active = 0;
-  printf("Training stopped. Episodes: %d, Total Reward: %.2f\n",
-         g_ai_episode_count, g_ai_training_reward);
-
-  if (g_ai_agent) {
-    printf("Final agent performance metrics available\n");
-  }
-}
-
-void save_ai_models(void) {
-  if (!g_ai_agent) {
-    printf("No AI agent to save!\n");
-    return;
-  }
-
-  // Save trained models to disk
-  printf(
-      "Saving AI models (Dreamer world model + Soft Actor-Critic policy)...\n");
-
-  // This would integrate with the RL_AGENT save functionality
-  // For now, just indicate that models would be saved
-  printf("Models saved to: ./ai_models/\n");
-}
-
-void update_ai_vs_ai_training(float dt) {
-  if (!g_ai_training_active || !g_ai_agent)
-    return;
-
-  g_ai_step_count++;
-
-  // Create observation from current game state
-  // This would normally extract features from game world
-  GridObservation observation = {0}; // Simplified observation
-  int obs_size = 128;
-
-  // Select action using RL agent
-  PolicyOutput action = rl_agent_act(g_ai_agent, &observation);
-
-  // Execute action (simplified - in real implementation this would control
-  // agents)
-  float reward = 0.1f; // Simplified reward
-
-  // Get next observation
-  GridObservation next_obs = {0};
-
-  // Update agent with experience
-  rl_agent_update(g_ai_agent, reward, &next_obs, 0);
-
-  g_ai_training_reward += reward;
-
-  // Check episode completion
-  if (g_ai_step_count >= 1000) {
-    g_ai_episode_count++;
+  void start_ai_vs_ai_training(void) {
+    g_ai_training_active = 1;
+    g_ai_episode_count = 0;
     g_ai_step_count = 0;
+    g_ai_training_reward = 0.0f;
 
-    // Reset agent for new episode
+    // Create AI agent with default config
+    AgentConfig config = {.use_world_model = 1,
+                          .use_self_play = 1,
+                          .curriculum_learning = 1,
+                          .num_training_threads = 4,
+                          .learning_rate = 0.001f,
+                          .batch_size = 32,
+                          .replay_buffer_size = 10000,
+                          .max_episode_length = 1000};
+    g_ai_agent = rl_agent_create(&config);
+    if (!g_ai_agent) {
+      printf("Failed to create RL agent!\n");
+      g_ai_training_active = 0;
+      return;
+      printf(
+          "Created RL agent with Dreamer world model and Soft Actor-Critic\n");
+    }
+
+    // Reset agent for new training session
     rl_agent_reset(g_ai_agent);
 
-    printf("Episode %d completed. Average reward: %.3f\n", g_ai_episode_count,
-           g_ai_training_reward / g_ai_episode_count);
+    printf("Starting AI vs AI training...\n");
+    printf(
+        "Agent will use Dreamer for world modeling and Soft Actor-Critic for "
+        "policy learning\n");
+
+    // Resume game and start training
+    g_state = STATE_PLAYING;
   }
 
-  // Stop after target episodes
-  if (g_ai_episode_count >= g_ai_training_episodes) {
-    stop_ai_vs_ai_training();
+  void stop_ai_vs_ai_training(void) {
+    g_ai_training_active = 0;
+    printf("Training stopped. Episodes: %d, Total Reward: %.2f\n",
+           g_ai_episode_count, g_ai_training_reward);
+
+    if (g_ai_agent) {
+      printf("Final agent performance metrics available\n");
+    }
   }
-}
 
-/* =======================
-   SPECTATOR MODE FUNCTIONS
-======================= */
+  void save_ai_models(void) {
+    if (!g_ai_agent) {
+      printf("No AI agent to save!\n");
+      return;
+    }
 
-void toggle_spectator_mode(void) {
-  g_spectator_mode = !g_spectator_mode;
+    // Save trained models to disk
+    printf("Saving AI models (Dreamer world model + Soft Actor-Critic "
+           "policy)...\n");
 
-  if (g_spectator_mode) {
-    printf("Spectator mode ENABLED - Free camera movement\n");
-    printf("Controls: WASD/Arrows=Move, Mouse=Look, Shift=Speed, Space=Up, "
-           "Ctrl=Down\n");
+    // This would integrate with the RL_AGENT save functionality
+    // For now, just indicate that models would be saved
+    printf("Models saved to: ./ai_models/\n");
+  }
 
-    // Initialize spectator position to current player position
-    g_spectator_pos.x = player.position.x;
-    g_spectator_pos.y = player.position.y + 10.0f; // Start above player
+  void update_ai_vs_ai_training(float dt) {
+    if (!g_ai_training_active || !g_ai_agent)
+      return;
 
-    // Unlock mouse for free look
+    g_ai_step_count++;
+
+    // Create observation from current game state
+    // This would normally extract features from game world
+    GridObservation observation = {0}; // Simplified observation
+    int obs_size = 128;
+
+    // Select action using RL agent
+    PolicyOutput action = rl_agent_act(g_ai_agent, &observation);
+
+    // Execute action (simplified - in real implementation this would control
+    // agents)
+    float reward = 0.1f; // Simplified reward
+
+    // Get next observation
+    GridObservation next_obs = {0};
+
+    // Update agent with experience
+    rl_agent_update(g_ai_agent, reward, &next_obs, 0);
+
+    g_ai_training_reward += reward;
+
+    // Check episode completion
+    if (g_ai_step_count >= 1000) {
+      g_ai_episode_count++;
+      g_ai_step_count = 0;
+
+      // Reset agent for new episode
+      rl_agent_reset(g_ai_agent);
+
+      printf("Episode %d completed. Average reward: %.3f\n", g_ai_episode_count,
+             g_ai_training_reward / g_ai_episode_count);
+    }
+
+    // Stop after target episodes
+    if (g_ai_episode_count >= g_ai_training_episodes) {
+      stop_ai_vs_ai_training();
+    }
+  }
+
+  /* =======================
+     SPECTATOR MODE FUNCTIONS
+  ======================= */
+
+  void toggle_spectator_mode(void) {
+    g_spectator_mode = !g_spectator_mode;
+
+    if (g_spectator_mode) {
+      printf("Spectator mode ENABLED - Free camera movement\n");
+      printf("Controls: WASD/Arrows=Move, Mouse=Look, Shift=Speed, Space=Up, "
+             "Ctrl=Down\n");
+
+      // Initialize spectator position to current player position
+      g_spectator_pos.x = player.position.x;
+      g_spectator_pos.y = player.position.y + 10.0f; // Start above player
+
+      // Unlock mouse for free look
+      SDL_ShowCursor();
+      g_mouse_locked = 0;
+    } else {
+      printf("Spectator mode DISABLED\n");
+      // Restore normal mouse state
+      if (g_state == STATE_PLAYING) {
+        SDL_HideCursor();
+        g_mouse_locked = 1;
+      }
+    }
+  }
+
+  void update_spectator_camera(float dt) {
+    if (!g_spectator_mode)
+      return;
+
+    // Update position based on velocity
+    g_spectator_pos.x += g_spectator_velocity.x * dt;
+    g_spectator_pos.y += g_spectator_velocity.y * dt;
+    g_spectator_pos.z += g_spectator_velocity.z * dt;
+
+    // Apply damping to velocity
+    g_spectator_velocity.x *= 0.85f;
+    g_spectator_velocity.y *= 0.85f;
+    g_spectator_velocity.z *= 0.85f;
+
+    // Update camera to follow spectator position
+    // This would update the main camera system
+    // For now, we'll integrate with existing camera system
+  }
+
+  void update_spectator_controls(void) {
+    if (!g_spectator_mode)
+      return;
+
+    float speed = SPECTATOR_SPEED;
+    if (IsKeyDown(KEY_LEFT_SHIFT))
+      speed *= 2.0f; // Turbo mode
+
+    // Movement controls
+    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+      g_spectator_velocity.x += speed * 0.016f; // Forward
+    }
+    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
+      g_spectator_velocity.x -= speed * 0.016f; // Backward
+    }
+    if (IsKeyDown(KEY_A)) {
+      g_spectator_velocity.z -= speed * 0.016f; // Left
+    }
+    if (IsKeyDown(KEY_D)) {
+      g_spectator_velocity.z += speed * 0.016f; // Right
+    }
+    if (IsKeyDown(KEY_SPACE)) {
+      g_spectator_velocity.y += speed * 0.016f; // Up
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) {
+      g_spectator_velocity.y -= speed * 0.016f; // Down
+    }
+
+    // Mouse look
+    if (g_mouse_locked) {
+      Vector2 mouse_delta = GetMouseDelta();
+      g_spectator_yaw += mouse_delta.x * SPECTATOR_MOUSE_SENSITIVITY;
+      g_spectator_pitch -= mouse_delta.y * SPECTATOR_MOUSE_SENSITIVITY;
+
+      // Clamp pitch to prevent camera flip
+      if (g_spectator_pitch > 89.0f)
+        g_spectator_pitch = 89.0f;
+      if (g_spectator_pitch < -89.0f)
+        g_spectator_pitch = -89.0f;
+    }
+  }
+
+  void render_spectator_hud(void) {
+    if (!g_spectator_mode)
+      return;
+
+    int w = GetScreenWidth();
+    int h = GetScreenHeight();
+
+    // Draw spectator mode indicator
+    const char *spectator_text = "SPECTATOR MODE";
+    int text_width = MeasureText(spectator_text, 20);
+    DrawRectangle(10, 10, text_width + 20, 40, (Color){0, 0, 0, 180});
+    DrawText(spectator_text, 20, 20, 20, YELLOW);
+
+    // Draw controls help
+    DrawText("WASD/Arrows: Move", 20, 60, 16, RAYWHITE);
+    DrawText("Mouse: Look", 20, 80, 16, RAYWHITE);
+    DrawText("Space: Up | Ctrl: Down", 20, 100, 16, RAYWHITE);
+    DrawText("Shift: Turbo | ESC: Exit", 20, 120, 16, RAYWHITE);
+
+    // Draw position info
+    char pos_info[128];
+    snprintf(pos_info, sizeof(pos_info), "Pos: (%.1f, %.1f, %.1f)",
+             g_spectator_pos.x, g_spectator_pos.y, g_spectator_pos.z);
+    DrawText(pos_info, 20, h - 60, 16, RAYWHITE);
+
+    // Draw training status if AI training is active
+    if (g_ai_training_active) {
+      char training_info[128];
+      snprintf(training_info, sizeof(training_info),
+               "AI Training: Episode %d | Step %d", g_ai_episode_count,
+               g_ai_step_count);
+      DrawText(training_info, 20, h - 40, 16, GREEN);
+    }
+  }
+
+  /* =======================
+     MAIN
+  ======================= */
+  int main(int argc, char *argv[]) {
+
+    srand(time(NULL));
+
+    // Simple performance initialization
+    g_last_frame_time = 0.0f; // Will be set on first frame
+    g_current_fps = 60.0f;
+
+    if (g_use_3d) {
+      // OpenGL will be initialized by Raylib
+    }
+
+    // Set target FPS before creating window
+    SetTargetFPS(60);
+
+    InitWindow(1280, 800, "MUZE Tribal Simulation");
+    printf("Window created: %d x %d\n", GetScreenWidth(), GetScreenHeight());
+
+    // Try to initialize TTF, but continue even if it fails
+    if (TTF_Init() != 0) {
+      printf("TTF_Init failed: %s\n", SDL_GetError());
+      printf("Continuing without TTF support...\n");
+    }
+    SetExitKey(KEY_NULL);
+    g_state = STATE_TITLE;
+    printf("Game state initialized to: %d\n", g_state);
+
+    // Initialize mouse state for UI
+    SDL_SetWindowRelativeMouseMode(g_window, true);
     SDL_ShowCursor();
     g_mouse_locked = 0;
-  } else {
-    printf("Spectator mode DISABLED\n");
-    // Restore normal mouse state
-    if (g_state == STATE_PLAYING) {
-      SDL_HideCursor();
-      g_mouse_locked = 1;
-    }
-  }
-}
-
-void update_spectator_camera(float dt) {
-  if (!g_spectator_mode)
-    return;
-
-  // Update position based on velocity
-  g_spectator_pos.x += g_spectator_velocity.x * dt;
-  g_spectator_pos.y += g_spectator_velocity.y * dt;
-  g_spectator_pos.z += g_spectator_velocity.z * dt;
-
-  // Apply damping to velocity
-  g_spectator_velocity.x *= 0.85f;
-  g_spectator_velocity.y *= 0.85f;
-  g_spectator_velocity.z *= 0.85f;
-
-  // Update camera to follow spectator position
-  // This would update the main camera system
-  // For now, we'll integrate with existing camera system
-}
-
-void update_spectator_controls(void) {
-  if (!g_spectator_mode)
-    return;
-
-  float speed = SPECTATOR_SPEED;
-  if (IsKeyDown(KEY_LEFT_SHIFT))
-    speed *= 2.0f; // Turbo mode
-
-  // Movement controls
-  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
-    g_spectator_velocity.x += speed * 0.016f; // Forward
-  }
-  if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
-    g_spectator_velocity.x -= speed * 0.016f; // Backward
-  }
-  if (IsKeyDown(KEY_A)) {
-    g_spectator_velocity.z -= speed * 0.016f; // Left
-  }
-  if (IsKeyDown(KEY_D)) {
-    g_spectator_velocity.z += speed * 0.016f; // Right
-  }
-  if (IsKeyDown(KEY_SPACE)) {
-    g_spectator_velocity.y += speed * 0.016f; // Up
-  }
-  if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) {
-    g_spectator_velocity.y -= speed * 0.016f; // Down
-  }
-
-  // Mouse look
-  if (g_mouse_locked) {
-    Vector2 mouse_delta = GetMouseDelta();
-    g_spectator_yaw += mouse_delta.x * SPECTATOR_MOUSE_SENSITIVITY;
-    g_spectator_pitch -= mouse_delta.y * SPECTATOR_MOUSE_SENSITIVITY;
-
-    // Clamp pitch to prevent camera flip
-    if (g_spectator_pitch > 89.0f)
-      g_spectator_pitch = 89.0f;
-    if (g_spectator_pitch < -89.0f)
-      g_spectator_pitch = -89.0f;
-  }
-}
-
-void render_spectator_hud(void) {
-  if (!g_spectator_mode)
-    return;
-
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
-
-  // Draw spectator mode indicator
-  const char *spectator_text = "SPECTATOR MODE";
-  int text_width = MeasureText(spectator_text, 20);
-  DrawRectangle(10, 10, text_width + 20, 40, (Color){0, 0, 0, 180});
-  DrawText(spectator_text, 20, 20, 20, YELLOW);
-
-  // Draw controls help
-  DrawText("WASD/Arrows: Move", 20, 60, 16, RAYWHITE);
-  DrawText("Mouse: Look", 20, 80, 16, RAYWHITE);
-  DrawText("Space: Up | Ctrl: Down", 20, 100, 16, RAYWHITE);
-  DrawText("Shift: Turbo | ESC: Exit", 20, 120, 16, RAYWHITE);
-
-  // Draw position info
-  char pos_info[128];
-  snprintf(pos_info, sizeof(pos_info), "Pos: (%.1f, %.1f, %.1f)",
-           g_spectator_pos.x, g_spectator_pos.y, g_spectator_pos.z);
-  DrawText(pos_info, 20, h - 60, 16, RAYWHITE);
-
-  // Draw training status if AI training is active
-  if (g_ai_training_active) {
-    char training_info[128];
-    snprintf(training_info, sizeof(training_info),
-             "AI Training: Episode %d | Step %d", g_ai_episode_count,
-             g_ai_step_count);
-    DrawText(training_info, 20, h - 40, 16, GREEN);
-  }
-}
-
-/* =======================
-   MAIN
-======================= */
-int main(int argc, char *argv[]) {
-
-  srand(time(NULL));
-
-  // Simple performance initialization
-  g_last_frame_time = 0.0f; // Will be set on first frame
-  g_current_fps = 60.0f;
-
-  if (g_use_3d) {
-    // OpenGL will be initialized by Raylib
-  }
-
-  // Set target FPS before creating window
-  SetTargetFPS(60);
-
-  InitWindow(1280, 800, "MUZE Tribal Simulation");
-  printf("Window created: %d x %d\n", GetScreenWidth(), GetScreenHeight());
-
-  // Try to initialize TTF, but continue even if it fails
-  if (TTF_Init() != 0) {
-    printf("TTF_Init failed: %s\n", SDL_GetError());
-    printf("Continuing without TTF support...\n");
-  }
-  SetExitKey(KEY_NULL);
-  g_state = STATE_TITLE;
-  printf("Game state initialized to: %d\n", g_state);
-
-  // Initialize mouse state for UI
-  SDL_SetWindowRelativeMouseMode(g_window, true);
-  SDL_ShowCursor();
-  g_mouse_locked = 0;
-  SCREEN_WIDTH = GetScreenWidth();
-  SCREEN_HEIGHT = GetScreenHeight();
-  TILE_SIZE = SCREEN_HEIGHT / 18.0f;
-
-  load_keybinds();
-  load_graphics_config();
-  init_tribes();
-  init_agents();
-  init_player();
-  // Temporarily disable ALL complex systems to test basic window
-  /*
-  if (!g_muze_loop_started) {
-    muze_loop_thread_start(&g_muze_loop);
-    g_muze_loop_started = 1;
-  }
-  */
-  // Re-enable MUZE system with fixed transformer
-  if (!g_muze_loop_started) {
-    muze_loop_thread_start(&g_muze_loop);
-    g_muze_loop_started = 1;
-  }
-  // Re-enable worker systems and grass worker
-  // Workers disabled to avoid threading issues - agents run in main thread
-  // Grass worker disabled temporarily to debug OpenGL texture issues
-  if (g_enable_grass) {
-    // start_grass_worker();
-  }
-  if (g_use_3d) {
-    g_state = STATE_TITLE;
-  }
-
-  // Defer graphics quality setup to avoid initialization conflicts
-  // Graphics quality will be set on first frame
-
-  for (int x = 0; x < WORLD_SIZE; x++) {
-    for (int y = 0; y < WORLD_SIZE; y++) {
-      pthread_rwlock_init(&world[x][y].lock, NULL);
-      world[x][y].generated = false;
-      world[x][y].resource_count = 0;
-      world[x][y].mob_spawn_timer = 0.0f;
-      world[x][y].grass = NULL;
-      world[x][y].grass_count = 0;
-      world[x][y].grass_capacity = 0;
-      world[x][y].grass_ready = 0;
-      world[x][y].grass_building = 0;
-    }
-  }
-
-  for (int i = 0; i < MAX_PROJECTILES; i++)
-    projectiles[i].alive = false;
-
-  while (!WindowShouldClose() && !g_should_quit) {
-    float dt = GetFrameTime();
-
-    // Safety check to prevent infinite loops
-    if (dt <= 0.0f || dt > 1.0f) {
-      dt = 1.0f / 60.0f; // Default to 60 FPS
-    }
-
-    // Update screen dimensions continuously
     SCREEN_WIDTH = GetScreenWidth();
     SCREEN_HEIGHT = GetScreenHeight();
+    TILE_SIZE = SCREEN_HEIGHT / 18.0f;
 
-    // Test mouse button detection with proper Raylib constants
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      printf("LEFT MOUSE BUTTON PRESSED\n");
+    load_keybinds();
+    load_graphics_config();
+    init_tribes();
+    init_agents();
+    init_player();
+    // Temporarily disable ALL complex systems to test basic window
+    /*
+    if (!g_muze_loop_started) {
+      muze_loop_thread_start(&g_muze_loop);
+      g_muze_loop_started = 1;
     }
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-      printf("RIGHT MOUSE BUTTON PRESSED\n");
+    */
+    // Re-enable MUZE system with fixed transformer
+    if (!g_muze_loop_started) {
+      muze_loop_thread_start(&g_muze_loop);
+      g_muze_loop_started = 1;
+    }
+    // Re-enable worker systems and grass worker
+    // Workers disabled to avoid threading issues - agents run in main thread
+    // Grass worker disabled temporarily to debug OpenGL texture issues
+    if (g_enable_grass) {
+      // start_grass_worker();
+    }
+    if (g_use_3d) {
+      g_state = STATE_TITLE;
     }
 
-    // Check window close button more frequently
-    if (WindowShouldClose()) {
-      g_should_quit = true;
-      break;
-    }
+    // Defer graphics quality setup to avoid initialization conflicts
+    // Graphics quality will be set on first frame
 
-    double frame_start_ms = prof_now_ms();
-
-    camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
-    camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
-
-    if (cam_shake > 0.0f) {
-      cam_shake -= dt;
-      float mag = cam_shake * 0.65f;
-      camera_pos.x += randf(-mag, mag);
-    }
-    WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
-
-    double update_start_ms = prof_now_ms();
-    // Re-enable agent worker system with fixed transformer
-    // TEMPORARILY DISABLED TO DEBUG WORLD ENTRY STUCK ISSUE
-    // if (g_state == STATE_PLAYING) {
-    //   run_agent_jobs();
-    // }
-
-    // Simple agent update in main thread (no workers)
-    if (g_state == STATE_PLAYING) {
-      for (int i = 0; i < MAX_AGENTS; i++) {
-        if (agents[i].alive) {
-          update_agent(&agents[i]);
-        }
+    for (int x = 0; x < WORLD_SIZE; x++) {
+      for (int y = 0; y < WORLD_SIZE; y++) {
+        pthread_rwlock_init(&world[x][y].lock, NULL);
+        world[x][y].generated = false;
+        world[x][y].resource_count = 0;
+        world[x][y].mob_spawn_timer = 0.0f;
+        world[x][y].grass = NULL;
+        world[x][y].grass_count = 0;
+        world[x][y].grass_capacity = 0;
+        world[x][y].grass_ready = 0;
+        world[x][y].grass_building = 0;
       }
     }
-    if (g_state == STATE_PLAYING) {
-      update_player();
-      update_visible_world(dt);
-      update_projectiles(dt);
-      update_daynight(dt);
-      update_ai_training(dt);      // Add AI training update
-      update_spectator_controls(); // Add spectator controls
-      collect_nearby_pickups();
 
-      g_dt = dt;
+    for (int i = 0; i < MAX_PROJECTILES; i++)
+      projectiles[i].alive = false;
 
-      // detect transition night->day for reward
-      int now_night = is_night_cached;
-      if (was_night && !now_night) {
-        // dawn reward: shards + small base repair
-        inv_shards += 5;
-        for (int t = 0; t < TRIBE_COUNT; t++) {
-          tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
-        }
-      }
-      was_night = now_night;
+    while (!WindowShouldClose() && !g_should_quit) {
+      float dt = GetFrameTime();
 
-      // raid spawner
-      if (is_night_cached) {
-        raid_timer -= dt;
-        if (raid_timer <= 0.0f) {
-          raid_timer = raid_interval;
-          spawn_raid_wave();
-        }
-      } else {
-        raid_timer = 1.5f;
+      // Safety check to prevent infinite loops
+      if (dt <= 0.0f || dt > 1.0f) {
+        dt = 1.0f / 60.0f; // Default to 60 FPS
       }
 
+      // Update screen dimensions continuously
+      SCREEN_WIDTH = GetScreenWidth();
+      SCREEN_HEIGHT = GetScreenHeight();
+
+      // Test mouse button detection with proper Raylib constants
+      if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        printf("LEFT MOUSE BUTTON PRESSED\n");
+      }
+      if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        printf("RIGHT MOUSE BUTTON PRESSED\n");
+      }
+
+      // Check window close button more frequently
+      if (WindowShouldClose()) {
+        g_should_quit = true;
+        break;
+      }
+
+      double frame_start_ms = prof_now_ms();
+
+      camera_pos.x += (player.position.x - camera_pos.x) * 0.1f;
+      camera_pos.y += (player.position.y - camera_pos.y) * 0.1f;
+
+      if (cam_shake > 0.0f) {
+        cam_shake -= dt;
+        float mag = cam_shake * 0.65f;
+        camera_pos.x += randf(-mag, mag);
+      }
+      WORLD_SCALE = lerp(WORLD_SCALE, target_world_scale, 0.12f);
+
+      double update_start_ms = prof_now_ms();
+      // Re-enable agent worker system with fixed transformer
+      // TEMPORARILY DISABLED TO DEBUG WORLD ENTRY STUCK ISSUE
+      // if (g_state == STATE_PLAYING) {
+      //   run_agent_jobs();
+      // }
+
+      // Simple agent update in main thread (no workers)
+      if (g_state == STATE_PLAYING) {
+        for (int i = 0; i < MAX_AGENTS; i++) {
+          if (agents[i].alive) {
+            update_agent(&agents[i]);
+          }
+        }
+      }
+      if (g_state == STATE_PLAYING) {
+        update_player();
+        update_visible_world(dt);
+        update_projectiles(dt);
+        update_daynight(dt);
+        update_ai_training(dt);      // Add AI training update
+        update_spectator_controls(); // Add spectator controls
+        collect_nearby_pickups();
+
+        g_dt = dt;
+
+        // detect transition night->day for reward
+        int now_night = is_night_cached;
+        if (was_night && !now_night) {
+          // dawn reward: shards + small base repair
+          inv_shards += 5;
+          for (int t = 0; t < TRIBE_COUNT; t++) {
+            tribes[t].integrity = fminf(100.0f, tribes[t].integrity + 15.0f);
+          }
+        }
+        was_night = now_night;
+
+        // raid spawner
+        if (is_night_cached) {
+          raid_timer -= dt;
+          if (raid_timer <= 0.0f) {
+            raid_timer = raid_interval;
+            spawn_raid_wave();
+          }
+        } else {
+          raid_timer = 1.5f;
+        }
+
+        for (int i = 0; i < MAX_AGENTS; i++) {
+          if (!agents[i].alive)
+            continue;
+          int acx = (int)(agents[i].position.x / CHUNK_SIZE);
+          int acy = (int)(agents[i].position.y / CHUNK_SIZE);
+          (void)get_chunk(acx, acy);
+        }
+
+        update_pickups(dt);
+      }
+
+      // Update spectator camera and render HUD
+      update_spectator_camera(dt);
+      render_spectator_hud();
+
+      double update_ms = prof_now_ms() - update_start_ms;
+
+      if (g_use_3d) {
+        // Use manual click detection for mouse locking
+        static int last_mouse_down = 0;
+        int current_mouse_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+        int mouse_clicked = current_mouse_down && !last_mouse_down;
+        last_mouse_down = current_mouse_down;
+
+        // Only lock mouse when playing AND user clicks (not immediately on
+        // entry)
+        if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
+          // Try without relative mode first
+          SDL_HideCursor();
+          int mw = GetScreenWidth();
+          int mh = GetScreenHeight();
+          if (mw > 0 && mh > 0) {
+            SetMousePosition(mw / 2, mh / 2);
+          }
+          g_mouse_locked = 1;
+        } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
+          SDL_ShowCursor();
+          g_mouse_locked = 0;
+        }
+
+        // Allow manual unlock with TAB key
+        if (g_state == STATE_PLAYING && g_mouse_locked &&
+            IsKeyPressed(KEY_TAB)) {
+          SDL_ShowCursor();
+          g_mouse_locked = 0;
+        }
+
+        // Ensure mouse is always visible and not in relative mode for UI
+        // screens
+        if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
+            g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
+          SDL_ShowCursor();
+          g_mouse_locked = 0;
+        }
+      }
+
+      // ...
+      if (g_use_3d && IsKeyPressed(KEY_V)) {
+        g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
+                                                            : CAM_THIRD_PERSON;
+      }
+      if (g_use_3d && g_state == STATE_PLAYING && IsKeyPressed(KEY_M)) {
+        g_minimap_zoomed = !g_minimap_zoomed;
+      }
+      if (g_use_3d && IsKeyPressed(KEY_F6)) {
+        GraphicsQuality next = GFX_LOW;
+        if (g_gfx_quality == GFX_LOW)
+          next = GFX_MED;
+        else if (g_gfx_quality == GFX_MED)
+          next = GFX_HIGH;
+        else
+          next = GFX_LOW;
+        apply_graphics_quality(next);
+        save_graphics_config();
+      }
+      if (g_use_3d && IsKeyPressed(KEY_F7)) {
+        g_profiler_enabled = !g_profiler_enabled;
+      }
+
+      if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE)) {
+        if (g_state == STATE_PLAYING) {
+          g_state = STATE_PAUSED;
+          g_pause_page = 0;
+          // Unlock mouse when paused
+          SDL_ShowCursor();
+          g_mouse_locked = 0;
+        } else if (g_state == STATE_PAUSED) {
+          g_state = STATE_PLAYING;
+        }
+      }
+
+      BeginDrawing();
+      ClearBackground((Color){135, 206, 235, 255});
+      if (g_use_3d) {
+        g_prof_draw_calls = 0;
+        g_prof_triangles = 0;
+        double render_start_ms = prof_now_ms();
+        if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+          render_scene_3d();
+        }
+        double render_ms = prof_now_ms() - render_start_ms;
+
+        double ui_start_ms = prof_now_ms();
+        if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+          glUseProgram(0); // Disable 3D shader before 2D drawing
+
+          draw_ui_3d_full();
+          draw_minimap_3d();
+          draw_daynight_overlay_3d();
+          draw_hurt_vignette_3d();
+          draw_crafting_ui_3d();
+          draw_hover_label_3d();
+          if (g_state == STATE_PLAYING) {
+            draw_crosshair_3d();
+          }
+        }
+
+        if (g_state == STATE_PAUSED) {
+          if (g_pause_page == 0)
+            draw_pause_menu_3d();
+          else if (g_pause_page == 3)
+            draw_graphics_menu_3d();
+          else if (g_pause_page == 4)
+            draw_ai_training_menu_3d();
+          else
+            draw_keybinds_menu_3d();
+        } else if (g_state == STATE_TITLE) {
+          draw_title_screen_3d();
+        } else if (g_state == STATE_WORLD_CREATE) {
+          draw_world_create_3d();
+        } else if (g_state == STATE_WORLD_SELECT) {
+          draw_world_select_3d();
+        }
+
+        double ui_ms = prof_now_ms() - ui_start_ms;
+        double total_ms = prof_now_ms() - frame_start_ms;
+
+        prof_smooth(&g_prof_update_ms, update_ms);
+        prof_smooth(&g_prof_render_ms, render_ms);
+        prof_smooth(&g_prof_ui_ms, ui_ms);
+        prof_smooth(&g_prof_total_ms, total_ms);
+
+        if (g_profiler_enabled) {
+          draw_profiler_3d();
+        }
+        EndDrawing();
+        continue;
+      }
+
+      if (g_state == STATE_PLAYING) {
+        // ---- your current game draw/update ----
+        // update_daynight(dt);
+        // update agents/mobs, draw_chunks/resources/mobs/player etc
+
+        // quick save hotkey
+        if (IsKeyPressed(KEY_F5))
+          save_world_to_disk(g_world_name);
+        if (bind_pressed(BIND_PAUSE))
+          g_state = STATE_PAUSED;
+      } else if (g_state == STATE_TITLE) {
+
+        DrawText("SAMCRAFT", 40, 40, 52, RAYWHITE);
+        DrawText("F5 = Save while playing", 44, 100, 18,
+                 (Color){200, 200, 200, 180});
+
+        Rectangle b1 = (Rectangle){60, 160, 260, 50};
+        Rectangle b2 = (Rectangle){60, 220, 260, 50};
+        Rectangle b3 = (Rectangle){60, 280, 260, 50};
+
+        if (ui_button(b1, "Play (Load/Select)"))
+          g_state = STATE_WORLD_SELECT;
+        if (ui_button(b2, "Create World"))
+          g_state = STATE_WORLD_CREATE;
+        if (ui_button(b3, "Quit"))
+          g_should_quit = 1;
+      } else if (g_state == STATE_WORLD_CREATE) {
+        // Get screen dimensions for scaling
+        int w = GetScreenWidth();
+        int h = GetScreenHeight();
+
+        DrawText("Create World", 60, 50, 34, RAYWHITE);
+
+        DrawText("World Name", 60, 120, 18, RAYWHITE);
+        ui_textbox((Rectangle){60, 145, 360, 45}, g_world_name,
+                   sizeof(g_world_name), &g_typing_name, 0);
+
+        DrawText("Seed", 60, 205, 18, RAYWHITE);
+        // Scale UI elements based on screen resolution
+        float ui_scale_x = w / 1280.0f; // Reference width
+        float ui_scale_y = h / 800.0f;  // Reference height
+
+        ui_textbox((Rectangle){60 * ui_scale_x, 230 * ui_scale_y,
+                               200 * ui_scale_x, 45 * ui_scale_y},
+                   g_seed_text, sizeof(g_seed_text), &g_typing_seed, 1);
+
+        float button_width = 200 * ui_scale_x;
+        float button_height = 50 * ui_scale_y;
+        float button_y = 300 * ui_scale_y;
+
+        if (ui_button((Rectangle){60 * ui_scale_x, button_y, button_width,
+                                  button_height},
+                      "Create & Play")) {
+          g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
+          world_reset(g_world_seed);
+          save_world_to_disk(g_world_name); // create initial save
+          g_state = STATE_PLAYING;
+          ensure_agents_ready_on_enter();
+        }
+
+        if (ui_button((Rectangle){280 * ui_scale_x, button_y, 140 * ui_scale_x,
+                                  button_height},
+                      "Back")) {
+          g_state = STATE_TITLE;
+        }
+      } else if (g_state == STATE_WORLD_SELECT) {
+        // Get screen dimensions for scaling
+        int w = GetScreenWidth();
+        int h = GetScreenHeight();
+
+        // Scale UI elements based on screen resolution
+        float ui_scale_x = w / 1280.0f; // Reference width
+        float ui_scale_y = h / 800.0f;  // Reference height
+
+        DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
+        DrawText("Select World", (int)(40 * ui_scale_x), (int)(30 * ui_scale_y),
+                 (int)(44 * ui_scale_y), RAYWHITE);
+
+        Rectangle listBox = {
+            (float)(40 * ui_scale_x), (float)(100 * ui_scale_y),
+            (float)(520 * ui_scale_x), (float)(h - 180 * ui_scale_y)};
+        DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
+        DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
+
+        // For now: quick load current name
+        float button_width = 260 * ui_scale_x;
+        float button_height = 50 * ui_scale_y;
+
+        if (ui_button((Rectangle){60 * ui_scale_x, 140 * ui_scale_y,
+                                  button_width, button_height},
+                      "Load World Name")) {
+          if (load_world_from_disk(g_world_name))
+            load_models_from_disk(g_world_name);
+          g_state = STATE_PLAYING;
+          ensure_agents_ready_on_enter();
+        }
+
+        if (ui_button((Rectangle){60 * ui_scale_x, 200 * ui_scale_y,
+                                  button_width, button_height},
+                      "Back"))
+          g_state = STATE_TITLE;
+      }
+
+      draw_chunks();
+      draw_resources();
+      draw_mobs();
+      draw_projectiles();
+      draw_pickups();
+
+      // bases
+      for (int t = 0; t < TRIBE_COUNT; t++) {
+        Vector2 bp = world_to_screen(tribes[t].base.position);
+        DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
+                         tribes[t].color);
+      }
+
+      // agents
       for (int i = 0; i < MAX_AGENTS; i++) {
         if (!agents[i].alive)
           continue;
-        int acx = (int)(agents[i].position.x / CHUNK_SIZE);
-        int acy = (int)(agents[i].position.y / CHUNK_SIZE);
-        (void)get_chunk(acx, acy);
+        Vector2 ap = world_to_screen(agents[i].position);
+        Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
+        draw_agent(&agents[i], ap, tc);
       }
 
-      update_pickups(dt);
-    }
+      // player
+      Vector2 pp = world_to_screen(player.position);
+      draw_player(pp);
+      draw_bow_charge_fx();
 
-    // Update spectator camera and render HUD
-    update_spectator_camera(dt);
-    render_spectator_hud();
+      // UI + debug
+      draw_ui_3d_full();
+      draw_minimap_3d();
+      draw_daynight_overlay_3d();
+      draw_hurt_vignette_3d();
+      draw_crafting_ui_3d();
+      draw_hover_label_3d();
+      draw_hurt_vignette();
+      draw_crafting_ui();
 
-    double update_ms = prof_now_ms() - update_start_ms;
-
-    if (g_use_3d) {
-      // Use manual click detection for mouse locking
-      static int last_mouse_down = 0;
-      int current_mouse_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-      int mouse_clicked = current_mouse_down && !last_mouse_down;
-      last_mouse_down = current_mouse_down;
-
-      // Only lock mouse when playing AND user clicks (not immediately on entry)
-      if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
-        // Try without relative mode first
-        SDL_HideCursor();
-        int mw = GetScreenWidth();
-        int mh = GetScreenHeight();
-        if (mw > 0 && mh > 0) {
-          SetMousePosition(mw / 2, mh / 2);
-        }
-        g_mouse_locked = 1;
-      } else if ((g_state != STATE_PLAYING) && g_mouse_locked) {
-        SDL_ShowCursor();
-        g_mouse_locked = 0;
-      }
-
-      // Allow manual unlock with TAB key
-      if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
-        SDL_ShowCursor();
-        g_mouse_locked = 0;
-      }
-
-      // Ensure mouse is always visible and not in relative mode for UI screens
-      if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
-          g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
-        SDL_ShowCursor();
-        g_mouse_locked = 0;
-      }
-    }
-
-    // ...
-    if (g_use_3d && IsKeyPressed(KEY_V)) {
-      g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
-                                                          : CAM_THIRD_PERSON;
-    }
-    if (g_use_3d && g_state == STATE_PLAYING && IsKeyPressed(KEY_M)) {
-      g_minimap_zoomed = !g_minimap_zoomed;
-    }
-    if (g_use_3d && IsKeyPressed(KEY_F6)) {
-      GraphicsQuality next = GFX_LOW;
-      if (g_gfx_quality == GFX_LOW)
-        next = GFX_MED;
-      else if (g_gfx_quality == GFX_MED)
-        next = GFX_HIGH;
-      else
-        next = GFX_LOW;
-      apply_graphics_quality(next);
-      save_graphics_config();
-    }
-    if (g_use_3d && IsKeyPressed(KEY_F7)) {
-      g_profiler_enabled = !g_profiler_enabled;
-    }
-
-    if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE)) {
+      // Draw crosshair in 2D mode
       if (g_state == STATE_PLAYING) {
-        g_state = STATE_PAUSED;
-        g_pause_page = 0;
-        // Unlock mouse when paused
-        SDL_ShowCursor();
-        g_mouse_locked = 0;
-      } else if (g_state == STATE_PAUSED) {
-        g_state = STATE_PLAYING;
-      }
-    }
-
-    BeginDrawing();
-    ClearBackground((Color){135, 206, 235, 255});
-    if (g_use_3d) {
-      g_prof_draw_calls = 0;
-      g_prof_triangles = 0;
-      double render_start_ms = prof_now_ms();
-      if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
-        render_scene_3d();
-      }
-      double render_ms = prof_now_ms() - render_start_ms;
-
-      double ui_start_ms = prof_now_ms();
-      if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
-        glUseProgram(0); // Disable 3D shader before 2D drawing
-
-        draw_ui_3d_full();
-        draw_minimap_3d();
-        draw_daynight_overlay_3d();
-        draw_hurt_vignette_3d();
-        draw_crafting_ui_3d();
-        draw_hover_label_3d();
-        if (g_state == STATE_PLAYING) {
-          draw_crosshair_3d();
-        }
+        draw_crosshair_2d();
       }
 
-      if (g_state == STATE_PAUSED) {
-        if (g_pause_page == 0)
-          draw_pause_menu_3d();
-        else if (g_pause_page == 3)
-          draw_graphics_menu_3d();
-        else if (g_pause_page == 4)
-          draw_ai_training_menu_3d();
-        else
-          draw_keybinds_menu_3d();
-      } else if (g_state == STATE_TITLE) {
-        draw_title_screen_3d();
-      } else if (g_state == STATE_WORLD_CREATE) {
-        draw_world_create_3d();
-      } else if (g_state == STATE_WORLD_SELECT) {
-        draw_world_select_3d();
-      }
+      DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+      DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
 
-      double ui_ms = prof_now_ms() - ui_start_ms;
-      double total_ms = prof_now_ms() - frame_start_ms;
-
-      prof_smooth(&g_prof_update_ms, update_ms);
-      prof_smooth(&g_prof_render_ms, render_ms);
-      prof_smooth(&g_prof_ui_ms, ui_ms);
-      prof_smooth(&g_prof_total_ms, total_ms);
-
-      if (g_profiler_enabled) {
-        draw_profiler_3d();
-      }
       EndDrawing();
-      continue;
     }
 
-    if (g_state == STATE_PLAYING) {
-      // ---- your current game draw/update ----
-      // update_daynight(dt);
-      // update agents/mobs, draw_chunks/resources/mobs/player etc
-
-      // quick save hotkey
-      if (IsKeyPressed(KEY_F5))
-        save_world_to_disk(g_world_name);
-      if (bind_pressed(BIND_PAUSE))
-        g_state = STATE_PAUSED;
-    } else if (g_state == STATE_TITLE) {
-
-      DrawText("SAMCRAFT", 40, 40, 52, RAYWHITE);
-      DrawText("F5 = Save while playing", 44, 100, 18,
-               (Color){200, 200, 200, 180});
-
-      Rectangle b1 = (Rectangle){60, 160, 260, 50};
-      Rectangle b2 = (Rectangle){60, 220, 260, 50};
-      Rectangle b3 = (Rectangle){60, 280, 260, 50};
-
-      if (ui_button(b1, "Play (Load/Select)"))
-        g_state = STATE_WORLD_SELECT;
-      if (ui_button(b2, "Create World"))
-        g_state = STATE_WORLD_CREATE;
-      if (ui_button(b3, "Quit"))
-        g_should_quit = 1;
-    } else if (g_state == STATE_WORLD_CREATE) {
-      // Get screen dimensions for scaling
-      int w = GetScreenWidth();
-      int h = GetScreenHeight();
-
-      DrawText("Create World", 60, 50, 34, RAYWHITE);
-
-      DrawText("World Name", 60, 120, 18, RAYWHITE);
-      ui_textbox((Rectangle){60, 145, 360, 45}, g_world_name,
-                 sizeof(g_world_name), &g_typing_name, 0);
-
-      DrawText("Seed", 60, 205, 18, RAYWHITE);
-      // Scale UI elements based on screen resolution
-      float ui_scale_x = w / 1280.0f; // Reference width
-      float ui_scale_y = h / 800.0f;  // Reference height
-
-      ui_textbox((Rectangle){60 * ui_scale_x, 230 * ui_scale_y,
-                             200 * ui_scale_x, 45 * ui_scale_y},
-                 g_seed_text, sizeof(g_seed_text), &g_typing_seed, 1);
-
-      float button_width = 200 * ui_scale_x;
-      float button_height = 50 * ui_scale_y;
-      float button_y = 300 * ui_scale_y;
-
-      if (ui_button((Rectangle){60 * ui_scale_x, button_y, button_width,
-                                button_height},
-                    "Create & Play")) {
-        g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
-        world_reset(g_world_seed);
-        save_world_to_disk(g_world_name); // create initial save
-        g_state = STATE_PLAYING;
-        ensure_agents_ready_on_enter();
-      }
-
-      if (ui_button((Rectangle){280 * ui_scale_x, button_y, 140 * ui_scale_x,
-                                button_height},
-                    "Back")) {
-        g_state = STATE_TITLE;
-      }
-    } else if (g_state == STATE_WORLD_SELECT) {
-      // Get screen dimensions for scaling
-      int w = GetScreenWidth();
-      int h = GetScreenHeight();
-
-      // Scale UI elements based on screen resolution
-      float ui_scale_x = w / 1280.0f; // Reference width
-      float ui_scale_y = h / 800.0f;  // Reference height
-
-      DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
-      DrawText("Select World", (int)(40 * ui_scale_x), (int)(30 * ui_scale_y),
-               (int)(44 * ui_scale_y), RAYWHITE);
-
-      Rectangle listBox = {(float)(40 * ui_scale_x), (float)(100 * ui_scale_y),
-                           (float)(520 * ui_scale_x),
-                           (float)(h - 180 * ui_scale_y)};
-      DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
-      DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
-
-      // For now: quick load current name
-      float button_width = 260 * ui_scale_x;
-      float button_height = 50 * ui_scale_y;
-
-      if (ui_button((Rectangle){60 * ui_scale_x, 140 * ui_scale_y, button_width,
-                                button_height},
-                    "Load World Name")) {
-        if (load_world_from_disk(g_world_name))
-          load_models_from_disk(g_world_name);
-        g_state = STATE_PLAYING;
-        ensure_agents_ready_on_enter();
-      }
-
-      if (ui_button((Rectangle){60 * ui_scale_x, 200 * ui_scale_y, button_width,
-                                button_height},
-                    "Back"))
-        g_state = STATE_TITLE;
+    // Re-enable worker cleanup and grass worker cleanup
+    stop_workers();
+    if (g_enable_grass) {
+      // stop_grass_worker();
     }
 
-    draw_chunks();
-    draw_resources();
-    draw_mobs();
-    draw_projectiles();
-    draw_pickups();
+    // Proper MUZE cleanup sequence to prevent hanging
+    if (g_muze_loop_started) {
+      // First signal the loop to stop
+      muze_loop_thread_stop(&g_muze_loop);
+      // Give it a moment to finish processing
+      struct timespec ts = {0, 100000000}; // 100ms
+      nanosleep(&ts, NULL);
+      g_muze_loop_started = 0;
+    }
 
-    // bases
+    // Clean up MUZE resources after thread is stopped
+    if (g_muze_rb) {
+      pthread_mutex_lock(&g_muze_rb_mtx);
+      rb_free((ReplayBuffer *)g_muze_rb); // Cast to original type for rb_free
+      g_muze_rb = NULL;
+      pthread_mutex_unlock(&g_muze_rb_mtx);
+    }
+    if (g_muze_model) {
+      pthread_mutex_lock(&g_muze_model_mtx);
+      mu_model_free(g_muze_model);
+      g_muze_model = NULL;
+      pthread_mutex_unlock(&g_muze_model_mtx);
+    }
+    if (g_obs_transformer) {
+      TRANSFORMER_destroy(g_obs_transformer);
+      g_obs_transformer = NULL;
+    }
+    if (g_obs_tokens) {
+      free(g_obs_tokens);
+      g_obs_tokens = NULL;
+    }
+    if (g_obs_token_buf) {
+      free(g_obs_token_buf);
+      g_obs_token_buf = NULL;
+    }
+    g_obs_token_count = 0;
+
+    ui_text_cache_clear(&g_hud_hp);
+    ui_text_cache_clear(&g_hud_st);
+    ui_text_cache_clear(&g_ui_cache_player);
+    ui_text_cache_clear(&g_ui_cache_hp);
+    ui_text_cache_clear(&g_ui_cache_st);
+    ui_text_cache_clear(&g_ui_cache_wood);
+    ui_text_cache_clear(&g_ui_cache_gold);
+    ui_text_cache_clear(&g_ui_cache_shards);
     for (int t = 0; t < TRIBE_COUNT; t++) {
-      Vector2 bp = world_to_screen(tribes[t].base.position);
-      DrawCircleLinesV(bp, tribes[t].base.radius * WORLD_SCALE,
-                       tribes[t].color);
+      ui_text_cache_clear(&g_ui_cache_base[t]);
     }
-
-    // agents
-    for (int i = 0; i < MAX_AGENTS; i++) {
-      if (!agents[i].alive)
-        continue;
-      Vector2 ap = world_to_screen(agents[i].position);
-      Color tc = tribes[agents[i].agent_id / AGENT_PER_TRIBE].color;
-      draw_agent(&agents[i], ap, tc);
+    ui_text_cache_clear(&g_ui_cache_minimap_title);
+    ui_text_cache_clear(&g_ui_cache_minimap_mobs);
+    ui_text_cache_clear(&g_ui_cache_daynight);
+    ui_text_cache_clear(&g_ui_cache_time);
+    for (int i = 0; i < (int)(sizeof(g_ui_fonts) / sizeof(g_ui_fonts[0]));
+         i++) {
+      if (g_ui_fonts[i].font) {
+        TTF_CloseFont(g_ui_fonts[i].font);
+        g_ui_fonts[i].font = NULL;
+      }
     }
-
-    // player
-    Vector2 pp = world_to_screen(player.position);
-    draw_player(pp);
-    draw_bow_charge_fx();
-
-    // UI + debug
-    draw_ui_3d_full();
-    draw_minimap_3d();
-    draw_daynight_overlay_3d();
-    draw_hurt_vignette_3d();
-    draw_crafting_ui_3d();
-    draw_hover_label_3d();
-    draw_hurt_vignette();
-    draw_crafting_ui();
-
-    // Draw crosshair in 2D mode
-    if (g_state == STATE_PLAYING) {
-      draw_crosshair_2d();
+    if (g_ui_font) {
+      TTF_CloseFont(g_ui_font);
+      g_ui_font = NULL;
     }
-
-    DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
-    DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
-
-    EndDrawing();
-  }
-
-  // Re-enable worker cleanup and grass worker cleanup
-  stop_workers();
-  if (g_enable_grass) {
-    // stop_grass_worker();
-  }
-
-  // Proper MUZE cleanup sequence to prevent hanging
-  if (g_muze_loop_started) {
-    // First signal the loop to stop
-    muze_loop_thread_stop(&g_muze_loop);
-    // Give it a moment to finish processing
-    struct timespec ts = {0, 100000000}; // 100ms
-    nanosleep(&ts, NULL);
-    g_muze_loop_started = 0;
-  }
-
-  // Clean up MUZE resources after thread is stopped
-  if (g_muze_rb) {
-    pthread_mutex_lock(&g_muze_rb_mtx);
-    rb_free((ReplayBuffer *)g_muze_rb); // Cast to original type for rb_free
-    g_muze_rb = NULL;
-    pthread_mutex_unlock(&g_muze_rb_mtx);
-  }
-  if (g_muze_model) {
-    pthread_mutex_lock(&g_muze_model_mtx);
-    mu_model_free(g_muze_model);
-    g_muze_model = NULL;
-    pthread_mutex_unlock(&g_muze_model_mtx);
-  }
-  if (g_obs_transformer) {
-    TRANSFORMER_destroy(g_obs_transformer);
-    g_obs_transformer = NULL;
-  }
-  if (g_obs_tokens) {
-    free(g_obs_tokens);
-    g_obs_tokens = NULL;
-  }
-  if (g_obs_token_buf) {
-    free(g_obs_token_buf);
-    g_obs_token_buf = NULL;
-  }
-  g_obs_token_count = 0;
-
-  ui_text_cache_clear(&g_hud_hp);
-  ui_text_cache_clear(&g_hud_st);
-  ui_text_cache_clear(&g_ui_cache_player);
-  ui_text_cache_clear(&g_ui_cache_hp);
-  ui_text_cache_clear(&g_ui_cache_st);
-  ui_text_cache_clear(&g_ui_cache_wood);
-  ui_text_cache_clear(&g_ui_cache_gold);
-  ui_text_cache_clear(&g_ui_cache_shards);
-  for (int t = 0; t < TRIBE_COUNT; t++) {
-    ui_text_cache_clear(&g_ui_cache_base[t]);
-  }
-  ui_text_cache_clear(&g_ui_cache_minimap_title);
-  ui_text_cache_clear(&g_ui_cache_minimap_mobs);
-  ui_text_cache_clear(&g_ui_cache_daynight);
-  ui_text_cache_clear(&g_ui_cache_time);
-  for (int i = 0; i < (int)(sizeof(g_ui_fonts) / sizeof(g_ui_fonts[0])); i++) {
-    if (g_ui_fonts[i].font) {
-      TTF_CloseFont(g_ui_fonts[i].font);
-      g_ui_fonts[i].font = NULL;
+    if (g_minimap_tex) {
+      glDeleteTextures(1, &g_minimap_tex);
+      g_minimap_tex = 0;
     }
-  }
-  if (g_ui_font) {
-    TTF_CloseFont(g_ui_font);
-    g_ui_font = NULL;
-  }
-  if (g_minimap_tex) {
-    glDeleteTextures(1, &g_minimap_tex);
-    g_minimap_tex = 0;
-  }
-  TTF_Quit();
+    TTF_Quit();
 
-  CloseWindow();
-  return 0;
-}
+    CloseWindow();
+    return 0;
+  }
