@@ -74,6 +74,8 @@ FLAGS="${FLAGS:-} -g"
   -I../utils/NN/MUZE \
   -I../SAM \
   -I../RL_AGENT \
+  -I../utils/NN/TRANSFORMER \
+  -I../utils/NN/NEAT \
   -I../utils/SDL \
   $SDL_CFLAGS \
   $SDL_LIBS \
