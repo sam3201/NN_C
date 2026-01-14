@@ -80,6 +80,7 @@ INCLUDES="
 LINK="
   ${SDL_LIBS}
   ${SDL_RPATH}
+  ${RAYLIB_LINK}
   -pthread -lm
   -framework OpenGL
   -arch arm64
