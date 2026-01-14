@@ -44,6 +44,7 @@
 #include <time.h>
 #include <unistd.h>
 
+/*
 // TTF function declarations from SDL3_compat
 typedef struct TTF_Font TTF_Font;
 typedef struct SDL_Surface SDL_Surface;
@@ -70,6 +71,7 @@ TTF_Font *TTF_OpenFont(const char *file, int ptsize);
 void TTF_CloseFont(TTF_Font *font);
 int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
                       int *h);
+                      */
 SDL_Surface *TTF_RenderText_Blended(TTF_Font *font, const char *text,
                                     size_t len, SDL_Color fg);
 SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, Uint32 format);
