@@ -84,6 +84,8 @@ static SDL_Scancode sdl_scancode_from_key(KeyboardKey key) {
     return SDL_SCANCODE_BACKSPACE;
   case KEY_ESCAPE:
     return SDL_SCANCODE_ESCAPE;
+  case KEY_P:
+    return SDL_SCANCODE_P;
   case KEY_UP:
     return SDL_SCANCODE_UP;
   case KEY_DOWN:

@@ -1,9 +1,6 @@
 #include "../../utils/SDL3/SDL3_compat.h"
-#include "../../utils/NN/CONVOLUTION.h"
-#include "../../utils/NN/TRANSFORMER.h"
-
-#define CGLTF_IMPLEMENTATION
-#include "../../utils/Raylib/src/external/cgltf.h"
+#include "../../utils/NN/NN/NN.h"
+#include "../../utils/NN/TRANSFORMER/TRANSFORMER.h"
 
 #include <math.h>
 #include <stdbool.h>
@@ -11,6 +8,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Key constants for weight initialization selection
+#define KEY_1 49
+#define KEY_2 50
+#define KEY_3 51
+#define KEY_4 52
+#define KEY_5 53
+#define KEY_6 54
+#define KEY_7 55
 
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 800
@@ -23,7 +29,6 @@
 #define BRUSH_SIZE 3
 #define BRUSH_COLOR WHITE
 
-// Additional colors for UI
 #define YELLOW (Color){255, 255, 0, 255}
 #define CYAN (Color){0, 255, 255, 255}
 
@@ -33,7 +38,7 @@ static float g_depth_map[CANVAS_SIZE][CANVAS_SIZE];
 static bool g_3d_mode = true;
 
 // Neural network components
-static CONVNet *g_conv = NULL;
+static NN_t *g_conv = NULL;
 static Transformer_t *g_transformer = NULL;
 
 // Training data
@@ -67,17 +72,21 @@ void init_canvas(void) {
 }
 
 void init_neural_networks(void) {
-  // Initialize convolution network
-  g_conv = CONV_create(CANVAS_SIZE, CANVAS_SIZE, 3, 0.01f);
+  // Create network architecture
+  size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+  ActivationFunctionType activations[] = {RELU, RELU, RELU, LINEAR};
+  ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE, LINEAR_DERIVATIVE};
+  
+  // Initialize with He initialization (optimal for ReLU) and Adam optimizer
+  g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                     L2, ADAM, 0.001f, HE);
   if (!g_conv) {
-    printf("Failed to create convolution network\n");
+    printf("Failed to create neural network with enhanced initialization\n");
     return;
   }
-  
-  // Add layers: conv -> relu -> flatten -> dense
-  CONV_add_conv2d(g_conv, 16, 3, 3, 1, 1);
-  CONV_add_flatten(g_conv);
-  CONV_add_dense(g_conv, 128);
+
+  // Set learning rate schedule for better convergence
+  NN_set_lr_schedule(g_conv, 0.001f, 0.0001f, 100);
   
   // Initialize transformer for attention-based processing
   g_transformer = TRANSFORMER_init(128, 4, 2);
@@ -85,8 +94,12 @@ void init_neural_networks(void) {
     printf("Failed to create transformer\n");
     return;
   }
-  
-  printf("Neural networks with transformer initialized successfully\n");
+
+  printf("Neural networks initialized with He weights and Adam optimizer\n");
+  printf("Network architecture: %zux%zux%zux%zu\n", 
+         layers[0], layers[1], layers[2], layers[3]);
+  printf("Weight initialization: He (optimal for ReLU)\n");
+  printf("Optimizer: Adam with learning rate scheduling\n");
 }
 
 void process_with_neural_networks(void) {
@@ -95,85 +108,157 @@ void process_with_neural_networks(void) {
     return;
   }
   
-  printf("Training neural networks...\n");
+  printf("Training neural networks with enhanced framework...\n");
+  printf("Press ESC to stop training early\n");
   
-  // Enhanced training loop
-  int epochs = 50;  // Increased from 10 for better training
-  int batch_size = 4;
-  float learning_rate = 0.01f;
+  // Enhanced training with stochastic gradient descent
+  int epochs = 1000;  // High limit, will stop at 0% loss
+  int batch_size = 8;  // Larger batch for better gradient estimation
   float best_loss = INFINITY;
-  int patience_counter = 0;
-  int max_patience = 10;  // Early stopping if no improvement
   
-  printf("Training parameters: %d epochs, batch size %d, learning rate %.4f\n", 
-         epochs, batch_size, learning_rate);
+  printf("Training until 0%% loss or ESC key...\n");
+  printf("Using Adam optimizer with Gaussian weight initialization\n");
   
   for (int epoch = 0; epoch < epochs; epoch++) {
     float epoch_loss = 0.0f;
     int batches_processed = 0;
     
+    // Check for ESC key press
+    if (IsKeyPressed(KEY_ESCAPE)) {
+      printf("Training stopped by user (ESC pressed)\n");
+      break;
+    }
+    
+    // Shuffle training data for stochastic gradient descent
+    int *indices = malloc(g_training_count * sizeof(int));
+    for (int i = 0; i < g_training_count; i++) {
+      indices[i] = i;
+    }
+    
+    // Simple Fisher-Yates shuffle
+    for (int i = g_training_count - 1; i > 0; i--) {
+      int j = rand() % (i + 1);
+      int temp = indices[i];
+      indices[i] = indices[j];
+      indices[j] = temp;
+    }
+    
+    // Process batches
     for (int batch = 0; batch < g_training_count / batch_size; batch++) {
       float batch_loss = 0.0f;
       
+      // Create batch arrays
+      long double *batch_inputs = malloc(batch_size * CANVAS_SIZE * CANVAS_SIZE * 3 * sizeof(long double));
+      long double *batch_targets = malloc(batch_size * CANVAS_SIZE * CANVAS_SIZE * sizeof(long double));
+      
       for (int sample = 0; sample < batch_size; sample++) {
-        int sample_idx = batch * batch_size + sample;
+        int sample_idx = indices[batch * batch_size + sample];
         
-        // Forward pass
-        float *input = &g_training_inputs[sample_idx * CANVAS_SIZE * CANVAS_SIZE * 3];
-        const float *conv_output = CONV_forward(g_conv, input);
-        
-        if (conv_output) {
-          // Simple loss calculation (MSE)
-          float *target = &g_training_targets[sample_idx * CANVAS_SIZE * CANVAS_SIZE];
-          int output_dim = CONV_output_dim(g_conv);
-          
-          for (int i = 0; i < CANVAS_SIZE * CANVAS_SIZE && i < output_dim; i++) {
-            float diff = conv_output[i] - target[i];
-            batch_loss += diff * diff;
-          }
+        // Copy input and target data
+        for (int i = 0; i < CANVAS_SIZE * CANVAS_SIZE * 3; i++) {
+          batch_inputs[sample * CANVAS_SIZE * CANVAS_SIZE * 3 + i] = 
+            (long double)g_training_inputs[sample_idx * CANVAS_SIZE * CANVAS_SIZE * 3 + i];
+        }
+        for (int i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
+          batch_targets[sample * CANVAS_SIZE * CANVAS_SIZE + i] = 
+            (long double)g_training_targets[sample_idx * CANVAS_SIZE * CANVAS_SIZE + i];
         }
       }
+      
+      // Forward pass
+      long double *output = NN_forward(g_conv, batch_inputs);
+      
+      if (output) {
+        // Calculate loss (MSE)
+        for (int i = 0; i < batch_size * CANVAS_SIZE * CANVAS_SIZE; i++) {
+          float diff = (float)(output[i] - batch_targets[i]);
+          batch_loss += diff * diff;
+        }
+        
+        // Backward pass
+        long double *output_delta = malloc(batch_size * CANVAS_SIZE * CANVAS_SIZE * sizeof(long double));
+        for (int i = 0; i < batch_size * CANVAS_SIZE * CANVAS_SIZE; i++) {
+          output_delta[i] = (output[i] - batch_targets[i]) * 2.0L; // MSE derivative
+        }
+        
+        NN_backprop_custom_delta(g_conv, batch_inputs, output_delta);
+        
+        free(output_delta);
+      }
+      
+      free(batch_inputs);
+      free(batch_targets);
       
       epoch_loss += batch_loss / (batch_size * CANVAS_SIZE * CANVAS_SIZE);
       batches_processed++;
+      
+      // Check for ESC key press during batch
+      if (IsKeyPressed(KEY_ESCAPE)) {
+        printf("Training stopped by user (ESC pressed)\n");
+        free(indices);
+        break;
+      }
     }
     
+    free(indices);
     epoch_loss /= batches_processed;
     
-    // Print progress
-    if (epoch % 5 == 0 || epoch == epochs - 1) {
-      printf("Epoch %d/%d - Loss: %.6f", epoch + 1, epochs, epoch_loss);
+    // Print progress every 10 epochs
+    if (epoch % 10 == 0 || epoch_loss < 0.001f) {
+      printf("Epoch %d - Loss: %.6f", epoch + 1, epoch_loss);
       
       if (epoch_loss < best_loss) {
-        printf(" (Best)");
+        printf(" ✓ (Best)");
         best_loss = epoch_loss;
-        patience_counter = 0;
-      } else {
-        patience_counter++;
-        if (patience_counter >= max_patience) {
-          printf(" - Early stopping (no improvement for %d epochs)", max_patience);
-          break;
-        }
       }
+      
+      // Show learning rate if scheduled
+      if (g_conv->lr_sched_steps > 0) {
+        printf(" LR: %.6f", (float)g_conv->learningRate);
+      }
+      
       printf("\n");
     }
     
-    // Check for convergence
-    if (epoch_loss < 0.001f) {  // Good enough for our purposes
-      printf("Training converged at epoch %d with loss %.6f\n", epoch + 1, epoch_loss);
+    // Stop at 0% loss (very close to zero)
+    if (epoch_loss < 0.0001f) {
+      printf("🎉 Training complete! Loss: %.6f (0%% achieved)\n", epoch_loss);
+      break;
+    }
+    
+    // Check for ESC key press after epoch
+    if (IsKeyPressed(KEY_ESCAPE)) {
+      printf("Training stopped by user (ESC pressed)\n");
       break;
     }
   }
   
-  printf("Training complete! Best loss: %.6f\n", best_loss);
+  printf("Training finished! Best loss: %.6f\n", best_loss);
+  
+  // Auto-save trained networks
+  save_trained_networks();
 }
 
 void save_trained_networks(void) {
   if (g_conv) {
-    if (CONV_save(g_conv, "trained_convolution.net") == 0) {
-      printf("Saved convolution network to trained_convolution.net\n");
+    // Save using NN framework's save function
+    FILE *file = fopen("trained_neural_network.nn", "wb");
+    if (file) {
+      // Simple save: write network parameters
+      fwrite(g_conv->layers, g_conv->numLayers * sizeof(size_t), 1, file);
+      
+      for (size_t i = 0; i < g_conv->numLayers - 1; i++) {
+        size_t wcount = g_conv->layers[i] * g_conv->layers[i + 1];
+        size_t bcount = g_conv->layers[i + 1];
+        
+        fwrite(g_conv->weights[i], wcount * sizeof(long double), 1, file);
+        fwrite(g_conv->biases[i], bcount * sizeof(long double), 1, file);
+      }
+      
+      fclose(file);
+      printf("Saved neural network to trained_neural_network.nn\n");
     } else {
-      printf("Failed to save convolution network\n");
+      printf("Failed to save neural network\n");
     }
   }
 }
@@ -181,22 +266,51 @@ void save_trained_networks(void) {
 void load_trained_networks(void) {
   if (g_conv) {
     // Free existing network
-    CONV_free(g_conv);
+    NN_destroy(g_conv);
     g_conv = NULL;
   }
   
   // Load trained network
-  g_conv = CONV_load("trained_convolution.net");
-  if (g_conv) {
-    printf("Loaded trained convolution network from trained_convolution.net\n");
-  } else {
-    printf("No trained network found, creating new one\n");
-    g_conv = CONV_create(CANVAS_SIZE, CANVAS_SIZE, 3, 0.01f);
-    if (g_conv) {
-      CONV_add_conv2d(g_conv, 16, 3, 3, 1, 1);
-      CONV_add_flatten(g_conv);
-      CONV_add_dense(g_conv, 128);
+  FILE *file = fopen("trained_neural_network.nn", "rb");
+  if (file) {
+    // Read network architecture
+    size_t layers[10]; // Max 10 layers
+    size_t num_layers_read = fread(layers, sizeof(size_t), 10, file);
+    
+    if (num_layers_read > 0) {
+      // Create activation functions (use defaults)
+      ActivationFunctionType activations[10];
+      ActivationDerivativeType derivatives[10];
+      
+      for (size_t i = 0; i < num_layers_read; i++) {
+        activations[i] = (i < num_layers_read - 1) ? RELU : LINEAR;
+        derivatives[i] = (i < num_layers_read - 1) ? RELU_DERIVATIVE : LINEAR_DERIVATIVE;
+      }
+      
+      // Initialize network
+      g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE,
+                                         L2, ADAM, 0.001f, RANDOM_NORMAL);
+      
+      if (g_conv) {
+        // Load weights and biases
+        for (size_t i = 0; i < g_conv->numLayers - 1; i++) {
+          size_t wcount = g_conv->layers[i] * g_conv->layers[i + 1];
+          size_t bcount = g_conv->layers[i + 1];
+          
+          fread(g_conv->weights[i], wcount * sizeof(long double), 1, file);
+          fread(g_conv->biases[i], bcount * sizeof(long double), 1, file);
+        }
+        
+        printf("Loaded trained neural network from trained_neural_network.nn\n");
+      }
     }
+    
+    fclose(file);
+  }
+  
+  if (!g_conv) {
+    printf("No trained network found, creating new one\n");
+    init_neural_networks();
   }
 }
 
@@ -216,16 +330,16 @@ void draw_3d_canvas(void) {
         color.b = (unsigned char)(color.b * (0.3f + depth * 0.7f));
       }
       
-      DrawRectangle(canvas_x + x * PIXEL_SIZE, canvas_y + y * PIXEL_SIZE, 
+      DrawRectangle(canvas_x + x * PIXEL_SIZE, canvas_y + y * PIXEL_SIZE,
                  PIXEL_SIZE, PIXEL_SIZE, color);
     }
   }
   
   // Draw grid
   for (int i = 0; i <= CANVAS_SIZE; i++) {
-    DrawLine(canvas_x, canvas_y + i * PIXEL_SIZE, 
+    DrawLine(canvas_x, canvas_y + i * PIXEL_SIZE,
             canvas_x + CANVAS_SIZE * PIXEL_SIZE, canvas_y + i * PIXEL_SIZE, GRAY);
-    DrawLine(canvas_x + i * PIXEL_SIZE, canvas_y, 
+    DrawLine(canvas_x + i * PIXEL_SIZE, canvas_y,
             canvas_x + i * PIXEL_SIZE, canvas_y + CANVAS_SIZE * PIXEL_SIZE, GRAY);
   }
 }
@@ -260,7 +374,7 @@ void load_training_assets(void) {
   const char *asset_files[] = {
     "./Assets/Grass.jpg",
     "./Assets/Base.glb",
-    "./Assets/Tree.glb", 
+    "./Assets/Tree.glb",
     "./Assets/Player.glb",
     "./Assets/Pig.glb"
   };
@@ -300,7 +414,7 @@ void load_training_assets(void) {
             g_training_inputs[input_idx + 0] = 0.1f;
             g_training_inputs[input_idx + 1] = expf(-((y - CANVAS_SIZE/2) * (y - CANVAS_SIZE/2)) * 0.01f);
             g_training_inputs[input_idx + 2] = (x % 16 < 8) ? 0.9f : 0.1f;
-            g_training_targets[target_idx] = 0.9f - fabsf(x - CANVAS_SIZE/2) * 0.02f;
+            g_training_targets[target_idx] = 0.9f - abs(x - CANVAS_SIZE/2) * 0.02f;
             break;
           case 3: // Player - centered, important
             g_training_inputs[input_idx + 0] = expf(-((x - CANVAS_SIZE/2) * (x - CANVAS_SIZE/2) + (y - CANVAS_SIZE/2) * (y - CANVAS_SIZE/2)) * 0.02f);
@@ -376,9 +490,9 @@ void generate_vertices_from_depth(void) {
     }
   }
   
-  // Export to GLB file
-  if (export_mesh_to_glb("generated_3d_object.glb", vertices, vcount, indices, icount)) {
-    printf("Successfully exported 3D object to generated_3d_object.glb\n");
+  // Export to mesh file
+  if (export_mesh_to_glb("generated_3d_object.mesh", vertices, vcount, indices, icount)) {
+    printf("Successfully exported 3D object to generated_3d_object.mesh\n");
   } else {
     printf("Failed to export 3D object\n");
   }
@@ -391,8 +505,6 @@ int export_mesh_to_glb(const char *filename, const float *vertices, int vcount, 
   printf("Exporting mesh to %s...\n", filename);
   
   // For now, export as a simple binary format that can be converted to GLB
-  // In a full implementation, this would use a proper GLB writer
-  
   FILE *file = fopen(filename, "wb");
   if (!file) {
     printf("Failed to open file for writing: %s\n", filename);
@@ -419,15 +531,14 @@ void view_generated_3d_object(void) {
   printf("Launching 3D object viewer...\n");
   
   // For now, just print info about the generated file
-  // In a full implementation, this would launch a 3D viewer
   printf("To view the generated 3D object:\n");
-  printf("1. Use the game engine to load 'generated_3d_object.glb'\n");
+  printf("1. Use the game engine to load 'generated_3d_object.mesh'\n");
   printf("2. Or use any 3D viewer that supports GLB format\n");
   printf("3. The object represents your painted canvas as a 3D terrain\n");
 }
 
 int main(void) {
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D Paint with Neural Networks - Training Ready");
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D Paint with Neural Networks");
   SetTargetFPS(FPS);
   
   init_canvas();
@@ -447,7 +558,7 @@ int main(void) {
       g_3d_mode = !g_3d_mode;
       printf("3D mode: %s\n", g_3d_mode ? "ON" : "OFF");
     }
-      
+    
     if (IsKeyPressed(KEY_ENTER)) {
       process_with_neural_networks();
       nn_processed = true;
@@ -464,8 +575,105 @@ int main(void) {
       printf("Training assets reloaded\n");
     }
     
+    if (IsKeyPressed(KEY_1) && g_training_mode) {
+      // Select Zero/Constant initialization
+      printf("Selected: Zero/Constant initialization (bad due to symmetry)\n");
+      // Update network with ZERO initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {RELU, RELU, RELU, LINEAR};
+        ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, ZERO);
+        printf("Reinitialized with Zero initialization\n");
+      }
+    }
+    
+    if (IsKeyPressed(KEY_2) && g_training_mode) {
+      // Select Random Uniform initialization
+      printf("Selected: Random Uniform initialization (basic, risks gradient issues)\n");
+      // Update network with RANDOM_UNIFORM initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {RELU, RELU, RELU, LINEAR};
+        ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, RANDOM_UNIFORM);
+        printf("Reinitialized with Random Uniform initialization\n");
+      }
+    }
+    
+    if (IsKeyPressed(KEY_3) && g_training_mode) {
+      // Select Random Normal initialization
+      printf("Selected: Random Normal initialization (basic, risks gradient issues)\n");
+      // Update network with RANDOM_NORMAL initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {RELU, RELU, RELU, LINEAR};
+        ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, RANDOM_NORMAL);
+        printf("Reinitialized with Random Normal initialization\n");
+      }
+    }
+    
+    if (IsKeyPressed(KEY_4) && g_training_mode) {
+      // Select Xavier/Glorot initialization (for sigmoid/tanh)
+      printf("Selected: Xavier/Glorot initialization (for sigmoid/tanh)\n");
+      // Update network with XAVIER initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {TANH, TANH, TANH, LINEAR};
+        ActivationDerivativeType derivatives[] = {TANH_DERIVATIVE, TANH_DERIVATIVE, TANH_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, XAVIER);
+        printf("Reinitialized with Xavier/Glorot initialization\n");
+      }
+    }
+    
+    if (IsKeyPressed(KEY_5) && g_training_mode) {
+      // Select He initialization (for ReLU)
+      printf("Selected: He initialization (for ReLU - CURRENT)\n");
+      // Update network with HE initialization (already set by default)
+      printf("Already using He initialization (optimal for ReLU)\n");
+    }
+    
+    if (IsKeyPressed(KEY_6) && g_training_mode) {
+      // Select LeCun initialization (for deeper models)
+      printf("Selected: LeCun initialization (for deeper models)\n");
+      // Update network with LECUN initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {SIGMOID, SIGMOID, SIGMOID, LINEAR};
+        ActivationDerivativeType derivatives[] = {SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE, SIGMOID_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, LECUN);
+        printf("Reinitialized with LeCun initialization\n");
+      }
+    }
+    
+    if (IsKeyPressed(KEY_7) && g_training_mode) {
+      // Select Orthogonal initialization (for complex models)
+      printf("Selected: Orthogonal initialization (for complex models)\n");
+      // Update network with ORTHOGONAL initialization
+      if (g_conv) {
+        NN_destroy(g_conv);
+        size_t layers[] = {CANVAS_SIZE * CANVAS_SIZE * 3, 128, 64, CANVAS_SIZE * CANVAS_SIZE, 0};
+        ActivationFunctionType activations[] = {RELU, RELU, RELU, LINEAR};
+        ActivationDerivativeType derivatives[] = {RELU_DERIVATIVE, RELU_DERIVATIVE, RELU_DERIVATIVE, LINEAR_DERIVATIVE};
+        g_conv = NN_init_with_weight_init(layers, activations, derivatives, MSE, MSE_DERIVATIVE, 
+                                           L2, ADAM, 0.001f, ORTHOGONAL);
+        printf("Reinitialized with Orthogonal initialization\n");
+      }
+    }
+    
     if (IsKeyPressed(KEY_R) && g_training_mode) {
-      init_neural_networks();
+      process_with_neural_networks();
     }
     
     if (IsKeyPressed(KEY_S) && g_training_mode) {
@@ -501,7 +709,7 @@ int main(void) {
     draw_3d_canvas();
     
     // Draw UI
-    DrawText("3D Paint with Neural Networks - Training Ready", 10, 10, 20, WHITE);
+    DrawText("3D Paint with Neural Networks", 10, 10, 20, WHITE);
     
     if (!g_training_mode) {
       DrawText("Left Click: Paint | Right Click: Erase", 10, 40, 16, WHITE);
@@ -510,26 +718,27 @@ int main(void) {
     } else {
       DrawText("TRAINING MODE - Painting Disabled", 10, 40, 16, YELLOW);
       DrawText("T: Toggle Training | L: Load Assets", 10, 60, 16, WHITE);
-      DrawText("R: Train Networks | S: Save Networks | O: Load Trained", 10, 80, 16, WHITE);
-      DrawText("G: Generate 3D Object | V: View 3D Object", 10, 100, 16, WHITE);
+      DrawText("1-7: Weight Init (1=Zero, 2=Uni, 3=Norm, 4=Xav, 5=He, 6=LeCun, 7=Orth)", 10, 80, 16, WHITE);
+      DrawText("R: Train Networks | S: Save Networks | O: Load Trained", 10, 100, 16, WHITE);
+      DrawText("G: Generate 3D Object | V: View 3D Object", 10, 120, 16, WHITE);
     }
     
-    DrawText(TextFormat("3D Mode: %s", g_3d_mode ? "ON" : "OFF"), 10, 120, 16, 
+    DrawText(TextFormat("3D Mode: %s", g_3d_mode ? "ON" : "OFF"), 10, 140, 16, 
                g_3d_mode ? GREEN : RED);
     
     if (nn_processed) {
-      DrawText("Neural Network Processing Complete!", 10, 140, 16, GREEN);
+      DrawText("Neural Network Processing Complete!", 10, 160, 16, GREEN);
     }
     
     if (g_training_mode) {
-      DrawText(TextFormat("Training Samples: %d", g_training_count), 10, 160, 16, CYAN);
+      DrawText(TextFormat("Training Samples: %d", g_training_count), 10, 180, 16, CYAN);
     }
     
     EndDrawing();
   }
   
   // Cleanup neural networks
-  if (g_conv) CONV_free(g_conv);
+  if (g_conv) NN_destroy(g_conv);
   if (g_transformer) free(g_transformer);
   
   // Cleanup training data

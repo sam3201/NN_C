@@ -1,7 +1,7 @@
-#include "../utils/NN/MEMORY/memory.h"
+#include "../utils/NN/MEMORY/MEMORY.h"
 #include "../utils/NN/MUZE/all.h"
-#include "../utils/NN/NEAT.h"
-#include "../utils/NN/NN.h"
+#include "../utils/NN/NEAT/NEAT.h"
+#include "../utils/NN/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <assert.h>
 #include <limits.h>

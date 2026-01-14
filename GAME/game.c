@@ -1,5 +1,5 @@
 #include "../utils/NN/MUZE/all.h"
-#include "../utils/NN/TRANSFORMER.h"
+#include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/SDL/include/SDL3/SDL.h"
 #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>

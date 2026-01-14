@@ -1,5 +1,5 @@
 #include "../utils/NN/MUZE/all.h"
-#include "../utils/NN/NN.h"
+#include "../utils/NN/NN/NN.h"
 #include "../utils/Raylib/src/raylib.h"
 #include <math.h>
 #include <pthread.h>

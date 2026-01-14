@@ -1,18 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "mesh_loader.h"
 #include <string.h>
-
-typedef struct {
-    float x, y, z;
-    float nx, ny, nz;
-} Vertex;
-
-typedef struct {
-    Vertex *vertices;
-    unsigned int *indices;
-    int vertex_count;
-    int index_count;
-} MeshData;
 
 int load_custom_mesh(const char *filename, MeshData *mesh) {
     FILE *file = fopen(filename, "rb");
