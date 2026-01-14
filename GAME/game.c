@@ -25,8 +25,6 @@
 #include "../utils/NN/MUZE/toy_env.h"
 // #include "../utils/NN/MUZE/trainer.h" // Excluded - includes replay_buffer.h
 #include "../utils/NN/MUZE/util.h"
-
-#include "../utils/NN/NN/NN.h"
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
 // #include "../utils/SDL3/SDL3_compat.h"
