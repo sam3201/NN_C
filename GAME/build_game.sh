@@ -77,8 +77,8 @@ FLAGS="${FLAGS:-} -g"
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
   -I"$SDL_SRC_DIR/include" \
-  $SDL_CFLAGS \
-  $SDL_LIBS \
+  # $SDL_CFLAGS \
+  # $SDL_LIBS \
   -L"$SDL_BUILD_DIR" -lSDL3 \
   -pthread -lm \
   -framework OpenGL \
