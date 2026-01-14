@@ -10125,42 +10125,47 @@ for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
         resources_rendered++;
       }
     }
-    pthread_rwlock_unlock(&c->lock);
-  }
-}
-
-// Render AI agents
-render_agents_3d(player_pos, view_proj);
-
-// Render damage numbers
-for (int i = 0; i < damage_number_count; i++) {
-  float alpha = damage_numbers[i].timer / 2.0f; // Fade out over 2 seconds
-  if (alpha > 0.0f) {
-    Vec3 dmg_pos =
-        vec3(damage_numbers[i].pos.x,
-             g_use_perlin_ground ? terrain_height(damage_numbers[i].pos.x,
                                                   damage_numbers[i].pos.y) +
                                        2.0f
                                  : 2.0f,
              damage_numbers[i].pos.y);
-    Mat4 dmg_model =
-        mat4_mul(mat4_translate(dmg_pos), mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
+                                                  Mat4 dmg_model = mat4_mul(
+                                                      mat4_translate(dmg_pos),
+                                                      mat4_scale(vec3(
+                                                          0.3f, 0.3f, 0.01f)));
+                                                  Color dmg_color =
+                                                      damage_numbers[i].color;
+                                                  dmg_color.a =
+                                                      (unsigned char)(255 *
+                                                                      alpha); // Apply fade
 
-    Color dmg_color = damage_numbers[i].color;
-    dmg_color.a = (unsigned char)(255 * alpha); // Apply fade
+                                                  // Animated floating effect
+                                                  float time = GetTime();
+                                                  float bounce =
+                                                      sinf(time * 10.0f) *
+                                                      0.05f; // Small bounce
+                                                  float scale =
+                                                      1.0f +
+                                                      bounce; // Pulse effect
 
-    // Animated floating effect
-    float time = GetTime();
-    float bounce = sinf(time * 10.0f) * 0.05f; // Small bounce
-    float scale = 1.0f + bounce;               // Pulse effect
-
-    Mat4 animated_model =
-        mat4_mul(dmg_model, mat4_scale(vec3(scale, scale, 0.01f)));
-    Vec3 dmg_tint =
-        vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f, dmg_color.b / 255.0f);
-    render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
+                                                  Mat4 animated_model =
+                                                      mat4_mul(dmg_model,
+                                                               mat4_scale(vec3(
+                                                                   scale, scale,
+                                                                   0.01f)));
+                                                  Vec3 dmg_tint = vec3(
+                                                      dmg_color.r / 255.0f,
+                                                      dmg_color.g / 255.0f,
+                                                      dmg_color.b / 255.0f);
+                                                  render_mesh(&g_mesh_cube,
+                                                              animated_model,
+                                                              view_proj,
+                                                              dmg_tint);
   }
+  vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f, dmg_color.b / 255.0f);
+  render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
 }
+render_resources_3d(player_pos, view_proj);
 
 // Render bases
 render_bases_3d(view_proj);
@@ -10180,7 +10185,15 @@ if (frame_counter >= 60) {
   }
   g_last_frame_time = current_time;
   frame_counter = 0;
-}
+  if (frame_counter >= 60) {
+    float current_time = GetTime();
+    if (g_last_frame_time > 0.0f) {
+      float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
+      g_current_fps = 1.0f / avg_frame_time;
+    }
+    g_last_frame_time = current_time;
+    frame_counter = 0;
+  }
 }
 
 /* =======================
