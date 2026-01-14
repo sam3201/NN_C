@@ -10240,7 +10240,7 @@ void toggle_spectator_mode(void) {
     printf("Spectator mode DISABLED\n");
     // Restore normal mouse state
     if (g_state == STATE_PLAYING) {
-      SDL_ShowCursor(SDL_FALSE);
+      SDL_ShowCursor(false);
       g_mouse_locked = 1;
     }
   }
@@ -10537,7 +10537,7 @@ int main(int argc, char *argv[]) {
       // Only lock mouse when playing AND user clicks (not immediately on entry)
       if (g_state == STATE_PLAYING && !g_mouse_locked && mouse_clicked) {
         // Try without relative mode first
-        SDL_ShowCursor(SDL_FALSE);
+        SDL_ShowCursor(false);
         int mw = GetScreenWidth();
         int mh = GetScreenHeight();
         if (mw > 0 && mh > 0) {
