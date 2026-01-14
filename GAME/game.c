@@ -9886,30 +9886,20 @@ void update_ai_training(float dt) {
   float observation[128] = {0}; // Simplified observation
   int obs_size = 128;
 
-  // Get action from RL agent
+  // Select action using RL agent
   int action = rl_agent_select_action(g_ai_agent, observation, obs_size);
+  
+  // Execute action (simplified - in real implementation this would control agents)
+  float reward = simulate_action_result(action);
+  
+  // Get next observation
+  float next_obs[128];
+  get_observation(next_obs, 128);
+  
+  // Update agent with experience
+  rl_agent_update(g_ai_agent, reward, (GridObservation*)next_obs, 1);
 
-  // Execute action in game world (simplified)
-  // In a full implementation, this would control actual agents
-  if (action >= 0 && action < 16) { // Valid action range
-    // Simulate reward based on action
-    float reward = 0.0f;
-
-    // Different actions give different rewards
-    switch (action % 4) {
-    case 0:
-      reward = 0.1f;
-      break; // Move
-    case 1:
-      reward = 0.05f;
-      break; // Jump
-    case 2:
-      reward = -0.02f;
-      break; // Attack (cost)
-    case 3:
-      reward = 0.15f;
-      break; // Collect
-    }
+  g_ai_training_reward += reward;
 
     g_ai_training_reward += reward;
 
