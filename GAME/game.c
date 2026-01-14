@@ -2611,10 +2611,14 @@ static void update_projectiles(float dt) {
 }
 
 static inline Vector2 world_to_screen(Vector2 wp) {
+  // Use current screen dimensions, not cached ones
+  int current_w = GetScreenWidth();
+  int current_h = GetScreenHeight();
+
   Vector2 sp = Vector2Subtract(wp, camera_pos);
   sp = Vector2Scale(sp, WORLD_SCALE);
-  sp.x += SCREEN_WIDTH / 2;
-  sp.y += SCREEN_HEIGHT / 2;
+  sp.x += current_w / 2;
+  sp.y += current_h / 2;
   return sp;
 }
 
@@ -4086,8 +4090,11 @@ void draw_chunks(void) {
 
       Vector2 screen = Vector2Subtract(world_pos, camera_pos);
       screen = Vector2Scale(screen, WORLD_SCALE);
-      screen.x += SCREEN_WIDTH / 2;
-      screen.y += SCREEN_HEIGHT / 2;
+      // Use current screen dimensions, not cached ones
+      int current_w = GetScreenWidth();
+      int current_h = GetScreenHeight();
+      screen.x += current_w / 2;
+      screen.y += current_h / 2;
 
       // IMPORTANT: snap to pixel grid to avoid seams
       int sx = (int)floorf(screen.x);
@@ -6221,9 +6228,12 @@ void update_player(void) {
           bow_charge01 >= BOW_CHARGE_MIN01) {
         // aim from player -> mouse in WORLD space
         Vector2 mouse = GetMousePosition();
+        // Use current screen dimensions, not cached ones
+        int current_w = GetScreenWidth();
+        int current_h = GetScreenHeight();
         Vector2 mouse_world = {
-            (mouse.x - SCREEN_WIDTH * 0.5f) / WORLD_SCALE + camera_pos.x,
-            (mouse.y - SCREEN_HEIGHT * 0.5f) / WORLD_SCALE + camera_pos.y};
+            (mouse.x - current_w * 0.5f) / WORLD_SCALE + camera_pos.x,
+            (mouse.y - current_h * 0.5f) / WORLD_SCALE + camera_pos.y};
 
         Vector2 dir = Vector2Subtract(mouse_world, player.position);
         if (Vector2Length(dir) < 1e-3f)
@@ -6692,13 +6702,19 @@ static int ui_button(Rectangle r, const char *text) {
   int hot = CheckCollisionPointRec(m, r);
   int clicked = hot && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
+  // Scale font size based on button height
+  int font_size = (int)(r.height * 0.4f); // 40% of button height
+  if (font_size < 12)
+    font_size = 12; // Minimum font size
+  if (font_size > 32)
+    font_size = 32; // Maximum font size
+
   Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
   DrawRectangleRounded(r, 0.25f, 8, bg);
   DrawRectangleRoundedLines(r, 0.25f, 8, (Color){0, 0, 0, 160});
-  int fs = 20;
-  int tw = MeasureText(text, fs);
+  int tw = MeasureText(text, font_size);
   DrawText(text, (int)(r.x + (r.width - tw) / 2),
-           (int)(r.y + (r.height - fs) / 2), fs, RAYWHITE);
+           (int)(r.y + (r.height - font_size) / 2), font_size, RAYWHITE);
   return clicked;
 }
 
@@ -8973,16 +8989,37 @@ static void draw_title_screen_3d(void) {
   // If 3D renderer is not ready, use 2D fallback rendering
   if (!g_3d_ready) {
     // 2D fallback rendering
-    DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
-    DrawText("SAMCRAFT", w / 2 - MeasureText("SAMCRAFT", 52) / 2, 40, 52,
-             RAYWHITE);
-    DrawText("F5 = Save while playing",
-             w / 2 - MeasureText("F5 = Save while playing", 18) / 2, 100, 18,
-             (Color){200, 200, 200, 180});
+    // Scale title and subtitle based on screen resolution
+    int title_font_size = (int)(h * 0.08f);     // 8% of screen height
+    int subtitle_font_size = (int)(h * 0.025f); // 2.5% of screen height
+    if (title_font_size > 72)
+      title_font_size = 72; // Max title size
+    if (title_font_size < 24)
+      title_font_size = 24; // Min title size
+    if (subtitle_font_size > 24)
+      subtitle_font_size = 24; // Max subtitle size
+    if (subtitle_font_size < 14)
+      subtitle_font_size = 14; // Min subtitle size
 
-    Rectangle b1 = {(float)w * 0.1f, (float)h * 0.3f, 260.0f, 50.0f};
-    Rectangle b2 = {(float)w * 0.1f, (float)h * 0.3f + 60.0f, 260.0f, 50.0f};
-    Rectangle b3 = {(float)w * 0.1f, (float)h * 0.3f + 120.0f, 260.0f, 50.0f};
+    DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
+    DrawText("SAMCRAFT", w / 2 - MeasureText("SAMCRAFT", title_font_size) / 2,
+             (int)(h * 0.05f), title_font_size, RAYWHITE);
+    DrawText("F5 = Save while playing",
+             w / 2 -
+                 MeasureText("F5 = Save while playing", subtitle_font_size) / 2,
+             (int)(h * 0.12f), subtitle_font_size, (Color){200, 200, 200, 180});
+
+    // Scale button sizes based on screen resolution
+    float button_width = (float)w * 0.2f;    // 20% of screen width
+    float button_height = (float)h * 0.06f;  // 6% of screen height
+    float button_spacing = (float)h * 0.08f; // 8% of screen height
+
+    Rectangle b1 = {(float)w * 0.1f, (float)h * 0.3f, button_width,
+                    button_height};
+    Rectangle b2 = {(float)w * 0.1f, (float)h * 0.3f + button_spacing,
+                    button_width, button_height};
+    Rectangle b3 = {(float)w * 0.1f, (float)h * 0.3f + button_spacing * 2.0f,
+                    button_width, button_height};
 
     if (ui_button(b1, "Play (Load/Select)")) {
       printf("DEBUG: Play button clicked!\n");
@@ -8999,7 +9036,7 @@ static void draw_title_screen_3d(void) {
     return;
   }
 
-  // Use screen-relative positioning
+  // Use screen-relative positioning for 3D mode
   float button_width = 260.0f;
   float button_height = 50.0f;
   float button_x = w * 0.1f; // 10% from left
@@ -9012,6 +9049,7 @@ static void draw_title_screen_3d(void) {
   Rectangle b3 = (Rectangle){button_x, start_y + button_spacing * 2,
                              button_width, button_height};
 
+  // Ensure full screen coverage
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
@@ -9065,128 +9103,158 @@ static void draw_world_select_3d(void) {
 
   world_list_ensure_valid(&g_world_list);
 
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
-               (Color){18, 18, 28, 255});
-  ui_draw_text_size(40, 30, "Select World", 44, RAYWHITE);
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
 
-  Rectangle listBox = {40, 100, 520, (float)SCREEN_HEIGHT - 180};
-  ui_draw_rect(listBox.x, listBox.y, listBox.width, listBox.height,
-               (Color){25, 25, 40, 255});
-  ui_draw_rect(listBox.x, listBox.y, listBox.width, 1.0f,
-               (Color){0, 0, 0, 160});
-  ui_draw_rect(listBox.x, listBox.y + listBox.height - 1.0f, listBox.width,
-               1.0f, (Color){0, 0, 0, 160});
-  ui_draw_rect(listBox.x, listBox.y, 1.0f, listBox.height,
-               (Color){0, 0, 0, 160});
-  ui_draw_rect(listBox.x + listBox.width - 1.0f, listBox.y, 1.0f,
-               listBox.height, (Color){0, 0, 0, 160});
+  // If 3D renderer is not ready, use 2D fallback rendering
+  if (!g_3d_ready) {
+    // 2D fallback rendering with proper scaling
+    float ui_scale_x = w / 1280.0f;
+    float ui_scale_y = h / 800.0f;
 
-  int itemH = 44;
-  int visible = (int)(listBox.height / itemH);
-  if (visible < 1)
-    visible = 1;
+    DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
+    DrawText("Select World", (int)(40 * ui_scale_x), (int)(30 * ui_scale_y),
+             (int)(44 * ui_scale_y), RAYWHITE);
 
-  float wheel = GetMouseWheelMove();
-  if (wheel != 0.0f && g_world_list.count > 0) {
-    g_world_list.scroll -= (int)wheel;
-    if (g_world_list.scroll < 0)
-      g_world_list.scroll = 0;
-    int maxScroll =
-        (g_world_list.count > visible) ? (g_world_list.count - visible) : 0;
-    if (g_world_list.scroll > maxScroll)
-      g_world_list.scroll = maxScroll;
-  }
+    Rectangle listBox = {(float)(40 * ui_scale_x), (float)(100 * ui_scale_y),
+                         (float)(520 * ui_scale_x),
+                         (float)(h - 180 * ui_scale_y)};
+    DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
+    DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
 
-  if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
-    g_world_list.selected--;
-  if (IsKeyPressed(KEY_DOWN) && g_world_list.selected < g_world_list.count - 1)
-    g_world_list.selected++;
+    // Scale font sizes for world list items
+    int item_font_size = (int)(22 * ui_scale_y);
+    if (item_font_size < 12)
+      item_font_size = 12;
+    if (item_font_size > 32)
+      item_font_size = 32;
 
-  if (g_world_list.selected >= 0) {
-    if (g_world_list.selected < g_world_list.scroll)
-      g_world_list.scroll = g_world_list.selected;
-    if (g_world_list.selected >= g_world_list.scroll + visible)
-      g_world_list.scroll = g_world_list.selected - visible + 1;
-  }
+    int itemH = (int)(44 * ui_scale_y);
+    int visible = (int)(listBox.height / itemH);
+    if (visible < 1)
+      visible = 1;
 
-  for (int i = 0; i < visible; i++) {
-    int idx = g_world_list.scroll + i;
-    if (idx >= g_world_list.count)
-      break;
-
-    Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
-                     listBox.width - 20, (float)itemH - 6};
-    int hot = CheckCollisionPointRec(GetMousePosition(), row);
-
-    Color bg = (Color){35, 35, 55, 255};
-    if (idx == g_world_list.selected)
-      bg = (Color){60, 60, 95, 255};
-    else if (hot)
-      bg = (Color){45, 45, 70, 255};
-
-    ui_draw_rect(row.x, row.y, row.width, row.height, bg);
-    ui_draw_text_size(row.x + 12, row.y + 10, g_world_list.names[idx], 22,
-                      RAYWHITE);
-
-    if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-      g_world_list.selected = idx;
+    // mouse wheel scroll
+    float wheel = GetMouseWheelMove();
+    if (wheel != 0.0f && g_world_list.count > 0) {
+      g_world_list.scroll -= (int)wheel;
+      if (g_world_list.scroll < 0)
+        g_world_list.scroll = 0;
+      int maxScroll =
+          (g_world_list.count > visible) ? (g_world_list.count - visible) : 0;
+      if (g_world_list.scroll > maxScroll)
+        g_world_list.scroll = maxScroll;
     }
-  }
 
-  Rectangle rPlay = {600, 140, 260, 54};
-  Rectangle rDelete = {600, 210, 260, 54};
-  Rectangle rCreate = {600, 280, 260, 54};
-  Rectangle rBack = {600, 350, 260, 54};
+    // keyboard nav
+    if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
+      g_world_list.selected--;
+    if (IsKeyPressed(KEY_DOWN) &&
+        g_world_list.selected < g_world_list.count - 1)
+      g_world_list.selected++;
 
-  int hasSelection = (g_world_list.selected >= 0 &&
-                      g_world_list.selected < g_world_list.count);
+    // keep selected in view
+    if (g_world_list.selected >= 0) {
+      if (g_world_list.selected < g_world_list.scroll)
+        g_world_list.scroll = g_world_list.selected;
+      if (g_world_list.selected >= g_world_list.scroll + visible)
+        g_world_list.scroll = g_world_list.selected - visible + 1;
+    }
 
-  if (ui_button_gl(rPlay, hasSelection ? "Play Selected" : "Play (no world)",
-                   20)) {
-    if (hasSelection) {
+    // draw items
+    for (int i = 0; i < visible; i++) {
+      int idx = g_world_list.scroll + i;
+      if (idx >= g_world_list.count)
+        break;
+
+      Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
+                       listBox.width - 20, (float)itemH - 6};
+      int hot = CheckCollisionPointRec(GetMousePosition(), row);
+
+      Color bg = (Color){35, 35, 55, 255};
+      if (idx == g_world_list.selected)
+        bg = (Color){60, 60, 95, 255};
+      else if (hot)
+        bg = (Color){45, 45, 70, 255};
+
+      DrawRectangleRounded(row, 0.18f, 8, bg);
+
+      DrawText(g_world_list.names[idx], (int)(row.x + 12), (int)(row.y + 10),
+               item_font_size, RAYWHITE);
+
+      if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        g_world_list.selected = idx;
+      }
+    }
+
+    // Scale buttons
+    float button_width = 260 * ui_scale_x;
+    float button_height = 54 * ui_scale_y;
+    float button_x = 600 * ui_scale_x;
+
+    Rectangle rPlay = {button_x, 140 * ui_scale_y, button_width, button_height};
+    Rectangle rDelete = {button_x, 210 * ui_scale_y, button_width,
+                         button_height};
+    Rectangle rCreate = {button_x, 280 * ui_scale_y, button_width,
+                         button_height};
+    Rectangle rBack = {button_x, 350 * ui_scale_y, button_width, button_height};
+
+    int hasSelection = (g_world_list.selected >= 0 &&
+                        g_world_list.selected < g_world_list.count);
+
+    if (ui_button(rPlay, hasSelection ? "Play Selected" : "Play (no world)")) {
+      if (hasSelection) {
+        snprintf(g_world_name, sizeof(g_world_name), "%s",
+                 g_world_list.names[g_world_list.selected]);
+
+        // load
+        if (!load_world_from_disk(g_world_name)) {
+          // if load fails, create fresh using current seed
+          world_reset(g_world_seed);
+          save_world_to_disk(g_world_name);
+          save_models_to_disk(g_world_name);
+        } else {
+          load_models_from_disk(g_world_name);
+        }
+        g_state = STATE_PLAYING;
+        ensure_agents_ready_on_enter();
+      }
+    }
+
+    if (ui_button(rDelete,
+                  hasSelection ? "Delete World" : "Delete (no world)")) {
+      if (hasSelection) {
+        const char *wname = g_world_list.names[g_world_list.selected];
+        delete_world_by_name(wname);
+
+        world_list_refresh(&g_world_list);
+        world_list_ensure_valid(&g_world_list);
+      }
+    }
+
+    if (ui_button(rCreate, "Create New World")) {
+      // go to your create UI
+      g_state = STATE_WORLD_CREATE;
+    }
+
+    if (ui_button(rBack, "Back")) {
+      g_state = STATE_TITLE;
+    }
+
+    // Enter to play
+    if (hasSelection && IsKeyPressed(KEY_ENTER)) {
       snprintf(g_world_name, sizeof(g_world_name), "%s",
                g_world_list.names[g_world_list.selected]);
       if (!load_world_from_disk(g_world_name)) {
         world_reset(g_world_seed);
         save_world_to_disk(g_world_name);
-        save_models_to_disk(g_world_name);
-      } else {
-        load_models_from_disk(g_world_name);
       }
       g_state = STATE_PLAYING;
       ensure_agents_ready_on_enter();
     }
-  }
-
-  if (ui_button_gl(rDelete, hasSelection ? "Delete World" : "Delete (no world)",
-                   20)) {
-    if (hasSelection) {
-      const char *wname = g_world_list.names[g_world_list.selected];
-      delete_world_by_name(wname);
-      world_list_refresh(&g_world_list);
-      world_list_ensure_valid(&g_world_list);
-    }
-  }
-
-  if (ui_button_gl(rCreate, "Create New World", 20)) {
-    g_state = STATE_WORLD_CREATE;
-  }
-
-  if (ui_button_gl(rBack, "Back", 20)) {
-    g_state = STATE_TITLE;
-  }
-
-  if (hasSelection && IsKeyPressed(KEY_ENTER)) {
-    snprintf(g_world_name, sizeof(g_world_name), "%s",
-             g_world_list.names[g_world_list.selected]);
-    if (!load_world_from_disk(g_world_name)) {
-      world_reset(g_world_seed);
-      save_world_to_disk(g_world_name);
-    }
-    g_state = STATE_PLAYING;
-    ensure_agents_ready_on_enter();
+    return;
   }
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
@@ -9815,146 +9883,151 @@ static void render_scene_3d(void) {
   if (w <= 0 || h <= 0)
     return;
 
-  glViewport(0, 0, w, h);
-  glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  static void init_3d_renderer(void) {
+    if (g_3d_initialized)
+      return;
+    g_3d_initialized = 1;
 
-  // Set up camera and projection
-  float aspect = (float)w / (float)h;
-  Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
-  float player_h = g_use_perlin_ground
-                       ? terrain_height(player.position.x, player.position.y)
-                       : 0.0f;
-  player_h += g_player_y_offset;
-  Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
-  Vec3 forward =
-      vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
-           cosf(g_player_pitch) * -cosf(g_player_yaw));
-  Vec3 eye = vec3_add(
-      player_pos,
-      vec3(0.0f, (g_camera_mode == CAM_FIRST_PERSON) ? 1.7f : 0.0f, 0.0f));
-  if (g_camera_mode == CAM_THIRD_PERSON) {
-    float dist = 8.0f;
-    float height = 2.5f;
-    Vec3 back = vec3_scale(forward, -dist);
-    eye = vec3_add(player_pos, back);
-    eye.y += height;
-  }
-  Vec3 target = vec3_add(eye, forward);
-  Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
-  Mat4 view_proj = mat4_mul(proj, view);
+    // Use current screen dimensions
+    int w = GetScreenWidth();
+    int h = GetScreenHeight();
 
-  glUseProgram(g_shader);
-  // Set up dynamic sun/lighting based on day/night cycle
-  float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
-  float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
+    glViewport(0, 0, w, h);
+    glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    float aspect = (float)w / (float)h;
+    Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
+    float player_h = g_use_perlin_ground
+                         ? terrain_height(player.position.x, player.position.y)
+                         : 0.0f;
+    player_h += g_player_y_offset;
+    Vec3 player_pos = vec3(player.position.x, player_h, player.position.y);
+    Vec3 forward =
+        vec3(cosf(g_player_pitch) * sinf(g_player_yaw), sinf(g_player_pitch),
+             cosf(g_player_pitch) * -cosf(g_player_yaw));
+    Vec3 eye = vec3_add(
+        player_pos,
+        vec3(0.0f, (g_camera_mode == CAM_FIRST_PERSON) ? 1.7f : 0.0f, 0.0f));
+    if (g_camera_mode == CAM_THIRD_PERSON) {
+      float dist = 8.0f;
+      float height = 2.5f;
+      Vec3 back = vec3_scale(forward, -dist);
+      eye = vec3_add(player_pos, back);
+      eye.y += height;
+    }
+    Vec3 target = vec3_add(eye, forward);
+    Mat4 view = mat4_lookat(eye, target, vec3(0, 1, 0));
+    Mat4 view_proj = mat4_mul(proj, view);
 
-  // Enhanced sun position: higher arc for better lighting
-  float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
-  Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
+    glUseProgram(g_shader);
+    // Set up dynamic sun/lighting based on day/night cycle
+    float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
+    float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
 
-  // Brighter ambient light during day
-  float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
-  float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
+    // Enhanced sun position: higher arc for better lighting
+    float sun_height = sinf(sun_angle) * 0.9f + 0.2f; // Higher peaks
+    Vec3 sun_dir = vec3(cosf(sun_angle), sun_height, sinf(sun_angle * 0.6f));
 
-  // At night, use moonlight (dimmer but with blue tint)
-  if (is_night_cached) {
-    sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
-    sun_dir.x += 0.05f;                  // Slight blue tint for moon
-    sun_dir.y += 0.02f;
-  } else {
-    // During day, add more dynamic intensity based on sun position
-    sun_intensity =
-        sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
-  }
+    // Brighter ambient light during day
+    float ambient_base = is_night_cached ? 0.15f : 0.4f; // Brighter day
+    float sun_intensity = is_night_cached ? 0.2f : 0.8f; // Stronger sun
 
-  // Combine ambient and directional light
-  Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base),
-                              vec3_scale(sun_dir, sun_intensity));
+    // At night, use moonlight (dimmer but with blue tint)
+    if (is_night_cached) {
+      sun_dir = vec3_scale(sun_dir, 0.4f); // Gentler night light
+      sun_dir.x += 0.05f;                  // Slight blue tint for moon
+      sun_dir.y += 0.02f;
+    } else {
+      // During day, add more dynamic intensity based on sun position
+      sun_intensity =
+          sun_intensity * (0.7f + 0.3f * sun_height); // Varies with sun height
+    }
 
-  glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
+    // Combine ambient and directional light
+    Vec3 final_light = vec3_add(vec3(ambient_base, ambient_base, ambient_base),
+                                vec3_scale(sun_dir, sun_intensity));
 
-  // Render ground using optimized terrain tiles with LOD
-  if (g_mesh_ground_tile_loaded) {
-    // Render far fewer terrain tiles for performance
-    float tile_size = 40.0f;            // Larger tiles = fewer draw calls
-    int tile_radius = 3;                // Only render 3x3 grid around player
-    float base_render_distance = 50.0f; // Base render distance for terrain too
+    glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
 
-    for (int x = -tile_radius; x <= tile_radius; x++) {
-      for (int y = -tile_radius; y <= tile_radius; y++) {
-        // Skip far tiles for LOD
-        float dist = sqrtf((float)(x * x + y * y)) * tile_size;
-        if (dist > base_render_distance)
-          continue;
+    // Render ground using optimized terrain tiles with LOD
+    if (g_mesh_ground_tile_loaded) {
+      // Render far fewer terrain tiles for performance
+      float tile_size = 40.0f; // Larger tiles = fewer draw calls
+      int tile_radius = 3;     // Only render 3x3 grid around player
+      float base_render_distance =
+          50.0f; // Base render distance for terrain too
 
-        Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
+      for (int x = -tile_radius; x <= tile_radius; x++) {
+        for (int y = -tile_radius; y <= tile_radius; y++) {
+          // Skip far tiles for LOD
+          float dist = sqrtf((float)(x * x + y * y)) * tile_size;
+          if (dist > base_render_distance)
+            continue;
 
-        // LOD scaling - use larger tiles for distance
-        float lod_scale = 1.0f;
-        if (dist > 30.0f)
-          lod_scale = 1.5f;
-        else if (dist > 20.0f)
-          lod_scale = 1.2f;
+          Vec3 pos = vec3(x * tile_size, 0.0f, y * tile_size);
 
-        Mat4 ground =
-            mat4_mul(mat4_translate(pos),
-                     mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f,
-                                     tile_size * lod_scale * 0.5f)));
-        render_mesh(&g_mesh_ground_tile, ground, view_proj,
-                    vec3(0.35f, 0.75f, 0.35f));
+          // LOD scaling - use larger tiles for distance
+          float lod_scale = 1.0f;
+          if (dist > 30.0f)
+            lod_scale = 1.5f;
+          else if (dist > 20.0f)
+            lod_scale = 1.2f;
+
+          Mat4 ground =
+              mat4_mul(mat4_translate(pos),
+                       mat4_scale(vec3(tile_size * lod_scale * 0.5f, 1.0f,
+                                       tile_size * lod_scale * 0.5f)));
+          render_mesh(&g_mesh_ground_tile, ground, view_proj,
+                      vec3(0.35f, 0.75f, 0.35f));
+        }
       }
+    } else {
+      // Fallback to simple ground plane
+      Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
+                             mat4_scale(vec3(100.0f, 0.1f, 100.0f)));
+      render_mesh(&g_mesh_cube, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
     }
-  } else {
-    // Fallback to simple ground plane
-    Mat4 ground = mat4_mul(mat4_translate(vec3(0.0f, 0.0f, 0.0f)),
-                           mat4_scale(vec3(100.0f, 0.1f, 100.0f)));
-    render_mesh(&g_mesh_cube, ground, view_proj, vec3(0.35f, 0.75f, 0.35f));
+
+    // Render player
+    if (g_mesh_player_loaded) {
+      // Get terrain height at player position
+      float terrain_h = 0.0f;
+      if (g_use_perlin_ground) {
+        terrain_h = terrain_height(player_pos.x, player_pos.z);
+      }
+
+      Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
+      Mat4 player_model = mat4_mul(mat4_translate(player_3d),
+                                   mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
+      render_mesh(&g_mesh_player, player_model, view_proj,
+                  vec3(0.8f, 0.4f, 0.2f));
+    } else {
+      // Fallback to cube
+      Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
+      Mat4 player_model = mat4_mul(mat4_translate(player_3d),
+                                   mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
+      render_mesh(&g_mesh_cube, player_model, view_proj,
+                  vec3(0.8f, 0.4f, 0.2f));
+    }
+
+    // Render grass with distance-based density optimization
+    if (g_enable_grass) {
+      render_grass_3d(player_pos, view_proj, 1.0f);
+      float player_dist_sq =
+          player_pos.x * player_pos.x + player_pos.z * player_pos.z;
+      float player_dist = sqrtf(player_dist_sq);
+
+      // Reduce grass density based on distance for performance
+      if (player_dist > 20.0f) {
+        grass_density = 0.5f; // Half density at medium distance
+      }
+      if (player_dist > 30.0f) {
+        grass_density = 0.25f; // Quarter density at far distance
+      }
+
+      render_grass_3d(player_pos, view_proj, grass_density);
+    }
   }
-
-  // Render player
-  if (g_mesh_player_loaded) {
-    // Get terrain height at player position
-    float terrain_h = 0.0f;
-    if (g_use_perlin_ground) {
-      terrain_h = terrain_height(player_pos.x, player_pos.z);
-    }
-
-    Vec3 player_3d = vec3(player_pos.x, terrain_h, player_pos.z);
-    Mat4 player_model =
-        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(1.0f, 1.0f, 1.0f)));
-    render_mesh(&g_mesh_player, player_model, view_proj,
-                vec3(0.8f, 0.4f, 0.2f));
-  } else {
-    // Fallback to cube
-    Vec3 player_3d = vec3(player_pos.x, 0.0f, player_pos.z);
-    Mat4 player_model =
-        mat4_mul(mat4_translate(player_3d), mat4_scale(vec3(0.5f, 1.0f, 0.5f)));
-    render_mesh(&g_mesh_cube, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
-  }
-
-  // Render grass with distance-based density optimization
-  if (g_enable_grass) {
-    float grass_distance = 30.0f; // Reduce grass render distance
-    float grass_density = 1.0f;
-
-    // Simple distance calculation without vec3_len to avoid potential issues
-    float player_dist_sq =
-        player_pos.x * player_pos.x + player_pos.z * player_pos.z;
-    float player_dist = sqrtf(player_dist_sq);
-
-    // Reduce grass density based on distance for performance
-    if (player_dist > 20.0f) {
-      grass_density = 0.5f; // Half density at medium distance
-    }
-    if (player_dist > 30.0f) {
-      grass_density = 0.25f; // Quarter density at far distance
-    }
-
-    render_grass_3d(player_pos, view_proj, grass_density);
-  }
-
-  // Render mobs
   render_mobs_3d(player_pos, view_proj);
 
   // Render resources with optimized culling and proper locking
@@ -10437,6 +10510,10 @@ int main(int argc, char *argv[]) {
       dt = 1.0f / 60.0f; // Default to 60 FPS
     }
 
+    // Update screen dimensions continuously
+    SCREEN_WIDTH = GetScreenWidth();
+    SCREEN_HEIGHT = GetScreenHeight();
+
     // Test mouse button detection with proper Raylib constants
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       printf("LEFT MOUSE BUTTON PRESSED\n");
@@ -10684,6 +10761,9 @@ int main(int argc, char *argv[]) {
       if (ui_button(b3, "Quit"))
         g_should_quit = 1;
     } else if (g_state == STATE_WORLD_CREATE) {
+      // Get screen dimensions for scaling
+      int w = GetScreenWidth();
+      int h = GetScreenHeight();
 
       DrawText("Create World", 60, 50, 34, RAYWHITE);
 
@@ -10692,10 +10772,21 @@ int main(int argc, char *argv[]) {
                  sizeof(g_world_name), &g_typing_name, 0);
 
       DrawText("Seed", 60, 205, 18, RAYWHITE);
-      ui_textbox((Rectangle){60, 230, 200, 45}, g_seed_text,
-                 sizeof(g_seed_text), &g_typing_seed, 1);
+      // Scale UI elements based on screen resolution
+      float ui_scale_x = w / 1280.0f; // Reference width
+      float ui_scale_y = h / 800.0f;  // Reference height
 
-      if (ui_button((Rectangle){60, 300, 200, 50}, "Create & Play")) {
+      ui_textbox((Rectangle){60 * ui_scale_x, 230 * ui_scale_y,
+                             200 * ui_scale_x, 45 * ui_scale_y},
+                 g_seed_text, sizeof(g_seed_text), &g_typing_seed, 1);
+
+      float button_width = 200 * ui_scale_x;
+      float button_height = 50 * ui_scale_y;
+      float button_y = 300 * ui_scale_y;
+
+      if (ui_button((Rectangle){60 * ui_scale_x, button_y, button_width,
+                                button_height},
+                    "Create & Play")) {
         g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
         world_reset(g_world_seed);
         save_world_to_disk(g_world_name); // create initial save
@@ -10703,23 +10794,46 @@ int main(int argc, char *argv[]) {
         ensure_agents_ready_on_enter();
       }
 
-      if (ui_button((Rectangle){280, 300, 140, 50}, "Back")) {
+      if (ui_button((Rectangle){280 * ui_scale_x, button_y, 140 * ui_scale_x,
+                                button_height},
+                    "Back")) {
         g_state = STATE_TITLE;
       }
     } else if (g_state == STATE_WORLD_SELECT) {
-      DrawText("Select World", 60, 50, 34, RAYWHITE);
-      DrawText("(This screen next: list saves/ folders)", 60, 95, 18,
-               (Color){200, 200, 200, 180});
+      // Get screen dimensions for scaling
+      int w = GetScreenWidth();
+      int h = GetScreenHeight();
 
-      // For now: quick load the current name
-      if (ui_button((Rectangle){60, 140, 260, 50}, "Load World Name")) {
+      // Scale UI elements based on screen resolution
+      float ui_scale_x = w / 1280.0f; // Reference width
+      float ui_scale_y = h / 800.0f;  // Reference height
+
+      DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
+      DrawText("Select World", (int)(40 * ui_scale_x), (int)(30 * ui_scale_y),
+               (int)(44 * ui_scale_y), RAYWHITE);
+
+      Rectangle listBox = {(float)(40 * ui_scale_x), (float)(100 * ui_scale_y),
+                           (float)(520 * ui_scale_x),
+                           (float)(h - 180 * ui_scale_y)};
+      DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
+      DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
+
+      // For now: quick load current name
+      float button_width = 260 * ui_scale_x;
+      float button_height = 50 * ui_scale_y;
+
+      if (ui_button((Rectangle){60 * ui_scale_x, 140 * ui_scale_y, button_width,
+                                button_height},
+                    "Load World Name")) {
         if (load_world_from_disk(g_world_name))
           load_models_from_disk(g_world_name);
         g_state = STATE_PLAYING;
         ensure_agents_ready_on_enter();
       }
 
-      if (ui_button((Rectangle){60, 200, 260, 50}, "Back"))
+      if (ui_button((Rectangle){60 * ui_scale_x, 200 * ui_scale_y, button_width,
+                                button_height},
+                    "Back"))
         g_state = STATE_TITLE;
     }
 
