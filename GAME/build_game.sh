@@ -19,7 +19,7 @@ SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
 echo "Collecting sources..."
 
 # Core NN sources (explicit, stable)
-NN_SRC="../utils/NN/NN.c ../utils/NN/TRANSFORMER.c ../utils/NN/NEAT.c"
+NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c"
 SDL_COMPAT_SRC="../utils/SDL3/SDL3_compat.c"
 
 # MUZE + SAM sources (deduped)
@@ -61,7 +61,7 @@ FLAGS="${FLAGS:-} -g"
   $NN_SRC \
   $MUZE_SRC \
   $SAM_SRC \
-  -I../utils/NN \
+  -I../utils/NN/NN \
   -I../utils/NN/MUZE \
   -I../SAM \
   -I../utils/SDL3 \
