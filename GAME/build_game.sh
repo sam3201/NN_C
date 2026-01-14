@@ -74,7 +74,7 @@ FLAGS="${FLAGS:-} -g"
   -I../utils/NN/MUZE \
   -I../SAM \
   -I../RL_AGENT \
-  -I../utils/SDL3 \
+  -I../utils/SDL \
   $SDL_CFLAGS \
   $SDL_LIBS \
   -pthread -lm \
