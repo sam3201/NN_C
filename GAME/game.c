@@ -197,6 +197,7 @@ static void *alloc_and_copy_struct(const void *src, size_t size) {
   return dest;
 }
 
+/*
 // Implementations for missing Raylib Vector2 functions
 Vector2 Vector2Normalize(Vector2 v) {
   float length = sqrtf(v.x * v.x + v.y * v.y);
@@ -234,6 +235,7 @@ float Vector2Length(Vector2 v) { return sqrtf(v.x * v.x + v.y * v.y); }
 float Vector2DotProduct(Vector2 v1, Vector2 v2) {
   return v1.x * v2.x + v1.y * v2.y;
 }
+*/
 
 // Implementations for missing RL_AGENT functions
 void update_ai_training(float dt) {
