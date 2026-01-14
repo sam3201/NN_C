@@ -76,7 +76,6 @@ FLAGS="${FLAGS:-} -g"
   -I../RL_AGENT \
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
-  -I../utils/SDL \
   -I../utils/SDL/build/include \
   $SDL_CFLAGS \
   $SDL_LIBS \
