@@ -10028,17 +10028,23 @@ static void render_scene_3d(void) {
       render_grass_3d(player_pos, view_proj, grass_density);
     }
   }
-  render_mobs_3d(player_pos, view_proj);
 
   // Render resources with optimized culling and proper locking
-  float base_render_distance = 50.0f; // Base render distance
-  float render_distance = base_render_distance;
+  static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
+    float base_render_distance = 50.0f; // Base render distance
+    float render_distance = base_render_distance;
 
-  // Dynamic render distance based on FPS (with safety check)
-  if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
-    render_distance =
-        base_render_distance * 0.7f; // Reduce distance if FPS drops
-  } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+    // Dynamic render distance based on FPS (with safety check)
+    if (g_current_fps > 0.0f && g_current_fps < 45.0f) {
+      render_distance =
+          base_render_distance * 0.7f; // Reduce distance if FPS drops
+    } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
+      render_distance =
+          base_render_distance * 0.5f; // Aggressive reduction for low FPS
+    }
+    base_render_distance * 0.7f; // Reduce distance if FPS drops
+  }
+  else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
     render_distance =
         base_render_distance * 0.5f; // Aggressive reduction for low FPS
   }
