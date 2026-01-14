@@ -70,7 +70,7 @@ INCLUDES="
   -I../RL_AGENT
   -I../utils/NN/TRANSFORMER
   -I../utils/NN/NEAT
-    ${RAYLIB_INCLUDES}
+  ${RAYLIB_INCLUDES}
   ${SDL_INCLUDES}
 "
 
