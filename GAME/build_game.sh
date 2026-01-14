@@ -85,7 +85,6 @@ SDL_BUILD_DIR="../utils/SDL/build"
 -L"$SDL_TTF_BUILD_DIR" -lSDL3_ttf \
 -Wl,-rpath,"$SDL_BUILD_DIR" \
 -Wl,-rpath,"$SDL_TTF_BUILD_DIR" \
-  -Wl,-rpath,"$SDL_BUILD_DIR" \
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
