@@ -76,7 +76,7 @@ FLAGS="${FLAGS:-} -g"
   -I../RL_AGENT \
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
-  -I../SDL_SRC_DIR/"nclude" \
+  -I../SDL_SRC_DIR/"include" \
   $SDL_CFLAGS \
   $SDL_LIBS \
   -pthread -lm \
