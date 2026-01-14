@@ -30,7 +30,7 @@
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
 // #include "../utils/SDL3/SDL3_compat.h"
-#include "../utils/SDL/include/SDL3/SDL.h"
+#include "../utils/SDL/build/SDL.h"
 #include <OpenGL/gl3.h>
 #include <dirent.h>
 #include <errno.h>
