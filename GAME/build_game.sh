@@ -8,93 +8,106 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
 # -----------------------
-# SDL3 deps
+# Toolchain
 # -----------------------
-# SDL_CFLAGS="$(pkg-config --cflags sdl3 sdl3-ttf)"
-# SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
+CC="${CC:-cc}"
+CFLAGS="${CFLAGS:-} -g -O0"
+LDFLAGS="${LDFLAGS:-}"
+
+# -----------------------
+# SDL3 (local build)
+# -----------------------
 SDL_SRC_DIR="../utils/SDL"
 SDL_BUILD_DIR="../utils/SDL/build"
 
 SDL_TTF_SRC_DIR="../utils/SDL_ttf"
 SDL_TTF_BUILD_DIR="../utils/SDL_ttf/build"
 
+SDL_INCLUDES="-I${SDL_SRC_DIR}/include -I${SDL_TTF_SRC_DIR}/include"
+SDL_LIBS="-L${SDL_BUILD_DIR} -lSDL3 -L${SDL_TTF_BUILD_DIR} -lSDL3_ttf"
+SDL_RPATH="-Wl,-rpath,${SDL_BUILD_DIR} -Wl,-rpath,${SDL_TTF_BUILD_DIR}"
+
 # -----------------------
-# Collect sources (dedupe)
+# Collect sources
 # -----------------------
 echo "Collecting sources..."
 
-# Core NN sources (explicit, stable)
 NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/CONVOLUTION/CONVOLUTION.c"
 
-# RL_AGENT sources (including all subdirectories, excluding test files)
 RL_AGENT_SRC="$(find ../RL_AGENT -type f -name '*.c' -print | grep -v test | sort -u | tr '\n' ' ')"
-
-# MUZE + SAM sources (deduped)
 MUZE_SRC="$(find ../utils/NN/MUZE -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
 SAM_SRC="$(find ../SAM -type f -name '*.c' -print | sort -u | tr '\n' ' ')"
 
-# Trim leading/trailing spaces (prevents phantom args)
+# Trim leading/trailing spaces
+RL_AGENT_SRC="$(printf "%s" "$RL_AGENT_SRC" | sed 's/^ *//; s/ *$//')"
 MUZE_SRC="$(printf "%s" "$MUZE_SRC" | sed 's/^ *//; s/ *$//')"
 SAM_SRC="$(printf "%s" "$SAM_SRC" | sed 's/^ *//; s/ *$//')"
-RL_AGENT_SRC="$(printf "%s" "$RL_AGENT_SRC" | sed 's/^ *//; s/ *$//')"
 
-if [ -z "$MUZE_SRC" ]; then
-  echo "ERROR: No MUZE .c files found under ../utils/NN/MUZE"
-  exit 1
-fi
+[ -n "$MUZE_SRC" ] || { echo "ERROR: No MUZE .c files found under ../utils/NN/MUZE"; exit 1; }
+[ -n "$SAM_SRC" ]  || { echo "ERROR: No SAM .c files found under ../SAM"; exit 1; }
 
-if [ -z "$SAM_SRC" ]; then
-  echo "ERROR: No SAM .c files found under ../SAM"
-  exit 1
-fi
-
-echo "MUZE files:"
-printf "  %s\n" $MUZE_SRC
-echo "SAM files:"
-printf "  %s\n" $SAM_SRC
-echo "RL_AGENT files:"
-printf "  %s\n" $RL_AGENT_SRC
+echo "MUZE files:";     printf "  %s\n" $MUZE_SRC
+echo "SAM files:";      printf "  %s\n" $SAM_SRC
+echo "RL_AGENT files:"; printf "  %s\n" $RL_AGENT_SRC
 
 # -----------------------
-# Compile
+# Includes
+# -----------------------
+INCLUDES="
+  -I../utils/NN/NN
+  -I../utils/NN/CONVOLUTION
+  -I../utils/NN/MUZE
+  -I../SAM
+  -I../RL_AGENT
+  -I../utils/NN/TRANSFORMER
+  -I../utils/NN/NEAT
+  ${SDL_INCLUDES}
+"
+
+# -----------------------
+# Link flags (macOS)
+# -----------------------
+LINK="
+  ${SDL_LIBS}
+  ${SDL_RPATH}
+  -pthread -lm
+  -framework OpenGL
+  -arch arm64
+"
+
+# -----------------------
+# Build
 # -----------------------
 echo "Compiling game..."
 
-CC="${CC:-cc}"
-FLAGS="${FLAGS:-} -g"
-
-SDL_SRC_DIR="../utils/SDL"
-SDL_BUILD_DIR="../utils/SDL/build"
-
-"$CC" $FLAGS \
+# shellcheck disable=SC2086
+$CC $CFLAGS \
   game.c \
   $NN_SRC \
   $RL_AGENT_SRC \
   $MUZE_SRC \
   $SAM_SRC \
-  -I../utils/NN/NN \
-  -I../utils/NN/CONVOLUTION \
-  -I../utils/NN/MUZE \
-  -I../SAM \
-  -I../RL_AGENT \
-  -I../utils/NN/TRANSFORMER \
-  -I../utils/NN/NEAT \
-  -I"$SDL_SRC_DIR/include" \
-  -I"$SDL_TTF_SRC_DIR/include" \
-  -L"$SDL_BUILD_DIR" -lSDL3 \
-  -L"$SDL_TTF_BUILD_DIR" -lSDL3_ttf \
-  -Wl,-rpath,"$SDL_BUILD_DIR" \
-  -Wl,-rpath,"$SDL_TTF_BUILD_DIR" \
-  -pthread -lm \
-  -framework OpenGL \
-  -arch arm64 \
+  $INCLUDES \
+  $LDFLAGS \
+  $LINK \
   -o game
 
-echo "Compilation successful! Running the game..."
-lldb ./game
+echo "Compilation successful!"
+
+# -----------------------
+# Run
+# -----------------------
+if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
+  lldb ./game
+else
+  ./game
+fi
+
 status=$?
 
 echo "Game exited with status $status"
+
 rm -f ./game
-rm -rf game.dSYM
+rm -rf ./game.dSYM
 exit "$status"
+
