@@ -57,11 +57,12 @@ printf "  %s\n" $RL_AGENT_SRC
 # -----------------------
 echo "Compiling game..."
 
-# Use clang on macOS if you want; gcc often maps to clang anyway.
-CC="${CC:-gcc}"
+CC="${CC:-cc}"
 FLAGS="${FLAGS:-} -g"
 
-# Note: -w hides warnings. Consider removing once you're stable.
+SDL_SRC_DIR="../utils/SDL"
+SDL_BUILD_DIR="../utils/SDL/build"
+
 "$CC" $FLAGS \
   game.c \
   $NN_SRC \
@@ -76,13 +77,12 @@ FLAGS="${FLAGS:-} -g"
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
   -I"$SDL_SRC_DIR/include" \
-  # $SDL_CFLAGS \
-  # $SDL_LIBS \
   -L"$SDL_BUILD_DIR" -lSDL3 \
+  -Wl,-rpath,"$SDL_BUILD_DIR" \
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
-  -o game 
+  -o game
 
 echo "Compilation successful! Running the game..."
 lldb ./game
