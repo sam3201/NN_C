@@ -6678,7 +6678,7 @@ static void draw_pause_overlay(void) {
 static int ui_button(Rectangle r, const char *text) {
   Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
-  int pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+  bool pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
   int clicked = hot && pressed;
 
