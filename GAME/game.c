@@ -10005,6 +10005,7 @@ static void render_scene_3d(void) {
 
   // Render grass with distance-based density optimization
   if (g_enable_grass) {
+    float grass_density = 1.0f;
     render_grass_3d(player_pos, view_proj, 1.0f);
     float player_dist_sq =
         player_pos.x * player_pos.x + player_pos.z * player_pos.z;
