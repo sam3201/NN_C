@@ -12,6 +12,11 @@ cd "$ROOT_DIR"
 # -----------------------
 # SDL_CFLAGS="$(pkg-config --cflags sdl3 sdl3-ttf)"
 # SDL_LIBS="$(pkg-config --libs sdl3 sdl3-ttf)"
+SDL_SRC_DIR="../utils/SDL"
+SDL_BUILD_DIR="../utils/SDL/build"
+
+SDL_TTF_SRC_DIR="../utils/SDL_ttf"
+SDL_TTF_BUILD_DIR="../utils/SDL_ttf/build"
 
 # -----------------------
 # Collect sources (dedupe)
@@ -20,11 +25,6 @@ echo "Collecting sources..."
 
 # Core NN sources (explicit, stable)
 NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/CONVOLUTION/CONVOLUTION.c"
-SDL_SRC_DIR="../utils/SDL"
-SDL_BUILD_DIR="../utils/SDL/build"
-
-SDL_TTF_SRC_DIR="../utils/SDL_ttf"
-SDL_TTF_BUILD_DIR="../utils/SDL_ttf/build"
 
 # RL_AGENT sources (including all subdirectories, excluding test files)
 RL_AGENT_SRC="$(find ../RL_AGENT -type f -name '*.c' -print | grep -v test | sort -u | tr '\n' ' ')"
