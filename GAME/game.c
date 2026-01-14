@@ -10435,7 +10435,6 @@ int main(int argc, char *argv[]) {
     projectiles[i].alive = false;
 
   while (!WindowShouldClose() && !g_should_quit) {
-    printf("DEBUG: Game loop started, g_state=%d\n", g_state);
     float dt = GetFrameTime();
 
     // Safety check to prevent infinite loops
