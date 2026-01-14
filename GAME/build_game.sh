@@ -20,7 +20,7 @@ echo "Collecting sources..."
 
 # Core NN sources (explicit, stable)
 NN_SRC="../utils/NN/NN/NN.c ../utils/NN/TRANSFORMER/TRANSFORMER.c ../utils/NN/NEAT/NEAT.c ../utils/NN/CONVOLUTION/CONVOLUTION.c"
-SDL_COMPAT_SRC="../utils/SDL3/SDL3_compat.c"
+SDL_SRC ="../utils/SDL3/SDL3_compat.c"
 
 # RL_AGENT sources (including all subdirectories, excluding test files)
 RL_AGENT_SRC="$(find ../RL_AGENT -type f -name '*.c' -print | grep -v test | sort -u | tr '\n' ' ')"
