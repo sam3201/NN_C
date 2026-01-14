@@ -10365,7 +10365,7 @@ int main(int argc, char *argv[]) {
 
   // Try to initialize TTF, but continue even if it fails
   if (TTF_Init() != 0) {
-    printf("TTF_Init failed: %s\n", TTF_GetError());
+    printf("TTF_Init failed: %s\n", SDL_GetError());
     printf("TTF_Init failed: %s\n", SDL_GetError());
     printf("Continuing without TTF support...\n");
   }
