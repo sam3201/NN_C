@@ -45,6 +45,7 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 #define MAX_MOBS 64
 
 #define TRIBE_COUNT 2
+
 #define AGENT_PER_TRIBE 8
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
@@ -9684,7 +9685,7 @@ int main(int argc, char *argv[]) {
   if (g_enable_grass) {
     // start_grass_worker();
   }
-  
+
   // Always set initial state to TITLE
   g_state = STATE_TITLE;
 
