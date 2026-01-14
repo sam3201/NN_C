@@ -6680,25 +6680,7 @@ static int ui_button(Rectangle r, const char *text) {
   int hot = CheckCollisionPointRec(m, r);
   int pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
-  // Simple mouse test - print any mouse button press anywhere
-  static int any_mouse_pressed = 0;
-  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) ||
-      IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) ||
-      IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON)) {
-    any_mouse_pressed = 1;
-    printf(
-        "MOUSE CLICK DETECTED! Left=%d, Right=%d, Middle=%d at (%.0f,%.0f)\n",
-        IsMouseButtonPressed(MOUSE_LEFT_BUTTON),
-        IsMouseButtonPressed(MOUSE_RIGHT_BUTTON),
-        IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON), m.x, m.y);
-  }
-
-  // Use IsMouseButtonPressed for single click detection
   int clicked = hot && pressed;
-  if (clicked) {
-    printf("DEBUG: Button '%s' clicked (hot=%d, pressed=%d) at (%.0f,%.0f)\n",
-           text, hot, pressed, m.x, m.y);
-  }
 
   Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
   DrawRectangleRounded(r, 0.25f, 8, bg);
@@ -10367,7 +10349,12 @@ int main(int argc, char *argv[]) {
     // OpenGL will be initialized by Raylib
   }
 
+  // Set target FPS before creating window
+  SetTargetFPS(60);
+
   InitWindow(1280, 800, "MUZE Tribal Simulation");
+  printf("Window created: %d x %d\n", GetScreenWidth(), GetScreenHeight());
+
   // Try to initialize TTF, but continue even if it fails
   if (TTF_Init() != 0) {
     printf("TTF_Init failed: %s\n", SDL_GetError());
@@ -10375,6 +10362,7 @@ int main(int argc, char *argv[]) {
   }
   SetExitKey(KEY_NULL);
   g_state = STATE_TITLE;
+  printf("Game state initialized to: %d\n", g_state);
 
   // Initialize mouse state for UI
   SetRelativeMouseMode(0);
@@ -10383,7 +10371,6 @@ int main(int argc, char *argv[]) {
   SCREEN_WIDTH = GetScreenWidth();
   SCREEN_HEIGHT = GetScreenHeight();
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
-  SetTargetFPS(60);
 
   load_keybinds();
   load_graphics_config();
@@ -10436,8 +10423,17 @@ int main(int argc, char *argv[]) {
     float dt = GetFrameTime();
 
     // Safety check to prevent infinite loops
-    if (dt <= 0.0f || dt > 1.0f)
+    if (dt <= 0.0f || dt > 1.0f) {
       dt = 1.0f / 60.0f; // Default to 60 FPS
+    }
+
+    // Test mouse button detection - use IsMouseButtonPressed for single trigger
+    if (IsMouseButtonPressed(2)) { // 2 = LEFT MOUSE BUTTON (based on debug)
+      printf("LEFT MOUSE BUTTON PRESSED\n");
+    }
+    if (IsMouseButtonPressed(0)) { // 0 = RIGHT MOUSE BUTTON (based on debug)
+      printf("RIGHT MOUSE BUTTON PRESSED\n");
+    }
 
     // Check window close button more frequently
     if (WindowShouldClose()) {
