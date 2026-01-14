@@ -79,6 +79,8 @@ FLAGS="${FLAGS:-} -g"
   -I"$SDL_SRC_DIR/include" \
   $SDL_CFLAGS \
   $SDL_LIBS \
+  -L"$SDL_BUILD_DIR" -lSDL3 \
+
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
