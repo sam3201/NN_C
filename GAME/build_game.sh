@@ -79,12 +79,12 @@ SDL_BUILD_DIR="../utils/SDL/build"
   -I../RL_AGENT \
   -I../utils/NN/TRANSFORMER \
   -I../utils/NN/NEAT \
--I"$SDL_SRC_DIR/include" \
--I"$SDL_TTF_SRC_DIR/include" \
--L"$SDL_BUILD_DIR" -lSDL3 \
--L"$SDL_TTF_BUILD_DIR" -lSDL3_ttf \
--Wl,-rpath,"$SDL_BUILD_DIR" \
--Wl,-rpath,"$SDL_TTF_BUILD_DIR" \
+  -I"$SDL_SRC_DIR/include" \
+  -I"$SDL_TTF_SRC_DIR/include" \
+  -L"$SDL_BUILD_DIR" -lSDL3 \
+  -L"$SDL_TTF_BUILD_DIR" -lSDL3_ttf \
+  -Wl,-rpath,"$SDL_BUILD_DIR" \
+  -Wl,-rpath,"$SDL_TTF_BUILD_DIR" \
   -pthread -lm \
   -framework OpenGL \
   -arch arm64 \
