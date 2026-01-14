@@ -1,3 +1,5 @@
+// Include RL_AGENT first to avoid ReplayBuffer conflicts
+#include "../RL_AGENT/rl_agent.h"
 
 // Include MUZE components individually, excluding replay_buffer.h
 #include "../utils/NN/MUZE/ewc.h"
