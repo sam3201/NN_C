@@ -74,7 +74,7 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
                       int *h);
                       */
 
-SDL_Surface *g_window = NULL;
+SDL_Surface g_window = NULL;
 SDL_Surface *TTF_RenderText_Blended(TTF_Font *font, const char *text,
                                     size_t len, SDL_Color fg);
 SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, Uint32 format);
