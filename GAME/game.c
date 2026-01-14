@@ -258,7 +258,7 @@ Vector2 chunk_origin_to_world(int cx, int cy, Vector2 local_pos);
 #define CGLTF_IMPLEMENTATION
 #include "../utils/Raylib/src/external/cgltf.h"
 
-#include <../utils/SDL/include/SDL.h>
+#include <../utils/SDL/include/src/SDL.h>
 // ------------------- Compile helpers / forward decls -------------------
 #ifndef SAVE_ROOT
 #define SAVE_ROOT "saves"
