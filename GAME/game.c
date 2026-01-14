@@ -175,6 +175,7 @@ typedef struct {
   } selfplay;
 } MuzeConfig;
 
+/*
 // Forward declarations for Raylib functions not in headers
 Vector2 Vector2Normalize(Vector2 v);
 float Vector2Distance(Vector2 v1, Vector2 v2);
@@ -185,6 +186,7 @@ float Vector2Length(Vector2 v);
 float Vector2DotProduct(Vector2 v1, Vector2 v2);
 void SetMouseVisible(int visible);
 void SetRelativeMouseMode(int enabled);
+*
 
 // Helper function to allocate and copy structs
 static void *alloc_and_copy_struct(const void *src, size_t size) {
