@@ -10162,38 +10162,6 @@ for (int dx = -chunk_render_radius; dx <= chunk_render_radius; dx++) {
                                                               view_proj,
                                                               dmg_tint);
   }
-  vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f, dmg_color.b / 255.0f);
-  render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
-}
-render_resources_3d(player_pos, view_proj);
-
-// Render bases
-render_bases_3d(view_proj);
-
-glEnable(GL_CULL_FACE);
-
-// Simplified performance monitoring to avoid stuck issues
-static int frame_counter = 0;
-frame_counter++;
-
-// Only update FPS every 60 frames to reduce overhead
-if (frame_counter >= 60) {
-  float current_time = GetTime();
-  if (g_last_frame_time > 0.0f) {
-    float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
-    g_current_fps = 1.0f / avg_frame_time;
-  }
-  g_last_frame_time = current_time;
-  frame_counter = 0;
-  if (frame_counter >= 60) {
-    float current_time = GetTime();
-    if (g_last_frame_time > 0.0f) {
-      float avg_frame_time = (current_time - g_last_frame_time) / 60.0f;
-      g_current_fps = 1.0f / avg_frame_time;
-    }
-    g_last_frame_time = current_time;
-    frame_counter = 0;
-  }
 }
 
 /* =======================
