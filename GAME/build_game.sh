@@ -34,7 +34,6 @@ SDL_RPATH="-Wl,-rpath,${SDL_BUILD_DIR} -Wl,-rpath,${SDL_TTF_BUILD_DIR}"
 RAYLIB_DIR="../utils/Raylib"
 RAYLIB_LIB="${RAYLIB_DIR}/src/libraylib.a"
 RAYLIB_INCLUDES="-I${RAYLIB_DIR}/src"
-
 RAYLIB_LINK="${RAYLIB_LIB} -framework Cocoa -framework IOKit -framework CoreVideo"
 
 # -----------------------
