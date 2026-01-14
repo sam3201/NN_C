@@ -3,6 +3,7 @@
 #include "../utils/NN/NN/NN.h"
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 #include "../utils/Raylib/src/raylib.h"
+#include <OpenGL/gl3.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -15,6 +16,9 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+
+// Use MUZE's ReplayBuffer to avoid conflict with RL_AGENT
+#define ReplayBuffer MUZE_ReplayBuffer
 
 // Forward declarations for Raylib functions not in headers
 Vector2 Vector2Normalize(Vector2 v);
