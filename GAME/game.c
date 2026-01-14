@@ -10240,7 +10240,7 @@ void toggle_spectator_mode(void) {
     printf("Spectator mode DISABLED\n");
     // Restore normal mouse state
     if (g_state == STATE_PLAYING) {
-      SetMouseVisible(0);
+      SDL_ShowCursor(SDL_DISABLE);
       g_mouse_locked = 1;
     }
   }
