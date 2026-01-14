@@ -1777,23 +1777,19 @@ static inline int vision_id_agent(int same_tribe) {
   return same_tribe ? g_vision_id_map.agent_same_id
                     : g_vision_id_map.agent_other_id;
 }
-static inline int vision_id_mob(MobType t, int hostile) {
-  int idx = (int)t;
-  if (g_vision_id_map.use_overrides && idx >= 0 && idx < MOB_COUNT) {
-    return hostile ? g_vision_id_map.mob_odd[idx]
-                   : g_vision_id_map.mob_even[idx];
-  }
-  return g_vision_id_map.mob_base + g_vision_id_map.mob_stride * idx +
-         (hostile ? g_vision_id_map.mob_odd_hostile : 0);
+static inline int vision_id_mob(int mob_type, bool hostile) {
+  /* IDs encode class in the low bit:
+     - passive mobs start at 2 (type 0 -> 2)
+     - hostile mobs start at 3 (type 0 -> 3)
+     Each mob type gets its own pair: (2 + type*2) and (3 + type*2)
+  */
+  int base = 2 + mob_type * 2;
+  return hostile ? (base + 1) : base;
 }
-static inline int vision_id_resource(ResourceType t, int variant) {
-  int idx = (int)t;
-  if (g_vision_id_map.use_overrides && idx >= 0 && idx < RES_COUNT) {
-    return variant ? g_vision_id_map.res_odd[idx]
-                   : g_vision_id_map.res_even[idx];
-  }
-  return g_vision_id_map.res_base + g_vision_id_map.res_stride * idx +
-         (variant ? g_vision_id_map.res_odd_variant : 0);
+static inline int vision_id_resource(int res_type) {
+  /* Keep resources in their own ID range (>= 100) so they never collide with
+   * mobs/agents/self. */
+  return 100 + res_type;
 }
 static inline int vision_id_base(int tribe, int variant) {
   if (g_vision_id_map.use_overrides && tribe >= 0 && tribe < TRIBE_COUNT) {
@@ -5756,7 +5752,8 @@ void update_player(void) {
     player.stamina = fmaxf(0.0f, player.stamina - drain * dt);
   }
 
-  if (g_use_3d && (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_F)) && g_player_on_ground) {
+  if (g_use_3d && (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_F)) &&
+      g_player_on_ground) {
     g_player_vy = PLAYER_JUMP_SPEED;
     g_player_on_ground = 0;
   }
