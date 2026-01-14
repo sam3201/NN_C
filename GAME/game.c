@@ -6679,6 +6679,7 @@ static int ui_button(Rectangle r, const char *text) {
   Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
   bool pressed = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+  printf("hot: %d, pressed: %d\n", hot, pressed);
 
   int clicked = hot && pressed;
 
