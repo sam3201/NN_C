@@ -112,7 +112,7 @@ echo "Compilation successful!"
 # Run
 # -----------------------
 if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
- lldb ./game > "$DEBUG_LOG" 
+ lldb ./game | tee "$DEBUG_LOG" 
 else
  ./game
 fi
