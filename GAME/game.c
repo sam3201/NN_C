@@ -26,8 +26,8 @@
 // #include "../utils/NN/MUZE/trainer.h" // Excluded - includes replay_buffer.h
 #include "../utils/NN/MUZE/util.h"
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
-#include "../utils/Raylib/src/raylib.h"
-#include "../utils/Raylib/src/raymath.h"
+// #include "../utils/Raylib/src/raylib.h"
+// #include "../utils/Raylib/src/raymath.h"
 // #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
 #include <OpenGL/gl.h>  // For legacy OpenGL functions
@@ -75,13 +75,8 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
                       int *h);
                       */
 
-// GetTime implementation
-double GetTime(void) {
-    return (double)SDL_GetTicks() / 1000.0;
-}
-
 // C_SELECT system - automatically imports only needed functions
-#include "game_auto_import.h"
+#include "generated/auto_import.h"
 
 
 SDL_Window *g_window = NULL;

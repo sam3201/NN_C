@@ -1,0 +1,84 @@
+// Raylib Types (defined first so functions can use them)
+API_TYPE(PUBLIC, Vector2,
+  float x;
+  float y;
+)
+
+API_TYPE(PUBLIC, Vector3,
+  float x;
+  float y;
+  float z;
+)
+
+API_TYPE(PUBLIC, Vector4,
+  float x;
+  float y;
+  float z;
+  float w;
+)
+
+API_TYPE(PUBLIC, Color,
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+  unsigned char a;
+)
+
+API_TYPE(PUBLIC, Rectangle,
+  float x;
+  float y;
+  float width;
+  float height;
+)
+
+// Keyboard Key enumeration - simple typedef to int for compatibility
+typedef int KeyboardKey;
+
+// OpenGL Drawing Functions (now can use the types defined above)
+API_FN(void, draw_circle_filled_opengl, (float centerX, float centerY, float radius, Color color))
+API_FN(void, draw_circle_outline_opengl, (float centerX, float centerY, float radius, Color color))
+API_FN(void, draw_triangle_opengl, (Vector2 v1, Vector2 v2, Vector2 v3, Color color))
+API_FN(void, draw_line_opengl, (float x1, float y1, float x2, float y2, float thickness, Color color))
+API_FN(void, draw_ellipse_filled_opengl, (int centerX, int centerY, int radiusX, int radiusY, Color color))
+API_FN(void, draw_polygon_filled_opengl, (Vector2 center, int sides, float radius, float rotation, Color color))
+API_FN(void, draw_polygon_outline_opengl, (Vector2 center, int sides, float radius, float rotation, Color color))
+API_FN(void, draw_rectangle_outline_opengl, (int x, int y, int width, int height, Color color))
+
+// Math helper functions
+API_FN(float, Vector2Distance, (Vector2 v1, Vector2 v2))
+
+// Missing Raylib functions that the game uses
+API_FN(double, GetTime, (void))
+API_FN(void, DrawLineEx, (Vector2 startPos, Vector2 endPos, float thick, Color color))
+API_FN(void, DrawText, (const char *text, int posX, int posY, int fontSize, Color color))
+API_FN(char *, TextFormat, (const char *text, ...))
+API_FN(Vector2, Vector2Scale, (Vector2 v, float scale))
+API_FN(Vector2, Vector2Normalize, (Vector2 v))
+API_FN(Vector2, Vector2Add, (Vector2 v1, Vector2 v2))
+API_FN(Vector2, Vector2Subtract, (Vector2 v1, Vector2 v2))
+API_FN(void, DrawCircleV, (Vector2 center, float radius, Color color))
+API_FN(void, DrawCircleLines, (int centerX, int centerY, float radius, Color color))
+API_FN(float, Vector2Length, (Vector2 v))
+API_FN(float, Vector2DotProduct, (Vector2 v1, Vector2 v2))
+API_FN(void, DrawRectangle, (int x, int y, int width, int height, Color color))
+API_FN(int, GetScreenWidth, (void))
+API_FN(int, GetScreenHeight, (void))
+API_FN(void, DrawEllipse, (int centerX, int centerY, int radiusX, int radiusY, Color color))
+API_FN(void, DrawRectangleLines, (int x, int y, int width, int height, Color color))
+API_FN(void, DrawLine, (int startX, int startY, int endX, int endY, Color color))
+API_FN(void, DrawTriangle, (Vector2 v1, Vector2 v2, Vector2 v3, Color color))
+API_FN(Vector2, GetMousePosition, (void))
+API_FN(float, GetFrameTime, (void))
+API_FN(Vector2, GetMouseDelta, (void))
+API_FN(void, SetMousePosition, (int x, int y))
+API_FN(Color, Fade, (Color color, float alpha))
+API_FN(void, DrawCircle, (int centerX, int centerY, float radius, Color color))
+API_FN(void, DrawPixel, (int x, int y, Color color))
+API_FN(int, MeasureText, (const char *text, int fontSize))
+API_FN(int, CheckCollisionPointRec, (Vector2 point, Rectangle rec))
+API_FN(void, DrawRectangleRounded, (Rectangle rec, float roundness, int segments, Color color))
+API_FN(void, DrawRectangleRoundedLines, (Rectangle rec, float roundness, int segments, Color color))
+API_FN(int, GetCharPressed, (void))
+API_FN(float, GetMouseWheelMove, (void))
+API_FN(int, IsMouseButtonDown, (int button))
+API_FN(int, IsMouseButtonPressed, (int button))
