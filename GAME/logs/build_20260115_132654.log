@@ -1,0 +1,722 @@
+In file included from game.c:33:
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:5:2: warning: gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality. [-W#warnings]
+    5 | #warning gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality.
+      |  ^
+In file included from game.c:84:
+In file included from ./game_auto_import.h:6:
+./framework/api.h:23:6: error: '#' is not followed by a macro parameter
+   23 |     #ifndef IMPORT_##name \
+      |      ^
+./framework/api.h:28:6: error: '#' is not followed by a macro parameter
+   28 |     #ifndef IMPORT_##name \
+      |      ^
+In file included from game.c:84:
+In file included from ./game_auto_import.h:6:
+In file included from ./framework/api.h:32:
+./framework/api.def:2:10: error: expected parameter declarator
+    2 | API_TYPE(PUBLIC, DebugState,
+      |          ^
+./framework/api.h:7:17: note: expanded from macro 'PUBLIC'
+    7 | #define PUBLIC  1
+      |                 ^
+In file included from game.c:84:
+In file included from ./game_auto_import.h:6:
+In file included from ./framework/api.h:32:
+./framework/api.def:2:10: error: expected ')'
+./framework/api.h:7:17: note: expanded from macro 'PUBLIC'
+    7 | #define PUBLIC  1
+      |                 ^
+./framework/api.def:2:9: note: to match this '('
+    2 | API_TYPE(PUBLIC, DebugState,
+      |         ^
+./framework/api.def:2:1: error: type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+    2 | API_TYPE(PUBLIC, DebugState,
+      | ^
+      | int
+./framework/api.def:4:1: error: expected identifier or '('
+    4 | )
+      | ^
+In file included from game.c:84:
+In file included from ./game_auto_import.h:6:
+./framework/api.h:41:6: error: '#' is not followed by a macro parameter
+   41 |     #if (API_VIS_PRIVATE_TOO || (vis)) \
+      |      ^
+./framework/api.h:48:6: error: '#' is not followed by a macro parameter
+   48 |     #if (API_VIS_PRIVATE_TOO || (vis)) \
+      |      ^
+game.c:1169:58: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1169 |     {"Harvest", KEY_E, KEY_NULL},    {"Fire", KEY_SPACE, KEY_NULL},
+      |                                      ~                   ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1169:47: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1169 |     {"Harvest", KEY_E, KEY_NULL},    {"Fire", KEY_SPACE, KEY_NULL},
+      |                                      ~        ^~~~~~~~~
+game.c:293:19: note: expanded from macro 'KEY_SPACE'
+  293 | #define KEY_SPACE SDL_SCANCODE_SPACE
+      |                   ^~~~~~~~~~~~~~~~~~
+game.c:1169:24: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1169 |     {"Harvest", KEY_E, KEY_NULL},    {"Fire", KEY_SPACE, KEY_NULL},
+      |     ~                  ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1168:56: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1168 |     {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
+      |                                      ~                 ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1168:49: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1168 |     {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
+      |                                      ~          ^~~~~
+game.c:294:15: note: expanded from macro 'KEY_F'
+  294 | #define KEY_F SDL_SCANCODE_F
+      |               ^~~~~~~~~~~~~~
+game.c:1168:22: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1168 |     {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
+      |     ~                ^~~~~~~~~~
+game.c:297:20: note: expanded from macro 'KEY_ESCAPE'
+  297 | #define KEY_ESCAPE SDL_SCANCODE_ESCAPE
+      |                    ^~~~~~~~~~~~~~~~~~~
+game.c:1168:15: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1168 |     {"Pause", KEY_P, KEY_ESCAPE},    {"Attack", KEY_F, KEY_NULL},
+      |     ~         ^~~~~
+game.c:320:15: note: expanded from macro 'KEY_P'
+  320 | #define KEY_P SDL_SCANCODE_P
+      |               ^~~~~~~~~~~~~~
+game.c:1167:65: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1167 |     {"Jump", KEY_SPACE, KEY_NULL},   {"Sprint", KEY_LEFT_SHIFT, KEY_NULL},
+      |                                      ~                          ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1167:49: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1167 |     {"Jump", KEY_SPACE, KEY_NULL},   {"Sprint", KEY_LEFT_SHIFT, KEY_NULL},
+      |                                      ~          ^~~~~~~~~~~~~~
+game.c:327:24: note: expanded from macro 'KEY_LEFT_SHIFT'
+  327 | #define KEY_LEFT_SHIFT SDL_SCANCODE_LSHIFT
+      |                        ^~~~~~~~~~~~~~~~~~~
+game.c:1167:25: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1167 |     {"Jump", KEY_SPACE, KEY_NULL},   {"Sprint", KEY_LEFT_SHIFT, KEY_NULL},
+      |     ~                   ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1167:14: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1167 |     {"Jump", KEY_SPACE, KEY_NULL},   {"Sprint", KEY_LEFT_SHIFT, KEY_NULL},
+      |     ~        ^~~~~~~~~
+game.c:293:19: note: expanded from macro 'KEY_SPACE'
+  293 | #define KEY_SPACE SDL_SCANCODE_SPACE
+      |                   ^~~~~~~~~~~~~~~~~~
+game.c:1166:60: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1166 |     {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+      |                                      ~                     ^~~~~~~~~
+game.c:324:19: note: expanded from macro 'KEY_RIGHT'
+  324 | #define KEY_RIGHT SDL_SCANCODE_RIGHT
+      |                   ^~~~~~~~~~~~~~~~~~
+game.c:1166:53: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1166 |     {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+      |                                      ~              ^~~~~
+game.c:332:15: note: expanded from macro 'KEY_D'
+  332 | #define KEY_D SDL_SCANCODE_D
+      |               ^~~~~~~~~~~~~~
+game.c:1166:26: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1166 |     {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+      |     ~                    ^~~~~~~~
+game.c:323:18: note: expanded from macro 'KEY_LEFT'
+  323 | #define KEY_LEFT SDL_SCANCODE_LEFT
+      |                  ^~~~~~~~~~~~~~~~~
+game.c:1166:19: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1166 |     {"Move Left", KEY_A, KEY_LEFT},  {"Move Right", KEY_D, KEY_RIGHT},
+      |     ~             ^~~~~
+game.c:330:15: note: expanded from macro 'KEY_A'
+  330 | #define KEY_A SDL_SCANCODE_A
+      |               ^~~~~~~~~~~~~~
+game.c:1165:59: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1165 |     {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
+      |                                      ~                    ^~~~~~~~
+game.c:322:18: note: expanded from macro 'KEY_DOWN'
+  322 | #define KEY_DOWN SDL_SCANCODE_DOWN
+      |                  ^~~~~~~~~~~~~~~~~
+game.c:1165:52: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1165 |     {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
+      |                                      ~             ^~~~~
+game.c:331:15: note: expanded from macro 'KEY_S'
+  331 | #define KEY_S SDL_SCANCODE_S
+      |               ^~~~~~~~~~~~~~
+game.c:1165:29: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1165 |     {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
+      |     ~                       ^~~~~~
+game.c:321:16: note: expanded from macro 'KEY_UP'
+  321 | #define KEY_UP SDL_SCANCODE_UP
+      |                ^~~~~~~~~~~~~~~
+game.c:1165:22: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1165 |     {"Move Forward", KEY_W, KEY_UP}, {"Move Back", KEY_S, KEY_DOWN},
+      |     ~                ^~~~~
+game.c:329:15: note: expanded from macro 'KEY_W'
+  329 | #define KEY_W SDL_SCANCODE_W
+      |               ^~~~~~~~~~~~~~
+game.c:1224:9: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1224 |   if (k >= KEY_A && k <= KEY_Z) {
+      |       ~ ^  ~~~~~
+game.c:1224:23: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1224 |   if (k >= KEY_A && k <= KEY_Z) {
+      |                     ~ ^  ~~~~~
+game.c:1234:9: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1234 |   if (k >= KEY_ONE && k <= KEY_ZERO) {
+      |       ~ ^  ~~~~~~~
+game.c:1234:25: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1234 |   if (k >= KEY_ONE && k <= KEY_ZERO) {
+      |                       ~ ^  ~~~~~~~~
+game.c:1257:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1257 |   case KEY_ENTER:
+      |        ^
+game.c:325:19: note: expanded from macro 'KEY_ENTER'
+  325 | #define KEY_ENTER SDL_SCANCODE_RETURN
+      |                   ^
+game.c:1261:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1261 |   case KEY_ESCAPE:
+      |        ^
+game.c:297:20: note: expanded from macro 'KEY_ESCAPE'
+  297 | #define KEY_ESCAPE SDL_SCANCODE_ESCAPE
+      |                    ^
+game.c:1259:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1259 |   case KEY_BACKSPACE:
+      |        ^
+game.c:326:23: note: expanded from macro 'KEY_BACKSPACE'
+  326 | #define KEY_BACKSPACE SDL_SCANCODE_BACKSPACE
+      |                       ^
+game.c:1255:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1255 |   case KEY_TAB:
+      |        ^
+game.c:296:17: note: expanded from macro 'KEY_TAB'
+  296 | #define KEY_TAB SDL_SCANCODE_TAB
+      |                 ^
+game.c:1269:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1269 |   case KEY_F5:
+      |        ^
+game.c:338:16: note: expanded from macro 'KEY_F5'
+  338 | #define KEY_F5 SDL_SCANCODE_F5
+      |                ^
+game.c:1271:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1271 |   case KEY_F6:
+      |        ^
+game.c:318:16: note: expanded from macro 'KEY_F6'
+  318 | #define KEY_F6 SDL_SCANCODE_F6
+      |                ^
+game.c:1273:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1273 |   case KEY_F7:
+      |        ^
+game.c:319:16: note: expanded from macro 'KEY_F7'
+  319 | #define KEY_F7 SDL_SCANCODE_F7
+      |                ^
+game.c:1267:8: warning: case value not in enumerated type 'KeyboardKey' [-Wswitch]
+ 1267 |   case KEY_LEFT_SHIFT:
+      |        ^
+game.c:327:24: note: expanded from macro 'KEY_LEFT_SHIFT'
+  327 | #define KEY_LEFT_SHIFT SDL_SCANCODE_LSHIFT
+      |                        ^
+game.c:1284:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1284 |     return KEY_NULL;
+      |     ~~~~~~ ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1292:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1292 |     return KEY_UP;
+      |     ~~~~~~ ^~~~~~
+game.c:321:16: note: expanded from macro 'KEY_UP'
+  321 | #define KEY_UP SDL_SCANCODE_UP
+      |                ^~~~~~~~~~~~~~~
+game.c:1294:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1294 |     return KEY_DOWN;
+      |     ~~~~~~ ^~~~~~~~
+game.c:322:18: note: expanded from macro 'KEY_DOWN'
+  322 | #define KEY_DOWN SDL_SCANCODE_DOWN
+      |                  ^~~~~~~~~~~~~~~~~
+game.c:1296:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1296 |     return KEY_LEFT;
+      |     ~~~~~~ ^~~~~~~~
+game.c:323:18: note: expanded from macro 'KEY_LEFT'
+  323 | #define KEY_LEFT SDL_SCANCODE_LEFT
+      |                  ^~~~~~~~~~~~~~~~~
+game.c:1298:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1298 |     return KEY_RIGHT;
+      |     ~~~~~~ ^~~~~~~~~
+game.c:324:19: note: expanded from macro 'KEY_RIGHT'
+  324 | #define KEY_RIGHT SDL_SCANCODE_RIGHT
+      |                   ^~~~~~~~~~~~~~~~~~
+game.c:1300:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1300 |     return KEY_SPACE;
+      |     ~~~~~~ ^~~~~~~~~
+game.c:293:19: note: expanded from macro 'KEY_SPACE'
+  293 | #define KEY_SPACE SDL_SCANCODE_SPACE
+      |                   ^~~~~~~~~~~~~~~~~~
+game.c:1302:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1302 |     return KEY_TAB;
+      |     ~~~~~~ ^~~~~~~
+game.c:296:17: note: expanded from macro 'KEY_TAB'
+  296 | #define KEY_TAB SDL_SCANCODE_TAB
+      |                 ^~~~~~~~~~~~~~~~
+game.c:1304:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1304 |     return KEY_ENTER;
+      |     ~~~~~~ ^~~~~~~~~
+game.c:325:19: note: expanded from macro 'KEY_ENTER'
+  325 | #define KEY_ENTER SDL_SCANCODE_RETURN
+      |                   ^~~~~~~~~~~~~~~~~~~
+game.c:1306:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1306 |     return KEY_BACKSPACE;
+      |     ~~~~~~ ^~~~~~~~~~~~~
+game.c:326:23: note: expanded from macro 'KEY_BACKSPACE'
+  326 | #define KEY_BACKSPACE SDL_SCANCODE_BACKSPACE
+      |                       ^~~~~~~~~~~~~~~~~~~~~~
+game.c:1308:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1308 |     return KEY_ESCAPE;
+      |     ~~~~~~ ^~~~~~~~~~
+game.c:297:20: note: expanded from macro 'KEY_ESCAPE'
+  297 | #define KEY_ESCAPE SDL_SCANCODE_ESCAPE
+      |                    ^~~~~~~~~~~~~~~~~~~
+game.c:1314:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1314 |     return KEY_LEFT_SHIFT;
+      |     ~~~~~~ ^~~~~~~~~~~~~~
+game.c:327:24: note: expanded from macro 'KEY_LEFT_SHIFT'
+  327 | #define KEY_LEFT_SHIFT SDL_SCANCODE_LSHIFT
+      |                        ^~~~~~~~~~~~~~~~~~~
+game.c:1316:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1316 |     return KEY_F5;
+      |     ~~~~~~ ^~~~~~
+game.c:338:16: note: expanded from macro 'KEY_F5'
+  338 | #define KEY_F5 SDL_SCANCODE_F5
+      |                ^~~~~~~~~~~~~~~
+game.c:1318:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1318 |     return KEY_F6;
+      |     ~~~~~~ ^~~~~~
+game.c:318:16: note: expanded from macro 'KEY_F6'
+  318 | #define KEY_F6 SDL_SCANCODE_F6
+      |                ^~~~~~~~~~~~~~~
+game.c:1320:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1320 |     return KEY_F7;
+      |     ~~~~~~ ^~~~~~
+game.c:319:16: note: expanded from macro 'KEY_F7'
+  319 | #define KEY_F7 SDL_SCANCODE_F7
+      |                ^~~~~~~~~~~~~~~
+game.c:1322:12: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1322 |     return KEY_NULL;
+      |     ~~~~~~ ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1323:10: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1323 |   return KEY_NULL;
+      |   ~~~~~~ ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1442:70: warning: implicit conversion from enumeration type 'enum SDL_Scancode' to different enumeration type 'KeyboardKey' [-Wenum-conversion]
+ 1442 |         g_keybinds[i].secondary = comma ? key_from_name(comma + 1) : KEY_NULL;
+      |                                 ~                                    ^~~~~~~~
+game.c:339:18: note: expanded from macro 'KEY_NULL'
+  339 | #define KEY_NULL SDL_SCANCODE_UNKNOWN
+      |                  ^~~~~~~~~~~~~~~~~~~~
+game.c:1453:13: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1453 |   return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+      |           ~ ^  ~~~~~~~~
+game.c:1453:48: warning: comparison of different enumeration types ('KeyboardKey' and 'enum SDL_Scancode') [-Wenum-compare]
+ 1453 |   return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+      |                                              ~ ^  ~~~~~~~~
+game.c:1453:73: warning: implicit conversion from enumeration type 'KeyboardKey' to different enumeration type 'SDL_Scancode' (aka 'enum SDL_Scancode') [-Wenum-conversion]
+ 1453 |   return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+      |                                                               ~~~~~~~~~~^~
+game.c:283:38: note: expanded from macro 'IsKeyDown'
+  283 | #define IsKeyDown(key) IsKeyDown_SDL(key)
+      |                        ~~~~~~~~~~~~~ ^~~
+game.c:1453:38: warning: implicit conversion from enumeration type 'KeyboardKey' to different enumeration type 'SDL_Scancode' (aka 'enum SDL_Scancode') [-Wenum-conversion]
+ 1453 |   return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+      |                            ~~~~~~~~~~^~
+game.c:283:38: note: expanded from macro 'IsKeyDown'
+  283 | #define IsKeyDown(key) IsKeyDown_SDL(key)
+      |                        ~~~~~~~~~~~~~ ^~~
+game.c:2329:3: error: call to undeclared function 'draw_circle_outline_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 2329 |   draw_circle_outline_opengl(g_handR.x, g_handR.y, r, (Color){255, 255, 255, 140});
+      |   ^
+game.c:2345:5: error: call to undeclared function 'draw_line_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 2345 |     draw_line_opengl(p0.x, p0.y, p1.x, p1.y, 3.0f, (Color){255, 220, 120, 220});
+      |     ^
+game.c:2779:21: error: use of undeclared identifier 'g_window'
+ 2779 |   SDL_GetWindowSize(g_window, &current_w, &current_h);
+      |                     ^
+game.c:3304:5: error: call to undeclared function 'draw_ellipse_filled_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3304 |     draw_ellipse_filled_opengl((int)sp.x, (int)(sp.y + s * 1.2f), (int)(s * 1.4f),
+      |     ^
+game.c:3309:7: error: call to undeclared function 'draw_circle_filled_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3309 |       draw_circle_filled_opengl(sp.x, sp.y, s * 0.75f, (Color){220, 60, 60, 255});
+      |       ^
+game.c:3310:7: error: call to undeclared function 'draw_circle_outline_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3310 |       draw_circle_outline_opengl(sp.x, sp.y, s * 0.75f, (Color){0, 0, 0, 160});
+      |       ^
+game.c:3311:7: error: call to undeclared function 'draw_triangle_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3311 |       draw_triangle_opengl((Vector2){sp.x, sp.y - s * 0.9f},
+      |       ^
+game.c:3318:7: error: call to undeclared function 'draw_polygon_filled_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3318 |       draw_polygon_filled_opengl(sp, 4, s * 0.9f, 45.0f, (Color){170, 210, 255, 255});
+      |       ^
+game.c:3319:7: error: call to undeclared function 'draw_polygon_outline_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3319 |       draw_polygon_outline_opengl(sp, 4, s * 0.9f, 45.0f, (Color){0, 0, 0, 160});
+      |       ^
+game.c:3326:7: error: call to undeclared function 'draw_line_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3326 |       draw_line_opengl(a.x, a.y, b.x, b.y, s * 0.25f, (Color){230, 230, 230, 255});
+      |       ^
+game.c:3327:7: error: call to undeclared function 'draw_triangle_opengl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 3327 |       draw_triangle_opengl((Vector2){b.x, b.y},
+      |       ^
+game.c:3434:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3434 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3435:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3435 |   glColor4f(0.0f, 0.0f, 0.0f, 160.0f/255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3436:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3436 |   glVertex2f(sp.x - w * 0.5f, sp.y - h);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3437:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3437 |   glVertex2f(sp.x + w * 0.5f, sp.y - h);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3438:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3438 |   glVertex2f(sp.x + w * 0.5f, sp.y);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3439:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3439 |   glVertex2f(sp.x - w * 0.5f, sp.y);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3440:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3440 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+60 warnings and 20 errors generated.
+game_impl.c:12:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   12 |     glBegin(GL_TRIANGLE_FAN);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:13:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   13 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:14:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   14 |     glVertex2f(centerX, centerY);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:18:9: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   18 |         glVertex2f(centerX + cosf(angle) * radius, centerY + sinf(angle) * radius);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:20:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   20 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:24:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   24 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:25:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   25 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:29:9: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   29 |         glVertex2f(centerX + cosf(angle) * radius, centerY + sinf(angle) * radius);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:31:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   31 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:35:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   35 |     glBegin(GL_TRIANGLES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:36:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   36 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:37:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   37 |     glVertex2f(v1.x, v1.y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:38:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   38 |     glVertex2f(v2.x, v2.y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:39:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   39 |     glVertex2f(v3.x, v3.y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:40:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   40 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:44:5: warning: 'glLineWidth' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   44 |     glLineWidth(thickness);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2569:13: note: 'glLineWidth' has been explicitly marked deprecated here
+ 2569 | extern void glLineWidth (GLfloat width) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:45:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   45 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:46:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   46 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:47:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   47 |     glVertex2f(x1, y1);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:48:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   48 |     glVertex2f(x2, y2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:49:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   49 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:50:5: warning: 'glLineWidth' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   50 |     glLineWidth(1.0f); // Reset to default
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2569:13: note: 'glLineWidth' has been explicitly marked deprecated here
+ 2569 | extern void glLineWidth (GLfloat width) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:54:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   54 |     glBegin(GL_TRIANGLE_FAN);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:55:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   55 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:56:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   56 |     glVertex2f(centerX, centerY);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:60:9: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   60 |         glVertex2f(centerX + cosf(angle) * radiusX, centerY + sinf(angle) * radiusY);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:62:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   62 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:66:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   66 |     glBegin(GL_TRIANGLE_FAN);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:67:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   67 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:68:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   68 |     glVertex2f(center.x, center.y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:71:9: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   71 |         glVertex2f(center.x + cosf(angle) * radius, center.y + sinf(angle) * radius);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:73:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   73 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:77:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   77 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:78:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   78 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:81:9: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   81 |         glVertex2f(center.x + cosf(angle) * radius, center.y + sinf(angle) * radius);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:83:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   83 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:87:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   87 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:88:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   88 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:89:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   89 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:90:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   90 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:91:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   91 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:92:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   92 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game_impl.c:93:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   93 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+43 warnings generated.
+../utils/NN/NN/NN.c:967:11: warning: enumeration value 'SCHEDULER_TYPE_COUNT' not handled in switch [-Wswitch]
+  967 |   switch (nn->lr_scheduler) {
+      |           ^~~~~~~~~~~~~~~~
+../utils/NN/NN/NN.c:967:11: note: add missing switch cases
+  967 |   switch (nn->lr_scheduler) {
+      |           ^
+../utils/NN/NN/NN.c:1050:35: warning: format specifies type 'double' but the argument has type 'long double' [-Wformat]
+ 1050 |   printf("Learning rate: %.6f\n", nn->learningRate);
+      |                          ~~~~     ^~~~~~~~~~~~~~~~
+      |                          %.6Lf
+../utils/NN/NN/NN.c:1051:29: warning: format specifies type 'int' but the argument has type 'OptimizerFunction' (aka 'void (*)(struct NN_t *)') [-Wformat]
+ 1051 |   printf("Optimizer: %d\n", nn->optimizer);
+      |                      ~~     ^~~~~~~~~~~~~
+3 warnings generated.
+../RL_AGENT/training/training_infrastructure.c:209:13: warning: enumeration value 'CURRICULUM_STAGE_COUNT' not handled in switch [-Wswitch]
+  209 |     switch (stage) {
+      |             ^~~~~
+../RL_AGENT/training/training_infrastructure.c:209:13: note: add missing switch cases
+  209 |     switch (stage) {
+      |             ^
+1 warning generated.
+../utils/NN/MUZE/muze_enhanced_model.c:234:49: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  234 |         NN_backprop_custom_delta(model->critic, obs_array, (long double*)critic_loss);
+      |                                                 ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:240:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  240 |         NN_backprop_custom_delta(model->actor, obs_array, (long double*)actor_loss);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:266:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  266 |         latent_ld = NN_forward(model->encoder, obs_array);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:227:47: note: passing argument to parameter 'inputs' here
+  227 | long double *NN_forward(NN_t *nn, long double inputs[]);
+      |                                               ^
+../utils/NN/MUZE/muze_enhanced_model.c:294:54: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  294 |         NN_backprop_custom_delta(model->world_model, obs_array, (long double*)world_loss);
+      |                                                      ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+4 warnings generated.

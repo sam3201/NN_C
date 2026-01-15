@@ -26,8 +26,8 @@
 // #include "../utils/NN/MUZE/trainer.h" // Excluded - includes replay_buffer.h
 #include "../utils/NN/MUZE/util.h"
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
-// #include "../utils/Raylib/src/raylib.h"
-// #include "../utils/Raylib/src/raymath.h"
+#include "../utils/Raylib/src/raylib.h"
+#include "../utils/Raylib/src/raymath.h"
 // #include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl3.h>
 #include <OpenGL/gl.h>  // For legacy OpenGL functions
@@ -74,6 +74,15 @@ void TTF_CloseFont(TTF_Font *font);
 int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
                       int *h);
                       */
+
+// GetTime implementation
+double GetTime(void) {
+    return (double)SDL_GetTicks() / 1000.0;
+}
+
+// C_SELECT system - automatically imports only needed functions
+#include "game_auto_import.h"
+
 
 SDL_Window *g_window = NULL;
 
@@ -3415,98 +3424,9 @@ static inline void obs_finalize_fixed(ObsBuffer *o, int target_dim) {
     obs_push(o, 0.0f);
 }
 
-// OpenGL helper function to draw rectangle outlines
-static void draw_rectangle_outline_opengl(int x, int y, int width, int height, Color color) {
-  glBegin(GL_LINE_LOOP);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(x, y);
-  glVertex2f(x + width, y);
-  glVertex2f(x + width, y + height);
-  glVertex2f(x, y + height);
-  glEnd();
-}
+// draw_rectangle_outline_opengl is now provided by framework/game_imports.h
 
-// OpenGL helper function to draw filled circles
-static void draw_circle_filled_opengl(float centerX, float centerY, float radius, Color color) {
-  glBegin(GL_TRIANGLE_FAN);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(centerX, centerY);
-  int segments = 32;
-  for (int i = 0; i <= segments; i++) {
-    float angle = 2.0f * PI * (float)i / (float)segments;
-    glVertex2f(centerX + cosf(angle) * radius, centerY + sinf(angle) * radius);
-  }
-  glEnd();
-}
-
-// OpenGL helper function to draw circle outlines
-static void draw_circle_outline_opengl(float centerX, float centerY, float radius, Color color) {
-  glBegin(GL_LINE_LOOP);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  int segments = 32;
-  for (int i = 0; i <= segments; i++) {
-    float angle = 2.0f * PI * (float)i / (float)segments;
-    glVertex2f(centerX + cosf(angle) * radius, centerY + sinf(angle) * radius);
-  }
-  glEnd();
-}
-
-// OpenGL helper function to draw triangles
-static void draw_triangle_opengl(Vector2 v1, Vector2 v2, Vector2 v3, Color color) {
-  glBegin(GL_TRIANGLES);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(v1.x, v1.y);
-  glVertex2f(v2.x, v2.y);
-  glVertex2f(v3.x, v3.y);
-  glEnd();
-}
-
-// OpenGL helper function to draw lines
-static void draw_line_opengl(float x1, float y1, float x2, float y2, float thickness, Color color) {
-  glLineWidth(thickness);
-  glBegin(GL_LINES);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(x1, y1);
-  glVertex2f(x2, y2);
-  glEnd();
-  glLineWidth(1.0f); // Reset to default
-}
-
-// OpenGL helper function to draw ellipses
-static void draw_ellipse_filled_opengl(int centerX, int centerY, int radiusX, int radiusY, Color color) {
-  glBegin(GL_TRIANGLE_FAN);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(centerX, centerY);
-  int segments = 32;
-  for (int i = 0; i <= segments; i++) {
-    float angle = 2.0f * PI * (float)i / (float)segments;
-    glVertex2f(centerX + cosf(angle) * radiusX, centerY + sinf(angle) * radiusY);
-  }
-  glEnd();
-}
-
-// OpenGL helper function to draw polygons
-static void draw_polygon_filled_opengl(Vector2 center, int sides, float radius, float rotation, Color color) {
-  glBegin(GL_TRIANGLE_FAN);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  glVertex2f(center.x, center.y);
-  for (int i = 0; i <= sides; i++) {
-    float angle = rotation + 2.0f * PI * (float)i / (float)sides;
-    glVertex2f(center.x + cosf(angle) * radius, center.y + sinf(angle) * radius);
-  }
-  glEnd();
-}
-
-// OpenGL helper function to draw polygon outlines
-static void draw_polygon_outline_opengl(Vector2 center, int sides, float radius, float rotation, Color color) {
-  glBegin(GL_LINE_LOOP);
-  glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
-  for (int i = 0; i <= sides; i++) {
-    float angle = rotation + 2.0f * PI * (float)i / (float)sides;
-    glVertex2f(center.x + cosf(angle) * radius, center.y + sinf(angle) * radius);
-  }
-  glEnd();
-}
+// OpenGL helper functions are now provided by framework/game_imports.h
 
 static void draw_health_bar(Vector2 sp, float w, float h, float t01,
                             Color fill) {
