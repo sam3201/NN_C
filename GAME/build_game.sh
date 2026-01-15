@@ -36,6 +36,7 @@ RAYLIB_LIB="${RAYLIB_DIR}/src/libraylib.a"
 RAYLIB_INCLUDES="-I${RAYLIB_DIR}/src"
 RAYLIB_LINK="${RAYLIB_LIB} -framework Cocoa -framework IOKit -framework CoreVideo"
 
+RUN_UNDER_LLDB=1
 # -----------------------
 # Collect sources
 # -----------------------
