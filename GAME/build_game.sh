@@ -38,6 +38,7 @@ RAYLIB_LINK="${RAYLIB_LIB} -framework Cocoa -framework IOKit -framework CoreVide
 
 RUN_UNDER_LLDB=1
 DEBUG_LOG = "LOGS/debug_log.txt"
+
 # -----------------------
 # Collect sources
 # -----------------------
@@ -111,7 +112,7 @@ echo "Compilation successful!"
 # Run
 # -----------------------
 if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
-  lldb ./game
+ lldb ./game > "$DEBUG_LOG" 
 else
  ./game
 fi
