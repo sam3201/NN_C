@@ -1,11 +1,43 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
 
 # -----------------------
-# Paths
+# Configuration
 # -----------------------
+set -eu
+
+# Paths
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
+
+# Default mode
+MODE="${1:-compile}"
+LLDB_MODE="${2:-0}"
+
+# -----------------------
+# Help
+# -----------------------
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Usage: $0 [MODE] [LLDB_MODE]"
+    echo ""
+    echo "Modes:"
+    echo "  compile     - Just compile the game (default)"
+    echo "  build       - Compile and run the game"
+    echo "  lldb        - Compile and run under lldb debugger"
+    echo "  clean       - Clean build artifacts"
+    echo ""
+    echo "LLDB Mode (optional):"
+    echo "  0           - Don't run under lldb (default for build mode)"
+    echo "  1           - Run under lldb (default for lldb mode)"
+    echo ""
+    echo "Examples:"
+    echo "  $0                # Compile only"
+    echo "  $0 compile        # Compile only"
+    echo "  $0 build          # Compile and run"
+    echo "  $0 lldb           # Compile and run with lldb"
+    echo "  $0 build 1        # Compile and run with lldb"
+    echo ""
+    exit 0
+fi
 
 # -----------------------
 # Toolchain
@@ -30,14 +62,18 @@ SDL_RPATH="-Wl,-rpath,${SDL_BUILD_DIR} -Wl,-rpath,${SDL_TTF_BUILD_DIR}"
 # -----------------------
 # Raylib (local build)
 # -----------------------
-#
 RAYLIB_DIR="../utils/Raylib"
 RAYLIB_LIB="${RAYLIB_DIR}/src/libraylib.a"
 RAYLIB_INCLUDES="-I${RAYLIB_DIR}/src"
 RAYLIB_LINK="${RAYLIB_LIB} -framework Cocoa -framework IOKit -framework CoreVideo"
 
-RUN_UNDER_LLDB=1
-DEBUG_LOG="LOGS/debug_log.txt"
+# -----------------------
+# Logging
+# -----------------------
+mkdir -p logs
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOG_FILE="logs/build_${TIMESTAMP}.log"
+DEBUG_LOG="logs/debug_${TIMESTAMP}.log"
 
 # -----------------------
 # Collect sources
@@ -73,6 +109,7 @@ INCLUDES="
   -I../RL_AGENT
   -I../utils/NN/TRANSFORMER
   -I../utils/NN/NEAT
+  -Igenerated
   ${RAYLIB_INCLUDES}
   ${SDL_INCLUDES}
 "
@@ -90,12 +127,25 @@ LINK="
 "
 
 # -----------------------
-# Build
+# Clean mode
 # -----------------------
-echo "Compiling game..."
+if [ "$MODE" = "clean" ]; then
+    echo "Cleaning build artifacts..."
+    rm -f game game.exe
+    rm -rf game.dSYM
+    rm -f *.o
+    echo "Clean completed!"
+    exit 0
+fi
+
+# -----------------------
+# Compile
+# -----------------------
+echo "Building game... Logging to $LOG_FILE"
 
 # shellcheck disable=SC2086
 $CC $CFLAGS \
+  generated/impl.c \
   game.c \
   $NN_SRC \
   $RL_AGENT_SRC \
@@ -104,24 +154,51 @@ $CC $CFLAGS \
   $INCLUDES \
   $LDFLAGS \
   $LINK \
-  -o game
+    -o game 2>&1 | tee "$LOG_FILE"
 
-echo "Compilation successful!"
-
-# -----------------------
-# Run
-# -----------------------
-if [ "${RUN_UNDER_LLDB:-1}" -eq 1 ]; then
- lldb ./game | tee "$DEBUG_LOG" 
+# Check if compilation was successful
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
+    echo "Build successful!"
+    
+    # -----------------------
+    # Execute based on mode
+    # -----------------------
+    case "$MODE" in
+        "compile")
+            echo "Compilation completed. Log saved to $LOG_FILE"
+            ;;
+        "build")
+            echo "Running game..."
+            if [ "${LLDB_MODE:-0}" -eq 1 ]; then
+                echo "Running under lldb..."
+                timeout 30s lldb --batch -o run -o bt -- ./game 2>&1 | tee -a "$LOG_FILE"
+            else
+                ./game
+            fi
+            ;;
+        "lldb")
+            echo "Running game under lldb..."
+            timeout 30s lldb --batch -o run -o bt -- ./game 2>&1 | tee "$DEBUG_LOG"
+            echo "Debug session completed. Log saved to $DEBUG_LOG"
+            ;;
+        *)
+            echo "Unknown mode: $MODE"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
 else
- ./game
+    echo "Build failed! Check $LOG_FILE for details."
+    exit 1
 fi
 
-status=$?
+# -----------------------
+# Cleanup
+# -----------------------
+echo "Cleaning up log directory..."
+# Keep only the last 5 log files
+cd logs
+ls -t | tail -n +6 | xargs -r rm -f
+cd ..
 
-echo "Game exited with status $status"
-
-rm -f ./game
-rm -rf ./game.dSYM
-exit "$status"
-
+echo "Done."

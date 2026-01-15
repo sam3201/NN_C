@@ -102,6 +102,7 @@ extern "C" {
 #define MOUSE_RIGHT_BUTTON    (3)  // SDL_BUTTON_RIGHT
 #define MOUSE_MIDDLE_BUTTON   (2)  // SDL_BUTTON_MIDDLE
 
+
 #ifdef __cplusplus
 }
 #endif
