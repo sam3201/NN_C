@@ -10414,8 +10414,8 @@ int main(int argc, char *argv[]) {
 
   // Use hardcoded display size since monitor functions are failing
   // From the output we can see the display is 1440 x 900
-  int display_w = 1440;
-  int display_h = 900;
+  int display_w = GetScreenWidth();
+  int display_h = GetScreenHeight();
 
   printf("Using display dimensions: %d x %d\n", display_w, display_h);
   InitWindow(display_w, display_h, "MUZE Tribal Simulation");
