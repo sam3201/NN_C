@@ -9862,6 +9862,9 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
   }
 }
 
+// Render resources with optimized culling and proper locking
+static void render_resources_3d(Vec3 player_pos, Mat4 view_proj);
+
 static void render_scene_3d(void) {
   init_3d_renderer();
 
@@ -9882,10 +9885,6 @@ static void render_scene_3d(void) {
   int h = GetScreenHeight();
   if (w <= 0 || h <= 0)
     return;
-
-  // Use current screen dimensions
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
 
   glViewport(0, 0, w, h);
   glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
@@ -10021,6 +10020,9 @@ static void render_scene_3d(void) {
 
     render_grass_3d(player_pos, view_proj, grass_density);
   }
+
+  // Render resources with optimized culling
+  render_resources_3d(player_pos, view_proj);
 }
 
 // Render resources with optimized culling and proper locking
@@ -10033,12 +10035,6 @@ static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
     render_distance =
         base_render_distance * 0.7f; // Reduce distance if FPS drops
   } else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
-    render_distance =
-        base_render_distance * 0.5f; // Aggressive reduction for low FPS
-  } else {
-    base_render_distance * 0.7f; // Reduce distance if FPS drops
-  }
-  else if (g_current_fps > 0.0f && g_current_fps < 30.0f) {
     render_distance =
         base_render_distance * 0.5f; // Aggressive reduction for low FPS
   }
@@ -10127,42 +10123,41 @@ static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
           resources_rendered++;
         }
       }
-                                                  damage_numbers[i].pos.y) +
-                                       2.0f
-                                 : 2.0f,
-             damage_numbers[i].pos.y);
-                                                  Mat4 dmg_model = mat4_mul(
-                                                      mat4_translate(dmg_pos),
-                                                      mat4_scale(vec3(
-                                                          0.3f, 0.3f, 0.01f)));
-                                                  Color dmg_color =
-                                                      damage_numbers[i].color;
-                                                  dmg_color.a =
-                                                      (unsigned char)(255 *
-                                                                      alpha); // Apply fade
+      pthread_rwlock_unlock(&c->lock);
+    }
+  }
 
-                                                  // Animated floating effect
-                                                  float time = GetTime();
-                                                  float bounce =
-                                                      sinf(time * 10.0f) *
-                                                      0.05f; // Small bounce
-                                                  float scale =
-                                                      1.0f +
-                                                      bounce; // Pulse effect
+  // Render damage numbers
+  for (int i = 0; i < MAX_DAMAGE_NUMBERS; i++) {
+    if (damage_numbers[i].timer > 0.0f) {
+      float alpha = damage_numbers[i].timer / 3.0f;
+      if (alpha <= 0.0f) {
+        damage_numbers[i].timer = 0.0f;
+        continue;
+      }
 
-                                                  Mat4 animated_model =
-                                                      mat4_mul(dmg_model,
-                                                               mat4_scale(vec3(
-                                                                   scale, scale,
-                                                                   0.01f)));
-                                                  Vec3 dmg_tint = vec3(
-                                                      dmg_color.r / 255.0f,
-                                                      dmg_color.g / 255.0f,
-                                                      dmg_color.b / 255.0f);
-                                                  render_mesh(&g_mesh_cube,
-                                                              animated_model,
-                                                              view_proj,
-                                                              dmg_tint);
+      Vec3 dmg_pos =
+          vec3(damage_numbers[i].pos.x,
+               (g_use_perlin_ground ? terrain_height(damage_numbers[i].pos.x,
+                                                     damage_numbers[i].pos.y)
+                                    : 0.0f) +
+                   2.0f,
+               damage_numbers[i].pos.y);
+      Mat4 dmg_model = mat4_mul(mat4_translate(dmg_pos),
+                                mat4_scale(vec3(0.3f, 0.3f, 0.01f)));
+      Color dmg_color = damage_numbers[i].color;
+      dmg_color.a = (unsigned char)(255 * alpha);
+
+      // Animated floating effect
+      float time = GetTime();
+      float bounce = sinf(time * 10.0f) * 0.05f; // Small bounce
+      float scale = 1.0f + bounce;               // Pulse effect
+
+      Mat4 animated_model =
+          mat4_mul(dmg_model, mat4_scale(vec3(scale, scale, 0.01f)));
+      Vec3 dmg_tint = vec3(dmg_color.r / 255.0f, dmg_color.g / 255.0f,
+                           dmg_color.b / 255.0f);
+      render_mesh(&g_mesh_cube, animated_model, view_proj, dmg_tint);
     }
   }
 }
@@ -10417,7 +10412,13 @@ int main(int argc, char *argv[]) {
   // Set target FPS before creating window
   SetTargetFPS(60);
 
-  InitWindow(1280, 800, "MUZE Tribal Simulation");
+  // Use hardcoded display size since monitor functions are failing
+  // From the output we can see the display is 1440 x 900
+  int display_w = 1440;
+  int display_h = 900;
+
+  printf("Using display dimensions: %d x %d\n", display_w, display_h);
+  InitWindow(display_w, display_h, "MUZE Tribal Simulation");
   printf("Window created: %d x %d\n", GetScreenWidth(), GetScreenHeight());
 
   // Try to initialize TTF, but continue even if it fails
@@ -10667,6 +10668,11 @@ int main(int argc, char *argv[]) {
       g_prof_triangles = 0;
       double render_start_ms = prof_now_ms();
       if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
+        // Ensure viewport covers full window after Raylib's BeginDrawing
+        int w = GetScreenWidth();
+        int h = GetScreenHeight();
+        glViewport(0, 0, w, h);
+
         render_scene_3d();
       }
       double render_ms = prof_now_ms() - render_start_ms;
