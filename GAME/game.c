@@ -29,8 +29,8 @@
 // #include "../utils/Raylib/src/raylib.h"
 // #include "../utils/Raylib/src/raymath.h"
 // #include "../utils/SDL3/SDL3_compat.h"
+#include <OpenGL/gl.h> // For legacy OpenGL functions
 #include <OpenGL/gl3.h>
-#include <OpenGL/gl.h>  // For legacy OpenGL functions
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <dirent.h>
@@ -77,7 +77,6 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
 
 // C_SELECT system - automatically imports only needed functions
 #include "generated/auto_import.h"
-
 
 SDL_Window *g_window = NULL;
 
@@ -205,58 +204,56 @@ void SetRelativeMouseMode(int enabled);
 
 // Custom mouse input functions that use SDL directly
 Vector2 GetMousePosition_Custom(void) {
-    float x, y;
-    SDL_GetMouseState(&x, &y);
-    return (Vector2){x, y};
+  float x, y;
+  SDL_GetMouseState(&x, &y);
+  return (Vector2){x, y};
 }
 
 Vector2 GetMouseDelta_Custom(void) {
-    static float last_x = 0.0f, last_y = 0.0f;
-    static int first_time = 1;
-    
-    float x, y;
-    SDL_GetMouseState(&x, &y);
-    
-    Vector2 delta = {0, 0};
-    
-    if (!first_time) {
-        delta.x = x - last_x;
-        delta.y = y - last_y;
-    }
-    
-    last_x = x;
-    last_y = y;
-    first_time = 0;
-    
-    return delta;
+  static float last_x = 0.0f, last_y = 0.0f;
+  static int first_time = 1;
+
+  float x, y;
+  SDL_GetMouseState(&x, &y);
+
+  Vector2 delta = {0, 0};
+
+  if (!first_time) {
+    delta.x = x - last_x;
+    delta.y = y - last_y;
+  }
+
+  last_x = x;
+  last_y = y;
+  first_time = 0;
+
+  return delta;
 }
 
 void SetMousePosition_Custom(int x, int y) {
-    if (g_window) {
-        SDL_WarpMouseInWindow(g_window, x, y);
-    }
+  if (g_window) {
+    SDL_WarpMouseInWindow(g_window, x, y);
+  }
 }
 
 // SDL Input helper functions to replace Raylib
 static void update_sdl_input_state(void) {
   // Update keyboard state
   g_keyboard_state = SDL_GetKeyboardState(NULL);
-  
+
   // Update mouse state
   g_prev_mouse_state = g_mouse_state;
   g_mouse_state = SDL_GetMouseState(&g_mouse_x, &g_mouse_y);
-  
+
   // Store previous keyboard state for key press detection
-  memcpy(g_prev_keyboard_state, g_keyboard_state, sizeof(g_prev_keyboard_state));
+  memcpy(g_prev_keyboard_state, g_keyboard_state,
+         sizeof(g_prev_keyboard_state));
 }
 
 static int is_key_pressed(SDL_Scancode key) {
   int current = g_keyboard_state[key];
   int prev = g_prev_keyboard_state[key];
   int result = current && !prev;
-  if (key == SDL_SCANCODE_G && result) {
-    printf("DEBUG: G key press detected - current: %d, prev: %d, result: %d\n", current, prev, result);
-  }
   return result;
 }
 
@@ -274,11 +271,13 @@ static inline int IsMouseButtonDown_SDL(int button) {
 }
 
 static inline int IsMouseButtonPressed_SDL(int button) {
-  return is_mouse_button_down(button) && !(g_prev_mouse_state & SDL_BUTTON_MASK(button));
+  return is_mouse_button_down(button) &&
+         !(g_prev_mouse_state & SDL_BUTTON_MASK(button));
 }
 
 static inline int IsMouseButtonReleased_SDL(int button) {
-  return !is_mouse_button_down(button) && (g_prev_mouse_state & SDL_BUTTON_MASK(button));
+  return !is_mouse_button_down(button) &&
+         (g_prev_mouse_state & SDL_BUTTON_MASK(button));
 }
 
 static inline int IsKeyDown_SDL(SDL_Scancode key) {
@@ -2449,7 +2448,8 @@ static void draw_bow_charge_fx(void) {
 
   // charge ring on right hand
   float r = 26.0f;
-  draw_circle_outline_opengl(g_handR.x, g_handR.y, r, (Color){255, 255, 255, 140});
+  draw_circle_outline_opengl(g_handR.x, g_handR.y, r,
+                             (Color){255, 255, 255, 140});
 
   // progress arc (simple: draw a few small segments)
   int segs = 22;
@@ -3424,39 +3424,42 @@ static void draw_pickups(void) {
     sp.y += bob;
 
     // shadow
-    draw_ellipse_filled_opengl((int)sp.x, (int)(sp.y + s * 1.2f), (int)(s * 1.4f),
-                (int)(s * 0.55f), (Color){0, 0, 0, 70});
+    draw_ellipse_filled_opengl((int)sp.x, (int)(sp.y + s * 1.2f),
+                               (int)(s * 1.4f), (int)(s * 0.55f),
+                               (Color){0, 0, 0, 70});
 
     switch (p->type) {
     case PICK_FOOD: {
-      draw_circle_filled_opengl(sp.x, sp.y, s * 0.75f, (Color){220, 60, 60, 255});
+      draw_circle_filled_opengl(sp.x, sp.y, s * 0.75f,
+                                (Color){220, 60, 60, 255});
       draw_circle_outline_opengl(sp.x, sp.y, s * 0.75f, (Color){0, 0, 0, 160});
       draw_triangle_opengl((Vector2){sp.x, sp.y - s * 0.9f},
-                   (Vector2){sp.x - s * 0.35f, sp.y - s * 1.25f},
-                   (Vector2){sp.x + s * 0.35f, sp.y - s * 1.25f},
-                   (Color){40, 180, 60, 255});
+                           (Vector2){sp.x - s * 0.35f, sp.y - s * 1.25f},
+                           (Vector2){sp.x + s * 0.35f, sp.y - s * 1.25f},
+                           (Color){40, 180, 60, 255});
     } break;
 
     case PICK_SHARD: {
-      draw_polygon_filled_opengl(sp, 4, s * 0.9f, 45.0f, (Color){170, 210, 255, 255});
-      draw_polygon_outline_opengl(sp, 4, s * 0.9f, 45.0f, (Color){0, 0, 0, 160});
+      draw_polygon_filled_opengl(sp, 4, s * 0.9f, 45.0f,
+                                 (Color){170, 210, 255, 255});
+      draw_polygon_outline_opengl(sp, 4, s * 0.9f, 45.0f,
+                                  (Color){0, 0, 0, 160});
     } break;
 
     case PICK_ARROW: {
       // tiny arrow icon
       Vector2 a = sp;
       Vector2 b = (Vector2){sp.x + s * 1.6f, sp.y};
-      draw_line_opengl(a.x, a.y, b.x, b.y, s * 0.25f, (Color){230, 230, 230, 255});
+      draw_line_opengl(a.x, a.y, b.x, b.y, s * 0.25f,
+                       (Color){230, 230, 230, 255});
       draw_triangle_opengl((Vector2){b.x, b.y},
-                   (Vector2){b.x - s * 0.5f, b.y - s * 0.35f},
-                   (Vector2){b.x - s * 0.5f, b.y + s * 0.35f},
-                   (Color){230, 230, 230, 255});
-      draw_line_opengl(sp.x - s * 0.6f, sp.y - s * 0.3f,
-                 sp.x - s * 0.2f, sp.y, s * 0.18f,
-                 (Color){180, 140, 90, 255});
-      draw_line_opengl(sp.x - s * 0.6f, sp.y + s * 0.3f,
-                 sp.x - s * 0.2f, sp.y, s * 0.18f,
-                 (Color){180, 140, 90, 255});
+                           (Vector2){b.x - s * 0.5f, b.y - s * 0.35f},
+                           (Vector2){b.x - s * 0.5f, b.y + s * 0.35f},
+                           (Color){230, 230, 230, 255});
+      draw_line_opengl(sp.x - s * 0.6f, sp.y - s * 0.3f, sp.x - s * 0.2f, sp.y,
+                       s * 0.18f, (Color){180, 140, 90, 255});
+      draw_line_opengl(sp.x - s * 0.6f, sp.y + s * 0.3f, sp.x - s * 0.2f, sp.y,
+                       s * 0.18f, (Color){180, 140, 90, 255});
     } break;
     }
   }
@@ -3555,7 +3558,7 @@ static void draw_health_bar(Vector2 sp, float w, float h, float t01,
                             Color fill) {
   // background
   glBegin(GL_QUADS);
-  glColor4f(0.0f, 0.0f, 0.0f, 160.0f/255.0f);
+  glColor4f(0.0f, 0.0f, 0.0f, 160.0f / 255.0f);
   glVertex2f(sp.x - w * 0.5f, sp.y - h);
   glVertex2f(sp.x + w * 0.5f, sp.y - h);
   glVertex2f(sp.x + w * 0.5f, sp.y);
@@ -3565,7 +3568,8 @@ static void draw_health_bar(Vector2 sp, float w, float h, float t01,
   float fw = w * (t01 < 0 ? 0 : (t01 > 1 ? 1 : t01));
   DrawRectangle((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)fw, (int)h, fill);
   // outline
-  draw_rectangle_outline_opengl((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)w, (int)h, (Color){0, 0, 0, 220});
+  draw_rectangle_outline_opengl((int)(sp.x - w * 0.5f), (int)(sp.y - h), (int)w,
+                                (int)h, (Color){0, 0, 0, 220});
 }
 
 static void obs_stamp_entity(Vector2 chunk_origin, float cell,
@@ -4399,13 +4403,14 @@ void draw_chunks(void) {
       int sh = (int)ceilf(chunk_px) + 1;
 
       // DrawRectangle(sx, sy, sw, sh, Fade(biome_colors[c->biome_type], 0.9f));
-  // glBegin(GL_QUADS);
-  // glColor4f(biome_colors[c->biome_type].r/255.0f, biome_colors[c->biome_type].g/255.0f, biome_colors[c->biome_type].b/255.0f, 0.9f);
-  // glVertex2f(sx, sy);
-  // glVertex2f(sx + sw, sy);
-  // glVertex2f(sx, sy + sh);
-  // glVertex2f(sx + sw, sy + sh);
-  // glEnd();
+      // glBegin(GL_QUADS);
+      // glColor4f(biome_colors[c->biome_type].r/255.0f,
+      // biome_colors[c->biome_type].g/255.0f,
+      // biome_colors[c->biome_type].b/255.0f, 0.9f); glVertex2f(sx, sy);
+      // glVertex2f(sx + sw, sy);
+      // glVertex2f(sx, sy + sh);
+      // glVertex2f(sx + sw, sy + sh);
+      // glEnd();
     }
   }
 }
@@ -6421,15 +6426,26 @@ void update_player(void) {
     const float MIN_JUMP_SPEED = PLAYER_JUMP_SPEED * 0.6f; // Minimum jump speed
     const float MAX_JUMP_SPEED = PLAYER_JUMP_SPEED * 1.2f; // Maximum jump speed
 
-    // Check for jump initiation
-    if ((IsKeyPressed_SDL_SPACE || IsKeyPressed_SDL_F) &&
-        g_player_on_ground && player.stamina >= 10.0f) {
+    // Check for jump initiation - use working key detection
+    static int space_was_down = 0;
+    static int f_was_down = 0;
+    int space_down = IsKeyDown_SDL_SPACE;
+    int f_down = IsKeyDown_SDL_F;
+    int space_pressed = space_down && !space_was_down;
+    int f_pressed = f_down && !f_was_down;
+    int can_jump = g_player_on_ground && player.stamina >= 10.0f;
+
+    if ((space_pressed || f_pressed) && can_jump) {
       jump_held = 1;
       jump_charge_time = 0.0f;
       g_player_vy = MIN_JUMP_SPEED; // Start with minimum jump
       g_player_on_ground = 0;
       player.stamina -= 10.0f; // Initial stamina cost
     }
+
+    // Update previous key states
+    space_was_down = space_down;
+    f_was_down = f_down;
 
     // Continue charging jump while button is held (but only for a short time)
     if (jump_held && (IsKeyDown_SDL_SPACE || IsKeyDown_SDL_F) &&
@@ -6640,7 +6656,7 @@ static void update_visible_world(float dt) {
   }
   // OpenGL equivalent of DrawRectangle
   glBegin(GL_QUADS);
-  glColor4f(0.0f, 0.0f, 0.0f, 110.0f/255.0f);
+  glColor4f(0.0f, 0.0f, 0.0f, 110.0f / 255.0f);
   glVertex2f(14, 14);
   glVertex2f(14 + 280, 14);
   glVertex2f(14 + 280, 14 + 128);
@@ -6653,12 +6669,13 @@ static void update_visible_world(float dt) {
   float st01 = clamp01(player.stamina / 100.0f);
 
   DrawText("Player", 24, 20, 18, RAYWHITE);
-  DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16, RAYWHITE);  // bars
+  DrawText(TextFormat("HP: %d", (int)player.health), 24, 44, 16,
+           RAYWHITE); // bars
   DrawText(TextFormat("ST: %d", (int)player.stamina), 24, 64, 16, RAYWHITE);
   // bar visuals
   // OpenGL equivalent of DrawRectangle - background
   glBegin(GL_QUADS);
-  glColor4f(0.0f, 0.0f, 0.0f, 140.0f/255.0f);
+  glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
   glVertex2f(120, 46);
   glVertex2f(120 + 160, 46);
   glVertex2f(120 + 160, 46 + 12);
@@ -6666,7 +6683,7 @@ static void update_visible_world(float dt) {
   glEnd();
   // OpenGL equivalent of DrawRectangle - hp fill
   glBegin(GL_QUADS);
-  glColor4f(80.0f/255.0f, 220.0f/255.0f, 80.0f/255.0f, 255.0f/255.0f);
+  glColor4f(80.0f / 255.0f, 220.0f / 255.0f, 80.0f / 255.0f, 255.0f / 255.0f);
   glVertex2f(120, 46);
   glVertex2f(120 + (int)(160 * hp01), 46);
   glVertex2f(120 + (int)(160 * hp01), 46 + 12);
@@ -6675,7 +6692,7 @@ static void update_visible_world(float dt) {
   draw_rectangle_outline_opengl(120, 46, 160, 12, (Color){0, 0, 0, 200});
   // OpenGL equivalent of DrawRectangle - stamina background
   glBegin(GL_QUADS);
-  glColor4f(0.0f, 0.0f, 0.0f, 140.0f/255.0f);
+  glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
   glVertex2f(120, 66);
   glVertex2f(120 + 160, 66);
   glVertex2f(120 + 160, 66 + 12);
@@ -6683,7 +6700,7 @@ static void update_visible_world(float dt) {
   glEnd();
   // OpenGL equivalent of DrawRectangle - stamina fill
   glBegin(GL_QUADS);
-  glColor4f(80.0f/255.0f, 160.0f/255.0f, 255.0f/255.0f, 255.0f/255.0f);
+  glColor4f(80.0f / 255.0f, 160.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
   glVertex2f(120, 66);
   glVertex2f(120 + (int)(160 * st01), 66);
   glVertex2f(120 + (int)(160 * st01), 66 + 12);
@@ -6707,7 +6724,7 @@ static void update_visible_world(float dt) {
     DrawText(TextFormat("Base %d", t), 24, y0 + t * 22, 16, tribes[t].color);
     // OpenGL equivalent of DrawRectangle - base background
     glBegin(GL_QUADS);
-    glColor4f(0.0f, 0.0f, 0.0f, 140.0f/255.0f);
+    glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
     glVertex2f(90, y0 + 4 + t * 22);
     glVertex2f(90 + 140, y0 + 4 + t * 22);
     glVertex2f(90 + 140, y0 + 4 + t * 22 + 10);
@@ -6715,13 +6732,15 @@ static void update_visible_world(float dt) {
     glEnd();
     // OpenGL equivalent of DrawRectangle - base fill
     glBegin(GL_QUADS);
-    glColor4f(tribes[t].color.r/255.0f, tribes[t].color.g/255.0f, tribes[t].color.b/255.0f, tribes[t].color.a/255.0f);
+    glColor4f(tribes[t].color.r / 255.0f, tribes[t].color.g / 255.0f,
+              tribes[t].color.b / 255.0f, tribes[t].color.a / 255.0f);
     glVertex2f(90, y0 + 4 + t * 22);
     glVertex2f(90 + (int)(140 * v), y0 + 4 + t * 22);
     glVertex2f(90 + (int)(140 * v), y0 + 4 + t * 22 + 10);
     glVertex2f(90, y0 + 4 + t * 22 + 10);
     glEnd();
-    draw_rectangle_outline_opengl(90, y0 + 4 + t * 22, 140, 10, (Color){0, 0, 0, 200});
+    draw_rectangle_outline_opengl(90, y0 + 4 + t * 22, 140, 10,
+                                  (Color){0, 0, 0, 200});
   }
 }
 
@@ -6777,10 +6796,10 @@ static void draw_hover_label(void) {
 
   // Draw focus box around the targeted object
   if (has_focus) {
-    draw_rectangle_outline_opengl((int)(focus_pos.x - focus_radius),
-                       (int)(focus_pos.y - focus_radius),
-                       (int)(focus_radius * 2), (int)(focus_radius * 2),
-                       (Color){255, 255, 0, 180}); // Yellow focus box
+    draw_rectangle_outline_opengl(
+        (int)(focus_pos.x - focus_radius), (int)(focus_pos.y - focus_radius),
+        (int)(focus_radius * 2), (int)(focus_radius * 2),
+        (Color){255, 255, 0, 180}); // Yellow focus box
   }
 
   if (label) {
@@ -6788,7 +6807,7 @@ static void draw_hover_label(void) {
     DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
                   (Color){0, 0, 0, 140});
     draw_rectangle_outline_opengl((int)mp.x + 14, (int)mp.y + 10, 160, 22,
-                       (Color){0, 0, 0, 220});
+                                  (Color){0, 0, 0, 220});
     if (hp >= 0) {
       DrawText(TextFormat("%s (%d)", label, hp), (int)mp.x + 22, (int)mp.y + 13,
                16, RAYWHITE);
@@ -7837,16 +7856,16 @@ static GLuint compile_shader(GLenum type, const char *src) {
 static GLuint make_program(const char *vs, const char *fs) {
   GLuint v = compile_shader(GL_VERTEX_SHADER, vs);
   GLuint f = compile_shader(GL_FRAGMENT_SHADER, fs);
-  
+
   if (!v || !f) {
     return 0;
   }
-  
+
   GLuint p = glCreateProgram();
   glAttachShader(p, v);
   glAttachShader(p, f);
   glLinkProgram(p);
-  
+
   GLint ok = 0;
   glGetProgramiv(p, GL_LINK_STATUS, &ok);
   if (!ok) {
@@ -7856,7 +7875,7 @@ static GLuint make_program(const char *vs, const char *fs) {
     glDeleteProgram(p);
     p = 0;
   }
-  
+
   glDeleteShader(v);
   glDeleteShader(f);
   return p;
@@ -9339,138 +9358,139 @@ static void draw_crafting_ui_3d(void) {
 }
 
 // Simple function to draw individual letter shapes
-static void draw_simple_letter(char letter, int x, int y, int width, int height) {
-  switch(letter) {
-    case 'S':
-      // Draw S shape as connected lines
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + height/2);
-      glVertex2f(x + width - 2, y + height/2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glVertex2f(x + 2, y + height - 2);
-      glEnd();
-      break;
-    case 'T':
-      // Draw T shape
-      glBegin(GL_LINES);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + width/2, y + 2);
-      glVertex2f(x + width/2, y + height - 2);
-      glEnd();
-      break;
-    case 'A':
-      // Draw A shape
-      glBegin(GL_LINES);
-      glVertex2f(x + width/2, y + 2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width/2, y + 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glVertex2f(x + 2, y + height/2);
-      glVertex2f(x + width - 2, y + height/2);
-      glEnd();
-      break;
-    case 'R':
-      // Draw R shape
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + width - 2, y + height/2);
-      glVertex2f(x + 2, y + height/2);
-      glEnd();
-      glBegin(GL_LINES);
-      glVertex2f(x + width - 2, y + height/2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'C':
-      // Draw C shape
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'E':
-      // Draw E shape
-      glBegin(GL_LINES);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + 2, y + height/2);
-      glVertex2f(x + width - 4, y + height/2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'U':
-      // Draw U shape
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glVertex2f(x + width - 2, y + 2);
-      glEnd();
-      break;
-    case 'I':
-      // Draw I shape
-      glBegin(GL_LINES);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + width/2, y + 2);
-      glVertex2f(x + width/2, y + height - 2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'Q':
-      // Draw Q shape
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      glBegin(GL_LINES);
-      glVertex2f(x + width/2, y + height/2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'M':
-      // Draw M shape
-      glBegin(GL_LINE_STRIP);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width/2, y + height/2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + width - 2, y + height - 2);
-      glEnd();
-      break;
-    case 'F':
-      // Draw F shape
-      glBegin(GL_LINES);
-      glVertex2f(x + 2, y + height - 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + 2, y + 2);
-      glVertex2f(x + width - 2, y + 2);
-      glVertex2f(x + 2, y + height/2);
-      glVertex2f(x + width - 4, y + height/2);
-      glEnd();
-      break;
-    default:
-      // Draw rectangle for unknown letters
-      glBegin(GL_LINE_LOOP);
-      glVertex2f(x, y);
-      glVertex2f(x + width, y);
-      glVertex2f(x + width, y + height);
-      glVertex2f(x, y + height);
-      glEnd();
-      break;
+static void draw_simple_letter(char letter, int x, int y, int width,
+                               int height) {
+  switch (letter) {
+  case 'S':
+    // Draw S shape as connected lines
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + height / 2);
+    glVertex2f(x + width - 2, y + height / 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glVertex2f(x + 2, y + height - 2);
+    glEnd();
+    break;
+  case 'T':
+    // Draw T shape
+    glBegin(GL_LINES);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + width / 2, y + 2);
+    glVertex2f(x + width / 2, y + height - 2);
+    glEnd();
+    break;
+  case 'A':
+    // Draw A shape
+    glBegin(GL_LINES);
+    glVertex2f(x + width / 2, y + 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width / 2, y + 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glVertex2f(x + 2, y + height / 2);
+    glVertex2f(x + width - 2, y + height / 2);
+    glEnd();
+    break;
+  case 'R':
+    // Draw R shape
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + width - 2, y + height / 2);
+    glVertex2f(x + 2, y + height / 2);
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(x + width - 2, y + height / 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'C':
+    // Draw C shape
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'E':
+    // Draw E shape
+    glBegin(GL_LINES);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + 2, y + height / 2);
+    glVertex2f(x + width - 4, y + height / 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'U':
+    // Draw U shape
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glVertex2f(x + width - 2, y + 2);
+    glEnd();
+    break;
+  case 'I':
+    // Draw I shape
+    glBegin(GL_LINES);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + width / 2, y + 2);
+    glVertex2f(x + width / 2, y + height - 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'Q':
+    // Draw Q shape
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(x + width / 2, y + height / 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'M':
+    // Draw M shape
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width / 2, y + height / 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + width - 2, y + height - 2);
+    glEnd();
+    break;
+  case 'F':
+    // Draw F shape
+    glBegin(GL_LINES);
+    glVertex2f(x + 2, y + height - 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + 2, y + 2);
+    glVertex2f(x + width - 2, y + 2);
+    glVertex2f(x + 2, y + height / 2);
+    glVertex2f(x + width - 4, y + height / 2);
+    glEnd();
+    break;
+  default:
+    // Draw rectangle for unknown letters
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x, y);
+    glVertex2f(x + width, y);
+    glVertex2f(x + width, y + height);
+    glVertex2f(x, y + height);
+    glEnd();
+    break;
   }
 }
 
@@ -9478,28 +9498,28 @@ static void draw_title_screen_3d(void) {
   // Get actual window dimensions
   int w, h;
   SDL_GetWindowSize(g_window, &w, &h);
-  
+
   printf("Drawing title screen: %d x %d\n", w, h);
-  
+
   // Set up OpenGL for 2D rendering
   glViewport(0, 0, w, h);
-  glClearColor(0.07f, 0.07f, 0.11f, 1.0f);  // Dark blue background
+  glClearColor(0.07f, 0.07f, 0.11f, 1.0f); // Dark blue background
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
+
   // Disable depth testing for UI
   glDisable(GL_DEPTH_TEST);
-  
+
   // Set up simple 2D projection
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glOrtho(0, w, h, 0, -1, 1); // Correct coordinate system (0,0 at top-left)
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  
+
   // Enable blending for transparency
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  
+
   // Draw title background panel
   glColor3f(0.15f, 0.2f, 0.35f);
   glBegin(GL_QUADS);
@@ -9508,7 +9528,7 @@ static void draw_title_screen_3d(void) {
   glVertex2f(w * 0.9f, h * 0.35f);
   glVertex2f(w * 0.1f, h * 0.35f);
   glEnd();
-  
+
   // Draw start button (green)
   glColor3f(0.2f, 0.7f, 0.2f);
   glBegin(GL_QUADS);
@@ -9517,7 +9537,7 @@ static void draw_title_screen_3d(void) {
   glVertex2f(w * 0.65f, h * 0.55f);
   glVertex2f(w * 0.35f, h * 0.55f);
   glEnd();
-  
+
   // Draw create world button (blue)
   glColor3f(0.2f, 0.4f, 0.8f);
   glBegin(GL_QUADS);
@@ -9526,7 +9546,7 @@ static void draw_title_screen_3d(void) {
   glVertex2f(w * 0.65f, h * 0.70f);
   glVertex2f(w * 0.35f, h * 0.70f);
   glEnd();
-  
+
   // Draw quit button (red)
   glColor3f(0.8f, 0.2f, 0.2f);
   glBegin(GL_QUADS);
@@ -9535,16 +9555,17 @@ static void draw_title_screen_3d(void) {
   glVertex2f(w * 0.65f, h * 0.85f);
   glVertex2f(w * 0.35f, h * 0.85f);
   glEnd();
-  
-  // Simple text rendering using OpenGL rectangles (since Raylib text doesn't work with SDL context)
-  
+
+  // Simple text rendering using OpenGL rectangles (since Raylib text doesn't
+  // work with SDL context)
+
   // Draw "SAMCRAFT" title using rectangles
   glColor3f(1.0f, 1.0f, 1.0f); // White
   int title_width = 200;
   int title_height = 40;
   int title_x = w / 2 - title_width / 2;
   int title_y = h * 0.1f;
-  
+
   // Draw title background
   glBegin(GL_QUADS);
   glVertex2f(title_x - 5, title_y - 5);
@@ -9552,165 +9573,165 @@ static void draw_title_screen_3d(void) {
   glVertex2f(title_x + title_width + 5, title_y + title_height + 5);
   glVertex2f(title_x - 5, title_y + title_height + 5);
   glEnd();
-  
+
   // Draw "SAMCRAFT" text with actual letter shapes
   glColor3f(1.0f, 1.0f, 1.0f); // White text
   int letter_width = 40;
   int letter_height = 60;
   int letter_spacing = 15;
-  const char* title = "SAMCRAFT";
-  
+  const char *title = "SAMCRAFT";
+
   for (int i = 0; title[i]; i++) {
     int x = title_x + 20 + i * (letter_width + letter_spacing);
     int y = title_y + 15;
-    
+
     // Draw letter shapes using lines
     glLineWidth(3.0f);
     glBegin(GL_LINES);
-    
-    switch(title[i]) {
-      case 'S':
-        // Draw S shape
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + letter_height/2);
-        glVertex2f(x + 5, y + letter_height/2);
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + letter_width - 5, y + letter_height - 5);
-        break;
-      case 'A':
-        // Draw A shape
-        glVertex2f(x + letter_width/2, y + 5);
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + letter_width - 5, y + letter_height - 5);
-        glVertex2f(x + letter_width/2, y + 5);
-        glVertex2f(x + 5, y + letter_height/2);
-        glVertex2f(x + letter_width - 5, y + letter_height/2);
-        break;
-      case 'M':
-        // Draw M shape
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + letter_width/2, y + letter_height/2);
-        glVertex2f(x + letter_width/2, y + letter_height/2);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + letter_height - 5);
-        break;
-      case 'C':
-        // Draw C shape
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + letter_width - 5, y + letter_height - 5);
-        break;
-      case 'R':
-        // Draw R shape
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + letter_height/2);
-        glVertex2f(x + letter_width - 5, y + letter_height/2);
-        glVertex2f(x + 5, y + letter_height/2);
-        glVertex2f(x + 5, y + letter_height/2);
-        glVertex2f(x + letter_width - 5, y + letter_height - 5);
-        break;
-      case 'F':
-        // Draw F shape
-        glVertex2f(x + 5, y + letter_height - 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + 5, y + letter_height/2);
-        glVertex2f(x + letter_width - 10, y + letter_height/2);
-        break;
-      case 'T':
-        // Draw T shape
-        glVertex2f(x + 5, y + 5);
-        glVertex2f(x + letter_width - 5, y + 5);
-        glVertex2f(x + letter_width/2, y + 5);
-        glVertex2f(x + letter_width/2, y + letter_height - 5);
-        break;
-      default:
-        // Draw rectangle for unknown letters
-        glBegin(GL_LINE_LOOP);
-        glVertex2f(x, y);
-        glVertex2f(x + letter_width, y);
-        glVertex2f(x + letter_width, y + letter_height);
-        glVertex2f(x, y + letter_height);
-        glEnd();
-        glLineWidth(3.0f);
-        glBegin(GL_LINES);
-        break;
+
+    switch (title[i]) {
+    case 'S':
+      // Draw S shape
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + letter_height / 2);
+      glVertex2f(x + 5, y + letter_height / 2);
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + letter_width - 5, y + letter_height - 5);
+      break;
+    case 'A':
+      // Draw A shape
+      glVertex2f(x + letter_width / 2, y + 5);
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + letter_width - 5, y + letter_height - 5);
+      glVertex2f(x + letter_width / 2, y + 5);
+      glVertex2f(x + 5, y + letter_height / 2);
+      glVertex2f(x + letter_width - 5, y + letter_height / 2);
+      break;
+    case 'M':
+      // Draw M shape
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + letter_width / 2, y + letter_height / 2);
+      glVertex2f(x + letter_width / 2, y + letter_height / 2);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + letter_height - 5);
+      break;
+    case 'C':
+      // Draw C shape
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + letter_width - 5, y + letter_height - 5);
+      break;
+    case 'R':
+      // Draw R shape
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + letter_height / 2);
+      glVertex2f(x + letter_width - 5, y + letter_height / 2);
+      glVertex2f(x + 5, y + letter_height / 2);
+      glVertex2f(x + 5, y + letter_height / 2);
+      glVertex2f(x + letter_width - 5, y + letter_height - 5);
+      break;
+    case 'F':
+      // Draw F shape
+      glVertex2f(x + 5, y + letter_height - 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + 5, y + letter_height / 2);
+      glVertex2f(x + letter_width - 10, y + letter_height / 2);
+      break;
+    case 'T':
+      // Draw T shape
+      glVertex2f(x + 5, y + 5);
+      glVertex2f(x + letter_width - 5, y + 5);
+      glVertex2f(x + letter_width / 2, y + 5);
+      glVertex2f(x + letter_width / 2, y + letter_height - 5);
+      break;
+    default:
+      // Draw rectangle for unknown letters
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(x, y);
+      glVertex2f(x + letter_width, y);
+      glVertex2f(x + letter_width, y + letter_height);
+      glVertex2f(x, y + letter_height);
+      glEnd();
+      glLineWidth(3.0f);
+      glBegin(GL_LINES);
+      break;
     }
     glEnd();
     glLineWidth(1.0f);
   }
-  
+
   // Draw button labels using actual text shapes
   glColor3f(1.0f, 1.0f, 1.0f); // White text
   glLineWidth(2.0f);
-  
+
   // START GAME label
   int start_x = w / 2 - 80;
   int start_y = h * 0.48f;
-  const char* start_text = "START";
+  const char *start_text = "START";
   for (int i = 0; start_text[i]; i++) {
     int x = start_x + i * 25;
     int y = start_y + 5;
     draw_simple_letter(start_text[i], x, y, 20, 25);
   }
-  
-  // CREATE WORLD label  
+
+  // CREATE WORLD label
   int create_x = w / 2 - 90;
   int create_y = h * 0.63f;
-  const char* create_text = "CREATE";
+  const char *create_text = "CREATE";
   for (int i = 0; create_text[i]; i++) {
     int x = create_x + i * 25;
     int y = create_y + 5;
     draw_simple_letter(create_text[i], x, y, 20, 25);
   }
-  
+
   // QUIT label
   int quit_x = w / 2 - 40;
   int quit_y = h * 0.78f;
-  const char* quit_text = "QUIT";
+  const char *quit_text = "QUIT";
   for (int i = 0; quit_text[i]; i++) {
     int x = quit_x + i * 25;
     int y = quit_y + 5;
     draw_simple_letter(quit_text[i], x, y, 20, 25);
   }
-  
+
   glLineWidth(1.0f);
-  
+
   // Re-enable depth testing
   glEnable(GL_DEPTH_TEST);
-  
+
   // Handle mouse clicks for buttons
   if (IsMouseButtonPressed_SDL(1)) { // Left click
     float mouse_x = g_mouse_x;
     float mouse_y = g_mouse_y;
-    
+
     // Check start button (green rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-        mouse_y >= h * 0.45f && mouse_y <= h * 0.55f) {
+    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
+        mouse_y <= h * 0.55f) {
       g_state = STATE_WORLD_SELECT;
       printf("Start button clicked - going to world select\n");
     }
-    
+
     // Check create world button (blue rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-        mouse_y >= h * 0.60f && mouse_y <= h * 0.70f) {
+    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
+        mouse_y <= h * 0.70f) {
       g_state = STATE_WORLD_CREATE;
       printf("Create World button clicked\n");
     }
-    
+
     // Check quit button (red rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-        mouse_y >= h * 0.75f && mouse_y <= h * 0.85f) {
+    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
+        mouse_y <= h * 0.85f) {
       g_should_quit = 1;
       printf("Quit button clicked - exiting\n");
     }
@@ -10087,11 +10108,11 @@ static void init_3d_renderer(void) {
                    "  FragColor = vec4(color * diff,1.0);\n"
                    "}\n";
   g_shader = make_program(vs, fs);
-  
+
   if (g_shader == 0) {
     return;
   }
-  
+
   g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
   g_u_model = glGetUniformLocation(g_shader, "uModel");
   g_u_color = glGetUniformLocation(g_shader, "uColor");
@@ -10366,6 +10387,8 @@ static void render_agents_3d(Vec3 player_pos, Mat4 view_proj) {
     float ax = a->position.x;
     float az = a->position.y;
     float ay = g_use_perlin_ground ? terrain_height(ax, az) : 0.0f;
+    // Add height offset to place agents on top of terrain
+    ay += 0.5f; // Raise agents above ground
     Vec3 ap = vec3(ax, ay, az);
     float dxp = ap.x - player_pos.x;
     float dzp = ap.z - player_pos.z;
@@ -10380,7 +10403,7 @@ static void render_agents_3d(Vec3 player_pos, Mat4 view_proj) {
 
     Color tc = tribes[a->agent_id / AGENT_PER_TRIBE].color;
     Vec3 tint = color_to_vec3(tc);
-    float s = 0.85f;
+    float s = 1.5f; // Make agents bigger for better visibility
     Mat4 model = mat4_mul(mat4_mul(mat4_translate(ap), mat4_rotate_y(yaw)),
                           mat4_scale(vec3(s, s, s)));
     if (g_mesh_player_loaded) {
@@ -10440,7 +10463,8 @@ static void render_bases_3d(Mat4 view_proj) {
     float yaw = atan2f(to_center.x, -to_center.y);
     Vec3 tint = color_to_vec3(tribes[t].color);
     float s = tribes[t].base.radius * 0.35f * 1.25f;
-    float base_drop = -0.85f * s; // align dome base to ground
+    float base_drop =
+        -0.1f * s; // reduce negative drop to bring base above ground
     Vec3 pos = vec3(bp.x, h + base_drop, bp.y);
     Mat4 model = mat4_mul(mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
                           mat4_scale(vec3(s, s, s)));
@@ -10521,6 +10545,48 @@ static void render_grass_3d(Vec3 player_pos, Mat4 view_proj, float tnow) {
 // Render resources with optimized culling and proper locking
 static void render_resources_3d(Vec3 player_pos, Mat4 view_proj);
 
+// Render projectiles with proper height positioning
+static void render_projectiles_3d(Vec3 player_pos, Mat4 view_proj) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    Projectile *p = &projectiles[i];
+    if (!p->alive)
+      continue;
+
+    // Distance culling
+    float dx = p->pos.x - player_pos.x;
+    float dz = p->pos.y - player_pos.z;
+    float dist_sq = dx * dx + dz * dz;
+    if (dist_sq > 50.0f * 50.0f) // Cull projectiles beyond 50 units
+      continue;
+
+    // Get terrain height at projectile position
+    float terrain_h = 0.0f;
+    if (g_use_perlin_ground) {
+      terrain_h = terrain_height(p->pos.x, p->pos.y);
+    }
+
+    // Position projectile above ground
+    Vec3 pos = vec3(p->pos.x, terrain_h + 0.5f, p->pos.y);
+
+    // Scale and color based on owner
+    float scale = 0.3f;
+    Vec3 tint = vec3(1.0f, 1.0f, 1.0f);
+
+    if (p->owner == PROJ_OWNER_PLAYER) {
+      tint = vec3(0.8f, 0.8f, 0.2f); // Yellow for player
+      scale = 0.4f;
+    } else if (p->owner == PROJ_OWNER_AGENT) {
+      tint = vec3(0.2f, 0.8f, 0.2f); // Green for agents
+    } else if (p->owner == PROJ_OWNER_MOB) {
+      tint = vec3(0.8f, 0.2f, 0.2f); // Red for mobs
+    }
+
+    Mat4 model =
+        mat4_mul(mat4_translate(pos), mat4_scale(vec3(scale, scale, scale)));
+    render_mesh(&g_mesh_sphere, model, view_proj, tint);
+  }
+}
+
 static void render_scene_3d(void) {
   init_3d_renderer();
 
@@ -10537,7 +10603,8 @@ static void render_scene_3d(void) {
     graphics_applied = 1;
   }
 
-  // Use SDL window dimensions directly instead of GetScreenWidth/GetScreenHeight
+  // Use SDL window dimensions directly instead of
+  // GetScreenWidth/GetScreenHeight
   int w, h;
   SDL_GetWindowSize(g_window, &w, &h);
   if (w <= 0 || h <= 0)
@@ -10571,8 +10638,7 @@ static void render_scene_3d(void) {
   Mat4 view_proj = mat4_mul(proj, view);
 
   glUseProgram(g_shader);
-  
-    
+
   // Set up dynamic sun/lighting based on day/night cycle
   float day_progress = time_of_day; // 0.0 = dawn, 0.5 = noon, 1.0 = next dawn
   float sun_angle = day_progress * 2.0f * PI; // Full rotation per day
@@ -10661,6 +10727,12 @@ static void render_scene_3d(void) {
     render_mesh(&g_mesh_cube, player_model, view_proj, vec3(0.8f, 0.4f, 0.2f));
   }
 
+  // Render bases
+  render_bases_3d(view_proj);
+
+  // Render agents
+  render_agents_3d(player_pos, view_proj);
+
   // Render grass with distance-based density optimization
   if (g_enable_grass) {
     float grass_density = 1.0f;
@@ -10682,6 +10754,9 @@ static void render_scene_3d(void) {
 
   // Render resources with optimized culling
   render_resources_3d(player_pos, view_proj);
+
+  // Render projectiles
+  render_projectiles_3d(player_pos, view_proj);
 }
 
 // Render resources with optimized culling and proper locking
@@ -10744,24 +10819,30 @@ static void render_resources_3d(Vec3 player_pos, Mat4 view_proj) {
         if (dist_sq > render_distance * render_distance)
           continue;
 
-        // Use simple terrain height calculation
+        // Use terrain height with offset to place resources on top
         float terrain_h = 0.0f;
         if (g_use_perlin_ground) {
           terrain_h = terrain_height(world_x, world_z);
         }
 
-        Vec3 pos = vec3(world_x, terrain_h, world_z);
+        // Add height offset to place resources on top of terrain mesh
+        float resource_height_offset = 0.5f; // Raise resources above ground
+        // Special case for trees - place them higher to sit on top
+        if (r->type == RES_TREE) {
+          resource_height_offset = 1.0f; // Trees sit higher on terrain
+        }
+        Vec3 pos = vec3(world_x, terrain_h + resource_height_offset, world_z);
         float scale = 1.0f;
 
         // Scale models appropriately
         if (r->type == RES_TREE)
           scale = 2.0f;
         else if (r->type == RES_ROCK)
-          scale = 0.5f;
+          scale = 1.5f; // Make rocks 3x bigger
         else if (r->type == RES_GOLD)
-          scale = 0.3f;
+          scale = 0.8f; // Make gold 2.5x bigger
         else if (r->type == RES_FOOD)
-          scale = 0.4f;
+          scale = 0.8f; // Make food 2x bigger
 
         Mat4 model = mat4_mul(mat4_translate(pos),
                               mat4_scale(vec3(scale, scale, scale)));
@@ -11073,28 +11154,24 @@ int main(int argc, char *argv[]) {
     printf("Failed to initialize SDL: %s\n", SDL_GetError());
     return 1;
   }
-  
+
   // Create SDL window
   int display_w = 1440;
   int display_h = 900;
-  
+
   // Set OpenGL attributes BEFORE creating window
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  
-  g_window = SDL_CreateWindow(
-    "MUZE Tribal Simulation",
-    display_w,
-    display_h,
-    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
-  );
-  
+
+  g_window = SDL_CreateWindow("MUZE Tribal Simulation", display_w, display_h,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+
   if (!g_window) {
     printf("Failed to create SDL window: %s\n", SDL_GetError());
     return 1;
   }
-  
+
   // Create OpenGL context
   SDL_GLContext gl_context = SDL_GL_CreateContext(g_window);
   if (!gl_context) {
@@ -11102,32 +11179,29 @@ int main(int argc, char *argv[]) {
     SDL_DestroyWindow(g_window);
     return 1;
   }
-  
+
   // Set swap interval for vsync
   SDL_GL_SetSwapInterval(1);
-  
+
   // Make OpenGL context current
   SDL_GL_MakeCurrent(g_window, gl_context);
-  
+
   // Show and enable mouse cursor
   SDL_ShowCursor();
   SDL_SetWindowMouseGrab(g_window, false);
   SDL_SetWindowRelativeMouseMode(g_window, false);
-  
+
   printf("SDL window created successfully: %d x %d\n", display_w, display_h);
 
   // Initialize SDL3 TTF
   if (!TTF_Init()) {
     printf("TTF_Init failed\n");
     // Try to find fonts in common locations
-    const char* font_paths[] = {
-      "/System/Library/Fonts/Arial.ttf",
-      "/System/Library/Fonts/Helvetica.ttc",
-      "/System/Library/Fonts/Times New Roman.ttf",
-      "/Library/Fonts/Arial.ttf",
-      NULL
-    };
-    
+    const char *font_paths[] = {"/System/Library/Fonts/Arial.ttf",
+                                "/System/Library/Fonts/Helvetica.ttc",
+                                "/System/Library/Fonts/Times New Roman.ttf",
+                                "/Library/Fonts/Arial.ttf", NULL};
+
     for (int i = 0; font_paths[i]; i++) {
       if (access(font_paths[i], R_OK) == 0) {
         printf("Found font: %s\n", font_paths[i]);
@@ -11145,7 +11219,7 @@ int main(int argc, char *argv[]) {
   SDL_SetWindowRelativeMouseMode(g_window, true);
   SDL_ShowCursor();
   g_mouse_locked = 0;
-  
+
   // Get actual window dimensions
   SDL_GetWindowSize(g_window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
   TILE_SIZE = SCREEN_HEIGHT / 18.0f;
@@ -11209,33 +11283,38 @@ int main(int argc, char *argv[]) {
         g_should_quit = 1;
         break;
       case SDL_EVENT_MOUSE_MOTION:
-        // Don't automatically lock mouse on motion - let the game logic handle it
+        // Don't automatically lock mouse on motion - let the game logic handle
+        // it
         break;
       case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        // Don't automatically lock mouse on button down - let the game logic handle it
+        // Don't automatically lock mouse on button down - let the game logic
+        // handle it
         break;
       case SDL_EVENT_MOUSE_BUTTON_UP:
-        // Don't automatically unlock mouse on button up - let the game logic handle it
+        // Don't automatically unlock mouse on button up - let the game logic
+        // handle it
         break;
       default:
         break;
       }
     }
-    
+
     if (g_should_quit) {
       break;
     }
 
     // Update SDL input state
     update_sdl_input_state();
-  
+
     // Calculate delta time
     static Uint64 last_time = 0;
     Uint64 current_time = SDL_GetPerformanceCounter();
-    if (last_time == 0) last_time = current_time;
-// ...
-    
-    float dt = (float)(current_time - last_time) / (float)SDL_GetPerformanceFrequency();
+    if (last_time == 0)
+      last_time = current_time;
+    // ...
+
+    float dt = (float)(current_time - last_time) /
+               (float)SDL_GetPerformanceFrequency();
     last_time = current_time;
 
     // Safety check to prevent infinite loops
@@ -11243,7 +11322,6 @@ int main(int argc, char *argv[]) {
       dt = 1.0f / 60.0f; // Default to 60 FPS
     }
 
-    
     // Update screen dimensions continuously
     SDL_GetWindowSize(g_window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
 
@@ -11408,41 +11486,25 @@ int main(int argc, char *argv[]) {
         g_state = STATE_PLAYING;
       }
     }
-    
+
     if (IsKeyPressed(KEY_P)) {
       if (g_state == STATE_PAUSED) {
         g_state = STATE_PLAYING;
       }
     }
-    
+
     // Debug: Press G to jump directly to game world
     if (IsKeyDown(KEY_G)) {
-      printf("G key down - Jumping to game world for testing\n");
       g_state = STATE_PLAYING;
       // Initialize a basic world
-      printf("About to call world_reset(12345)\n");
       world_reset(12345);
-      printf("world_reset completed\n");
-      printf("About to call save_world_to_disk(\"test_world\")\n");
-      save_world_to_disk("test_world");
-      printf("save_world_to_disk completed\n");
-    }
-    
-    // Debug: Test if any key is being detected
-    if (IsKeyPressed(KEY_SPACE)) {
-      printf("SPACE key pressed - Testing input detection\n");
-    }
-    
-    // Debug: Test if G key is being held down
-    if (IsKeyDown(KEY_G)) {
-      printf("G key is down\n");
     }
 
     // SDL render loop
     // Clear screen
-    glClearColor(135.0f/255.0f, 206.0f/255.0f, 235.0f/255.0f, 1.0f);
+    glClearColor(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     if (g_use_3d) {
       g_prof_draw_calls = 0;
       g_prof_triangles = 0;
@@ -11450,13 +11512,9 @@ int main(int argc, char *argv[]) {
       if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
         // Set viewport to full window
         glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-        
-        printf("Rendering 3D scene - State: %d\n", g_state);
-        printf("About to call render_scene_3d()\n");
+
         render_scene_3d();
-        printf("3D scene rendered successfully\n");
       } else {
-        printf("Not rendering 3D scene - State: %d\n", g_state);
       }
       double render_ms = prof_now_ms() - render_start_ms;
 
@@ -11464,36 +11522,16 @@ int main(int argc, char *argv[]) {
       if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
         glUseProgram(0); // Disable 3D shader before 2D drawing
 
-        printf("Re-enabling UI drawing system\n");
-        printf("Drawing UI elements\n");
-        printf("About to call draw_ui_3d_full()\n");
         draw_ui_3d_full();
-        printf("draw_ui_3d_full completed\n");
-        
-        printf("About to call draw_minimap_3d()\n");
         draw_minimap_3d();
-        printf("draw_minimap_3d completed\n");
-        
-        printf("About to call draw_daynight_overlay_3d()\n");
         draw_daynight_overlay_3d();
-        printf("draw_daynight_overlay_3d completed\n");
-        
-        printf("About to call draw_hurt_vignette_3d()\n");
+
         draw_hurt_vignette_3d();
-        printf("draw_hurt_vignette_3d completed\n");
-        
-        printf("About to call draw_crafting_ui_3d()\n");
         draw_crafting_ui_3d();
-        printf("draw_crafting_ui_3d completed\n");
-        
-        printf("About to call draw_hover_label_3d()\n");
         draw_hover_label_3d();
-        printf("draw_hover_label_3d completed\n");
-        
+
         if (g_state == STATE_PLAYING) {
-          printf("About to call draw_crosshair_3d()\n");
           draw_crosshair_3d();
-          printf("draw_crosshair_3d completed\n");
         }
       }
 
@@ -11510,41 +11548,44 @@ int main(int argc, char *argv[]) {
         printf("Drawing world select screen\n");
         draw_world_select_3d();
       } else if (g_state == STATE_WORLD_CREATE) {
-    } else {
-      // 2D rendering path (when g_use_3d = 0)
-      if (g_state == STATE_TITLE) {
-        // Simple SDL/OpenGL 2D title screen
-        int w = 1440, h = 900;
-        glViewport(0, 0, w, h);
-        glClearColor(0.07f, 0.07f, 0.11f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        // Handle mouse clicks for buttons (same logic as 3D version)
-        if (IsMouseButtonPressed_SDL(1)) { // Left click
-          float mouse_x = g_mouse_x;
-          float mouse_y = g_mouse_y;
-          
-          // Check start button area
-          if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 160 && mouse_y <= 210) {
-            g_state = STATE_WORLD_SELECT;
-            printf("Start button clicked - going to world select\n");
-          }
-          
-          // Check create world button area
-          if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 220 && mouse_y <= 270) {
-            g_state = STATE_WORLD_CREATE;
-            printf("Create World button clicked\n");
-          }
-          
-          // Check quit button area
-          if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 280 && mouse_y <= 330) {
-            g_should_quit = 1;
-            printf("Quit button clicked - exiting\n");
+      } else {
+        // 2D rendering path (when g_use_3d = 0)
+        if (g_state == STATE_TITLE) {
+          // Simple SDL/OpenGL 2D title screen
+          int w = 1440, h = 900;
+          glViewport(0, 0, w, h);
+          glClearColor(0.07f, 0.07f, 0.11f, 1.0f);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+          // Handle mouse clicks for buttons (same logic as 3D version)
+          if (IsMouseButtonPressed_SDL(1)) { // Left click
+            float mouse_x = g_mouse_x;
+            float mouse_y = g_mouse_y;
+
+            // Check start button area
+            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 160 &&
+                mouse_y <= 210) {
+              g_state = STATE_WORLD_SELECT;
+              printf("Start button clicked - going to world select\n");
+            }
+
+            // Check create world button area
+            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 220 &&
+                mouse_y <= 270) {
+              g_state = STATE_WORLD_CREATE;
+              printf("Create World button clicked\n");
+            }
+
+            // Check quit button area
+            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 280 &&
+                mouse_y <= 330) {
+              g_should_quit = 1;
+              printf("Quit button clicked - exiting\n");
+            }
           }
         }
       }
-    }
-  } else if (g_state == STATE_WORLD_CREATE) {
+    } else if (g_state == STATE_WORLD_CREATE) {
       // Get screen dimensions for scaling
       int w, h;
       SDL_GetWindowSize(g_window, &w, &h);
@@ -11625,7 +11666,7 @@ int main(int argc, char *argv[]) {
     if (g_use_3d) {
       // Re-enable core 3D game rendering
       render_scene_3d();
-      
+
       // Re-enable UI systems
       draw_ui_3d_full();
       draw_minimap_3d();
@@ -11636,24 +11677,24 @@ int main(int argc, char *argv[]) {
       draw_hurt_vignette();
       draw_crafting_ui();
 
-    // Draw crosshair in 2D mode
-    if (!g_use_3d && g_state == STATE_PLAYING) {
-      draw_crosshair_2d();
-    }
+      // Draw crosshair in 2D mode
+      if (!g_use_3d && g_state == STATE_PLAYING) {
+        draw_crosshair_2d();
+      }
 
-    // DrawText calls disabled - Raylib text doesn't work with SDL context
-    // DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
-    // DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
+      // DrawText calls disabled - Raylib text doesn't work with SDL context
+      // DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
+      // DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
 
-    // EndDrawing(); // Disabled - causes crashes with SDL context
+      // EndDrawing(); // Disabled - causes crashes with SDL context
     } // End of g_use_3d drawing section
-    
+
     // Swap SDL buffers
     printf("About to swap SDL buffers\n");
     SDL_GL_SwapWindow(g_window);
     printf("SDL buffers swapped successfully\n");
   }
-  
+
   // Re-enable worker cleanup
   stop_workers();
   if (g_enable_grass) {
@@ -11718,7 +11759,7 @@ int main(int argc, char *argv[]) {
       g_ui_fonts[i].font = NULL;
     }
   }
-  
+
   if (g_ui_font) {
     TTF_CloseFont(g_ui_font);
     g_ui_font = NULL;

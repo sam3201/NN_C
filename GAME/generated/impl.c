@@ -69,4 +69,7 @@ static void gluLookAt(float eyeX, float eyeY, float eyeZ,
     glMultMatrixf(matrix);
 }
 
+// --- API Function Implementations ---
+// All functions are provided by Raylib library - no implementations needed here
+
 
