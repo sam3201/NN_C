@@ -37,7 +37,7 @@ RAYLIB_INCLUDES="-I${RAYLIB_DIR}/src"
 RAYLIB_LINK="${RAYLIB_LIB} -framework Cocoa -framework IOKit -framework CoreVideo"
 
 RUN_UNDER_LLDB=1
-DEBUG_LOG = "LOGS/debug_log.txt"
+DEBUG_LOG="LOGS/debug_log.txt"
 
 # -----------------------
 # Collect sources
