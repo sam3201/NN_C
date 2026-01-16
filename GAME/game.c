@@ -11191,7 +11191,7 @@ int main(int argc, char *argv[]) {
     uint64_t current_time = SDL_GetPerformanceCounter();
     if (last_time == 0)
       last_time = current_time;
-    // ...
+    //
 
     float dt = (float)(current_time - last_time) /
                (float)SDL_GetPerformanceFrequency();
