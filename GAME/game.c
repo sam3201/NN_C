@@ -79,7 +79,7 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
 #include "generated/auto_import.h"
 
 SDL_Window *g_window = NULL;
-int g_window_width, g_window_height = 0;
+static int g_window_width, g_window_height = 0;
 
 // SDL input state tracking - must be declared before functions that use them
 static const bool *g_keyboard_state = NULL;
