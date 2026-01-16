@@ -4465,10 +4465,8 @@ void draw_chunks(void) {
       Vector2 screen = Vector2Subtract(world_pos, camera_pos);
       screen = Vector2Scale(screen, WORLD_SCALE);
       // Use current screen dimensions, not cached ones
-      int current_w = GetScreenWidth();
-      int current_h = GetScreenHeight();
-      screen.x += current_w / 2;
-      screen.y += current_h / 2;
+      screen.x += g_screen_width / 2;
+      screen.y += g_screen_height / 2;
 
       // IMPORTANT: snap to pixel grid to avoid seams
       int sx = (int)floorf(screen.x);
@@ -9128,11 +9126,10 @@ static void draw_hurt_vignette_3d(void) {
 }
 
 static void draw_title_screen_3d(void) {
-  printf("DEBUG: Drawing title screen 3D\n");
-  // Use SDL window dimensions directly instead of GetScreenWidth/GetScreenHeight
+  // Use SDL window dimensions directly instead of
+  // GetScreenWidth/GetScreenHeight
   int w, h;
   SDL_GetWindowSize(g_window, &w, &h);
-  printf("DEBUG: Screen size: %d x %d\n", w, h);
   if (w <= 0 || h <= 0)
     return;
 
@@ -11432,7 +11429,6 @@ int main(int argc, char *argv[]) {
       } else if (g_state == STATE_WORLD_CREATE) {
         draw_world_create_3d();
       } else if (g_state == STATE_TITLE) {
-        printf("DEBUG: In title screen state, g_use_3d = %d\n", g_use_3d);
         if (g_use_3d) {
           draw_title_screen_3d();
         } else {
@@ -11448,22 +11444,22 @@ int main(int argc, char *argv[]) {
             float mouse_y = g_mouse_y;
 
             // Check start button (green rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
-                mouse_y <= h * 0.55f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.45f && mouse_y <= h * 0.55f) {
               g_state = STATE_WORLD_SELECT;
               printf("Start button clicked - going to world select\n");
             }
 
             // Check create world button (blue rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
-                mouse_y <= h * 0.70f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.60f && mouse_y <= h * 0.70f) {
               g_state = STATE_WORLD_CREATE;
               printf("Create World button clicked\n");
             }
 
             // Check quit button (red rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
-                mouse_y <= h * 0.85f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.75f && mouse_y <= h * 0.85f) {
               g_should_quit = 1;
               printf("Quit button clicked - exiting\n");
             }
