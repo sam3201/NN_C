@@ -196,7 +196,7 @@ fi
 # Cleanup
 # -----------------------
 echo "Cleaning up log directory..."
-# Keep only the last log files
+# Keep only the last log file
 cd logs
 ls -t | tail -n +6 | xargs -r rm -f
 cd ..
