@@ -197,5 +197,5 @@ fi
 # -----------------------
 echo "Cleaning up log directory..."
 # Keep only the last log file
-rm -rf logs/*
+rm -rf logs/
 echo "Done."
