@@ -11187,8 +11187,8 @@ int main(int argc, char *argv[]) {
     update_sdl_input_state();
 
     // Calculate delta time
-    static Uint64 last_time = 0;
-    Uint64 current_time = SDL_GetPerformanceCounter();
+    static uint64 last_time = 0;
+    uint64 current_time = SDL_GetPerformanceCounter();
     if (last_time == 0)
       last_time = current_time;
     // ...
