@@ -198,4 +198,5 @@ fi
 echo "Cleaning up log directory..."
 # Keep only the last log file
 rm -rf logs/
+mkdir -p logs
 echo "Done."
