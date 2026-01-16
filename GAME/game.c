@@ -11428,7 +11428,7 @@ int main(int argc, char *argv[]) {
       } else if (g_state == STATE_WORLD_CREATE) {
         draw_world_create_3d();
       } else if (g_state == STATE_TITLE) {
-        draw_title_screen_3d();
+        // No need to draw anything else for title screen
       } else {
         // 2D rendering path (when g_use_3d = 0)
         if (g_state == STATE_TITLE) {
@@ -11443,23 +11443,23 @@ int main(int argc, char *argv[]) {
             float mouse_x = g_mouse_x;
             float mouse_y = g_mouse_y;
 
-            // Check start button area
-            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 160 &&
-                mouse_y <= 210) {
+            // Check start button (green rectangle)
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
+                mouse_y <= h * 0.55f) {
               g_state = STATE_WORLD_SELECT;
               printf("Start button clicked - going to world select\n");
             }
 
-            // Check create world button area
-            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 220 &&
-                mouse_y <= 270) {
+            // Check create world button (blue rectangle)
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
+                mouse_y <= h * 0.70f) {
               g_state = STATE_WORLD_CREATE;
               printf("Create World button clicked\n");
             }
 
-            // Check quit button area
-            if (mouse_x >= 60 && mouse_x <= 320 && mouse_y >= 280 &&
-                mouse_y <= 330) {
+            // Check quit button (red rectangle)
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
+                mouse_y <= h * 0.85f) {
               g_should_quit = 1;
               printf("Quit button clicked - exiting\n");
             }
@@ -11571,9 +11571,7 @@ int main(int argc, char *argv[]) {
     } // End of g_use_3d drawing section
 
     // Swap SDL buffers
-    printf("About to swap SDL buffers\n");
     SDL_GL_SwapWindow(g_window);
-    printf("SDL buffers swapped successfully\n");
   }
 
   // Re-enable worker cleanup
