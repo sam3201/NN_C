@@ -330,9 +330,11 @@ static inline int IsKeyDown_SDL(SDL_Scancode key) {
 #ifndef KEY_F
 #define KEY_F SDL_SCANCODE_F
 #endif
+/*
 #ifndef KEY_G
 #define KEY_G SDL_SCANCODE_G
 #endif
+*/
 #ifndef KEY_TAB
 #define KEY_TAB SDL_SCANCODE_TAB
 #endif
@@ -11444,22 +11446,22 @@ int main(int argc, char *argv[]) {
             float mouse_y = g_mouse_y;
 
             // Check start button (green rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
-                mouse_y <= h * 0.55f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.45f && mouse_y <= h * 0.55f) {
               g_state = STATE_WORLD_SELECT;
               printf("Start button clicked - going to world select\n");
             }
 
             // Check create world button (blue rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
-                mouse_y <= h * 0.70f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.60f && mouse_y <= h * 0.70f) {
               g_state = STATE_WORLD_CREATE;
               printf("Create World button clicked\n");
             }
 
             // Check quit button (red rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
-                mouse_y <= h * 0.85f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
+                mouse_y >= h * 0.75f && mouse_y <= h * 0.85f) {
               g_should_quit = 1;
               printf("Quit button clicked - exiting\n");
             }
