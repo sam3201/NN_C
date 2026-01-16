@@ -197,5 +197,5 @@ fi
 # -----------------------
 echo "Cleaning up log directory..."
 # Keep only the last log file
-find logs -type f -name "build_*.log" -not -name "build_${TIMESTAMP}.log" -exec rm -f {} \ || true;
+find logs -type f -name "build_*.log" -not -name "build_${TIMESTAMP}.log" -exec rm -f {} \;
 echo "Done."
