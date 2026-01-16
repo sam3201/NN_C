@@ -53,11 +53,11 @@ typedef struct SDL_Surface SDL_Surface;
 typedef struct {
   unsigned char r, g, b, a;
 } SDL_Color;
-typedef unsigned int uint_32;
+typedef unsigned int uint32_t;
 
 // Basic SDL_Surface structure
 struct SDL_Surface {
-  uint_32 format;
+  uint32_t format;
   int w;
   int h;
   int pitch;
@@ -83,14 +83,14 @@ int g_window_width, g_window_height = 0;
 
 // SDL input state tracking - must be declared before functions that use them
 static const bool *g_keyboard_state = NULL;
-static uint_32 g_mouse_state = 0;
+static uint32_t g_mouse_state = 0;
 static float g_mouse_x = 0.0f, g_mouse_y = 0.0f;
 static bool g_prev_keyboard_state[SDL_SCANCODE_COUNT] = {0};
-static uint_32 g_prev_mouse_state = 0;
+static uint32_t g_prev_mouse_state = 0;
 
 SDL_Surface *TTF_RenderText_Blended(TTF_Font *font, const char *text,
                                     size_t len, SDL_Color fg);
-SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, uint_32 format);
+SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, uint32_t format);
 void SDL_FreeSurface(SDL_Surface *surf);
 void SDL_DestroySurface(SDL_Surface *surf);
 const char *SDL_GetError(void);
