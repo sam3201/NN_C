@@ -11372,12 +11372,14 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    /*
     // Debug: Press G to jump directly to game world
     if (IsKeyDown(KEY_G)) {
       g_state = STATE_PLAYING;
       // Initialize a basic world
       world_reset(12345);
     }
+    */
 
     // SDL render loop
     // Clear screen
