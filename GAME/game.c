@@ -8573,11 +8573,11 @@ static const char *ui_font_path(void) {
     return p;
   // Use Raylib font examples as fallback
   const char *fallback_paths[] = {
-      "../Raylib/examples/textures/resources/KAISG.ttf",
-      "../Raylib/examples/textures/resources/NotoSansTC-Regular.ttf",
-      "../Raylib/examples/textures/resources/DotGothic16-Regular.ttf",
-      "../Raylib/examples/textures/resources/anonymous_pro_bold.ttf",
-      "../Raylib/examples/textures/resources/pixantiqua.ttf",
+      "../utils/Raylib/examples/textures/resources/KAISG.ttf",
+      "../utils/Raylib/examples/textures/resources/NotoSansTC-Regular.ttf",
+      "../utils/Raylib/examples/textures/resources/DotGothic16-Regular.ttf",
+      "../utils/Raylib/examples/textures/resources/anonymous_pro_bold.ttf",
+      "../utils/Raylib/examples/textures/resources/pixantiqua.ttf",
       "KAISG.ttf", // Current directory fallback
       NULL};
 
@@ -9128,8 +9128,11 @@ static void draw_hurt_vignette_3d(void) {
 }
 
 static void draw_title_screen_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  printf("DEBUG: Drawing title screen 3D\n");
+  // Use SDL window dimensions directly instead of GetScreenWidth/GetScreenHeight
+  int w, h;
+  SDL_GetWindowSize(g_window, &w, &h);
+  printf("DEBUG: Screen size: %d x %d\n", w, h);
   if (w <= 0 || h <= 0)
     return;
 
@@ -11372,14 +11375,12 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    /*
     // Debug: Press G to jump directly to game world
     if (IsKeyDown(KEY_G)) {
       g_state = STATE_PLAYING;
       // Initialize a basic world
       world_reset(12345);
     }
-    */
 
     // SDL render loop
     // Clear screen
@@ -11431,10 +11432,10 @@ int main(int argc, char *argv[]) {
       } else if (g_state == STATE_WORLD_CREATE) {
         draw_world_create_3d();
       } else if (g_state == STATE_TITLE) {
-        // No need to draw anything else for title screen
-      } else {
-        // 2D rendering path (when g_use_3d = 0)
-        if (g_state == STATE_TITLE) {
+        printf("DEBUG: In title screen state, g_use_3d = %d\n", g_use_3d);
+        if (g_use_3d) {
+          draw_title_screen_3d();
+        } else {
           // Simple SDL/OpenGL 2D title screen
           int w = 1440, h = 900;
           glViewport(0, 0, w, h);
@@ -11447,22 +11448,22 @@ int main(int argc, char *argv[]) {
             float mouse_y = g_mouse_y;
 
             // Check start button (green rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.45f && mouse_y <= h * 0.55f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
+                mouse_y <= h * 0.55f) {
               g_state = STATE_WORLD_SELECT;
               printf("Start button clicked - going to world select\n");
             }
 
             // Check create world button (blue rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.60f && mouse_y <= h * 0.70f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
+                mouse_y <= h * 0.70f) {
               g_state = STATE_WORLD_CREATE;
               printf("Create World button clicked\n");
             }
 
             // Check quit button (red rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.75f && mouse_y <= h * 0.85f) {
+            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
+                mouse_y <= h * 0.85f) {
               g_should_quit = 1;
               printf("Quit button clicked - exiting\n");
             }
