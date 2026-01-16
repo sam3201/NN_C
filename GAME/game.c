@@ -313,6 +313,12 @@ static inline int IsKeyDown_SDL(SDL_Scancode key) {
 #define IsKeyDown_SDL_SPACE IsKeyDown_SDL(SDL_SCANCODE_SPACE)
 #define IsKeyDown_SDL_F IsKeyDown_SDL(SDL_SCANCODE_F)
 
+// Mouse button constants
+#define MOUSE_BUTTON_LEFT 1
+#define MOUSE_BUTTON_RIGHT 2
+#define MOUSE_BUTTON_MIDDLE 3
+
+// Use direct function calls instead of macros to avoid issues
 #define IsMouseButtonDown(button) IsMouseButtonDown_SDL(button)
 #define IsMouseButtonPressed(button) IsMouseButtonPressed_SDL(button)
 #define IsMouseButtonReleased(button) IsMouseButtonReleased_SDL(button)
@@ -509,6 +515,64 @@ float Vector2Length(Vector2 v) { return sqrtf(v.x * v.x + v.y * v.y); }
 float Vector2DotProduct(Vector2 v1, Vector2 v2) {
   return v1.x * v2.x + v1.y * v2.y;
 }
+
+int CheckCollisionPointRec(Vector2 point, Rectangle rec) {
+  return (point.x >= rec.x && point.x <= (rec.x + rec.width) &&
+          point.y >= rec.y && point.y <= (rec.y + rec.height));
+}
+
+// SDL-compatible text drawing functions
+static int MeasureText(const char *text, int font_size) {
+  if (!g_ui_font) {
+    return strlen(text) * font_size * 0.5f; // Fallback estimate
+  }
+
+  int w, h;
+  if (TTF_SizeText(g_ui_font, text, &w, &h) == 0) {
+    return w;
+  }
+  return strlen(text) * font_size * 0.5f; // Fallback estimate
+}
+
+static void DrawText(int x, int y, const char *text, int font_size, Color color)
+{ if (!g_ui_font) { return; // No font loaded
+  }
+
+  // Create SDL surface for text
+  SDL_Color sdl_color = {color.r, color.g, color.b, color.a};
+  SDL_Surface *surface = TTF_RenderText_Blended(g_ui_font, text, sdl_color);
+  if (!surface) {
+    return;
+  }
+
+  // Create OpenGL texture from surface
+  GLuint texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA,
+GL_UNSIGNED_BYTE, surface->pixels); glTexParameteri(GL_TEXTURE_2D,
+GL_TEXTURE_MIN_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D,
+GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // Draw textured quad
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+  glBegin(GL_QUADS);
+  glTexCoord2f(0.0f, 0.0f); glVertex2f(x, y);
+  glTexCoord2f(1.0f, 0.0f); glVertex2f(x + surface->w, y);
+  glTexCoord2f(1.0f, 1.0f); glVertex2f(x + surface->w, y + surface->h);
+  glTexCoord2f(0.0f, 1.0f); glVertex2f(x, y + surface->h);
+  glEnd();
+
+  // Cleanup
+  glDisable(GL_TEXTURE_2D);
+  glDeleteTextures(1, &texture);
+  SDL_FreeSurface(surface);
+}
 */
 
 // Implementations for missing RL_AGENT functions
@@ -554,6 +618,18 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
                          Color color);
 
 /* =======================
+   GAME STATES
+======================= */
+typedef enum {
+  STATE_TITLE = 0,
+  STATE_WORLD_SELECT,
+  STATE_WORLD_CREATE,
+  STATE_PLAYING,
+  STATE_PAUSED,
+  STATE_COUNT
+} GameStateType;
+
+/* =======================
    GLOBAL CONFIG
 ======================= */
 #define FPS 60.0f
@@ -569,6 +645,13 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
 #define BASE_RADIUS 24
+
+// ------------------- Compile helpers / forward decls -------------------
+#ifndef SAVE_ROOT
+#define SAVE_ROOT "saves"
+#endif
+
+#define WORLD_NAME_MAX 64
 
 #define HARVEST_DISTANCE 5.0f
 #define HARVEST_AMOUNT 1
@@ -597,6 +680,7 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 #define MOB_SPEED_PASSIVE 2.55f
 #define MOB_SPEED_SCARED (MOB_SPEED_PASSIVE * 2.0f)
 #define MOB_SPEED_HOSTILE 3.85f
+#define MOB_GRAVITY 16.0f
 
 #define MAX_PROJECTILES 64
 // ---- Player bow charge ----
@@ -686,15 +770,6 @@ Vector2 chunk_origin_to_world(int cx, int cy, Vector2 local_pos) {
 /* =======================
    ENUMS
 ======================= */
-
-typedef enum {
-  STATE_TITLE = 0,
-  STATE_WORLD_SELECT,
-  STATE_WORLD_CREATE,
-  STATE_PLAYING,
-  STATE_PAUSED,
-  STATE_COUNT
-} GameStateType;
 
 typedef enum {
   TOOL_HAND = 0,
@@ -805,6 +880,7 @@ typedef struct {
 
   // AI / motion (chunk-local)
   Vector2 vel;
+  float vy;          // Y velocity for gravity
   float ai_timer;    // when to pick new wander dir
   float aggro_timer; // stays angry after being hit
   float attack_cd;
@@ -3845,6 +3921,7 @@ static void init_mob(Mob *m, MobType type, Vector2 local_pos, int make_angry) {
   m->health = 100;
   m->visited = false;
   m->vel = (Vector2){0, 0};
+  m->vy = 0.0f; // Initialize Y velocity for gravity
   m->ai_timer = randf(0.2f, 1.2f);
   m->aggro_timer = make_angry ? 2.0f : 0.0f;
   m->attack_cd = randf(0.2f, 1.0f);
@@ -3862,8 +3939,9 @@ static void try_spawn_mobs_in_chunk(Chunk *c, int cx, int cy, float dt) {
   int night = is_night_cached;
 
   // cap populations differently for day/night
-  int cap = night ? 10 : 6;
-  if (chunk_alive_mobs(c) >= cap)
+  int cap = night ? 20 : 12; // Increase caps for better visibility
+  int current_mobs = chunk_alive_mobs(c);
+  if (current_mobs >= cap)
     return;
 
   // spawn 1 mob
@@ -4086,6 +4164,7 @@ Chunk *get_chunk(int cx, int cy) {
     c->mobs[i].health = 0;
     c->mobs[i].visited = false;
     c->mobs[i].vel = (Vector2){0, 0};
+    c->mobs[i].vy = 0.0f; // Initialize Y velocity
     c->mobs[i].ai_timer = 0.0f;
     c->mobs[i].aggro_timer = 0.0f;
     c->mobs[i].attack_cd = 0.0f;
@@ -4288,16 +4367,11 @@ static int world_pos_blocked_nearby(int cx, int cy, Vector2 worldPos,
                                     float radius, int self_cx, int self_cy) {
   const float padding = 0.25f; // extra spacing so things don't touch
 
-  // Bases are solid obstacles.
-  Vector2 world_center = (Vector2){WORLD_SIZE * 0.5f, WORLD_SIZE * 0.5f};
+  // Bases are solid obstacles for spawning (no entry allowed)
   for (int t = 0; t < TRIBE_COUNT; t++) {
     Vector2 bp = tribes[t].base.position;
-    Vector2 to_center = {world_center.x - bp.x, world_center.y - bp.y};
-    float yaw = atan2f(to_center.x, -to_center.y);
-    if (base_allows_entry(bp, yaw, worldPos)) {
-      continue;
-    }
-    float br = tribes[t].base.radius + radius + padding;
+    float br = tribes[t].base.radius + radius + padding +
+               2.0f; // Extra spacing from bases
     if (Vector2Distance(worldPos, bp) < br) {
       return 1;
     }
@@ -6237,6 +6311,9 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
     }
   }
 
+  // ---- apply gravity ----
+  m->vy -= MOB_GRAVITY * dt;
+
   // ---- move (chunk-local; avoid crossing chunks) ----
   Vector2 step = Vector2Scale(m->vel, speed * dt);
   Vector2 nextW = Vector2Add(mw, step);
@@ -6252,6 +6329,21 @@ static void update_mob_ai(Mob *m, Vector2 chunk_origin, float dt) {
 
   // convert to local position and clamp in chunk
   Vector2 nextLocal = Vector2Subtract(nextW, chunk_origin);
+
+  // ---- ground collision for gravity ----
+  float ground_y =
+      g_use_perlin_ground ? terrain_height(nextW.x, nextW.y) : 0.0f;
+  float mob_bottom = ground_y + m->vy * dt;
+
+  // Check if mob would hit ground
+  if (mob_bottom <= ground_y) {
+    m->vy = 0.0f; // Stop falling
+    // Place mob on ground with small offset
+    float world_y = ground_y + mob_radius_world(m->type) * 0.8f;
+    // Convert back to local position (keep X, set Y to ground height)
+    nextLocal.x = m->position.x; // Keep current X
+    nextLocal.y = m->position.y; // Keep current Y for now
+  }
 
   // if trying to leave the chunk, bounce back inward
   if (nextLocal.x < 0.25f || nextLocal.x > (float)CHUNK_SIZE - 0.25f) {
@@ -9034,6 +9126,36 @@ static void draw_hurt_vignette_3d(void) {
                (Color){220, 80, 80, a});
 }
 
+static void draw_title_screen_3d(void) {
+  int w = GetScreenWidth();
+  int h = GetScreenHeight();
+  if (w <= 0 || h <= 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
+
+  // Title
+  ui_draw_text_size(w * 0.5f - 160, h * 0.25f, "NEURAL NATIONS", 48, RAYWHITE);
+  ui_draw_text_size(w * 0.5f - 140, h * 0.35f, "AI-Powered Survival Game", 20,
+                    (Color){200, 200, 200, 180});
+
+  // Buttons
+  Rectangle b1 = {w * 0.5f - 140, h * 0.5f, 280, 54};
+  Rectangle b2 = {w * 0.5f - 140, h * 0.5f + 70, 280, 54};
+  Rectangle b3 = {w * 0.5f - 140, h * 0.5f + 140, 280, 54};
+
+  if (ui_button_gl(b1, "Play (Load/Select)", 20))
+    g_state = STATE_WORLD_SELECT;
+  if (ui_button_gl(b2, "Create World", 20))
+    g_state = STATE_WORLD_CREATE;
+  if (ui_button_gl(b3, "Quit", 20))
+    g_should_quit = 1;
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+}
+
 static void draw_minimap_3d(void) {
   int size = g_minimap_zoomed ? 240 : 160;
   int x = 310;
@@ -9135,10 +9257,12 @@ static void draw_ui_3d_full(void) {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 
+  int sw = GetScreenWidth();
+  int sh = GetScreenHeight();
   float panel_x = 14.0f;
   float panel_y = 12.0f;
-  float panel_w = 280.0f;
-  float panel_h = 170.0f;
+  float panel_w = fminf(280.0f, sw * 0.25f); // Scale with screen width
+  float panel_h = fminf(170.0f, sh * 0.3f);  // Scale with screen height
 
   double now = GetTime();
   if (now - g_ui_cache_last_update > 0.25) {
@@ -9494,262 +9618,12 @@ static void draw_simple_letter(char letter, int x, int y, int width,
   }
 }
 
-static void draw_title_screen_3d(void) {
-  // Get actual window dimensions
-  int w, h;
-  SDL_GetWindowSize(g_window, &w, &h);
-
-  printf("Drawing title screen: %d x %d\n", w, h);
-
-  // Set up OpenGL for 2D rendering
-  glViewport(0, 0, w, h);
-  glClearColor(0.07f, 0.07f, 0.11f, 1.0f); // Dark blue background
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Disable depth testing for UI
-  glDisable(GL_DEPTH_TEST);
-
-  // Set up simple 2D projection
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0, w, h, 0, -1, 1); // Correct coordinate system (0,0 at top-left)
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-  // Enable blending for transparency
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  // Draw title background panel
-  glColor3f(0.15f, 0.2f, 0.35f);
-  glBegin(GL_QUADS);
-  glVertex2f(w * 0.1f, h * 0.05f);
-  glVertex2f(w * 0.9f, h * 0.05f);
-  glVertex2f(w * 0.9f, h * 0.35f);
-  glVertex2f(w * 0.1f, h * 0.35f);
-  glEnd();
-
-  // Draw start button (green)
-  glColor3f(0.2f, 0.7f, 0.2f);
-  glBegin(GL_QUADS);
-  glVertex2f(w * 0.35f, h * 0.45f);
-  glVertex2f(w * 0.65f, h * 0.45f);
-  glVertex2f(w * 0.65f, h * 0.55f);
-  glVertex2f(w * 0.35f, h * 0.55f);
-  glEnd();
-
-  // Draw create world button (blue)
-  glColor3f(0.2f, 0.4f, 0.8f);
-  glBegin(GL_QUADS);
-  glVertex2f(w * 0.35f, h * 0.60f);
-  glVertex2f(w * 0.65f, h * 0.60f);
-  glVertex2f(w * 0.65f, h * 0.70f);
-  glVertex2f(w * 0.35f, h * 0.70f);
-  glEnd();
-
-  // Draw quit button (red)
-  glColor3f(0.8f, 0.2f, 0.2f);
-  glBegin(GL_QUADS);
-  glVertex2f(w * 0.35f, h * 0.75f);
-  glVertex2f(w * 0.65f, h * 0.75f);
-  glVertex2f(w * 0.65f, h * 0.85f);
-  glVertex2f(w * 0.35f, h * 0.85f);
-  glEnd();
-
-  // Simple text rendering using OpenGL rectangles (since Raylib text doesn't
-  // work with SDL context)
-
-  // Draw "SAMCRAFT" title using rectangles
-  glColor3f(1.0f, 1.0f, 1.0f); // White
-  int title_width = 200;
-  int title_height = 40;
-  int title_x = w / 2 - title_width / 2;
-  int title_y = h * 0.1f;
-
-  // Draw title background
-  glBegin(GL_QUADS);
-  glVertex2f(title_x - 5, title_y - 5);
-  glVertex2f(title_x + title_width + 5, title_y - 5);
-  glVertex2f(title_x + title_width + 5, title_y + title_height + 5);
-  glVertex2f(title_x - 5, title_y + title_height + 5);
-  glEnd();
-
-  // Draw "SAMCRAFT" text with actual letter shapes
-  glColor3f(1.0f, 1.0f, 1.0f); // White text
-  int letter_width = 40;
-  int letter_height = 60;
-  int letter_spacing = 15;
-  const char *title = "SAMCRAFT";
-
-  for (int i = 0; title[i]; i++) {
-    int x = title_x + 20 + i * (letter_width + letter_spacing);
-    int y = title_y + 15;
-
-    // Draw letter shapes using lines
-    glLineWidth(3.0f);
-    glBegin(GL_LINES);
-
-    switch (title[i]) {
-    case 'S':
-      // Draw S shape
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + letter_height / 2);
-      glVertex2f(x + 5, y + letter_height / 2);
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + letter_width - 5, y + letter_height - 5);
-      break;
-    case 'A':
-      // Draw A shape
-      glVertex2f(x + letter_width / 2, y + 5);
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + letter_width - 5, y + letter_height - 5);
-      glVertex2f(x + letter_width / 2, y + 5);
-      glVertex2f(x + 5, y + letter_height / 2);
-      glVertex2f(x + letter_width - 5, y + letter_height / 2);
-      break;
-    case 'M':
-      // Draw M shape
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + letter_width / 2, y + letter_height / 2);
-      glVertex2f(x + letter_width / 2, y + letter_height / 2);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + letter_height - 5);
-      break;
-    case 'C':
-      // Draw C shape
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + letter_width - 5, y + letter_height - 5);
-      break;
-    case 'R':
-      // Draw R shape
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + letter_height / 2);
-      glVertex2f(x + letter_width - 5, y + letter_height / 2);
-      glVertex2f(x + 5, y + letter_height / 2);
-      glVertex2f(x + 5, y + letter_height / 2);
-      glVertex2f(x + letter_width - 5, y + letter_height - 5);
-      break;
-    case 'F':
-      // Draw F shape
-      glVertex2f(x + 5, y + letter_height - 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + 5, y + letter_height / 2);
-      glVertex2f(x + letter_width - 10, y + letter_height / 2);
-      break;
-    case 'T':
-      // Draw T shape
-      glVertex2f(x + 5, y + 5);
-      glVertex2f(x + letter_width - 5, y + 5);
-      glVertex2f(x + letter_width / 2, y + 5);
-      glVertex2f(x + letter_width / 2, y + letter_height - 5);
-      break;
-    default:
-      // Draw rectangle for unknown letters
-      glBegin(GL_LINE_LOOP);
-      glVertex2f(x, y);
-      glVertex2f(x + letter_width, y);
-      glVertex2f(x + letter_width, y + letter_height);
-      glVertex2f(x, y + letter_height);
-      glEnd();
-      glLineWidth(3.0f);
-      glBegin(GL_LINES);
-      break;
-    }
-    glEnd();
-    glLineWidth(1.0f);
-  }
-
-  // Draw button labels using actual text shapes
-  glColor3f(1.0f, 1.0f, 1.0f); // White text
-  glLineWidth(2.0f);
-
-  // START GAME label
-  int start_x = w / 2 - 80;
-  int start_y = h * 0.48f;
-  const char *start_text = "START";
-  for (int i = 0; start_text[i]; i++) {
-    int x = start_x + i * 25;
-    int y = start_y + 5;
-    draw_simple_letter(start_text[i], x, y, 20, 25);
-  }
-
-  // CREATE WORLD label
-  int create_x = w / 2 - 90;
-  int create_y = h * 0.63f;
-  const char *create_text = "CREATE";
-  for (int i = 0; create_text[i]; i++) {
-    int x = create_x + i * 25;
-    int y = create_y + 5;
-    draw_simple_letter(create_text[i], x, y, 20, 25);
-  }
-
-  // QUIT label
-  int quit_x = w / 2 - 40;
-  int quit_y = h * 0.78f;
-  const char *quit_text = "QUIT";
-  for (int i = 0; quit_text[i]; i++) {
-    int x = quit_x + i * 25;
-    int y = quit_y + 5;
-    draw_simple_letter(quit_text[i], x, y, 20, 25);
-  }
-
-  glLineWidth(1.0f);
-
-  // Re-enable depth testing
-  glEnable(GL_DEPTH_TEST);
-
-  // Handle mouse clicks for buttons
-  if (IsMouseButtonPressed_SDL(1)) { // Left click
-    float mouse_x = g_mouse_x;
-    float mouse_y = g_mouse_y;
-
-    // Check start button (green rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.45f &&
-        mouse_y <= h * 0.55f) {
-      g_state = STATE_WORLD_SELECT;
-      printf("Start button clicked - going to world select\n");
-    }
-
-    // Check create world button (blue rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.60f &&
-        mouse_y <= h * 0.70f) {
-      g_state = STATE_WORLD_CREATE;
-      printf("Create World button clicked\n");
-    }
-
-    // Check quit button (red rectangle)
-    if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f && mouse_y >= h * 0.75f &&
-        mouse_y <= h * 0.85f) {
-      g_should_quit = 1;
-      printf("Quit button clicked - exiting\n");
-    }
-  }
-}
-
 static void draw_world_create_3d(void) {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
                (Color){18, 18, 28, 255});
   ui_draw_text_size(60, 50, "Create World", 34, RAYWHITE);
-  ui_draw_text_size(60, 120, "World Name", 18, RAYWHITE);
-  ui_textbox_gl((Rectangle){60, 145, 360, 45}, g_world_name,
-                sizeof(g_world_name), &g_typing_name, 0);
-  ui_draw_text_size(60, 205, "Seed", 18, RAYWHITE);
-  ui_textbox_gl((Rectangle){60, 230, 200, 45}, g_seed_text, sizeof(g_seed_text),
-                &g_typing_seed, 1);
 
   if (ui_button_gl((Rectangle){60, 300, 200, 50}, "Create & Play", 20)) {
     g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
@@ -10294,12 +10168,12 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
   int cx = (int)(player.position.x / CHUNK_SIZE);
   int cy = (int)(player.position.y / CHUNK_SIZE);
   int drawn = 0;
-  int max_draw = 50;
-  float max_dist = 30.0f;
+  int max_draw = 100;
+  float max_dist = 60.0f; // Increase render distance for testing
   float max_dist2 = max_dist * max_dist;
 
-  for (int dy = -2; dy <= 2; dy++) {
-    for (int dx = -2; dx <= 2; dx++) {
+  for (int dy = -3; dy <= 3; dy++) {
+    for (int dx = -3; dx <= 3; dx++) {
       if (drawn >= max_draw)
         break;
       Chunk *c = get_chunk(cx + dx, cy + dy);
@@ -10318,9 +10192,10 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
           yaw = atan2f(m->vel.x, -m->vel.y);
         }
 
-        float s = mob_radius_world(m->type) * 1.6f;
+        float s = mob_radius_world(m->type) *
+                  3.0f; // Make mobs 2x bigger for visibility
         float ground_y = g_use_perlin_ground ? terrain_height(mpx, mpz) : 0.0f;
-        float mpy = ground_y + s * 0.35f;
+        float mpy = ground_y + s * 0.8f + m->vy; // Use gravity-based height
         Vec3 mp = vec3(mpx, mpy, mpz);
         float dxp = mp.x - player_pos.x;
         float dzp = mp.z - player_pos.z;
@@ -10337,6 +10212,7 @@ static void render_mobs_3d(Vec3 player_pos, Mat4 view_proj) {
           Mat4 body = mat4_mul(model, mat4_scale(vec3(0.7f, 0.7f, 0.7f)));
           render_mesh(&g_mesh_sphere, body, view_proj, tint);
         }
+        drawn++;
 
         // Draw health bar above mob
         if (m->health < 100) {
@@ -10463,8 +10339,7 @@ static void render_bases_3d(Mat4 view_proj) {
     float yaw = atan2f(to_center.x, -to_center.y);
     Vec3 tint = color_to_vec3(tribes[t].color);
     float s = tribes[t].base.radius * 0.35f * 1.25f;
-    float base_drop =
-        -0.1f * s; // reduce negative drop to bring base above ground
+    float base_drop = 0.1f * s; // Positive lift to place base above ground
     Vec3 pos = vec3(bp.x, h + base_drop, bp.y);
     Mat4 model = mat4_mul(mat4_mul(mat4_translate(pos), mat4_rotate_y(yaw)),
                           mat4_scale(vec3(s, s, s)));
@@ -10754,6 +10629,9 @@ static void render_scene_3d(void) {
 
   // Render resources with optimized culling
   render_resources_3d(player_pos, view_proj);
+
+  // Render mobs
+  render_mobs_3d(player_pos, view_proj);
 
   // Render projectiles
   render_projectiles_3d(player_pos, view_proj);
@@ -11548,6 +11426,9 @@ int main(int argc, char *argv[]) {
         printf("Drawing world select screen\n");
         draw_world_select_3d();
       } else if (g_state == STATE_WORLD_CREATE) {
+        draw_world_create_3d();
+      } else if (g_state == STATE_TITLE) {
+        draw_title_screen_3d();
       } else {
         // 2D rendering path (when g_use_3d = 0)
         if (g_state == STATE_TITLE) {
