@@ -1,0 +1,1803 @@
+generated/impl.c:15:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   15 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:16:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   16 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:17:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   17 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:18:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   18 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:19:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   19 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:20:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   20 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:21:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   21 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:69:5: warning: 'glMultMatrixf' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   69 |     glMultMatrixf(matrix);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2591:13: note: 'glMultMatrixf' has been explicitly marked deprecated here
+ 2591 | extern void glMultMatrixf (const GLfloat *m) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+8 warnings generated.
+In file included from game.c:33:
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:15:2: warning: gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality. [-W#warnings]
+   15 | #warning gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality.
+      |  ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:15:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   15 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:16:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   16 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:17:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   17 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:18:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   18 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:19:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   19 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:20:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   20 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:21:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   21 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:69:5: warning: 'glMultMatrixf' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   69 |     glMultMatrixf(matrix);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2591:13: note: 'glMultMatrixf' has been explicitly marked deprecated here
+ 2591 | extern void glMultMatrixf (const GLfloat *m) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:429:9: warning: 'MOUSE_BUTTON_LEFT' macro redefined [-Wmacro-redefined]
+  429 | #define MOUSE_BUTTON_LEFT SDL_BUTTON_LEFT
+      |         ^
+game.c:276:9: note: previous definition is here
+  276 | #define MOUSE_BUTTON_LEFT 1
+      |         ^
+game.c:430:9: warning: 'MOUSE_BUTTON_RIGHT' macro redefined [-Wmacro-redefined]
+  430 | #define MOUSE_BUTTON_RIGHT SDL_BUTTON_RIGHT
+      |         ^
+game.c:277:9: note: previous definition is here
+  277 | #define MOUSE_BUTTON_RIGHT 2
+      |         ^
+game.c:1611:28: error: call to undeclared function 'IsKeyDown_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 1611 |   return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+      |                            ^
+game.c:270:24: note: expanded from macro 'IsKeyDown'
+  270 | #define IsKeyDown(key) IsKeyDown_SDL(key)
+      |                        ^
+game.c:3593:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3593 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3594:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3594 |   glColor4f(0.0f, 0.0f, 0.0f, 160.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3595:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3595 |   glVertex2f(sp.x - w * 0.5f, sp.y - h);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3596:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3596 |   glVertex2f(sp.x + w * 0.5f, sp.y - h);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3597:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3597 |   glVertex2f(sp.x + w * 0.5f, sp.y);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3598:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3598 |   glVertex2f(sp.x - w * 0.5f, sp.y);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:3599:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 3599 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:5343:46: warning: incompatible pointer types passing 'struct (unnamed struct at game.c:195:3) *' to parameter of type 'const MuConfig *' [-Wincompatible-pointer-types]
+ 5343 |   g_muze_model = mu_model_create_nn_with_cfg(&g_muze_cfg.model, &g_muze_cfg.nn);
+      |                                              ^~~~~~~~~~~~~~~~~
+./../utils/NN/MUZE/muzero_model.h:157:54: note: passing argument to parameter 'cfg' here
+  157 | MuModel *mu_model_create_nn_with_cfg(const MuConfig *cfg,
+      |                                                      ^
+game.c:5343:65: warning: incompatible pointer types passing 'struct (unnamed struct at game.c:183:3) *' to parameter of type 'const MuNNConfig *' [-Wincompatible-pointer-types]
+ 5343 |   g_muze_model = mu_model_create_nn_with_cfg(&g_muze_cfg.model, &g_muze_cfg.nn);
+      |                                                                 ^~~~~~~~~~~~~~
+./../utils/NN/MUZE/muzero_model.h:158:56: note: passing argument to parameter 'nn_cfg' here
+  158 |                                      const MuNNConfig *nn_cfg);
+      |                                                        ^
+game.c:6390:18: error: call to undeclared function 'GetMouseDelta_Custom'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 6390 |     Vector2 md = GetMouseDelta_Custom();
+      |                  ^
+game.c:6390:13: error: initializing 'Vector2' (aka 'struct Vector2') with an expression of incompatible type 'int'
+ 6390 |     Vector2 md = GetMouseDelta_Custom();
+      |             ^    ~~~~~~~~~~~~~~~~~~~~~~
+game.c:6485:22: error: call to undeclared function 'IsKeyDown_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 6485 |     int space_down = IsKeyDown_SDL_SPACE;
+      |                      ^
+game.c:272:29: note: expanded from macro 'IsKeyDown_SDL_SPACE'
+  272 | #define IsKeyDown_SDL_SPACE IsKeyDown_SDL(SDL_SCANCODE_SPACE)
+      |                             ^
+game.c:6569:7: error: call to undeclared function 'IsMouseButtonDown_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 6569 |   if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || bind_down(BIND_ATTACK)) {
+      |       ^
+game.c:281:35: note: expanded from macro 'IsMouseButtonDown'
+  281 | #define IsMouseButtonDown(button) IsMouseButtonDown_SDL(button)
+      |                                   ^
+game.c:6569:7: note: did you mean 'IsMouseButtonDown'?
+game.c:281:35: note: expanded from macro 'IsMouseButtonDown'
+  281 | #define IsMouseButtonDown(button) IsMouseButtonDown_SDL(button)
+      |                                   ^
+./generated/complete_api.def:82:13: note: 'IsMouseButtonDown' declared here
+   82 | API_FN(int, IsMouseButtonDown, (int button))
+      |             ^
+game.c:6711:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6711 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6712:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6712 |   glColor4f(0.0f, 0.0f, 0.0f, 110.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6713:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6713 |   glVertex2f(14, 14);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6714:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6714 |   glVertex2f(14 + 280, 14);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6715:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6715 |   glVertex2f(14 + 280, 14 + 128);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6716:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6716 |   glVertex2f(14, 14 + 128);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6717:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6717 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6730:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6730 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6731:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6731 |   glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6732:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6732 |   glVertex2f(120, 46);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6733:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6733 |   glVertex2f(120 + 160, 46);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6734:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6734 |   glVertex2f(120 + 160, 46 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6735:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6735 |   glVertex2f(120, 46 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6736:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6736 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6738:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6738 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6739:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6739 |   glColor4f(80.0f / 255.0f, 220.0f / 255.0f, 80.0f / 255.0f, 255.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6740:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6740 |   glVertex2f(120, 46);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6741:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6741 |   glVertex2f(120 + (int)(160 * hp01), 46);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6742:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6742 |   glVertex2f(120 + (int)(160 * hp01), 46 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6743:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6743 |   glVertex2f(120, 46 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6744:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6744 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6747:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6747 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6748:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6748 |   glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6749:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6749 |   glVertex2f(120, 66);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6750:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6750 |   glVertex2f(120 + 160, 66);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6751:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6751 |   glVertex2f(120 + 160, 66 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6752:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6752 |   glVertex2f(120, 66 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6753:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6753 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6755:3: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6755 |   glBegin(GL_QUADS);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6756:3: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6756 |   glColor4f(80.0f / 255.0f, 160.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6757:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6757 |   glVertex2f(120, 66);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6758:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6758 |   glVertex2f(120 + (int)(160 * st01), 66);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6759:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6759 |   glVertex2f(120 + (int)(160 * st01), 66 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6760:3: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6760 |   glVertex2f(120, 66 + 12);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6761:3: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6761 |   glEnd();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6779:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6779 |     glBegin(GL_QUADS);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6780:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6780 |     glColor4f(0.0f, 0.0f, 0.0f, 140.0f / 255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6781:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6781 |     glVertex2f(90, y0 + 4 + t * 22);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6782:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6782 |     glVertex2f(90 + 140, y0 + 4 + t * 22);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6783:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6783 |     glVertex2f(90 + 140, y0 + 4 + t * 22 + 10);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6784:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6784 |     glVertex2f(90, y0 + 4 + t * 22 + 10);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6785:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6785 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6787:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6787 |     glBegin(GL_QUADS);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6788:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6788 |     glColor4f(tribes[t].color.r / 255.0f, tribes[t].color.g / 255.0f,
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6790:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6790 |     glVertex2f(90, y0 + 4 + t * 22);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6791:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6791 |     glVertex2f(90 + (int)(140 * v), y0 + 4 + t * 22);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6792:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6792 |     glVertex2f(90 + (int)(140 * v), y0 + 4 + t * 22 + 10);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6793:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6793 |     glVertex2f(90, y0 + 4 + t * 22 + 10);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:6794:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 6794 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7301:3: error: type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+ 7301 |   hasSelection = (g_world_list.selected >= 0 &&
+      |   ^
+      |   int
+game.c:7301:46: error: initializer element is not a compile-time constant
+ 7301 |   hasSelection = (g_world_list.selected >= 0 &&
+      |                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+ 7302 |                  g_world_list.selected < g_world_list.count);
+      |                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+game.c:7304:3: error: expected identifier or '('
+ 7304 |   if (ui_button(rPlay, hasSelection ? "Play Selected" : "Play (no world)")) {
+      |   ^
+game.c:7323:3: error: expected identifier or '('
+ 7323 |   if (ui_button(rDelete, hasSelection ? "Delete World" : "Delete (no world)")) {
+      |   ^
+game.c:7333:3: error: expected identifier or '('
+ 7333 |   if (ui_button(rCreate, "Create New World")) {
+      |   ^
+game.c:7338:3: error: expected identifier or '('
+ 7338 |   if (ui_button(rBack, "Back")) {
+      |   ^
+game.c:7343:3: error: expected identifier or '('
+ 7343 |   if (hasSelection && IsKeyPressed(KEY_ENTER)) {
+      |   ^
+game.c:7353:1: error: extraneous closing brace ('}')
+ 7353 | }
+      | ^
+game.c:7603:5: warning: 'glDeleteBuffers' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7603 |     glDeleteBuffers(1, &m->ebo);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2868:13: note: 'glDeleteBuffers' has been explicitly marked deprecated here
+ 2868 | extern void glDeleteBuffers (GLsizei n, const GLuint *buffers) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7607:5: warning: 'glDeleteBuffers' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7607 |     glDeleteBuffers(1, &m->vbo);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2868:13: note: 'glDeleteBuffers' has been explicitly marked deprecated here
+ 2868 | extern void glDeleteBuffers (GLsizei n, const GLuint *buffers) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7611:5: warning: 'glDeleteVertexArrays' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7611 |     glDeleteVertexArrays(1, &m->vao);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2361:21: note: 'glDeleteVertexArrays' has been explicitly marked deprecated here
+ 2361 | GLAPI void APIENTRY glDeleteVertexArrays (GLsizei n, const GLuint *arrays) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:7904:14: warning: 'glCreateShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7904 |   GLuint s = glCreateShader(type);
+      |              ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2925:15: note: 'glCreateShader' has been explicitly marked deprecated here
+ 2925 | extern GLuint glCreateShader (GLenum type) OPENGL_DEPRECATED(10.0, 10.14);
+      |               ^
+game.c:7905:3: warning: 'glShaderSource' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7905 |   glShaderSource(s, 1, &src, NULL);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2926:13: note: 'glShaderSource' has been explicitly marked deprecated here
+ 2926 | extern void glShaderSource (GLuint shader, GLsizei count, const GLchar* const *string, const GLint *length) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7906:3: warning: 'glCompileShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7906 |   glCompileShader(s);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2927:13: note: 'glCompileShader' has been explicitly marked deprecated here
+ 2927 | extern void glCompileShader (GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7908:3: warning: 'glGetShaderiv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7908 |   glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2955:13: note: 'glGetShaderiv' has been explicitly marked deprecated here
+ 2955 | extern void glGetShaderiv (GLuint shader, GLenum pname, GLint *params) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7911:5: warning: 'glGetShaderInfoLog' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7911 |     glGetShaderInfoLog(s, sizeof(log), NULL, log);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2958:13: note: 'glGetShaderInfoLog' has been explicitly marked deprecated here
+ 2958 | extern void glGetShaderInfoLog (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7913:5: warning: 'glDeleteShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7913 |     glDeleteShader(s);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2923:13: note: 'glDeleteShader' has been explicitly marked deprecated here
+ 2923 | extern void glDeleteShader (GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7927:14: warning: 'glCreateProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7927 |   GLuint p = glCreateProgram();
+      |              ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2928:15: note: 'glCreateProgram' has been explicitly marked deprecated here
+ 2928 | extern GLuint glCreateProgram (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |               ^
+game.c:7928:3: warning: 'glAttachShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7928 |   glAttachShader(p, v);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2929:13: note: 'glAttachShader' has been explicitly marked deprecated here
+ 2929 | extern void glAttachShader (GLuint program, GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7929:3: warning: 'glAttachShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7929 |   glAttachShader(p, f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2929:13: note: 'glAttachShader' has been explicitly marked deprecated here
+ 2929 | extern void glAttachShader (GLuint program, GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7930:3: warning: 'glLinkProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7930 |   glLinkProgram(p);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2930:13: note: 'glLinkProgram' has been explicitly marked deprecated here
+ 2930 | extern void glLinkProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7933:3: warning: 'glGetProgramiv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7933 |   glGetProgramiv(p, GL_LINK_STATUS, &ok);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2956:13: note: 'glGetProgramiv' has been explicitly marked deprecated here
+ 2956 | extern void glGetProgramiv (GLuint program, GLenum pname, GLint *params) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7936:5: warning: 'glGetProgramInfoLog' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7936 |     glGetProgramInfoLog(p, sizeof(log), NULL, log);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2959:13: note: 'glGetProgramInfoLog' has been explicitly marked deprecated here
+ 2959 | extern void glGetProgramInfoLog (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7938:5: warning: 'glDeleteProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7938 |     glDeleteProgram(p);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2932:13: note: 'glDeleteProgram' has been explicitly marked deprecated here
+ 2932 | extern void glDeleteProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7942:3: warning: 'glDeleteShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7942 |   glDeleteShader(v);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2923:13: note: 'glDeleteShader' has been explicitly marked deprecated here
+ 2923 | extern void glDeleteShader (GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7943:3: warning: 'glDeleteShader' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7943 |   glDeleteShader(f);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2923:13: note: 'glDeleteShader' has been explicitly marked deprecated here
+ 2923 | extern void glDeleteShader (GLuint shader) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:7999:3: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 7999 |   glGenTextures(1, &tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8000:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8000 |   glBindTexture(GL_TEXTURE_2D, tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8099:3: warning: 'glGenVertexArrays' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8099 |   glGenVertexArrays(1, &m->vao);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2362:21: note: 'glGenVertexArrays' has been explicitly marked deprecated here
+ 2362 | GLAPI void APIENTRY glGenVertexArrays (GLsizei n, GLuint *arrays) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8100:3: warning: 'glGenBuffers' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8100 |   glGenBuffers(1, &m->vbo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2869:13: note: 'glGenBuffers' has been explicitly marked deprecated here
+ 2869 | extern void glGenBuffers (GLsizei n, GLuint *buffers) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8101:3: warning: 'glGenBuffers' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8101 |   glGenBuffers(1, &m->ebo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2869:13: note: 'glGenBuffers' has been explicitly marked deprecated here
+ 2869 | extern void glGenBuffers (GLsizei n, GLuint *buffers) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8102:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8102 |   glBindVertexArray(m->vao);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8103:3: warning: 'glBindBuffer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8103 |   glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2867:13: note: 'glBindBuffer' has been explicitly marked deprecated here
+ 2867 | extern void glBindBuffer (GLenum target, GLuint buffer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8104:3: warning: 'glBufferData' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8104 |   glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vcount * 6, verts,
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2871:13: note: 'glBufferData' has been explicitly marked deprecated here
+ 2871 | extern void glBufferData (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8106:3: warning: 'glBindBuffer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8106 |   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ebo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2867:13: note: 'glBindBuffer' has been explicitly marked deprecated here
+ 2867 | extern void glBindBuffer (GLenum target, GLuint buffer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8107:3: warning: 'glBufferData' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8107 |   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * icount, indices,
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2871:13: note: 'glBufferData' has been explicitly marked deprecated here
+ 2871 | extern void glBufferData (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8109:3: warning: 'glEnableVertexAttribArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8109 |   glEnableVertexAttribArray(0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2917:13: note: 'glEnableVertexAttribArray' has been explicitly marked deprecated here
+ 2917 | extern void glEnableVertexAttribArray (GLuint index) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8110:3: warning: 'glVertexAttribPointer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8110 |   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void *)0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2916:13: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+ 2916 | extern void glVertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8111:3: warning: 'glEnableVertexAttribArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8111 |   glEnableVertexAttribArray(1);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2917:13: note: 'glEnableVertexAttribArray' has been explicitly marked deprecated here
+ 2917 | extern void glEnableVertexAttribArray (GLuint index) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8112:3: warning: 'glVertexAttribPointer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8112 |   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6,
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2916:13: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+ 2916 | extern void glVertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8114:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8114 |   glBindVertexArray(0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8588:19: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8588 |   g_ui_u_screen = glGetUniformLocation(g_ui_shader, "uScreen");
+      |                   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:8589:18: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8589 |   g_ui_u_color = glGetUniformLocation(g_ui_shader, "uColor");
+      |                  ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:8590:16: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8590 |   g_ui_u_tex = glGetUniformLocation(g_ui_shader, "uTex");
+      |                ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:8592:3: warning: 'glGenVertexArrays' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8592 |   glGenVertexArrays(1, &g_ui_vao);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2362:21: note: 'glGenVertexArrays' has been explicitly marked deprecated here
+ 2362 | GLAPI void APIENTRY glGenVertexArrays (GLsizei n, GLuint *arrays) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8593:3: warning: 'glGenBuffers' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8593 |   glGenBuffers(1, &g_ui_vbo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2869:13: note: 'glGenBuffers' has been explicitly marked deprecated here
+ 2869 | extern void glGenBuffers (GLsizei n, GLuint *buffers) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8594:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8594 |   glBindVertexArray(g_ui_vao);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8595:3: warning: 'glBindBuffer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8595 |   glBindBuffer(GL_ARRAY_BUFFER, g_ui_vbo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2867:13: note: 'glBindBuffer' has been explicitly marked deprecated here
+ 2867 | extern void glBindBuffer (GLenum target, GLuint buffer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8596:3: warning: 'glBufferData' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8596 |   glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2871:13: note: 'glBufferData' has been explicitly marked deprecated here
+ 2871 | extern void glBufferData (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8597:3: warning: 'glEnableVertexAttribArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8597 |   glEnableVertexAttribArray(0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2917:13: note: 'glEnableVertexAttribArray' has been explicitly marked deprecated here
+ 2917 | extern void glEnableVertexAttribArray (GLuint index) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8598:3: warning: 'glVertexAttribPointer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8598 |   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void *)0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2916:13: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+ 2916 | extern void glVertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8599:3: warning: 'glEnableVertexAttribArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8599 |   glEnableVertexAttribArray(1);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2917:13: note: 'glEnableVertexAttribArray' has been explicitly marked deprecated here
+ 2917 | extern void glEnableVertexAttribArray (GLuint index) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8600:3: warning: 'glVertexAttribPointer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8600 |   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2916:13: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+ 2916 | extern void glVertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8602:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8602 |   glBindVertexArray(0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8604:3: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8604 |   glGenTextures(1, &g_ui_white_tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8605:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8605 |   glBindTexture(GL_TEXTURE_2D, g_ui_white_tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8676:3: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8676 |   glGenTextures(1, &tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8677:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8677 |   glBindTexture(GL_TEXTURE_2D, tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8685:3: warning: 'glDeleteTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8685 |   glDeleteTextures(1, &tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2458:13: note: 'glDeleteTextures' has been explicitly marked deprecated here
+ 2458 | extern void glDeleteTextures (GLsizei n, const GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8704:3: warning: 'glUseProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8704 |   glUseProgram(g_ui_shader);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2931:13: note: 'glUseProgram' has been explicitly marked deprecated here
+ 2931 | extern void glUseProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8705:3: warning: 'glUniform2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8705 |   glUniform2f(g_ui_u_screen, (float)sw, (float)sh);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2935:13: note: 'glUniform2f' has been explicitly marked deprecated here
+ 2935 | extern void glUniform2f (GLint location, GLfloat v0, GLfloat v1) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8706:3: warning: 'glUniform4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8706 |   glUniform4f(g_ui_u_color, color.r / 255.0f, color.g / 255.0f,
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2937:13: note: 'glUniform4f' has been explicitly marked deprecated here
+ 2937 | extern void glUniform4f (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8708:3: warning: 'glActiveTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8708 |   glActiveTexture(GL_TEXTURE0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2772:13: note: 'glActiveTexture' has been explicitly marked deprecated here
+ 2772 | extern void glActiveTexture (GLenum texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8709:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8709 |   glBindTexture(GL_TEXTURE_2D, tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8710:3: warning: 'glUniform1i' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8710 |   glUniform1i(g_ui_u_tex, 0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2938:13: note: 'glUniform1i' has been explicitly marked deprecated here
+ 2938 | extern void glUniform1i (GLint location, GLint v0) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8711:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8711 |   glBindVertexArray(g_ui_vao);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8712:3: warning: 'glBindBuffer' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8712 |   glBindBuffer(GL_ARRAY_BUFFER, g_ui_vbo);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2867:13: note: 'glBindBuffer' has been explicitly marked deprecated here
+ 2867 | extern void glBindBuffer (GLenum target, GLuint buffer) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8713:3: warning: 'glBufferSubData' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8713 |   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2872:13: note: 'glBufferSubData' has been explicitly marked deprecated here
+ 2872 | extern void glBufferSubData (GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8714:3: warning: 'glDrawArrays' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8714 |   glDrawArrays(GL_TRIANGLES, 0, 6);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2464:13: note: 'glDrawArrays' has been explicitly marked deprecated here
+ 2464 | extern void glDrawArrays (GLenum mode, GLint first, GLsizei count) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8715:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8715 |   glBindVertexArray(0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:8745:3: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8745 |   glGenTextures(1, &tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8746:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8746 |   glBindTexture(GL_TEXTURE_2D, tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8754:3: warning: 'glDeleteTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8754 |   glDeleteTextures(1, &tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2458:13: note: 'glDeleteTextures' has been explicitly marked deprecated here
+ 2458 | extern void glDeleteTextures (GLsizei n, const GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8761:5: warning: 'glDeleteTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8761 |     glDeleteTextures(1, &cache->tex);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2458:13: note: 'glDeleteTextures' has been explicitly marked deprecated here
+ 2458 | extern void glDeleteTextures (GLsizei n, const GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8798:3: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8798 |   glGenTextures(1, &cache->tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8799:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 8799 |   glBindTexture(GL_TEXTURE_2D, cache->tex);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:8968:7: error: call to undeclared function 'IsKeyPressed_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 8968 |   if (IsKeyPressed(KEY_TWO)) {
+      |       ^
+game.c:267:27: note: expanded from macro 'IsKeyPressed'
+  267 | #define IsKeyPressed(key) IsKeyPressed_SDL(key)
+      |                           ^
+game.c:9015:7: error: call to undeclared function 'IsKeyPressed_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 9015 |   if (IsKeyPressed(KEY_ONE)) {
+      |       ^
+game.c:267:27: note: expanded from macro 'IsKeyPressed'
+  267 | #define IsKeyPressed(key) IsKeyPressed_SDL(key)
+      |                           ^
+game.c:9151:9: warning: 'glDeleteTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9151 |         glDeleteTextures(1, &g_minimap_tex);
+      |         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2458:13: note: 'glDeleteTextures' has been explicitly marked deprecated here
+ 2458 | extern void glDeleteTextures (GLsizei n, const GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9154:7: warning: 'glGenTextures' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9154 |       glGenTextures(1, &g_minimap_tex);
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2498:13: note: 'glGenTextures' has been explicitly marked deprecated here
+ 2498 | extern void glGenTextures (GLsizei n, GLuint *textures) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9155:7: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9155 |       glBindTexture(GL_TEXTURE_2D, g_minimap_tex);
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9185:7: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9185 |       glBindTexture(GL_TEXTURE_2D, g_minimap_tex);
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9186:7: warning: 'glTexSubImage2D' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9186 |       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, cells, cells, GL_RGBA,
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2726:13: note: 'glTexSubImage2D' has been explicitly marked deprecated here
+ 2726 | extern void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9463:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9463 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9464:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9464 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9465:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9465 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9466:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9466 |     glVertex2f(x + 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9467:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9467 |     glVertex2f(x + width - 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9468:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9468 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9469:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9469 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9470:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9470 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9474:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9474 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9475:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9475 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9476:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9476 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9477:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9477 |     glVertex2f(x + width / 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9478:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9478 |     glVertex2f(x + width / 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9479:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9479 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9483:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9483 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9484:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9484 |     glVertex2f(x + width / 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9485:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9485 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9486:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9486 |     glVertex2f(x + width / 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9487:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9487 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9488:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9488 |     glVertex2f(x + 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9489:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9489 |     glVertex2f(x + width - 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9490:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9490 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9494:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9494 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9495:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9495 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9496:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9496 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9497:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9497 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9498:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9498 |     glVertex2f(x + width - 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9499:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9499 |     glVertex2f(x + 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9500:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9500 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9501:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9501 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9502:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9502 |     glVertex2f(x + width - 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9503:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9503 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9504:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9504 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9508:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9508 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9509:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9509 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9510:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9510 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9511:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9511 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9512:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9512 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9513:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9513 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9517:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9517 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9518:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9518 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9519:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9519 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9520:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9520 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9521:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9521 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9522:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9522 |     glVertex2f(x + 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9523:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9523 |     glVertex2f(x + width - 4, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9524:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9524 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9525:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9525 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9526:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9526 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9530:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9530 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9531:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9531 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9532:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9532 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9533:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9533 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9534:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9534 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9535:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9535 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9539:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9539 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9540:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9540 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9541:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9541 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9542:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9542 |     glVertex2f(x + width / 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9543:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9543 |     glVertex2f(x + width / 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9544:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9544 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9545:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9545 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9546:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9546 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9550:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9550 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9551:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9551 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9552:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9552 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9553:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9553 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9554:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9554 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9555:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9555 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9556:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9556 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9557:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9557 |     glVertex2f(x + width / 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9558:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9558 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9559:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9559 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9563:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9563 |     glBegin(GL_LINE_STRIP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9564:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9564 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9565:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9565 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9566:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9566 |     glVertex2f(x + width / 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9567:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9567 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9568:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9568 |     glVertex2f(x + width - 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9569:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9569 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9573:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9573 |     glBegin(GL_LINES);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9574:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9574 |     glVertex2f(x + 2, y + height - 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9575:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9575 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9576:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9576 |     glVertex2f(x + 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9577:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9577 |     glVertex2f(x + width - 2, y + 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9578:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9578 |     glVertex2f(x + 2, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9579:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9579 |     glVertex2f(x + width - 4, y + height / 2);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9580:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9580 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9584:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9584 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9585:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9585 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9586:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9586 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9587:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9587 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9588:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9588 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9589:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9589 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:9674:9: error: call to undeclared function 'IsKeyPressed_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 9674 |     if (IsKeyPressed(KEY_DOWN) &&
+      |         ^
+game.c:267:27: note: expanded from macro 'IsKeyPressed'
+  267 | #define IsKeyPressed(key) IsKeyPressed_SDL(key)
+      |                           ^
+game.c:9823:9: error: call to undeclared function 'IsKeyPressed_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 9823 |     if (IsKeyPressed(KEY_TAB)) {
+      |         ^
+game.c:267:27: note: expanded from macro 'IsKeyPressed'
+  267 | #define IsKeyPressed(key) IsKeyPressed_SDL(key)
+      |                           ^
+game.c:9912:7: error: call to undeclared function 'IsKeyPressed_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 9912 |   if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+      |       ^
+game.c:267:27: note: expanded from macro 'IsKeyPressed'
+  267 | #define IsKeyPressed(key) IsKeyPressed_SDL(key)
+      |                           ^
+game.c:9967:13: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9967 |   g_u_mvp = glGetUniformLocation(g_shader, "uMVP");
+      |             ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9968:15: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9968 |   g_u_model = glGetUniformLocation(g_shader, "uModel");
+      |               ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9969:15: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9969 |   g_u_color = glGetUniformLocation(g_shader, "uColor");
+      |               ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9970:15: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9970 |   g_u_light = glGetUniformLocation(g_shader, "uLightDir");
+      |               ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9971:17: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9971 |   g_u_use_tex = glGetUniformLocation(g_shader, "uUseTex");
+      |                 ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9972:13: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9972 |   g_u_tex = glGetUniformLocation(g_shader, "uTex");
+      |             ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:9973:19: warning: 'glGetUniformLocation' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 9973 |   g_u_tex_scale = glGetUniformLocation(g_shader, "uTexScale");
+      |                   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2960:14: note: 'glGetUniformLocation' has been explicitly marked deprecated here
+ 2960 | extern GLint glGetUniformLocation (GLuint program, const GLchar *name) OPENGL_DEPRECATED(10.0, 10.14);
+      |              ^
+game.c:10084:3: warning: 'glUseProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10084 |   glUseProgram(g_shader);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2931:13: note: 'glUseProgram' has been explicitly marked deprecated here
+ 2931 | extern void glUseProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10085:3: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10085 |   glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2952:13: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+ 2952 | extern void glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10086:3: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10086 |   glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2952:13: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+ 2952 | extern void glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10087:3: warning: 'glUniform3f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10087 |   glUniform3f(g_u_color, color.x, color.y, color.z);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2936:13: note: 'glUniform3f' has been explicitly marked deprecated here
+ 2936 | extern void glUniform3f (GLint location, GLfloat v0, GLfloat v1, GLfloat v2) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10089:5: warning: 'glUniform1i' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10089 |     glUniform1i(g_u_use_tex, 0);
+       |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2938:13: note: 'glUniform1i' has been explicitly marked deprecated here
+ 2938 | extern void glUniform1i (GLint location, GLint v0) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10090:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10090 |   glBindVertexArray(m->vao);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:10091:3: warning: 'glDrawElements' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10091 |   glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2466:13: note: 'glDrawElements' has been explicitly marked deprecated here
+ 2466 | extern void glDrawElements (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10092:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10092 |   glBindVertexArray(0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:10099:3: warning: 'glUseProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10099 |   glUseProgram(g_shader);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2931:13: note: 'glUseProgram' has been explicitly marked deprecated here
+ 2931 | extern void glUseProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10100:3: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10100 |   glUniformMatrix4fv(g_u_mvp, 1, GL_FALSE, mvp.m);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2952:13: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+ 2952 | extern void glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10101:3: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10101 |   glUniformMatrix4fv(g_u_model, 1, GL_FALSE, model.m);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2952:13: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+ 2952 | extern void glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10102:3: warning: 'glUniform3f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10102 |   glUniform3f(g_u_color, color.x, color.y, color.z);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2936:13: note: 'glUniform3f' has been explicitly marked deprecated here
+ 2936 | extern void glUniform3f (GLint location, GLfloat v0, GLfloat v1, GLfloat v2) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10104:5: warning: 'glUniform1i' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10104 |     glUniform1i(g_u_use_tex, 1);
+       |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2938:13: note: 'glUniform1i' has been explicitly marked deprecated here
+ 2938 | extern void glUniform1i (GLint location, GLint v0) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10105:3: warning: 'glUniform1f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10105 |   glUniform1f(g_u_tex_scale, tex_scale);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2934:13: note: 'glUniform1f' has been explicitly marked deprecated here
+ 2934 | extern void glUniform1f (GLint location, GLfloat v0) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10106:3: warning: 'glActiveTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10106 |   glActiveTexture(GL_TEXTURE0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2772:13: note: 'glActiveTexture' has been explicitly marked deprecated here
+ 2772 | extern void glActiveTexture (GLenum texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10107:3: warning: 'glBindTexture' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10107 |   glBindTexture(GL_TEXTURE_2D, tex);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2386:13: note: 'glBindTexture' has been explicitly marked deprecated here
+ 2386 | extern void glBindTexture (GLenum target, GLuint texture) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10108:3: warning: 'glUniform1i' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10108 |   glUniform1i(g_u_tex, 0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2938:13: note: 'glUniform1i' has been explicitly marked deprecated here
+ 2938 | extern void glUniform1i (GLint location, GLint v0) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10109:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10109 |   glBindVertexArray(m->vao);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:10110:3: warning: 'glDrawElements' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10110 |   glDrawElements(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2466:13: note: 'glDrawElements' has been explicitly marked deprecated here
+ 2466 | extern void glDrawElements (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10111:3: warning: 'glBindVertexArray' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10111 |   glBindVertexArray(0);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:2360:21: note: 'glBindVertexArray' has been explicitly marked deprecated here
+ 2360 | GLAPI void APIENTRY glBindVertexArray (GLuint array) OPENGL_DEPRECATED(10.5, 10.14);
+      |                     ^
+game.c:10489:3: warning: 'glUseProgram' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10489 |   glUseProgram(g_shader);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2931:13: note: 'glUseProgram' has been explicitly marked deprecated here
+ 2931 | extern void glUseProgram (GLuint program) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10518:3: warning: 'glUniform3f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+ 10518 |   glUniform3f(g_u_light, final_light.x, final_light.y, final_light.z);
+       |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2936:13: note: 'glUniform3f' has been explicitly marked deprecated here
+ 2936 | extern void glUniform3f (GLint location, GLfloat v0, GLfloat v1, GLfloat v2) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:10917:7: error: call to undeclared function 'IsKeyDown_SDL'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+ 10917 |   if (IsKeyDown(KEY_LEFT_SHIFT))
+       |       ^
+game.c:270:24: note: expanded from macro 'IsKeyDown'
+  270 | #define IsKeyDown(key) IsKeyDown_SDL(key)
+      |                        ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+265 warnings and 20 errors generated.
+../utils/NN/NN/NN.c:967:11: warning: enumeration value 'SCHEDULER_TYPE_COUNT' not handled in switch [-Wswitch]
+  967 |   switch (nn->lr_scheduler) {
+      |           ^~~~~~~~~~~~~~~~
+../utils/NN/NN/NN.c:967:11: note: add missing switch cases
+  967 |   switch (nn->lr_scheduler) {
+      |           ^
+../utils/NN/NN/NN.c:1050:35: warning: format specifies type 'double' but the argument has type 'long double' [-Wformat]
+ 1050 |   printf("Learning rate: %.6f\n", nn->learningRate);
+      |                          ~~~~     ^~~~~~~~~~~~~~~~
+      |                          %.6Lf
+../utils/NN/NN/NN.c:1051:29: warning: format specifies type 'int' but the argument has type 'OptimizerFunction' (aka 'void (*)(struct NN_t *)') [-Wformat]
+ 1051 |   printf("Optimizer: %d\n", nn->optimizer);
+      |                      ~~     ^~~~~~~~~~~~~
+3 warnings generated.
+../RL_AGENT/training/training_infrastructure.c:209:13: warning: enumeration value 'CURRICULUM_STAGE_COUNT' not handled in switch [-Wswitch]
+  209 |     switch (stage) {
+      |             ^~~~~
+../RL_AGENT/training/training_infrastructure.c:209:13: note: add missing switch cases
+  209 |     switch (stage) {
+      |             ^
+1 warning generated.
+../utils/NN/MUZE/muze_enhanced_model.c:234:49: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  234 |         NN_backprop_custom_delta(model->critic, obs_array, (long double*)critic_loss);
+      |                                                 ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:240:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  240 |         NN_backprop_custom_delta(model->actor, obs_array, (long double*)actor_loss);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:266:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  266 |         latent_ld = NN_forward(model->encoder, obs_array);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:227:47: note: passing argument to parameter 'inputs' here
+  227 | long double *NN_forward(NN_t *nn, long double inputs[]);
+      |                                               ^
+../utils/NN/MUZE/muze_enhanced_model.c:294:54: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  294 |         NN_backprop_custom_delta(model->world_model, obs_array, (long double*)world_loss);
+      |                                                      ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+4 warnings generated.

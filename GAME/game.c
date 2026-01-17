@@ -119,6 +119,15 @@ static float g_mouse_x = 0.0f, g_mouse_y = 0.0f;
 static bool g_prev_keyboard_state[SDL_SCANCODE_COUNT] = {0};
 static uint32_t g_prev_mouse_state = 0;
 
+// Update SDL input state
+static void update_sdl_input_state(void) {
+  g_mouse_state = SDL_GetMouseState(&g_mouse_x, &g_mouse_y);
+  const bool *current_state = SDL_GetKeyboardState(NULL);
+  if (current_state) {
+    g_keyboard_state = current_state;
+  }
+}
+
 SDL_Surface *TTF_RenderText_Blended(TTF_Font *font, const char *text,
                                     size_t len, SDL_Color fg);
 SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, uint32_t format);
@@ -221,7 +230,6 @@ typedef struct {
   } selfplay;
 } MuzeConfig;
 
-/*
 // Forward declarations for Raylib functions not in headers
 Vector2 Vector2Normalize(Vector2 v);
 float Vector2Distance(Vector2 v1, Vector2 v2);
@@ -231,8 +239,8 @@ Vector2 Vector2Subtract(Vector2 v1, Vector2 v2);
 float Vector2Length(Vector2 v);
 float Vector2DotProduct(Vector2 v1, Vector2 v2);
 void SetMouseVisible(int visible);
+Vector2 GetMouseDelta_Custom(void);
 void SetRelativeMouseMode(int enabled);
-*/
 
 // Use direct function calls instead of macros to avoid issues
 #define IsKeyPressed_SDL_SPACE IsKeyPressed_SDL(SDL_SCANCODE_SPACE)
@@ -704,7 +712,6 @@ typedef enum {
 #define TRAIN_INTERVAL 1
 
 #define MAX_WORLDS 4096
-#define WORLD_NAME_MAX 4096
 
 // Implementation for chunk_origin_to_world (after constants are defined)
 Vector2 chunk_origin_to_world(int cx, int cy, Vector2 local_pos) {
@@ -1600,7 +1607,8 @@ static void load_keybinds(void) {
 static int bind_down(BindAction a) {
   KeyboardKey p = g_keybinds[a].primary;
   KeyboardKey s = g_keybinds[a].secondary;
-  return (p != KEY_NULL && IsKeyDown(p)) || (s != KEY_NULL && IsKeyDown(s));
+  return (p != KEY_NULL && g_keyboard_state && g_keyboard_state[p]) ||
+         (s != KEY_NULL && g_keyboard_state && g_keyboard_state[s]);
 }
 
 /*
@@ -5050,7 +5058,9 @@ static void draw_player(Vector2 pp_screen) {
       bodyR * 0.18f, (Color){255, 255, 255, 120});
 
   // --- Mouse-aim direction (screen space) ---
-  int mx, my = SDL_GetMouseState();
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 mouse = {mx, my};
   Vector2 aim = Vector2Subtract(mouse, pp_screen);
   float aimLen = Vector2Length(aim);
   if (aimLen < 1e-3f)
@@ -6383,7 +6393,9 @@ void update_player(void) {
     // If mouse is locked but delta is 0, try manual position tracking
     if (g_mouse_locked && (md.x == 0 && md.y == 0)) {
       static Vector2 last_mouse_pos = {0};
-      Vector2 current_pos = GetMousePosition_Custom();
+      float mx, my;
+      SDL_GetMouseState(&mx, &my);
+      Vector2 current_pos = {mx, my};
       if (last_mouse_pos.x != 0 && last_mouse_pos.y != 0) {
         md.x = current_pos.x - last_mouse_pos.x;
         md.y = current_pos.y - last_mouse_pos.y;
@@ -6394,7 +6406,9 @@ void update_player(void) {
           SetMousePosition(mw / 2, mh / 2);
         }
       }
-      last_mouse_pos = GetMousePosition_Custom();
+      float lmx, lmy;
+      SDL_GetMouseState(&lmx, &lmy);
+      last_mouse_pos = (Vector2){lmx, lmy};
     }
 
     g_player_yaw += md.x * sens;
@@ -6442,9 +6456,9 @@ void update_player(void) {
 
   resolve_player_collisions();
   // --- zoom controls ---
-  if (IsKeyDown(KEY_EQUAL))
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_EQUALS])
     target_world_scale += 60.0f * dt;
-  if (IsKeyDown(KEY_MINUS))
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_MINUS])
     target_world_scale -= 60.0f * dt;
   target_world_scale = clampf(target_world_scale, 0.0f, 100.0f);
 
@@ -6468,8 +6482,8 @@ void update_player(void) {
     // Check for jump initiation - use working key detection
     static int space_was_down = 0;
     static int f_was_down = 0;
-    int space_down = IsKeyDown_SDL_SPACE;
-    int f_down = IsKeyDown_SDL_F;
+    int space_down = g_keyboard_state && g_keyboard_state[SDL_SCANCODE_SPACE];
+    int f_down = g_keyboard_state && g_keyboard_state[SDL_SCANCODE_F];
     int space_pressed = space_down && !space_was_down;
     int f_pressed = f_down && !f_was_down;
     int can_jump = g_player_on_ground && player.stamina >= 10.0f;
@@ -6487,7 +6501,9 @@ void update_player(void) {
     f_was_down = f_down;
 
     // Continue charging jump while button is held (but only for a short time)
-    if (jump_held && (IsKeyDown_SDL_SPACE || IsKeyDown_SDL_F) &&
+    if (jump_held &&
+        ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_SPACE]) ||
+         (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_F])) &&
         jump_charge_time < MAX_JUMP_CHARGE) {
       jump_charge_time += dt;
       float charge_ratio = jump_charge_time / MAX_JUMP_CHARGE;
@@ -6500,7 +6516,8 @@ void update_player(void) {
     }
 
     // Release jump button - stop charging
-    if (!(IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_F))) {
+    if (!((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_SPACE]) ||
+          (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_F]))) {
       jump_held = 0;
     }
 
@@ -6530,7 +6547,7 @@ void update_player(void) {
   }
 
   // --- crafting toggle ---
-  if (IsKeyPressed_SDL_TAB) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_TAB]) {
     crafting_open = !crafting_open;
   }
 
@@ -6552,7 +6569,8 @@ void update_player(void) {
   // =========================
 
   // (A) Continuous melee attack (hold LEFT mouse or attack keybind)
-  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || bind_down(BIND_ATTACK)) {
+  if ((SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT) ||
+      bind_down(BIND_ATTACK)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
     Chunk *c = get_chunk(cx, cy);
@@ -6564,7 +6582,8 @@ void update_player(void) {
   }
 
   // (B) Continuous harvest/mine (hold RIGHT mouse or harvest keybind)
-  if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || bind_down(BIND_HARVEST)) {
+  if ((SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_RIGHT) ||
+      bind_down(BIND_HARVEST)) {
     int cx = (int)(player.position.x / CHUNK_SIZE);
     int cy = (int)(player.position.y / CHUNK_SIZE);
     Chunk *c = get_chunk(cx, cy);
@@ -6593,7 +6612,9 @@ void update_player(void) {
       if (player_fire_cd <= 0.0f && inv_arrows > 0 &&
           bow_charge01 >= BOW_CHARGE_MIN01) {
         // aim from player -> mouse in WORLD space
-        Vector2 mouse = GetMousePosition_Custom();
+        float mx, my;
+        SDL_GetMouseState(&mx, &my);
+        Vector2 mouse = {mx, my};
         // Use cached screen dimensions for performance
         Vector2 mouse_world = {
             (mouse.x - g_window_width * 0.5f) / WORLD_SCALE + camera_pos.x,
@@ -6840,7 +6861,9 @@ static void draw_hover_label(void) {
   }
 
   if (label) {
-    Vector2 mp = GetMousePosition_Custom();
+    float mx, my;
+    SDL_GetMouseState(&mx, &my);
+    Vector2 mp = {mx, my};
     DrawRectangle((int)mp.x + 14, (int)mp.y + 10, 160, 22,
                   (Color){0, 0, 0, 140});
     draw_rectangle_outline_opengl((int)mp.x + 14, (int)mp.y + 10, 160, 22,
@@ -7094,9 +7117,11 @@ static void draw_pause_overlay(void) {
 static int ui_button(Rectangle r, const char *text) {
   // Hardcoded mouse detection - check if mouse is over button and left button
   // is pressed
-  Vector2 m = SDL_GetMouseState();
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 m = {mx, my};
   int hot = CheckCollisionPointRec(m, r);
-  int clicked = hot && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+  int clicked = hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT);
 
   // Scale font size based on button height
   int font_size = (int)(r.height * 0.4f); // 40% of button height
@@ -7116,11 +7141,13 @@ static int ui_button(Rectangle r, const char *text) {
 
 static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
                        int digits_only) {
-  Vector2 m = GetMousePosition_Custom();
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 m = {mx, my};
   int hot = CheckCollisionPointRec(m, r);
-  if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+  if (hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT))
     *active = 1;
-  if (!hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+  if (!hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT))
     *active = 0;
 
   Color bg = *active ? (Color){35, 35, 45, 255} : (Color){25, 25, 35, 255};
@@ -7144,7 +7171,7 @@ static void ui_textbox(Rectangle r, char *buf, int cap, int *active,
       }
       key = GetCharPressed();
     }
-    if (IsKeyPressed(KEY_BACKSPACE)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_BACKSPACE]) {
       int len = (int)strlen(buf);
       if (len > 0)
         buf[len - 1] = 0;
@@ -7191,139 +7218,6 @@ static void save_current_world_session(void) {
     return;
   save_world_to_disk(g_world_name);
   save_models_to_disk(g_world_name);
-}
-
-static void do_world_select_screen(void) {
-  // Refresh list on first entry or when empty
-  static int initialized = 0;
-  if (!initialized) {
-    world_list_refresh(&g_world_list);
-    initialized = 1;
-  }
-
-  world_list_ensure_valid(&g_world_list);
-
-  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){18, 18, 28, 255});
-  DrawText("Select World", 40, 30, 44, RAYWHITE);
-
-  Rectangle listBox = {40, 100, 520, (float)SCREEN_HEIGHT - 180};
-  DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
-  DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
-
-  int itemH = 44;
-  int visible = (int)(listBox.height / itemH);
-  if (visible < 1)
-    visible = 1;
-
-  // mouse wheel scroll
-  float wheel = GetMouseWheelMove();
-  if (wheel != 0.0f && g_world_list.count > 0) {
-    g_world_list.scroll -= (int)wheel;
-    if (g_world_list.scroll < 0)
-      g_world_list.scroll = 0;
-    int maxScroll =
-        (g_world_list.count > visible) ? (g_world_list.count - visible) : 0;
-    if (g_world_list.scroll > maxScroll)
-      g_world_list.scroll = maxScroll;
-  }
-
-  // keyboard nav
-  if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
-    g_world_list.selected--;
-  if (IsKeyPressed(KEY_DOWN) && g_world_list.selected < g_world_list.count - 1)
-    g_world_list.selected++;
-
-  // keep selected in view
-  if (g_world_list.selected >= 0) {
-    if (g_world_list.selected < g_world_list.scroll)
-      g_world_list.scroll = g_world_list.selected;
-    if (g_world_list.selected >= g_world_list.scroll + visible)
-      g_world_list.scroll = g_world_list.selected - visible + 1;
-  }
-
-  // draw items
-  for (int i = 0; i < visible; i++) {
-    int idx = g_world_list.scroll + i;
-    if (idx >= g_world_list.count)
-      break;
-
-    Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
-                     listBox.width - 20, (float)itemH - 6};
-    int hot = CheckCollisionPointRec(GetMousePosition_Custom(), row);
-
-    Color bg = (Color){35, 35, 55, 255};
-    if (idx == g_world_list.selected)
-      bg = (Color){60, 60, 95, 255};
-    else if (hot)
-      bg = (Color){45, 45, 70, 255};
-
-    DrawRectangleRounded(row, 0.18f, 8, bg);
-
-    DrawText(g_world_list.names[idx], (int)(row.x + 12), (int)(row.y + 10), 22,
-             RAYWHITE);
-
-    if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-      g_world_list.selected = idx;
-    }
-  }
-
-  Rectangle rPlay = {600, 140, 260, 54};
-  Rectangle rDelete = {600, 210, 260, 54};
-  Rectangle rCreate = {600, 280, 260, 54};
-  Rectangle rBack = {600, 350, 260, 54};
-
-  int hasSelection = (g_world_list.selected >= 0 &&
-                      g_world_list.selected < g_world_list.count);
-
-  if (ui_button(rPlay, hasSelection ? "Play Selected" : "Play (no world)")) {
-    if (hasSelection) {
-      snprintf(g_world_name, sizeof(g_world_name), "%s",
-               g_world_list.names[g_world_list.selected]);
-
-      // load
-      if (!load_world_from_disk(g_world_name)) {
-        // if load fails, create fresh using current seed
-        world_reset(g_world_seed);
-        save_world_to_disk(g_world_name);
-        save_models_to_disk(g_world_name);
-      } else {
-        load_models_from_disk(g_world_name);
-      }
-      g_state = STATE_PLAYING;
-      ensure_agents_ready_on_enter();
-    }
-  }
-
-  if (ui_button(rDelete, hasSelection ? "Delete World" : "Delete (no world)")) {
-    if (hasSelection) {
-      const char *wname = g_world_list.names[g_world_list.selected];
-      delete_world_by_name(wname);
-
-      world_list_refresh(&g_world_list);
-      world_list_ensure_valid(&g_world_list);
-    }
-  }
-
-  if (ui_button(rCreate, "Create New World")) {
-    // go to your create UI
-    g_state = STATE_WORLD_CREATE;
-  }
-
-  if (ui_button(rBack, "Back")) {
-    g_state = STATE_TITLE;
-  }
-
-  // Enter to play
-  if (hasSelection && IsKeyPressed(KEY_ENTER)) {
-    snprintf(g_world_name, sizeof(g_world_name), "%s",
-             g_world_list.names[g_world_list.selected]);
-    if (!load_world_from_disk(g_world_name)) {
-      world_reset(g_world_seed);
-      save_world_to_disk(g_world_name);
-    }
-    g_state = STATE_PLAYING;
-    ensure_agents_ready_on_enter();
-  }
 }
 
 /* =======================
@@ -8787,32 +8681,40 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
     return;
   ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
-Vector2 m = GetMousePosition_Custom();
-int hot = CheckCollisionPointRec(m, r);
-int clicked = hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
-Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
-ui_draw_rect(r.x, r.y, r.width, r.height, bg);
-ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
-ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f, (Color){0, 0, 0, 160});
-ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
-ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
+static int ui_button_gl(Rectangle r, const char *text, int font_size) {
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 m = {mx, my};
+  int hot = CheckCollisionPointRec(m, r);
+  int clicked = hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT);
 
-int tw = ui_measure_text_size(text, font_size);
-float tx = r.x + (r.width - (float)tw) * 0.5f;
-float ty = r.y + (r.height - (float)font_size) * 0.5f;
-ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
+  Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
+  ui_draw_rect(r.x, r.y, r.width, r.height, bg);
+  ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f,
+               (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
+  ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height,
+               (Color){0, 0, 0, 160});
 
-return clicked;
+  int tw = ui_measure_text_size(text, font_size);
+  float tx = r.x + (r.width - (float)tw) * 0.5f;
+  float ty = r.y + (r.height - (float)font_size) * 0.5f;
+  ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
+
+  return clicked;
 }
 
 static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
                           int digits_only) {
-  Vector2 m = GetMousePosition_Custom();
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 m = {mx, my};
   int hot = CheckCollisionPointRec(m, r);
-  if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+  if (hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT))
     *active = 1;
-  if (!hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+  if (!hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT))
     *active = 0;
 
   Color bg = *active ? (Color){35, 35, 45, 220} : (Color){25, 25, 35, 210};
@@ -8840,7 +8742,7 @@ static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
       }
       key = GetCharPressed();
     }
-    if (IsKeyPressed(KEY_BACKSPACE)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_BACKSPACE]) {
       int len = (int)strlen(buf);
       if (len > 0)
         buf[len - 1] = 0;
@@ -8851,7 +8753,9 @@ static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
 }
 
 static void draw_crosshair_2d(void) {
-  Vector2 m = GetMousePosition_Custom();
+  float mx, my;
+  SDL_GetMouseState(&mx, &my);
+  Vector2 m = {mx, my};
   DrawCircleLines((int)m.x, (int)m.y, 10, (Color){0, 0, 0, 200});
   DrawLine((int)m.x - 14, (int)m.y, (int)m.x + 14, (int)m.y,
            (Color){0, 0, 0, 200});
@@ -8892,6 +8796,9 @@ static void draw_crosshair_3d(void) {
 }
 
 static KeyboardKey poll_any_key_pressed(void) {
+  if (!g_keyboard_state)
+    return KEY_NULL;
+
   KeyboardKey keys[] = {
       KEY_A,      KEY_B,         KEY_C,          KEY_D,     KEY_E,    KEY_F,
       KEY_H,      KEY_I,         KEY_J,          KEY_K,     KEY_L,    KEY_M,
@@ -8902,7 +8809,7 @@ static KeyboardKey poll_any_key_pressed(void) {
       KEY_DOWN,   KEY_LEFT,      KEY_RIGHT,      KEY_SPACE, KEY_TAB,  KEY_ENTER,
       KEY_ESCAPE, KEY_BACKSPACE, KEY_LEFT_SHIFT, KEY_F5,    KEY_F6,   KEY_F7};
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
-    if (IsKeyPressed(keys[i]))
+    if (g_keyboard_state[keys[i]])
       return keys[i];
   }
   return KEY_NULL;
@@ -8929,20 +8836,20 @@ static void draw_pause_menu_3d(void) {
                RAYWHITE);
   glEnable(GL_DEPTH_TEST);
 
-  if (IsKeyPressed(KEY_TWO)) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_2]) {
     g_pause_page = 1;
-  } else if (IsKeyPressed(KEY_THREE)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_3]) {
     g_pause_page = 3;
     g_rebind_index = -1;
-  } else if (IsKeyPressed(KEY_FOUR)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_4]) {
     g_pause_page = 4; // AI Training page
-  } else if (IsKeyPressed(KEY_FIVE)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_5]) {
     g_state = STATE_TITLE;
     g_pause_page = 0;
     g_rebind_index = -1;
-  } else if (IsKeyPressed(KEY_SIX)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_6]) {
     save_current_world_session();
-  } else if (IsKeyPressed(KEY_Q)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_Q]) {
     g_should_quit = true;
   }
 }
@@ -8976,17 +8883,17 @@ static void draw_ai_training_menu_3d(void) {
 
   glEnable(GL_DEPTH_TEST);
 
-  if (IsKeyPressed(KEY_ONE)) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_1]) {
     start_ai_vs_ai_training();
-  } else if (IsKeyPressed(KEY_TWO)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_2]) {
     g_pause_page = 5; // Training settings page
-  } else if (IsKeyPressed(KEY_THREE)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_3]) {
     g_pause_page = 6; // Statistics page
-  } else if (IsKeyPressed(KEY_FOUR)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_4]) {
     save_ai_models();
-  } else if (IsKeyPressed(KEY_FIVE)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_5]) {
     toggle_spectator_mode();
-  } else if (IsKeyPressed(KEY_ESCAPE)) {
+  } else if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_ESCAPE]) {
     g_pause_page = 0;
   }
 }
@@ -9348,7 +9255,9 @@ static void draw_hover_label_3d(void) {
       snprintf(line, sizeof(line), "%s (%d)", label, hp);
     else
       snprintf(line, sizeof(line), "%s", label);
-    Vector2 mouse = GetMousePosition_Custom();
+    float mx, my;
+    SDL_GetMouseState(&mx, &my);
+    Vector2 mouse = {mx, my};
 
     // Position label above cursor with offset
     float label_x = mouse.x + 20.0f;
@@ -9631,9 +9540,10 @@ static void draw_world_select_3d(void) {
     }
 
     // keyboard nav
-    if (IsKeyPressed(KEY_UP) && g_world_list.selected > 0)
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_UP] &&
+        g_world_list.selected > 0)
       g_world_list.selected--;
-    if (IsKeyPressed(KEY_DOWN) &&
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_DOWN] &&
         g_world_list.selected < g_world_list.count - 1)
       g_world_list.selected++;
 
@@ -9653,7 +9563,10 @@ static void draw_world_select_3d(void) {
 
       Rectangle row = {listBox.x + 10, listBox.y + 10 + i * itemH,
                        listBox.width - 20, (float)itemH - 6};
-      int hot = CheckCollisionPointRec(GetMousePosition_Custom(), row);
+      float mx, my;
+      SDL_GetMouseState(&mx, &my);
+      Vector2 mouse_pos = {mx, my};
+      int hot = CheckCollisionPointRec(mouse_pos, row);
 
       Color bg = (Color){35, 35, 55, 255};
       if (idx == g_world_list.selected)
@@ -9666,7 +9579,7 @@ static void draw_world_select_3d(void) {
       DrawText(g_world_list.names[idx], (int)(row.x + 12), (int)(row.y + 10),
                item_font_size, RAYWHITE);
 
-      if (hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      if (hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT)) {
         g_world_list.selected = idx;
       }
     }
@@ -9686,7 +9599,8 @@ static void draw_world_select_3d(void) {
     int hasSelection = (g_world_list.selected >= 0 &&
                         g_world_list.selected < g_world_list.count);
 
-    if (ui_button(rPlay, hasSelection ? "Play Selected" : "Play (no world)")) {
+    if (ui_button_gl(rPlay, hasSelection ? "Play Selected" : "Play (no world)",
+                     20)) {
       if (hasSelection) {
         snprintf(g_world_name, sizeof(g_world_name), "%s",
                  g_world_list.names[g_world_list.selected]);
@@ -9726,7 +9640,8 @@ static void draw_world_select_3d(void) {
     }
 
     // Enter to play
-    if (hasSelection && IsKeyPressed(KEY_ENTER)) {
+    if (hasSelection && g_keyboard_state &&
+        g_keyboard_state[SDL_SCANCODE_RETURN]) {
       snprintf(g_world_name, sizeof(g_world_name), "%s",
                g_world_list.names[g_world_list.selected]);
       if (!load_world_from_disk(g_world_name)) {
@@ -9779,16 +9694,16 @@ static void draw_keybinds_menu_3d(void) {
       save_keybinds();
     }
   } else {
-    if (IsKeyPressed(KEY_TAB)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_TAB]) {
       g_pause_page = (g_pause_page == 1) ? 2 : 1;
     }
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+    if ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_ESCAPE]) ||
+        (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_BACKSPACE])) {
       g_pause_page = 0;
       g_rebind_index = -1;
     }
     for (int i = 0; i < BIND_COUNT && i < 8; i++) {
-      KeyboardKey k = (KeyboardKey)(KEY_ONE + i);
-      if (IsKeyPressed(k)) {
+      if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_1 + i]) {
         g_rebind_index = i;
         break;
       }
@@ -9868,7 +9783,8 @@ static void draw_graphics_menu_3d(void) {
     g_pause_page = 0;
     changed = 1;
   }
-  if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+  if ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_ESCAPE]) ||
+      (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_BACKSPACE])) {
     g_pause_page = 0;
     changed = 1;
   }
@@ -10873,26 +10789,29 @@ void update_spectator_controls(void) {
     return;
 
   float speed = SPECTATOR_SPEED;
-  if (IsKeyDown(KEY_LEFT_SHIFT))
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_LSHIFT])
     speed *= 2.0f; // Turbo mode
 
   // Movement controls
-  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+  if ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_W]) ||
+      (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_UP])) {
     g_spectator_velocity.x += speed * 0.016f; // Forward
   }
-  if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
+  if ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_S]) ||
+      (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_DOWN])) {
     g_spectator_velocity.x -= speed * 0.016f; // Backward
   }
-  if (IsKeyDown(KEY_A)) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_A]) {
     g_spectator_velocity.z -= speed * 0.016f; // Left
   }
-  if (IsKeyDown(KEY_D)) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_D]) {
     g_spectator_velocity.z += speed * 0.016f; // Right
   }
-  if (IsKeyDown(KEY_SPACE)) {
+  if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_SPACE]) {
     g_spectator_velocity.y += speed * 0.016f; // Up
   }
-  if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) {
+  if ((g_keyboard_state && g_keyboard_state[SDL_SCANCODE_LCTRL]) ||
+      (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_RCTRL])) {
     g_spectator_velocity.y -= speed * 0.016f; // Down
   }
 
@@ -11142,11 +11061,11 @@ int main(int argc, char *argv[]) {
     SCREEN_WIDTH = (int)g_window_width;
     SCREEN_HEIGHT = (int)g_window_height;
 
-    // Test mouse button detection with proper Raylib constants
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    // Test mouse button detection with proper SDL constants
+    if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT) {
       printf("LEFT MOUSE BUTTON PRESSED\n");
     }
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+    if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_RIGHT) {
       printf("RIGHT MOUSE BUTTON PRESSED\n");
     }
 
@@ -11232,7 +11151,8 @@ int main(int argc, char *argv[]) {
     if (g_use_3d) {
       // Use manual click detection for mouse locking
       static int last_mouse_down = 0;
-      int current_mouse_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+      int current_mouse_down =
+          (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT) ? 1 : 0;
       int mouse_clicked = current_mouse_down && !last_mouse_down;
       last_mouse_down = current_mouse_down;
 
@@ -11253,7 +11173,8 @@ int main(int argc, char *argv[]) {
       }
 
       // Allow manual unlock with TAB key
-      if (g_state == STATE_PLAYING && g_mouse_locked && IsKeyPressed(KEY_TAB)) {
+      if (g_state == STATE_PLAYING && g_mouse_locked && g_keyboard_state &&
+          g_keyboard_state[SDL_SCANCODE_TAB]) {
         SDL_ShowCursor();
         g_mouse_locked = 0;
       }
@@ -11270,14 +11191,15 @@ int main(int argc, char *argv[]) {
     }
 
     // ...
-    if (g_use_3d && IsKeyPressed(KEY_V)) {
+    if (g_use_3d && g_keyboard_state && g_keyboard_state[SDL_SCANCODE_V]) {
       g_camera_mode = (g_camera_mode == CAM_THIRD_PERSON) ? CAM_FIRST_PERSON
                                                           : CAM_THIRD_PERSON;
     }
-    if (g_use_3d && g_state == STATE_PLAYING && IsKeyPressed(KEY_M)) {
+    if (g_use_3d && g_state == STATE_PLAYING && g_keyboard_state &&
+        g_keyboard_state[SDL_SCANCODE_M]) {
       g_minimap_zoomed = !g_minimap_zoomed;
     }
-    if (g_use_3d && IsKeyPressed(KEY_F6)) {
+    if (g_use_3d && g_keyboard_state && g_keyboard_state[SDL_SCANCODE_F6]) {
       GraphicsQuality next = GFX_LOW;
       if (g_gfx_quality == GFX_LOW)
         next = GFX_MED;
@@ -11288,11 +11210,11 @@ int main(int argc, char *argv[]) {
       apply_graphics_quality(next);
       save_graphics_config();
     }
-    if (g_use_3d && IsKeyPressed(KEY_F7)) {
+    if (g_use_3d && g_keyboard_state && g_keyboard_state[SDL_SCANCODE_F7]) {
       g_profiler_enabled = !g_profiler_enabled;
     }
 
-    if (IsKeyPressed(KEY_ESCAPE)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_ESCAPE]) {
       if (g_state == STATE_PLAYING) {
         g_state = STATE_PAUSED;
         g_pause_page = 0;
@@ -11304,14 +11226,14 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (IsKeyPressed(KEY_P)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_P]) {
       if (g_state == STATE_PAUSED) {
         g_state = STATE_PLAYING;
       }
     }
 
     // Debug: Press G to jump directly to game world
-    if (IsKeyDown(KEY_G)) {
+    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_G]) {
       g_state = STATE_PLAYING;
       // Initialize a basic world
       world_reset(12345);
