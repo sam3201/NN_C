@@ -7176,7 +7176,7 @@ static void draw_pause_overlay(void) {
 static int ui_button(Rectangle r, const char *text) {
   // Hardcoded mouse detection - check if mouse is over button and left button
   // is pressed
-  Vector2 m = GetMousePosition_Custom();
+  Vector2 m = GetMousePosition();
   int hot = CheckCollisionPointRec(m, r);
   int clicked = hot && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
