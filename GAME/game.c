@@ -8795,6 +8795,16 @@ static void draw_crosshair_3d(void) {
   glEnable(GL_CULL_FACE);
 }
 
+Vector2 GetMouseDelta_Custom(void) {
+  static int last_x = 0, last_y = 0;
+  int x, y;
+  SDL_GetMouseState(&x, &y);
+  Vector2 delta = {(float)(x - last_x), (float)(y - last_y)};
+  last_x = x;
+  last_y = y;
+  return delta;
+}
+
 static KeyboardKey poll_any_key_pressed(void) {
   if (!g_keyboard_state)
     return KEY_NULL;
