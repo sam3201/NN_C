@@ -5050,7 +5050,7 @@ static void draw_player(Vector2 pp_screen) {
       bodyR * 0.18f, (Color){255, 255, 255, 120});
 
   // --- Mouse-aim direction (screen space) ---
-  Vector2 mouse = SDL_GetMouseState();
+  int mx, my = SDL_GetMouseState();
   Vector2 aim = Vector2Subtract(mouse, pp_screen);
   float aimLen = Vector2Length(aim);
   if (aimLen < 1e-3f)
