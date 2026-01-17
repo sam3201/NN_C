@@ -5050,7 +5050,7 @@ static void draw_player(Vector2 pp_screen) {
       bodyR * 0.18f, (Color){255, 255, 255, 120});
 
   // --- Mouse-aim direction (screen space) ---
-  Vector2 mouse = GetMousePosition_Custom();
+  Vector2 mouse = SDL_GetMouseState();
   Vector2 aim = Vector2Subtract(mouse, pp_screen);
   float aimLen = Vector2Length(aim);
   if (aimLen < 1e-3f)
@@ -8787,34 +8787,23 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
     return;
   ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
+Vector2 m = GetMousePosition_Custom();
+int hot = CheckCollisionPointRec(m, r);
+int clicked = hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
-static int ui_button_gl(Rectangle r, const char *text, int font_size) {
-  Vector2 m = GetMousePosition_Custom();
-  int hot = CheckCollisionPointRec(m, r);
-  int clicked = hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
+ui_draw_rect(r.x, r.y, r.width, r.height, bg);
+ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
+ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f, (Color){0, 0, 0, 160});
+ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
+ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
 
-  // Debug for title screen buttons
-  if (g_state == STATE_TITLE && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    printf("DEBUG ui_button_gl: Mouse(%.1f,%.1f) Button(%.1f,%.1f,%.1f,%.1f) "
-           "Hot=%d Clicked=%d\n",
-           m.x, m.y, r.x, r.y, r.width, r.height, hot, clicked);
-  }
+int tw = ui_measure_text_size(text, font_size);
+float tx = r.x + (r.width - (float)tw) * 0.5f;
+float ty = r.y + (r.height - (float)font_size) * 0.5f;
+ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
 
-  Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
-  ui_draw_rect(r.x, r.y, r.width, r.height, bg);
-  ui_draw_rect(r.x, r.y, r.width, 1.0f, (Color){0, 0, 0, 160});
-  ui_draw_rect(r.x, r.y + r.height - 1.0f, r.width, 1.0f,
-               (Color){0, 0, 0, 160});
-  ui_draw_rect(r.x, r.y, 1.0f, r.height, (Color){0, 0, 0, 160});
-  ui_draw_rect(r.x + r.width - 1.0f, r.y, 1.0f, r.height,
-               (Color){0, 0, 0, 160});
-
-  int tw = ui_measure_text_size(text, font_size);
-  float tx = r.x + (r.width - (float)tw) * 0.5f;
-  float ty = r.y + (r.height - (float)font_size) * 0.5f;
-  ui_draw_text_size(tx, ty, text, font_size, RAYWHITE);
-
-  return clicked;
+return clicked;
 }
 
 static void ui_textbox_gl(Rectangle r, char *buf, int cap, int *active,
@@ -9071,62 +9060,32 @@ static void draw_hurt_vignette_3d(void) {
 }
 
 static void draw_title_screen_3d(void) {
-  // Get screen dimensions directly since cache might not be initialized yet
-  int window_width, window_height;
-  SDL_GetWindowSize(g_window, &window_width, &window_height);
-
-  if (window_width <= 0 || window_height <= 0) {
-    printf("DEBUG: draw_title_screen_3d early return - window_width:%d "
-           "window_height:%d\n",
-           window_width, window_height);
+  int w, h;
+  SDL_GetWindowSize(g_window, &w, &h);
+  if (w <= 0 || h <= 0)
     return;
-  }
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  ui_draw_rect(0, 0, (float)window_width, (float)window_height,
-               (Color){18, 18, 28, 255});
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
 
   // Title
-  ui_draw_text_size(window_width * 0.5f - 160, window_height * 0.25f,
-                    "NEURAL NATIONS", 48, RAYWHITE);
-  ui_draw_text_size(window_width * 0.5f - 140, window_height * 0.35f,
-                    "AI-Powered Survival Game", 20,
+  ui_draw_text_size(w * 0.5f - 160, h * 0.25f, "NEURAL NATIONS", 48, RAYWHITE);
+  ui_draw_text_size(w * 0.5f - 140, h * 0.35f, "AI-Powered Survival Game", 20,
                     (Color){200, 200, 200, 180});
 
   // Buttons
-  printf("DEBUG: Before button calc - window_width:%d window_height:%d\n",
-         window_width, window_height);
-  Rectangle b1, b2, b3;
-  b1.x = window_width * 0.5f - 140;
-  b1.y = window_height * 0.5f;
-  b1.width = 280;
-  b1.height = 54;
-  b2.x = window_width * 0.5f - 140;
-  b2.y = window_height * 0.5f + 70;
-  b2.width = 280;
-  b2.height = 54;
-  b3.x = window_width * 0.5f - 140;
-  b3.y = window_height * 0.5f + 140;
-  b3.width = 280;
-  b3.height = 54;
-  printf("DEBUG title_screen: b1(%.1f,%.1f,%.1f,%.1f) b2(%.1f,%.1f,%.1f,%.1f) "
-         "b3(%.1f,%.1f,%.1f,%.1f)\n",
-         b1.x, b1.y, b1.width, b1.height, b2.x, b2.y, b2.width, b2.height, b3.x,
-         b3.y, b3.width, b3.height);
+  Rectangle b1 = {w * 0.5f - 140, h * 0.5f, 280, 54};
+  Rectangle b2 = {w * 0.5f - 140, h * 0.5f + 70, 280, 54};
+  Rectangle b3 = {w * 0.5f - 140, h * 0.5f + 140, 280, 54};
 
-  if (ui_button_gl(b1, "Play (Load/Select)", 20)) {
-    printf("DEBUG: Play button clicked!\n");
+  if (ui_button_gl(b1, "Play (Load/Select)", 20))
     g_state = STATE_WORLD_SELECT;
-  }
-  if (ui_button_gl(b2, "Create World", 20)) {
-    printf("DEBUG: Create World button clicked!\n");
+  if (ui_button_gl(b2, "Create World", 20))
     g_state = STATE_WORLD_CREATE;
-  }
-  if (ui_button_gl(b3, "Quit", 20)) {
-    printf("DEBUG: Quit button clicked!\n");
+  if (ui_button_gl(b3, "Quit", 20))
     g_should_quit = 1;
-  }
+
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
