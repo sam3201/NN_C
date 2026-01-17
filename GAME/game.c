@@ -234,55 +234,6 @@ void SetMouseVisible(int visible);
 void SetRelativeMouseMode(int enabled);
 */
 
-// Custom mouse input functions that use SDL directly
-// SDL Input helper functions to replace Raylib
-static void update_sdl_input_state(void) {
-  // Update keyboard state
-  g_keyboard_state = SDL_GetKeyboardState(NULL);
-
-  // Update mouse state
-  g_prev_mouse_state = g_mouse_state;
-  g_mouse_state = SDL_GetMouseState(&g_mouse_x, &g_mouse_y);
-
-  // Store previous keyboard state for key press detection
-  memcpy(g_prev_keyboard_state, g_keyboard_state,
-         sizeof(g_prev_keyboard_state));
-}
-
-static int is_key_pressed(SDL_Scancode key) {
-  int current = g_keyboard_state[key];
-  int prev = g_prev_keyboard_state[key];
-  int result = current && !prev;
-  return result;
-}
-
-static int is_mouse_button_down(int button) {
-  return (g_mouse_state & SDL_BUTTON_MASK(button)) != 0;
-}
-
-// Direct function replacements for Raylib input
-static inline int IsKeyPressed_SDL(SDL_Scancode key) {
-  return is_key_pressed(key);
-}
-
-static inline int IsMouseButtonDown_SDL(int button) {
-  return is_mouse_button_down(button);
-}
-
-static inline int IsMouseButtonPressed_SDL(int button) {
-  return is_mouse_button_down(button) &&
-         !(g_prev_mouse_state & SDL_BUTTON_MASK(button));
-}
-
-static inline int IsMouseButtonReleased_SDL(int button) {
-  return !is_mouse_button_down(button) &&
-         (g_prev_mouse_state & SDL_BUTTON_MASK(button));
-}
-
-static inline int IsKeyDown_SDL(SDL_Scancode key) {
-  return g_keyboard_state[key];
-}
-
 // Use direct function calls instead of macros to avoid issues
 #define IsKeyPressed_SDL_SPACE IsKeyPressed_SDL(SDL_SCANCODE_SPACE)
 #define IsKeyPressed_SDL_F IsKeyPressed_SDL(SDL_SCANCODE_F)
