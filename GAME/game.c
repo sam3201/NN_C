@@ -235,39 +235,6 @@ void SetRelativeMouseMode(int enabled);
 */
 
 // Custom mouse input functions that use SDL directly
-Vector2 GetMousePosition_Custom(void) {
-  float x, y;
-  SDL_GetMouseState(&x, &y);
-  return (Vector2){x, y};
-}
-
-Vector2 GetMouseDelta_Custom(void) {
-  static float last_x = 0.0f, last_y = 0.0f;
-  static int first_time = 1;
-
-  float x, y;
-  SDL_GetMouseState(&x, &y);
-
-  Vector2 delta = {0, 0};
-
-  if (!first_time) {
-    delta.x = x - last_x;
-    delta.y = y - last_y;
-  }
-
-  last_x = x;
-  last_y = y;
-  first_time = 0;
-
-  return delta;
-}
-
-void SetMousePosition_Custom(int x, int y) {
-  if (g_window) {
-    SDL_WarpMouseInWindow(g_window, x, y);
-  }
-}
-
 // SDL Input helper functions to replace Raylib
 static void update_sdl_input_state(void) {
   // Update keyboard state
