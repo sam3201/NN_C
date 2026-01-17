@@ -79,7 +79,38 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
 #include "generated/auto_import.h"
 
 SDL_Window *g_window = NULL;
-static unsigned int g_window_width, g_window_height = 0;
+static unsigned int g_window_width = 0, g_window_height = 0;
+static bool g_screen_dimensions_cached = false;
+
+// Cache screen dimensions for performance
+static void cache_screen_dimensions(void) {
+  if (g_window && !g_screen_dimensions_cached) {
+    SDL_GetWindowSize(g_window, (int *)&g_window_width,
+                      (int *)&g_window_height);
+    g_screen_dimensions_cached = true;
+  }
+}
+
+// Get cached screen width
+static unsigned int get_cached_screen_width(void) {
+  if (!g_screen_dimensions_cached) {
+    cache_screen_dimensions();
+  }
+  return g_window_width;
+}
+
+// Get cached screen height
+static unsigned int get_cached_screen_height(void) {
+  if (!g_screen_dimensions_cached) {
+    cache_screen_dimensions();
+  }
+  return g_window_height;
+}
+
+// Invalidate cache (call when window is resized)
+static void invalidate_screen_cache(void) {
+  g_screen_dimensions_cached = false;
+}
 
 // SDL input state tracking - must be declared before functions that use them
 static const bool *g_keyboard_state = NULL;
@@ -2976,14 +3007,11 @@ static void update_projectiles(float dt) {
 }
 
 static inline Vector2 world_to_screen(Vector2 wp) {
-  // Use current screen dimensions, not cached ones
-  int current_w, current_h;
-  SDL_GetWindowSize(g_window, &current_w, &current_h);
-
+  // Use cached screen dimensions for performance
   Vector2 sp = Vector2Subtract(wp, camera_pos);
   sp = Vector2Scale(sp, WORLD_SCALE);
-  sp.x += current_w / 2;
-  sp.y += current_h / 2;
+  sp.x += g_window_width / 2;
+  sp.y += g_window_height / 2;
   return sp;
 }
 
@@ -4465,17 +4493,17 @@ void draw_chunks(void) {
 
       Vector2 screen = Vector2Subtract(world_pos, camera_pos);
       screen = Vector2Scale(screen, WORLD_SCALE);
-      // Use current screen dimensions, not cached ones
-      screen.x += g_screen_width / 2;
-      screen.y += g_screen_height / 2;
+      // Use cached screen dimensions for performance
+      screen.x += g_window_width / 2;
+      screen.y += g_window_height / 2;
 
       // IMPORTANT: snap to pixel grid to avoid seams
       int sx = (int)floorf(screen.x);
       int sy = (int)floorf(screen.y);
 
       // IMPORTANT: ceil size (and +1) so we never leave a 1px gap
-      int sw = (int)ceilf(chunk_px) + 1;
-      int sh = (int)ceilf(chunk_px) + 1;
+      int chunk_sw = (int)ceilf(chunk_px) + 1;
+      int chunk_sh = (int)ceilf(chunk_px) + 1;
 
       // DrawRectangle(sx, sy, sw, sh, Fade(biome_colors[c->biome_type], 0.9f));
       // glBegin(GL_QUADS);
@@ -6442,8 +6470,8 @@ void update_player(void) {
         md.x = current_pos.x - last_mouse_pos.x;
         md.y = current_pos.y - last_mouse_pos.y;
         // Reset mouse to center
-        int mw = GetScreenWidth();
-        int mh = GetScreenHeight();
+        int mw, mh;
+        SDL_GetWindowSize(g_window, &mw, &mh);
         if (mw > 0 && mh > 0) {
           SetMousePosition(mw / 2, mh / 2);
         }
@@ -6648,12 +6676,10 @@ void update_player(void) {
           bow_charge01 >= BOW_CHARGE_MIN01) {
         // aim from player -> mouse in WORLD space
         Vector2 mouse = GetMousePosition_Custom();
-        // Use current screen dimensions, not cached ones
-        int current_w = GetScreenWidth();
-        int current_h = GetScreenHeight();
+        // Use cached screen dimensions for performance
         Vector2 mouse_world = {
-            (mouse.x - current_w * 0.5f) / WORLD_SCALE + camera_pos.x,
-            (mouse.y - current_h * 0.5f) / WORLD_SCALE + camera_pos.y};
+            (mouse.x - g_window_width * 0.5f) / WORLD_SCALE + camera_pos.x,
+            (mouse.y - g_window_height * 0.5f) / WORLD_SCALE + camera_pos.y};
 
         Vector2 dir = Vector2Subtract(mouse_world, player.position);
         if (Vector2Length(dir) < 1e-3f)
@@ -8718,8 +8744,8 @@ static void ui_draw_text_size(float x, float y, const char *text, int size,
 static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
                          Color color) {
   init_ui_gl();
-  int sw = GetScreenWidth();
-  int sh = GetScreenHeight();
+  int sw = (int)g_window_width;
+  int sh = (int)g_window_height;
   if (sw <= 0 || sh <= 0)
     return;
   float verts[] = {
@@ -8847,16 +8873,14 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
 static int ui_button_gl(Rectangle r, const char *text, int font_size) {
   Vector2 m = GetMousePosition_Custom();
   int hot = CheckCollisionPointRec(m, r);
-  int down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+  int clicked = hot && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
-  // Manual click detection: track when mouse goes from up to down
-  g_manual_click = 0;
-  if (down && !g_last_mouse_down) {
-    g_manual_click = 1;
+  // Debug for title screen buttons
+  if (g_state == STATE_TITLE && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    printf("DEBUG ui_button_gl: Mouse(%.1f,%.1f) Button(%.1f,%.1f,%.1f,%.1f) "
+           "Hot=%d Clicked=%d\n",
+           m.x, m.y, r.x, r.y, r.width, r.height, hot, clicked);
   }
-  g_last_mouse_down = down;
-
-  int clicked = hot && g_manual_click;
 
   Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
   ui_draw_rect(r.x, r.y, r.width, r.height, bg);
@@ -8939,8 +8963,8 @@ static void draw_crosshair_3d(void) {
   glDisable(GL_CULL_FACE);
 
   // Draw test crosshair using UI drawing functions
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -8978,8 +9002,8 @@ static KeyboardKey poll_any_key_pressed(void) {
 }
 
 static void draw_pause_menu_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -9017,8 +9041,8 @@ static void draw_pause_menu_3d(void) {
 }
 
 static void draw_ai_training_menu_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -9061,8 +9085,8 @@ static void draw_ai_training_menu_3d(void) {
 }
 
 static void draw_hud_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -9104,8 +9128,9 @@ static void draw_daynight_overlay_3d(void) {
   night01 = 1.0f - night01;
 
   unsigned char a = (unsigned char)(150 * night01);
-  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
-               (Color){10, 20, 40, a});
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){10, 20, 40, a});
   double now = GetTime();
   if (now - g_ui_cache_last_update > 0.25) {
     ui_text_cache_update(&g_ui_cache_daynight,
@@ -9122,38 +9147,68 @@ static void draw_hurt_vignette_3d(void) {
     return;
   float t = clamp01(player_hurt_timer / 0.18f);
   unsigned char a = (unsigned char)(120 * t);
-  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
-               (Color){220, 80, 80, a});
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){220, 80, 80, a});
 }
 
 static void draw_title_screen_3d(void) {
-  // Use SDL window dimensions directly instead of
-  // GetScreenWidth/GetScreenHeight
-  int w, h;
-  SDL_GetWindowSize(g_window, &w, &h);
-  if (w <= 0 || h <= 0)
+  // Get screen dimensions directly since cache might not be initialized yet
+  int window_width, window_height;
+  SDL_GetWindowSize(g_window, &window_width, &window_height);
+
+  if (window_width <= 0 || window_height <= 0) {
+    printf("DEBUG: draw_title_screen_3d early return - window_width:%d "
+           "window_height:%d\n",
+           window_width, window_height);
     return;
+  }
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
+  ui_draw_rect(0, 0, (float)window_width, (float)window_height,
+               (Color){18, 18, 28, 255});
 
   // Title
-  ui_draw_text_size(w * 0.5f - 160, h * 0.25f, "NEURAL NATIONS", 48, RAYWHITE);
-  ui_draw_text_size(w * 0.5f - 140, h * 0.35f, "AI-Powered Survival Game", 20,
+  ui_draw_text_size(window_width * 0.5f - 160, window_height * 0.25f,
+                    "NEURAL NATIONS", 48, RAYWHITE);
+  ui_draw_text_size(window_width * 0.5f - 140, window_height * 0.35f,
+                    "AI-Powered Survival Game", 20,
                     (Color){200, 200, 200, 180});
 
   // Buttons
-  Rectangle b1 = {w * 0.5f - 140, h * 0.5f, 280, 54};
-  Rectangle b2 = {w * 0.5f - 140, h * 0.5f + 70, 280, 54};
-  Rectangle b3 = {w * 0.5f - 140, h * 0.5f + 140, 280, 54};
+  printf("DEBUG: Before button calc - window_width:%d window_height:%d\n",
+         window_width, window_height);
+  Rectangle b1, b2, b3;
+  b1.x = window_width * 0.5f - 140;
+  b1.y = window_height * 0.5f;
+  b1.width = 280;
+  b1.height = 54;
+  b2.x = window_width * 0.5f - 140;
+  b2.y = window_height * 0.5f + 70;
+  b2.width = 280;
+  b2.height = 54;
+  b3.x = window_width * 0.5f - 140;
+  b3.y = window_height * 0.5f + 140;
+  b3.width = 280;
+  b3.height = 54;
+  printf("DEBUG title_screen: b1(%.1f,%.1f,%.1f,%.1f) b2(%.1f,%.1f,%.1f,%.1f) "
+         "b3(%.1f,%.1f,%.1f,%.1f)\n",
+         b1.x, b1.y, b1.width, b1.height, b2.x, b2.y, b2.width, b2.height, b3.x,
+         b3.y, b3.width, b3.height);
 
-  if (ui_button_gl(b1, "Play (Load/Select)", 20))
+  if (ui_button_gl(b1, "Play (Load/Select)", 20)) {
+    printf("DEBUG: Play button clicked!\n");
     g_state = STATE_WORLD_SELECT;
-  if (ui_button_gl(b2, "Create World", 20))
+  }
+  if (ui_button_gl(b2, "Create World", 20)) {
+    printf("DEBUG: Create World button clicked!\n");
     g_state = STATE_WORLD_CREATE;
-  if (ui_button_gl(b3, "Quit", 20))
+  }
+  if (ui_button_gl(b3, "Quit", 20)) {
+    printf("DEBUG: Quit button clicked!\n");
     g_should_quit = 1;
+  }
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
@@ -9259,8 +9314,8 @@ static void draw_ui_3d_full(void) {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 
-  int sw = GetScreenWidth();
-  int sh = GetScreenHeight();
+  int sw = (int)g_window_width;
+  int sh = (int)g_window_height;
   float panel_x = 14.0f;
   float panel_y = 12.0f;
   float panel_w = fminf(280.0f, sw * 0.25f); // Scale with screen width
@@ -9332,7 +9387,8 @@ static void draw_ui_3d_full(void) {
 }
 
 static void draw_profiler_3d(void) {
-  int w = GetScreenWidth();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0)
     return;
 
@@ -9623,8 +9679,9 @@ static void draw_simple_letter(char letter, int x, int y, int width,
 static void draw_world_create_3d(void) {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  ui_draw_rect(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(),
-               (Color){18, 18, 28, 255});
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
+  ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
   ui_draw_text_size(60, 50, "Create World", 34, RAYWHITE);
 
   if (ui_button_gl((Rectangle){60, 300, 200, 50}, "Create & Play", 20)) {
@@ -9651,8 +9708,8 @@ static void draw_world_select_3d(void) {
 
   world_list_ensure_valid(&g_world_list);
 
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -9809,8 +9866,8 @@ static void draw_world_select_3d(void) {
 }
 
 static void draw_keybinds_menu_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -9865,8 +9922,8 @@ static void draw_keybinds_menu_3d(void) {
 }
 
 static void draw_graphics_menu_3d(void) {
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   if (w <= 0 || h <= 0)
     return;
 
@@ -10480,17 +10537,14 @@ static void render_scene_3d(void) {
     graphics_applied = 1;
   }
 
-  // Use SDL window dimensions directly instead of
-  // GetScreenWidth/GetScreenHeight
-  int w, h;
-  SDL_GetWindowSize(g_window, &w, &h);
-  if (w <= 0 || h <= 0)
+  // Use cached screen dimensions for performance
+  if (g_window_width <= 0 || g_window_height <= 0)
     return;
 
-  glViewport(0, 0, w, h);
+  glViewport(0, 0, (int)g_window_width, (int)g_window_height);
   glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  float aspect = (float)w / (float)h;
+  float aspect = (float)g_window_width / (float)g_window_height;
   Mat4 proj = mat4_perspective(60.0f, aspect, 0.1f, 400.0f);
   float player_h = g_use_perlin_ground
                        ? terrain_height(player.position.x, player.position.y)
@@ -10983,8 +11037,8 @@ void render_spectator_hud(void) {
   if (!g_spectator_mode)
     return;
 
-  int w = GetScreenWidth();
-  int h = GetScreenHeight();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
 
   // Draw spectator mode indicator
   const char *spectator_text = "SPECTATOR MODE";
@@ -11162,6 +11216,9 @@ int main(int argc, char *argv[]) {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         g_should_quit = 1;
         break;
+      case SDL_EVENT_WINDOW_RESIZED:
+        invalidate_screen_cache();
+        break;
       case SDL_EVENT_MOUSE_MOTION:
         // Don't automatically lock mouse on motion - let the game logic handle
         // it
@@ -11202,8 +11259,11 @@ int main(int argc, char *argv[]) {
       dt = 1.0f / 60.0f; // Default to 60 FPS
     }
 
-    // Update screen dimensions continuously
-    SDL_GetWindowSize(g_window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
+    // Update cached screen dimensions each frame
+    SDL_GetWindowSize(g_window, (int *)&g_window_width,
+                      (int *)&g_window_height);
+    SCREEN_WIDTH = (int)g_window_width;
+    SCREEN_HEIGHT = (int)g_window_height;
 
     // Test mouse button detection with proper Raylib constants
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -11397,179 +11457,48 @@ int main(int argc, char *argv[]) {
       } else {
       }
       double render_ms = prof_now_ms() - render_start_ms;
+    }
 
-      double ui_start_ms = prof_now_ms();
-      if (g_state == STATE_PLAYING || g_state == STATE_PAUSED) {
-        glUseProgram(0); // Disable 3D shader before 2D drawing
+    // Draw UI for all states (regardless of 3D mode)
+    double ui_start_ms = prof_now_ms();
+    glUseProgram(0); // Disable 3D shader before 2D drawing
 
+    switch (g_state) {
+    case STATE_PLAYING:
+      if (g_use_3d) {
         draw_ui_3d_full();
         draw_minimap_3d();
         draw_daynight_overlay_3d();
-
         draw_hurt_vignette_3d();
         draw_crafting_ui_3d();
         draw_hover_label_3d();
-
-        if (g_state == STATE_PLAYING) {
-          draw_crosshair_3d();
-        }
+        draw_crosshair_3d();
       }
+      break;
 
-      if (g_state == STATE_PAUSED) {
-        if (g_pause_page == 0)
-          draw_pause_menu_3d();
-        else if (g_pause_page == 3)
-          draw_graphics_menu_3d();
-        else if (g_pause_page == 4)
-          draw_ai_training_menu_3d();
-        else
-          draw_keybinds_menu_3d();
-      } else if (g_state == STATE_WORLD_SELECT) {
-        printf("Drawing world select screen\n");
-        draw_world_select_3d();
-      } else if (g_state == STATE_WORLD_CREATE) {
-        draw_world_create_3d();
-      } else if (g_state == STATE_TITLE) {
-        if (g_use_3d) {
-          draw_title_screen_3d();
-        } else {
-          // Simple SDL/OpenGL 2D title screen
-          int w = 1440, h = 900;
-          glViewport(0, 0, w, h);
-          glClearColor(0.07f, 0.07f, 0.11f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    case STATE_PAUSED:
+      if (g_pause_page == 0)
+        draw_pause_menu_3d();
+      else if (g_pause_page == 3)
+        draw_graphics_menu_3d();
+      else if (g_pause_page == 4)
+        draw_ai_training_menu_3d();
+      else
+        draw_keybinds_menu_3d();
+      break;
 
-          // Handle mouse clicks for buttons (same logic as 3D version)
-          if (IsMouseButtonPressed_SDL(1)) { // Left click
-            float mouse_x = g_mouse_x;
-            float mouse_y = g_mouse_y;
+    case STATE_WORLD_SELECT:
+      draw_world_select_3d();
+      break;
 
-            // Check start button (green rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.45f && mouse_y <= h * 0.55f) {
-              g_state = STATE_WORLD_SELECT;
-              printf("Start button clicked - going to world select\n");
-            }
+    case STATE_WORLD_CREATE:
+      draw_world_create_3d();
+      break;
 
-            // Check create world button (blue rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.60f && mouse_y <= h * 0.70f) {
-              g_state = STATE_WORLD_CREATE;
-              printf("Create World button clicked\n");
-            }
-
-            // Check quit button (red rectangle)
-            if (mouse_x >= w * 0.35f && mouse_x <= w * 0.65f &&
-                mouse_y >= h * 0.75f && mouse_y <= h * 0.85f) {
-              g_should_quit = 1;
-              printf("Quit button clicked - exiting\n");
-            }
-          }
-        }
-      }
-    } else if (g_state == STATE_WORLD_CREATE) {
-      // Get screen dimensions for scaling
-      int w, h;
-      SDL_GetWindowSize(g_window, &w, &h);
-
-      DrawText("Create World", 60, 50, 34, RAYWHITE);
-
-      DrawText("World Name", 60, 120, 18, RAYWHITE);
-      ui_textbox((Rectangle){60, 145, 360, 45}, g_world_name,
-                 sizeof(g_world_name), &g_typing_name, 0);
-
-      DrawText("Seed", 60, 205, 18, RAYWHITE);
-      // Scale UI elements based on screen resolution
-      float ui_scale_x = w / 1280.0f; // Reference width
-      float ui_scale_y = h / 800.0f;  // Reference height
-
-      ui_textbox((Rectangle){60 * ui_scale_x, 230 * ui_scale_y,
-                             200 * ui_scale_x, 45 * ui_scale_y},
-                 g_seed_text, sizeof(g_seed_text), &g_typing_seed, 1);
-
-      float button_width = 200 * ui_scale_x;
-      float button_height = 50 * ui_scale_y;
-      float button_y = 300 * ui_scale_y;
-
-      if (ui_button((Rectangle){60 * ui_scale_x, button_y, button_width,
-                                button_height},
-                    "Create & Play")) {
-        g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
-        world_reset(g_world_seed);
-        save_world_to_disk(g_world_name); // create initial save
-        g_state = STATE_PLAYING;
-        ensure_agents_ready_on_enter();
-      }
-
-      if (ui_button((Rectangle){280 * ui_scale_x, button_y, 140 * ui_scale_x,
-                                button_height},
-                    "Back")) {
-        g_state = STATE_TITLE;
-      }
-    } else if (g_state == STATE_WORLD_SELECT) {
-      // Get screen dimensions for scaling
-      int w, h;
-      SDL_GetWindowSize(g_window, &w, &h);
-
-      // Scale UI elements based on screen resolution
-      float ui_scale_x = w / 1280.0f; // Reference width
-      float ui_scale_y = h / 800.0f;  // Reference height
-
-      DrawRectangle(0, 0, w, h, (Color){18, 18, 28, 255});
-      DrawText("Select World", (int)(40 * ui_scale_x), (int)(30 * ui_scale_y),
-               (int)(44 * ui_scale_y), RAYWHITE);
-
-      Rectangle listBox = {(float)(40 * ui_scale_x), (float)(100 * ui_scale_y),
-                           (float)(520 * ui_scale_x),
-                           (float)(h - 180 * ui_scale_y)};
-      DrawRectangleRounded(listBox, 0.12f, 8, (Color){25, 25, 40, 255});
-      DrawRectangleRoundedLines(listBox, 0.12f, 8, (Color){0, 0, 0, 160});
-
-      // For now: quick load current name
-      float button_width = 260 * ui_scale_x;
-      float button_height = 50 * ui_scale_y;
-
-      if (ui_button((Rectangle){60 * ui_scale_x, 140 * ui_scale_y, button_width,
-                                button_height},
-                    "Load World Name")) {
-        if (load_world_from_disk(g_world_name))
-          load_models_from_disk(g_world_name);
-        g_state = STATE_PLAYING;
-        ensure_agents_ready_on_enter();
-      }
-
-      if (ui_button((Rectangle){60 * ui_scale_x, 200 * ui_scale_y, button_width,
-                                button_height},
-                    "Back"))
-        g_state = STATE_TITLE;
+    case STATE_TITLE:
+      draw_title_screen_3d();
+      break;
     }
-
-    // Only draw 3D game elements if 3D mode is enabled
-    if (g_use_3d) {
-      // Re-enable core 3D game rendering
-      render_scene_3d();
-
-      // Re-enable UI systems
-      draw_ui_3d_full();
-      draw_minimap_3d();
-      draw_daynight_overlay_3d();
-      draw_hurt_vignette_3d();
-      draw_crafting_ui_3d();
-      draw_hover_label_3d();
-      draw_hurt_vignette();
-      draw_crafting_ui();
-
-      // Draw crosshair in 2D mode
-      if (!g_use_3d && g_state == STATE_PLAYING) {
-        draw_crosshair_2d();
-      }
-
-      // DrawText calls disabled - Raylib text doesn't work with SDL context
-      // DrawText("MUZE Tribal Simulation", 20, 160, 20, RAYWHITE);
-      // DrawText(TextFormat("FPS: %d", GetFPS()), 20, 185, 20, RAYWHITE);
-
-      // EndDrawing(); // Disabled - causes crashes with SDL context
-    } // End of g_use_3d drawing section
 
     // Swap SDL buffers
     SDL_GL_SwapWindow(g_window);
