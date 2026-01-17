@@ -1081,6 +1081,7 @@ static GameStateType g_state = STATE_TITLE;
 static char g_world_name[WORLD_NAME_MAX] = {0};
 static char g_seed_text[64] = {0};
 static int g_typing_name = 0;
+static int g_last_mouse_state = 0;
 static int g_typing_seed = 0;
 static int g_tribes_ready = 0;
 static float g_base_flat_height[TRIBE_COUNT] = {0};
@@ -8687,7 +8688,21 @@ static int ui_button_gl(Rectangle r, const char *text, int font_size) {
   SDL_GetMouseState(&mx, &my);
   Vector2 m = {mx, my};
   int hot = CheckCollisionPointRec(m, r);
-  int clicked = hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT);
+  int current_mouse_state = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT;
+  int clicked = hot && current_mouse_state && !g_last_mouse_state;
+  g_last_mouse_state = current_mouse_state;
+  
+  // Debug: print mouse position and button state
+  if (current_mouse_state && !g_last_mouse_state) {
+    printf("Mouse click at (%.0f, %.0f), button rect: (%.0f,%.0f,%.0fx%.0f), hot: %d\n", 
+           mx, my, r.x, r.y, r.width, r.height, hot);
+  }
+  
+  // Debug: print mouse position for first button
+  if (strcmp(text, "Play (Load/Select)") == 0) {
+    printf("Mouse pos: (%.0f, %.0f), button: (%.0f,%.0f,%.0fx%.0f), hot: %d\n", 
+           mx, my, r.x, r.y, r.width, r.height, hot);
+  }
 
   Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
   ui_draw_rect(r.x, r.y, r.width, r.height, bg);
@@ -8977,8 +8992,10 @@ static void draw_hurt_vignette_3d(void) {
 }
 
 static void draw_title_screen_3d(void) {
+  printf("Drawing title screen, state=%d\n", g_state);
   int w, h;
   SDL_GetWindowSize(g_window, &w, &h);
+  printf("Window size: %dx%d\n", w, h);
   if (w <= 0 || h <= 0)
     return;
 
@@ -11071,14 +11088,7 @@ int main(int argc, char *argv[]) {
     SCREEN_WIDTH = (int)g_window_width;
     SCREEN_HEIGHT = (int)g_window_height;
 
-    // Test mouse button detection with proper SDL constants
-    if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT) {
-      printf("LEFT MOUSE BUTTON PRESSED\n");
-    }
-    if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_RIGHT) {
-      printf("RIGHT MOUSE BUTTON PRESSED\n");
-    }
-
+    
     // Window close is handled by SDL event loop above
 
     double frame_start_ms = prof_now_ms();
@@ -11242,15 +11252,11 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // Debug: Press G to jump directly to game world
-    if (g_keyboard_state && g_keyboard_state[SDL_SCANCODE_G]) {
-      g_state = STATE_PLAYING;
-      // Initialize a basic world
-      world_reset(12345);
-    }
-
+    
     // SDL render loop
     // Clear screen
+    printf("Main loop state=%d\n", g_state);
+    fflush(stdout);
     glClearColor(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

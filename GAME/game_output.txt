@@ -1,0 +1,1531 @@
+SDL window created successfully: 1440 x 900
+TTF initialized successfully
+Game state initialized to: 0
+Main loop state=0
+UNSUPPORTED (log once): POSSIBLE ISSUE: unit 0 GLD_TEXTURE_INDEX_2D is unloadable and bound to sampler type (Float) - using zero texture because texture unloadable
+Drawing title screen, state=0
+Using font: ../utils/Raylib/examples/textures/resources/KAISG.ttf
+Using font: ../utils/Raylib/examples/textures/resources/KAISG.ttf
+Using font: ../utils/Raylib/examples/textures/resources/KAISG.ttf
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (805, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (805, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (805, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 828), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (806, 820), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (804, 795), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (797, 745), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (777, 637), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (770, 599), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (762, 553), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (752, 497), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (748, 481), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (744, 469), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (742, 464), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (741, 461), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (740, 460), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (739, 459), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (737, 454), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (733, 446), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (731, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (728, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (727, 435), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 435), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 435), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 436), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 437), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 438), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 439), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 439), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 440), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 441), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 455), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 492), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 520), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 531), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 546), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 552), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 553), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 553), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 552), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 548), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 546), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 543), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 541), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 536), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 533), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 531), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 531), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 530), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 532), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 536), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 544), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 553), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 558), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 560), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 562), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (726, 566), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (725, 574), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 581), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 586), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 590), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 585), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 558), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 476), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 383), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 346), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 301), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 287), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 284), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (724, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (723, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (723, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (723, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (723, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (723, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (722, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (722, 283), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (721, 278), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (716, 265), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (712, 252), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (708, 242), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (706, 234), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 228), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 227), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (704, 225), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (686, 201), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (646, 167), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (553, 115), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (281, 43), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (61, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (3, 34), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (17, 25), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (22, 22), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (24, 21), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (24, 21), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (24, 21), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (24, 21), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (24, 19), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (20, 15), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (13, 9), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
+Main loop state=0
+Drawing title screen, state=0
+Mouse pos: (0, 0), button: (0,0,0x0), hot: 0
