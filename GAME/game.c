@@ -28,7 +28,7 @@
 #include "../utils/NN/TRANSFORMER/TRANSFORMER.h"
 // #include "../utils/Raylib/src/raylib.h"
 // #include "../utils/Raylib/src/raymath.h"
-// #include "../utils/SDL3/SDL3_compat.h"
+#include "../utils/SDL3/SDL3_compat.h"
 #include <OpenGL/gl.h> // For legacy OpenGL functions
 #include <OpenGL/gl3.h>
 #include <SDL3/SDL.h>
@@ -81,6 +81,11 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
 SDL_Window *g_window = NULL;
 static unsigned int g_window_width = 0, g_window_height = 0;
 static bool g_screen_dimensions_cached = false;
+
+// Custom button rectangle struct to avoid Rectangle issues
+typedef struct {
+  float x, y, width, height;
+} ButtonRect;
 
 // Cache screen dimensions for performance
 static void cache_screen_dimensions(void) {
@@ -1081,7 +1086,8 @@ static GameStateType g_state = STATE_TITLE;
 static char g_world_name[WORLD_NAME_MAX] = {0};
 static char g_seed_text[64] = {0};
 static int g_typing_name = 0;
-static int g_last_mouse_state = 0;
+static int g_last_mouse_state = -1;
+static int g_mouse_button_pressed = 0;
 static int g_typing_seed = 0;
 static int g_tribes_ready = 0;
 static float g_base_flat_height[TRIBE_COUNT] = {0};
@@ -7115,13 +7121,14 @@ static void draw_pause_overlay(void) {
 }
 
 // tiny button helper
-static int ui_button(Rectangle r, const char *text) {
+static int ui_button(ButtonRect r, const char *text) {
   // Hardcoded mouse detection - check if mouse is over button and left button
   // is pressed
   float mx, my;
   SDL_GetMouseState(&mx, &my);
   Vector2 m = {mx, my};
-  int hot = CheckCollisionPointRec(m, r);
+  Rectangle rect = {r.x, r.y, r.width, r.height};
+  int hot = CheckCollisionPointRec(m, rect);
   int clicked = hot && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT);
 
   // Scale font size based on button height
@@ -7132,8 +7139,8 @@ static int ui_button(Rectangle r, const char *text) {
     font_size = 32; // Maximum font size
 
   Color bg = hot ? (Color){70, 70, 90, 255} : (Color){50, 50, 70, 255};
-  DrawRectangleRounded(r, 0.25f, 8, bg);
-  DrawRectangleRoundedLines(r, 0.25f, 8, (Color){0, 0, 0, 160});
+  DrawRectangleRounded(rect, 0.25f, 8, bg);
+  DrawRectangleRoundedLines(rect, 0.25f, 8, (Color){0, 0, 0, 160});
   int tw = MeasureText(text, font_size);
   DrawText(text, (int)(r.x + (r.width - tw) / 2),
            (int)(r.y + (r.height - font_size) / 2), font_size, RAYWHITE);
@@ -7188,9 +7195,9 @@ static void do_pause_menu(void) {
   float cx = SCREEN_WIDTH * 0.5f;
   float y = SCREEN_HEIGHT * 0.35f;
 
-  Rectangle rResume = {cx - 140, y + 0, 280, 54};
-  Rectangle rSave = {cx - 140, y + 70, 280, 54};
-  Rectangle rExit = {cx - 140, y + 140, 280, 54};
+  ButtonRect rResume = {cx - 140, y + 0, 280, 54};
+  ButtonRect rSave = {cx - 140, y + 70, 280, 54};
+  ButtonRect rExit = {cx - 140, y + 140, 280, 54};
 
   if (ui_button(rResume, "Resume (ESC)")) {
     g_state = STATE_PLAYING;
@@ -8683,26 +8690,42 @@ static void ui_draw_text_cached(float x, float y, UiTextCache *cache) {
   ui_draw_quad(x, y, (float)cache->w, (float)cache->h, cache->tex, WHITE);
 }
 
-static int ui_button_gl(Rectangle r, const char *text, int font_size) {
-  float mx, my;
+static int ui_button_gl(ButtonRect r, const char *text, int font_size) {
+  // Check if window has focus
+  // Uint32 flags = SDL_GetWindowFlags(g_window);
+  // printf("Window flags: 0x%x, INPUT_FOCUS: %d\n", flags, !!(flags &
+  // SDL_WINDOW_INPUT_FOCUS)); if (!(flags & SDL_WINDOW_INPUT_FOCUS)) {
+  //   return 0; // Window doesn't have focus, don't process clicks
+  // }
+
+  float mx = 0.0f, my = 0.0f;
   SDL_GetMouseState(&mx, &my);
   Vector2 m = {mx, my};
-  int hot = CheckCollisionPointRec(m, r);
-  int current_mouse_state = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LEFT;
-  int clicked = hot && current_mouse_state && !g_last_mouse_state;
-  g_last_mouse_state = current_mouse_state;
-  
-  // Debug: print mouse position and button state
-  if (current_mouse_state && !g_last_mouse_state) {
-    printf("Mouse click at (%.0f, %.0f), button rect: (%.0f,%.0f,%.0fx%.0f), hot: %d\n", 
-           mx, my, r.x, r.y, r.width, r.height, hot);
+  printf("  ButtonRect: x=%.0f, y=%.0f, w=%.0f, h=%.0f\n", r.x, r.y, r.width,
+         r.height);
+  Rectangle rect = {r.x, r.y, r.width, r.height};
+  printf("  Rectangle: x=%.0f, y=%.0f, w=%.0f, h=%.0f\n", rect.x, rect.y,
+         rect.width, rect.height);
+  int hot = CheckCollisionPointRec(m, rect);
+  // Debug collision check
+  int in_x = (mx >= rect.x && mx <= (rect.x + rect.width));
+  int in_y = (my >= rect.y && my <= (rect.y + rect.height));
+  printf("  Collision check: mx=%.0f in_x=%d (range %.0f-%.0f), my=%.0f "
+         "in_y=%d (range %.0f-%.0f)\n",
+         mx, in_x, rect.x, rect.x + rect.width, my, in_y, rect.y,
+         rect.y + rect.height);
+  int clicked = hot && g_mouse_button_pressed && !g_last_mouse_state;
+
+  printf("Frame %d - Button '%s': mouse(%.0f,%.0f) rect(%.0f,%.0f,%.0fx%.0f) "
+         "hot=%d, pressed=%d, last=%d, clicked=%d, state=%d\n",
+         g_frame_count, text, mx, my, r.x, r.y, r.width, r.height, hot,
+         g_mouse_button_pressed, g_last_mouse_state, clicked, g_state);
+
+  if (clicked) {
+    printf("BUTTON CLICKED: %s\n", text);
   }
-  
-  // Debug: print mouse position for first button
-  if (strcmp(text, "Play (Load/Select)") == 0) {
-    printf("Mouse pos: (%.0f, %.0f), button: (%.0f,%.0f,%.0fx%.0f), hot: %d\n", 
-           mx, my, r.x, r.y, r.width, r.height, hot);
-  }
+
+  g_last_mouse_state = g_mouse_button_pressed;
 
   Color bg = hot ? (Color){70, 70, 90, 220} : (Color){50, 50, 70, 200};
   ui_draw_rect(r.x, r.y, r.width, r.height, bg);
@@ -8993,8 +9016,9 @@ static void draw_hurt_vignette_3d(void) {
 
 static void draw_title_screen_3d(void) {
   printf("Drawing title screen, state=%d\n", g_state);
-  int w, h;
-  SDL_GetWindowSize(g_window, &w, &h);
+  cache_screen_dimensions();
+  int w = (int)g_window_width;
+  int h = (int)g_window_height;
   printf("Window size: %dx%d\n", w, h);
   if (w <= 0 || h <= 0)
     return;
@@ -9009,16 +9033,38 @@ static void draw_title_screen_3d(void) {
                     (Color){200, 200, 200, 180});
 
   // Buttons
-  Rectangle b1 = {w * 0.5f - 140, h * 0.5f, 280, 54};
-  Rectangle b2 = {w * 0.5f - 140, h * 0.5f + 70, 280, 54};
-  Rectangle b3 = {w * 0.5f - 140, h * 0.5f + 140, 280, 54};
+  ButtonRect b1;
+  b1.x = 580.0f;
+  b1.y = 418.0f;
+  b1.width = 280.0f;
+  b1.height = 54.0f;
+  ButtonRect b2;
+  b2.x = (float)w * 0.5f - 140;
+  b2.y = (float)h * 0.5f + 70;
+  b2.width = 280;
+  b2.height = 54;
+  ButtonRect b3;
+  b3.x = (float)w * 0.5f - 140;
+  b3.y = (float)h * 0.5f + 140;
+  b3.width = 280;
+  b3.height = 54;
 
-  if (ui_button_gl(b1, "Play (Load/Select)", 20))
+  int result1 = ui_button_gl(b1, "Play (Load/Select)", 20);
+  int result2 = ui_button_gl(b2, "Create World", 20);
+  int result3 = ui_button_gl(b3, "Quit", 20);
+
+  if (result1) {
+    printf("Play button clicked!\n");
     g_state = STATE_WORLD_SELECT;
-  if (ui_button_gl(b2, "Create World", 20))
+  }
+  if (result2) {
+    printf("Create button clicked!\n");
     g_state = STATE_WORLD_CREATE;
-  if (ui_button_gl(b3, "Quit", 20))
+  }
+  if (result3) {
+    printf("Quit button clicked!\n");
     g_should_quit = 1;
+  }
 
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
@@ -9497,7 +9543,7 @@ static void draw_world_create_3d(void) {
   ui_draw_rect(0, 0, (float)w, (float)h, (Color){18, 18, 28, 255});
   ui_draw_text_size(60, 50, "Create World", 34, RAYWHITE);
 
-  if (ui_button_gl((Rectangle){60, 300, 200, 50}, "Create & Play", 20)) {
+  if (ui_button_gl((ButtonRect){60, 300, 200, 50}, "Create & Play", 20)) {
     g_world_seed = (uint32_t)strtoul(g_seed_text, NULL, 10);
     world_reset(g_world_seed);
     save_world_to_disk(g_world_name); // create initial save
@@ -9505,7 +9551,7 @@ static void draw_world_create_3d(void) {
     ensure_agents_ready_on_enter();
   }
 
-  if (ui_button_gl((Rectangle){280, 300, 140, 50}, "Back", 20)) {
+  if (ui_button_gl((ButtonRect){280, 300, 140, 50}, "Back", 20)) {
     g_state = STATE_TITLE;
   }
   glEnable(GL_CULL_FACE);
@@ -9616,12 +9662,14 @@ static void draw_world_select_3d(void) {
     float button_height = 54 * ui_scale_y;
     float button_x = 600 * ui_scale_x;
 
-    Rectangle rPlay = {button_x, 140 * ui_scale_y, button_width, button_height};
-    Rectangle rDelete = {button_x, 210 * ui_scale_y, button_width,
-                         button_height};
-    Rectangle rCreate = {button_x, 280 * ui_scale_y, button_width,
-                         button_height};
-    Rectangle rBack = {button_x, 350 * ui_scale_y, button_width, button_height};
+    ButtonRect rPlay = {button_x, 140 * ui_scale_y, button_width,
+                        button_height};
+    ButtonRect rDelete = {button_x, 210 * ui_scale_y, button_width,
+                          button_height};
+    ButtonRect rCreate = {button_x, 280 * ui_scale_y, button_width,
+                          button_height};
+    ButtonRect rBack = {button_x, 350 * ui_scale_y, button_width,
+                        button_height};
 
     int hasSelection = (g_world_list.selected >= 0 &&
                         g_world_list.selected < g_world_list.count);
@@ -9760,29 +9808,29 @@ static void draw_graphics_menu_3d(void) {
   int changed = 0;
 
   ui_draw_text((int)bx, (int)(y - 26.0f), "Quality Presets", RAYWHITE);
-  if (ui_button_gl((Rectangle){bx, y, bw, bh}, "Low", 20)) {
+  if (ui_button_gl((ButtonRect){bx, y, bw, bh}, "Low", 20)) {
     apply_graphics_quality(GFX_LOW);
     changed = 1;
   }
-  if (ui_button_gl((Rectangle){bx + bw + 16, y, bw, bh}, "Medium", 20)) {
+  if (ui_button_gl((ButtonRect){bx + bw + 16, y, bw, bh}, "Medium", 20)) {
     apply_graphics_quality(GFX_MED);
     changed = 1;
   }
-  if (ui_button_gl((Rectangle){bx + (bw + 16) * 2, y, bw, bh}, "High", 20)) {
+  if (ui_button_gl((ButtonRect){bx + (bw + 16) * 2, y, bw, bh}, "High", 20)) {
     apply_graphics_quality(GFX_HIGH);
     changed = 1;
   }
 
   y += 80.0f;
   ui_draw_text((int)bx, (int)(y - 26.0f), "Toggles", RAYWHITE);
-  if (ui_button_gl((Rectangle){bx, y, bw + 40, bh},
+  if (ui_button_gl((ButtonRect){bx, y, bw + 40, bh},
                    g_enable_grass ? "Grass: ON" : "Grass: OFF", 20)) {
     g_enable_grass = !g_enable_grass;
     g_gfx_quality = GFX_CUSTOM;
     apply_graphics_custom_runtime();
     changed = 1;
   }
-  if (ui_button_gl((Rectangle){bx + bw + 60, y, bw + 60, bh},
+  if (ui_button_gl((ButtonRect){bx + bw + 60, y, bw + 60, bh},
                    g_enable_ground_tex ? "Ground Tex: ON" : "Ground Tex: OFF",
                    20)) {
     g_enable_ground_tex = !g_enable_ground_tex;
@@ -9792,21 +9840,21 @@ static void draw_graphics_menu_3d(void) {
 
   y += 80.0f;
   ui_draw_text((int)bx, (int)(y - 26.0f), "Texture Scale", RAYWHITE);
-  if (ui_button_gl((Rectangle){bx, y, 44, bh}, "-", 24)) {
+  if (ui_button_gl((ButtonRect){bx, y, 44, bh}, "-", 24)) {
     g_ground_tex_scale = fmaxf(0.02f, g_ground_tex_scale - 0.01f);
     g_gfx_quality = GFX_CUSTOM;
     changed = 1;
   }
   ui_draw_text_size(bx + 64, y + 10, TextFormat("%.3f", g_ground_tex_scale), 20,
                     RAYWHITE);
-  if (ui_button_gl((Rectangle){bx + 160, y, 44, bh}, "+", 24)) {
+  if (ui_button_gl((ButtonRect){bx + 160, y, 44, bh}, "+", 24)) {
     g_ground_tex_scale = fminf(0.20f, g_ground_tex_scale + 0.01f);
     g_gfx_quality = GFX_CUSTOM;
     changed = 1;
   }
 
   y += 90.0f;
-  if (ui_button_gl((Rectangle){bx, y, 180, 46}, "Back", 20)) {
+  if (ui_button_gl((ButtonRect){bx, y, 180, 46}, "Back", 20)) {
     g_pause_page = 0;
     changed = 1;
   }
@@ -10973,7 +11021,7 @@ int main(int argc, char *argv[]) {
   printf("Game state initialized to: %d\n", g_state);
 
   // Initialize mouse state for UI
-  SDL_SetWindowRelativeMouseMode(g_window, true);
+  SDL_SetWindowRelativeMouseMode(g_window, false);
   SDL_ShowCursor();
   g_mouse_locked = 0;
 
@@ -11029,6 +11077,7 @@ int main(int argc, char *argv[]) {
     projectiles[i].alive = false;
 
   while (!g_should_quit) {
+    g_frame_count++;
     // Handle SDL events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -11047,6 +11096,12 @@ int main(int argc, char *argv[]) {
         // it
         break;
       case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        if (event.button.button == SDL_BUTTON_LEFT) {
+          float mx, my;
+          SDL_GetMouseState(&mx, &my);
+          g_mouse_button_pressed = 1;
+          printf("MOUSE BUTTON DOWN EVENT RECEIVED at (%.0f, %.0f)\n", mx, my);
+        }
         // Don't automatically lock mouse on button down - let the game logic
         // handle it
         break;
@@ -11088,7 +11143,6 @@ int main(int argc, char *argv[]) {
     SCREEN_WIDTH = (int)g_window_width;
     SCREEN_HEIGHT = (int)g_window_height;
 
-    
     // Window close is handled by SDL event loop above
 
     double frame_start_ms = prof_now_ms();
@@ -11207,6 +11261,8 @@ int main(int argc, char *argv[]) {
         SDL_SetWindowMouseGrab(g_window, false);
         SDL_SetWindowRelativeMouseMode(g_window, false);
         g_mouse_locked = 0;
+        // Force mouse state update
+        SDL_PumpEvents();
       }
     }
 
@@ -11252,7 +11308,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    
     // SDL render loop
     // Clear screen
     printf("Main loop state=%d\n", g_state);
@@ -11317,6 +11372,11 @@ int main(int argc, char *argv[]) {
 
     // Swap SDL buffers
     SDL_GL_SwapWindow(g_window);
+
+    // Reset mouse button state after all UI drawing is done
+    if (g_mouse_button_pressed) {
+      g_mouse_button_pressed = 0;
+    }
   }
 
   // Re-enable worker cleanup
