@@ -87,6 +87,31 @@ typedef struct {
   float x, y, width, height;
 } ButtonRect;
 
+// Lobby structure for multiplayer games
+typedef struct {
+  char name[LOBBY_NAME_MAX];
+  char host_key[HOST_KEY_MAX];
+  int player_count;
+  int max_players;
+  bool is_active;
+  uint32_t creation_time;
+} Lobby;
+
+// Tribe colors for different players
+typedef struct {
+  float r, g, b;
+} TribeColor;
+
+// Network message types
+typedef enum {
+  MSG_LOBBY_CREATE,
+  MSG_LOBBY_JOIN,
+  MSG_LOBBY_LIST,
+  MSG_GAME_START,
+  MSG_PLAYER_UPDATE,
+  MSG_CHAT
+} MessageType;
+
 // Cache screen dimensions for performance
 static void cache_screen_dimensions(void) {
   if (g_window && !g_screen_dimensions_cached) {
@@ -123,6 +148,17 @@ static uint32_t g_mouse_state = 0;
 static float g_mouse_x = 0.0f, g_mouse_y = 0.0f;
 static bool g_prev_keyboard_state[SDL_SCANCODE_COUNT] = {0};
 static uint32_t g_prev_mouse_state = 0;
+
+// Generate a random host key
+static void generate_host_key(char *buffer, size_t size) {
+  const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const size_t charset_size = sizeof(charset) - 1;
+  
+  for (size_t i = 0; i < size - 1; i++) {
+    buffer[i] = charset[rand() % charset_size];
+  }
+  buffer[size - 1] = '\0';
+}
 
 // Update SDL input state
 static void update_sdl_input_state(void) {
@@ -246,6 +282,133 @@ float Vector2DotProduct(Vector2 v1, Vector2 v2);
 void SetMouseVisible(int visible);
 Vector2 GetMouseDelta_Custom(void);
 void SetRelativeMouseMode(int enabled);
+
+// Multiplayer function declarations
+static void generate_host_key(char *buffer, size_t size);
+static void create_lobby(const char *name);
+static void join_lobby(const char *host_key);
+static void draw_multiplayer_lobby_3d(void);
+static void spread_tribe_bases(void);
+
+// Draw multiplayer lobby screen
+static void draw_multiplayer_lobby_3d(void) {
+  unsigned int w = get_cached_screen_width();
+  unsigned int h = get_cached_screen_height();
+  
+  // Draw background
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(0.0, w, h, 0.0, -1.0, 1.0);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  
+  // Dark background
+  ui_draw_quad(0, 0, w, h, 0, (Color){20, 20, 30, 255});
+  
+  // Title
+  ui_draw_text_cached(w * 0.5f, 100, "Multiplayer Lobby", 32);
+  
+  // Show host key if host
+  if (g_is_host && g_current_lobby_index >= 0) {
+    char host_info[128];
+    snprintf(host_info, sizeof(host_info), "Host Key: %s", g_current_host_key);
+    ui_draw_text_cached(w * 0.5f, 150, host_info, 20);
+  }
+  
+  // Lobby list
+  float y = 200;
+  for (int i = 0; i < g_lobby_count; i++) {
+    if (g_lobbies[i].is_active) {
+      char lobby_info[128];
+      snprintf(lobby_info, sizeof(lobby_info), 
+               "%s - %d/%d players", 
+               g_lobbies[i].name, 
+               g_lobbies[i].player_count, 
+               g_lobbies[i].max_players);
+      
+      ui_draw_text_cached(100, y, lobby_info, 18);
+      y += 30;
+    }
+  }
+  
+  // Input fields
+  ui_draw_text_cached(100, 400, "Lobby Name:", 18);
+  ui_draw_quad(250, 390, 300, 30, 0, (Color){50, 50, 70, 200});
+  ui_draw_text_cached(260, 400, g_lobby_name_input, 18);
+  
+  ui_draw_text_cached(100, 440, "Host Key (to join):", 18);
+  ui_draw_quad(300, 430, 250, 30, 0, (Color){50, 50, 70, 200});
+  ui_draw_text_cached(310, 440, g_host_key_input, 18);
+  
+  // Buttons
+  if (ui_button_gl((ButtonRect){100, 500, 120, 40}, "Create Lobby", 18)) {
+    create_lobby(g_lobby_name_input);
+  }
+  
+  if (ui_button_gl((ButtonRect){240, 500, 120, 40}, "Join Lobby", 18)) {
+    join_lobby(g_host_key_input);
+  }
+  
+  if (ui_button_gl((ButtonRect){380, 500, 120, 40}, "Back", 18)) {
+    g_state = STATE_TITLE;
+  }
+}
+
+// Create a new lobby
+static void create_lobby(const char *name) {
+  if (g_lobby_count >= MAX_LOBBIES) {
+    return; // Max lobbies reached
+  }
+  
+  Lobby *lobby = &g_lobbies[g_lobby_count];
+  strncpy(lobby->name, name, LOBBY_NAME_MAX - 1);
+  lobby->name[LOBBY_NAME_MAX - 1] = '\0';
+  generate_host_key(lobby->host_key, HOST_KEY_MAX);
+  lobby->player_count = 1; // Host counts as first player
+  lobby->max_players = 8;
+  lobby->is_active = true;
+  lobby->creation_time = SDL_GetTicks();
+  
+  strcpy(g_current_host_key, lobby->host_key);
+  g_is_host = true;
+  g_current_lobby_index = g_lobby_count;
+  g_lobby_count++;
+  
+  g_state = STATE_MULTIPLAYER_LOBBY;
+}
+
+// Join an existing lobby
+static void join_lobby(const char *host_key) {
+  // Find lobby by host key
+  for (int i = 0; i < g_lobby_count; i++) {
+    if (strcmp(g_lobbies[i].host_key, host_key) == 0) {
+      if (g_lobbies[i].player_count < g_lobbies[i].max_players) {
+        g_lobbies[i].player_count++;
+        strcpy(g_current_host_key, host_key);
+        g_is_host = false;
+        g_current_lobby_index = i;
+        g_state = STATE_MULTIPLAYER_LOBBY;
+      }
+      return;
+    }
+  }
+}
+
+// Spread tribe bases apart from each other
+static void spread_tribe_bases(void) {
+  // This will be called during world initialization to ensure
+  // tribe bases are spread across the map
+  // Implementation will depend on world generation system
+  printf("Spreading tribe bases with different colors\n");
+  
+  // Assign different colors to tribes
+  for (int i = 0; i < TRIBE_COUNT; i++) {
+    // Set tribe color based on predefined colors
+    // This will be used when rendering tribe bases
+    printf("Tribe %d color: (%.1f, %.1f, %.1f)\n", 
+           i, g_tribe_colors[i].r, g_tribe_colors[i].g, g_tribe_colors[i].b);
+  }
+}
 
 // Use direct function calls instead of macros to avoid issues
 #define IsKeyPressed_SDL_SPACE IsKeyPressed_SDL(SDL_SCANCODE_SPACE)
@@ -589,6 +752,7 @@ typedef enum {
   STATE_TITLE = 0,
   STATE_WORLD_SELECT,
   STATE_WORLD_CREATE,
+  STATE_MULTIPLAYER_LOBBY,
   STATE_PLAYING,
   STATE_PAUSED,
   STATE_COUNT
@@ -605,18 +769,20 @@ typedef enum {
 #define MAX_RESOURCES 512
 #define MAX_MOBS 64
 
-#define TRIBE_COUNT 2
+#define TRIBE_COUNT 4
 #define AGENT_PER_TRIBE 8
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
 #define BASE_RADIUS 24
 
+#define MAX_LOBBIES 10
+#define LOBBY_NAME_MAX 64
+#define HOST_KEY_MAX 32
+
 // ------------------- Compile helpers / forward decls -------------------
 #ifndef SAVE_ROOT
 #define SAVE_ROOT "saves"
 #endif
-
-#define WORLD_NAME_MAX 64
 
 #define HARVEST_DISTANCE 5.0f
 #define HARVEST_AMOUNT 1
@@ -1090,6 +1256,21 @@ static int g_last_mouse_state = -1;
 static int g_mouse_button_pressed = 0;
 static int g_typing_seed = 0;
 static int g_tribes_ready = 0;
+
+// Multiplayer globals
+static Lobby g_lobbies[MAX_LOBBIES];
+static int g_lobby_count = 0;
+static char g_current_host_key[HOST_KEY_MAX] = {0};
+static char g_lobby_name_input[LOBBY_NAME_MAX] = {0};
+static char g_host_key_input[HOST_KEY_MAX] = {0};
+static bool g_is_host = false;
+static int g_current_lobby_index = -1;
+static TribeColor g_tribe_colors[TRIBE_COUNT] = {
+  {1.0f, 0.0f, 0.0f},  // Red
+  {0.0f, 0.0f, 1.0f},  // Blue
+  {0.0f, 1.0f, 0.0f},  // Green
+  {1.0f, 1.0f, 0.0f}   // Yellow
+};
 static float g_base_flat_height[TRIBE_COUNT] = {0};
 static const float g_base_open_half_angle = 0.61f; // ~35 deg
 static MuzeConfig g_muze_cfg;
@@ -11367,6 +11548,10 @@ int main(int argc, char *argv[]) {
 
     case STATE_TITLE:
       draw_title_screen_3d();
+      break;
+      
+    case STATE_MULTIPLAYER_LOBBY:
+      draw_multiplayer_lobby_3d();
       break;
     }
 
