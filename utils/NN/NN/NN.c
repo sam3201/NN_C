@@ -11,7 +11,7 @@ static double uniform_random(double min_val, double max_val) {
 static double normal_random(double mean, double stddev) {
   static double spare = 0.0;
   static bool has_spare = false;
-  
+
   if (has_spare) {
     has_spare = false;
     return mean + stddev * spare;
@@ -35,7 +35,7 @@ static void orthogonal_init(long double *matrix, size_t rows, size_t cols) {
   for (size_t i = 0; i < rows * cols; i++) {
     matrix[i] = normal_random(0.0, 1.0);
   }
-  
+
   // Gram-Schmidt orthogonalization
   for (size_t col = 0; col < cols; col++) {
     // Normalize column
@@ -44,32 +44,32 @@ static void orthogonal_init(long double *matrix, size_t rows, size_t cols) {
       norm += matrix[row * cols + col] * matrix[row * cols + col];
     }
     norm = sqrtl(norm);
-    
+
     if (norm > 1e-10L) {
       for (size_t row = 0; row < rows; row++) {
         matrix[row * cols + col] /= norm;
       }
     }
-    
+
     // Orthogonalize against previous columns
     for (size_t prev_col = 0; prev_col < col; prev_col++) {
       long double dot = 0.0L;
       for (size_t row = 0; row < rows; row++) {
         dot += matrix[row * cols + col] * matrix[row * cols + prev_col];
       }
-      
+
       for (size_t row = 0; row < rows; row++) {
         matrix[row * cols + col] -= dot * matrix[row * cols + prev_col];
       }
     }
-    
+
     // Renormalize
     norm = 0.0L;
     for (size_t row = 0; row < rows; row++) {
       norm += matrix[row * cols + col] * matrix[row * cols + col];
     }
     norm = sqrtl(norm);
-    
+
     if (norm > 1e-10L) {
       for (size_t row = 0; row < rows; row++) {
         matrix[row * cols + col] /= norm;
@@ -91,9 +91,9 @@ static const LossDerivative LOSS_DERIVATIVES[] = {
     mse_derivative, mae_derivative, huber_derivative, ll_derivative,
     ce_derivative};
 
-static const OptimizerFunction OPTIMIZER_FUNCTIONS[] = {sgd, rmsprop, adagrad,
-                                                        adam, nag, adadelta,
-                                                        rmsprop_nesterov, adamax, nadam};
+static const OptimizerFunction OPTIMIZER_FUNCTIONS[] = {
+    sgd,      rmsprop,          adagrad, adam, nag,
+    adadelta, rmsprop_nesterov, adamax,  nadam};
 
 static const RegularizationFunction REGULARIZATION_FUNCTIONS[] = {l1, l2};
 
@@ -255,9 +255,12 @@ NN_t *NN_init(size_t *layers, ActivationFunctionType *actFuncs,
 }
 
 NN_t *NN_init_with_weight_init(size_t *layers, ActivationFunctionType *actFuncs,
-                                ActivationDerivativeType *actDerivs, LossFunctionType lossFunc,
-                                LossDerivativeType lossDeriv, RegularizationType reg,
-                                OptimizerType opt, long double learningRate, WeightInitType weightInit) {
+                               ActivationDerivativeType *actDerivs,
+                               LossFunctionType lossFunc,
+                               LossDerivativeType lossDeriv,
+                               RegularizationType reg, OptimizerType opt,
+                               long double learningRate,
+                               WeightInitType weightInit) {
   if (!layers || !actFuncs || !actDerivs) {
     fprintf(stderr, "NN_init_with_weight_init: NULL input parameters\n");
     return NULL;
@@ -283,20 +286,30 @@ NN_t *NN_init_with_weight_init(size_t *layers, ActivationFunctionType *actFuncs,
   }
 
   // Allocate memory for weights and biases
-  nn->weights = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->biases = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->weights_grad = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->biases_grad = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->weights =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->biases =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->weights_grad =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->biases_grad =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
 
   // Allocate optimizer memory
-  nn->opt_m_w = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_w = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_m_b = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
-  nn->opt_v_b = (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_m_w =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_v_w =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_m_b =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
+  nn->opt_v_b =
+      (long double **)malloc((nn->numLayers - 1) * sizeof(long double *));
 
   // Allocate activation functions
-  nn->activationFunctions = (ActivationFunction *)malloc(nn->numLayers * sizeof(ActivationFunction));
-  nn->activationDerivatives = (ActivationDerivative *)malloc(nn->numLayers * sizeof(ActivationDerivative));
+  nn->activationFunctions =
+      (ActivationFunction *)malloc(nn->numLayers * sizeof(ActivationFunction));
+  nn->activationDerivatives = (ActivationDerivative *)malloc(
+      nn->numLayers * sizeof(ActivationDerivative));
 
   if (!nn->weights || !nn->biases || !nn->weights_grad || !nn->biases_grad ||
       !nn->opt_m_w || !nn->opt_v_w || !nn->opt_m_b || !nn->opt_v_b ||
@@ -313,7 +326,8 @@ NN_t *NN_init_with_weight_init(size_t *layers, ActivationFunctionType *actFuncs,
 
     nn->weights[i] = (long double *)malloc(current_size * sizeof(long double));
     nn->biases[i] = (long double *)malloc(bcount * sizeof(long double));
-    nn->weights_grad[i] = (long double *)malloc(current_size * sizeof(long double));
+    nn->weights_grad[i] =
+        (long double *)malloc(current_size * sizeof(long double));
     nn->biases_grad[i] = (long double *)malloc(bcount * sizeof(long double));
 
     nn->opt_m_w[i] = (long double *)malloc(current_size * sizeof(long double));
@@ -321,9 +335,12 @@ NN_t *NN_init_with_weight_init(size_t *layers, ActivationFunctionType *actFuncs,
     nn->opt_m_b[i] = (long double *)malloc(bcount * sizeof(long double));
     nn->opt_v_b[i] = (long double *)malloc(bcount * sizeof(long double));
 
-    if (!nn->weights[i] || !nn->biases[i] || !nn->weights_grad[i] || !nn->biases_grad[i] ||
-        !nn->opt_m_w[i] || !nn->opt_v_w[i] || !nn->opt_m_b[i] || !nn->opt_v_b[i]) {
-      fprintf(stderr, "Failed to allocate memory for weights or biases at layer %zu\n", i);
+    if (!nn->weights[i] || !nn->biases[i] || !nn->weights_grad[i] ||
+        !nn->biases_grad[i] || !nn->opt_m_w[i] || !nn->opt_v_w[i] ||
+        !nn->opt_m_b[i] || !nn->opt_v_b[i]) {
+      fprintf(stderr,
+              "Failed to allocate memory for weights or biases at layer %zu\n",
+              i);
       NN_destroy(nn);
       return NULL;
     }
@@ -357,90 +374,90 @@ NN_t *NN_init_with_weight_init(size_t *layers, ActivationFunctionType *actFuncs,
     size_t fan_out = nn->layers[i + 1];
 
     switch (weightInit) {
-      case ZERO:
-        // Zero/Constant initialization (bad due to symmetry)
-        scale = 0.0L;
-        break;
-      case RANDOM_UNIFORM:
-        // Basic uniform distribution [-1, 1]
-        scale = 1.0L;
-        break;
-      case RANDOM_NORMAL:
-        // Basic normal distribution (risks gradient issues)
-        scale = 1.0L;
-        break;
-      case XAVIER:
-        // Xavier/Glorot initialization (for sigmoid/tanh)
-        // Variance = 2.0 / (fan_in + fan_out)
-        scale = sqrtl(2.0L / (fan_in + fan_out));
-        break;
-      case HE:
-        // He initialization (for ReLU)
-        // Variance = 2.0 / fan_in
-        scale = sqrtl(2.0L / fan_in);
-        break;
-      case LECUN:
-        // LeCun initialization (for deeper models)
-        // Variance = 1.0 / fan_in
-        scale = sqrtl(1.0L / fan_in);
-        break;
-      case ORTHOGONAL:
-        // Orthogonal initialization (for complex models)
-        scale = 1.0L;
-        break;
-      default:
-        // Default to Xavier
-        scale = sqrtl(2.0L / (fan_in + fan_out));
-        break;
+    case ZERO:
+      // Zero/Constant initialization (bad due to symmetry)
+      scale = 0.0L;
+      break;
+    case RANDOM_UNIFORM:
+      // Basic uniform distribution [-1, 1]
+      scale = 1.0L;
+      break;
+    case RANDOM_NORMAL:
+      // Basic normal distribution (risks gradient issues)
+      scale = 1.0L;
+      break;
+    case XAVIER:
+      // Xavier/Glorot initialization (for sigmoid/tanh)
+      // Variance = 2.0 / (fan_in + fan_out)
+      scale = sqrtl(2.0L / (fan_in + fan_out));
+      break;
+    case HE:
+      // He initialization (for ReLU)
+      // Variance = 2.0 / fan_in
+      scale = sqrtl(2.0L / fan_in);
+      break;
+    case LECUN:
+      // LeCun initialization (for deeper models)
+      // Variance = 1.0 / fan_in
+      scale = sqrtl(1.0L / fan_in);
+      break;
+    case ORTHOGONAL:
+      // Orthogonal initialization (for complex models)
+      scale = 1.0L;
+      break;
+    default:
+      // Default to Xavier
+      scale = sqrtl(2.0L / (fan_in + fan_out));
+      break;
     }
 
     // Initialize weights
     for (size_t j = 0; j < current_size; j++) {
       switch (weightInit) {
-        case ZERO:
-          nn->weights[i][j] = 0.0L;
-          break;
-        case RANDOM_UNIFORM:
-          nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
-          break;
-        case RANDOM_NORMAL:
-          nn->weights[i][j] = normal_random(0.0L, scale);
-          break;
-        case XAVIER:
-        case HE:
-        case LECUN:
-          nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
-          break;
-        case ORTHOGONAL:
-          // For orthogonal, we need to handle the entire weight matrix at once
-          if (j == 0) {
-            orthogonal_init(nn->weights[i], fan_in, fan_out);
-            j = current_size - 1; // Skip rest since we handled all at once
-          }
-          break;
-        default:
-          nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
-          break;
+      case ZERO:
+        nn->weights[i][j] = 0.0L;
+        break;
+      case RANDOM_UNIFORM:
+        nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
+        break;
+      case RANDOM_NORMAL:
+        nn->weights[i][j] = normal_random(0.0L, scale);
+        break;
+      case XAVIER:
+      case HE:
+      case LECUN:
+        nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
+        break;
+      case ORTHOGONAL:
+        // For orthogonal, we need to handle the entire weight matrix at once
+        if (j == 0) {
+          orthogonal_init(nn->weights[i], fan_in, fan_out);
+          j = current_size - 1; // Skip rest since we handled all at once
+        }
+        break;
+      default:
+        nn->weights[i][j] = uniform_random(-1.0L, 1.0L) * scale;
+        break;
       }
     }
 
     // Initialize biases (typically small random values or zeros)
     for (size_t j = 0; j < bcount; j++) {
       switch (weightInit) {
-        case ZERO:
-          nn->biases[i][j] = 0.0L;
-          break;
-        case RANDOM_UNIFORM:
-        case RANDOM_NORMAL:
-        case XAVIER:
-        case HE:
-        case LECUN:
-        case ORTHOGONAL:
-          nn->biases[i][j] = uniform_random(-0.1L, 0.1L);
-          break;
-        default:
-          nn->biases[i][j] = 0.0L;
-          break;
+      case ZERO:
+        nn->biases[i][j] = 0.0L;
+        break;
+      case RANDOM_UNIFORM:
+      case RANDOM_NORMAL:
+      case XAVIER:
+      case HE:
+      case LECUN:
+      case ORTHOGONAL:
+        nn->biases[i][j] = uniform_random(-0.1L, 0.1L);
+        break;
+      default:
+        nn->biases[i][j] = 0.0L;
+        break;
       }
     }
 
@@ -825,8 +842,10 @@ void adadelta(NN_t *nn) {
     for (size_t i = 0; i < wcount; i++) {
       long double accu_grad = nn->weights_grad[l][i] * nn->weights_grad[l][i];
       nn->opt_v_w[l][i] = rho * nn->opt_v_w[l][i] + (1 - rho) * accu_grad;
-      
-      long double update = sqrtl((nn->opt_m_w[l][i] + eps) / (nn->opt_v_w[l][i] + eps)) * nn->weights_grad[l][i];
+
+      long double update =
+          sqrtl((nn->opt_m_w[l][i] + eps) / (nn->opt_v_w[l][i] + eps)) *
+          nn->weights_grad[l][i];
       nn->weights[l][i] -= update;
       nn->opt_m_w[l][i] = rho * nn->opt_m_w[l][i] + (1 - rho) * update * update;
     }
@@ -834,8 +853,10 @@ void adadelta(NN_t *nn) {
     for (size_t j = 0; j < bcount; j++) {
       long double accu_grad = nn->biases_grad[l][j] * nn->biases_grad[l][j];
       nn->opt_v_b[l][j] = rho * nn->opt_v_b[l][j] + (1 - rho) * accu_grad;
-      
-      long double update = sqrtl((nn->opt_m_b[l][j] + eps) / (nn->opt_v_b[l][j] + eps)) * nn->biases_grad[l][j];
+
+      long double update =
+          sqrtl((nn->opt_m_b[l][j] + eps) / (nn->opt_v_b[l][j] + eps)) *
+          nn->biases_grad[l][j];
       nn->biases[l][j] -= update;
       nn->opt_m_b[l][j] = rho * nn->opt_m_b[l][j] + (1 - rho) * update * update;
     }
@@ -852,19 +873,31 @@ void rmsprop_nesterov(NN_t *nn) {
     size_t bcount = nn->layers[l + 1];
 
     for (size_t i = 0; i < wcount; i++) {
-      nn->opt_v_w[l][i] = decay * nn->opt_v_w[l][i] + (1 - decay) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
-      
-      long double nesterov_grad = nn->weights_grad[l][i] + momentum * nn->opt_m_w[l][i];
-      nn->weights[l][i] -= nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_w[l][i]) + eps);
-      nn->opt_m_w[l][i] = momentum * nn->opt_m_w[l][i] - nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_w[l][i]) + eps);
+      nn->opt_v_w[l][i] =
+          decay * nn->opt_v_w[l][i] +
+          (1 - decay) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
+
+      long double nesterov_grad =
+          nn->weights_grad[l][i] + momentum * nn->opt_m_w[l][i];
+      nn->weights[l][i] -=
+          nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_w[l][i]) + eps);
+      nn->opt_m_w[l][i] =
+          momentum * nn->opt_m_w[l][i] -
+          nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_w[l][i]) + eps);
     }
 
     for (size_t j = 0; j < bcount; j++) {
-      nn->opt_v_b[l][j] = decay * nn->opt_v_b[l][j] + (1 - decay) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
-      
-      long double nesterov_grad = nn->biases_grad[l][j] + momentum * nn->opt_m_b[l][j];
-      nn->biases[l][j] -= nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_b[l][j]) + eps);
-      nn->opt_m_b[l][j] = momentum * nn->opt_m_b[l][j] - nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_b[l][j]) + eps);
+      nn->opt_v_b[l][j] =
+          decay * nn->opt_v_b[l][j] +
+          (1 - decay) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
+
+      long double nesterov_grad =
+          nn->biases_grad[l][j] + momentum * nn->opt_m_b[l][j];
+      nn->biases[l][j] -=
+          nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_b[l][j]) + eps);
+      nn->opt_m_b[l][j] =
+          momentum * nn->opt_m_b[l][j] -
+          nn->learningRate * nesterov_grad / (sqrtl(nn->opt_v_b[l][j]) + eps);
     }
   }
 }
@@ -879,17 +912,21 @@ void adamax(NN_t *nn) {
     size_t bcount = nn->layers[l + 1];
 
     for (size_t i = 0; i < wcount; i++) {
-      nn->opt_m_w[l][i] = beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
-      nn->opt_v_w[l][i] = fmaxl(beta2 * nn->opt_v_w[l][i], fabsl(nn->weights_grad[l][i]));
-      
+      nn->opt_m_w[l][i] =
+          beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
+      nn->opt_v_w[l][i] =
+          fmaxl(beta2 * nn->opt_v_w[l][i], fabsl(nn->weights_grad[l][i]));
+
       long double m_hat = nn->opt_m_w[l][i] / (1 - powl(beta1, nn->t));
       nn->weights[l][i] -= nn->learningRate * m_hat / (nn->opt_v_w[l][i] + eps);
     }
 
     for (size_t j = 0; j < bcount; j++) {
-      nn->opt_m_b[l][j] = beta1 * nn->opt_m_b[l][j] + (1 - beta1) * nn->biases_grad[l][j];
-      nn->opt_v_b[l][j] = fmaxl(beta2 * nn->opt_v_b[l][j], fabsl(nn->biases_grad[l][j]));
-      
+      nn->opt_m_b[l][j] =
+          beta1 * nn->opt_m_b[l][j] + (1 - beta1) * nn->biases_grad[l][j];
+      nn->opt_v_b[l][j] =
+          fmaxl(beta2 * nn->opt_v_b[l][j], fabsl(nn->biases_grad[l][j]));
+
       long double m_hat = nn->opt_m_b[l][j] / (1 - powl(beta1, nn->t));
       nn->biases[l][j] -= nn->learningRate * m_hat / (nn->opt_v_b[l][j] + eps);
     }
@@ -906,50 +943,64 @@ void nadam(NN_t *nn) {
     size_t bcount = nn->layers[l + 1];
 
     for (size_t i = 0; i < wcount; i++) {
-      nn->opt_m_w[l][i] = beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
-      nn->opt_v_w[l][i] = beta2 * nn->opt_v_w[l][i] + (1 - beta2) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
-      
+      nn->opt_m_w[l][i] =
+          beta1 * nn->opt_m_w[l][i] + (1 - beta1) * nn->weights_grad[l][i];
+      nn->opt_v_w[l][i] =
+          beta2 * nn->opt_v_w[l][i] +
+          (1 - beta2) * nn->weights_grad[l][i] * nn->weights_grad[l][i];
+
       long double m_hat = nn->opt_m_w[l][i] / (1 - powl(beta1, nn->t));
       long double v_hat = nn->opt_v_w[l][i] / (1 - powl(beta2, nn->t));
-      
+
       // Nesterov momentum
-      long double momentum = beta1 * m_hat + (1 - beta1) * nn->weights_grad[l][i];
+      long double momentum =
+          beta1 * m_hat + (1 - beta1) * nn->weights_grad[l][i];
       nn->weights[l][i] -= nn->learningRate * momentum / (sqrtl(v_hat) + eps);
     }
 
     for (size_t j = 0; j < bcount; j++) {
-      nn->opt_m_b[l][j] = beta1 * nn->opt_m_b[l][j] + (1 - beta1) * nn->biases_grad[l][j];
-      nn->opt_v_b[l][j] = beta2 * nn->opt_v_b[l][j] + (1 - beta2) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
-      
+      nn->opt_m_b[l][j] =
+          beta1 * nn->opt_m_b[l][j] + (1 - beta1) * nn->biases_grad[l][j];
+      nn->opt_v_b[l][j] =
+          beta2 * nn->opt_v_b[l][j] +
+          (1 - beta2) * nn->biases_grad[l][j] * nn->biases_grad[l][j];
+
       long double m_hat = nn->opt_m_b[l][j] / (1 - powl(beta1, nn->t));
       long double v_hat = nn->opt_v_b[l][j] / (1 - powl(beta2, nn->t));
-      
-      long double momentum = beta1 * m_hat + (1 - beta1) * nn->biases_grad[l][j];
+
+      long double momentum =
+          beta1 * m_hat + (1 - beta1) * nn->biases_grad[l][j];
       nn->biases[l][j] -= nn->learningRate * momentum / (sqrtl(v_hat) + eps);
     }
   }
 }
 
 // Enhanced utility functions
-void NN_set_optimizer_params(NN_t *nn, float beta1, float beta2, float epsilon) {
-  if (!nn) return;
+void NN_set_optimizer_params(NN_t *nn, float beta1, float beta2,
+                             float epsilon) {
+  if (!nn)
+    return;
   nn->beta1 = beta1;
   nn->beta2 = beta2;
   nn->epsilon = epsilon;
 }
 
 void NN_set_weight_decay(NN_t *nn, float decay_rate) {
-  if (!nn) return;
+  if (!nn)
+    return;
   nn->weight_decay = decay_rate;
 }
 
 void NN_set_dropout(NN_t *nn, float dropout_rate) {
-  if (!nn) return;
+  if (!nn)
+    return;
   nn->dropout_rate = dropout_rate;
 }
 
-void NN_set_lr_scheduler(NN_t *nn, LRSchedulerType type, float initial_lr, float final_lr, int total_steps) {
-  if (!nn) return;
+void NN_set_lr_scheduler(NN_t *nn, LRSchedulerType type, float initial_lr,
+                         float final_lr, int total_steps) {
+  if (!nn)
+    return;
   nn->lr_scheduler = type;
   nn->initial_lr = initial_lr;
   nn->final_lr = final_lr;
@@ -959,57 +1010,64 @@ void NN_set_lr_scheduler(NN_t *nn, LRSchedulerType type, float initial_lr, float
 }
 
 void NN_step_lr(NN_t *nn) {
-  if (!nn || nn->current_step >= nn->total_steps) return;
-  
+  if (!nn || nn->current_step >= nn->total_steps)
+    return;
+
   nn->current_step++;
   float progress = (float)nn->current_step / nn->total_steps;
-  
+
   switch (nn->lr_scheduler) {
-    case CONSTANT:
-      // No change
-      break;
-    case STEP:
-      // Simple linear decay
-      nn->learningRate = nn->initial_lr + (nn->final_lr - nn->initial_lr) * progress;
-      break;
-    case EXPONENTIAL:
-      // Exponential decay
-      nn->learningRate = nn->initial_lr * powl(nn->final_lr / nn->initial_lr, progress);
-      break;
-    case COSINE:
-      // Cosine annealing
-      nn->learningRate = nn->final_lr + (nn->initial_lr - nn->final_lr) * 
-                         (0.5f * (1.0f + cosf(3.14159f * progress)));
-      break;
-    case ONE_CYCLE:
-      // One cycle policy
-      nn->learningRate = nn->final_lr + (nn->initial_lr - nn->final_lr) * 
-                         (0.5f * (1.0f + cosf(3.14159f * (progress - 1.0f / nn->total_steps))));
-      break;
-    case WARMUP:
-      // Linear warmup then decay
-      if (progress < 0.1f) {
-        nn->learningRate = nn->initial_lr * (progress / 0.1f);
-      } else {
-        nn->learningRate = nn->initial_lr * powl(0.1f / progress, 0.5f);
-      }
-      break;
+  case CONSTANT:
+    // No change
+    break;
+  case STEP:
+    // Simple linear decay
+    nn->learningRate =
+        nn->initial_lr + (nn->final_lr - nn->initial_lr) * progress;
+    break;
+  case EXPONENTIAL:
+    // Exponential decay
+    nn->learningRate =
+        nn->initial_lr * powl(nn->final_lr / nn->initial_lr, progress);
+    break;
+  case COSINE:
+    // Cosine annealing
+    nn->learningRate =
+        nn->final_lr + (nn->initial_lr - nn->final_lr) *
+                           (0.5f * (1.0f + cosf(3.14159f * progress)));
+    break;
+  case ONE_CYCLE:
+    // One cycle policy
+    nn->learningRate =
+        nn->final_lr +
+        (nn->initial_lr - nn->final_lr) *
+            (0.5f *
+             (1.0f + cosf(3.14159f * (progress - 1.0f / nn->total_steps))));
+    break;
+  case WARMUP:
+    // Linear warmup then decay
+    if (progress < 0.1f) {
+      nn->learningRate = nn->initial_lr * (progress / 0.1f);
+    } else {
+      nn->learningRate = nn->initial_lr * powl(0.1f / progress, 0.5f);
+    }
+    break;
   }
 }
 
-float NN_get_current_lr(NN_t *nn) {
-  return nn ? nn->learningRate : 0.0f;
-}
+float NN_get_current_lr(NN_t *nn) { return nn ? nn->learningRate : 0.0f; }
 
 void NN_set_gradient_clipping(NN_t *nn, int clip_type, float threshold) {
-  if (!nn) return;
+  if (!nn)
+    return;
   nn->gradient_clip_type = clip_type;
   nn->gradient_clip_value = threshold;
 }
 
 void NN_enable_monitoring(NN_t *nn, int history_capacity) {
-  if (!nn) return;
-  
+  if (!nn)
+    return;
+
   nn->loss_history = malloc(history_capacity * sizeof(float));
   nn->accuracy_history = malloc(history_capacity * sizeof(float));
   nn->history_capacity = history_capacity;
@@ -1018,8 +1076,9 @@ void NN_enable_monitoring(NN_t *nn, int history_capacity) {
 }
 
 void NN_log_metrics(NN_t *nn, float loss, float accuracy) {
-  if (!nn || !nn->loss_history) return;
-  
+  if (!nn || !nn->loss_history)
+    return;
+
   if (nn->history_size < nn->history_capacity) {
     nn->loss_history[nn->history_size] = loss;
     nn->accuracy_history[nn->history_size] = accuracy;
@@ -1028,16 +1087,18 @@ void NN_log_metrics(NN_t *nn, float loss, float accuracy) {
 }
 
 void NN_print_model_summary(NN_t *nn) {
-  if (!nn) return;
-  
+  if (!nn)
+    return;
+
   printf("=== Neural Network Summary ===\n");
   printf("Architecture: ");
   for (size_t i = 0; i < nn->numLayers; i++) {
     printf("%zu", nn->layers[i]);
-    if (i < nn->numLayers - 1) printf(" -> ");
+    if (i < nn->numLayers - 1)
+      printf(" -> ");
   }
   printf("\n");
-  
+
   printf("Total parameters: ");
   size_t total_params = 0;
   for (size_t i = 0; i < nn->numLayers - 1; i++) {
@@ -1046,7 +1107,7 @@ void NN_print_model_summary(NN_t *nn) {
     printf("Layer %zu: %zu, ", i, params);
   }
   printf("\nTotal: %zu\n", total_params);
-  
+
   printf("Learning rate: %.6f\n", nn->learningRate);
   printf("Optimizer: %d\n", nn->optimizer);
   printf("Weight init: %d\n", nn->weightInit);
