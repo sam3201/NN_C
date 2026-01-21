@@ -103,6 +103,9 @@ extern "C" {
 #define MOUSE_MIDDLE_BUTTON   (2)  // SDL_BUTTON_MIDDLE
 
 
+// Functions TextFormat, CheckCollisionPointRec, IsMouseButtonDown, and IsMouseButtonPressed
+// are declared in SDL3_compat.h and implemented elsewhere
+
 #ifdef __cplusplus
 }
 #endif

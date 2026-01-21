@@ -78,9 +78,105 @@ int TTF_GetStringSize(TTF_Font *font, const char *text, size_t len, int *w,
 // C_SELECT system - automatically imports only needed functions
 #include "generated/auto_import.h"
 
+// Multiplayer constants
+#define MAX_LOBBIES 10
+#define LOBBY_NAME_MAX 64
+#define HOST_KEY_MAX 32
+
+// Game constants
+#define CHUNK_SIZE 32
+#define MAX_RESOURCES 512
+#define MAX_MOBS 64
+#define WORLD_NAME_MAX 64
+#define WORLD_SIZE 64
+#define TRIBE_COUNT 4
+#define AGENT_PER_TRIBE 8
+#define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
+#define MAX_PICKUPS 256
+#define MAX_PROJECTILES 128
+#define GRASS_STRIDE_NEAR 2
+#define GRASS_STRIDE_MID 4
+#define BOW_TTL_MIN 60
+#define BOW_TTL_MAX 120
+#define BOW_DMG_MIN 10
+#define BOW_DMG_MAX 20
+#define ATTACK_DISTANCE 3.0f
+#define PLAYER_ATTACK_DAMAGE 3
+#define MAX_WORLDS 100
+#define GRASS_STRIDE_FAR 8
+#define GRASS_MAX_CHUNK_NEAR 16
+#define GRASS_MAX_CHUNK_MID 32
+#define GRASS_MAX_CHUNK_FAR 64
+#define BOW_SPEED_MIN 10.0f
+#define BOW_SPEED_MAX 20.0f
+#define PLAYER_ATTACK_COOLDOWN 30
+#define PLAYER_HARVEST_DAMAGE 3
+#define PLAYER_MINE_DAMAGE 1
+#define PLAYER_HARVEST_COOLDOWN 30
+#define PLAYER_MINE_COOLDOWN 30
+#define PLAYER_MINE_STAMINA_COST 5
+#define R_ATTACK_WASTE 0
+#define R_ATTACK_HIT 1
+#define R_ATTACK_KILL 2
+#define R_HARVEST_WASTE 3
+#define HARVEST_DISTANCE 5.0f
+#define R_HARVEST_NO_STAMINA 4
+#define R_HARVEST_HIT 5
+#define R_HARVEST_BREAK 6
+#define R_FIRE_WASTE 7
+#define R_FIRE_NO_AMMO 8
+#define R_EAT_NO_FOOD 9
+#define R_EAT_WASTE 10
+#define R_EAT_GOOD 11
+#define OBS_GRID_W 64
+#define OBS_GRID_H 64
+#define OBS_TOKEN_DIM 256
+#define OBS_HEIGHT_BINS 16
+#define PLAYER_RADIUS 1.0f
+#define BASE_RADIUS 24
+#define OBS_DIM 1024
+#define OBS_EMBED_DIM 512
+#define STAMINA_REGEN_RATE 0.1f
+#define AGENT_FIRE_LATCH_TIME 10
+#define R_WANDER_PENALTY -0.01f
+#define R_DEATH -10.0f
+#define R_SURVIVE_PER_TICK 0.01f
+#define MOB_AGGRO_RANGE 8.0f
+#define MOB_SPEED_PASSIVE 1.0f
+#define MOB_SPEED_SCARED 2.0f
+#define MOB_SPEED_HOSTILE 1.5f
+#define MOB_ATTACK_RANGE 3.0f
+#define PLAYER_TAKEN_DAMAGE -5.0f
+#define AGENT_TAKEN_DAMAGE -5.0f
+#define MOB_GRAVITY -9.8f
+#define STAMINA_DRAIN_RATE 0.5f
+#define PLAYER_JUMP_SPEED 5.0f
+#define PLAYER_GRAVITY -9.8f
+#define BOW_CHARGE_TIME 60
+#define BOW_CHARGE_MIN01 0.1f
+#define PLAYER_FIRE_COOLDOWN 20
+#define GRASS_PATCH_CELL 4
+#define GRASS_PATCH_THRESHOLD 0.5f
+#define GRASS_PATCH_DENSITY 0.8f
+#define GRASS_PATCH_SIZE 16
+#define GRASS_CHUNK_RADIUS 32
+
 SDL_Window *g_window = NULL;
 static unsigned int g_window_width = 0, g_window_height = 0;
 static bool g_screen_dimensions_cached = false;
+
+// Game state
+typedef enum {
+  STATE_TITLE = 0,
+  STATE_WORLD_SELECT,
+  STATE_WORLD_CREATE,
+  STATE_MULTIPLAYER_LOBBY,
+  STATE_PLAYING,
+  STATE_PAUSED,
+  STATE_COUNT
+} GameStateType;
+
+static GameStateType g_state = STATE_TITLE;
 
 // Custom button rectangle struct to avoid Rectangle issues
 typedef struct {
@@ -111,6 +207,21 @@ typedef enum {
   MSG_PLAYER_UPDATE,
   MSG_CHAT
 } MessageType;
+
+// Multiplayer globals
+static Lobby g_lobbies[MAX_LOBBIES];
+static int g_lobby_count = 0;
+static char g_current_host_key[HOST_KEY_MAX] = {0};
+static char g_lobby_name_input[LOBBY_NAME_MAX] = {0};
+static char g_host_key_input[HOST_KEY_MAX] = {0};
+static bool g_is_host = false;
+static int g_current_lobby_index = -1;
+static TribeColor g_tribe_colors[TRIBE_COUNT] = {
+    {1.0f, 0.0f, 0.0f}, // Red
+    {0.0f, 0.0f, 1.0f}, // Blue
+    {0.0f, 1.0f, 0.0f}, // Green
+    {1.0f, 1.0f, 0.0f}  // Yellow
+};
 
 // Cache screen dimensions for performance
 static void cache_screen_dimensions(void) {
@@ -153,7 +264,7 @@ static uint32_t g_prev_mouse_state = 0;
 static void generate_host_key(char *buffer, size_t size) {
   const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const size_t charset_size = sizeof(charset) - 1;
-  
+
   for (size_t i = 0; i < size - 1; i++) {
     buffer[i] = charset[rand() % charset_size];
   }
@@ -290,65 +401,71 @@ static void join_lobby(const char *host_key);
 static void draw_multiplayer_lobby_3d(void);
 static void spread_tribe_bases(void);
 
+// UI function declarations
+static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
+                         Color color);
+static void ui_draw_text(float x, float y, const char *text, Color color);
+static void ui_draw_text_size(float x, float y, const char *text, int font_size,
+                              Color color);
+static int ui_button_gl(ButtonRect r, const char *text, int font_size);
+
 // Draw multiplayer lobby screen
 static void draw_multiplayer_lobby_3d(void) {
   unsigned int w = get_cached_screen_width();
   unsigned int h = get_cached_screen_height();
-  
+
   // Draw background
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glOrtho(0.0, w, h, 0.0, -1.0, 1.0);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  
+
   // Dark background
   ui_draw_quad(0, 0, w, h, 0, (Color){20, 20, 30, 255});
-  
+
   // Title
-  ui_draw_text_cached(w * 0.5f, 100, "Multiplayer Lobby", 32);
-  
+  ui_draw_text_size(w * 0.5f - 100, 100, "Multiplayer Lobby", 32, RAYWHITE);
+
   // Show host key if host
   if (g_is_host && g_current_lobby_index >= 0) {
     char host_info[128];
     snprintf(host_info, sizeof(host_info), "Host Key: %s", g_current_host_key);
-    ui_draw_text_cached(w * 0.5f, 150, host_info, 20);
+    ui_draw_text(w * 0.5f - 80, 150, host_info, RAYWHITE);
   }
-  
+
   // Lobby list
   float y = 200;
   for (int i = 0; i < g_lobby_count; i++) {
     if (g_lobbies[i].is_active) {
       char lobby_info[128];
-      snprintf(lobby_info, sizeof(lobby_info), 
-               "%s - %d/%d players", 
-               g_lobbies[i].name, 
-               g_lobbies[i].player_count, 
+      snprintf(lobby_info, sizeof(lobby_info), "%s - %d/%d players",
+               g_lobbies[i].name, g_lobbies[i].player_count,
                g_lobbies[i].max_players);
-      
-      ui_draw_text_cached(100, y, lobby_info, 18);
+
+      ui_draw_text(100, y, lobby_info, RAYWHITE);
       y += 30;
     }
   }
-  
+
   // Input fields
-  ui_draw_text_cached(100, 400, "Lobby Name:", 18);
+  ui_draw_text(100, 400, "Lobby Name:", RAYWHITE);
   ui_draw_quad(250, 390, 300, 30, 0, (Color){50, 50, 70, 200});
-  ui_draw_text_cached(260, 400, g_lobby_name_input, 18);
-  
-  ui_draw_text_cached(100, 440, "Host Key (to join):", 18);
+  ui_draw_text(260, 400, g_lobby_name_input, RAYWHITE);
+
+  ui_draw_text(100, 440, "Host Key (to join):", RAYWHITE);
   ui_draw_quad(300, 430, 250, 30, 0, (Color){50, 50, 70, 200});
-  ui_draw_text_cached(310, 440, g_host_key_input, 18);
-  
+  ui_draw_text(310, 440, g_host_key_input, RAYWHITE);
+
   // Buttons
   if (ui_button_gl((ButtonRect){100, 500, 120, 40}, "Create Lobby", 18)) {
     create_lobby(g_lobby_name_input);
   }
-  
+
   if (ui_button_gl((ButtonRect){240, 500, 120, 40}, "Join Lobby", 18)) {
     join_lobby(g_host_key_input);
   }
-  
+
   if (ui_button_gl((ButtonRect){380, 500, 120, 40}, "Back", 18)) {
     g_state = STATE_TITLE;
   }
@@ -359,7 +476,7 @@ static void create_lobby(const char *name) {
   if (g_lobby_count >= MAX_LOBBIES) {
     return; // Max lobbies reached
   }
-  
+
   Lobby *lobby = &g_lobbies[g_lobby_count];
   strncpy(lobby->name, name, LOBBY_NAME_MAX - 1);
   lobby->name[LOBBY_NAME_MAX - 1] = '\0';
@@ -368,12 +485,12 @@ static void create_lobby(const char *name) {
   lobby->max_players = 8;
   lobby->is_active = true;
   lobby->creation_time = SDL_GetTicks();
-  
+
   strcpy(g_current_host_key, lobby->host_key);
   g_is_host = true;
   g_current_lobby_index = g_lobby_count;
   g_lobby_count++;
-  
+
   g_state = STATE_MULTIPLAYER_LOBBY;
 }
 
@@ -400,13 +517,13 @@ static void spread_tribe_bases(void) {
   // tribe bases are spread across the map
   // Implementation will depend on world generation system
   printf("Spreading tribe bases with different colors\n");
-  
+
   // Assign different colors to tribes
   for (int i = 0; i < TRIBE_COUNT; i++) {
     // Set tribe color based on predefined colors
     // This will be used when rendering tribe bases
-    printf("Tribe %d color: (%.1f, %.1f, %.1f)\n", 
-           i, g_tribe_colors[i].r, g_tribe_colors[i].g, g_tribe_colors[i].b);
+    printf("Tribe %d color: (%.1f, %.1f, %.1f)\n", i, g_tribe_colors[i].r,
+           g_tribe_colors[i].g, g_tribe_colors[i].b);
   }
 }
 
@@ -644,10 +761,6 @@ float Vector2DotProduct(Vector2 v1, Vector2 v2) {
   return v1.x * v2.x + v1.y * v2.y;
 }
 
-int CheckCollisionPointRec(Vector2 point, Rectangle rec) {
-  return (point.x >= rec.x && point.x <= (rec.x + rec.width) &&
-          point.y >= rec.y && point.y <= (rec.y + rec.height));
-}
 
 // SDL-compatible text drawing functions
 static int MeasureText(const char *text, int font_size) {
@@ -748,41 +861,17 @@ static void ui_draw_quad(float x, float y, float w, float h, GLuint tex,
 /* =======================
    GAME STATES
 ======================= */
-typedef enum {
-  STATE_TITLE = 0,
-  STATE_WORLD_SELECT,
-  STATE_WORLD_CREATE,
-  STATE_MULTIPLAYER_LOBBY,
-  STATE_PLAYING,
-  STATE_PAUSED,
-  STATE_COUNT
-} GameStateType;
-
 /* =======================
-   GLOBAL CONFIG
-======================= */
-#define FPS 60.0f
-
-#define WORLD_SIZE 128
-#define CHUNK_SIZE 32
-
-#define MAX_RESOURCES 512
-#define MAX_MOBS 64
-
-#define TRIBE_COUNT 4
 #define AGENT_PER_TRIBE 8
 #define MAX_AGENTS (TRIBE_COUNT * AGENT_PER_TRIBE)
 
 #define BASE_RADIUS 24
 
 #define MAX_LOBBIES 10
+#define WORLD_NAME_MAX 64
 #define LOBBY_NAME_MAX 64
 #define HOST_KEY_MAX 32
 
-// ------------------- Compile helpers / forward decls -------------------
-#ifndef SAVE_ROOT
-#define SAVE_ROOT "saves"
-#endif
 
 #define HARVEST_DISTANCE 5.0f
 #define HARVEST_AMOUNT 1
@@ -1248,7 +1337,6 @@ typedef struct {
 #pragma pack(pop)
 
 static uint32_t g_world_seed = 0;
-static GameStateType g_state = STATE_TITLE;
 static char g_world_name[WORLD_NAME_MAX] = {0};
 static char g_seed_text[64] = {0};
 static int g_typing_name = 0;
@@ -1257,20 +1345,6 @@ static int g_mouse_button_pressed = 0;
 static int g_typing_seed = 0;
 static int g_tribes_ready = 0;
 
-// Multiplayer globals
-static Lobby g_lobbies[MAX_LOBBIES];
-static int g_lobby_count = 0;
-static char g_current_host_key[HOST_KEY_MAX] = {0};
-static char g_lobby_name_input[LOBBY_NAME_MAX] = {0};
-static char g_host_key_input[HOST_KEY_MAX] = {0};
-static bool g_is_host = false;
-static int g_current_lobby_index = -1;
-static TribeColor g_tribe_colors[TRIBE_COUNT] = {
-  {1.0f, 0.0f, 0.0f},  // Red
-  {0.0f, 0.0f, 1.0f},  // Blue
-  {0.0f, 1.0f, 0.0f},  // Green
-  {1.0f, 1.0f, 0.0f}   // Yellow
-};
 static float g_base_flat_height[TRIBE_COUNT] = {0};
 static const float g_base_open_half_angle = 0.61f; // ~35 deg
 static MuzeConfig g_muze_cfg;
@@ -9229,10 +9303,16 @@ static void draw_title_screen_3d(void) {
   b3.y = (float)h * 0.5f + 140;
   b3.width = 280;
   b3.height = 54;
+  ButtonRect b4;
+  b4.x = (float)w * 0.5f - 140;
+  b4.y = (float)h * 0.5f + 210;
+  b4.width = 280;
+  b4.height = 54;
 
   int result1 = ui_button_gl(b1, "Play (Load/Select)", 20);
   int result2 = ui_button_gl(b2, "Create World", 20);
-  int result3 = ui_button_gl(b3, "Quit", 20);
+  int result3 = ui_button_gl(b3, "Multiplayer", 20);
+  int result4 = ui_button_gl(b4, "Quit", 20);
 
   if (result1) {
     printf("Play button clicked!\n");
@@ -9243,6 +9323,10 @@ static void draw_title_screen_3d(void) {
     g_state = STATE_WORLD_CREATE;
   }
   if (result3) {
+    printf("Multiplayer button clicked!\n");
+    g_state = STATE_MULTIPLAYER_LOBBY;
+  }
+  if (result4) {
     printf("Quit button clicked!\n");
     g_should_quit = 1;
   }
@@ -11202,6 +11286,21 @@ int main(int argc, char *argv[]) {
   printf("Game state initialized to: %d\n", g_state);
 
   // Initialize mouse state for UI
+  g_last_mouse_state = -1;
+  g_mouse_button_pressed = 0;
+
+  // Initialize multiplayer variables
+  memset(g_lobbies, 0, sizeof(g_lobbies));
+  g_lobby_count = 0;
+  memset(g_current_host_key, 0, sizeof(g_current_host_key));
+  memset(g_lobby_name_input, 0, sizeof(g_lobby_name_input));
+  memset(g_host_key_input, 0, sizeof(g_host_key_input));
+  g_is_host = false;
+  g_current_lobby_index = -1;
+
+  // Seed random number generator for host keys
+  srand(SDL_GetTicks());
+
   SDL_SetWindowRelativeMouseMode(g_window, false);
   SDL_ShowCursor();
   g_mouse_locked = 0;
@@ -11289,6 +11388,39 @@ int main(int argc, char *argv[]) {
       case SDL_EVENT_MOUSE_BUTTON_UP:
         // Don't automatically unlock mouse on button up - let the game logic
         // handle it
+        break;
+      case SDL_EVENT_KEY_DOWN:
+        if (g_state == STATE_MULTIPLAYER_LOBBY) {
+          if (event.key.key == SDLK_BACKSPACE) {
+            // Handle backspace for input fields
+            size_t len = strlen(g_lobby_name_input);
+            if (len > 0) {
+              g_lobby_name_input[len - 1] = '\0';
+            }
+            len = strlen(g_host_key_input);
+            if (len > 0) {
+              g_host_key_input[len - 1] = '\0';
+            }
+          }
+        }
+        break;
+      case SDL_EVENT_TEXT_INPUT:
+        if (g_state == STATE_MULTIPLAYER_LOBBY) {
+          // Add character to input fields
+          const char *text = event.text.text;
+          if (strlen(text) == 1) {
+            size_t len = strlen(g_lobby_name_input);
+            if (len < LOBBY_NAME_MAX - 1) {
+              g_lobby_name_input[len] = text[0];
+              g_lobby_name_input[len + 1] = '\0';
+            }
+            len = strlen(g_host_key_input);
+            if (len < HOST_KEY_MAX - 1) {
+              g_host_key_input[len] = text[0];
+              g_host_key_input[len + 1] = '\0';
+            }
+          }
+        }
         break;
       default:
         break;
@@ -11437,7 +11569,8 @@ int main(int argc, char *argv[]) {
       // Ensure mouse is always visible and not in relative mode for UI
       // screens
       if (g_state == STATE_TITLE || g_state == STATE_WORLD_SELECT ||
-          g_state == STATE_WORLD_CREATE || g_state == STATE_PAUSED) {
+          g_state == STATE_WORLD_CREATE || g_state == STATE_MULTIPLAYER_LOBBY ||
+          g_state == STATE_PAUSED) {
         SDL_ShowCursor();
         SDL_SetWindowMouseGrab(g_window, false);
         SDL_SetWindowRelativeMouseMode(g_window, false);
@@ -11549,7 +11682,7 @@ int main(int argc, char *argv[]) {
     case STATE_TITLE:
       draw_title_screen_3d();
       break;
-      
+
     case STATE_MULTIPLAYER_LOBBY:
       draw_multiplayer_lobby_3d();
       break;

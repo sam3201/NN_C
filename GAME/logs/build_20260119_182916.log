@@ -1,0 +1,324 @@
+generated/impl.c:15:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   15 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:16:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   16 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:17:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   17 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:18:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   18 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:19:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   19 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:20:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   20 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:21:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   21 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+generated/impl.c:69:5: warning: 'glMultMatrixf' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   69 |     glMultMatrixf(matrix);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2591:13: note: 'glMultMatrixf' has been explicitly marked deprecated here
+ 2591 | extern void glMultMatrixf (const GLfloat *m) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+8 warnings generated.
+In file included from game.c:33:
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h:15:2: warning: gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality. [-W#warnings]
+   15 | #warning gl.h and gl3.h are both included.  Compiler will not invoke errors if using removed OpenGL functionality.
+      |  ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:2:18: error: typedef redefinition with different types ('struct Vector2' vs 'struct Vector2' (aka 'Vector2'))
+    2 | API_TYPE(PUBLIC, Vector2,
+      |                  ^
+./../utils/SDL3/SDL3_compat.h:15:3: note: previous definition is here
+   15 | } Vector2;
+      |   ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:20:18: error: typedef redefinition with different types ('struct Color' vs 'struct Color' (aka 'Color'))
+   20 | API_TYPE(PUBLIC, Color,
+      |                  ^
+./../utils/SDL3/SDL3_compat.h:29:3: note: previous definition is here
+   29 | } Color;
+      |   ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:27:18: error: typedef redefinition with different types ('struct Rectangle' vs 'struct Rectangle' (aka 'Rectangle'))
+   27 | API_TYPE(PUBLIC, Rectangle,
+      |                  ^
+./../utils/SDL3/SDL3_compat.h:22:3: note: previous definition is here
+   22 | } Rectangle;
+      |   ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:35:13: error: typedef redefinition with different types ('int' vs 'enum KeyboardKey')
+   35 | typedef int KeyboardKey;
+      |             ^
+./../utils/SDL3/SDL3_compat.h:94:3: note: previous definition is here
+   94 | } KeyboardKey;
+      |   ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:53:16: error: conflicting types for 'TextFormat'
+   53 | API_FN(char *, TextFormat, (const char *text, ...))
+      |                ^
+./../utils/SDL3/SDL3_compat.h:168:13: note: previous declaration is here
+  168 | const char *TextFormat(const char *text, ...);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:77:13: error: conflicting types for 'CheckCollisionPointRec'
+   77 | API_FN(int, CheckCollisionPointRec, (Vector2 point, Rectangle rec))
+      |             ^
+./../utils/SDL3/SDL3_compat.h:174:6: note: previous declaration is here
+  174 | bool CheckCollisionPointRec(Vector2 point, Rectangle rec);
+      |      ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:82:13: error: conflicting types for 'IsMouseButtonDown'
+   82 | API_FN(int, IsMouseButtonDown, (int button))
+      |             ^
+./../utils/SDL3/SDL3_compat.h:137:6: note: previous declaration is here
+  137 | bool IsMouseButtonDown(int button);
+      |      ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+In file included from ./generated/complete_api.h:14:
+./generated/complete_api.def:83:13: error: conflicting types for 'IsMouseButtonPressed'
+   83 | API_FN(int, IsMouseButtonPressed, (int button))
+      |             ^
+./../utils/SDL3/SDL3_compat.h:138:6: note: previous declaration is here
+  138 | bool IsMouseButtonPressed(int button);
+      |      ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+./generated/complete_api.h:101:9: warning: 'MOUSE_LEFT_BUTTON' macro redefined [-Wmacro-redefined]
+  101 | #define MOUSE_LEFT_BUTTON     (1)  // SDL_BUTTON_LEFT
+      |         ^
+./../utils/SDL3/SDL3_compat.h:102:9: note: previous definition is here
+  102 | #define MOUSE_LEFT_BUTTON MOUSE_BUTTON_LEFT
+      |         ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:6:
+./generated/complete_api.h:102:9: warning: 'MOUSE_RIGHT_BUTTON' macro redefined [-Wmacro-redefined]
+  102 | #define MOUSE_RIGHT_BUTTON    (3)  // SDL_BUTTON_RIGHT
+      |         ^
+./../utils/SDL3/SDL3_compat.h:103:9: note: previous definition is here
+  103 | #define MOUSE_RIGHT_BUTTON MOUSE_BUTTON_RIGHT
+      |         ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:15:5: warning: 'glBegin' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   15 |     glBegin(GL_LINE_LOOP);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2385:13: note: 'glBegin' has been explicitly marked deprecated here
+ 2385 | extern void glBegin (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:16:5: warning: 'glColor4f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   16 |     glColor4f(color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2421:13: note: 'glColor4f' has been explicitly marked deprecated here
+ 2421 | extern void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:17:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   17 |     glVertex2f(x, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:18:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   18 |     glVertex2f(x + width, y);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:19:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   19 |     glVertex2f(x + width, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:20:5: warning: 'glVertex2f' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   20 |     glVertex2f(x, y + height);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2732:13: note: 'glVertex2f' has been explicitly marked deprecated here
+ 2732 | extern void glVertex2f (GLfloat x, GLfloat y) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:21:5: warning: 'glEnd' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   21 |     glEnd();
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2474:13: note: 'glEnd' has been explicitly marked deprecated here
+ 2474 | extern void glEnd (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+In file included from game.c:79:
+In file included from ./generated/auto_import.h:9:
+In file included from ./generated/impl.h:4:
+./generated/impl.c:69:5: warning: 'glMultMatrixf' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+   69 |     glMultMatrixf(matrix);
+      |     ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2591:13: note: 'glMultMatrixf' has been explicitly marked deprecated here
+ 2591 | extern void glMultMatrixf (const GLfloat *m) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:92:13: error: use of undeclared identifier 'LOBBY_NAME_MAX'
+   92 |   char name[LOBBY_NAME_MAX];
+      |             ^
+game.c:93:17: error: use of undeclared identifier 'HOST_KEY_MAX'
+   93 |   char host_key[HOST_KEY_MAX];
+      |                 ^
+game.c:116:24: error: use of undeclared identifier 'MAX_LOBBIES'
+  116 | static Lobby g_lobbies[MAX_LOBBIES];
+      |                        ^
+game.c:118:32: error: use of undeclared identifier 'HOST_KEY_MAX'
+  118 | static char g_current_host_key[HOST_KEY_MAX] = {0};
+      |                                ^
+game.c:119:32: error: use of undeclared identifier 'LOBBY_NAME_MAX'
+  119 | static char g_lobby_name_input[LOBBY_NAME_MAX] = {0};
+      |                                ^
+game.c:120:30: error: use of undeclared identifier 'HOST_KEY_MAX'
+  120 | static char g_host_key_input[HOST_KEY_MAX] = {0};
+      |                              ^
+game.c:123:34: error: use of undeclared identifier 'TRIBE_COUNT'
+  123 | static TribeColor g_tribe_colors[TRIBE_COUNT] = {
+      |                                  ^
+game.c:319:3: warning: 'glMatrixMode' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+  319 |   glMatrixMode(GL_PROJECTION);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2588:13: note: 'glMatrixMode' has been explicitly marked deprecated here
+ 2588 | extern void glMatrixMode (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:320:3: warning: 'glLoadIdentity' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+  320 |   glLoadIdentity();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2571:13: note: 'glLoadIdentity' has been explicitly marked deprecated here
+ 2571 | extern void glLoadIdentity (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:321:3: warning: 'glOrtho' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+  321 |   glOrtho(0.0, w, h, 0.0, -1.0, 1.0);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2604:13: note: 'glOrtho' has been explicitly marked deprecated here
+ 2604 | extern void glOrtho (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:322:3: warning: 'glMatrixMode' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+  322 |   glMatrixMode(GL_MODELVIEW);
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2588:13: note: 'glMatrixMode' has been explicitly marked deprecated here
+ 2588 | extern void glMatrixMode (GLenum mode) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:323:3: warning: 'glLoadIdentity' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+  323 |   glLoadIdentity();
+      |   ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h:2571:13: note: 'glLoadIdentity' has been explicitly marked deprecated here
+ 2571 | extern void glLoadIdentity (void) OPENGL_DEPRECATED(10.0, 10.14);
+      |             ^
+game.c:364:7: error: call to undeclared function 'ui_button_gl'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  364 |   if (ui_button_gl((ButtonRect){100, 500, 120, 40}, "Create Lobby", 18)) {
+      |       ^
+game.c:373:5: error: use of undeclared identifier 'g_state'
+  373 |     g_state = STATE_TITLE;
+      |     ^
+game.c:373:15: error: use of undeclared identifier 'STATE_TITLE'
+  373 |     g_state = STATE_TITLE;
+      |               ^
+game.c:379:24: error: use of undeclared identifier 'MAX_LOBBIES'
+  379 |   if (g_lobby_count >= MAX_LOBBIES) {
+      |                        ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+16 warnings and 20 errors generated.
+../utils/NN/NN/NN.c:967:11: warning: enumeration value 'SCHEDULER_TYPE_COUNT' not handled in switch [-Wswitch]
+  967 |   switch (nn->lr_scheduler) {
+      |           ^~~~~~~~~~~~~~~~
+../utils/NN/NN/NN.c:967:11: note: add missing switch cases
+  967 |   switch (nn->lr_scheduler) {
+      |           ^
+../utils/NN/NN/NN.c:1050:35: warning: format specifies type 'double' but the argument has type 'long double' [-Wformat]
+ 1050 |   printf("Learning rate: %.6f\n", nn->learningRate);
+      |                          ~~~~     ^~~~~~~~~~~~~~~~
+      |                          %.6Lf
+../utils/NN/NN/NN.c:1051:29: warning: format specifies type 'int' but the argument has type 'OptimizerFunction' (aka 'void (*)(struct NN_t *)') [-Wformat]
+ 1051 |   printf("Optimizer: %d\n", nn->optimizer);
+      |                      ~~     ^~~~~~~~~~~~~
+3 warnings generated.
+../RL_AGENT/training/training_infrastructure.c:209:13: warning: enumeration value 'CURRICULUM_STAGE_COUNT' not handled in switch [-Wswitch]
+  209 |     switch (stage) {
+      |             ^~~~~
+../RL_AGENT/training/training_infrastructure.c:209:13: note: add missing switch cases
+  209 |     switch (stage) {
+      |             ^
+1 warning generated.
+../utils/NN/MUZE/muze_enhanced_model.c:234:49: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  234 |         NN_backprop_custom_delta(model->critic, obs_array, (long double*)critic_loss);
+      |                                                 ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:240:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  240 |         NN_backprop_custom_delta(model->actor, obs_array, (long double*)actor_loss);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+../utils/NN/MUZE/muze_enhanced_model.c:266:48: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  266 |         latent_ld = NN_forward(model->encoder, obs_array);
+      |                                                ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:227:47: note: passing argument to parameter 'inputs' here
+  227 | long double *NN_forward(NN_t *nn, long double inputs[]);
+      |                                               ^
+../utils/NN/MUZE/muze_enhanced_model.c:294:54: warning: incompatible pointer types passing 'float *' to parameter of type 'long double *' [-Wincompatible-pointer-types]
+  294 |         NN_backprop_custom_delta(model->world_model, obs_array, (long double*)world_loss);
+      |                                                      ^~~~~~~~~
+../utils/NN/MUZE/../NN/NN.h:231:53: note: passing argument to parameter 'inputs' here
+  231 | void NN_backprop_custom_delta(NN_t *nn, long double inputs[],
+      |                                                     ^
+4 warnings generated.

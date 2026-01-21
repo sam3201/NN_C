@@ -25,10 +25,10 @@ API_TYPE(PUBLIC, Color,
 )
 
 API_TYPE(PUBLIC, Rectangle,
-  int x;
-  int y;
-  int width;
-  int height;
+  float x;
+  float y;
+  float width;
+  float height;
 )
 
 // Keyboard Key enumeration - simple typedef to int for compatibility
@@ -50,7 +50,6 @@ API_FN(float, Vector2Distance, (Vector2 v1, Vector2 v2))
 API_FN(double, GetTime, (void))
 API_FN(void, DrawLineEx, (Vector2 startPos, Vector2 endPos, float thick, Color color))
 API_FN(void, DrawText, (const char *text, int posX, int posY, int fontSize, Color color))
-API_FN(char *, TextFormat, (const char *text, ...))
 API_FN(Vector2, Vector2Scale, (Vector2 v, float scale))
 API_FN(Vector2, Vector2Normalize, (Vector2 v))
 API_FN(Vector2, Vector2Add, (Vector2 v1, Vector2 v2))
@@ -74,10 +73,7 @@ API_FN(Color, Fade, (Color color, float alpha))
 API_FN(void, DrawCircle, (int centerX, int centerY, float radius, Color color))
 API_FN(void, DrawPixel, (int x, int y, Color color))
 API_FN(int, MeasureText, (const char *text, int fontSize))
-API_FN(int, CheckCollisionPointRec, (Vector2 point, Rectangle rec))
 API_FN(void, DrawRectangleRounded, (Rectangle rec, float roundness, int segments, Color color))
 API_FN(void, DrawRectangleRoundedLines, (Rectangle rec, float roundness, int segments, Color color))
 API_FN(int, GetCharPressed, (void))
 API_FN(float, GetMouseWheelMove, (void))
-API_FN(int, IsMouseButtonDown, (int button))
-API_FN(int, IsMouseButtonPressed, (int button))

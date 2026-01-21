@@ -70,6 +70,6 @@ static void gluLookAt(float eyeX, float eyeY, float eyeZ,
 }
 
 // --- API Function Implementations ---
-// All functions are provided by Raylib library - no implementations needed here
+// These functions are provided as inline implementations in complete_api.h
 
 
