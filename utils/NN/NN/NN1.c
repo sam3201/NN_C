@@ -338,11 +338,6 @@ NN_t *NN_load(const char *filename);
 int NN_save_fp(NN_t *nn, FILE *f);
 NN_t *NN_load_fp(FILE *f);
 
-#include "NN.h"
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
 // Enhanced random number generators
 static double uniform_random(double min_val, double max_val) {
   return min_val + (max_val - min_val) * ((double)rand() / RAND_MAX);
