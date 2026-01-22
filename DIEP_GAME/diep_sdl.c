@@ -65,7 +65,6 @@ typedef struct {
 typedef struct {
   Tank player;
   Tank ai_tank;
-  Bullet bullets[MAX_BULLETS];
   uint32_t last_fire_time[2]; // 0 = player, 1 = AI
   int score[2];
   bool game_running;
@@ -77,6 +76,7 @@ typedef struct {
   TTF_Font *font;
 
   // AI observation grid
+  Bullet bullets[MAX_BULLETS];
   float ai_observation[AI_INPUT_SIZE];
 } GameState;
 
