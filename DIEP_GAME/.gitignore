@@ -1,0 +1,22 @@
+# Executables
+diep_simple
+diep_game
+
+# Object files
+*.o
+
+# Debug files
+*.dSYM/
+*.su
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
