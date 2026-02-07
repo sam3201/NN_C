@@ -19,7 +19,25 @@ from datetime import datetime
 from pathlib import Path
 import requests
 import re  # Add missing import
+import ast
+import shutil
+import subprocess
+import traceback
+import logging
+import random
+import string
+import platform
+import psutil
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List, Optional, Callable, Any, Union, Tuple
 
+# Import SAM components
+from survival_agent import SURVIVAL_PROMPT
+from goal_management import GoalManager, create_conversationalist_tasks
+from sam_config import config   
 # C Core Modules (Performance Optimized)
 import consciousness_algorithmic
 import multi_agent_orchestrator_c
