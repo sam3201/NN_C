@@ -1,0 +1,20 @@
+{
+  "boot_test": {
+    "import": "\u2705 PASSED",
+    "overall": "\u274c FAILED: 'UnifiedSAMSystem' object has no attribute '_check_web_access'"
+  },
+  "component_integration": {},
+  "api_testing": {},
+  "command_testing": {},
+  "integration_testing": {
+    "error": "\u274c CRITICAL: No module named 'schedule'"
+  },
+  "autonomous_testing": {},
+  "performance_testing": {
+    "error": "\u274c ERROR: 'UnifiedSAMSystem' object has no attribute '_check_web_access'"
+  },
+  "error_testing": {},
+  "final_validation": {
+    "error": "\u274c CRITICAL: name 'system' is not defined"
+  }
+}

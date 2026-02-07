@@ -1,0 +1,25 @@
+{
+  "imports": {
+    "Main System": "\u274c FAILED: name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2174)",
+    "Gmail Integration": "\u274c FAILED: No module named 'schedule'",
+    "GitHub Integration": "\u2705 SUCCESS",
+    "Code Modifier": "\u2705 SUCCESS",
+    "Web Search": "\u2705 SUCCESS",
+    "Google Drive": "\u274c FAILED: No module named 'googleapiclient'"
+  },
+  "initialization": {
+    "success": false,
+    "error": "name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2174)"
+  },
+  "integrations": {},
+  "commands": {},
+  "apis": {},
+  "agents": {},
+  "communication": {},
+  "functionality": [
+    [
+      "Backup Directory",
+      "\u2705 EXISTS"
+    ]
+  ]
+}

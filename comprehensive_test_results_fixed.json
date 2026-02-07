@@ -1,0 +1,34 @@
+{
+  "modules": {
+    "Main SAM System": "\u26a0\ufe0f PARTIAL: name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2170)",
+    "Google Drive Integration": "\u274c FAILED: No module named 'googleapiclient'",
+    "Web Search Module": "\u2705 PASSED",
+    "Code Modification System": "\u2705 PASSED",
+    "Gmail Integration": "\u274c FAILED: No module named 'schedule'",
+    "GitHub Integration": "\u2705 PASSED",
+    "C Library Agents": "\u2705 PASSED",
+    "Survival Agent": "\u2705 PASSED",
+    "Goal Management": "\u2705 PASSED"
+  },
+  "system_init": {
+    "status": "\u274c FAILED: name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2170)"
+  },
+  "api_endpoints": {},
+  "chat_commands": {},
+  "agent_system": {},
+  "integrations": {
+    "Google Drive": "\u274c FAILED: No module named 'googleapiclient'",
+    "Web Search": "\u2705 OK",
+    "Code Modifier": "\u2705 OK",
+    "Gmail": "\u274c FAILED: No module named 'schedule'",
+    "GitHub": "\u2705 OK"
+  },
+  "file_operations": {
+    "backup_dir": "\u2705 EXISTS",
+    "complete_sam_unified.py": "\u2705 EXISTS",
+    "README.md": "\u2705 EXISTS",
+    "ARCHITECTURE.md": "\u26a0\ufe0f MISSING"
+  },
+  "error_handling": {},
+  "edge_cases": {}
+}

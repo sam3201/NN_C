@@ -1,0 +1,66 @@
+{
+  "modules": {
+    "Main SAM System": "\u26a0\ufe0f PARTIAL: name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2170)",
+    "Google Drive Integration": "\u274c FAILED: No module named 'googleapiclient'",
+    "Web Search Module": "\u2705 PASSED",
+    "Code Modification System": "\u2705 PASSED",
+    "Gmail Integration": "\u274c FAILED: No module named 'schedule'",
+    "GitHub Integration": "\u2705 PASSED",
+    "C Library Agents": "\u2705 PASSED",
+    "Survival Agent": "\u2705 PASSED",
+    "Goal Management": "\u2705 PASSED"
+  },
+  "system_init": {
+    "status": "\u274c FAILED: name 'sam_gmail' is used prior to global declaration (complete_sam_unified.py, line 2170)"
+  },
+  "api_endpoints": {},
+  "chat_commands": {
+    "Help system": "\u274c FAILED: name 'system' is not defined",
+    "System status": "\u274c FAILED: name 'system' is not defined",
+    "Agent listing": "\u274c FAILED: name 'system' is not defined",
+    "Agent connection": "\u274c FAILED: name 'system' is not defined",
+    "Agent disconnection": "\u274c FAILED: name 'system' is not defined",
+    "Agent cloning": "\u274c FAILED: name 'system' is not defined",
+    "Agent spawning": "\u274c FAILED: name 'system' is not defined",
+    "Research command": "\u274c FAILED: name 'system' is not defined",
+    "Code generation": "\u274c FAILED: name 'system' is not defined",
+    "Financial analysis": "\u274c FAILED: name 'system' is not defined",
+    "Web search": "\u274c FAILED: name 'system' is not defined",
+    "Code analysis": "\u274c FAILED: name 'system' is not defined",
+    "Code modification": "\u274c FAILED: name 'system' is not defined",
+    "Code history": "\u274c FAILED: name 'system' is not defined",
+    "Code rollback": "\u274c FAILED: name 'system' is not defined",
+    "Email sending": "\u274c FAILED: name 'system' is not defined",
+    "Email scheduling": "\u274c FAILED: name 'system' is not defined",
+    "System reports": "\u274c FAILED: name 'system' is not defined",
+    "Gmail status": "\u274c FAILED: name 'system' is not defined",
+    "GitHub save": "\u274c FAILED: name 'system' is not defined",
+    "GitHub status": "\u274c FAILED: name 'system' is not defined",
+    "GitHub commits": "\u274c FAILED: name 'system' is not defined"
+  },
+  "agent_system": {
+    "general": "\u274c FAILED: name 'system' is not defined"
+  },
+  "integrations": {
+    "Google Drive": "\u274c FAILED: No module named 'googleapiclient'",
+    "Web Search": "\u2705 OK",
+    "Code Modifier": "\u2705 OK",
+    "Gmail": "\u274c FAILED: No module named 'schedule'",
+    "GitHub": "\u2705 OK"
+  },
+  "file_operations": {
+    "backup_dir": "\u2705 EXISTS",
+    "complete_sam_unified.py": "\u2705 EXISTS",
+    "README.md": "\u2705 EXISTS",
+    "ARCHITECTURE.md": "\u26a0\ufe0f MISSING"
+  },
+  "error_handling": {
+    "Invalid command": "\u274c CRASHED: name 'system' is not defined",
+    "Empty message": "\u274c CRASHED: name 'system' is not defined",
+    "Malformed agent connect": "\u274c CRASHED: name 'system' is not defined",
+    "Invalid email": "\u274c CRASHED: name 'system' is not defined"
+  },
+  "edge_cases": {
+    "general": "\u274c FAILED: name 'system' is not defined"
+  }
+}
