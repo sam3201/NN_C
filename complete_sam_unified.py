@@ -18,7 +18,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 import requests
-            import re  # Add missing import
+import re  # Add missing import
 
 # C Core Modules (Performance Optimized)
 import consciousness_algorithmic
