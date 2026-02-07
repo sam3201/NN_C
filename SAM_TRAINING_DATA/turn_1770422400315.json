@@ -1,0 +1,20 @@
+{
+  "kind": "conversation_training",
+  "timestamp": 1770422374.395933,
+  "user": "Test MUZE training with fixed load",
+  "sam_reply": "Got it. I\u2019m going to build on what we\u2019ve discussed\u2014what direction do you want next?",
+  "improved_reply": null,
+  "transcript": "You: Test MUZE training with fixed load\nSAM-Alpha: Got it. I\u2019m going to build on what we\u2019ve discussed\u2014what direction do you want next?",
+  "web_snippet": " Test MUZE training with fixed load at DuckDuckGo All Regions Argentina Australia Austria Belgium (fr) Belgium (nl) Brazil Bulgaria Canada (en) Canada (fr) Catalonia Chile China Colombia Croatia Czech Republic Denmark Estonia Finland France Germany Greece Hong Kong Hungary Iceland India (en) Indonesia (en) Ireland Israel (en) Italy Japan Korea Latvia Lithuania Malaysia (en) Mexico Netherlands New Zealand Norway Pakistan (en) Peru Philippines (en) Poland Portugal Romania Russia Saudi Arabia Singapore Slovakia Slovenia South Africa Spain (ca) Spain (es) Sweden Switzerland (de) Switzerland (fr) T",
+  "teacher_replies": [],
+  "muze": {
+    "ok": true,
+    "training_step": 3,
+    "loss": 0.0,
+    "value": -0.020802,
+    "action": 0,
+    "ts": 1770422400.315579,
+    "rc": 0,
+    "stderr": null
+  }
+}

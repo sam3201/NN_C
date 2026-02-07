@@ -1,0 +1,24 @@
+{
+  "timestamp": 1770342139,
+  "session_start": 1770342139.254459,
+  "duration": 0.0001850128173828125,
+  "system_status": {
+    "sam_available": true,
+    "deepseek_available": true,
+    "ollama_available": true,
+    "web_available": true
+  },
+  "sam_instances": {
+    "sam_alpha": {
+      "name": "SAM-Alpha",
+      "specialty": "Research & Analysis",
+      "knowledge_count": 7
+    },
+    "sam_beta": {
+      "name": "SAM-Beta",
+      "specialty": "Synthesis & Application",
+      "knowledge_count": 7
+    }
+  },
+  "conversation_history": []
+}

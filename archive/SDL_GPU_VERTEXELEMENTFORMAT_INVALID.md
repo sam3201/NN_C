@@ -1,0 +1,7 @@
+# SDL_GPU_VERTEXELEMENTFORMAT_INVALID
+
+Please refer to [SDL_GPUVertexElementFormat](SDL_GPUVertexElementFormat) for details.
+
+----
+[CategoryAPI](CategoryAPI), [CategoryAPIEnumerators](CategoryAPIEnumerators)
+

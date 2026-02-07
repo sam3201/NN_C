@@ -1,0 +1,179 @@
+{
+  "session_time": "2026-02-04T22:53:36.794554",
+  "training_performance": [
+    {
+      "epoch": 1,
+      "accuracy": 100.0,
+      "correct": 277,
+      "total": 277
+    },
+    {
+      "epoch": 2,
+      "accuracy": 100.0,
+      "correct": 277,
+      "total": 277
+    },
+    {
+      "epoch": 3,
+      "accuracy": 100.0,
+      "correct": 277,
+      "total": 277
+    },
+    {
+      "epoch": 4,
+      "accuracy": 100.0,
+      "correct": 277,
+      "total": 277
+    },
+    {
+      "epoch": 5,
+      "accuracy": 100.0,
+      "correct": 277,
+      "total": 277
+    }
+  ],
+  "test_results": [
+    {
+      "problem": "A point (3, 4) is reflected over the x-axis. What are its new coordinates?",
+      "category": "geometry",
+      "correct": true,
+      "ai_response": "For subtraction, I take away the second number from the first. Reflection over x-axis changes the sign of the y-coordinate while keeping x-coordinate the same.\n\nSolution: (3, -4)",
+      "expected_solution": "(3, -4)"
+    },
+    {
+      "problem": "6 \u00d7 4 \u00f7 3 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "Multiplication means repeated addition. 6 \u00d7 4 \u00f7 3 = 24 \u00f7 3 = 8. Multiplication and division from left to right.\n\nSolution: 8",
+      "expected_solution": "8"
+    },
+    {
+      "problem": "2\u00b2 + 3 \u00d7 4 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "To solve this addition problem, I need to add the numbers together. 2\u00b2 + 3 \u00d7 4 = 4 + 12 = 16. Exponents first, then multiplication, then addition.\n\nSolution: 16",
+      "expected_solution": "16"
+    },
+    {
+      "problem": "3x - 4 \u2264 11",
+      "category": "algebra",
+      "correct": true,
+      "ai_response": "For subtraction, I take away the second number from the first. 3x - 4 \u2264 11. Add 4 to both sides: 3x \u2264 15. Divide by 3: x \u2264 5.\n\nSolution: x \u2264 5",
+      "expected_solution": "x \u2264 5"
+    },
+    {
+      "problem": "Find the area under y = x\u00b2 from x = 0 to x = 2.",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "This is an algebraic equation. I need to solve for x. Area = \u222b[0 to 2] x\u00b2dx = [x\u00b3/3] from 0 to 2 = (2\u00b3/3) - (0\u00b3/3) = 8/3.\n\nSolution: 8/3",
+      "expected_solution": "8/3"
+    },
+    {
+      "problem": "Find the circumference of a circle with diameter 12 cm. (Use \u03c0 \u2248 3.14)",
+      "category": "geometry",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Circumference = \u03c0d = 3.14 \u00d7 12 = 37.68 cm.\n\nSolution: 37.68 cm",
+      "expected_solution": "37.68 cm"
+    },
+    {
+      "problem": "Find f'(x) for f(x) = (x\u00b2 + 1)\u00b3",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "To solve this addition problem, I need to add the numbers together. Using chain rule: d/dx(u\u00b3) = 3u\u00b2 \u00d7 du/dx. Here u = x\u00b2 + 1, du/dx = 2x. So f'(x) = 3(x\u00b2 + 1)\u00b2 \u00d7 2x = 6x(x\u00b2 + 1)\u00b2.\n\nSolution: f'(x) = 6x(x\u00b2 + 1)\u00b2",
+      "expected_solution": "f'(x) = 6x(x\u00b2 + 1)\u00b2"
+    },
+    {
+      "problem": "500 - 234 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "For subtraction, I take away the second number from the first. 500 - 234 = 266. 500 - 200 = 300. 300 - 34 = 266.\n\nSolution: 266",
+      "expected_solution": "266"
+    },
+    {
+      "problem": "Find the volume of a triangular prism with base area 24 cm\u00b2 and height 10 cm.",
+      "category": "geometry",
+      "correct": true,
+      "ai_response": "This involves geometric calculations. Volume = base area \u00d7 height = 24 \u00d7 10 = 240 cm\u00b3.\n\nSolution: 240 cm\u00b3",
+      "expected_solution": "240 cm\u00b3"
+    },
+    {
+      "problem": "Find the work done to lift a 10 lb object 20 ft.",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Work = Force \u00d7 Distance = 10 \u00d7 20 = 200 ft-lb.\n\nSolution: 200 ft-lb",
+      "expected_solution": "200 ft-lb"
+    },
+    {
+      "problem": "Find \u222bsin\u00b2(x)dx",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Use identity sin\u00b2(x) = (1 - cos(2x))/2. \u222bsin\u00b2(x)dx = \u222b(1 - cos(2x))/2 dx = x/2 - sin(2x)/4 + C.\n\nSolution: x/2 - sin(2x)/4 + C",
+      "expected_solution": "x/2 - sin(2x)/4 + C"
+    },
+    {
+      "problem": "Find the formula for the nth term: 3, 6, 9, 12, ...",
+      "category": "algebra",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Each term is 3 times its position: 3\u00d71, 3\u00d72, 3\u00d73, 3\u00d74, ...\n\nSolution: a_n = 3n",
+      "expected_solution": "a_n = 3n"
+    },
+    {
+      "problem": "Factor: x\u00b2 + 6x + 8",
+      "category": "algebra",
+      "correct": true,
+      "ai_response": "To solve this addition problem, I need to add the numbers together. Find two numbers that multiply to 8 and add to 6: 2 and 4. So (x + 2)(x + 4).\n\nSolution: (x + 2)(x + 4)",
+      "expected_solution": "(x + 2)(x + 4)"
+    },
+    {
+      "problem": "Find \u222b[1 to 3] x\u00b2dx",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. \u222bx\u00b2dx = x\u00b3/3. Evaluate from 1 to 3: (3\u00b3/3) - (1\u00b3/3) = 27/3 - 1/3 = 26/3.\n\nSolution: 26/3",
+      "expected_solution": "26/3"
+    },
+    {
+      "problem": "2\u00b3 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. 2\u00b3 = 2 \u00d7 2 \u00d7 2 = 8. Multiply 2 by itself 3 times.\n\nSolution: 8",
+      "expected_solution": "8"
+    },
+    {
+      "problem": "In a right triangle, if angle B = 45\u00b0 and the adjacent side is 8 cm, find the hypotenuse.",
+      "category": "geometry",
+      "correct": true,
+      "ai_response": "This involves geometric calculations. cos(B) = adjacent/hypotenuse. cos(45\u00b0) = \u221a2/2 \u2248 0.707. So hypotenuse = 8/0.707 \u2248 11.31 cm.\n\nSolution: 8\u221a2 cm \u2248 11.31 cm",
+      "expected_solution": "8\u221a2 cm \u2248 11.31 cm"
+    },
+    {
+      "problem": "25 \u00d7 4 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "Multiplication means repeated addition. 25 \u00d7 4 = 100. Easy mental math.\n\nSolution: 100",
+      "expected_solution": "100"
+    },
+    {
+      "problem": "789 + 456 = ?",
+      "category": "arithmetic",
+      "correct": true,
+      "ai_response": "To solve this addition problem, I need to add the numbers together. 789 + 456 = 1245. Use column addition: 9+6=15 (write 5, carry 1), 8+5+1=14 (write 4, carry 1), 7+4+1=12. Result: 1245.\n\nSolution: 1245",
+      "expected_solution": "1245"
+    },
+    {
+      "problem": "The product of two consecutive odd integers is 143. Find the integers.",
+      "category": "algebra",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Let first odd integer = x, second = x + 2. x(x + 2) = 143. x\u00b2 + 2x - 143 = 0. (x + 13)(x - 11) = 0. x = 11 or x = -13. Positive solution: 11 and 13.\n\nSolution: 11 and 13",
+      "expected_solution": "11 and 13"
+    },
+    {
+      "problem": "Find \u222bcos(3x)dx",
+      "category": "calculus",
+      "correct": true,
+      "ai_response": "I'll solve this step by step. Using substitution: u = 3x, du = 3dx. \u222bcos(3x)dx = (1/3)\u222bcos(u)du = (1/3)sin(u) + C = sin(3x)/3 + C.\n\nSolution: sin(3x)/3 + C",
+      "expected_solution": "sin(3x)/3 + C"
+    }
+  ],
+  "test_accuracy": 100.0,
+  "total_problems": 277
+}

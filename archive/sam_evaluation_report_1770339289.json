@@ -1,0 +1,166 @@
+{
+  "timestamp": 1770339289,
+  "evaluation_date": "2026-02-05T19:54:49.482410",
+  "system_status": {
+    "sam_available": true,
+    "ollama_available": true
+  },
+  "test_questions_count": 10,
+  "evaluation_results": [
+    {
+      "question": "What is consciousness?",
+      "sam_response": "Through SAM's multi-model architecture, I analyze consciousness using transformer attention, NEAT evolution, and cortical mapping. Consciousness emerges from complex neural interplay.",
+      "sam_response_time": 1.0967254638671875e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.003777027130127,
+      "total_time": 10.003787994384766
+    },
+    {
+      "question": "How do neural networks learn?",
+      "sam_response": "SAM processes neural networks through pattern recognition and adaptive learning. Neural networks learn through weight optimization and hierarchical feature extraction.",
+      "sam_response_time": 1.6689300537109375e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.006632089614868,
+      "total_time": 10.006648778915405
+    },
+    {
+      "question": "What is the nature of reality?",
+      "sam_response": "Using SAM's hierarchical processing, reality may be fundamentally informational. Consciousness emerges from complex information processing patterns.",
+      "sam_response_time": 1.811981201171875e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.00451397895813,
+      "total_time": 10.004532098770142
+    },
+    {
+      "question": "How can we achieve artificial general intelligence?",
+      "sam_response": "SAM analyzes the query through multi-stage neural processing and pattern recognition to generate contextual responses.",
+      "sam_response_time": 1.811981201171875e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.004184007644653,
+      "total_time": 10.004202127456665
+    },
+    {
+      "question": "What are the ethical considerations for AI development?",
+      "sam_response": "SAM recognizes that ethical considerations require careful alignment between neural architectures and human values through adaptive learning mechanisms.",
+      "sam_response_time": 1.5020370483398438e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.034104108810425,
+      "total_time": 10.034119129180908
+    },
+    {
+      "question": "How does SAM process information?",
+      "sam_response": "SAM processes information through multi-stage neural pathways: character patterns \u2192 word recognition \u2192 phrase understanding \u2192 response generation.",
+      "sam_response_time": 2.6226043701171875e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.03842282295227,
+      "total_time": 10.038449048995972
+    },
+    {
+      "question": "What patterns exist in the universe?",
+      "sam_response": "SAM's pattern recognition reveals that the universe exhibits mathematical regularities, fractal structures, and emergent behaviors across scales.",
+      "sam_response_time": 2.4080276489257812e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.008522033691406,
+      "total_time": 10.008546113967896
+    },
+    {
+      "question": "How can we enhance SAM's neural architecture?",
+      "sam_response": "SAM can be enhanced through transformer integration, expanded neural pathways, and improved adaptive learning mechanisms.",
+      "sam_response_time": 4.7206878662109375e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.025215864181519,
+      "total_time": 10.02526307106018
+    },
+    {
+      "question": "What is the relationship between mathematics and consciousness?",
+      "sam_response": "Through SAM's multi-model architecture, I analyze consciousness using transformer attention, NEAT evolution, and cortical mapping. Consciousness emerges from complex neural interplay.",
+      "sam_response_time": 3.3855438232421875e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.0053870677948,
+      "total_time": 10.005420923233032
+    },
+    {
+      "question": "How do different neural architectures compare?",
+      "sam_response": "Different neural architectures excel at different tasks: CNNs for spatial patterns, RNNs for sequences, Transformers for attention, and SAM for adaptive learning.",
+      "sam_response_time": 2.5033950805664062e-05,
+      "evaluation": {
+        "relevance": 5.0,
+        "accuracy": 5.0,
+        "coherence": 5.0,
+        "helpfulness": 5.0,
+        "overall": 5.0,
+        "explanation": "\u23f0\ufe0f Timeout"
+      },
+      "evaluation_time": 10.005316972732544,
+      "total_time": 10.00534200668335
+    }
+  ],
+  "summary": {
+    "avg_overall_score": 5.0,
+    "avg_sam_time": 2.353191375732422e-05,
+    "avg_eval_time": 10.013607597351074
+  }
+}

@@ -1,0 +1,7 @@
+# SDL_GPU_TEXTUREFORMAT_R32G32B32A32_INT
+
+Please refer to [SDL_GPUTextureFormat](SDL_GPUTextureFormat) for details.
+
+----
+[CategoryAPI](CategoryAPI), [CategoryAPIEnumerators](CategoryAPIEnumerators)
+

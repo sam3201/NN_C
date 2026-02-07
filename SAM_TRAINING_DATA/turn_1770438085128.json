@@ -1,0 +1,20 @@
+{
+  "kind": "conversation_training",
+  "timestamp": 1770438084.476929,
+  "user": "Building on Wait, have we considered the - what if we took this in a completely different direction?",
+  "sam_reply": "That's interesting about Building on Wait, have we. What makes you think that?",
+  "improved_reply": null,
+  "transcript": "SAM-Beta: How does That's interesting about Building on apply in practice? I'm curious about the implementation.\nSAM-Gamma: Wait, have we considered the edge cases with How does That's interesting about?\nSAM-Delta: Building on Wait, have we considered the - what if we took this in a completely different direction?\nSAM-Alpha: That's interesting about Building on Wait, have we. What makes you think that?\nSAM-Beta: How does That's interesting about Building on apply in practice? I'm curious about the implementation.\nSAM-Gamma: Wait, have we considered the edge cases with How does That's interesting about?\nSAM-Delta: Building on Wait, have we considered the - what if we took this in a completely different direction?\nSAM-Alpha: That's interesting about Building on Wait, have we. What makes you think that?\nSAM-Beta: How does That's interesting about Building on apply in practice? I'm curious about the implementation.\nSAM-Gamma: Wait, have we considered the edge cases with How does That's interesting about?\nSAM-Delta: Building on Wait, have we considered the - what if we took this in a completely different direction?\nSAM-Alpha: That's interesting about Building on Wait, have we. What makes you think that?\nSAM-Beta: How does That's interesting about Building on apply in practice? I'm curious about the implementation.\nSAM-Gamma: Wait, have we considered the edge cases with How does That's interesting about?\nSAM-Delta: Building on Wait, have we considered the - what if we took this in a completely different direction?\nSAM-Alpha: That's interesting about Building on Wait, have we. What makes you think that?",
+  "web_snippet": "\"Wait, Why Are We Building This?\" The Importance of Problem Framing\n\nPlanning Fallacy - The Decision Lab\n\nPlanning and Implementing Change: The Value of Asking \"What if?\"",
+  "teacher_replies": [],
+  "muze": {
+    "ok": true,
+    "training_step": 211,
+    "loss": 0.0,
+    "value": -0.013312,
+    "action": 0,
+    "ts": 1770438085.1285691,
+    "rc": 0,
+    "stderr": null
+  }
+}

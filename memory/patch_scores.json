@@ -1,0 +1,36 @@
+[
+  {
+    "diff_hash": 419875,
+    "score": 104.5,
+    "tests_passed": true,
+    "attempts": 1,
+    "cluster_hits": 0,
+    "diff_size": 5,
+    "reasons": [
+      "tests_pass",
+      "size_penalty_0.5",
+      "attempt_penalty_5",
+      "cluster_penalty_0",
+      "formatting_bonus_10.0"
+    ],
+    "timestamp": "2026-02-07T00:48:30.725197",
+    "execution_time": null
+  },
+  {
+    "diff_hash": 248288,
+    "score": 104.6,
+    "tests_passed": true,
+    "attempts": 1,
+    "cluster_hits": 0,
+    "diff_size": 4,
+    "reasons": [
+      "tests_pass",
+      "size_penalty_0.4",
+      "attempt_penalty_5",
+      "cluster_penalty_0",
+      "formatting_bonus_10.0"
+    ],
+    "timestamp": "2026-02-07T00:50:54.602278",
+    "execution_time": null
+  }
+]

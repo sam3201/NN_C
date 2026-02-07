@@ -1,0 +1,8 @@
+{
+  "shutdown_time": "2026-02-07T00:04:42.052014",
+  "shutdown_duration": 0.00043702125549316406,
+  "signal_received": true,
+  "components": [
+    {
+      "name": "Complete SAM System",
+      "shutdown_func": 

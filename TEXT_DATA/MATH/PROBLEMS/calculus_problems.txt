@@ -1,0 +1,303 @@
+# CALCULUS PROBLEMS - COMPREHENSIVE COLLECTION
+# Calculus problems with solutions and step-by-step explanations
+
+# LIMITS - BASIC
+Problem: Find lim(x→2) (3x + 1)
+Solution: 7
+Explanation: As x approaches 2, 3x + 1 approaches 3(2) + 1 = 7.
+
+Problem: Find lim(x→3) (x² - 4)
+Solution: 5
+Explanation: As x approaches 3, x² - 4 approaches 3² - 4 = 9 - 4 = 5.
+
+Problem: Find lim(x→1) (2x² + 3x - 1)
+Solution: 4
+Explanation: As x approaches 1, 2x² + 3x - 1 approaches 2(1)² + 3(1) - 1 = 2 + 3 - 1 = 4.
+
+# LIMITS - DIRECT SUBSTITUTION
+Problem: Find lim(x→4) (x² - 16)/(x - 4)
+Solution: 8
+Explanation: Factor numerator: (x - 4)(x + 4)/(x - 4) = x + 4. As x→4, x + 4 = 8.
+
+Problem: Find lim(x→2) (x² - 4)/(x - 2)
+Solution: 4
+Explanation: Factor numerator: (x - 2)(x + 2)/(x - 2) = x + 2. As x→2, x + 2 = 4.
+
+# LIMITS - INFINITY
+Problem: Find lim(x→∞) (3x + 5)/(2x - 1)
+Solution: 3/2
+Explanation: Divide numerator and denominator by x: (3 + 5/x)/(2 - 1/x). As x→∞, 5/x→0 and 1/x→0, so limit = 3/2.
+
+Problem: Find lim(x→∞) (x² + 3x + 2)/(2x² - x + 1)
+Solution: 1/2
+Explanation: Divide numerator and denominator by x²: (1 + 3/x + 2/x²)/(2 - 1/x + 1/x²). As x→∞, terms with 1/x→0, so limit = 1/2.
+
+# LIMITS - ONE-SIDED
+Problem: Find lim(x→0⁺) √x
+Solution: 0
+Explanation: As x approaches 0 from the right, √x approaches 0.
+
+Problem: Find lim(x→0⁻) 1/x
+Solution: -∞
+Explanation: As x approaches 0 from the left, 1/x approaches negative infinity.
+
+# DERIVATIVES - POWER RULE
+Problem: Find f'(x) for f(x) = x³
+Solution: f'(x) = 3x²
+Explanation: Using power rule: d/dx(x^n) = nx^(n-1). So d/dx(x³) = 3x².
+
+Problem: Find f'(x) for f(x) = 5x⁴
+Solution: f'(x) = 20x³
+Explanation: Using power rule: d/dx(5x⁴) = 5 × 4x³ = 20x³.
+
+Problem: Find f'(x) for f(x) = √x
+Solution: f'(x) = 1/(2√x)
+Explanation: √x = x^(1/2). Using power rule: d/dx(x^(1/2)) = (1/2)x^(-1/2) = 1/(2√x).
+
+# DERIVATIVES - PRODUCT RULE
+Problem: Find f'(x) for f(x) = x²(3x + 1)
+Solution: f'(x) = 9x² + 2x
+Explanation: Using product rule: (uv)' = u'v + uv'. Let u = x², v = 3x + 1. u' = 2x, v' = 3. So f'(x) = 2x(3x + 1) + x²(3) = 6x² + 2x + 3x² = 9x² + 2x.
+
+Problem: Find f'(x) for f(x) = (x + 1)(x - 2)
+Solution: f'(x) = 2x - 1
+Explanation: Using product rule: u = x + 1, v = x - 2. u' = 1, v' = 1. So f'(x) = 1(x - 2) + (x + 1)(1) = x - 2 + x + 1 = 2x - 1.
+
+# DERIVATIVES - QUOTIENT RULE
+Problem: Find f'(x) for f(x) = (x + 3)/(x - 1)
+Solution: f'(x) = -4/(x - 1)²
+Explanation: Using quotient rule: (u/v)' = (u'v - uv')/v². u = x + 3, v = x - 1. u' = 1, v' = 1. So f'(x) = (1(x - 1) - (x + 3)(1))/(x - 1)² = (x - 1 - x - 3)/(x - 1)² = -4/(x - 1)².
+
+Problem: Find f'(x) for f(x) = x²/(x + 2)
+Solution: f'(x) = (x² + 4x)/(x + 2)²
+Explanation: Using quotient rule: u = x², v = x + 2. u' = 2x, v' = 1. So f'(x) = (2x(x + 2) - x²(1))/(x + 2)² = (2x² + 4x - x²)/(x + 2)² = (x² + 4x)/(x + 2)².
+
+# DERIVATIVES - CHAIN RULE
+Problem: Find f'(x) for f(x) = (x² + 1)³
+Solution: f'(x) = 6x(x² + 1)²
+Explanation: Using chain rule: d/dx(u³) = 3u² × du/dx. Here u = x² + 1, du/dx = 2x. So f'(x) = 3(x² + 1)² × 2x = 6x(x² + 1)².
+
+Problem: Find f'(x) for f(x) = √(x³ + 2)
+Solution: f'(x) = (3x²)/(2√(x³ + 2))
+Explanation: Using chain rule: d/dx(√u) = (1/(2√u)) × du/dx. Here u = x³ + 2, du/dx = 3x². So f'(x) = (3x²)/(2√(x³ + 2)).
+
+# DERIVATIVES - TRIGONOMETRIC
+Problem: Find f'(x) for f(x) = sin(2x)
+Solution: f'(x) = 2cos(2x)
+Explanation: Using chain rule: d/dx(sin(u)) = cos(u) × du/dx. Here u = 2x, du/dx = 2. So f'(x) = cos(2x) × 2 = 2cos(2x).
+
+Problem: Find f'(x) for f(x) = cos(x²)
+Solution: f'(x) = -2x sin(x²)
+Explanation: Using chain rule: d/dx(cos(u)) = -sin(u) × du/dx. Here u = x², du/dx = 2x. So f'(x) = -sin(x²) × 2x = -2x sin(x²).
+
+Problem: Find f'(x) for f(x) = tan(3x)
+Solution: f'(x) = 3sec²(3x)
+Explanation: Using chain rule: d/dx(tan(u)) = sec²(u) × du/dx. Here u = 3x, du/dx = 3. So f'(x) = sec²(3x) × 3 = 3sec²(3x).
+
+# DERIVATIVES - EXPONENTIAL
+Problem: Find f'(x) for f(x) = e^(2x)
+Solution: f'(x) = 2e^(2x)
+Explanation: Using chain rule: d/dx(e^u) = e^u × du/dx. Here u = 2x, du/dx = 2. So f'(x) = e^(2x) × 2 = 2e^(2x).
+
+Problem: Find f'(x) for f(x) = e^(x²)
+Solution: f'(x) = 2xe^(x²)
+Explanation: Using chain rule: d/dx(e^u) = e^u × du/dx. Here u = x², du/dx = 2x. So f'(x) = e^(x²) × 2x = 2xe^(x²).
+
+# DERIVATIVES - LOGARITHMIC
+Problem: Find f'(x) for f(x) = ln(3x)
+Solution: f'(x) = 1/x
+Explanation: Using chain rule: d/dx(ln(u)) = (1/u) × du/dx. Here u = 3x, du/dx = 3. So f'(x) = (1/(3x)) × 3 = 1/x.
+
+Problem: Find f'(x) for f(x) = ln(x² + 1)
+Solution: f'(x) = 2x/(x² + 1)
+Explanation: Using chain rule: d/dx(ln(u)) = (1/u) × du/dx. Here u = x² + 1, du/dx = 2x. So f'(x) = (1/(x² + 1)) × 2x = 2x/(x² + 1).
+
+# DERIVATIVES - IMPLICIT DIFFERENTIATION
+Problem: Find dy/dx for x² + y² = 25
+Solution: dy/dx = -x/y
+Explanation: Differentiate both sides: 2x + 2y(dy/dx) = 0. Solve for dy/dx: 2y(dy/dx) = -2x. dy/dx = -x/y.
+
+Problem: Find dy/dx for x³ + y³ = 6xy
+Solution: dy/dx = (2y - x²)/(y² - 2x)
+Explanation: Differentiate both sides: 3x² + 3y²(dy/dx) = 6(y + x(dy/dx)). 3x² + 3y²(dy/dx) = 6y + 6x(dy/dx). Collect terms: 3y²(dy/dx) - 6x(dy/dx) = 6y - 3x². (3y² - 6x)(dy/dx) = 6y - 3x². dy/dx = (6y - 3x²)/(3y² - 6x) = (2y - x²)/(y² - 2x).
+
+# APPLICATIONS - RATES OF CHANGE
+Problem: A ball is thrown upward with height h(t) = -16t² + 64t + 8. Find the velocity at t = 2 seconds.
+Solution: 0 ft/s
+Explanation: Velocity = h'(t) = -32t + 64. At t = 2: h'(2) = -32(2) + 64 = -64 + 64 = 0 ft/s.
+
+Problem: The position of a particle is s(t) = t³ - 6t² + 9t. Find when the particle is at rest.
+Solution: t = 1 and t = 3
+Explanation: Particle is at rest when velocity = 0. Velocity = s'(t) = 3t² - 12t + 9 = 3(t² - 4t + 3) = 3(t - 1)(t - 3). Set = 0: t = 1 or t = 3.
+
+# APPLICATIONS - RELATED RATES
+Problem: A circular ripple is expanding. When the radius is 5 cm, the radius is increasing at 2 cm/s. How fast is the area increasing?
+Solution: 20π cm²/s
+Explanation: Area = πr². dA/dt = 2πr(dr/dt) = 2π(5)(2) = 20π cm²/s.
+
+Problem: A 10-foot ladder leans against a wall. If the bottom slides away at 1 ft/s, how fast is the top sliding down when the bottom is 6 ft from the wall?
+Solution: -3/4 ft/s
+Explanation: x² + y² = 100. Differentiate: 2x(dx/dt) + 2y(dy/dt) = 0. When x = 6, y = √(100 - 36) = 8. So 2(6)(1) + 2(8)(dy/dt) = 0. 12 + 16(dy/dt) = 0. dy/dt = -12/16 = -3/4 ft/s.
+
+# APPLICATIONS - OPTIMIZATION
+Problem: Find the dimensions of a rectangle with perimeter 40 cm that has maximum area.
+Solution: 10 cm × 10 cm (square)
+Explanation: Let length = x, width = y. 2x + 2y = 40, so y = 20 - x. Area = x(20 - x) = 20x - x². dA/dx = 20 - 2x = 0. x = 10. y = 20 - 10 = 10.
+
+Problem: Find the number that gives the maximum product when added to its reciprocal.
+Solution: 1
+Explanation: Let the number be x. Product = x(1/x) = 1. Actually, let me reconsider: Product = x + 1/x. d/dx(x + 1/x) = 1 - 1/x² = 0. 1 = 1/x². x² = 1. x = 1 (positive).
+
+# INTEGRALS - BASIC
+Problem: Find ∫(3x² + 2x + 1)dx
+Solution: x³ + x² + x + C
+Explanation: Integrate term by term: ∫3x²dx = x³, ∫2xdx = x², ∫1dx = x. Add constant C.
+
+Problem: Find ∫(4x³ - 2x + 5)dx
+Solution: x⁴ - x² + 5x + C
+Explanation: Integrate term by term: ∫4x³dx = x⁴, ∫(-2x)dx = -x², ∫5dx = 5x. Add constant C.
+
+# INTEGRALS - POWER RULE
+Problem: Find ∫x⁴dx
+Solution: x⁵/5 + C
+Explanation: Using power rule: ∫x^n dx = x^(n+1)/(n+1) + C. So ∫x⁴dx = x⁵/5 + C.
+
+Problem: Find ∫x^(-2)dx
+Solution: -1/x + C
+Explanation: Using power rule: ∫x^(-2)dx = x^(-1)/(-1) + C = -1/x + C.
+
+# INTEGRALS - EXPONENTIAL
+Problem: Find ∫e^(3x)dx
+Solution: e^(3x)/3 + C
+Explanation: Using substitution: u = 3x, du = 3dx. ∫e^(3x)dx = (1/3)∫e^u du = (1/3)e^u + C = e^(3x)/3 + C.
+
+Problem: Find ∫2^x dx
+Solution: 2^x/ln(2) + C
+Explanation: ∫a^x dx = a^x/ln(a) + C. So ∫2^x dx = 2^x/ln(2) + C.
+
+# INTEGRALS - TRIGONOMETRIC
+Problem: Find ∫sin(2x)dx
+Solution: -cos(2x)/2 + C
+Explanation: Using substitution: u = 2x, du = 2dx. ∫sin(2x)dx = (1/2)∫sin(u)du = -(1/2)cos(u) + C = -cos(2x)/2 + C.
+
+Problem: Find ∫cos(3x)dx
+Solution: sin(3x)/3 + C
+Explanation: Using substitution: u = 3x, du = 3dx. ∫cos(3x)dx = (1/3)∫cos(u)du = (1/3)sin(u) + C = sin(3x)/3 + C.
+
+# INTEGRALS - SUBSTITUTION
+Problem: Find ∫x√(x² + 1)dx
+Solution: (x² + 1)^(3/2)/3 + C
+Explanation: Let u = x² + 1, du = 2xdx. ∫x√(x² + 1)dx = (1/2)∫√u du = (1/2) × (2/3)u^(3/2) + C = (x² + 1)^(3/2)/3 + C.
+
+Problem: Find ∫xe^(x²)dx
+Solution: e^(x²)/2 + C
+Explanation: Let u = x², du = 2xdx. ∫xe^(x²)dx = (1/2)∫e^u du = (1/2)e^u + C = e^(x²)/2 + C.
+
+# DEFINITE INTEGRALS
+Problem: Find ∫[0 to 2] (3x + 1)dx
+Solution: 8
+Explanation: ∫(3x + 1)dx = (3/2)x² + x. Evaluate from 0 to 2: [(3/2)(2)² + 2] - [(3/2)(0)² + 0] = [(3/2)(4) + 2] - [0] = 6 + 2 = 8.
+
+Problem: Find ∫[1 to 3] x²dx
+Solution: 26/3
+Explanation: ∫x²dx = x³/3. Evaluate from 1 to 3: (3³/3) - (1³/3) = 27/3 - 1/3 = 26/3.
+
+# APPLICATIONS - AREA
+Problem: Find the area under y = x² from x = 0 to x = 2.
+Solution: 8/3
+Explanation: Area = ∫[0 to 2] x²dx = [x³/3] from 0 to 2 = (2³/3) - (0³/3) = 8/3.
+
+Problem: Find the area between y = x² and y = x from x = 0 to x = 1.
+Solution: 1/6
+Explanation: Area = ∫[0 to 1] (x - x²)dx = [x²/2 - x³/3] from 0 to 1 = (1/2 - 1/3) - (0 - 0) = 1/6.
+
+# APPLICATIONS - VOLUME
+Problem: Find the volume when the region under y = √x from x = 0 to x = 4 is rotated about the x-axis.
+Solution: 8π
+Explanation: Volume = π∫[0 to 4] (√x)²dx = π∫[0 to 4] x dx = π[x²/2] from 0 to 4 = π(16/2 - 0) = 8π.
+
+# APPLICATIONS - WORK
+Problem: Find the work done to lift a 10 lb object 20 ft.
+Solution: 200 ft-lb
+Explanation: Work = Force × Distance = 10 × 20 = 200 ft-lb.
+
+# APPLICATIONS - AVERAGE VALUE
+Problem: Find the average value of f(x) = x² on [0, 2].
+Solution: 4/3
+Explanation: Average value = (1/(b-a))∫[a to b] f(x)dx = (1/2)∫[0 to 2] x²dx = (1/2)[x³/3] from 0 to 2 = (1/2)(8/3) = 4/3.
+
+# FUNDAMENTAL THEOREM OF CALCULUS
+Problem: If F(x) = ∫[0 to x] sin(t)dt, find F'(x).
+Solution: sin(x)
+Explanation: By Fundamental Theorem of Calculus, F'(x) = sin(x).
+
+# INTEGRATION BY PARTS
+Problem: Find ∫xe^x dx
+Solution: xe^x - e^x + C
+Explanation: Use integration by parts: ∫udv = uv - ∫vdu. Let u = x, dv = e^x dx. Then du = dx, v = e^x. So ∫xe^x dx = xe^x - ∫e^x dx = xe^x - e^x + C.
+
+Problem: Find ∫x ln(x)dx
+Solution: (x²/2)ln(x) - x²/4 + C
+Explanation: Use integration by parts: u = ln(x), dv = x dx. Then du = (1/x)dx, v = x²/2. So ∫x ln(x)dx = (x²/2)ln(x) - ∫(x²/2)(1/x)dx = (x²/2)ln(x) - ∫x/2 dx = (x²/2)ln(x) - x²/4 + C.
+
+# TRIGONOMETRIC INTEGRALS
+Problem: Find ∫sin²(x)dx
+Solution: x/2 - sin(2x)/4 + C
+Explanation: Use identity sin²(x) = (1 - cos(2x))/2. ∫sin²(x)dx = ∫(1 - cos(2x))/2 dx = x/2 - sin(2x)/4 + C.
+
+Problem: Find ∫cos²(x)dx
+Solution: x/2 + sin(2x)/4 + C
+Explanation: Use identity cos²(x) = (1 + cos(2x))/2. ∫cos²(x)dx = ∫(1 + cos(2x))/2 dx = x/2 + sin(2x)/4 + C.
+
+# PARTIAL FRACTIONS
+Problem: Find ∫(x + 3)/(x² + x - 2)dx
+Solution: (5/3)ln|x - 1| - (2/3)ln|x + 2| + C
+Explanation: Factor denominator: (x - 1)(x + 2). Partial fractions: (x + 3)/(x - 1)(x + 2) = A/(x - 1) + B/(x + 2). x + 3 = A(x + 2) + B(x - 1). Setting x = 1: 4 = 3A, A = 4/3. Setting x = -2: 1 = -3B, B = -1/3. So ∫[(4/3)/(x - 1) - (1/3)/(x + 2)]dx = (4/3)ln|x - 1| - (1/3)ln|x + 2| + C.
+
+# IMPROPER INTEGRALS
+Problem: Find ∫[1 to ∞] 1/x² dx
+Solution: 1
+Explanation: ∫[1 to ∞] 1/x² dx = lim(b→∞)∫[1 to b] 1/x² dx = lim(b→∞)[-1/x] from 1 to b = lim(b→∞)(-1/b + 1) = 0 + 1 = 1.
+
+# SEQUENCES AND SERIES
+Problem: Find the sum of the series ∑[n=1 to ∞] (1/2)^n
+Solution: 1
+Explanation: This is a geometric series with first term a = 1/2 and ratio r = 1/2. Sum = a/(1 - r) = (1/2)/(1 - 1/2) = (1/2)/(1/2) = 1.
+
+# TAYLOR SERIES
+Problem: Find the Taylor series for e^x centered at x = 0.
+Solution: ∑[n=0 to ∞] x^n/n!
+Explanation: The Taylor series for e^x at x = 0 is 1 + x + x²/2! + x³/3! + ... = ∑[n=0 to ∞] x^n/n!.
+
+# DIFFERENTIAL EQUATIONS
+Problem: Solve dy/dx = 2x with initial condition y(0) = 3.
+Solution: y = x² + 3
+Explanation: Integrate both sides: y = ∫2x dx = x² + C. Using y(0) = 3: 3 = 0² + C, so C = 3. Therefore y = x² + 3.
+
+Problem: Solve dy/dx = ky with initial condition y(0) = y₀.
+Solution: y = y₀e^(kx)
+Explanation: Separate variables: dy/y = k dx. Integrate: ln|y| = kx + C. Exponentiate: y = Ce^(kx). Using y(0) = y₀: y₀ = Ce^0 = C. So y = y₀e^(kx).
+
+# MULTIVARIABLE CALCULUS
+Problem: Find ∂f/∂x for f(x,y) = x²y + 3xy²
+Solution: 2xy + 3y²
+Explanation: Treat y as constant: ∂/∂x(x²y + 3xy²) = 2xy + 3y².
+
+Problem: Find ∂f/∂y for f(x,y) = x²y + 3xy²
+Solution: x² + 6xy
+Explanation: Treat x as constant: ∂/∂y(x²y + 3xy²) = x² + 6xy.
+
+# DIRECTIONAL DERIVATIVES
+Problem: Find the directional derivative of f(x,y) = x² + y² at point (1,2) in direction of vector (3,4).
+Solution: 22/5
+Explanation: Gradient ∇f = (2x, 2y). At (1,2): ∇f = (2, 4). Unit vector in direction (3,4): u = (3,4)/√(3² + 4²) = (3,4)/5. Directional derivative = ∇f · u = (2,4) · (3/5,4/5) = 6/5 + 16/5 = 22/5.
+
+# DOUBLE INTEGRALS
+Problem: Find ∫∫[0 to 1, 0 to 2] (x + y)dy dx
+Solution: 3
+Explanation: Inner integral: ∫[0 to 2] (x + y)dy = [xy + y²/2] from 0 to 2 = 2x + 2. Outer integral: ∫[0 to 1] (2x + 2)dx = [x² + 2x] from 0 to 1 = 1 + 2 = 3.
+
+# LINE INTEGRALS
+Problem: Find ∫C x ds where C is the line segment from (0,0) to (1,1).
+Solution: √2/2
+Explanation: Parameterize: x = t, y = t, 0 ≤ t ≤ 1. ds = √((dx/dt)² + (dy/dt)²)dt = √(1 + 1)dt = √2 dt. ∫C x ds = ∫[0 to 1] t √2 dt = √2[t²/2] from 0 to 1 = √2/2.

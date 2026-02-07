@@ -1,0 +1,7 @@
+{
+  "epoch": 24,
+  "total_samples": 240,
+  "average_loss": 0.3162812754154686,
+  "timestamp": 1770262586.763208,
+  "model": "Mock SAM Model"
+}

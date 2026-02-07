@@ -1,0 +1,241 @@
+# MATHEMATICAL SYMBOLS - COMPREHENSIVE REFERENCE
+# All mathematical symbols with names and meanings
+
+# BASIC ARITHMETIC SYMBOLS
++ Addition - combining numbers
+- Subtraction - taking away
+× Multiplication - repeated addition
+÷ Division - equal parts
+= Equals - same value
+≠ Not equal - different values
+≈ Approximately equal - close to
+< Less than - smaller value
+> Greater than - larger value
+≤ Less than or equal - smaller or same
+≥ Greater than or equal - larger or same
+
+# ADVANCED ARITHMETIC
+± Plus minus - positive or negative
+∓ Minus plus - negative or positive
+∞ Infinity - endless
+∑ Summation - sum of series
+∏ Product - product of series
+√ Square root - number squared equals original
+∛ Cube root - number cubed equals original
+∜ Fourth root - number to fourth power equals original
+
+# FRACTIONS AND RATIOS
+/ Division slash - fraction bar
+⁄ Fraction slash - division
+: Ratio - comparison
+% Percent - per hundred
+‰ Per mille - per thousand
+‱ Per ten thousand - basis point
+
+# EXPONENTS AND POWERS
+^ Exponent - power
+² Squared - to the power of 2
+³ Cubed - to the power of 3
+⁴ Fourth power - to the power of 4
+ⁿ Nth power - to the power of n
+⁻¹ Negative power - reciprocal
+⁰ Zero power - equals 1
+
+# ALGEBRA SYMBOLS
+x Variable - unknown value
+y Variable - unknown value
+z Variable - unknown value
+a,b,c Constants - fixed values
+n Natural number - positive integer
+i Imaginary unit - square root of -1
+π Pi - approximately 3.14159
+e Euler's number - approximately 2.71828
+
+# SET THEORY
+∈ Element of - belongs to set
+∉ Not element of - not in set
+⊂ Subset of - contained in
+⊃ Superset of - contains
+⊆ Subset or equal - contained or equal
+⊇ Superset or equal - contains or equal
+∩ Intersection - common elements
+∪ Union - all elements
+∅ Empty set - no elements
+{ } Set notation - collection
+| | Cardinality - number of elements
+
+# LOGIC SYMBOLS
+∧ Logical AND - both true
+∨ Logical OR - either true
+¬ Logical NOT - opposite
+→ Implies - if then
+↔ If and only if - both directions
+∀ For all - universal quantifier
+∃ There exists - existential quantifier
+∄ There does not exist - no such element
+
+# CALCULUS SYMBOLS
+d/dx Derivative - rate of change
+∂ Partial derivative - multivariable rate of change
+∫ Integral - area under curve
+∫∫ Double integral - surface integral
+∫∫∫ Triple integral - volume integral
+∮ Closed integral - around closed path
+∇ Gradient - vector of partial derivatives
+∇· Divergence - flux density
+∇× Curl - rotation
+Δ Laplacian - second derivative
+
+# GEOMETRY SYMBOLS
+∠ Angle - measure of rotation
+° Degree - 1/360 of circle
+′ Minute - 1/60 of degree
+″ Second - 1/60 of minute
+∥ Parallel - same direction
+⊥ Perpendicular - right angle
+≅ Congruent - same shape and size
+∼ Similar - same shape
+△ Triangle - three-sided polygon
+□ Square - four equal sides
+⊙ Circle - round shape
+∞ Infinity - endless
+
+# TRIGONOMETRY
+sin Sine - opposite/hypotenuse
+cos Cosine - adjacent/hypotenuse
+tan Tangent - opposite/adjacent
+cot Cotangent - adjacent/opposite
+sec Secant - hypotenuse/adjacent
+csc Cosecant - hypotenuse/opposite
+arcsin Arc sine - inverse sine
+arccos Arc cosine - inverse cosine
+arctan Arc tangent - inverse tangent
+
+# COMPLEX NUMBERS
+Re Real part - horizontal component
+Im Imaginary part - vertical component
+|z| Modulus - magnitude
+arg Argument - angle
+z* Complex conjugate - mirror image
+i Imaginary unit - √(-1)
+
+# LINEAR ALGEBRA
+[ ] Matrix - rectangular array
+( ) Vector - ordered list
+| | Determinant - scalar value
+‖ ‖ Norm - length or magnitude
+T Transpose - rows become columns
+⁻¹ Inverse - reciprocal
+⊗ Tensor product - outer product
+⊕ Direct sum - combination
+
+# PROBABILITY AND STATISTICS
+P Probability - likelihood
+E Expected value - average
+V Variance - spread
+σ Standard deviation - square root of variance
+μ Mean - average
+∑ Sum - total
+∏ Product - multiplication
+∫ Integral - continuous sum
+! Factorial - product of integers
+C(n,k) Combination - choose k from n
+P(n,k) Permutation - arrange k from n
+
+# GREEK LETTERS IN MATH
+α Alpha - angle, coefficient
+β Beta - angle, coefficient
+γ Gamma - angle, constant
+δ Delta - change, small amount
+ε Epsilon - small quantity
+ζ Zeta - function
+η Eta - efficiency
+θ Theta - angle, temperature
+ι Iota - unit vector
+κ Kappa - curvature
+λ Lambda - wavelength, eigenvalue
+μ Mu - mean, micro
+ν Nu - frequency
+ξ Xi - random variable
+π Pi - circle constant
+ρ Rho - density, correlation
+σ Sigma - standard deviation, sum
+τ Tau - torque, time constant
+υ Upsilon - displacement
+φ Phi - angle, golden ratio
+χ Chi - distribution
+ψ Psi - wave function
+ω Omega - angular frequency
+
+# UNITS AND MEASUREMENTS
+m Meter - length
+kg Kilogram - mass
+s Second - time
+A Ampere - current
+K Kelvin - temperature
+mol Mole - amount
+cd Candela - luminous intensity
+N Newton - force
+J Joule - energy
+W Watt - power
+Pa Pascal - pressure
+V Volt - voltage
+Ω Ohm - resistance
+C Coulomb - charge
+F Farad - capacitance
+H Henry - inductance
+T Tesla - magnetic field
+G Gauss - magnetic field
+L Liter - volume
+g Gram - mass
+cal Calorie - energy
+kcal Kilocalorie - energy
+Hz Hertz - frequency
+rad Radian - angle
+sr Steradian - solid angle
+
+# SPECIAL CONSTANTS
+π Pi - 3.14159265359...
+e Euler's number - 2.71828182846...
+φ Golden ratio - 1.61803398875...
+γ Euler-Mascheroni - 0.5772156649...
+√2 Square root of 2 - 1.41421356237...
+√3 Square root of 3 - 1.73205080757...
+
+# NUMBER SYSTEMS
+ℕ Natural numbers - {1,2,3,...}
+ℤ Integers - {...,-2,-1,0,1,2,...}
+ℚ Rational numbers - fractions
+ℝ Real numbers - all numbers
+ℂ Complex numbers - a + bi
+ℍ Quaternions - a + bi + cj + dk
+ℙ Prime numbers - {2,3,5,7,11,...}
+
+# INEQUALITY SYMBOLS
+≪ Much less than - very small
+≫ Much greater than - very large
+≈ Approximately equal - close value
+≅ Congruent - exactly equal
+≡ Identical - same in all aspects
+∝ Proportional to - directly related
+∼ Similar - same shape
+≈≈ Approximately equal - very close
+
+# FUNCTION NOTATION
+f(x) Function of x - mapping
+f⁻¹(x) Inverse function - reverse mapping
+f'(x) Derivative - rate of change
+f''(x) Second derivative - acceleration
+∫f(x)dx Integral - antiderivative
+lim Limit - approaching value
+limₓ→a Limit as x approaches a
+limₓ→∞ Limit as x approaches infinity
+limₓ→-∞ Limit as x approaches negative infinity
+
+# SERIES AND SEQUENCES
+aₙ Nth term - sequence element
+Sₙ Nth partial sum - series sum
+∑ₙ=1^∞ Infinite series - sum to infinity
+∑ₙ=1^N Finite series - sum to N
+∏ₙ=1^N Product - multiplication to N
+limₙ→∞ aₙ Limit of sequence - approaching value

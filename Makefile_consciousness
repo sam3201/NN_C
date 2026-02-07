@@ -1,0 +1,28 @@
+# Pure C Consciousness Loss Module - Makefile
+# No external dependencies, pure C implementation
+
+CC = gcc
+CFLAGS = -std=c99 -O3 -Wall -Wextra -fPIC -shared
+PYTHON_INCLUDES = $(shell python3-config --includes)
+PYTHON_LDFLAGS = $(shell python3-config --ldflags)
+
+TARGET = consciousness_c.so
+SOURCES = consciousness_c.c
+HEADERS = consciousness_c.h
+
+all: $(TARGET)
+
+$(TARGET): $(SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) $(PYTHON_INCLUDES) $(SOURCES) -o $(TARGET) $(PYTHON_LDFLAGS) -lm
+
+clean:
+	rm -f $(TARGET) *.o
+
+test: $(TARGET)
+	python3 -c "
+import consciousness_c
+print('✅ Pure C consciousness module loaded successfully!')
+print('No numpy, no external libraries - pure C!')
+"
+
+.PHONY: all clean test

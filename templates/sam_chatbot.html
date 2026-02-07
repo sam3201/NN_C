@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAM + Ollama Chatbot - Web Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .model-status {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .model-status .status-item {
+            display: inline-block;
+            margin-right: 15px;
+        }
+
+        .model-status .status-item.active {
+            color: #4CAF50;
+        }
+
+        .model-status .status-item.inactive {
+            color: #f44336;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            margin-right: auto;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            order: 1;
+        }
+
+        .message.bot .message-avatar {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .evaluation {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            padding: 5px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-style: italic;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .controls button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .controls button:hover {
+            background: #e0e0e0;
+        }
+
+        .error-message {
+            color: #f44336;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .chat-header {
+                border-radius: 0;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .chat-input {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>SAM + Ollama Chatbot</h1>
+            <p>Trained SAM responds, Ollama evaluates quality</p>
+            <span class="status-indicator"></span>
+        </div>
+
+        <div class="model-status">
+            <span class="status-item active" id="sam-status">SAM Model: ✅</span>
+            <span class="status-item active" id="ollama-status">Ollama: ✅</span>
+            <span class="status-item" id="connection-status">Server: 🔄</span>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-avatar">🧠</div>
+                <div>
+                    <div class="message-content">
+                        Hello! I'm your SAM + Ollama Chatbot. I've been trained to answer questions correctly, and Ollama evaluates my responses for quality. Ask me anything!
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="message-avatar">🧠</div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Ask SAM a question..." autocomplete="off">
+                <button id="sendButton">Send</button>
+            </div>
+            <div class="controls">
+                <button id="clearButton">Clear Chat</button>
+                <button id="saveButton">Save Chat</button>
+                <button id="statusButton">Status</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SAMOllamaChatbot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.clearButton = document.getElementById('clearButton');
+                this.saveButton = document.getElementById('saveButton');
+                this.statusButton = document.getElementById('statusButton');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.samStatus = document.getElementById('sam-status');
+                this.ollamaStatus = document.getElementById('ollama-status');
+                this.connectionStatus = document.getElementById('connection-status');
+                
+                this.messageHistory = [];
+                this.isTyping = false;
+                
+                this.initEventListeners();
+                this.checkServerStatus();
+            }
+
+            initEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+                
+                this.clearButton.addEventListener('click', () => this.clearChat());
+                this.saveButton.addEventListener('click', () => this.saveChat());
+                this.statusButton.addEventListener('click', () => this.showStatus());
+            }
+
+            async checkServerStatus() {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    
+                    if (data.sam_available) {
+                        this.samStatus.className = 'status-item active';
+                        this.samStatus.textContent = 'SAM Model: ✅';
+                    } else {
+                        this.samStatus.className = 'status-item inactive';
+                        this.samStatus.textContent = 'SAM Model: ❌';
+                    }
+                    
+                    if (data.ollama_available) {
+                        this.ollamaStatus.className = 'status-item active';
+                        this.ollamaStatus.textContent = 'Ollama: ✅';
+                    } else {
+                        this.ollamaStatus.className = 'status-item inactive';
+                        this.ollamaStatus.textContent = 'Ollama: ❌';
+                    }
+                    
+                    this.connectionStatus.className = 'status-item active';
+                    this.connectionStatus.textContent = 'Server: ✅';
+                    
+                } catch (error) {
+                    this.connectionStatus.className = 'status-item inactive';
+                    this.connectionStatus.textContent = 'Server: ❌';
+                    console.error('Server status check failed:', error);
+                }
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || this.isTyping) return;
+
+                // Add user message
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                
+                // Show typing indicator
+                this.showTypingIndicator();
+                
+                try {
+                    // Send message to server
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Hide typing indicator
+                        this.hideTypingIndicator();
+                        
+                        // Add SAM response with evaluation
+                        this.addMessageWithEvaluation(data.message, data.evaluation, 'bot');
+                    } else {
+                        this.hideTypingIndicator();
+                        this.addMessage(`Error: ${data.error}`, 'bot', true);
+                    }
+                    
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    this.addMessage(`Connection error: ${error.message}`, 'bot', true);
+                    console.error('Send message error:', error);
+                }
+            }
+
+            addMessage(content, sender, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = sender === 'user' ? '👤' : '🧠';
+                
+                const messageContent = document.createElement('div');
+                messageContent.innerHTML = `
+                    <div class="message-content ${isError ? 'error-message' : ''}">${content}</div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
+                `;
+                
+                if (sender === 'user') {
+                    messageDiv.appendChild(messageContent);
+                    messageDiv.appendChild(avatar);
+                } else {
+                    messageDiv.appendChild(avatar);
+                    messageDiv.appendChild(messageContent);
+                }
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                
+                // Add to history
+                this.messageHistory.push({ content, sender, timestamp: Date.now() });
+            }
+
+            addMessageWithEvaluation(content, evaluation, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = '🧠';
+                
+                const messageContent = document.createElement('div');
+                messageContent.innerHTML = `
+                    <div class="message-content">${content}</div>
+                    <div class="evaluation">📊 Ollama Evaluation: ${evaluation}</div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
+                `;
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                
+                // Add to history
+                this.messageHistory.push({ 
+                    content, 
+                    evaluation, 
+                    sender, 
+                    timestamp: Date.now() 
+                });
+            }
+
+            showTypingIndicator() {
+                this.isTyping = true;
+                this.typingIndicator.classList.add('show');
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            hideTypingIndicator() {
+                this.isTyping = false;
+                this.typingIndicator.classList.remove('show');
+            }
+
+            async clearChat() {
+                try {
+                    const response = await fetch('/api/clear');
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Clear messages except the first bot message
+                        while (this.chatMessages.children.length > 1) {
+                            this.chatMessages.removeChild(this.chatMessages.lastChild);
+                        }
+                        this.messageHistory = [];
+                        this.addMessage("Chat cleared! Ready for new conversation.", 'bot');
+                    } else {
+                        this.addMessage(`Error clearing chat: ${data.error}`, 'bot', true);
+                    }
+                } catch (error) {
+                    this.addMessage(`Clear chat error: ${error.message}`, 'bot', true);
+                }
+            }
+
+            async saveChat() {
+                try {
+                    const response = await fetch('/api/save');
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.addMessage(`Chat saved to: ${data.filename}`, 'bot');
+                    } else {
+                        this.addMessage(`Error saving chat: ${data.error}`, 'bot', true);
+                    }
+                } catch (error) {
+                    this.addMessage(`Save chat error: ${error.message}`, 'bot', true);
+                }
+            }
+
+            async showStatus() {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const statusText = `
+                            🧠 SAM Model: ${data.sam_available ? '✅' : '❌'}
+                            🤖 Ollama: ${data.ollama_available ? '✅' : '❌'}
+                            💬 Conversations: ${data.conversation_count}
+                            ⏱️ Session: ${Math.floor(data.session_duration)}s
+                        `;
+                        this.addMessage(statusText, 'bot');
+                    } else {
+                        this.addMessage(`Error getting status: ${data.error}`, 'bot', true);
+                    }
+                } catch (error) {
+                    this.addMessage(`Status error: ${error.message}`, 'bot', true);
+                }
+            }
+
+            getCurrentTime() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        // Initialize chatbot when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SAMOllamaChatbot();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+STAGE1_TRAINING_CONFIG
+=====================
+
+Model Configuration:
+- Input Dimension: 512
+- Output Dimension: 128
+- Attention Heads: 12
+- Sequence Length: 128
+- Batch Size: 16
+- Learning Rate: 0.01
+- Epochs: 50
+
+Data Sources:
+- Raw text files from training_data/raw_texts/
+- Minimal preprocessing for pattern learning
+- Character-level encoding
+- Sliding window sequences
+
+Training Goals:
+- Basic pattern recognition
+- Statistical language modeling
+- Character prediction
+- Text structure learning
+
+Expected Outcomes:
+- 70% pattern accuracy
+- Coherent character sequences
+- Basic text generation
+- Foundation for Stage 2

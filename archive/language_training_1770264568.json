@@ -1,0 +1,75 @@
+{
+  "timestamp": 1770264568.59267,
+  "fundamentals_taught": 14,
+  "patterns_taught": 9,
+  "p_vs_np_taught": 4,
+  "understanding_score": 7.5,
+  "test_results": [
+    {
+      "question": "What is a sentence?",
+      "answer": "The physical process by which a protein chain acquires its native 3D structure Examples: Hemoglobin folding, Enzyme active sites",
+      "expected_type": "definition",
+      "score": 7,
+      "domain": "linguistics",
+      "difficulty": "basic"
+    },
+    {
+      "question": "What does \"prove that\" mean in mathematics?",
+      "answer": "A single unit of language that carries meaning Examples: cat, run",
+      "expected_type": "proof",
+      "score": 6.5,
+      "domain": "mathematics",
+      "difficulty": "basic"
+    },
+    {
+      "question": "What does \u2200x \u2208 \u211d mean?",
+      "answer": "The specialized language used to express mathematical concepts and relationships Examples: \u2200x \u2208 \u211d, x\u00b2 \u2265 0, Let f: \u211d \u2192 \u211d be continuous",
+      "expected_type": "definition",
+      "score": 8,
+      "domain": "mathematics",
+      "difficulty": "intermediate"
+    },
+    {
+      "question": "How does mathematical notation help in expressing concepts?",
+      "answer": "The set of rules that govern how words are combined to form meaningful sentences Examples: Subject-verb agreement, Proper noun capitalization",
+      "expected_type": "explanation",
+      "score": 7,
+      "domain": "mathematics",
+      "difficulty": "intermediate"
+    },
+    {
+      "question": "What is the P vs NP problem?",
+      "answer": "The physical process by which a protein chain acquires its native 3D structure Examples: Hemoglobin folding, Enzyme active sites",
+      "expected_type": "definition",
+      "score": 8,
+      "domain": "complexity_theory",
+      "difficulty": "advanced"
+    },
+    {
+      "question": "What does \"NP-complete\" mean?",
+      "answer": "I understand this is about complexity_theory. This requires specialized knowledge in this area.",
+      "expected_type": "definition",
+      "score": 7.5,
+      "domain": "complexity_theory",
+      "difficulty": "advanced"
+    },
+    {
+      "question": "How do you prove that a problem is NP-complete?",
+      "answer": "The set of rules that govern how words are combined to form meaningful sentences Examples: Subject-verb agreement, Proper noun capitalization",
+      "expected_type": "proof",
+      "score": 8,
+      "domain": "complexity_theory",
+      "difficulty": "advanced"
+    },
+    {
+      "question": "Is P = NP?",
+      "answer": "The physical process by which a protein chain acquires its native 3D structure Examples: Hemoglobin folding, Enzyme active sites",
+      "expected_type": "capability",
+      "score": 8,
+      "domain": "complexity_theory",
+      "difficulty": "expert"
+    }
+  ],
+  "is_ready_for_p_vs_np": true,
+  "final_knowledge_count": 30
+}

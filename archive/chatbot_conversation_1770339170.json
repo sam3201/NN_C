@@ -1,0 +1,31 @@
+{
+  "timestamp": 1770339170,
+  "session_start": 1770339110.02101,
+  "duration": 60.021135091781616,
+  "system_status": {
+    "sam_available": true,
+    "ollama_available": true,
+    "knowledge_available": true
+  },
+  "conversation_count": 2,
+  "conversations": [
+    {
+      "timestamp": 1770339140.0347798,
+      "user": "What is consciousness?",
+      "bot": "\ud83e\udde0 SAM Analysis: SAM analyzes 'What is consciousness?' through multi-stage processing: character \u2192 word \u2192 phrase \u2192 response.\n\n\ud83e\udd16 Ollama Response: \u23f0\ufe0f Ollama timeout - response took too long",
+      "systems_used": [
+        "SAM",
+        "Ollama"
+      ]
+    },
+    {
+      "timestamp": 1770339170.041994,
+      "user": "How does SAM work?",
+      "bot": "\ud83e\udde0 SAM Analysis: Using SAM's self-associative memory, I recognize patterns in 'How does SAM work?' and generate contextual responses.\n\n\ud83e\udd16 Ollama Response: \u23f0\ufe0f Ollama timeout - response took too long",
+      "systems_used": [
+        "SAM",
+        "Ollama"
+      ]
+    }
+  ]
+}

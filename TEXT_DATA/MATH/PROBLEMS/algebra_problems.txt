@@ -1,0 +1,308 @@
+# ALGEBRA PROBLEMS - COMPREHENSIVE COLLECTION
+# Algebra problems with solutions and step-by-step explanations
+
+# BASIC EQUATIONS - ONE STEP
+Problem: x + 5 = 12
+Solution: x = 7
+Explanation: x + 5 = 12. Subtract 5 from both sides: x = 12 - 5 = 7.
+
+Problem: x - 3 = 8
+Solution: x = 11
+Explanation: x - 3 = 8. Add 3 to both sides: x = 8 + 3 = 11.
+
+Problem: 2x = 14
+Solution: x = 7
+Explanation: 2x = 14. Divide both sides by 2: x = 14 ÷ 2 = 7.
+
+Problem: x ÷ 4 = 6
+Solution: x = 24
+Explanation: x ÷ 4 = 6. Multiply both sides by 4: x = 6 × 4 = 24.
+
+# TWO-STEP EQUATIONS
+Problem: 2x + 3 = 11
+Solution: x = 4
+Explanation: 2x + 3 = 11. Subtract 3 from both sides: 2x = 8. Divide both sides by 2: x = 4.
+
+Problem: 3x - 5 = 16
+Solution: x = 7
+Explanation: 3x - 5 = 16. Add 5 to both sides: 3x = 21. Divide both sides by 3: x = 7.
+
+Problem: x/2 + 4 = 9
+Solution: x = 10
+Explanation: x/2 + 4 = 9. Subtract 4 from both sides: x/2 = 5. Multiply both sides by 2: x = 10.
+
+Problem: 4x + 7 = 19
+Solution: x = 3
+Explanation: 4x + 7 = 19. Subtract 7 from both sides: 4x = 12. Divide both sides by 4: x = 3.
+
+# EQUATIONS WITH VARIABLES ON BOTH SIDES
+Problem: 3x + 2 = 2x + 8
+Solution: x = 6
+Explanation: 3x + 2 = 2x + 8. Subtract 2x from both sides: x + 2 = 8. Subtract 2 from both sides: x = 6.
+
+Problem: 5x - 3 = 2x + 9
+Solution: x = 4
+Explanation: 5x - 3 = 2x + 9. Subtract 2x from both sides: 3x - 3 = 9. Add 3 to both sides: 3x = 12. Divide by 3: x = 4.
+
+Problem: 4x + 7 = x + 19
+Solution: x = 4
+Explanation: 4x + 7 = x + 19. Subtract x from both sides: 3x + 7 = 19. Subtract 7 from both sides: 3x = 12. Divide by 3: x = 4.
+
+# DISTRIBUTIVE PROPERTY
+Problem: 3(x + 4) = 21
+Solution: x = 3
+Explanation: 3(x + 4) = 21. Distribute: 3x + 12 = 21. Subtract 12 from both sides: 3x = 9. Divide by 3: x = 3.
+
+Problem: 2(x - 5) = 8
+Solution: x = 9
+Explanation: 2(x - 5) = 8. Distribute: 2x - 10 = 8. Add 10 to both sides: 2x = 18. Divide by 2: x = 9.
+
+Problem: 4(2x + 3) = 36
+Solution: x = 3
+Explanation: 4(2x + 3) = 36. Distribute: 8x + 12 = 36. Subtract 12 from both sides: 8x = 24. Divide by 8: x = 3.
+
+# COMBINING LIKE TERMS
+Problem: 3x + 2x + 5 = 20
+Solution: x = 3
+Explanation: 3x + 2x + 5 = 20. Combine like terms: 5x + 5 = 20. Subtract 5 from both sides: 5x = 15. Divide by 5: x = 3.
+
+Problem: 4x - x + 7 = 22
+Solution: x = 5
+Explanation: 4x - x + 7 = 22. Combine like terms: 3x + 7 = 22. Subtract 7 from both sides: 3x = 15. Divide by 3: x = 5.
+
+# FRACTIONAL EQUATIONS
+Problem: x/3 + 2 = 7
+Solution: x = 15
+Explanation: x/3 + 2 = 7. Subtract 2 from both sides: x/3 = 5. Multiply both sides by 3: x = 15.
+
+Problem: 2x/5 + 3 = 7
+Solution: x = 10
+Explanation: 2x/5 + 3 = 7. Subtract 3 from both sides: 2x/5 = 4. Multiply both sides by 5: 2x = 20. Divide by 2: x = 10.
+
+# DECIMAL EQUATIONS
+Problem: 0.5x + 1.5 = 4
+Solution: x = 5
+Explanation: 0.5x + 1.5 = 4. Subtract 1.5 from both sides: 0.5x = 2.5. Divide by 0.5: x = 5.
+
+Problem: 1.2x - 0.8 = 2.8
+Solution: x = 3
+Explanation: 1.2x - 0.8 = 2.8. Add 0.8 to both sides: 1.2x = 3.6. Divide by 1.2: x = 3.
+
+# WORD PROBLEMS - ONE VARIABLE
+Problem: John is 3 years older than his sister. If John is 15 years old, how old is his sister?
+Solution: 12 years old
+Explanation: Let x = sister's age. John's age = x + 3 = 15. So x + 3 = 15. Subtract 3: x = 12.
+
+Problem: A number increased by 8 is 25. Find the number.
+Solution: 17
+Explanation: Let x = the number. x + 8 = 25. Subtract 8: x = 17.
+
+Problem: Three times a number minus 4 equals 20. Find the number.
+Solution: 8
+Explanation: Let x = the number. 3x - 4 = 20. Add 4: 3x = 24. Divide by 3: x = 8.
+
+Problem: The perimeter of a rectangle is 30 cm. If the length is 10 cm, what is the width?
+Solution: 5 cm
+Explanation: Perimeter = 2(length + width). 30 = 2(10 + w). 30 = 20 + 2w. 10 = 2w. w = 5.
+
+# SYSTEMS OF EQUATIONS - SUBSTITUTION
+Problem: x + y = 10, x = 3
+Solution: x = 3, y = 7
+Explanation: x + y = 10 and x = 3. Substitute x = 3 into first equation: 3 + y = 10. Subtract 3: y = 7.
+
+Problem: 2x + y = 15, y = 3
+Solution: x = 6, y = 3
+Explanation: 2x + y = 15 and y = 3. Substitute y = 3 into first equation: 2x + 3 = 15. Subtract 3: 2x = 12. Divide by 2: x = 6.
+
+# SYSTEMS OF EQUATIONS - ELIMINATION
+Problem: x + y = 12, x - y = 4
+Solution: x = 8, y = 4
+Explanation: Add the equations: (x + y) + (x - y) = 12 + 4. 2x = 16. x = 8. Substitute back: 8 + y = 12. y = 4.
+
+Problem: 2x + y = 14, x + y = 9
+Solution: x = 5, y = 4
+Explanation: Subtract second equation from first: (2x + y) - (x + y) = 14 - 9. x = 5. Substitute back: 5 + y = 9. y = 4.
+
+# INEQUALITIES
+Problem: x + 5 > 12
+Solution: x > 7
+Explanation: x + 5 > 12. Subtract 5 from both sides: x > 7.
+
+Problem: 3x - 4 ≤ 11
+Solution: x ≤ 5
+Explanation: 3x - 4 ≤ 11. Add 4 to both sides: 3x ≤ 15. Divide by 3: x ≤ 5.
+
+Problem: 2x + 7 ≥ 15
+Solution: x ≥ 4
+Explanation: 2x + 7 ≥ 15. Subtract 7 from both sides: 2x ≥ 8. Divide by 2: x ≥ 4.
+
+# ABSOLUTE VALUE EQUATIONS
+Problem: |x| = 5
+Solution: x = 5 or x = -5
+Explanation: |x| = 5 means x is 5 units from 0, so x = 5 or x = -5.
+
+Problem: |x - 3| = 4
+Solution: x = 7 or x = -1
+Explanation: |x - 3| = 4 means x - 3 = 4 or x - 3 = -4. So x = 7 or x = -1.
+
+# EXPONENTS IN EQUATIONS
+Problem: x² = 25
+Solution: x = 5 or x = -5
+Explanation: x² = 25. Take square root of both sides: x = ±√25 = ±5.
+
+Problem: x³ = 27
+Solution: x = 3
+Explanation: x³ = 27. Take cube root of both sides: x = ∛27 = 3.
+
+Problem: 2^x = 16
+Solution: x = 4
+Explanation: 2^x = 16. 2^4 = 16, so x = 4.
+
+# QUADRATIC EQUATIONS - FACTORING
+Problem: x² + 5x + 6 = 0
+Solution: x = -2 or x = -3
+Explanation: x² + 5x + 6 = 0. Factor: (x + 2)(x + 3) = 0. Set each factor to 0: x + 2 = 0 → x = -2, x + 3 = 0 → x = -3.
+
+Problem: x² - 9 = 0
+Solution: x = 3 or x = -3
+Explanation: x² - 9 = 0. Factor as difference of squares: (x + 3)(x - 3) = 0. x = -3 or x = 3.
+
+Problem: x² - 4x - 5 = 0
+Solution: x = 5 or x = -1
+Explanation: x² - 4x - 5 = 0. Factor: (x - 5)(x + 1) = 0. x = 5 or x = -1.
+
+# QUADRATIC FORMULA
+Problem: x² + 3x + 2 = 0
+Solution: x = -1 or x = -2
+Explanation: Using quadratic formula x = [-b ± √(b² - 4ac)]/(2a). Here a = 1, b = 3, c = 2. x = [-3 ± √(9 - 8)]/2 = [-3 ± 1]/2. x = -1 or x = -2.
+
+# RADICAL EQUATIONS
+Problem: √x = 4
+Solution: x = 16
+Explanation: √x = 4. Square both sides: x = 16.
+
+Problem: √(x + 3) = 5
+Solution: x = 22
+Explanation: √(x + 3) = 5. Square both sides: x + 3 = 25. Subtract 3: x = 22.
+
+# RATIO AND PROPORTION
+Problem: If 3 apples cost $6, how much do 5 apples cost?
+Solution: $10
+Explanation: Set up proportion: 3/6 = 5/x. Cross multiply: 3x = 30. x = 10.
+
+Problem: The ratio of boys to girls is 3:4. If there are 21 boys, how many girls are there?
+Solution: 28 girls
+Explanation: Set up proportion: 3/4 = 21/x. Cross multiply: 3x = 84. x = 28.
+
+# PERCENTAGE PROBLEMS
+Problem: A shirt costs $40 and is on sale for 25% off. What is the sale price?
+Solution: $30
+Explanation: 25% of $40 = $10 discount. $40 - $10 = $30.
+
+Problem: A student scored 85% on a test with 40 questions. How many questions did they get right?
+Solution: 34 questions
+Explanation: 85% of 40 = 0.85 × 40 = 34.
+
+# MIXTURE PROBLEMS
+Problem: How many liters of 20% solution must be mixed with 10 liters of 50% solution to get a 30% solution?
+Solution: 20 liters
+Explanation: Let x = liters of 20% solution. 0.20x + 0.50(10) = 0.30(x + 10). 0.20x + 5 = 0.30x + 3. 2 = 0.10x. x = 20.
+
+# WORK PROBLEMS
+Problem: If John can paint a fence in 6 hours and Mary can paint it in 4 hours, how long will it take them together?
+Solution: 2.4 hours
+Explanation: John's rate = 1/6 fence per hour. Mary's rate = 1/4 fence per hour. Combined rate = 1/6 + 1/4 = 5/12. Time = 1 ÷ (5/12) = 12/5 = 2.4 hours.
+
+# DISTANCE PROBLEMS
+Problem: A car travels at 60 mph for 2.5 hours. How far does it travel?
+Solution: 150 miles
+Explanation: Distance = Speed × Time = 60 × 2.5 = 150 miles.
+
+Problem: Two cars start from the same point and travel in opposite directions. One travels at 50 mph and the other at 60 mph. How far apart are they after 3 hours?
+Solution: 330 miles
+Explanation: Total distance = (50 + 60) × 3 = 110 × 3 = 330 miles.
+
+# AGE PROBLEMS
+Problem: Tom is twice as old as his son. In 5 years, Tom will be 1.5 times as old as his son. How old are they now?
+Solution: Tom = 20, Son = 10
+Explanation: Let son's age = x, Tom's age = 2x. In 5 years: 2x + 5 = 1.5(x + 5). 2x + 5 = 1.5x + 7.5. 0.5x = 2.5. x = 5. Son = 5, Tom = 10. Wait, let me recalculate: 2x + 5 = 1.5x + 7.5. 0.5x = 2.5. x = 5. Son = 5, Tom = 10. Actually, let me check: 2x + 5 = 1.5(x + 5). 2x + 5 = 1.5x + 7.5. 0.5x = 2.5. x = 5. Son = 5, Tom = 10. But 10 is twice 5, and in 5 years: 15 vs 7.5, 15 = 1.5 × 10. Actually, let me recalculate: 2x + 5 = 1.5(x + 5). 2x + 5 = 1.5x + 7.5. 0.5x = 2.5. x = 5. Son = 5, Tom = 10. In 5 years: 15 and 10. 15 = 1.5 × 10. Correct.
+
+# GEOMETRY PROBLEMS
+Problem: The perimeter of a square is 40 cm. What is the area?
+Solution: 100 cm²
+Explanation: Perimeter = 4 × side. 40 = 4s. s = 10. Area = s² = 10² = 100.
+
+Problem: The area of a rectangle is 48 cm² and the length is 8 cm. What is the perimeter?
+Solution: 28 cm
+Explanation: Area = length × width. 48 = 8 × w. w = 6. Perimeter = 2(length + width) = 2(8 + 6) = 28.
+
+# NUMBER THEORY
+Problem: Find two consecutive integers whose sum is 45.
+Solution: 22 and 23
+Explanation: Let first integer = x, second = x + 1. x + (x + 1) = 45. 2x + 1 = 45. 2x = 44. x = 22. Numbers are 22 and 23.
+
+Problem: The product of two consecutive odd integers is 143. Find the integers.
+Solution: 11 and 13
+Explanation: Let first odd integer = x, second = x + 2. x(x + 2) = 143. x² + 2x - 143 = 0. (x + 13)(x - 11) = 0. x = 11 or x = -13. Positive solution: 11 and 13.
+
+# EXPRESSIONS
+Problem: Simplify: 3x + 2x - 5x
+Solution: 0
+Explanation: 3x + 2x - 5x = (3 + 2 - 5)x = 0x = 0.
+
+Problem: Simplify: 4(x + 3) - 2x
+Solution: 2x + 12
+Explanation: 4(x + 3) - 2x = 4x + 12 - 2x = 2x + 12.
+
+Problem: Evaluate: 2x² + 3x - 1 when x = 2
+Solution: 13
+Explanation: 2(2)² + 3(2) - 1 = 2(4) + 6 - 1 = 8 + 6 - 1 = 13.
+
+# FACTORING
+Problem: Factor: x² + 6x + 8
+Solution: (x + 2)(x + 4)
+Explanation: Find two numbers that multiply to 8 and add to 6: 2 and 4. So (x + 2)(x + 4).
+
+Problem: Factor: x² - 9
+Solution: (x + 3)(x - 3)
+Explanation: Difference of squares: a² - b² = (a + b)(a - b). Here a = x, b = 3.
+
+Problem: Factor: 2x² + 8x
+Solution: 2x(x + 4)
+Explanation: Factor out greatest common factor 2x: 2x(x + 4).
+
+# GRAPHS
+Problem: Find the slope of the line passing through (2, 3) and (5, 9)
+Solution: 2
+Explanation: Slope = (y₂ - y₁)/(x₂ - x₁) = (9 - 3)/(5 - 2) = 6/3 = 2.
+
+Problem: Find the equation of the line with slope 3 passing through (1, 4)
+Solution: y = 3x + 1
+Explanation: Use point-slope form: y - y₁ = m(x - x₁). y - 4 = 3(x - 1). y - 4 = 3x - 3. y = 3x + 1.
+
+# FUNCTIONS
+Problem: If f(x) = 2x + 3, find f(5)
+Solution: 13
+Explanation: f(5) = 2(5) + 3 = 10 + 3 = 13.
+
+Problem: If g(x) = x² - 4, find g(-2)
+Solution: 0
+Explanation: g(-2) = (-2)² - 4 = 4 - 4 = 0.
+
+# SEQUENCES
+Problem: Find the next term in the sequence: 2, 5, 8, 11, ?
+Solution: 14
+Explanation: Pattern: add 3 each time. 11 + 3 = 14.
+
+Problem: Find the formula for the nth term: 3, 6, 9, 12, ...
+Solution: a_n = 3n
+Explanation: Each term is 3 times its position: 3×1, 3×2, 3×3, 3×4, ...
+
+# LOGARITHMS
+Problem: Solve: 2^x = 8
+Solution: x = 3
+Explanation: 2^x = 8 = 2^3. So x = 3.
+
+Problem: Solve: log₂(x) = 4
+Solution: x = 16
+Explanation: log₂(x) = 4 means 2^4 = x, so x = 16.

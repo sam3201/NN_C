@@ -1,0 +1,31 @@
+# SDL_GPURenderPass
+
+An opaque handle representing a render pass.
+
+## Header File
+
+Defined in [<SDL3/SDL_gpu.h>](https://github.com/libsdl-org/SDL/blob/main/include/SDL3/SDL_gpu.h)
+
+## Syntax
+
+```c
+typedef struct SDL_GPURenderPass SDL_GPURenderPass;
+```
+
+## Remarks
+
+This handle is transient and should not be held or referenced after
+[SDL_EndGPURenderPass](SDL_EndGPURenderPass) is called.
+
+## Version
+
+This struct is available since SDL 3.2.0.
+
+## See Also
+
+- [SDL_BeginGPURenderPass](SDL_BeginGPURenderPass)
+- [SDL_EndGPURenderPass](SDL_EndGPURenderPass)
+
+----
+[CategoryAPI](CategoryAPI), [CategoryAPIDatatype](CategoryAPIDatatype), [CategoryGPU](CategoryGPU)
+

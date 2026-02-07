@@ -1,0 +1,116 @@
+# Complete SAM System - Pure C Implementation Makefile
+# Compiles all C modules and creates Python extensions
+
+# Compiler settings
+CC = gcc
+PYTHON = python3
+PYTHON_CONFIG = python3-config
+
+# Include paths for SAM framework components
+SAM_INCLUDES = -I./ORGANIZED/UTILS/SAM/SAM -I./ORGANIZED/UTILS/utils/NN/MUZE -I./ORGANIZED/UTILS/utils/NN/NEAT -I./ORGANIZED/UTILS/utils/NN/TRANSFORMER
+
+# Compiler flags
+CFLAGS = -Wall -Wextra -O2 -fPIC -std=c99 $(SAM_INCLUDES) $(shell $(PYTHON_CONFIG) --cflags)
+
+# Linker flags - explicit Python linking for ARM64 macOS
+PYTHON_LDFLAGS = -L$(shell $(PYTHON_CONFIG) --prefix)/lib -lpython3.11 -lm -lpthread
+LDFLAGS = $(PYTHON_LDFLAGS)
+
+# Source files for each module
+CONSCIOUSNESS_SRC = consciousness_algorithmic.c
+ORCHESTRATOR_SRC = multi_agent_orchestrator_c.c
+AGENTS_SRC = specialized_agents_c.c
+NEURAL_SRC = neural_network_c.c
+WEBSERVER_SRC = sam_web_server_c.c
+
+# Target shared libraries
+CONSCIOUSNESS_SO = consciousness_algorithmic.so
+ORCHESTRATOR_SO = multi_agent_orchestrator_c.so
+AGENTS_SO = specialized_agents_c.so
+NEURAL_SO = neural_network_c.so
+WEBSERVER_SO = sam_web_server_c.so
+
+# Default target
+all: $(CONSCIOUSNESS_SO) $(ORCHESTRATOR_SO) $(AGENTS_SO) $(NEURAL_SO) $(WEBSERVER_SO)
+	@echo "✅ All SAM C modules compiled successfully"
+
+# Consciousness module
+$(CONSCIOUSNESS_SO): $(CONSCIOUSNESS_SRC)
+	@echo "🧠 Compiling consciousness module..."
+	$(CC) $(CFLAGS) -shared $< -o $@ $(LDFLAGS)
+	@echo "✅ Consciousness module ready"
+
+# Multi-agent orchestrator
+$(ORCHESTRATOR_SO): $(ORCHESTRATOR_SRC)
+	@echo "🤖 Compiling multi-agent orchestrator..."
+	$(CC) $(CFLAGS) -shared $< -o $@ $(LDFLAGS)
+	@echo "✅ Multi-agent orchestrator ready"
+
+# Specialized agents
+$(AGENTS_SO): $(AGENTS_SRC)
+	@echo "🎯 Compiling specialized agents..."
+	$(CC) $(CFLAGS) -shared $< -o $@ $(LDFLAGS)
+	@echo "✅ Specialized agents ready"
+
+# Neural network framework
+$(NEURAL_SO): $(NEURAL_SRC)
+	@echo "🧠 Compiling neural network framework..."
+	$(CC) $(CFLAGS) -shared $< -o $@ $(LDFLAGS)
+	@echo "✅ Neural network framework ready"
+
+# Web server
+$(WEBSERVER_SO): $(WEBSERVER_SRC)
+	@echo "🖥️  Compiling web server..."
+	$(CC) $(CFLAGS) -shared $< -o $@ $(LDFLAGS)
+	@echo "✅ Web server ready"
+
+# Clean build artifacts
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	rm -f *.so *.o
+	@echo "✅ Clean completed"
+
+# Test compilation of all modules
+test: all
+	@echo "🧪 Testing Python imports..."
+	$(PYTHON) -c "import consciousness_algorithmic; print('✅ Consciousness import OK')"
+	$(PYTHON) -c "import multi_agent_orchestrator_c; print('✅ Orchestrator import OK')"
+	$(PYTHON) -c "import specialized_agents_c; print('✅ Agents import OK')"
+	$(PYTHON) -c "import neural_network_c; print('✅ Neural network import OK')"
+	$(PYTHON) -c "import sam_web_server_c; print('✅ Web server import OK')"
+	@echo "✅ All imports successful"
+
+# Install dependencies (if needed)
+deps:
+	@echo "📦 Installing Python dependencies..."
+	$(PYTHON) -m pip install --upgrade pip
+	$(PYTHON) -m pip install numpy torch flask requests beautifulsoup4
+	@echo "✅ Dependencies installed"
+
+# Full system test
+system_test: test
+	@echo "🚀 Running complete system test..."
+	$(PYTHON) complete_sam_system_clean_c.py
+	@echo "✅ System test completed"
+
+# Help
+help:
+	@echo "SAM Pure C Implementation Build System"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all          - Build all C modules"
+	@echo "  clean        - Remove build artifacts"
+	@echo "  test         - Test Python imports"
+	@echo "  deps         - Install Python dependencies"
+	@echo "  system_test  - Run complete system test"
+	@echo ""
+	@echo "Modules:"
+	@echo "  consciousness_algorithmic.so    - Algorithmic consciousness"
+	@echo "  multi_agent_orchestrator_c.so   - Multi-agent orchestration"
+	@echo "  specialized_agents_c.so         - Specialized agents"
+	@echo "  neural_network_c.so             - Neural network framework"
+	@echo "  sam_web_server_c.so            - Web server"
+	@echo ""
+	@echo "Usage: make [target]"
+
+.PHONY: all clean test deps system_test help

@@ -1,0 +1,20 @@
+{
+  "kind": "conversation_training",
+  "timestamp": 1770424230.5611289,
+  "user": "hanging in there are you doing all right?",
+  "sam_reply": "Got it. What\u2019s the main constraint you care about most?",
+  "improved_reply": null,
+  "transcript": "You: hi how are we all doing today?\nSAM (General): Hey \u2014 I\u2019m here. What do you want to dig into?\nOllama-CodeLlama: I'm happy to be here! How can I help you with your question today?\nOllama-Llama2: Hanging in there! How about you? \ud83d\ude0a\nYou: hanging in there are you doing all right?\nSAM (General): Got it. What\u2019s the main constraint you care about most?",
+  "web_snippet": " hanging in there are you doing all right? at DuckDuckGo All Regions Argentina Australia Austria Belgium (fr) Belgium (nl) Brazil Bulgaria Canada (en) Canada (fr) Catalonia Chile China Colombia Croatia Czech Republic Denmark Estonia Finland France Germany Greece Hong Kong Hungary Iceland India (en) Indonesia (en) Ireland Israel (en) Italy Japan Korea Latvia Lithuania Malaysia (en) Mexico Netherlands New Zealand Norway Pakistan (en) Peru Philippines (en) Poland Portugal Romania Russia Saudi Arabia Singapore Slovakia Slovenia South Africa Spain (ca) Spain (es) Sweden Switzerland (de) Switzerland",
+  "teacher_replies": [],
+  "muze": {
+    "ok": true,
+    "training_step": 5,
+    "loss": 0.0,
+    "value": 0.004304,
+    "action": 0,
+    "ts": 1770424256.6008441,
+    "rc": 0,
+    "stderr": null
+  }
+}

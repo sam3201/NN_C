@@ -1,0 +1,13 @@
+{
+  "question": "What is artificial intelligence?",
+  "keywords": [
+    "artificial",
+    "intelligence",
+    "AI",
+    "machine",
+    "learning"
+  ],
+  "category": "technology",
+  "correct_answer": "Artificial Intelligence (AI) is the field of computer science focused on creating systems that can perform tasks that typically require human intelligence. This includes learning from experience, reasoning, problem-solving, perception, and language understanding. AI ranges from narrow AI (designed for specific tasks) to general AI (with human-like intelligence across domains), using techniques like machine learning, neural networks, and deep learning.",
+  "timestamp": 1770339793.8180401
+}

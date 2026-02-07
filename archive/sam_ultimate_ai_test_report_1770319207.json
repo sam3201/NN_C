@@ -1,0 +1,25 @@
+{
+  "timestamp": 1770319207.444277,
+  "test_results": {
+    "sam_model": true,
+    "ollama": false,
+    "web_scraping": true,
+    "knowledge_base": true,
+    "reasoning": false,
+    "integration": false
+  },
+  "integration_score": 3,
+  "max_score": 5,
+  "knowledge_summary": {
+    "mathematical_knowledge": 429,
+    "protein_knowledge": 6,
+    "concept_knowledge": 78,
+    "training_sessions": 3,
+    "knowledge_categories": 3,
+    "total_knowledge_items": 513
+  },
+  "recommendations": [
+    "\u274c Ollama not available - install Olaunch and pull codellama model",
+    "\u274c Reasoning capabilities limited - check model integration"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/samueldasari/Personal/NN_C/utils/SDL/build/cmake_install.cmake",
+		"/Users/samueldasari/Personal/NN_C/utils/SDL/build/test/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

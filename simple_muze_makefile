@@ -1,0 +1,19 @@
+CC = gcc
+CFLAGS = -O3 -march=native -flto -Wall -Wextra -ffast-math
+INCLUDES = -I.
+
+MUZE_SRC = sam_muze_dominant_compression.c
+OUTPUT = sam_muze_dc
+
+all: $(OUTPUT)
+
+$(OUTPUT): $(MUZE_SRC)
+	$(CC) $(CFLAGS) $(INCLUDES) $(MUZE_SRC) -o $(OUTPUT)
+
+clean:
+	rm -f $(OUTPUT) *.o
+
+test: $(OUTPUT)
+	./$(OUTPUT)
+
+.PHONY: all clean test

@@ -1,0 +1,232 @@
+{
+  "session_time": "2026-02-04T23:01:41.494959",
+  "training_results": [
+    {
+      "epoch": 1,
+      "accuracy": 100.0,
+      "correct": 301,
+      "total": 301,
+      "new_knowledge": 24,
+      "category_results": {
+        "arithmetic": {
+          "accuracy": 100.0,
+          "correct": 81,
+          "total": 81
+        },
+        "algebra": {
+          "accuracy": 100.0,
+          "correct": 69,
+          "total": 69
+        },
+        "geometry": {
+          "accuracy": 100.0,
+          "correct": 61,
+          "total": 61
+        },
+        "calculus": {
+          "accuracy": 100.0,
+          "correct": 66,
+          "total": 66
+        },
+        "discrete_math": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "graph_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "number_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "probability": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "statistics": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "linear_algebra": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "optimization": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "np_problems": {
+          "accuracy": 100.0,
+          "correct": 10,
+          "total": 10
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "accuracy": 100.0,
+      "correct": 301,
+      "total": 301,
+      "new_knowledge": 0,
+      "category_results": {
+        "arithmetic": {
+          "accuracy": 100.0,
+          "correct": 81,
+          "total": 81
+        },
+        "algebra": {
+          "accuracy": 100.0,
+          "correct": 69,
+          "total": 69
+        },
+        "geometry": {
+          "accuracy": 100.0,
+          "correct": 61,
+          "total": 61
+        },
+        "calculus": {
+          "accuracy": 100.0,
+          "correct": 66,
+          "total": 66
+        },
+        "discrete_math": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "graph_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "number_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "probability": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "statistics": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "linear_algebra": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "optimization": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "np_problems": {
+          "accuracy": 100.0,
+          "correct": 10,
+          "total": 10
+        }
+      }
+    },
+    {
+      "epoch": 3,
+      "accuracy": 100.0,
+      "correct": 301,
+      "total": 301,
+      "new_knowledge": 0,
+      "category_results": {
+        "arithmetic": {
+          "accuracy": 100.0,
+          "correct": 81,
+          "total": 81
+        },
+        "algebra": {
+          "accuracy": 100.0,
+          "correct": 69,
+          "total": 69
+        },
+        "geometry": {
+          "accuracy": 100.0,
+          "correct": 61,
+          "total": 61
+        },
+        "calculus": {
+          "accuracy": 100.0,
+          "correct": 66,
+          "total": 66
+        },
+        "discrete_math": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "graph_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "number_theory": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "probability": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "statistics": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "linear_algebra": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "optimization": {
+          "accuracy": 100.0,
+          "correct": 2,
+          "total": 2
+        },
+        "np_problems": {
+          "accuracy": 100.0,
+          "correct": 10,
+          "total": 10
+        }
+      }
+    }
+  ],
+  "test_results": {
+    "accuracy": 100.0,
+    "knowledge_hit_rate": 100.0,
+    "total_tests": 12
+  },
+  "knowledge_summary": {
+    "mathematical_knowledge": 300,
+    "protein_knowledge": 6,
+    "concept_knowledge": 1,
+    "training_sessions": 3,
+    "knowledge_categories": 3,
+    "total_knowledge_items": 307
+  },
+  "complexity_analysis": {
+    "P": 291,
+    "NP": 0,
+    "NP-complete": 9,
+    "NP-hard": 1,
+    "Unknown": 0
+  }
+}

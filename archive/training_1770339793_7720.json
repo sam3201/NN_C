@@ -1,0 +1,14 @@
+{
+  "question": "How do black holes work?",
+  "keywords": [
+    "black",
+    "hole",
+    "gravity",
+    "event",
+    "horizon",
+    "singularity"
+  ],
+  "category": "physics",
+  "correct_answer": "Black holes form when massive stars collapse under their own gravity at the end of their life cycle. They create a region of spacetime with gravity so strong that nothing can escape, not even light. The boundary is called the event horizon, and at the center is a singularity - a point of infinite density. Black holes warp spacetime around them and can grow by absorbing matter and merging with other black holes.",
+  "timestamp": 1770339793.817576
+}

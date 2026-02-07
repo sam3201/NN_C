@@ -1,0 +1,61 @@
+{
+  "mathematics": {
+    "categories": {
+      "calculus": 69,
+      "arithmetic": 79,
+      "algebra": 69,
+      "geometry": 61,
+      "discrete_math": 2,
+      "graph_theory": 2,
+      "number_theory": 3,
+      "probability": 2,
+      "statistics": 2,
+      "linear_algebra": 3,
+      "optimization": 2,
+      "np_problems": 10,
+      "differential_equations": 1,
+      "pretrained_model": 1239,
+      "comprehensive_training": 15
+    },
+    "total_items": 1559,
+    "last_updated": 1770318253.3436
+  },
+  "protein_folding": {
+    "categories": {
+      "helix": 5,
+      "sheet": 1
+    },
+    "total_items": 6,
+    "last_updated": 1770263819.490813
+  },
+  "concepts": {
+    "categories": {
+      "biochemistry": 1,
+      "web_scraped": 41,
+      "ai_analysis": 12,
+      "linguistics": 5,
+      "mathematics": 5,
+      "logic": 2,
+      "problem_solving": 2,
+      "algorithms": 1,
+      "complexity_theory": 4,
+      "language_patterns": 9,
+      "transformer_reasoning": 2,
+      "pretrained_model": 12,
+      "synthesis": 128,
+      "language_understanding": 481,
+      "web_research": 551,
+      "advanced_reasoning": 15,
+      "comprehensive_training": 11,
+      "codeLlama_training": 4,
+      "response_patterns": 4,
+      "sam_web_integration": 10,
+      "sam_training": 164,
+      "ollama_integration": 10,
+      "system_synthesis": 16,
+      "sam_web_deployment": 24
+    },
+    "total_items": 1514,
+    "last_updated": 1770338885.4027479
+  }
+}

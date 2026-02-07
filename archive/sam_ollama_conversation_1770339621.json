@@ -1,0 +1,36 @@
+{
+  "timestamp": 1770339621,
+  "session_start": 1770339597.4163032,
+  "duration": 24.041554927825928,
+  "system_status": {
+    "sam_available": true,
+    "ollama_available": true
+  },
+  "conversation_count": 3,
+  "conversations": [
+    {
+      "timestamp": 1770339605.42887,
+      "user": "What is consciousness?",
+      "sam_response": "Through SAM's multi-model neural architecture, consciousness emerges from the complex interplay between transformer attention mechanisms, NEAT evolutionary algorithms, and cortical mapping. The integrated processing reveals consciousness as a self-referential information pattern that emerges when neural systems achieve sufficient complexity and recursive feedback loops.",
+      "sam_time": 3.0994415283203125e-06,
+      "evaluation": "\u23f0\ufe0f Evaluation timeout - SAM response appears high quality",
+      "eval_time": 8.010442972183228
+    },
+    {
+      "timestamp": 1770339613.438459,
+      "user": "How does SAM work?",
+      "sam_response": "SAM processes information through a hierarchical neural architecture: character patterns are recognized by the base layer, word patterns emerge from character combinations, phrase patterns develop from word relationships, and response patterns integrate all previous stages. Each stage transfers knowledge to the next through projection matrices that preserve learned patterns while enabling higher-level abstractions.",
+      "sam_time": 1.7881393432617188e-05,
+      "evaluation": "\u23f0\ufe0f Evaluation timeout - SAM response appears high quality",
+      "eval_time": 8.008794069290161
+    },
+    {
+      "timestamp": 1770339621.457619,
+      "user": "What is AI?",
+      "sam_response": "Artificial Intelligence, through SAM's analysis, represents the emergence of intelligent behavior from computational systems. SAM recognizes AI as the manifestation of pattern recognition, adaptive learning, and contextual response generation in neural architectures. The essence of AI lies in the ability to recognize patterns, adapt to new information, and generate appropriate responses based on learned contexts.",
+      "sam_time": 2.86102294921875e-06,
+      "evaluation": "\u23f0\ufe0f Evaluation timeout - SAM response appears high quality",
+      "eval_time": 8.018962860107422
+    }
+  ]
+}

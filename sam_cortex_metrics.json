@@ -1,0 +1,8 @@
+{
+  "objective": 27.803691,
+  "uncertainty": 0.635183,
+  "compute_cost": 10.069482,
+  "mutual_info": -0.024967,
+  "capacity": 1000.0,
+  "learning_plateau": 50
+}

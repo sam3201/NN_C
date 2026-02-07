@@ -1,0 +1,31 @@
+{
+  "timestamp": 1770339314,
+  "session_start": 1770339295.9647942,
+  "duration": 18.911787748336792,
+  "system_status": {
+    "sam_available": true,
+    "ollama_available": true,
+    "knowledge_available": true
+  },
+  "conversation_count": 2,
+  "conversations": [
+    {
+      "timestamp": 1770339299.8716679,
+      "user": "Hello",
+      "bot": "\ud83e\udde0 SAM Analysis: SAM analyzes 'Hello' through multi-stage processing: character \u2192 word \u2192 phrase \u2192 response.\n\n\ud83e\udd16 Ollama Response: Hi there! How are you?",
+      "systems_used": [
+        "SAM",
+        "Ollama"
+      ]
+    },
+    {
+      "timestamp": 1770339314.876471,
+      "user": "What is AI?",
+      "bot": "\ud83e\udde0 SAM Analysis: Using SAM's self-associative memory, I recognize patterns in 'What is AI?' and generate contextual responses.\n\n\ud83e\udd16 Ollama Response: \u23f0\ufe0f Ollama timeout - trying faster response...",
+      "systems_used": [
+        "SAM",
+        "Ollama"
+      ]
+    }
+  ]
+}

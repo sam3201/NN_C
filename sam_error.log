@@ -1,0 +1,161 @@
+[2026-02-07 02:36:44 -0500] [62111] [INFO] Starting gunicorn 25.0.2
+[2026-02-07 02:36:44 -0500] [62111] [INFO] Listening at: http://127.0.0.1:8080 (62111)
+[2026-02-07 02:36:44 -0500] [62111] [INFO] Using worker: sync
+[2026-02-07 02:36:44 -0500] [62112] [INFO] Booting worker with pid: 62112
+[2026-02-07 02:36:44 -0500] [62112] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/arbiter.py", line 684, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1398, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1371, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1342, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 938, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 893, in get_code
+  File "<frozen importlib._bootstrap_external>", line 823, in source_to_code
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "/Users/samueldasari/Personal/NN_C/sam_web_server.py", line 379
+    self.app.logger.info("🚀 Starting Optimized SAM Web Server"        self.app.logger.info(f"🌐 Host: {host}:{port}")
+                        ^
+SyntaxError: '(' was never closed
+[2026-02-07 02:36:44 -0500] [62112] [INFO] Worker exiting (pid: 62112)
+[2026-02-07 02:36:44 -0500] [62113] [INFO] Booting worker with pid: 62113
+[2026-02-07 02:36:44 -0500] [62113] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/arbiter.py", line 684, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1398, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1371, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1342, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 938, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 893, in get_code
+  File "<frozen importlib._bootstrap_external>", line 823, in source_to_code
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "/Users/samueldasari/Personal/NN_C/sam_web_server.py", line 379
+    self.app.logger.info("🚀 Starting Optimized SAM Web Server"        self.app.logger.info(f"🌐 Host: {host}:{port}")
+                        ^
+SyntaxError: '(' was never closed
+[2026-02-07 02:36:44 -0500] [62113] [INFO] Worker exiting (pid: 62113)
+[2026-02-07 02:36:44 -0500] [62114] [INFO] Booting worker with pid: 62114
+[2026-02-07 02:36:44 -0500] [62114] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/arbiter.py", line 684, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1398, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1371, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1342, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 938, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 893, in get_code
+  File "<frozen importlib._bootstrap_external>", line 823, in source_to_code
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "/Users/samueldasari/Personal/NN_C/sam_web_server.py", line 379
+    self.app.logger.info("🚀 Starting Optimized SAM Web Server"        self.app.logger.info(f"🌐 Host: {host}:{port}")
+                        ^
+SyntaxError: '(' was never closed
+[2026-02-07 02:36:44 -0500] [62114] [INFO] Worker exiting (pid: 62114)
+[2026-02-07 02:36:44 -0500] [62115] [INFO] Booting worker with pid: 62115
+[2026-02-07 02:36:44 -0500] [62115] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/arbiter.py", line 684, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/samueldasari/Personal/NN_C/venv/lib/python3.14/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1398, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1371, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1342, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 938, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 893, in get_code
+  File "<frozen importlib._bootstrap_external>", line 823, in source_to_code
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "/Users/samueldasari/Personal/NN_C/sam_web_server.py", line 379
+    self.app.logger.info("🚀 Starting Optimized SAM Web Server"        self.app.logger.info(f"🌐 Host: {host}:{port}")
+                        ^
+SyntaxError: '(' was never closed
+[2026-02-07 02:36:44 -0500] [62115] [INFO] Worker exiting (pid: 62115)
+[2026-02-07 02:36:44 -0500] [62111] [ERROR] Worker (pid:62115) exited with code 3.
+[2026-02-07 02:36:44 -0500] [62111] [ERROR] Worker (pid:62114) exited with code 3.

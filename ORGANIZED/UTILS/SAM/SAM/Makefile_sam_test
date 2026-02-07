@@ -1,0 +1,16 @@
+CC=gcc
+CFLAGS=-std=c99 -O3 -Wall -Wextra
+INCLUDES=-I../../utils/NN/MUZE -I../../utils/NN/NEAT -I../../utils/NN/TRANSFORMER
+LIBS=-lm
+
+TARGET=test_sam_integration
+
+all: $(TARGET)
+
+$(TARGET): test_sam_integration.c SAM.c
+	$(CC) $(CFLAGS) $(INCLUDES) test_sam_integration.c SAM.c -o $(TARGET) $(LIBS)
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: all clean

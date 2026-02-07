@@ -1,0 +1,22 @@
+[
+  {
+    "timestamp": 1770318134.294963,
+    "user": "what is 2 + 2",
+    "type": "user_input"
+  },
+  {
+    "timestamp": 1770318136.128331,
+    "ai": "The answer to 2 + 2 is 4.",
+    "type": "ai_response"
+  },
+  {
+    "timestamp": 1770318136.1283882,
+    "user": "solve x + 3 = 7",
+    "type": "user_input"
+  },
+  {
+    "timestamp": 1770318142.50048,
+    "ai": "To solve the equation x + 3 = 7, we need to isolate the variable x.\n\nFirst, we can subtract 3 from both sides of the equation to get:\n\nx = 7 - 3\n\nx = 4\n\nTherefore, the value of x is 4.",
+    "type": "ai_response"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "question": "How does the internet work?",
+  "keywords": [
+    "internet",
+    "network",
+    "protocol",
+    "data",
+    "packets"
+  ],
+  "category": "technology",
+  "correct_answer": "The internet works through a global network of interconnected computers using standardized protocols like TCP/IP. When you send data, it's broken into packets that travel through routers and switches across the network. Each packet has the destination address, and they can take different routes to reach their destination, where they're reassembled. The internet uses domain names (DNS) to translate human-readable addresses to IP numbers and various protocols for different services (HTTP for web, SMTP for email, etc.).",
+  "timestamp": 1770339793.818642
+}
