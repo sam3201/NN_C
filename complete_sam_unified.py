@@ -38,6 +38,7 @@ from typing import Dict, List, Optional, Callable, Any, Union, Tuple
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import GoalManager, create_conversationalist_tasks
 from sam_config import config   
+
 # C Core Modules (Performance Optimized)
 import consciousness_algorithmic
 import multi_agent_orchestrator_c
@@ -1188,27 +1189,27 @@ class ProductionMetaAgent:
     """Production-grade Meta-Agent for safe self-healing AGI
     Implements complete O→L→P→V→S→A algorithm with learning state"""
     
-    def __init__(self, observer=None, localizer=None, generator=None, verifier=None):
-        # Required sub-agents
-        self.observer = observer
-        self.localizer = localizer
-        self.generator = generator
-        self.verifier = verifier
+def __init__(self, observer=None, localizer=None, generator=None, verifier=None):
+    # Required sub-agents
+    self.observer = observer
+    self.localizer = localizer
+    self.generator = generator
+    self.verifier = verifier
 
-        # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
-        self.failure_clusters = {}     # cluster_id -> list[failure]
-        self.patch_history = []        # list of applied/rejected patches
-        self.confidence_threshold = 0.80  # Fixed confidence threshold
+    # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
+    self.failure_clusters = {}     # cluster_id -> list[failure]
+    self.patch_history = []        # list of applied/rejected patches
+    self.confidence_threshold = 0.80  # Fixed confidence threshold
 
-        # Internal counters
-        self._cluster_id_counter = 0
+    # Internal counters
+    self._cluster_id_counter = 0
 
-        print(" Production Meta-Agent initialized with learning state")
-        print("   Observer Agent: Active")
-        print("   Fault Localizer: Active")
-        print("   Patch Generator: Active")
-        print("   Verifier Judge: Active")
-        print(f"   Confidence Threshold: {self.confidence_threshold}")
+    print(" Production Meta-Agent initialized with learning state")
+    print("   Observer Agent: Active")
+    print("   Fault Localizer: Active")
+    print("   Patch Generator: Active")
+    print("   Verifier Judge: Active")
+    print(f"   Confidence Threshold: {self.confidence_threshold}")
 
     # ===========================
     # FAILURE CLUSTERING
