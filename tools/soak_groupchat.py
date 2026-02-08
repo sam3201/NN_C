@@ -16,6 +16,8 @@ def run_server():
     log_path = repo_root / "logs" / "soak_groupchat.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_file = open(log_path, "w", encoding="utf-8")
+    os.dup2(log_file.fileno(), 1)
+    os.dup2(log_file.fileno(), 2)
     sys.stdout = log_file
     sys.stderr = log_file
     from complete_sam_unified import UnifiedSAMSystem
@@ -78,12 +80,13 @@ def main():
     os.environ.setdefault('SAM_TEACHER_MIN_SIM', '0.72')
     os.environ.setdefault('SAM_TEACHER_MIN_VOTES', '1')
     os.environ.setdefault('SAM_DISTILL_PATH', 'training/distilled/groupchat.jsonl')
+    os.environ.setdefault('SAM_AUTONOMOUS_ENABLED', '0')
 
     server_proc = mp.Process(target=run_server)
     server_proc.start()
 
     try:
-        if not wait_for_health('http://localhost:5004/api/health', timeout_s=90):
+        if not wait_for_health('http://localhost:5004/api/groupchat/status', timeout_s=90):
             raise RuntimeError('Server did not become healthy within timeout')
 
         messages = [

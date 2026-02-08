@@ -2441,6 +2441,9 @@ class UnifiedSAMSystem:
         if self.backup_enabled:
             register_shutdown_handler("backup_manager", self.backup_manager.stop, priority=50)
 
+        # Autonomous loops
+        self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+
         # Start meta-controller loop
         self._start_meta_loop()
 
@@ -6403,6 +6406,10 @@ sam@terminal:~$
     def _start_monitoring_system(self):
         """Start background monitoring system with autonomous operation"""
         print("📊 Starting background monitoring and autonomous operation system...")
+
+        if not self.autonomous_enabled:
+            print("⚠️ Autonomous loops disabled (SAM_AUTONOMOUS_ENABLED=0)")
+            return
 
         def autonomous_operation_loop():
             while not is_shutting_down():
