@@ -45,6 +45,7 @@ import multi_agent_orchestrator_c
 import specialized_agents_c
 import sam_meta_controller_c
 import sam_ananke_dual_system
+from training.regression_suite import run_regression_suite
 print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
@@ -2313,6 +2314,16 @@ class UnifiedSAMSystem:
         self.meta_loop_active = True
         self.meta_thread = None
 
+        # Regression gate configuration
+        self.regression_on_growth = os.getenv("SAM_REGRESSION_ON_GROWTH", "1") == "1"
+        self.regression_tasks_path = os.getenv(
+            "SAM_REGRESSION_TASKS",
+            str(self.project_root / "training/tasks/default_tasks.jsonl")
+        )
+        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:mistral:latest")
+        self.regression_min_pass = float(os.getenv("SAM_REGRESSION_MIN_PASS", "0.7"))
+        self.meta_growth_freeze = False
+
         # Start meta-controller loop
         self._start_meta_loop()
 
@@ -2330,6 +2341,27 @@ class UnifiedSAMSystem:
             'compression_waste': clamp(payload.get('compression_waste', 0.0)),
             'temporal_incoherence': clamp(payload.get('temporal_incoherence', 0.0))
         }
+
+    def _run_regression_gate(self):
+        if not self.regression_on_growth:
+            return True
+        try:
+            result = run_regression_suite(
+                tasks_path=self.regression_tasks_path,
+                provider_spec=self.regression_provider,
+                min_pass_rate=self.regression_min_pass,
+            )
+            if not result.get("passed_gate", False):
+                self.meta_growth_freeze = True
+                self.system_metrics["system_health"] = "degraded"
+                print("⚠️ Regression gate failed - freezing growth")
+                return False
+            return True
+        except Exception as exc:
+            self.meta_growth_freeze = True
+            self.system_metrics["system_health"] = "degraded"
+            print(f"⚠️ Regression gate error - freezing growth: {exc}")
+            return False
 
     def _compute_pressure_signals(self):
         """Compute pressure signals from current system metrics"""
@@ -2379,7 +2411,14 @@ class UnifiedSAMSystem:
                 )
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
                 if primitive:
-                    sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                    applied = False
+                    if not self.meta_growth_freeze:
+                        applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                        if applied:
+                            gate_ok = self._run_regression_gate()
+                            sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, bool(gate_ok))
+                            if not gate_ok:
+                                applied = False
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 time.sleep(5)
         self.meta_thread = threading.Thread(target=loop, daemon=True)
@@ -3834,7 +3873,13 @@ class UnifiedSAMSystem:
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
                 applied = False
                 if primitive:
-                    applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                    if not self.meta_growth_freeze:
+                        applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                        if applied:
+                            gate_ok = self._run_regression_gate()
+                            sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, bool(gate_ok))
+                            if not gate_ok:
+                                applied = False
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 return jsonify({
                     "lambda": lambda_val,

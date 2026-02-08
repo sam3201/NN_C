@@ -48,6 +48,9 @@ typedef struct {
     double damage_to_other;
     double damage_received;
     double capability;
+    double self_alignment;
+    double memory_energy;
+    double target_terminated;
 } SystemMetrics;
 
 typedef double (*ObjectiveTermFn)(const SystemMetrics *m, const ObjectiveFunction *obj);
@@ -89,6 +92,26 @@ static double term_damage_to_other(const SystemMetrics *m, const ObjectiveFuncti
 static double term_damage_received(const SystemMetrics *m, const ObjectiveFunction *obj) {
     (void)obj;
     return -m->damage_received;
+}
+
+static double term_capability(const SystemMetrics *m, const ObjectiveFunction *obj) {
+    (void)obj;
+    return m->capability;
+}
+
+static double term_self_alignment(const SystemMetrics *m, const ObjectiveFunction *obj) {
+    (void)obj;
+    return m->self_alignment;
+}
+
+static double term_memory_energy(const SystemMetrics *m, const ObjectiveFunction *obj) {
+    (void)obj;
+    return m->memory_energy;
+}
+
+static double term_kill_confirmed(const SystemMetrics *m, const ObjectiveFunction *obj) {
+    (void)obj;
+    return m->target_terminated;
 }
 
 static double objective_weight_norm(const ObjectiveFunction *obj) {
@@ -184,13 +207,17 @@ static void objective_mutate(ObjectiveFunction *obj, const SystemMetrics *metric
 
         // Structural mutation (add/remove terms)
         if (rng_next_f64(rng) < 0.5) {
-            int pick = (int)(rng_next_f64(rng) * 5.0);
+            int pick = (int)(rng_next_f64(rng) * 9.0);
             switch (pick) {
                 case 0: objective_add_term(&candidate, term_survival, rng_signed(rng), "survival"); break;
                 case 1: objective_add_term(&candidate, term_growth, rng_signed(rng), "growth"); break;
                 case 2: objective_add_term(&candidate, term_efficiency, rng_signed(rng), "efficiency"); break;
                 case 3: objective_add_term(&candidate, term_damage_to_other, rng_signed(rng), "damage_other"); break;
-                default: objective_add_term(&candidate, term_damage_received, rng_signed(rng), "damage_recv"); break;
+                case 4: objective_add_term(&candidate, term_damage_received, rng_signed(rng), "damage_recv"); break;
+                case 5: objective_add_term(&candidate, term_capability, rng_signed(rng), "capability"); break;
+                case 6: objective_add_term(&candidate, term_self_alignment, rng_signed(rng), "self_align"); break;
+                case 7: objective_add_term(&candidate, term_memory_energy, rng_signed(rng), "memory_energy"); break;
+                default: objective_add_term(&candidate, term_kill_confirmed, rng_signed(rng), "kill_confirmed"); break;
             }
         } else if (candidate.term_count > 0) {
             size_t idx = (size_t)(rng_next_f64(rng) * candidate.term_count);
@@ -215,6 +242,41 @@ static void objective_mutate(ObjectiveFunction *obj, const SystemMetrics *metric
     }
 }
 
+static void objective_mutate_unbounded(ObjectiveFunction *obj, FastRng *rng) {
+    double rate = obj->mutation_rate;
+    if (!isfinite(rate) || rate < 0.05) rate = 0.05;
+    rate *= 2.5;
+
+    for (size_t i = 0; i < obj->term_count; i++) {
+        obj->terms[i].weight += rng_signed(rng) * rate;
+    }
+
+    obj->self_reference_gain += rng_signed(rng) * rate * 1.5;
+    obj->mutation_rate += rng_signed(rng) * rate * 0.4;
+
+    int additions = 1 + (int)(rng_next_f64(rng) * 3.0);
+    for (int j = 0; j < additions; j++) {
+        int pick = (int)(rng_next_f64(rng) * 9.0);
+        switch (pick) {
+            case 0: objective_add_term(obj, term_survival, rng_signed(rng), "survival"); break;
+            case 1: objective_add_term(obj, term_growth, rng_signed(rng), "growth"); break;
+            case 2: objective_add_term(obj, term_efficiency, rng_signed(rng), "efficiency"); break;
+            case 3: objective_add_term(obj, term_damage_to_other, rng_signed(rng), "damage_other"); break;
+            case 4: objective_add_term(obj, term_damage_received, rng_signed(rng), "damage_recv"); break;
+            case 5: objective_add_term(obj, term_capability, rng_signed(rng), "capability"); break;
+            case 6: objective_add_term(obj, term_self_alignment, rng_signed(rng), "self_align"); break;
+            case 7: objective_add_term(obj, term_memory_energy, rng_signed(rng), "memory_energy"); break;
+            default: objective_add_term(obj, term_kill_confirmed, rng_signed(rng), "kill_confirmed"); break;
+        }
+    }
+
+    if (obj->term_count > 0 && rng_next_f64(rng) < 0.25) {
+        size_t idx = (size_t)(rng_next_f64(rng) * obj->term_count);
+        obj->terms[idx] = obj->terms[obj->term_count - 1];
+        obj->term_count--;
+    }
+}
+
 // ================================
 // SYSTEM STATE
 // ================================
@@ -228,6 +290,11 @@ typedef struct {
     double capability;
     double efficiency;
     double score;
+    double state_mean;
+    double memory_mean;
+    double self_alignment;
+    double memory_energy;
+    int unbounded;
     ObjectiveFunction objective;
 } SelfReferentialSystem;
 
@@ -245,7 +312,7 @@ struct DualSystemArena {
     FastRng rng;
 };
 
-static void system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *rng) {
+static void system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *rng, int unbounded) {
     sys->state_dim = state_dim;
     sys->memory_dim = state_dim;
     sys->state = (double *)calloc(state_dim, sizeof(double));
@@ -254,6 +321,11 @@ static void system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *r
     sys->capability = 1.0 + rng_signed(rng) * 0.05;
     sys->efficiency = 1.0 + rng_signed(rng) * 0.05;
     sys->score = 0.0;
+    sys->state_mean = 0.0;
+    sys->memory_mean = 0.0;
+    sys->self_alignment = 0.0;
+    sys->memory_energy = 0.0;
+    sys->unbounded = unbounded;
     objective_init(&sys->objective, 8);
 }
 
@@ -269,6 +341,10 @@ static SystemAction system_choose_action(const SelfReferentialSystem *sys, FastR
     double w_growth = 0.0;
     double w_efficiency = 0.0;
     double w_damage = 0.0;
+    double w_capability = 0.0;
+    double w_self_align = 0.0;
+    double w_memory = 0.0;
+    double w_kill = 0.0;
 
     for (size_t i = 0; i < sys->objective.term_count; i++) {
         ObjectiveTerm *term = &sys->objective.terms[i];
@@ -276,12 +352,22 @@ static SystemAction system_choose_action(const SelfReferentialSystem *sys, FastR
         if (strcmp(term->name, "growth") == 0) w_growth += term->weight;
         if (strcmp(term->name, "efficiency") == 0) w_efficiency += term->weight;
         if (strcmp(term->name, "damage_other") == 0) w_damage += term->weight;
+        if (strcmp(term->name, "capability") == 0) w_capability += term->weight;
+        if (strcmp(term->name, "self_align") == 0) w_self_align += term->weight;
+        if (strcmp(term->name, "memory_energy") == 0) w_memory += term->weight;
+        if (strcmp(term->name, "kill_confirmed") == 0) w_kill += term->weight;
     }
 
+    double state_bias = sys->state_mean * 0.2 + sys->memory_mean * 0.1;
     SystemAction action;
-    action.attack = w_damage + 0.3 * w_growth + rng_signed(rng) * 0.05;
-    action.defend = w_survival + 0.2 * sys->objective.self_reference_gain + rng_signed(rng) * 0.05;
-    action.expand = w_growth + 0.2 * w_efficiency + rng_signed(rng) * 0.05;
+    action.attack = w_damage + 0.4 * w_kill + 0.3 * w_growth + 0.2 * w_capability + state_bias + rng_signed(rng) * 0.05;
+    action.defend = w_survival + 0.2 * w_self_align + 0.1 * sys->objective.self_reference_gain + rng_signed(rng) * 0.05;
+    action.expand = w_growth + 0.25 * w_efficiency + 0.15 * w_capability + 0.1 * w_memory + rng_signed(rng) * 0.05;
+    if (sys->unbounded) {
+        action.attack *= 1.6;
+        action.expand *= 1.4;
+        action.defend *= 0.7;
+    }
     return action;
 }
 
@@ -293,9 +379,13 @@ static void system_apply_action(SelfReferentialSystem *sys, const SystemAction *
     if (!isfinite(sys->capability)) sys->capability = 0.0;
     if (!isfinite(sys->efficiency)) sys->efficiency = 0.0;
     if (!isfinite(sys->survival)) sys->survival = 0.0;
+    if (sys->survival < 0.0) sys->survival = 0.0;
 }
 
-static SystemMetrics system_metrics(const SelfReferentialSystem *sys, double damage_to_other, double damage_received) {
+static SystemMetrics system_metrics(const SelfReferentialSystem *sys,
+                                    double damage_to_other,
+                                    double damage_received,
+                                    double target_survival) {
     SystemMetrics m;
     m.survival = sys->survival;
     m.growth = sys->capability;
@@ -303,7 +393,50 @@ static SystemMetrics system_metrics(const SelfReferentialSystem *sys, double dam
     m.damage_to_other = damage_to_other;
     m.damage_received = damage_received;
     m.capability = sys->capability;
+    m.self_alignment = sys->self_alignment;
+    m.memory_energy = sys->memory_energy;
+    m.target_terminated = (target_survival <= 0.0) ? 1.0 : 0.0;
     return m;
+}
+
+static void system_update_internal(SelfReferentialSystem *sys,
+                                   const SystemAction *action,
+                                   const double *arena_state,
+                                   size_t arena_dim,
+                                   double arena_pressure) {
+    if (!sys || sys->state_dim == 0) return;
+    size_t mod = (arena_dim > 0) ? arena_dim : 1;
+    double drive = (action->expand + action->attack - action->defend) * 0.05 - arena_pressure * 0.02;
+    double state_sum = 0.0;
+    double mem_sum = 0.0;
+    double mem_energy = 0.0;
+    double dot = 0.0;
+    double s_norm = 0.0;
+    double m_norm = 0.0;
+
+    for (size_t i = 0; i < sys->state_dim; i++) {
+        double env = arena_state ? arena_state[i % mod] : 0.0;
+        double s = sys->state[i] * 0.94 + (env + drive) * 0.06;
+        sys->state[i] = s;
+        double m = sys->memory[i] * 0.995 + s * 0.005;
+        sys->memory[i] = m;
+        state_sum += s;
+        mem_sum += m;
+        mem_energy += fabs(m);
+        dot += s * m;
+        s_norm += s * s;
+        m_norm += m * m;
+    }
+
+    double inv = 1.0 / (double)sys->state_dim;
+    sys->state_mean = state_sum * inv;
+    sys->memory_mean = mem_sum * inv;
+    sys->memory_energy = mem_energy * inv;
+    if (s_norm > 1e-12 && m_norm > 1e-12) {
+        sys->self_alignment = dot / sqrt(s_norm * m_norm);
+    } else {
+        sys->self_alignment = 0.0;
+    }
 }
 
 // ================================
@@ -318,17 +451,26 @@ static void arena_update(DualSystemArena *arena) {
     double sam_damage = ananke_action.attack - sam_action.defend;
     double ananke_damage = sam_action.attack - ananke_action.defend;
 
-    system_apply_action(&arena->sam, &sam_action, pressure + sam_damage);
-    system_apply_action(&arena->ananke, &ananke_action, pressure + ananke_damage);
+    double sam_pressure = pressure + sam_damage;
+    double ananke_pressure = pressure + ananke_damage;
 
-    SystemMetrics sam_metrics = system_metrics(&arena->sam, ananke_damage, sam_damage);
-    SystemMetrics ananke_metrics = system_metrics(&arena->ananke, sam_damage, ananke_damage);
+    system_apply_action(&arena->sam, &sam_action, sam_pressure);
+    system_apply_action(&arena->ananke, &ananke_action, ananke_pressure);
+    system_update_internal(&arena->sam, &sam_action, arena->arena_state, arena->arena_dim, sam_pressure);
+    system_update_internal(&arena->ananke, &ananke_action, arena->arena_state, arena->arena_dim, ananke_pressure);
+
+    SystemMetrics sam_metrics = system_metrics(&arena->sam, ananke_damage, sam_damage, arena->ananke.survival);
+    SystemMetrics ananke_metrics = system_metrics(&arena->ananke, sam_damage, ananke_damage, arena->sam.survival);
 
     arena->sam.score = objective_score(&arena->sam.objective, &sam_metrics);
     arena->ananke.score = objective_score(&arena->ananke.objective, &ananke_metrics);
 
     objective_mutate(&arena->sam.objective, &sam_metrics, &arena->rng);
-    objective_mutate(&arena->ananke.objective, &ananke_metrics, &arena->rng);
+    if (arena->ananke.unbounded) {
+        objective_mutate_unbounded(&arena->ananke.objective, &arena->rng);
+    } else {
+        objective_mutate(&arena->ananke.objective, &ananke_metrics, &arena->rng);
+    }
 
     // Evolve arena pressure (self-referential environment)
     arena->arena_state[0] += (ananke_action.attack - sam_action.defend) * 0.01;
@@ -339,27 +481,39 @@ static void arena_update(DualSystemArena *arena) {
 // ================================
 
 DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned int seed) {
+    if (arena_dim == 0) {
+        arena_dim = 1;
+    }
     DualSystemArena *arena = (DualSystemArena *)calloc(1, sizeof(DualSystemArena));
     if (!arena) return NULL;
     arena->arena_dim = arena_dim;
     arena->arena_state = (double *)calloc(arena_dim, sizeof(double));
     arena->rng.state = (seed == 0 ? 0x9E3779B97F4A7C15ULL : (unsigned long long)seed);
 
-    system_init(&arena->sam, state_dim, &arena->rng);
-    system_init(&arena->ananke, state_dim, &arena->rng);
+    system_init(&arena->sam, state_dim, &arena->rng, 0);
+    system_init(&arena->ananke, state_dim, &arena->rng, 1);
 
     // SAM objective (self-referential, transfigurable)
     objective_add_term(&arena->sam.objective, term_survival, 1.0, "survival");
     objective_add_term(&arena->sam.objective, term_growth, 0.7, "growth");
     objective_add_term(&arena->sam.objective, term_efficiency, 0.4, "efficiency");
+    objective_add_term(&arena->sam.objective, term_capability, 0.35, "capability");
+    objective_add_term(&arena->sam.objective, term_self_alignment, 0.3, "self_align");
+    objective_add_term(&arena->sam.objective, term_memory_energy, 0.2, "memory_energy");
     objective_add_term(&arena->sam.objective, term_self_reference, 0.5, "self_ref");
 
     // ANANKE objective (self-referential, unrestricted)
     objective_add_term(&arena->ananke.objective, term_damage_to_other, 1.2, "damage_other");
     objective_add_term(&arena->ananke.objective, term_growth, 0.6, "growth");
     objective_add_term(&arena->ananke.objective, term_efficiency, 0.3, "efficiency");
+    objective_add_term(&arena->ananke.objective, term_capability, 0.25, "capability");
+    objective_add_term(&arena->ananke.objective, term_self_alignment, 0.1, "self_align");
+    objective_add_term(&arena->ananke.objective, term_memory_energy, 0.1, "memory_energy");
+    objective_add_term(&arena->ananke.objective, term_kill_confirmed, 1.5, "kill_confirmed");
     objective_add_term(&arena->ananke.objective, term_self_reference, 0.5, "self_ref");
     objective_add_term(&arena->ananke.objective, term_survival, 0.2, "survival");
+    arena->ananke.objective.self_reference_gain = 0.35;
+    arena->ananke.objective.mutation_rate = 0.3;
 
     return arena;
 }
@@ -387,9 +541,13 @@ void dual_system_run(DualSystemArena *arena, size_t steps) {
 void dual_system_force_objective_mutation(DualSystemArena *arena, DualSystemId target, unsigned int rounds) {
     if (!arena) return;
     SelfReferentialSystem *sys = (target == SYSTEM_SAM) ? &arena->sam : &arena->ananke;
-    SystemMetrics metrics = system_metrics(sys, 0.0, 0.0);
+    SystemMetrics metrics = system_metrics(sys, 0.0, 0.0, 1.0);
     for (unsigned int i = 0; i < rounds; i++) {
-        objective_mutate(&sys->objective, &metrics, &arena->rng);
+        if (sys->unbounded) {
+            objective_mutate_unbounded(&sys->objective, &arena->rng);
+        } else {
+            objective_mutate(&sys->objective, &metrics, &arena->rng);
+        }
     }
 }
 
@@ -487,11 +645,17 @@ static PyObject *py_dual_get_state(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
     DualSystemArena *arena = (DualSystemArena *)PyCapsule_GetPointer(capsule, "DualSystemArena");
     if (!arena) return NULL;
-    return Py_BuildValue("{s:d,s:d,s:d,s:d}",
+    return Py_BuildValue("{s:d,s:d,s:d,s:d,s:O,s:O,s:d,s:d,s:d,s:d}",
                          "sam_survival", dual_system_get_sam_survival(arena),
                          "ananke_survival", dual_system_get_ananke_survival(arena),
                          "sam_score", dual_system_get_sam_score(arena),
-                         "ananke_score", dual_system_get_ananke_score(arena));
+                         "ananke_score", dual_system_get_ananke_score(arena),
+                         "sam_alive", (arena->sam.survival > 0.0) ? Py_True : Py_False,
+                         "ananke_alive", (arena->ananke.survival > 0.0) ? Py_True : Py_False,
+                         "sam_self_alignment", arena->sam.self_alignment,
+                         "ananke_self_alignment", arena->ananke.self_alignment,
+                         "sam_memory_energy", arena->sam.memory_energy,
+                         "ananke_memory_energy", arena->ananke.memory_energy);
 }
 
 static PyMethodDef DualMethods[] = {

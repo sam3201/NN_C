@@ -39,12 +39,27 @@ struct SamMetaController {
     double growth_budget;
     double growth_budget_max;
 
+    double thresholds[8];
+    double dominance_margin;
+    unsigned int persistence_min;
+    unsigned int cooldown_steps;
+    double risk_max;
+    unsigned int step;
+    unsigned int last_growth_step;
+    GrowthPrimitive last_selected;
+    unsigned int last_selected_step;
+
     double *identity_anchor;
     size_t identity_dim;
     double *identity_vec;
 
     PressureState pressure;
     unsigned int rng;
+
+    unsigned int invariant_violations;
+    int last_violation;
+    unsigned int primitive_failures[GP_REPARAM + 1];
+    unsigned int primitive_blocked_until[GP_REPARAM + 1];
 };
 
 static unsigned int rng_next(SamMetaController *mc) {
@@ -89,10 +104,23 @@ SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t
     mc->lambda_decay = 0.99;
     mc->growth_budget = 0.0;
     mc->growth_budget_max = 4.0;
+    for (int i = 0; i < 8; i++) {
+        mc->thresholds[i] = 0.1;
+    }
+    mc->dominance_margin = 0.05;
+    mc->persistence_min = 3;
+    mc->cooldown_steps = 4;
+    mc->risk_max = 0.85;
+    mc->step = 0;
+    mc->last_growth_step = 0;
+    mc->last_selected = GP_NONE;
+    mc->last_selected_step = 0;
     mc->identity_anchor = NULL;
     mc->identity_vec = NULL;
     mc->identity_dim = 0;
     mc->rng = seed ? seed : 0xC0FFEEu;
+    mc->invariant_violations = 0;
+    mc->last_violation = 0;
     return mc;
 }
 
@@ -113,12 +141,13 @@ double sam_meta_update_pressure(SamMetaController *mc,
                                 double compression_waste,
                                 double temporal_incoherence) {
     if (!mc) return 0.0;
+    mc->step += 1;
     double values[8] = {residual, rank_def, retrieval_entropy, interference,
                         planner_friction, context_collapse, compression_waste, temporal_incoherence};
     double *persist = mc->pressure.persistence;
     for (int i = 0; i < 8; i++) {
         double v = values[i];
-        persist[i] = (v > 0.1) ? (persist[i] + 1.0) : 0.0;
+        persist[i] = (v > mc->thresholds[i]) ? (persist[i] + 1.0) : 0.0;
     }
     mc->pressure.residual = residual;
     mc->pressure.rank_def = rank_def;
@@ -167,36 +196,101 @@ static int dominant_pressure(const SamMetaController *mc, double *out_value) {
         }
     }
     if (out_value) *out_value = maxv;
-    if (maxv - second < 0.05) return -1;
+    if (maxv - second < mc->dominance_margin) return -1;
     return maxi;
+}
+
+static int pressure_compensable(const SamMetaController *mc, int dominant_idx) {
+    if (!mc) return 0;
+    switch (dominant_idx) {
+        case 4: // planner friction
+            return (mc->pressure.residual > mc->thresholds[0]) ||
+                   (mc->pressure.rank_def > mc->thresholds[1]);
+        case 2: // retrieval entropy
+            return (mc->pressure.compression_waste > mc->thresholds[6]);
+        default:
+            return 0;
+    }
+}
+
+static double primitive_risk(const SamMetaController *mc, GrowthPrimitive primitive) {
+    double budget_factor = mc ? (mc->growth_budget / (mc->growth_budget_max + 1e-6)) : 0.0;
+    switch (primitive) {
+        case GP_LATENT_EXPAND: return 0.7 + 0.15 * budget_factor;
+        case GP_SUBMODEL_SPAWN: return 0.8 + 0.1 * budget_factor;
+        case GP_INDEX_EXPAND: return 0.35 + 0.1 * budget_factor;
+        case GP_ROUTING_INCREASE: return 0.45 + 0.1 * budget_factor;
+        case GP_CONTEXT_EXPAND: return 0.55 + 0.1 * budget_factor;
+        case GP_PLANNER_WIDEN: return 0.6 + 0.1 * budget_factor;
+        case GP_CONSOLIDATE: return 0.25;
+        case GP_REPARAM: return 0.65;
+        case GP_NONE:
+        default:
+            return 1.0;
+    }
+}
+
+static int primitive_blocked(const SamMetaController *mc, GrowthPrimitive primitive) {
+    if (!mc || primitive < GP_NONE || primitive > GP_REPARAM) return 1;
+    if (primitive == GP_NONE) return 1;
+    return mc->primitive_blocked_until[primitive] > mc->step;
 }
 
 GrowthPrimitive sam_meta_select_primitive(SamMetaController *mc) {
     if (!mc) return GP_NONE;
     if (mc->lambda < mc->lambda_threshold) return GP_NONE;
     if (mc->growth_budget >= mc->growth_budget_max) {
+        mc->last_selected = GP_CONSOLIDATE;
+        mc->last_selected_step = mc->step;
         return GP_CONSOLIDATE;
+    }
+    if (mc->step > mc->last_growth_step &&
+        (mc->step - mc->last_growth_step) < mc->cooldown_steps) {
+        return GP_NONE;
     }
 
     double maxv = 0.0;
     int idx = dominant_pressure(mc, &maxv);
     if (idx < 0) return GP_NONE;
+    if (mc->pressure.persistence[idx] < (double)mc->persistence_min) return GP_NONE;
+    if (pressure_compensable(mc, idx)) return GP_NONE;
 
+    GrowthPrimitive candidate = GP_NONE;
     switch (idx) {
-        case 0: return GP_LATENT_EXPAND;       // residual
-        case 1: return (rand_unit(mc) > 0.5) ? GP_LATENT_EXPAND : GP_REPARAM; // rank_def
-        case 2: return GP_INDEX_EXPAND;        // retrieval_entropy
-        case 3: return GP_SUBMODEL_SPAWN;      // interference
-        case 4: return GP_PLANNER_WIDEN;       // planner_friction
-        case 5: return GP_CONTEXT_EXPAND;      // context_collapse
-        case 6: return GP_CONSOLIDATE;         // compression_waste
-        case 7: return GP_REPARAM;             // temporal_incoherence
-        default: return GP_NONE;
+        case 0: candidate = GP_LATENT_EXPAND; break;       // residual
+        case 1: candidate = (rand_unit(mc) > 0.5) ? GP_LATENT_EXPAND : GP_REPARAM; break; // rank_def
+        case 2: candidate = GP_INDEX_EXPAND; break;        // retrieval_entropy
+        case 3: candidate = GP_SUBMODEL_SPAWN; break;      // interference
+        case 4: candidate = GP_PLANNER_WIDEN; break;       // planner_friction
+        case 5: candidate = GP_CONTEXT_EXPAND; break;      // context_collapse
+        case 6: candidate = GP_CONSOLIDATE; break;         // compression_waste
+        case 7: candidate = GP_REPARAM; break;             // temporal_incoherence
+        default: candidate = GP_NONE; break;
     }
+
+    if (candidate == GP_NONE) return GP_NONE;
+    if (primitive_blocked(mc, candidate)) return GP_NONE;
+    if (primitive_risk(mc, candidate) > mc->risk_max) return GP_NONE;
+
+    mc->last_selected = candidate;
+    mc->last_selected_step = mc->step;
+    return candidate;
 }
 
 int sam_meta_apply_primitive(SamMetaController *mc, GrowthPrimitive primitive) {
     if (!mc) return 0;
+    if (primitive == GP_NONE) return 0;
+    if (primitive != mc->last_selected || mc->last_selected_step != mc->step) {
+        mc->invariant_violations += 1;
+        mc->last_violation = 1; // growth causality violation
+        return 0;
+    }
+    if (mc->step > mc->last_growth_step &&
+        (mc->step - mc->last_growth_step) < mc->cooldown_steps) {
+        mc->invariant_violations += 1;
+        mc->last_violation = 2; // cooldown violation
+        return 0;
+    }
     switch (primitive) {
         case GP_LATENT_EXPAND:
             mc->latent_dim += 8;
@@ -239,6 +333,54 @@ int sam_meta_apply_primitive(SamMetaController *mc, GrowthPrimitive primitive) {
             return 0;
     }
     mc->lambda *= 0.9;
+    mc->last_growth_step = mc->step;
+    mc->last_selected = GP_NONE;
+    return 1;
+}
+
+void sam_meta_set_policy_params(SamMetaController *mc,
+                                const double *thresholds,
+                                double dominance_margin,
+                                unsigned int persistence_min,
+                                unsigned int cooldown_steps,
+                                double risk_max) {
+    if (!mc) return;
+    if (thresholds) {
+        for (int i = 0; i < 8; i++) {
+            mc->thresholds[i] = thresholds[i];
+        }
+    }
+    if (dominance_margin > 0.0) mc->dominance_margin = dominance_margin;
+    if (persistence_min > 0) mc->persistence_min = persistence_min;
+    if (cooldown_steps > 0) mc->cooldown_steps = cooldown_steps;
+    if (risk_max > 0.0) mc->risk_max = risk_max;
+}
+
+void sam_meta_get_policy_params(const SamMetaController *mc, SamMetaPolicyParams *out_params) {
+    if (!mc || !out_params) return;
+    for (int i = 0; i < 8; i++) {
+        out_params->thresholds[i] = mc->thresholds[i];
+    }
+    out_params->dominance_margin = mc->dominance_margin;
+    out_params->persistence_min = mc->persistence_min;
+    out_params->cooldown_steps = mc->cooldown_steps;
+    out_params->risk_max = mc->risk_max;
+}
+
+int sam_meta_record_growth_outcome(SamMetaController *mc, GrowthPrimitive primitive, int success) {
+    if (!mc) return 0;
+    if (primitive <= GP_NONE || primitive > GP_REPARAM) return 0;
+    if (success) {
+        if (mc->primitive_failures[primitive] > 0) {
+            mc->primitive_failures[primitive] -= 1;
+        }
+        return 1;
+    }
+    mc->primitive_failures[primitive] += 1;
+    if (mc->primitive_failures[primitive] >= 3) {
+        mc->primitive_blocked_until[primitive] = mc->step + (mc->cooldown_steps * 3);
+        mc->primitive_failures[primitive] = 0;
+    }
     return 1;
 }
 
@@ -267,6 +409,13 @@ int sam_meta_check_invariants(SamMetaController *mc, double *out_identity_simila
     if (out_identity_similarity) *out_identity_similarity = sim;
     if (sim < 0.8) return 0;
     return 1;
+}
+
+SamMetaInvariantState sam_meta_get_invariant_state(const SamMetaController *mc) {
+    SamMetaInvariantState state;
+    state.violations = mc ? mc->invariant_violations : 0;
+    state.last_violation = mc ? mc->last_violation : 0;
+    return state;
 }
 
 int sam_meta_evaluate_contract(SamMetaController *mc,
@@ -444,7 +593,7 @@ static PyObject *py_sam_meta_get_state(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
     SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
     if (!mc) return NULL;
-    return Py_BuildValue("{s:k,s:k,s:k,s:k,s:k,s:d,s:d,s:k}",
+    return Py_BuildValue("{s:k,s:k,s:k,s:k,s:k,s:d,s:d,s:k,s:d,s:d,s:k,s:k,s:d,s:k}",
                          "latent_dim", (unsigned long)sam_meta_get_latent_dim(mc),
                          "context_dim", (unsigned long)sam_meta_get_context_dim(mc),
                          "submodels", (unsigned long)sam_meta_get_submodel_count(mc),
@@ -452,7 +601,92 @@ static PyObject *py_sam_meta_get_state(PyObject *self, PyObject *args) {
                          "planner_depth", (unsigned long)sam_meta_get_planner_depth(mc),
                          "lambda", sam_meta_get_lambda(mc),
                          "growth_budget", sam_meta_get_growth_budget(mc),
-                         "archived_dim", (unsigned long)sam_meta_get_archived_dim(mc));
+                         "archived_dim", (unsigned long)sam_meta_get_archived_dim(mc),
+                         "lambda_threshold", mc->lambda_threshold,
+                         "dominance_margin", mc->dominance_margin,
+                         "persistence_min", (unsigned long)mc->persistence_min,
+                         "cooldown_steps", (unsigned long)mc->cooldown_steps,
+                         "risk_max", mc->risk_max,
+                         "step", (unsigned long)mc->step);
+}
+
+static PyObject *py_sam_meta_set_policy_params(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    PyObject *seq = NULL;
+    double dominance_margin = 0.0;
+    unsigned long persistence_min = 0;
+    unsigned long cooldown_steps = 0;
+    double risk_max = 0.0;
+    if (!PyArg_ParseTuple(args, "OOdkkd", &capsule, &seq, &dominance_margin, &persistence_min, &cooldown_steps, &risk_max)) {
+        return NULL;
+    }
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    double thresholds[8];
+    double *threshold_ptr = NULL;
+    if (seq != Py_None) {
+        PyObject *fast = PySequence_Fast(seq, "thresholds must be a sequence or None");
+        if (!fast) return NULL;
+        Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
+        if (n != 8) {
+            Py_DECREF(fast);
+            PyErr_SetString(PyExc_ValueError, "thresholds must have length 8");
+            return NULL;
+        }
+        for (Py_ssize_t i = 0; i < n; i++) {
+            thresholds[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+        }
+        threshold_ptr = thresholds;
+        Py_DECREF(fast);
+    }
+    sam_meta_set_policy_params(mc, threshold_ptr, dominance_margin, (unsigned int)persistence_min,
+                               (unsigned int)cooldown_steps, risk_max);
+    Py_RETURN_NONE;
+}
+
+static PyObject *py_sam_meta_get_policy_params(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    SamMetaPolicyParams params;
+    sam_meta_get_policy_params(mc, &params);
+    PyObject *thresholds = PyList_New(8);
+    for (int i = 0; i < 8; i++) {
+        PyList_SetItem(thresholds, i, PyFloat_FromDouble(params.thresholds[i]));
+    }
+    return Py_BuildValue("{s:O,s:d,s:k,s:k,s:d}",
+                         "thresholds", thresholds,
+                         "dominance_margin", params.dominance_margin,
+                         "persistence_min", (unsigned long)params.persistence_min,
+                         "cooldown_steps", (unsigned long)params.cooldown_steps,
+                         "risk_max", params.risk_max);
+}
+
+static PyObject *py_sam_meta_record_growth_outcome(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    long primitive = 0;
+    int success = 0;
+    if (!PyArg_ParseTuple(args, "Olp", &capsule, &primitive, &success)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    int ok = sam_meta_record_growth_outcome(mc, (GrowthPrimitive)primitive, success);
+    return PyBool_FromLong(ok);
+}
+
+static PyObject *py_sam_meta_get_invariant_state(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    SamMetaInvariantState state = sam_meta_get_invariant_state(mc);
+    return Py_BuildValue("{s:k,s:i}",
+                         "violations", (unsigned long)state.violations,
+                         "last_violation", state.last_violation);
 }
 
 static PyMethodDef MetaMethods[] = {
@@ -461,9 +695,13 @@ static PyMethodDef MetaMethods[] = {
     {"update_pressure", py_sam_meta_update_pressure, METH_VARARGS, "Update pressure signals"},
     {"select_primitive", py_sam_meta_select_primitive, METH_VARARGS, "Select growth primitive"},
     {"apply_primitive", py_sam_meta_apply_primitive, METH_VARARGS, "Apply growth primitive"},
+    {"set_policy_params", py_sam_meta_set_policy_params, METH_VARARGS, "Set policy parameters"},
+    {"get_policy_params", py_sam_meta_get_policy_params, METH_VARARGS, "Get policy parameters"},
+    {"record_growth_outcome", py_sam_meta_record_growth_outcome, METH_VARARGS, "Record growth outcome"},
     {"set_identity_anchor", py_sam_meta_set_identity_anchor, METH_VARARGS, "Set identity anchor"},
     {"update_identity_vector", py_sam_meta_update_identity_vector, METH_VARARGS, "Update identity vector"},
     {"check_invariants", py_sam_meta_check_invariants, METH_VARARGS, "Check invariants"},
+    {"get_invariant_state", py_sam_meta_get_invariant_state, METH_VARARGS, "Get invariant state"},
     {"evaluate_contract", py_sam_meta_evaluate_contract, METH_VARARGS, "Evaluate objective contract"},
     {"get_state", py_sam_meta_get_state, METH_VARARGS, "Get meta-controller state"},
     {NULL, NULL, 0, NULL}
