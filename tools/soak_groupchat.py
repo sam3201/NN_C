@@ -13,6 +13,11 @@ def run_server():
     repo_root = Path(__file__).resolve().parents[1]
     os.chdir(repo_root)
     sys.path.insert(0, str(repo_root))
+    log_path = repo_root / "logs" / "soak_groupchat.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_file = open(log_path, "w", encoding="utf-8")
+    sys.stdout = log_file
+    sys.stderr = log_file
     from complete_sam_unified import UnifiedSAMSystem
     system = UnifiedSAMSystem()
     system.run()

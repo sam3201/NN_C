@@ -2761,6 +2761,7 @@ class UnifiedSAMSystem:
         self.active_conversations = {}
         self.web_search_enabled = self.sam_web_search_available
         self.socketio_available = flask_available  # SocketIO available if Flask is
+        self.google_drive = None
         # Sync module-level flags used by background threads
         global sam_gmail_available, sam_github_available, sam_web_search_available, sam_code_modifier_available
         sam_gmail_available = self.sam_gmail_available

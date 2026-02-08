@@ -52,6 +52,15 @@ class SurvivalAgent:
             'strategies_active': len(self.survival_strategies)
         }
 
+    def assess_survival(self):
+        """Assess survival status and update score."""
+        risk = self.assess_survival_risk()
+        self.survival_score = max(0.0, min(1.0, 1.0 - risk))
+        status = self.monitor_system_health()
+        status['risk'] = risk
+        status['survival_score'] = self.survival_score
+        return status
+
 def create_survival_agent():
     """Create a survival agent instance"""
     return SurvivalAgent()
