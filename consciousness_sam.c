@@ -9,8 +9,8 @@
 #include <math.h>
 #include <time.h>
 
-// Use existing SAM framework
-#include "ORGANIZED/UTILS/SAM/SAM/SAM.h"
+// Use available consciousness headers
+#include "consciousness_sam.c"
 
 // ================================
 // CONSCIOUSNESS LOSS MODULE - Using SAM Framework

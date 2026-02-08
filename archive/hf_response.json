@@ -1,5 +1,0 @@
-{
-  "prompt": "hello",
-  "response": "[BERT Response] I understand your query: 'hello'. As a bidirectional encoder model, BERT is better suited for understanding and classification tasks rather than text generation. Consider using a generative model like GPT-2 for conversation.",
-  "model": "distilbert-base-uncased"
-}

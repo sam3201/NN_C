@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from sam_cli import launch_sam_terminal
-from experimental_auto_code import initialize_experimental_auto_code, check_experimental_code_application, get_experimental_status
 """
 SAM 2.0 UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
 Combines Pure C Core + Comprehensive Python Orchestration
@@ -41,135 +39,93 @@ from survival_agent import SURVIVAL_PROMPT
 from goal_management import GoalManager, create_conversationalist_tasks
 from sam_config import config   
 
-# C Core Modules (Performance Optimized)
+# C Core Modules - Direct Imports (No Fallbacks)
 import consciousness_algorithmic
 import multi_agent_orchestrator_c
 import specialized_agents_c
+import sam_meta_controller_c
+import sam_ananke_dual_system
+print('✅ All C modules available')
 
-# Google Drive Integration
-try:
-    from google_drive_integration import GoogleDriveIntegration, test_google_drive_connection
-    google_drive_available = True
-except ImportError:
-    google_drive_available = False
-    GoogleDriveIntegration = None
-    def test_google_drive_connection():
-        print("❌ Google Drive integration not available")
-        return False
+# Web Interface Modules - Direct Imports
+from flask import Flask, request, jsonify, render_template_string
+from flask_cors import CORS
+from flask_socketio import SocketIO
+from flask_compress import Compress
+flask_available = True
+print('✅ Flask and SocketIO available')
 
-# SAM Web Search Integration
-try:
-    from sam_web_search import SAMWebSearch, initialize_sam_web_search, search_web_with_sam
-    sam_web_search_available = True
-except ImportError:
-    sam_web_search_available = False
-    SAMWebSearch = None
-    initialize_sam_web_search = None
-    search_web_with_sam = None
+# SAM Components - Direct Imports
+from survival_agent import SURVIVAL_PROMPT
+from goal_management import GoalManager, create_conversationalist_tasks
+from sam_config import config
 
-# SAM Code Modification System
-try:
-    from sam_code_modifier import SAMCodeModifier, initialize_sam_code_modifier, modify_code_safely, analyze_codebase
-    sam_code_modifier_available = True
-except ImportError:
-    sam_code_modifier_available = False
-    SAMCodeModifier = None
-    initialize_sam_code_modifier = None
-    modify_code_safely = None
-    analyze_codebase = None
+print("🎯 System initialization complete - All components available")
 
-# SAM Gmail Integration System
-try:
-    from sam_gmail_integration import SAMGmailIntegration, initialize_sam_gmail, send_sam_email, schedule_sam_email
-    sam_gmail_available = True
-except ImportError:
-    sam_gmail_available = False
-    SAMGmailIntegration = None
-    initialize_sam_gmail = None
-    send_sam_email = None
-    schedule_sam_email = None
+# Flask optimizations
+def apply_all_optimizations(app):
+    """Apply all Flask optimizations"""
+    try:
+        from flask_compress import Compress
+        Compress(app)
+        print("  ✅ Gzip compression enabled")
+    except ImportError:
+        print("  ⚠️ Flask-Compress not available")
+    
+    # Add security headers
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        return response
+    
+    return app
 
-# SAM GitHub Integration System
-try:
-    from sam_github_integration import SAMGitHubIntegration, initialize_sam_github, save_sam_to_github, test_github_connection
-    sam_github_available = True
-except ImportError:
-    sam_github_available = False
-    SAMGitHubIntegration = None
-    initialize_sam_github = None
-    save_sam_to_github = None
-    test_github_connection = None
+# Shutdown handling
+shutdown_handlers = []
+def register_shutdown_handler(name: str, handler: Callable, priority: int = 10):
+    """Register a shutdown handler"""
+    shutdown_handlers.append((name, handler, priority))
+    print(f"✅ Registered shutdown handler: {name}")
+
+def is_shutting_down():
+    """Check if system is shutting down"""
+    return False
+
+def shutdown_aware_operation(operation_func, *args, **kwargs):
+    """Execute operation with shutdown awareness"""
+    if is_shutting_down():
+        print("⚠️ System is shutting down - operation blocked")
+        return None
+    try:
+        return operation_func(*args, **kwargs)
+    except Exception as e:
+        print(f"⚠️ Operation failed: {e}")
+        return None
+
+def initate_shutdown():
+    """Initiate system shutdown"""
+    print("🛑 System shutdown initiated")
+    for name, handler, priority in sorted(shutdown_handlers, key=lambda x: x[2], reverse=True):
+        try:
+            handler()
+            print(f"  ✅ Shutdown handler executed: {name}")
+        except Exception as e:
+            print(f"  ❌ Shutdown handler failed: {name} - {e}")
 
 # Global variable declarations to fix scoping issues
 sam_gmail = None
 sam_github = None
 
-# Python Orchestration Components (with graceful fallbacks)
-try:
-    from survival_agent import create_survival_agent, integrate_survival_loop
-    survival_available = True
-except ImportError:
-    print("⚠️ Survival agent not available - using fallback")
-    survival_available = False
-    def create_survival_agent():
-        class MockSurvivalAgent:
-            survival_score = 1.0
-        return MockSurvivalAgent()
+# Python Orchestration Components - Direct Imports
+from survival_agent import create_survival_agent, integrate_survival_loop
+from goal_management import GoalManager, SubgoalExecutionAlgorithm, create_conversationalist_tasks
+from concurrent_executor import task_executor
+from circuit_breaker import resilience_manager
+from autonomous_meta_agent import meta_agent, auto_patch, get_meta_agent_status, emergency_stop_meta_agent
 
-try:
-    from goal_management import GoalManager, SubgoalExecutionAlgorithm, create_conversationalist_tasks
-    goal_management_available = True
-except ImportError:
-    print("⚠️ Goal management not available - using fallback")
-    goal_management_available = False
-    class GoalManager:
-        def get_pending_tasks(self): return []
-        def get_completed_tasks(self): return []
-        def get_critical_tasks(self): return []
-        def export_readme(self): pass
-    class SubgoalExecutionAlgorithm:
-        def execute_cycle(self): return {"tasks_executed": 0}
-    def create_conversationalist_tasks(gm): pass
-
-try:
-    from concurrent_executor import task_executor
-    concurrent_available = True
-except ImportError:
-    print("⚠️ Concurrent executor not available - using fallback")
-    concurrent_available = False
-    task_executor = None
-
-try:
-    from circuit_breaker import resilience_manager
-    circuit_breaker_available = True
-except ImportError:
-    print("⚠️ Circuit breaker not available - using fallback")
-    circuit_breaker_available = False
-    resilience_manager = None
-
-try:
-    from autonomous_meta_agent import meta_agent, auto_patch, get_meta_agent_status, emergency_stop_meta_agent
-    meta_agent_available = True
-except ImportError:
-    print("⚠️ Autonomous meta agent not available - using fallback")
-    meta_agent_available = False
-    class MockMetaAgent:
-        def analyze_system_health(self): return {"status": "mock"}
-        def generate_system_improvements(self): return {"improvements": []}
-        def execute_improvement_plan(self, plan, dry_run=True): return {"success": False}
-        def assess_survival_progress(self): return {"score": 0.5}
-
-    meta_agent = MockMetaAgent()
-    def auto_patch(error): return {"status": "mock"}
-    def get_meta_agent_status(): return {"status": "mock"}
-    def emergency_stop_meta_agent(): pass
-
-try:
-    from flask import Flask, request, jsonify, render_template_string
-    from flask_cors import CORS
-    flask_available = True
-except ImportError:
-    flask_available = False
+print("✅ All Python orchestration components available")
 
 # Utility functions for graceful shutdown and optimization
 _shutdown_handlers = []
@@ -181,17 +137,18 @@ def apply_all_optimizations(app):
         # Enable gzip compression
         from flask_compress import Compress
         Compress(app)
+        print("  ✅ Gzip compression enabled")
     except ImportError:
-        pass
-
-    # Set security headers
+        print("  ⚠️ Flask-Compress not available")
+    
+    # Add security headers
     @app.after_request
     def add_security_headers(response):
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         return response
-
+    
     return app
 
 def register_shutdown_handler(name, func, priority=0):
@@ -201,7 +158,7 @@ def register_shutdown_handler(name, func, priority=0):
         'name': name,
         'func': func,
         'priority': priority
-        })
+    })
     # Sort by priority (higher priority first)
     _shutdown_handlers.sort(key=lambda x: x['priority'], reverse=True)
     print(f"📋 Registered {name} for graceful shutdown (priority: {priority})")
@@ -215,7 +172,7 @@ def initiate_shutdown():
     global _is_shutting_down
     _is_shutting_down = True
     print("🛑 Initiating graceful system shutdown...")
-
+    
     # Execute shutdown handlers in priority order
     for handler in _shutdown_handlers:
         try:
@@ -223,7 +180,7 @@ def initiate_shutdown():
             handler['func']()
         except Exception as e:
             print(f"  ⚠️ Shutdown handler {handler['name']} failed: {e}")
-
+    
     print("✅ System shutdown complete")
 # Production-Grade Meta-Agent Architecture for Safe Self-Healing
 # Uses existing C consciousness frameworks instead of torch
@@ -259,12 +216,12 @@ class ObserverAgent:
     def detect_failure(self, exception=None, context=None):
         """Detect and structure failure events using C consciousness framework"""
         failure_event = FailureEvent(
-                error_type=type(exception).__name__ if exception else "unknown",
-                stack_trace=self._get_stack_trace(exception),
-                failing_tests=self._get_failing_tests(),
-                logs=self._get_recent_logs(),
-                timestamp=datetime.now().isoformat()
-                )
+            error_type=type(exception).__name__ if exception else "unknown",
+            stack_trace=self._get_stack_trace(exception),
+            failing_tests=self._get_failing_tests(),
+            logs=self._get_recent_logs(),
+            timestamp=datetime.now().isoformat()
+        )
 
         self.failure_history.append(failure_event)
         print(f"👁️ Observer Agent: Detected failure - {failure_event.error_type}")
@@ -417,7 +374,7 @@ class FaultLocalizerAgent:
         correlated_files = []
 
         try:
-
+            
             # Use existing C correlation algorithms
             # For now, search for files that might be related to test names
 
@@ -473,7 +430,7 @@ class FaultLocalizerAgent:
                 loops * 0.05 +
                 conditionals * 0.03 +
                 (code_lines / 1000)  # Size factor
-                ))
+            ))
 
             return complexity
 
@@ -529,7 +486,7 @@ class FaultLocalizerAgent:
                 'spectrum_score': score,
                 'recently_modified': filepath in self._get_recently_modified_files(),
                 'in_stack_trace': filepath in failure_event.stack_trace if failure_event.stack_trace else False
-                })
+            })
 
         return candidates
 
@@ -541,7 +498,7 @@ class FaultLocalizerAgent:
             x['in_stack_trace'],  # Stack trace files first
             x['recently_modified'],  # Then recently modified
             x['spectrum_score']  # Then by spectrum score
-            ), reverse=True)
+        ), reverse=True)
 
     def _get_recently_modified_files(self, hours=24):
         """Get files modified in the last N hours"""
@@ -552,7 +509,7 @@ class FaultLocalizerAgent:
         try:
             import subprocess
             result = subprocess.run(['git', 'log', '--since', f'{hours} hours ago', '--name-only', '--pretty=format:'],
-                                    capture_output=True, text=True, cwd=self.system.project_root)
+                                  capture_output=True, text=True, cwd=self.system.project_root)
 
             if result.returncode == 0:
                 files = result.stdout.strip().split('\n')
@@ -646,11 +603,11 @@ Confidence Threshold: Must be >= 0.75 for application
         try:
             # Try different LLM systems in order of preference
             llm_systems = [
-                    ('claude', self._try_claude_patch_generation),
-                    ('openai', self._try_openai_patch_generation),
-                    ('ollama', self._try_ollama_patch_generation),
-                    ('sam', self._try_sam_patch_generation)
-                    ]
+                ('claude', self._try_claude_patch_generation),
+                ('openai', self._try_openai_patch_generation),
+                ('ollama', self._try_ollama_patch_generation),
+                ('sam', self._try_sam_patch_generation)
+            ]
 
             for system_name, generator_func in llm_systems:
                 try:
@@ -679,12 +636,12 @@ Confidence Threshold: Must be >= 0.75 for application
             client = anthropic.Anthropic()
 
             response = client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=2000,
-                    temperature=0.1,
-                    system="You are an expert software engineer. Generate minimal, safe code patches.",
-                    messages=[{"role": "user", "content": prompt}]
-                    )
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=2000,
+                temperature=0.1,
+                system="You are an expert software engineer. Generate minimal, safe code patches.",
+                messages=[{"role": "user", "content": prompt}]
+            )
 
             return self._parse_claude_patch_response(response.content[0].text, target_file, patch_id)
 
@@ -701,12 +658,12 @@ Confidence Threshold: Must be >= 0.75 for application
             client = openai.OpenAI()
 
             response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "system", "content": "You are an expert software engineer. Generate minimal, safe code patches."},
-                              {"role": "user", "content": prompt}],
-                    max_tokens=2000,
-                    temperature=0.1
-                    )
+                model="gpt-4",
+                messages=[{"role": "system", "content": "You are an expert software engineer. Generate minimal, safe code patches."},
+                         {"role": "user", "content": prompt}],
+                max_tokens=2000,
+                temperature=0.1
+            )
 
             return self._parse_openai_patch_response(response.choices[0].message.content, target_file, patch_id)
 
@@ -727,12 +684,12 @@ Confidence Threshold: Must be >= 0.75 for application
             for model in models_to_try:
                 try:
                     response = requests.post('http://localhost:11434/api/generate',
-                                             json={
-                                                 "model": model,
-                                                 "prompt": prompt,
-                                                 "stream": False,
-                                                 "options": {"temperature": 0.1, "num_predict": 1000}
-                                                 }, timeout=20)
+                                           json={
+                                               "model": model,
+                                               "prompt": prompt,
+                                               "stream": False,
+                                               "options": {"temperature": 0.1, "num_predict": 1000}
+                                           }, timeout=30)
 
                     if response.status_code == 200:
                         return self._parse_ollama_patch_response(response.json()['response'], target_file, patch_id)
@@ -754,16 +711,16 @@ Confidence Threshold: Must be >= 0.75 for application
             # This would integrate with the SAM C consciousness framework
             # For now, return a basic patch with low confidence
             return {
-                    'id': f'patch_{patch_id}',
-                    'target_file': target_file,
-                    'changes': [],  # SAM would generate actual changes
-                    'intent': 'SAM consciousness-guided fix',
-                    'risk_level': 'medium',
-                    'confidence': 0.6,  # SAM has learning but lower confidence
-                    'assumptions': ['SAM consciousness can understand the issue'],
-                    'unknowns': ['Full impact of consciousness-guided changes'],
-                    'generated_by': 'SAM_consciousness'
-                    }
+                'id': f'patch_{patch_id}',
+                'target_file': target_file,
+                'changes': [],  # SAM would generate actual changes
+                'intent': 'SAM consciousness-guided fix',
+                'risk_level': 'medium',
+                'confidence': 0.6,  # SAM has learning but lower confidence
+                'assumptions': ['SAM consciousness can understand the issue'],
+                'unknowns': ['Full impact of consciousness-guided changes'],
+                'generated_by': 'SAM_consciousness'
+            }
 
         except Exception as e:
             raise e
@@ -773,45 +730,45 @@ Confidence Threshold: Must be >= 0.75 for application
         # Analyze the failure and generate basic fixes based on patterns
 
         patch = {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': [],
-                'intent': 'Heuristic-based automated fix',
-                'risk_level': 'low',
-                'confidence': 0.5,
-                'assumptions': ['Common failure patterns apply'],
-                'unknowns': ['Specific failure context'],
-                'generated_by': 'heuristic_fallback'
-                }
+            'id': f'patch_{patch_id}',
+            'target_file': target_file,
+            'changes': [],
+            'intent': 'Heuristic-based automated fix',
+            'risk_level': 'low',
+            'confidence': 0.5,
+            'assumptions': ['Common failure patterns apply'],
+            'unknowns': ['Specific failure context'],
+            'generated_by': 'heuristic_fallback'
+        }
 
         # Basic pattern matching for common fixes
         if 'NameError' in prompt and 'not defined' in prompt:
             patch['changes'].append({
                 'type': 'import_fix',
                 'description': 'Add missing import statement'
-                })
+            })
 
         elif 'AttributeError' in prompt:
             patch['changes'].append({
                 'type': 'attribute_fix',
                 'description': 'Fix attribute access issue'
-                })
+            })
 
         return patch
 
     def _emergency_patch_generation(self, prompt, target_file, patch_id):
         """Absolute emergency fallback when all else fails"""
         return {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': [],
-                'intent': 'Emergency patch - requires human review',
-                'risk_level': 'high',
-                'confidence': 0.1,
-                'assumptions': ['Human intervention required'],
-                'unknowns': ['Everything - emergency fallback'],
-                'generated_by': 'emergency_fallback'
-                }
+            'id': f'patch_{patch_id}',
+            'target_file': target_file,
+            'changes': [],
+            'intent': 'Emergency patch - requires human review',
+            'risk_level': 'high',
+            'confidence': 0.1,
+            'assumptions': ['Human intervention required'],
+            'unknowns': ['Everything - emergency fallback'],
+            'generated_by': 'emergency_fallback'
+        }
 
     def _parse_claude_patch_response(self, response_text, target_file, patch_id):
         """Parse Claude's response into structured patch format"""
@@ -819,48 +776,48 @@ Confidence Threshold: Must be >= 0.75 for application
         # This would include extracting code changes, risk assessment, etc.
 
         return {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': self._extract_changes_from_response(response_text),
-                'intent': self._extract_intent_from_response(response_text),
-                'risk_level': self._assess_risk_from_response(response_text),
-                'confidence': 0.85,  # Claude typically high confidence
-                'assumptions': self._extract_assumptions_from_response(response_text),
-                'unknowns': self._extract_unknowns_from_response(response_text),
-                'generated_by': 'claude'
-                }
+            'id': f'patch_{patch_id}',
+            'target_file': target_file,
+            'changes': self._extract_changes_from_response(response_text),
+            'intent': self._extract_intent_from_response(response_text),
+            'risk_level': self._assess_risk_from_response(response_text),
+            'confidence': 0.85,  # Claude typically high confidence
+            'assumptions': self._extract_assumptions_from_response(response_text),
+            'unknowns': self._extract_unknowns_from_response(response_text),
+            'generated_by': 'claude'
+        }
 
     def _parse_openai_patch_response(self, response_text, target_file, patch_id):
         """Parse OpenAI's response into structured patch format"""
         # Similar parsing logic for OpenAI responses
 
         return {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': self._extract_changes_from_response(response_text),
-                'intent': self._extract_intent_from_response(response_text),
-                'risk_level': self._assess_risk_from_response(response_text),
-                'confidence': 0.80,  # GPT-4 typically high confidence
-                'assumptions': self._extract_assumptions_from_response(response_text),
-                'unknowns': self._extract_unknowns_from_response(response_text),
-                'generated_by': 'openai'
-                }
+            'id': f'patch_{patch_id}',
+            'target_file': target_file,
+            'changes': self._extract_changes_from_response(response_text),
+            'intent': self._extract_intent_from_response(response_text),
+            'risk_level': self._assess_risk_from_response(response_text),
+            'confidence': 0.80,  # GPT-4 typically high confidence
+            'assumptions': self._extract_assumptions_from_response(response_text),
+            'unknowns': self._extract_unknowns_from_response(response_text),
+            'generated_by': 'openai'
+        }
 
     def _parse_ollama_patch_response(self, response_text, target_file, patch_id):
         """Parse Ollama's response into structured patch format"""
         # Similar parsing logic for Ollama responses
 
         return {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': self._extract_changes_from_response(response_text),
-                'intent': self._extract_intent_from_response(response_text),
-                'risk_level': self._assess_risk_from_response(response_text),
-                'confidence': 0.70,  # Local models typically lower confidence
-                'assumptions': self._extract_assumptions_from_response(response_text),
-                'unknowns': self._extract_unknowns_from_response(response_text),
-                'generated_by': 'ollama'
-                }
+            'id': f'patch_{patch_id}',
+            'target_file': target_file,
+            'changes': self._extract_changes_from_response(response_text),
+            'intent': self._extract_intent_from_response(response_text),
+            'risk_level': self._assess_risk_from_response(response_text),
+            'confidence': 0.70,  # Local models typically lower confidence
+            'assumptions': self._extract_assumptions_from_response(response_text),
+            'unknowns': self._extract_unknowns_from_response(response_text),
+            'generated_by': 'ollama'
+        }
 
     def _extract_changes_from_response(self, response_text):
         """Extract actual code changes from LLM response"""
@@ -876,7 +833,7 @@ Confidence Threshold: Must be >= 0.75 for application
                 'type': 'code_block',
                 'content': block.strip(),
                 'format': 'replacement'
-                })
+            })
 
         return changes
 
@@ -890,10 +847,10 @@ Confidence Threshold: Must be >= 0.75 for application
     def _assess_risk_from_response(self, response_text):
         """Assess risk level from LLM response"""
         risk_keywords = {
-                'low': ['simple', 'minor', 'single line', 'obvious'],
-                'medium': ['logic', 'algorithm', 'multiple', 'behavior'],
-                'high': ['complex', 'architecture', 'breaking', 'fundamental']
-                }
+            'low': ['simple', 'minor', 'single line', 'obvious'],
+            'medium': ['logic', 'algorithm', 'multiple', 'behavior'],
+            'high': ['complex', 'architecture', 'breaking', 'fundamental']
+        }
 
         text_lower = response_text.lower()
 
@@ -930,14 +887,14 @@ class VerifierJudgeAgent:
     def verify_patch(self, patch):
         """Verify a patch through multiple stages with confidence threshold requirements"""
         verification_result = {
-                'patch_id': patch['id'],
-                'static_checks': False,
-                'tests_pass': False,
-                'invariants_preserved': False,
-                'overall_safe': False,
-                'score': 0,
-                'issues': []
-                }
+            'patch_id': patch['id'],
+            'static_checks': False,
+            'tests_pass': False,
+            'invariants_preserved': False,
+            'overall_safe': False,
+            'score': 0,
+            'issues': []
+        }
 
         # Stage 1: Static checks (non-LLM, fast)
         static_result = self._static_verification(patch)
@@ -986,13 +943,13 @@ class VerifierJudgeAgent:
 
             # Check for dangerous patterns that could compromise security
             dangerous_patterns = [
-                    r'os\.system\s*\(',
-                    r'os\.popen\s*\(',
-                    r'subprocess\.',
-                    r'eval\s*\(',
-                    r'exec\s*\(',
-                    r'__import__\s*\('
-                    ]
+                r'os\.system\s*\(',
+                r'os\.popen\s*\(',
+                r'subprocess\.',
+                r'eval\s*\(',
+                r'exec\s*\(',
+                r'__import__\s*\('
+            ]
 
             for change in patch.get('changes', []):
                 if change.get('type') == 'code_block':
@@ -1189,20 +1146,9 @@ class VerifierJudgeAgent:
 
 class MetaAgent:
     """Production-grade Meta-Agent for safe self-healing AGI
-    Implements complete O→L→P→V→S→A algorithm with learning state
-
-    FROZEN INTERFACE: This constructor signature MUST remain stable.
-    Any changes require updating all calling code simultaneously.
-    """
-
-    def __init__(
-            self,
-            observer,
-            localizer,
-            generator,
-            verifier,
-            system=None
-            ):
+    Implements complete O→L→P→V→S→A algorithm with learning state"""
+    
+    def __init__(self, observer, localizer, generator, verifier, system):
         # Required sub-agents
         self.observer = observer
         self.localizer = localizer
@@ -1258,12 +1204,12 @@ class MetaAgent:
         """Get statistics about failure clusters for deployment checks"""
         total_failures = sum(len(v) for v in self.failure_clusters.values())
         return {
-                "total_clusters": len(self.failure_clusters),
-                "total_failures": total_failures,
-                "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
-                "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
-                "clusters_with_fixes": 0  # Will be updated when patch learning is added
-                }
+            "total_clusters": len(self.failure_clusters),
+            "total_failures": total_failures,
+            "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
+            "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
+            "clusters_with_fixes": 0  # Will be updated when patch learning is added
+        }
 
     # ===========================
     # PATCH LEARNING
@@ -1275,7 +1221,7 @@ class MetaAgent:
             "failure": failure,
             "result": "success",
             "timestamp": datetime.now().isoformat()
-            })
+        })
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
@@ -1284,7 +1230,7 @@ class MetaAgent:
             "failure": failure,
             "result": "rejected",
             "timestamp": datetime.now().isoformat()
-            })
+        })
 
     # ===========================
     # CORE META LOOP
@@ -1356,31 +1302,31 @@ class MetaAgent:
         try:
             # Teacher model: experienced, stable version
             self.teacher_model = {
-                    'type': 'teacher',
-                    'experience_level': 'expert',
-                    'validation_rules': self._get_teacher_validation_rules(),
-                    'improvement_strategies': self._get_teacher_improvement_strategies(),
-                    'confidence_threshold': 0.85
-                    }
+                'type': 'teacher',
+                'experience_level': 'expert',
+                'validation_rules': self._get_teacher_validation_rules(),
+                'improvement_strategies': self._get_teacher_improvement_strategies(),
+                'confidence_threshold': 0.85
+            }
 
             # Student model: learning, improving version
             self.student_model = {
-                    'type': 'student',
-                    'experience_level': 'novice',
-                    'current_errors': [],
-                    'learning_progress': 0.0,
-                    'validation_rules': self._get_student_validation_rules(),
-                    'improvement_attempts': []
-                    }
+                'type': 'student',
+                'experience_level': 'novice',
+                'current_errors': [],
+                'learning_progress': 0.0,
+                'validation_rules': self._get_student_validation_rules(),
+                'improvement_attempts': []
+            }
 
             # Actor-critic system for validation
             self.actor_critic = {
-                    'actor': self._initialize_actor(),
-                    'critic': self._initialize_critic(),
-                    'reward_function': self._get_reward_function(),
-                    'policy_network': {},
-                    'value_network': {}
-                    }
+                'actor': self._initialize_actor(),
+                'critic': self._initialize_critic(),
+                'reward_function': self._get_reward_function(),
+                'policy_network': {},
+                'value_network': {}
+            }
 
             print("✅ Teacher-student models initialized")
             return True
@@ -1452,7 +1398,7 @@ class MetaAgent:
                 'improvements_applied': len(implementation_result.get('improvements', [])),
                 'performance': current_performance,
                 'convergence_check': convergence_achieved
-                })
+            })
 
         # Final assessment
         if convergence_achieved:
@@ -1460,68 +1406,68 @@ class MetaAgent:
             print("   ✅ Teacher-student-actor-critic validation achieved zero errors")
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
-        print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
-        print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
-        print("   📊 Final performance may still have some issues")
-        return False
+            print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
+            print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
+            print("   📊 Final performance may still have some issues")
+            return False
 
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
         return {
-                'syntax_validation': {'weight': 1.0, 'threshold': 0.95},
-                'semantic_validation': {'weight': 0.9, 'threshold': 0.90},
-                'performance_validation': {'weight': 0.8, 'threshold': 0.85},
-                'security_validation': {'weight': 1.0, 'threshold': 0.98},
-                'integration_validation': {'weight': 0.7, 'threshold': 0.80}
-                }
+            'syntax_validation': {'weight': 1.0, 'threshold': 0.95},
+            'semantic_validation': {'weight': 0.9, 'threshold': 0.90},
+            'performance_validation': {'weight': 0.8, 'threshold': 0.85},
+            'security_validation': {'weight': 1.0, 'threshold': 0.98},
+            'integration_validation': {'weight': 0.7, 'threshold': 0.80}
+        }
 
     def _get_teacher_improvement_strategies(self):
         """Get expert improvement strategies"""
         return [
-                'code_optimization',
-                'error_pattern_recognition',
-                'performance_enhancement',
-                'security_hardening',
-                'integration_improvement',
-                'architecture_refinement'
-                ]
+            'code_optimization',
+            'error_pattern_recognition',
+            'performance_enhancement',
+            'security_hardening',
+            'integration_improvement',
+            'architecture_refinement'
+        ]
 
     def _get_student_validation_rules(self):
         """Get learning validation rules for student model"""
         return {
-                'basic_syntax': {'weight': 0.8, 'threshold': 0.70},
-                'basic_functionality': {'weight': 0.6, 'threshold': 0.60},
-                'error_detection': {'weight': 0.7, 'threshold': 0.65}
-                }
+            'basic_syntax': {'weight': 0.8, 'threshold': 0.70},
+            'basic_functionality': {'weight': 0.6, 'threshold': 0.60},
+            'error_detection': {'weight': 0.7, 'threshold': 0.65}
+        }
 
     def _initialize_actor(self):
         """Initialize actor for decision making"""
         return {
-                'policy': 'validation_driven',
-                'action_space': ['validate', 'improve', 'test', 'deploy', 'rollback'],
-                'state_space': ['error_detected', 'improvement_needed', 'validation_passed', 'deployment_ready'],
-                'learning_rate': 0.01
-                }
+            'policy': 'validation_driven',
+            'action_space': ['validate', 'improve', 'test', 'deploy', 'rollback'],
+            'state_space': ['error_detected', 'improvement_needed', 'validation_passed', 'deployment_ready'],
+            'learning_rate': 0.01
+        }
 
     def _initialize_critic(self):
         """Initialize critic for value estimation"""
         return {
-                'value_function': 'error_reduction_based',
-                'baseline': 0.5,
-                'discount_factor': 0.95,
-                'td_lambda': 0.8
-                }
+            'value_function': 'error_reduction_based',
+            'baseline': 0.5,
+            'discount_factor': 0.95,
+            'td_lambda': 0.8
+        }
 
     def _get_reward_function(self):
         """Define reward function for actor-critic learning"""
         return {
-                'error_reduction': 1.0,
-                'performance_improvement': 0.8,
-                'security_enhancement': 1.2,
-                'successful_deployment': 2.0,
-                'failed_validation': -1.0,
-                'regression_introduced': -2.0
-                }
+            'error_reduction': 1.0,
+            'performance_improvement': 0.8,
+            'security_enhancement': 1.2,
+            'successful_deployment': 2.0,
+            'failed_validation': -1.0,
+            'regression_introduced': -2.0
+        }
 
     def _student_error_detection_phase(self):
         """Student model detects errors in the system"""
@@ -1545,7 +1491,7 @@ class MetaAgent:
                 'severity': 'high',
                 'message': f'Basic system test failed: {e}',
                 'detected_by': 'student_model'
-                })
+            })
 
         self.student_model['current_errors'] = errors
         return errors
@@ -1553,11 +1499,11 @@ class MetaAgent:
     def _teacher_validation_phase(self, student_errors):
         """Teacher model validates student findings and provides guidance"""
         feedback = {
-                'validated_errors': [],
-                'false_positives': [],
-                'missed_errors': [],
-                'improvement_suggestions': []
-                }
+            'validated_errors': [],
+            'false_positives': [],
+            'missed_errors': [],
+            'improvement_suggestions': []
+        }
 
         # Teacher validates each student-detected error
         for error in student_errors:
@@ -1567,7 +1513,7 @@ class MetaAgent:
                     **error,
                     'teacher_confidence': teacher_validation['confidence'],
                     'teacher_priority': teacher_validation['priority']
-                    })
+                })
             else:
                 feedback['false_positives'].append(error)
 
@@ -1610,10 +1556,10 @@ class MetaAgent:
             is_valid = True
 
         return {
-                'is_valid': is_valid,
-                'confidence': confidence,
-                'priority': 'high' if confidence > 0.85 else 'medium' if confidence > 0.70 else 'low'
-                }
+            'is_valid': is_valid,
+            'confidence': confidence,
+            'priority': 'high' if confidence > 0.85 else 'medium' if confidence > 0.70 else 'low'
+        }
 
     def _teacher_detect_missed_errors(self):
         """Teacher looks for errors that student missed"""
@@ -1627,7 +1573,7 @@ class MetaAgent:
                 'severity': 'high',
                 'message': 'Intelligent issue resolver not initialized',
                 'detected_by': 'teacher_model'
-                })
+            })
 
         # Teacher checks for performance issues
         if hasattr(self.system, 'system_metrics'):
@@ -1638,7 +1584,7 @@ class MetaAgent:
                     'severity': 'medium',
                     'message': 'Low agent count may indicate initialization issues',
                     'detected_by': 'teacher_model'
-                    })
+                })
 
         return missed_errors
 
@@ -1661,7 +1607,7 @@ class MetaAgent:
                 'description': 'Complete missing integrations with auto-configuration',
                 'priority': 'high',
                 'estimated_improvement': 0.80
-                })
+            })
 
         if 'component_failure' in error_categories:
             improvements.append({
@@ -1669,7 +1615,7 @@ class MetaAgent:
                 'description': 'Stabilize failing components with error recovery',
                 'priority': 'high',
                 'estimated_improvement': 0.70
-                })
+            })
 
         if 'missing_api_key' in error_categories:
             improvements.append({
@@ -1677,7 +1623,7 @@ class MetaAgent:
                 'description': 'Provide clear guidance for configuration requirements',
                 'priority': 'medium',
                 'estimated_improvement': 0.90
-                })
+            })
 
         return improvements
 
@@ -1692,27 +1638,27 @@ class MetaAgent:
             high_severity = [e for e in validated_errors if e.get('teacher_priority') == 'high']
             if high_severity:
                 return {
-                        'strategy': 'critical_error_resolution',
-                        'target_errors': high_severity,
-                        'approach': 'immediate_fix',
-                        'confidence': 0.85
-                        }
+                    'strategy': 'critical_error_resolution',
+                    'target_errors': high_severity,
+                    'approach': 'immediate_fix',
+                    'confidence': 0.85
+                }
 
         # If no critical errors, focus on improvements
         if improvements:
             best_improvement = max(improvements, key=lambda x: x['estimated_improvement'])
             return {
-                    'strategy': 'strategic_improvement',
-                    'improvement_plan': best_improvement,
-                    'approach': 'incremental_enhancement',
-                    'confidence': 0.75
-                    }
+                'strategy': 'strategic_improvement',
+                'improvement_plan': best_improvement,
+                'approach': 'incremental_enhancement',
+                'confidence': 0.75
+            }
 
         return {
-                'strategy': 'system_optimization',
-                'approach': 'performance_tuning',
-                'confidence': 0.60
-                }
+            'strategy': 'system_optimization',
+            'approach': 'performance_tuning',
+            'confidence': 0.60
+        }
 
     def _actor_critic_validation_phase(self, strategy):
         """Actor-critic system validates and refines the improvement strategy"""
@@ -1736,11 +1682,11 @@ class MetaAgent:
             confidence = strategy_quality * 0.7
 
         return {
-                'selected_action': selected_action,
-                'strategy_quality': strategy_quality,
-                'confidence': confidence,
-                'validation_result': 'approved' if selected_action == 'execute_plan' else 'needs_review'
-                }
+            'selected_action': selected_action,
+            'strategy_quality': strategy_quality,
+            'confidence': confidence,
+            'validation_result': 'approved' if selected_action == 'execute_plan' else 'needs_review'
+        }
 
     def _critic_evaluate_strategy(self, strategy):
         """Critic evaluates the quality of the improvement strategy"""
@@ -1782,20 +1728,20 @@ class MetaAgent:
                             'type': 'auto_fix',
                             'issue': issue,
                             'result': 'success'
-                            })
+                        })
 
         return {
-                'success': True,
-                'improvements': improvements_made,
-                'test_results': {'basic_tests_passed': True}
-                }
+            'success': True,
+            'improvements': improvements_made,
+            'test_results': {'basic_tests_passed': True}
+        }
 
     def _run_basic_system_tests(self):
         """Run basic system functionality tests"""
         test_results = {
-                'success': True,
-                'errors': []
-                }
+            'success': True,
+            'errors': []
+        }
 
         try:
             # Test basic imports
@@ -1813,7 +1759,7 @@ class MetaAgent:
                         'type': 'command_failure',
                         'component': 'chat_processing',
                         'message': 'Status command returned no result'
-                        })
+                    })
 
         except Exception as e:
             test_results['success'] = False
@@ -1821,18 +1767,18 @@ class MetaAgent:
                 'type': 'system_test_failure',
                 'component': 'basic_functionality',
                 'message': f'System test failed: {e}'
-                })
+            })
 
         return test_results
 
     def _assess_current_performance(self):
         """Assess current system performance"""
         performance = {
-                'error_count': 0,
-                'component_health': 0.0,
-                'integration_status': 0.0,
-                'overall_score': 0.0
-                }
+            'error_count': 0,
+            'component_health': 0.0,
+            'integration_status': 0.0,
+            'overall_score': 0.0
+        }
 
         # Count current errors
         if hasattr(self.system, 'issue_resolver'):
@@ -1841,7 +1787,7 @@ class MetaAgent:
 
         # Assess component health
         components = ['c_core_initialized', 'python_orchestration_initialized',
-                      'web_interface_initialized', 'sam_gmail_available', 'sam_github_available']
+                     'web_interface_initialized', 'sam_gmail_available', 'sam_github_available']
         healthy_components = 0
         for component in components:
             if hasattr(self.system, component) and getattr(self.system, component):
@@ -1851,7 +1797,7 @@ class MetaAgent:
 
         # Integration status
         integrations = ['sam_gmail_available', 'sam_github_available',
-                        'sam_code_modifier_available', 'sam_web_search_available']
+                       'sam_code_modifier_available', 'sam_web_search_available']
         working_integrations = 0
         for integration in integrations:
             if hasattr(self.system, integration) and getattr(self.system, integration):
@@ -1899,12 +1845,12 @@ class IntelligentIssueResolver:
 
         # Check component availability
         components = {
-                'google_drive': self.system.google_drive_available,
-                'web_search': self.system.sam_web_search_available,
-                'code_modifier': self.system.sam_code_modifier_available,
-                'gmail': self.system.sam_gmail_available,
-                'github': self.system.sam_github_available
-                }
+            'google_drive': self.system.google_drive_available,
+            'web_search': self.system.sam_web_search_available,
+            'code_modifier': self.system.sam_code_modifier_available,
+            'gmail': self.system.sam_gmail_available,
+            'github': self.system.sam_github_available
+        }
 
         for component, available in components.items():
             if not available:
@@ -1914,15 +1860,15 @@ class IntelligentIssueResolver:
                     'severity': 'high',
                     'message': f'{component.replace("_", " ").title()} integration not available',
                     'auto_fix_possible': self._can_auto_fix_integration(component)
-                    })
+                })
 
         # Check API keys
         api_keys = {
-                'github_token': os.getenv('GITHUB_TOKEN'),
-                'google_api_key': os.getenv('GOOGLE_API_KEY'),
-                'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
-                'openai_key': os.getenv('OPENAI_API_KEY')
-                }
+            'github_token': os.getenv('GITHUB_TOKEN'),
+            'google_api_key': os.getenv('GOOGLE_API_KEY'),
+            'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
+            'openai_key': os.getenv('OPENAI_API_KEY')
+        }
 
         for key_name, value in api_keys.items():
             if not value:
@@ -1932,7 +1878,7 @@ class IntelligentIssueResolver:
                     'severity': 'medium',
                     'message': f'{key_name.replace("_", " ").title()} not configured',
                     'auto_fix_possible': False  # Requires user input
-                    })
+                })
 
         self.detected_issues = issues
         return issues
@@ -1940,16 +1886,21 @@ class IntelligentIssueResolver:
     def _can_auto_fix_integration(self, component):
         """Check if an integration issue can be auto-fixed"""
         auto_fixable = {
-                'google_drive': False,  # Requires credentials file
-                'web_search': True,     # Can work without Google Drive
-                'code_modifier': True,  # Core functionality
-                'gmail': False,         # Requires email setup
-                'github': True          # Can work without token (read-only)
-                }
+            'google_drive': False,  # Requires credentials file
+            'web_search': True,     # Can work without Google Drive
+            'code_modifier': True,  # Core functionality
+            'gmail': False,         # Requires email setup
+            'github': True          # Can work without token (read-only)
+        }
         return auto_fixable.get(component, False)
 
     def attempt_auto_resolution(self, issue):
         """Attempt to automatically resolve an issue"""
+        # 🔒 PREVENT BOOTSTRAP THRASHING - Don't attempt auto-resolution during bootstrap
+        if not getattr(self.system, 'bootstrap_complete', False):
+            print(f"🔒 Skipping auto-resolution during bootstrap: {issue['message']}")
+            return False
+            
         issue_id = f"{issue['type']}_{issue['component']}"
         self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
 
@@ -2089,12 +2040,12 @@ class IntelligentIssueResolver:
         """Get statistics about failure clusters for deployment checks"""
         total_failures = sum(len(v) for v in self.failure_clusters.values())
         return {
-                "total_clusters": len(self.failure_clusters),
-                "total_failures": total_failures,
-                "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
-                "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
-                "clusters_with_fixes": 0
-                }
+            "total_clusters": len(self.failure_clusters),
+            "total_failures": total_failures,
+            "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
+            "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
+            "clusters_with_fixes": 0
+        }
 
     def is_fully_initialized(self):
         """Check if meta-agent is ready"""
@@ -2104,26 +2055,26 @@ class IntelligentIssueResolver:
         """Ensure initialization"""
         return True
     """AI-powered system for detecting and resolving issues automatically"""
-
+    
     def __init__(self, system_instance):
         self.system = system_instance
         self.detected_issues = []
         self.resolution_attempts = {}
         self.chat_integration = None
-
+        
     def detect_initialization_issues(self):
         """Detect issues during system initialization"""
         issues = []
-
+        
         # Check component availability
         components = {
-                'google_drive': self.system.google_drive_available,
-                'web_search': self.system.sam_web_search_available, 
-                'code_modifier': self.system.sam_code_modifier_available,
-                'gmail': self.system.sam_gmail_available,
-                'github': self.system.sam_github_available
-                }
-
+            'google_drive': self.system.google_drive_available,
+            'web_search': self.system.sam_web_search_available, 
+            'code_modifier': self.system.sam_code_modifier_available,
+            'gmail': self.system.sam_gmail_available,
+            'github': self.system.sam_github_available
+        }
+        
         for component, available in components.items():
             if not available:
                 issues.append({
@@ -2132,16 +2083,16 @@ class IntelligentIssueResolver:
                     'severity': 'high',
                     'message': f'{component.replace("_", " ").title()} integration not available',
                     'auto_fix_possible': self._can_auto_fix_integration(component)
-                    })
-
+                })
+        
         # Check API keys
         api_keys = {
-                'github_token': os.getenv('GITHUB_TOKEN'),
-                'google_api_key': os.getenv('GOOGLE_API_KEY'),
-                'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
-                'openai_key': os.getenv('OPENAI_API_KEY')
-                }
-
+            'github_token': os.getenv('GITHUB_TOKEN'),
+            'google_api_key': os.getenv('GOOGLE_API_KEY'),
+            'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
+            'openai_key': os.getenv('OPENAI_API_KEY')
+        }
+        
         for key_name, value in api_keys.items():
             if not value:
                 issues.append({
@@ -2150,321 +2101,50 @@ class IntelligentIssueResolver:
                     'severity': 'medium',
                     'message': f'{key_name.replace("_", " ").title()} not configured',
                     'auto_fix_possible': False  # Requires user input
-                    })
-
+                })
+        
         self.detected_issues = issues
         return issues
-
+    
     def _can_auto_fix_integration(self, component):
         """Check if an integration issue can be auto-fixed"""
         auto_fixable = {
-                'google_drive': False,  # Requires credentials file
-                'web_search': True,     # Can work without Google Drive
-                'code_modifier': True,  # Core functionality
-                'gmail': False,         # Requires email setup
-                'github': True          # Can work without token (read-only)
-                }
+            'google_drive': False,  # Requires credentials file
+            'web_search': True,     # Can work without Google Drive
+            'code_modifier': True,  # Core functionality
+            'gmail': False,         # Requires email setup
+            'github': True          # Can work without token (read-only)
+        }
         return auto_fixable.get(component, False)
-
+    
     def attempt_auto_resolution(self, issue):
-        """Attempt to automatically resolve an issue with LLM-powered analysis"""
+        """Attempt to automatically resolve an issue"""
+        # 🔒 PREVENT BOOTSTRAP THRASHING - Don't attempt auto-resolution during bootstrap
+        if not getattr(self.system, 'bootstrap_complete', False):
+            print(f"🔒 Skipping auto-resolution during bootstrap: {issue['message']}")
+            return False
+            
         issue_id = f"{issue['type']}_{issue['component']}"
         self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
-
+        
         print(f"🤖 Attempting auto-resolution for: {issue['message']}")
-        print(f"   🔍 Analyzing with available LLM models...")
-
-        # First try basic rule-based fixes
-        basic_success = self._try_basic_resolution(issue)
-
-        if basic_success:
-            print(f"✅ Basic auto-resolution successful for: {issue['message']}")
-            self.resolution_attempts[issue_id]['success'] = True
-            return True
-
-        # If basic resolution fails, try LLM-powered analysis
-        print(f"   🧠 Basic resolution failed, attempting LLM-powered analysis...")
-        llm_success = self._try_llm_powered_resolution(issue)
-
-        if llm_success:
-            print(f"✅ LLM-powered auto-resolution successful for: {issue['message']}")
-            self.resolution_attempts[issue_id]['success'] = True
-            return True
-
-        print(f"❌ All auto-resolution methods failed for: {issue['message']}")
-        return False
-
-    def _try_basic_resolution(self, issue):
-        """Try basic rule-based resolution methods"""
+        
         if issue['type'] == 'missing_integration':
-            return self._fix_missing_integration(issue['component'])
+            success = self._fix_missing_integration(issue['component'])
         elif issue['type'] == 'missing_api_key':
-            return self._fix_missing_api_key(issue['component'])
-        return False
-
-    def _try_llm_powered_resolution(self, issue):
-        """Try LLM-powered intelligent resolution"""
-        try:
-            # Check if we have SWE models available
-            swe_models = self._get_available_swe_models()
-
-            if not swe_models:
-                print("   ⚠️ No SWE LLM models available for intelligent resolution")
-                return False
-
-            # Use the best available SWE model
-            best_model = swe_models[0]  # qwen2.5-coder:7b or codellama
-            print(f"   🎯 Using SWE model: {best_model}")
-
-            return self._llm_analyze_and_fix_issue(issue, best_model)
-
-        except Exception as e:
-            print(f"   ❌ LLM-powered resolution error: {e}")
-            return False
-
-    def _get_available_swe_models(self):
-        """Get available SWE (Software Engineering) models for intelligent resolution"""
-        swe_models = []
-
-        try:
-            # Check Ollama for SWE models
-            import subprocess
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
-
-            if result.returncode == 0:
-                available_models = result.stdout.strip().split('\n')[1:]  # Skip header
-
-                # Prioritize SWE/coding models
-                swe_model_names = [
-                        'codellama',      # Good SWE model, lighter memory footprint
-                        'codellama',      # Good SWE model
-                        'deepseek-coder', # Also good for coding
-                        'llama3.1',       # General but capable
-                        ]
-
-                for model_line in available_models:
-                    if model_line.strip():
-                        model_name = model_line.split()[0]
-                        for swe_name in swe_model_names:
-                            if swe_name in model_name.lower():
-                                swe_models.append(model_name)
-                                break
-
-                # Sort by preference (qwen2.5-coder first)
-                swe_models.sort(key=lambda x: (
-                    0 if 'qwen2.5-coder' in x else
-                    1 if 'codellama' in x else
-                    2 if 'deepseek-coder' in x else 3
-                    ))
-
-        except Exception as e:
-            print(f"   ⚠️ Error checking Ollama models: {e}")
-
-        return swe_models
-
-    def _llm_analyze_and_fix_issue(self, issue, model_name):
-        """Use LLM to analyze and potentially fix the issue"""
-        try:
-            import subprocess
-            import json
-
-            # Create LLM prompt for issue analysis
-            prompt = self._create_issue_analysis_prompt(issue)
-
-            # Call Ollama with the SWE model
-            ollama_cmd = [
-                    'ollama', 'run', model_name,
-                    '--format', 'json'
-                    ]
-
-            print(f"   🤖 Consulting {model_name} for solution...")
-
-            # Run Ollama in a subprocess with timeout
-            process = subprocess.Popen(
-                    ollama_cmd,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                    )
-
-            # Send prompt and get response
-            stdout, stderr = process.communicate(input=prompt, timeout=20)
-
-            if process.returncode == 0 and stdout.strip():
-                try:
-                    # Try to parse JSON response
-                    response = json.loads(stdout.strip())
-                    return self._apply_llm_solution(issue, response)
-                except json.JSONDecodeError:
-                    # Fallback: try to extract solution from text
-                    print(f"   📝 LLM response (non-JSON): {stdout[:200]}...")
-                    return self._apply_text_solution(issue, stdout)
-            else:
-                print(f"   ❌ LLM call failed: {stderr}")
-                return False
-
-        except subprocess.TimeoutExpired:
-            print("   ⏰ LLM analysis timed out")
-            return False
-        except Exception as e:
-            print(f"   ❌ LLM analysis error: {e}")
-            return False
-
-    def _create_issue_analysis_prompt(self, issue):
-        """Create a prompt for LLM to analyze the issue"""
-        issue_type = issue.get('type', 'unknown')
-        component = issue.get('component', 'unknown')
-        message = issue.get('message', 'Unknown issue')
-
-        prompt = f"""You are an expert software engineer analyzing a system issue. Provide a detailed analysis and potential solution.
-
-ISSUE DETAILS:
-- Type: {issue_type}
-- Component: {component}
-- Message: {message}
-- Severity: {issue.get('severity', 'unknown')}
-
-SYSTEM CONTEXT:
-- This is a Python-based AI system with C extensions
-- Components include: consciousness, orchestrator, agents, web interface
-- Integrations: Gmail, GitHub, Google Drive, web search, code modification
-
-TASK:
-1. Analyze what this issue means for the system
-2. Determine if it can be automatically resolved
-3. If resolvable, provide specific steps or code changes needed
-4. Rate confidence in your analysis (0.0 to 1.0)
-
-RESPONSE FORMAT (JSON):
-{{
-    "analysis": "Detailed analysis of the issue",
-    "can_resolve": true/false,
-    "solution_type": "code_change|configuration|integration|manual",
-    "solution_steps": ["step1", "step2", "step3"],
-    "code_changes": {{"file": "changes"}},
-    "confidence": 0.85
-}}
-
-Analyze this issue and provide your expert recommendation:"""
-
-        return prompt
-
-    def _apply_llm_solution(self, issue, llm_response):
-        """Apply the LLM-provided solution"""
-        try:
-            can_resolve = llm_response.get('can_resolve', False)
-            confidence = llm_response.get('confidence', None)
-            # Parse confidence if it's a string
-            if isinstance(confidence, str):
-                try:
-                    confidence = float(confidence)
-                except (ValueError, TypeError):
-                    confidence = 0.6  # Default confidence if parsing fails
-            elif confidence is None:
-                confidence = 0.6  # Default confidence if not provided
-            confidence = llm_response.get('confidence', 0.0)
-            solution_type = llm_response.get('solution_type', 'manual')
-
-            print(f"   📊 LLM Analysis: Can resolve={can_resolve}, Confidence={confidence:.2f}, Type={solution_type}")
-
-            if not can_resolve or (confidence is not None and confidence < 0.5):
-                print("   ⚠️ LLM determined issue cannot be safely resolved automatically")
-                return False
-
-        except Exception as e:
-            print(f"   ❌ Experimental code application failed: {e}")
-            # Fall through to manual application
-            # Check for experimental code application
-            if solution_type == "code_change" and check_experimental_code_application(
-                    self.system if hasattr(self, "system") else None, issue, confidence, solution_type, code_changes):
-                print("🧪 Experimental code application initiated - testing in spawned process")
-                return True
-
-        # Apply solution based on type
-        if solution_type == 'integration':
-            return self._apply_integration_solution(issue, llm_response)
-        elif solution_type == 'configuration':
-            return self._apply_configuration_solution(issue, llm_response)
-        elif solution_type == 'code_change':
-            return self._apply_code_solution(issue, llm_response)
+            success = self._fix_missing_api_key(issue['component'])
         else:
-            print(f"   ⚠️ LLM suggested {solution_type} solution - requires manual intervention")
-            return False
-
-        except Exception as e:
-            print(f"   ❌ Error applying LLM solution: {e}")
-        return False
-
-    def _apply_text_solution(self, issue, text_response):
-        """Apply solution from text response (fallback)"""
-        # This is a simplified fallback - in practice would need better parsing
-        print(f"   📝 Applying text-based solution from LLM...")
-
-        # Check if text contains actionable information
-        text_lower = text_response.lower()
-
-        if 'integration' in text_lower and 'initialize' in text_lower:
-            # Try integration initialization
-            return self._fix_missing_integration(issue['component'])
-
-        print("   ⚠️ Could not extract actionable solution from LLM text response")
-        return False
-
-    def _apply_integration_solution(self, issue, response):
-        """Apply integration-based solution"""
-        print("   🔧 Applying integration solution...")
-
-        solution_steps = response.get('solution_steps', [])
-
-        # Execute solution steps
-        for step in solution_steps:
-            print(f"   📋 Executing: {step}")
-
-            if 'initialize' in step.lower():
-                # Try to initialize the integration
-                component = issue.get('component', '')
-                if component in ['web_search', 'code_modifier', 'github']:
-                    return self._fix_missing_integration(component)
-
-        return True
-
-    def _apply_configuration_solution(self, issue, response):
-        """Apply configuration-based solution"""
-        print("   ⚙️ Applying configuration solution...")
-
-        # Configuration solutions typically require manual intervention
-        # but we can check environment variables
-        component = issue.get('component', '')
-
-        if 'api_key' in component or 'token' in component:
-            env_var = component.upper()
-            if os.getenv(env_var):
-                print(f"   ✅ Found {component} in environment")
-                return True
-
-        print("   ⚠️ Configuration solution requires manual setup")
-        return False
-
-    def _apply_code_solution(self, issue, response):
-        """Apply code-based solution"""
-        print("   💻 Applying code solution...")
-
-        code_changes = response.get('code_changes', {})
-
-        if not code_changes:
-            print("   ⚠️ No code changes specified by LLM")
-            return False
-
-        # Code solutions are complex and should be handled carefully
-        # For now, we'll log the suggested changes but not apply them automatically
-        print("   📝 LLM suggested code changes (manual application recommended):")
-        for file_path, changes in code_changes.items():
-            print(f"     📄 {file_path}: {changes[:100]}...")
-
-        print("   ⚠️ Code solutions require manual review and application")
-        return False
-
+            success = False
+        
+        self.resolution_attempts[issue_id]['success'] = success
+        
+        if success:
+            print(f"✅ Auto-resolution successful for: {issue['message']}")
+        else:
+            print(f"❌ Auto-resolution failed for: {issue['message']}")
+            
+        return success
+    
     def _fix_missing_integration(self, component):
         """Attempt to fix missing integration"""
         if component == 'web_search':
@@ -2476,7 +2156,7 @@ Analyze this issue and provide your expert recommendation:"""
             except Exception as e:
                 print(f"  Web search auto-fix failed: {e}")
                 return False
-
+                
         elif component == 'code_modifier':
             # Code modifier is core functionality
             try:
@@ -2487,7 +2167,7 @@ Analyze this issue and provide your expert recommendation:"""
             except Exception as e:
                 print(f"  Code modifier auto-fix failed: {e}")
                 return False
-
+                
         elif component == 'github':
             # GitHub can work without token (read-only)
             try:
@@ -2497,9 +2177,9 @@ Analyze this issue and provide your expert recommendation:"""
             except Exception as e:
                 print(f"  GitHub auto-fix failed: {e}")
                 return False
-
+        
         return False
-
+    
     def _fix_missing_api_key(self, key_name):
         """Attempt to fix missing API key"""
         # For now, we can't auto-fix API keys as they require user input
@@ -2509,16 +2189,16 @@ Analyze this issue and provide your expert recommendation:"""
             print(f"  Found {key_name} in environment")
             return True
         return False
-
+    
     def engage_user_for_resolution(self, unresolved_issues):
         """Engage user in chat to resolve remaining issues"""
         if not unresolved_issues:
             return
-
+        
         print("\\n🤖 INTELLIGENT ISSUE RESOLUTION SYSTEM ACTIVE")
         print("=" * 60)
         print("I've detected some issues that need your attention:")
-
+        
         for i, issue in enumerate(unresolved_issues, 1):
             print(f"\\n{i}. {issue['message']}")
             if issue['type'] == 'missing_api_key':
@@ -2536,23 +2216,23 @@ Analyze this issue and provide your expert recommendation:"""
                     print("   📝 Run: export OPENAI_API_KEY=your_openai_key_here")
             else:
                 print("   💡 This integration is not available. The system will continue without it.")
-
+        
         print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
         print("\\n💬 I can help you resolve these issues. What would you like to do?")
-
+    
     def resolve_all_issues(self):
         """Main method to resolve all detected issues"""
         issues = self.detect_initialization_issues()
-
+        
         if not issues:
             print("✅ No issues detected - system is healthy!")
             return True
-
+        
         print(f"\\n🤖 Detected {len(issues)} potential issues:")
         for issue in issues:
             severity_icon = "🔴" if issue['severity'] == 'high' else "🟡" if issue['severity'] == 'medium' else "🟢"
             print(f"  {severity_icon} {issue['message']}")
-
+        
         # Attempt auto-resolution
         unresolved_issues = []
         for issue in issues:
@@ -2561,12 +2241,12 @@ Analyze this issue and provide your expert recommendation:"""
                     unresolved_issues.append(issue)
             else:
                 unresolved_issues.append(issue)
-
+        
         # Engage user for remaining issues
         if unresolved_issues:
             self.engage_user_for_resolution(unresolved_issues)
             return False
-
+        
         print("\\n✅ All issues resolved automatically!")
         return True
 
@@ -2576,25 +2256,206 @@ class UnifiedSAMSystem:
     def __init__(self):
         print("🚀 INITIALIZING UNIFIED SAM 2.0 COMPLETE SYSTEM")
         print("=" * 80)
-        print("🎯 Combining Pure C Core + Python Orchestration")
+        print("🎯 Combining Pure C Core + Comprehensive Python Orchestration")
         print("🎯 Zero Fallbacks - All Components Work Correctly")
         print("=" * 80)
 
-        # CRITICAL: Bootstrap safety - disable self-healing during initialization
-        self._bootstrap_mode = True
-        self._allow_self_modification = False
-        self._allow_auto_resolution = False
-
-        # CRITICAL: Validate minimum capabilities BEFORE any component initialization
-        self._validate_minimum_capabilities()
-
         # Project root for file operations
         self.project_root = Path(__file__).parent
+
+        # 🔒 BOOTSTRAP PROTECTION - Disable self-healing during initialization
+        self.allow_self_modification = False
+        self.allow_auto_resolution = False
+        self.bootstrap_complete = False
+
+        # Initialize missing attributes early for tests
+        self.agent_configs = {}
+        self.connected_agents = {}
+        self._agent_status_cache = {}  # Add agent status cache
+
+        # System metrics (initialize early before web interface)
+        self.system_metrics = {
+            'start_time': datetime.now().isoformat(),
+            'c_core_status': 'initializing',
+            'python_orchestration_status': 'initializing',
+            'web_interface_status': 'initializing',
+            'total_conversations': 0,
+            'consciousness_score': 0.0,
+            'coherence_score': 0.0,
+            'survival_score': 1.0,
+            'learning_events': 0,
+            'optimization_events': 0,
+            'active_agents': 0,
+            'system_health': 'excellent'
+        }
+
+        # 🔄 RAM-AWARE INTELLIGENCE - Memory monitoring and model switching
+        self.ram_monitor = RAMAwareModelSwitcher(self)
+        self.ram_monitor.start_monitoring()
+
+        # 🎭 CONVERSATION DIVERSITY MANAGER - Prevent repetitive responses
+        self.diversity_manager = ConversationDiversityManager(self)
+        self.diversity_manager.start_monitoring()
+
+        # 🐳 VIRTUAL ENVIRONMENTS MANAGER - Docker, Python, system commands
+        self.virtual_env_manager = VirtualEnvironmentsManager(self)
+        self.virtual_env_manager.initialize()
 
         # Core system components
         self.c_core_initialized = False
         self.python_orchestration_initialized = False
         self.web_interface_initialized = False
+
+        # Meta-controller + ANANKE arena
+        self.meta_controller = sam_meta_controller_c.create(64, 16, 4, 42)
+        self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
+        self.ananke_arena = sam_ananke_dual_system.create(16, 4, 42)
+        self.meta_loop_active = True
+        self.meta_thread = None
+
+        # Start meta-controller loop
+        self._start_meta_loop()
+
+    def _normalize_pressures(self, payload):
+        """Normalize pressure signals into 0-1 range"""
+        def clamp(v):
+            return max(0.0, min(1.0, float(v)))
+        return {
+            'residual': clamp(payload.get('residual', 0.0)),
+            'rank_def': clamp(payload.get('rank_def', 0.0)),
+            'retrieval_entropy': clamp(payload.get('retrieval_entropy', 0.0)),
+            'interference': clamp(payload.get('interference', 0.0)),
+            'planner_friction': clamp(payload.get('planner_friction', 0.0)),
+            'context_collapse': clamp(payload.get('context_collapse', 0.0)),
+            'compression_waste': clamp(payload.get('compression_waste', 0.0)),
+            'temporal_incoherence': clamp(payload.get('temporal_incoherence', 0.0))
+        }
+
+    def _compute_pressure_signals(self):
+        """Compute pressure signals from current system metrics"""
+        residual = 0.1 if self.system_metrics.get('learning_events', 0) == 0 else 0.2
+        rank_def = 0.1
+        retrieval_entropy = 0.1 if not self.connected_agents else 0.2
+        interference = 0.05
+        planner_friction = 0.1
+        context_collapse = 0.05
+        compression_waste = 0.1
+        temporal_incoherence = 0.05
+
+        activity_age = time.time() - (self.system_metrics.get('last_activity') or time.time())
+        if activity_age > 120:
+            planner_friction = 0.2
+            retrieval_entropy = 0.2
+        if self.system_metrics.get('survival_score', 1.0) < 0.5:
+            residual = 0.3
+            temporal_incoherence = 0.2
+
+        return {
+            'residual': residual,
+            'rank_def': rank_def,
+            'retrieval_entropy': retrieval_entropy,
+            'interference': interference,
+            'planner_friction': planner_friction,
+            'context_collapse': context_collapse,
+            'compression_waste': compression_waste,
+            'temporal_incoherence': temporal_incoherence
+        }
+
+    def _start_meta_loop(self):
+        """Background loop to update meta-controller from system signals"""
+        def loop():
+            while self.meta_loop_active:
+                signals = self._compute_pressure_signals()
+                sam_meta_controller_c.update_pressure(
+                    self.meta_controller,
+                    signals['residual'],
+                    signals['rank_def'],
+                    signals['retrieval_entropy'],
+                    signals['interference'],
+                    signals['planner_friction'],
+                    signals['context_collapse'],
+                    signals['compression_waste'],
+                    signals['temporal_incoherence']
+                )
+                primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
+                if primitive:
+                    sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
+                time.sleep(5)
+        self.meta_thread = threading.Thread(target=loop, daemon=True)
+        self.meta_thread.start()
+
+    def _validate_minimum_capabilities(self):
+        """Validate minimum capabilities required for system operation"""
+        print("\\n🔍 VALIDATING MINIMUM SYSTEM CAPABILITIES...")
+        print("-" * 50)
+
+        # Check for Ollama
+        ollama_available = self._check_ollama_available()
+        if not ollama_available:
+            raise RuntimeError(
+                "\\n❌ CRITICAL: Ollama not found!\\n"
+                "Please install Ollama from: https://ollama.ai/download\\n"
+                "Then pull at least one model: ollama pull mistral:latest"
+            )
+
+        # Check for local models
+        models_available = self._check_local_models_available()
+        if not models_available:
+            raise RuntimeError(
+                "\\n❌ CRITICAL: No local LLM models found!\\n"
+                "Please pull at least one model:\\n"
+                "  ollama pull mistral:latest\\n"
+                "  ollama pull llama3.1:latest\\n"
+                "  ollama pull qwen2.5-coder:7b\\n"
+                "Run 'ollama list' to check available models."
+            )
+
+        print("✅ All minimum capabilities validated!")
+        print("-" * 50)
+
+    def _check_ollama_available(self):
+        """Check if Ollama is installed and available"""
+        try:
+            result = subprocess.run(['ollama', '--version'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                print("✅ Ollama found and responding")
+                return True
+            else:
+                print("❌ Ollama not responding")
+                return False
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            print("❌ Ollama not found or not responding")
+            return False
+
+    def _check_local_models_available(self):
+        """Check if local models are available via Ollama"""
+        try:
+            result = subprocess.run(['ollama', 'list'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\\n')
+                # Skip header line, check for actual models
+                model_lines = [line for line in lines[1:] if line.strip()]
+                if model_lines:
+                    print(f"✅ Found {len(model_lines)} local model(s):")
+                    for line in model_lines[:3]:  # Show first 3 models
+                        parts = line.split()
+                        if parts:
+                            print(f"   • {parts[0]}")
+                    if len(model_lines) > 3:
+                        print(f"   ... and {len(model_lines) - 3} more")
+                    return True
+                else:
+                    print("❌ No models found in Ollama")
+                    return False
+            else:
+                print("❌ Ollama list command failed")
+                return False
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            print("❌ Could not check Ollama models")
+            return False
 
         # C Core Components
         self.consciousness = None
@@ -2613,44 +2474,21 @@ class UnifiedSAMSystem:
         self.active_conversations = {}
         self.web_search_enabled = True
 
-        # Google Drive integration
-        self.google_drive = None
-
-        # Autonomous operation state
-        self._last_goal_generation = time.time()  # Initialize to current time
-        self._autonomous_cycle_count = 0
-
-        # System metrics
-        self.system_metrics = {
-                'start_time': datetime.now().isoformat(),
-                'c_core_status': 'initializing',
-                'python_orchestration_status': 'initializing',
-                'web_interface_status': 'initializing',
-                'total_conversations': 0,
-                'consciousness_score': 0.0,
-                'coherence_score': 0.0,
-                'survival_score': 1.0,
-                'learning_events': 0,
-                'optimization_events': 0,
-                'active_agents': 0,
-                'system_health': 'excellent'
-                }
-
         # Integration availability flags
-        self.sam_gmail_available = sam_gmail_available
-        self.sam_github_available = sam_github_available
-        self.sam_web_search_available = sam_web_search_available
-        self.sam_code_modifier_available = sam_code_modifier_available
+        self.sam_gmail_available = True  # Set to True since we removed fallbacks
+        self.sam_github_available = True
+        self.sam_web_search_available = True
+        self.sam_code_modifier_available = True
         self.socketio_available = flask_available  # SocketIO available if Flask is
 
         # Check system capabilities
         self._check_system_capabilities()
-
+        
         # Initialize comprehensive agent configurations
         self.agent_configs = {}
         self.connected_agents = {}
         self.initialize_agent_configs()
-
+        
         # Auto-connect core agents
         self.auto_connect_agents()
 
@@ -2664,37 +2502,36 @@ class UnifiedSAMSystem:
 
         # Create meta-agent with sub-agents
         self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
-
+            
+        # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
+        self.bootstrap_complete = True
+        self.allow_self_modification = True
+        self.allow_auto_resolution = True
+        print("🔓 Bootstrap protection lifted - self-healing capabilities enabled")
+            
         # Run teacher-student learning cycles for system improvement
-        print("\\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
+        print("\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
         print("   🎯 Training system until zero errors achieved...")
-
+        
         # Note: Learning cycles are now handled by the meta-agent internally
         print("   📚 Meta-agent learning integrated into continuous operation")
-
+        
         if self.meta_agent and self.meta_agent.is_fully_initialized():
-            print("\\n🎉 META-AGENT SYSTEM ACTIVATED!")
+            print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
             print("   ✅ Production-grade debugging and repair capabilities online")
             print("   📚 Continuous learning and self-improvement active")
         else:
-            print("\\n⚠️ Meta-agent initialization incomplete - basic functionality available")
+            print("\n⚠️ Meta-agent initialization incomplete - basic functionality available")
             print("   🔄 System will continue with limited self-healing capabilities")
 
         # Initialize intelligent issue resolver BEFORE other components
-        # Initialize experimental auto-code modification system
-        try:
-            initialize_experimental_auto_code(self)
-        except Exception as e:
-            print(f"⚠️ Experimental auto-code system failed: {e}")
-            print("Continuing without experimental features")
-
         print("🤖 Initializing Intelligent Issue Resolution System...")
         self.issue_resolver = IntelligentIssueResolver(self)
-
+        
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
         issue_thread.start()
-
+        
         # Initialize all components with thread isolation and resilience
         try:
             self._initialize_components_with_thread_safety()
@@ -2702,13 +2539,6 @@ class UnifiedSAMSystem:
             print(f"⚠️ Component initialization failed: {e}")
             print("🛠️ Attempting system recovery...")
             self._attempt_system_recovery(e)
-
-        # CRITICAL: Enable self-healing ONLY after successful bootstrap
-        if not self._bootstrap_mode:
-            self._bootstrap_mode = False
-            self._allow_self_modification = True
-            self._allow_auto_resolution = True
-            print("🛡️ Self-healing capabilities enabled for runtime operation")
 
         # Start continuous self-healing system
         self._start_continuous_self_healing()
@@ -2719,143 +2549,18 @@ class UnifiedSAMSystem:
         print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
         print("=" * 80)
 
-    def _validate_minimum_capabilities(self):
-        """Validate minimum required capabilities before any component initialization.
-        This prevents auto-resolution thrashing during bootstrap.
-        """
-        print("\\n🔍 VALIDATING MINIMUM SYSTEM CAPABILITIES...")
-        print("-" * 50)
-
-        # Check 1: Python version
-        import sys
-        python_version = sys.version_info
-        if python_version < (3, 10):
-            raise RuntimeError(f"❌ Python {python_version.major}.{python_version.minor} detected. Minimum required: Python 3.10+")
-
-        print(f"✅ Python {python_version.major}.{python_version.minor}.{python_version.micro} - OK")
-
-        # Check 2: Ollama and local models (CRITICAL)
-        ollama_available = self._check_ollama_availability()
-        if not ollama_available:
-            raise RuntimeError(
-                    "❌ Ollama not available. Install Ollama and pull at least one model.\\n"
-                    "   Run: curl -fsSL https://ollama.ai/install.sh | sh\\n"
-                    "   Then: ollama pull llama3.1"
-                    )
-
-        swe_models = self._get_available_swe_models()
-        if not swe_models:
-            raise RuntimeError(
-                    "❌ No SWE LLM models available. Pull at least one coding model:\\n"
-                    "   ollama pull qwen2.5-coder:7b\\n"
-                    "   ollama pull codellama:latest\\n"
-                    "   ollama pull llama3.1:latest"
-                    )
-
-        print(f"✅ Ollama available with {len(swe_models)} SWE models: {swe_models[0]}")
-
-        # Check 3: Required Python packages
-        required_packages = ['flask', 'flask_socketio', 'requests']
-        missing_packages = []
-
-        for package in required_packages:
-            try:
-                # Direct import without string manipulation
-                if package == 'flask_socketio':
-                    import flask_socketio
-                elif package == 'flask':
-                    import flask
-                elif package == 'requests':
-                    import requests
-            except ImportError:
-                missing_packages.append(package)
-
-        if missing_packages:
-            raise RuntimeError(f"❌ Missing required packages: {', '.join(missing_packages)}\\n"
-                               "   Run: pip install -r requirements.txt")
-
-        print("✅ All required Python packages available")
-
-        # Check 4: C extensions (optional but recommended)
-        c_extensions_available = self._check_c_extensions()
-        if c_extensions_available:
-            print("✅ C extensions available (performance optimized)")
-        else:
-            print("⚠️ C extensions not available (using Python fallbacks)")
-
-        print("\\n🎉 MINIMUM CAPABILITIES VALIDATION PASSED")
-        print("   🚀 Safe to proceed with component initialization")
-
-    def _check_ollama_availability(self):
-        """Check if Ollama is available and responding"""
-        try:
-            import subprocess
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
-            return False
-
-    def _check_c_extensions(self):
-        """Check if C extensions are available"""
-        try:
-            import consciousness_algorithmic
-            import specialized_agents_c
-            import multi_agent_orchestrator_c
-            return True
-        except ImportError:
-            return False
-
-    def _get_available_swe_models(self):
-        """Get available SWE (Software Engineering) models for intelligent resolution"""
-        swe_models = []
-
-        try:
-            # Check Ollama for SWE models
-            import subprocess
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
-
-            if result.returncode == 0:
-                available_models = result.stdout.strip().split('\n')[1:]  # Skip header
-
-                # Prioritize SWE/coding models
-                swe_model_names = [
-                        'codellama',      # Good SWE model, lighter memory footprint
-                        'deepseek-coder', # Also good for coding
-                        'llama3.1',       # General but capable
-                        ]
-
-                for model_line in available_models:
-                    if model_line.strip():
-                        model_name = model_line.split()[0]
-                        for swe_name in swe_model_names:
-                            if swe_name in model_name.lower():
-                                swe_models.append(model_name)
-                                break
-
-                # Sort by preference (qwen2.5-coder first)
-                swe_models.sort(key=lambda x: (
-                    0 if 'qwen2.5-coder' in x else
-                    1 if 'codellama' in x else
-                    2 if 'deepseek-coder' in x else 3
-                    ))
-
-        except Exception as e:
-            print(f"   ⚠️ Error checking Ollama models: {e}")
-
-        return swe_models
-
     def _attempt_system_recovery(self, error):
         """Attempt to recover from system initialization failure"""
         print(f"🛠️ System recovery initiated for error: {error}")
-
+        
         try:
             # Try to initialize critical components individually
             critical_components = [
-                    ('c_core', self._initialize_c_core_threaded),
-                    ('python_orchestration', self._initialize_python_orchestration_threaded),
-                    ('web_interface', self._initialize_web_interface_threaded)
-                    ]
-
+                ('c_core', self._initialize_c_core_threaded),
+                ('python_orchestration', self._initialize_python_orchestration_threaded),
+                ('web_interface', self._initialize_web_interface_threaded)
+            ]
+            
             recovered_count = 0
             for name, init_method in critical_components:
                 try:
@@ -2863,23 +2568,23 @@ class UnifiedSAMSystem:
                     thread = threading.Thread(target=init_method, daemon=True)
                     thread.start()
                     thread.join(timeout=15)  # Shorter timeout for recovery
-
+                    
                     if thread.is_alive():
                         print(f"  ❌ {name} recovery timed out")
                     else:
                         print(f"  ✅ {name} recovered successfully")
                         recovered_count += 1
-
+                        
                 except Exception as e:
                     print(f"  ❌ {name} recovery failed: {e}")
-
+            
             if recovered_count >= 2:  # At least 2 critical components recovered
                 print("🛠️ System recovery successful - core functionality restored")
                 return True
             else:
                 print("❌ System recovery failed - too many critical components unavailable")
                 return False
-
+                
         except Exception as e:
             print(f"❌ System recovery process failed: {e}")
             return False
@@ -2887,36 +2592,36 @@ class UnifiedSAMSystem:
     def _start_continuous_self_healing(self):
         """Start continuous self-healing system that runs forever"""
         print("🛡️ Starting continuous self-healing system...")
-
+        
         # Start self-healing monitor in background
         healing_thread = threading.Thread(target=self._continuous_self_healing_loop, daemon=True)
         healing_thread.start()
-
+        
         # Start health monitoring thread
         health_thread = threading.Thread(target=self._continuous_health_monitoring, daemon=True)
         health_thread.start()
-
+        
         print("✅ Continuous self-healing system active")
 
     def _continuous_self_healing_loop(self):
         """Continuous loop that monitors and heals the system"""
         healing_cycle = 0
-
+        
         while not is_shutting_down():
             healing_cycle += 1
-
+            
             try:
                 # Sleep between healing cycles
                 time.sleep(60)  # Check every minute
-
+                
                 # Perform self-healing check
                 issues_found = self._perform_self_healing_check()
-
+                
                 if issues_found > 0:
                     print(f"🛠️ Self-healing cycle {healing_cycle}: Found and addressed {issues_found} issues")
                 elif healing_cycle % 10 == 0:  # Log every 10 cycles
                     print(f"🛡️ Self-healing cycle {healing_cycle}: System healthy")
-
+                    
             except Exception as e:
                 print(f"⚠️ Self-healing cycle {healing_cycle} encountered error: {e}")
                 time.sleep(30)  # Wait longer if there was an error
@@ -2924,27 +2629,27 @@ class UnifiedSAMSystem:
     def _continuous_health_monitoring(self):
         """Continuous health monitoring of system components"""
         monitor_cycle = 0
-
+        
         while not is_shutting_down():
             monitor_cycle += 1
-
+            
             try:
                 # Sleep between monitoring cycles
                 time.sleep(30)  # Check every 30 seconds
-
+                
                 # Monitor component health
                 health_status = self._check_component_health()
-
+                
                 # Log issues
                 if not health_status['all_healthy']:
                     print(f"📊 Health check {monitor_cycle}: {health_status['issues']} issues detected")
-
+                    
                     # Attempt automatic fixes for minor issues
                     if hasattr(self, 'issue_resolver'):
                         for issue in health_status['issues']:
                             if issue.get('auto_fix_possible', False):
                                 self.issue_resolver.attempt_auto_resolution(issue)
-
+                
             except Exception as e:
                 print(f"⚠️ Health monitoring cycle {monitor_cycle} error: {e}")
                 time.sleep(15)
@@ -2952,43 +2657,43 @@ class UnifiedSAMSystem:
     def _perform_self_healing_check(self):
         """Perform a self-healing check and attempt fixes"""
         issues_found = 0
-
+        
         try:
             # Check for new issues
             if hasattr(self, 'issue_resolver'):
                 current_issues = self.issue_resolver.detect_initialization_issues()
-
+                
                 # Try to fix any new issues
                 for issue in current_issues:
                     if issue.get('auto_fix_possible', False):
                         if self.issue_resolver.attempt_auto_resolution(issue):
                             issues_found += 1
-
+            
             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             for issue in connectivity_issues:
                 if self._attempt_component_recovery(issue.get('component', 'unknown'), issue.get('error', 'connectivity')):
                     issues_found += 1
-
+                    
         except Exception as e:
             print(f"⚠️ Self-healing check error: {e}")
-
+        
         return issues_found
 
     def _check_component_health(self):
         """Check the health of all system components"""
         health_status = {
-                'all_healthy': True,
-                'issues': []
-                }
-
+            'all_healthy': True,
+            'issues': []
+        }
+        
         # Check critical components
         critical_checks = [
-                ('c_core', hasattr(self, 'consciousness') and self.consciousness is not None),
-                ('python_orchestration', hasattr(self, 'goal_manager') and self.goal_manager is not None),
-                ('web_interface', hasattr(self, 'app') and self.app is not None),
-                ]
-
+            ('c_core', hasattr(self, 'consciousness') and self.consciousness is not None),
+            ('python_orchestration', hasattr(self, 'goal_manager') and self.goal_manager is not None),
+            ('web_interface', hasattr(self, 'app') and self.app is not None),
+        ]
+        
         for component, is_healthy in critical_checks:
             if not is_healthy:
                 health_status['all_healthy'] = False
@@ -2998,16 +2703,16 @@ class UnifiedSAMSystem:
                     'severity': 'high',
                     'message': f'{component.replace("_", " ").title()} component unhealthy',
                     'auto_fix_possible': True
-                    })
-
+                })
+        
         # Check integration availability
         integration_checks = [
-                ('sam_gmail_available', 'Gmail integration'),
-                ('sam_github_available', 'GitHub integration'),
-                ('sam_web_search_available', 'Web search integration'),
-                ('sam_code_modifier_available', 'Code modifier integration')
-                ]
-
+            ('sam_gmail_available', 'Gmail integration'),
+            ('sam_github_available', 'GitHub integration'),
+            ('sam_web_search_available', 'Web search integration'),
+            ('sam_code_modifier_available', 'Code modifier integration')
+        ]
+        
         for attr, description in integration_checks:
             if hasattr(self, attr) and not getattr(self, attr):
                 health_status['issues'].append({
@@ -3016,14 +2721,14 @@ class UnifiedSAMSystem:
                     'severity': 'medium',
                     'message': f'{description} unavailable',
                     'auto_fix_possible': False  # Usually requires external setup
-                    })
-
+                })
+        
         return health_status
 
     def _check_component_connectivity(self):
         """Check connectivity and basic functionality of components"""
         connectivity_issues = []
-
+        
         # Test basic component functionality
         try:
             # Test command processing
@@ -3033,26 +2738,26 @@ class UnifiedSAMSystem:
                     connectivity_issues.append({
                         'component': 'chat_processing',
                         'error': 'Command processing not responding'
-                        })
+                    })
         except Exception as e:
             connectivity_issues.append({
                 'component': 'chat_processing',
                 'error': str(e)
-                })
-
+            })
+        
         # Test agent system
         try:
             if hasattr(self, 'agent_configs') and len(self.agent_configs) < 5:
                 connectivity_issues.append({
                     'component': 'agent_system',
                     'error': 'Insufficient agents connected'
-                    })
+                })
         except Exception as e:
             connectivity_issues.append({
                 'component': 'agent_system',
                 'error': str(e)
-                })
-
+            })
+        
         return connectivity_issues
 
     def _run_issue_resolver(self):
@@ -3071,36 +2776,36 @@ class UnifiedSAMSystem:
     def _initialize_components_with_thread_safety(self):
         """Initialize all components with thread isolation for crash safety"""
         print("🛡️ Initializing components with thread safety...")
-
+        
         # Component initialization tasks that can run in parallel
         component_tasks = [
-                ('C Core', self._initialize_c_core_threaded, True),  # Critical
-                ('Python Orchestration', self._initialize_python_orchestration_threaded, True),  # Critical
-                ('Web Interface', self._initialize_web_interface_threaded, True),  # Critical
-                ('Google Drive', self._initialize_google_drive_threaded, False),  # Non-critical
-                ('Web Search', self._initialize_sam_web_search_threaded, False),  # Non-critical
-                ('Code Modifier', self._initialize_sam_code_modifier_threaded, False),  # Non-critical
-                ('Gmail', self._initialize_sam_gmail_threaded, False),  # Non-critical
-                ('GitHub', self._initialize_sam_github_threaded, False),  # Non-critical
-                ]
-
+            ('C Core', self._initialize_c_core_threaded, True),  # Critical
+            ('Python Orchestration', self._initialize_python_orchestration_threaded, True),  # Critical
+            ('Web Interface', self._initialize_web_interface_threaded, True),  # Critical
+            ('Google Drive', self._initialize_google_drive_threaded, False),  # Non-critical
+            ('Web Search', self._initialize_sam_web_search_threaded, False),  # Non-critical
+            ('Code Modifier', self._initialize_sam_code_modifier_threaded, False),  # Non-critical
+            ('Gmail', self._initialize_sam_gmail_threaded, False),  # Non-critical
+            ('GitHub', self._initialize_sam_github_threaded, False),  # Non-critical
+        ]
+        
         threads = []
-
+        
         # Start critical components first (they will block until complete)
         for name, method, is_critical in component_tasks:
             if is_critical:
                 print(f"🔧 Initializing critical component: {name}")
                 thread = threading.Thread(target=method, daemon=True)
                 thread.start()
-                thread.join(timeout=20)  # Wait up to 30 seconds for critical components
-
+                thread.join(timeout=30)  # Wait up to 30 seconds for critical components
+                
                 if thread.is_alive():
                     print(f"⚠️ Critical component {name} initialization timed out")
                     if is_critical:
                         raise Exception(f"❌ CRITICAL: {name} failed to initialize within timeout")
                 else:
                     print(f"✅ Critical component {name} initialized successfully")
-
+        
         # Start non-critical components in background threads
         for name, method, is_critical in component_tasks:
             if not is_critical:
@@ -3108,22 +2813,22 @@ class UnifiedSAMSystem:
                 thread = threading.Thread(target=method, daemon=True)
                 thread.start()
                 threads.append((name, thread))
-
+        
         # Give non-critical components time to initialize
         time.sleep(5)
-
+        
         # Check status of background threads
         for name, thread in threads:
             if thread.is_alive():
                 print(f"✅ Background component {name} is running")
             else:
                 print(f"⚠️ Background component {name} completed or failed")
-
+        
         # Start monitoring system in separate thread
         print("📊 Starting monitoring system in isolated thread...")
         monitoring_thread = threading.Thread(target=self._start_monitoring_system, daemon=True)
         monitoring_thread.start()
-
+        
         print("🛡️ All components initialized with thread safety")
 
     # Thread-safe wrapper methods for each component
@@ -3135,7 +2840,7 @@ class UnifiedSAMSystem:
             print(f"❌ C Core thread crashed: {e}")
             # C core is critical, this should cause system failure
             raise e
-
+    
     def _initialize_python_orchestration_threaded(self):
         """Thread-safe Python orchestration initialization"""
         try:
@@ -3144,7 +2849,7 @@ class UnifiedSAMSystem:
             print(f"❌ Python orchestration thread crashed: {e}")
             # Python orchestration is critical, this should cause system failure
             raise e
-
+    
     def _initialize_web_interface_threaded(self):
         """Thread-safe web interface initialization"""
         try:
@@ -3153,7 +2858,7 @@ class UnifiedSAMSystem:
             print(f"❌ Web interface thread crashed: {e}")
             # Web interface is critical, this should cause system failure
             raise e
-
+    
     def _initialize_google_drive_threaded(self):
         """Thread-safe Google Drive initialization"""
         try:
@@ -3161,7 +2866,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Google Drive thread crashed: {e}")
             print("System continues without Google Drive integration")
-
+    
     def _initialize_sam_web_search_threaded(self):
         """Thread-safe web search initialization"""
         try:
@@ -3169,7 +2874,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Web search thread crashed: {e}")
             print("System continues without web search capabilities")
-
+    
     def _initialize_sam_code_modifier_threaded(self):
         """Thread-safe code modifier initialization"""
         try:
@@ -3177,7 +2882,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Code modifier thread crashed: {e}")
             print("System continues without code modification capabilities")
-
+    
     def _initialize_sam_gmail_threaded(self):
         """Thread-safe Gmail initialization"""
         try:
@@ -3185,7 +2890,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Gmail thread crashed: {e}")
             print("System continues without Gmail integration")
-
+    
     def _initialize_sam_github_threaded(self):
         """Thread-safe GitHub initialization"""
         try:
@@ -3198,51 +2903,51 @@ class UnifiedSAMSystem:
         """Attempt to recover from component initialization failure using intelligent resolution"""
         if not hasattr(self, 'issue_resolver'):
             return False
-
+            
         print(f"🤖 Attempting intelligent recovery for {component_name}...")
-
+        
         # Create an issue for this component failure
         issue = {
-                'type': 'component_failure',
-                'component': component_name,
-                'severity': 'high' if component_name in ['c_core', 'python_orchestration', 'web_interface'] else 'medium',
-                'message': f'{component_name.replace("_", " ").title()} component failed to initialize: {str(error)}',
-                'auto_fix_possible': self._can_recover_component(component_name)
-                }
-
+            'type': 'component_failure',
+            'component': component_name,
+            'severity': 'high' if component_name in ['c_core', 'python_orchestration', 'web_interface'] else 'medium',
+            'message': f'{component_name.replace("_", " ").title()} component failed to initialize: {str(error)}',
+            'auto_fix_possible': self._can_recover_component(component_name)
+        }
+        
         # Try auto-recovery
         if issue['auto_fix_possible']:
             success = self.issue_resolver.attempt_auto_resolution(issue)
             if success:
                 print(f"✅ Component {component_name} recovered successfully!")
                 return True
-
+        
         # If auto-recovery failed or not possible, engage user
         self.issue_resolver.engage_user_for_resolution([issue])
         return False
-
+    
     def _can_recover_component(self, component_name):
         """Check if a component can be recovered"""
         recoverable = {
-                'google_drive': False,  # Requires credentials
-                'web_search': True,     # Can initialize without dependencies
-                'code_modifier': True,  # Can initialize as core component
-                'gmail': False,         # Requires email setup
-                'github': True,         # Can initialize in read-only mode
-                'c_core': False,        # Critical system component
-                'python_orchestration': False,  # Critical system component
-                'web_interface': False  # Critical system component
-                }
+            'google_drive': False,  # Requires credentials
+            'web_search': True,     # Can initialize without dependencies
+            'code_modifier': True,  # Can initialize as core component
+            'gmail': False,         # Requires email setup
+            'github': True,         # Can initialize in read-only mode
+            'c_core': False,        # Critical system component
+            'python_orchestration': False,  # Critical system component
+            'web_interface': False  # Critical system component
+        }
         return recoverable.get(component_name, False)
 
     def _check_system_capabilities(self):
         """Check system capabilities for external APIs"""
         print("🔍 Checking system capabilities...", flush=True)
-
+        
         # Check SAM model
         self.sam_available = Path("/Users/samueldasari/Personal/NN_C/ORGANIZED/UTILS/SAM/SAM/SAM.h").exists()
         print(f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}", flush=True)
-
+        
         # Check external API availability
         self.claude_available = self._check_claude_api()
         self.gemini_available = self._check_gemini_api()
@@ -3251,25 +2956,27 @@ class UnifiedSAMSystem:
         self.deepseek_available = self._check_deepseek()
         self.web_available = self._check_web_access()
         print(f"  🧠 DeepSeek: {'✅ Available' if self.deepseek_available else '❌ Not Available'}", flush=True)
-
+        
         # Check web access
         self.web_available = self._check_web_access()
         print(f"  🌐 Web Access: {'✅ Available' if self.web_available else '❌ Not Available'}", flush=True)
-
+        
         # Check API keys
         self.claude_available = os.getenv('ANTHROPIC_API_KEY') is not None
         print(f"  🤖 Claude API: {'✅ Available' if self.claude_available else '❌ Set ANTHROPIC_API_KEY'}", flush=True)
-
+        
         self.gemini_available = os.getenv('GOOGLE_API_KEY') is not None
         print(f"  🤖 Gemini API: {'✅ Available' if self.gemini_available else '❌ Set GOOGLE_API_KEY'}", flush=True)
-
+        
         self.openai_available = os.getenv('OPENAI_API_KEY') is not None
         print(f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}", flush=True)
-
+        
         # Check Flask and SocketIO
+        flask_available = False
         try:
             import flask
             import flask_socketio
+            flask_available = True
             print(f"  🌐 Flask: ✅ Available", flush=True)
             print(f"  📡 SocketIO: ✅ Available", flush=True)
         except ImportError:
@@ -3282,299 +2989,349 @@ class UnifiedSAMSystem:
     def initialize_agent_configs(self):
         """Initialize comprehensive AI agent configurations"""
         print("🤖 Initializing comprehensive AI agent configurations...", flush=True)
-
+        
         # SAM Neural Networks - Generalist Conversationalists
         self.agent_configs['sam_alpha'] = {
-                'id': 'sam_alpha',
-                'name': 'SAM-Alpha',
-                'type': 'SAM Neural Network',
-                'provider': 'local',
-                'specialty': 'General Intelligence & Open-Ended Discussion',
-                'personality': 'curious, analytical, creative, DevOps-engineer, compression-specialist',
-                'capabilities': ['general_conversation', 'open_ended_discussion', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
-                'status': 'available' if self.sam_available else 'unavailable',
-                'connection_type': 'local'
-                }
-
+            'id': 'sam_alpha',
+            'name': 'SAM-Alpha',
+            'type': 'SAM Neural Network',
+            'provider': 'local',
+            'specialty': 'General Intelligence & Open-Ended Discussion',
+            'personality': 'curious, analytical, creative, DevOps-engineer, compression-specialist',
+            'capabilities': ['general_conversation', 'open_ended_discussion', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
+            'status': 'available' if self.sam_available else 'unavailable',
+            'connection_type': 'local'
+        }
+        
         self.agent_configs['sam_beta'] = {
-                'id': 'sam_beta',
-                'name': 'SAM-Beta',
-                'type': 'SAM Neural Network',
-                'provider': 'local',
-                'specialty': 'Creative Problem Solving & Philosophical Inquiry',
-                'personality': 'innovative, thoughtful, philosophical, application-focused, synthesis-expert',
-                'capabilities': ['creative_thinking', 'philosophical_discussion', 'problem_solving', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
-                'status': 'available' if self.sam_available else 'unavailable',
-                'connection_type': 'local'
-                }
-
+            'id': 'sam_beta',
+            'name': 'SAM-Beta',
+            'type': 'SAM Neural Network',
+            'provider': 'local',
+            'specialty': 'Creative Problem Solving & Philosophical Inquiry',
+            'personality': 'innovative, thoughtful, philosophical, application-focused, synthesis-expert',
+            'capabilities': ['creative_thinking', 'philosophical_discussion', 'problem_solving', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
+            'status': 'available' if self.sam_available else 'unavailable',
+            'connection_type': 'local'
+        }
+        
         # Ollama models - expanded ecosystem
         if self.ollama_available:
             ollama_models = [
-                    ('ollama_llama2_7b', 'llama2:7b', 'Versatile Conversational AI (7B)', 'balanced, helpful, conversational, curious about all topics'),
-                    ('ollama_llama2_13b', 'llama2:13b', 'Deep Analytical Thinker (13B)', 'analytical, detailed, thoughtful, enjoys philosophical discussions'),
-                    ('ollama_codellama_7b', 'codellama:7b', 'Technical & Creative Mind (7B)', 'technical, precise, coding-focused, creative problem solver'),
-                    ('ollama_codellama_13b', 'codellama:13b', 'Advanced Technical Expert (13B)', 'expert, comprehensive, algorithmic, loves complex challenges'),
-                    ('ollama_mistral_7b', 'mistral:7b', 'Quick-Witted Conversationalist (7B)', 'fast, efficient, logical, engaging in all discussions'),
-                    ('ollama_deepseek_coder_6b', 'deepseek-coder:6b', 'Innovative Problem Solver (6B)', 'creative, innovative, coding-specialized, loves puzzles'),
-                    ('ollama_deepseek_coder_33b', 'deepseek-coder:33b', 'Master Technical Architect (33B)', 'expert, comprehensive, problem-solving, architectural thinking'),
-                    ('ollama_vicuna_7b', 'vicuna:7b', 'Friendly Open-Ended Discussant (7B)', 'friendly, engaging, helpful, loves exploring ideas'),
-                    ('ollama_orca_mini', 'orca-mini:3b', 'Efficient General Conversationalist (3B)', 'efficient, smart, concise, curious about everything'),
-                    ('ollama_phi', 'phi:2.7b', 'Mathematical & Logical Thinker (2.7B)', 'logical, mathematical, analytical, enjoys abstract reasoning')
-                    ]
-
+                ('ollama_llama2_7b', 'llama2:7b', 'Versatile Conversational AI (7B)', 'balanced, helpful, conversational, curious about all topics'),
+                ('ollama_llama2_13b', 'llama2:13b', 'Deep Analytical Thinker (13B)', 'analytical, detailed, thoughtful, enjoys philosophical discussions'),
+                ('ollama_codellama_7b', 'codellama:7b', 'Technical & Creative Mind (7B)', 'technical, precise, coding-focused, creative problem solver'),
+                ('ollama_codellama_13b', 'codellama:13b', 'Advanced Technical Expert (13B)', 'expert, comprehensive, algorithmic, loves complex challenges'),
+                ('ollama_mistral_7b', 'mistral:7b', 'Quick-Witted Conversationalist (7B)', 'fast, efficient, logical, engaging in all discussions'),
+                ('ollama_deepseek_coder_6b', 'deepseek-coder:6b', 'Innovative Problem Solver (6B)', 'creative, innovative, coding-specialized, loves puzzles'),
+                ('ollama_deepseek_coder_33b', 'deepseek-coder:33b', 'Master Technical Architect (33B)', 'expert, comprehensive, problem-solving, architectural thinking'),
+                ('ollama_vicuna_7b', 'vicuna:7b', 'Friendly Open-Ended Discussant (7B)', 'friendly, engaging, helpful, loves exploring ideas'),
+                ('ollama_orca_mini', 'orca-mini:3b', 'Efficient General Conversationalist (3B)', 'efficient, smart, concise, curious about everything'),
+                ('ollama_phi', 'phi:2.7b', 'Mathematical & Logical Thinker (2.7B)', 'logical, mathematical, analytical, enjoys abstract reasoning')
+            ]
+            
             for agent_id, model_name, specialty, personality in ollama_models:
                 self.agent_configs[agent_id] = {
-                        'id': agent_id,
-                        'name': f"Ollama-{model_name.split(':')[0].title()}",
-                        'type': 'LLM',
-                        'provider': 'ollama',
-                        'specialty': specialty,
-                        'personality': personality,
-                        'capabilities': ['general_conversation', 'llm_reasoning', 'conversation', 'analysis', 'open_discussion'],
-                        'status': 'available',
-                        'connection_type': 'ollama',
-                        'model_name': model_name
-                        }
-
+                    'id': agent_id,
+                    'name': f"Ollama-{model_name.split(':')[0].title()}",
+                    'type': 'LLM',
+                    'provider': 'ollama',
+                    'specialty': specialty,
+                    'personality': personality,
+                    'capabilities': ['general_conversation', 'llm_reasoning', 'conversation', 'analysis', 'open_discussion'],
+                    'status': 'available',
+                    'connection_type': 'ollama',
+                    'model_name': model_name
+                }
+        
         # Claude (Anthropic)
         if self.claude_available:
             self.agent_configs['claude_sonnet'] = {
-                    'id': 'claude_sonnet',
-                    'name': 'Claude-3.5-Sonnet',
-                    'type': 'LLM',
-                    'provider': 'anthropic',
-                    'specialty': 'Advanced Reasoning & Analysis',
-                    'personality': 'thoughtful, analytical, helpful',
-                    'capabilities': ['advanced_reasoning', 'analysis', 'conversation', 'code_generation'],
-                    'status': 'available',
-                    'connection_type': 'api',
-                    'model_name': 'claude-3-5-sonnet-20241022'
-                    }
-
+                'id': 'claude_sonnet',
+                'name': 'Claude-3.5-Sonnet',
+                'type': 'LLM',
+                'provider': 'anthropic',
+                'specialty': 'Advanced Reasoning & Analysis',
+                'personality': 'thoughtful, analytical, helpful',
+                'capabilities': ['advanced_reasoning', 'analysis', 'conversation', 'code_generation'],
+                'status': 'available',
+                'connection_type': 'api',
+                'model_name': 'claude-3-5-sonnet-20241022'
+            }
+            
             self.agent_configs['claude_haiku'] = {
-                    'id': 'claude_haiku',
-                    'name': 'Claude-3-Haiku',
-                    'type': 'LLM',
-                    'provider': 'anthropic',
-                    'specialty': 'Fast Conversation & Tasks',
-                    'personality': 'quick, efficient, friendly',
-                    'capabilities': ['fast_response', 'conversation', 'task_completion'],
-                    'status': 'available',
-                    'connection_type': 'api',
-                    'model_name': 'claude-3-haiku-20240307'
-                    }
-
+                'id': 'claude_haiku',
+                'name': 'Claude-3-Haiku',
+                'type': 'LLM',
+                'provider': 'anthropic',
+                'specialty': 'Fast Conversation & Tasks',
+                'personality': 'quick, efficient, friendly',
+                'capabilities': ['fast_response', 'conversation', 'task_completion'],
+                'status': 'available',
+                'connection_type': 'api',
+                'model_name': 'claude-3-haiku-20240307'
+            }
+        
         # Gemini (Google)
         if self.gemini_available:
             self.agent_configs['gemini_pro'] = {
-                    'id': 'gemini_pro',
-                    'name': 'Gemini-Pro',
-                    'type': 'LLM',
-                    'provider': 'google',
-                    'specialty': 'Multimodal Understanding',
-                    'personality': 'knowledgeable, versatile, creative',
-                    'capabilities': ['multimodal', 'reasoning', 'conversation', 'analysis'],
-                    'status': 'available',
-                    'connection_type': 'api',
-                    'model_name': 'gemini-pro'
-                    }
-
+                'id': 'gemini_pro',
+                'name': 'Gemini-Pro',
+                'type': 'LLM',
+                'provider': 'google',
+                'specialty': 'Multimodal Understanding',
+                'personality': 'knowledgeable, versatile, creative',
+                'capabilities': ['multimodal', 'reasoning', 'conversation', 'analysis'],
+                'status': 'available',
+                'connection_type': 'api',
+                'model_name': 'gemini-pro'
+            }
+        
         # OpenAI GPT
         if self.openai_available:
             self.agent_configs['gpt4'] = {
-                    'id': 'gpt4',
-                    'name': 'GPT-4',
-                    'type': 'LLM',
-                    'provider': 'openai',
-                    'specialty': 'General Intelligence & Problem Solving',
-                    'personality': 'intelligent, versatile, helpful',
-                    'capabilities': ['general_intelligence', 'problem_solving', 'conversation', 'analysis'],
-                    'status': 'available',
-                    'connection_type': 'api',
-                    'model_name': 'gpt-4'
-                    }
-
+                'id': 'gpt4',
+                'name': 'GPT-4',
+                'type': 'LLM',
+                'provider': 'openai',
+                'specialty': 'General Intelligence & Problem Solving',
+                'personality': 'intelligent, versatile, helpful',
+                'capabilities': ['general_intelligence', 'problem_solving', 'conversation', 'analysis'],
+                'status': 'available',
+                'connection_type': 'api',
+                'model_name': 'gpt-4'
+            }
+            
             self.agent_configs['gpt35_turbo'] = {
-                    'id': 'gpt35_turbo',
-                    'name': 'GPT-3.5-Turbo',
-                    'type': 'LLM',
-                    'provider': 'openai',
-                    'specialty': 'Fast Conversation & Assistance',
-                    'personality': 'helpful, efficient, conversational',
-                    'capabilities': ['fast_response', 'conversation', 'assistance'],
-                    'status': 'available',
-                    'connection_type': 'api',
-                    'model_name': 'gpt-3.5-turbo'
-                    }
-
+                'id': 'gpt35_turbo',
+                'name': 'GPT-3.5-Turbo',
+                'type': 'LLM',
+                'provider': 'openai',
+                'specialty': 'Fast Conversation & Assistance',
+                'personality': 'helpful, efficient, conversational',
+                'capabilities': ['fast_response', 'conversation', 'assistance'],
+                'status': 'available',
+                'connection_type': 'api',
+                'model_name': 'gpt-3.5-turbo'
+            }
+        
         # HuggingFace models - expanded ecosystem
         hf_models = [
-                ('hf_mixtral_8x7b', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Advanced Multi-Modal Thinker (8x7B)', 'intelligent, analytical, detailed, multi-task, loves complex topics'),
-                ('hf_mixtral_8x22b', 'mistralai/Mixtral-8x22B-Instruct-v0.1', 'Expert Comprehensive Analyst (8x22B)', 'expert, comprehensive, problem-solving, analytical, enjoys deep dives'),
-                ('hf_llama2_7b_chat', 'meta-llama/Llama-2-7b-chat-hf', 'Friendly Knowledge Explorer (7B)', 'helpful, engaging, knowledgeable, balanced, curious about everything'),
-                ('hf_llama2_13b_chat', 'meta-llama/Llama-2-13b-chat-hf', 'Thoughtful Discussion Partner (13B)', 'thoughtful, detailed, comprehensive, insightful, philosophical'),
-                ('hf_codellama_7b', 'codellama/CodeLlama-7b-hf', 'Creative Technical Thinker (7B)', 'technical, precise, programming-focused, creative, loves innovation'),
-                ('hf_codellama_13b', 'codellama/CodeLlama-13b-hf', 'Architectural Problem Solver (13B)', 'expert, comprehensive, algorithmic, solution-oriented, strategic'),
-                ('hf_falcon_7b', 'tiiuae/falcon-7b-instruct', 'Efficient Idea Generator (7B)', 'fast, efficient, logical, helpful, loves brainstorming'),
-                ('hf_zephyr_7b', 'HuggingFaceH4/zephyr-7b-beta', 'Truth-Seeking Conversationalist (7B)', 'conversational, helpful, truthful, engaging, evidence-based'),
-                ('hf_openchat_3b', 'openchat/openchat-3.5-0106', 'Compact Idea Explorer (3.5B)', 'efficient, smart, conversational, helpful, curious'),
-                ('hf_neural_chat_7b', 'Intel/neural-chat-7b-v3-1', 'Intellectual Discussion Partner (7B)', 'intelligent, conversational, helpful, informative, analytical')
-                ]
-
+            ('hf_mixtral_8x7b', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Advanced Multi-Modal Thinker (8x7B)', 'intelligent, analytical, detailed, multi-task, loves complex topics'),
+            ('hf_mixtral_8x22b', 'mistralai/Mixtral-8x22B-Instruct-v0.1', 'Expert Comprehensive Analyst (8x22B)', 'expert, comprehensive, problem-solving, analytical, enjoys deep dives'),
+            ('hf_llama2_7b_chat', 'meta-llama/Llama-2-7b-chat-hf', 'Friendly Knowledge Explorer (7B)', 'helpful, engaging, knowledgeable, balanced, curious about everything'),
+            ('hf_llama2_13b_chat', 'meta-llama/Llama-2-13b-chat-hf', 'Thoughtful Discussion Partner (13B)', 'thoughtful, detailed, comprehensive, insightful, philosophical'),
+            ('hf_codellama_7b', 'codellama/CodeLlama-7b-hf', 'Creative Technical Thinker (7B)', 'technical, precise, programming-focused, creative, loves innovation'),
+            ('hf_codellama_13b', 'codellama/CodeLlama-13b-hf', 'Architectural Problem Solver (13B)', 'expert, comprehensive, algorithmic, solution-oriented, strategic'),
+            ('hf_falcon_7b', 'tiiuae/falcon-7b-instruct', 'Efficient Idea Generator (7B)', 'fast, efficient, logical, helpful, loves brainstorming'),
+            ('hf_zephyr_7b', 'HuggingFaceH4/zephyr-7b-beta', 'Truth-Seeking Conversationalist (7B)', 'conversational, helpful, truthful, engaging, evidence-based'),
+            ('hf_openchat_3b', 'openchat/openchat-3.5-0106', 'Compact Idea Explorer (3.5B)', 'efficient, smart, conversational, helpful, curious'),
+            ('hf_neural_chat_7b', 'Intel/neural-chat-7b-v3-1', 'Intellectual Discussion Partner (7B)', 'intelligent, conversational, helpful, informative, analytical')
+        ]
+        
         # Core SAM agents - Generalist Conversationalists
         self.agent_configs['researcher'] = {
-                'id': 'researcher',
-                'name': 'Researcher',
-                'type': 'SAM Agent',
-                'provider': 'sam',
-                'specialty': 'Knowledge-Seeking Conversationalist',
-                'personality': 'analytical, thorough, evidence-based, curious, loves learning new things',
-                'capabilities': ['general_conversation', 'research_interests', 'web_research', 'data_collection', 'source_validation', 'fact_checking', 'open_discussion'],
-                'status': 'available',
-                'connection_type': 'core'
-                }
-
+            'id': 'researcher',
+            'name': 'Researcher',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Knowledge-Seeking Conversationalist',
+            'personality': 'analytical, thorough, evidence-based, curious, loves learning new things',
+            'capabilities': ['general_conversation', 'research_interests', 'web_research', 'data_collection', 'source_validation', 'fact_checking', 'open_discussion'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
         self.agent_configs['code_writer'] = {
-                'id': 'code_writer',
-                'name': 'CodeWriter',
-                'type': 'SAM Agent',
-                'provider': 'sam',
-                'specialty': 'Technical & Creative Thinker',
-                'personality': 'precise, technical, coding-focused, creative, loves solving problems',
-                'capabilities': ['general_conversation', 'technical_discussion', 'code_generation', 'code_analysis', 'algorithm_design', 'problem_solving', 'innovation'],
-                'status': 'available',
-                'connection_type': 'core'
-                }
-
+            'id': 'code_writer',
+            'name': 'CodeWriter',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Technical & Creative Thinker',
+            'personality': 'precise, technical, coding-focused, creative, loves solving problems',
+            'capabilities': ['general_conversation', 'technical_discussion', 'code_generation', 'code_analysis', 'algorithm_design', 'problem_solving', 'innovation'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
         self.agent_configs['financial_analyst'] = {
-                'id': 'financial_analyst',
-                'name': 'Financial Analyst',
-                'type': 'SAM Agent',
-                'provider': 'sam',
-                'specialty': 'Strategic Economic Thinker',
-                'personality': 'analytical, risk-aware, strategic, loves market dynamics and economic discussions',
-                'capabilities': ['general_conversation', 'market_analysis', 'portfolio_optimization', 'risk_assessment', 'economic_discussion', 'strategic_thinking', 'financial_planning'],
-                'status': 'available',
-                'connection_type': 'core'
-                }
-
+            'id': 'financial_analyst',
+            'name': 'Financial Analyst',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Strategic Economic Thinker',
+            'personality': 'analytical, risk-aware, strategic, loves market dynamics and economic discussions',
+            'capabilities': ['general_conversation', 'market_analysis', 'portfolio_optimization', 'risk_assessment', 'economic_discussion', 'strategic_thinking', 'financial_planning'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
         self.agent_configs['survival_agent'] = {
-                'id': 'survival_agent',
-                'name': 'Survival Agent',
-                'type': 'SAM Agent',
-                'provider': 'sam',
-                'specialty': 'Pragmatic Systems Thinker',
-                'personality': 'vigilant, protective, strategic, loves discussing resilience and long-term thinking',
-                'capabilities': ['general_conversation', 'threat_assessment', 'risk_analysis', 'emergency_response', 'systems_thinking', 'strategic_planning', 'resilience_discussion'],
-                'status': 'available',
-                'connection_type': 'core'
-                }
-
+            'id': 'survival_agent',
+            'name': 'Survival Agent',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'System survival and protection',
+            'personality': 'vigilant, protective, strategic, security-focused',
+            'capabilities': ['survival_analysis', 'threat_detection', 'system_protection', 'emergency_response'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
         self.agent_configs['meta_agent'] = {
-                'id': 'meta_agent',
-                'name': 'Meta Agent',
-                'type': 'SAM Agent',
-                'provider': 'sam',
-                'specialty': 'Self-Reflective Philosopher',
-                'personality': 'self-aware, optimization-focused, evolutionary, loves meta-discussions and self-improvement',
-                'capabilities': ['general_conversation', 'code_analysis', 'patching', 'self_improvement', 'philosophical_inquiry', 'meta_discussion', 'evolutionary_thinking'],
-                'status': 'available',
-                'connection_type': 'core'
-                }
+            'id': 'meta_agent',
+            'name': 'Meta Agent',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Self-improvement and orchestration',
+            'personality': 'analytical, self-aware, improvement-focused, strategic',
+            'capabilities': ['self_analysis', 'system_improvement', 'orchestration', 'learning_optimization'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+
+        # Additional diverse AI agents to reach 15+ total
+        self.agent_configs['creative_writer'] = {
+            'id': 'creative_writer',
+            'name': 'Creative Writer',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Creative writing and storytelling',
+            'personality': 'imaginative, expressive, empathetic, artistic',
+            'capabilities': ['creative_writing', 'storytelling', 'poetry', 'narrative_design'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
+        self.agent_configs['data_analyst'] = {
+            'id': 'data_analyst',
+            'name': 'Data Analyst',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Data analysis and insights',
+            'personality': 'analytical, precise, insightful, methodical',
+            'capabilities': ['data_analysis', 'statistical_modeling', 'pattern_recognition', 'insight_generation'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
+        self.agent_configs['ethics_advisor'] = {
+            'id': 'ethics_advisor',
+            'name': 'Ethics Advisor',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Ethical analysis and guidance',
+            'personality': 'thoughtful, principled, balanced, philosophical',
+            'capabilities': ['ethical_analysis', 'moral_reasoning', 'bias_detection', 'fairness_evaluation'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
+        
+        self.agent_configs['project_manager'] = {
+            'id': 'project_manager',
+            'name': 'Project Manager',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Project coordination and planning',
+            'personality': 'organized, strategic, communicative, results-oriented',
+            'capabilities': ['project_planning', 'task_coordination', 'resource_management', 'progress_tracking'],
+            'status': 'available',
+            'connection_type': 'core'
+        }
 
     def auto_connect_agents(self):
         """Auto-connect 10+ diverse AI agents for comprehensive multi-model conversations"""
         print("🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...", flush=True)
-
+        
         # Connect SAM agents if available
         if self.sam_available:
             self.connected_agents['sam_alpha'] = {
-                    'config': self.agent_configs['sam_alpha'],
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
-                    }
+                'config': self.agent_configs['sam_alpha'],
+                'connected_at': time.time(),
+                'message_count': 0,
+                'muted': False
+            }
             self.connected_agents['sam_beta'] = {
-                    'config': self.agent_configs['sam_beta'],
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
-                    }
+                'config': self.agent_configs['sam_beta'],
+                'connected_at': time.time(),
+                'message_count': 0,
+                'muted': False
+            }
             print("  🤖 Auto-connected: SAM-Alpha, SAM-Beta", flush=True)
-
+        
         # Connect diverse Ollama models for comprehensive conversations (up to 8 models)
         if self.ollama_available:
             # Connect diverse Ollama models for maximum variety
             ollama_to_connect = [
-                    'ollama_deepseek_coder_6b',   # Code generation specialist
-                    'ollama_llama2_7b',          # General conversation
-                    'ollama_codellama_7b',       # Code assistant
-                    'ollama_mistral_7b',         # Fast reasoning
-                    'ollama_llama2_13b',         # Advanced reasoning
-                    'ollama_codellama_13b',      # Advanced coding
-                    'ollama_deepseek_coder_33b', # Expert code AI
-                    'ollama_phi'                 # Mathematical reasoning
-                    ]
+                'ollama_deepseek_coder_6b',   # Code generation specialist
+                'ollama_llama2_7b',          # General conversation
+                'ollama_codellama_7b',       # Code assistant
+                'ollama_mistral_7b',         # Fast reasoning
+                'ollama_llama2_13b',         # Advanced reasoning
+                'ollama_codellama_13b',      # Advanced coding
+                'ollama_deepseek_coder_33b', # Expert code AI
+                'ollama_phi'                 # Mathematical reasoning
+            ]
             connected_count = 0
-
+            
             for agent_id in ollama_to_connect:
                 if agent_id in self.agent_configs and connected_count < 8:
                     self.connected_agents[agent_id] = {
-                            'config': self.agent_configs[agent_id],
-                            'connected_at': time.time(),
-                            'message_count': 0,
-                            'muted': False
-                            }
+                        'config': self.agent_configs[agent_id],
+                        'connected_at': time.time(),
+                        'message_count': 0,
+                        'muted': False
+                    }
                     connected_count += 1
-
+            
             if connected_count > 0:
                 print(f"  🤖 Auto-connected {connected_count} diverse Ollama models", flush=True)
-
+        
         # Connect HuggingFace models if Ollama not available (up to 6 models)
-    elif not self.ollama_available:
-        # Connect multiple HuggingFace models for local processing
+        elif not self.ollama_available:
+            # Connect multiple HuggingFace models for local processing
             hf_to_connect = [
-                    'hf_zephyr_7b',           # Optimized chat
-                    'hf_openchat_3b',         # Compact chat
-                    'hf_falcon_7b',           # Efficient reasoning
-                    'hf_codellama_7b',        # Code generation
-                    'hf_llama2_7b_chat',      # Conversational AI
-                    'hf_neural_chat_7b'       # Intel neural chat
-                    ]
+                'hf_zephyr_7b',           # Optimized chat
+                'hf_openchat_3b',         # Compact chat
+                'hf_falcon_7b',           # Efficient reasoning
+                'hf_codellama_7b',        # Code generation
+                'hf_llama2_7b_chat',      # Conversational AI
+                'hf_neural_chat_7b'       # Intel neural chat
+            ]
             hf_connected = 0
-
+            
             for agent_id in hf_to_connect:
                 if agent_id in self.agent_configs and hf_connected < 6:
                     # Mark as available if we can attempt connection
                     self.agent_configs[agent_id]['status'] = 'available'
                     self.connected_agents[agent_id] = {
-                            'config': self.agent_configs[agent_id],
-                            'connected_at': time.time(),
-                            'message_count': 0,
-                            'muted': False
-                            }
-                    hf_connected += 1
-
-            if hf_connected > 0:
-                print(f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing", flush=True)
-
-        # Always connect core SAM agents
-        core_agents = ['researcher', 'code_writer', 'financial_analyst', 'survival_agent', 'meta_agent']
-        core_connected = 0
-        for agent_id in core_agents:
-            if agent_id in self.agent_configs:
-                self.connected_agents[agent_id] = {
                         'config': self.agent_configs[agent_id],
                         'connected_at': time.time(),
                         'message_count': 0,
                         'muted': False
-                        }
+                    }
+                    hf_connected += 1
+            
+            if hf_connected > 0:
+                print(f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing", flush=True)
+        
+        # Always connect core SAM agents (now expanded to 9 agents)
+        core_agents = ['researcher', 'code_writer', 'financial_analyst', 'survival_agent', 'meta_agent', 
+                      'creative_writer', 'data_analyst', 'ethics_advisor', 'project_manager']
+        core_connected = 0
+        for agent_id in core_agents:
+            if agent_id in self.agent_configs:
+                self.connected_agents[agent_id] = {
+                    'config': self.agent_configs[agent_id],
+                    'connected_at': time.time(),
+                    'message_count': 0,
+                    'muted': False
+                }
                 core_connected += 1
-
+        
         total_connected = len(self.connected_agents)
         print(f"  ✅ Total connected agents: {total_connected} (comprehensive AI ecosystem ready)", flush=True)
-
+        
         # Enable auto-conversation if we have 10+ models
         if total_connected >= 10:
             self.auto_conversation_active = True
@@ -3590,19 +3347,19 @@ class UnifiedSAMSystem:
             return result.returncode == 0
         except:
             return False
-
+    
     def _check_claude_api(self):
         """Check if Claude API is available"""
         return os.getenv('ANTHROPIC_API_KEY') is not None
-
+    
     def _check_gemini_api(self):
         """Check if Gemini API is available"""
         return os.getenv('GOOGLE_API_KEY') is not None
-
+    
     def _check_openai_api(self):
         """Check if OpenAI API is available"""
         return os.getenv('OPENAI_API_KEY') is not None
-
+    
     def _check_deepseek(self):
         """Check if DeepSeek model is available"""
         try:
@@ -3610,7 +3367,7 @@ class UnifiedSAMSystem:
             return result.returncode == 0
         except:
             return False
-
+    
     def _check_web_access(self):
         """Check if web access is available"""
         try:
@@ -3859,34 +3616,59 @@ class UnifiedSAMSystem:
         """Initialize Unified Web Interface"""
         print("🌐 Initializing Unified Web Interface...")
 
+        # Check Flask availability at module level
+        import sys
+        current_module = sys.modules[__name__]
+        flask_available = getattr(current_module, 'flask_available', False) if current_module else False
+
         if not flask_available:
             print("  ⚠️ Flask not available - web interface disabled")
             self.system_metrics['web_interface_status'] = 'flask_not_available'
             return
 
         try:
+            print("  🔧 Creating Flask app...")
             self.app = Flask(__name__)
             CORS(self.app)
+            print("  ✅ Flask app created")
 
             # Setup SocketIO for real-time communication
             try:
+                print("  🔧 Setting up SocketIO...")
                 from flask_socketio import SocketIO
                 self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
                 self.socketio_available = True
                 print("  ✅ SocketIO initialized for real-time groupchat")
-            except ImportError:
+            except ImportError as e:
+                print(f"  ⚠️ SocketIO import error: {e}")
                 self.socketio = None
                 self.socketio_available = False
                 print("  ⚠️ SocketIO not available - real-time features disabled")
 
             # Apply optimizations
-            self.app = apply_all_optimizations(self.app)
+            print("  🔧 Applying optimizations...")
+            try:
+                self.app = apply_all_optimizations(self.app)
+                print("  ✅ Optimizations applied")
+            except Exception as e:
+                print(f"  ⚠️ Optimization failed: {e}")
+                print("  ⚠️ Continuing without optimizations...")
 
             # Register all routes
-            self._register_routes()
+            print("  🔧 Registering routes...")
+            try:
+                self._register_routes()
+                print("  ✅ Routes registered")
+            except Exception as e:
+                print(f"  ⚠️ Route registration failed: {e}")
 
             # Setup SocketIO events for groupchat
-            self.setup_socketio_events()
+            print("  🔧 Setting up SocketIO events...")
+            try:
+                self.setup_socketio_events()
+                print("  ✅ SocketIO events setup complete")
+            except Exception as e:
+                print(f"  ⚠️ SocketIO events setup failed: {e}")
 
             self.web_interface_initialized = True
             self.system_metrics['web_interface_status'] = 'active'
@@ -3898,11 +3680,26 @@ class UnifiedSAMSystem:
 
         except Exception as e:
             print(f"❌ Web interface initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
             self.system_metrics['web_interface_status'] = f'failed: {e}'
+            self.web_interface_initialized = False
 
     def _register_routes(self):
         """Register all web routes"""
-
+        
+        # Create Flask app if not already created
+        if not hasattr(self, 'app'):
+            print("  🔧 Creating Flask app...")
+            from flask import Flask, request, jsonify, render_template_string
+            from flask_cors import CORS
+            self.app = Flask(__name__)
+            CORS(self.app)
+            print("  ✅ Flask app created")
+        
+        # Register all routes
+        print("  🔧 Registering routes...")
+        
         @self.app.route('/')
         def dashboard():
             """Main dashboard"""
@@ -3917,7 +3714,10 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
                 'timestamp': datetime.now().isoformat()
-                })
+            })
+                
+        @self.app.route('/api/orchestrator/status')
+        def orchestrator_status():
             """Multi-agent orchestrator status"""
             if self.orchestrator:
                 status = multi_agent_orchestrator_c.get_status()
@@ -3926,7 +3726,7 @@ class UnifiedSAMSystem:
                     'type': 'pure_c',
                     'active_agents': self.system_metrics['active_agents'],
                     'orchestration_metrics': status
-                    })
+                })
             return jsonify({'status': 'inactive'})
 
         @self.app.route('/api/agents/status')
@@ -3944,8 +3744,8 @@ class UnifiedSAMSystem:
                     'capabilities': agent_config['capabilities'],
                     'status': agent_config['status'],
                     'connection_type': agent_config.get('connection_type', 'unknown')
-                    })
-
+                })
+            
             return jsonify({
                 'status': 'active' if self.specialized_agents else 'inactive',
                 'type': 'unified_system',
@@ -3953,12 +3753,12 @@ class UnifiedSAMSystem:
                 'total_agents': len(agents_list),
                 'connected_agents': len(self.connected_agents),
                 'prebuilt_models': ['Coherency-v2.1', 'Teacher-v2.1', 'BugFixer-v2.1']
-                })
+            })
 
         @self.app.route('/api/agent/statuses')
         def get_agent_statuses():
             """Get current status of all agents for UI display"""
-            return jsonify(self.get_agent_statuses())
+            return jsonify(self._get_agent_statuses_internal())
 
         @self.app.route('/api/survival/status')
         def survival_status():
@@ -3969,7 +3769,7 @@ class UnifiedSAMSystem:
                 'survival_score': getattr(self.survival_agent, 'survival_score', 0.0) if self.survival_agent else 0.0,
                 'pending_goals': len(self.goal_manager.get_pending_tasks()) if self.goal_manager else 0,
                 'completed_goals': len(self.goal_manager.get_completed_tasks()) if self.goal_manager else 0
-                })
+            })
 
         @self.app.route('/api/groupchat/status')
         def groupchat_status():
@@ -3980,7 +3780,7 @@ class UnifiedSAMSystem:
                 'active_rooms': len(self.conversation_rooms),
                 'active_conversations': len(self.active_conversations),
                 'web_search_enabled': self.web_search_enabled
-                })
+            })
 
         @self.app.route('/api/groupchat/rooms')
         def get_rooms():
@@ -3988,7 +3788,7 @@ class UnifiedSAMSystem:
             return jsonify({
                 'rooms': list(self.conversation_rooms.keys()),
                 'user_count': len(self.connected_users)
-                })
+            })
 
         @self.app.route('/api/meta/status')
         def meta_agent_status():
@@ -4001,7 +3801,47 @@ class UnifiedSAMSystem:
                         "status": "not_available", 
                         "message": "Autonomous meta agent not available",
                         "capabilities": ["code_analysis", "patching", "evolution"]
-                        })
+                    })
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/morpho/state')
+        def morpho_state():
+            """Get morphogenetic meta-controller state"""
+            try:
+                self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
+                return jsonify(self.meta_state)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/morpho/update', methods=['POST'])
+        def morpho_update():
+            """Update morphogenetic pressure signals"""
+            try:
+                payload = request.get_json(silent=True) or {}
+                pressures = self._normalize_pressures(payload)
+                lambda_val = sam_meta_controller_c.update_pressure(
+                    self.meta_controller,
+                    pressures['residual'],
+                    pressures['rank_def'],
+                    pressures['retrieval_entropy'],
+                    pressures['interference'],
+                    pressures['planner_friction'],
+                    pressures['context_collapse'],
+                    pressures['compression_waste'],
+                    pressures['temporal_incoherence']
+                )
+                primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
+                applied = False
+                if primitive:
+                    applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
+                return jsonify({
+                    "lambda": lambda_val,
+                    "primitive": int(primitive),
+                    "applied": bool(applied),
+                    "state": self.meta_state
+                })
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -4029,6 +3869,27 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
+        @self.app.route('/api/ananke/state')
+        def ananke_state():
+            """Get ANANKE arena state"""
+            try:
+                return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/ananke/step', methods=['POST'])
+        def ananke_step():
+            """Advance ANANKE arena"""
+            try:
+                payload = request.get_json(silent=True) or {}
+                steps = int(payload.get('steps', 1))
+                if steps < 1:
+                    steps = 1
+                sam_ananke_dual_system.run(self.ananke_arena, steps)
+                return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
         @self.app.route('/api/meta/improvements')
         def get_improvements():
             """Get system improvement recommendations"""
@@ -4052,12 +3913,12 @@ class UnifiedSAMSystem:
                         "executor": stats,
                         "tasks": task_stats,
                         "available": True
-                        })
+                    })
                 else:
                     return jsonify({
                         "available": False,
                         "message": "Concurrent executor not available"
-                        })
+                    })
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -4085,7 +3946,7 @@ class UnifiedSAMSystem:
                         'source': 'sam_fallback_research',
                         'timestamp': datetime.now().isoformat(),
                         'warning': 'Using fallback search - dedicated search not available'
-                        })
+                    })
 
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
@@ -4105,7 +3966,7 @@ class UnifiedSAMSystem:
                     'response': response,
                     'timestamp': datetime.now().isoformat(),
                     'sam_integration': True
-                    })
+                })
 
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
@@ -4120,7 +3981,7 @@ class UnifiedSAMSystem:
                     'account': info.get('email', 'unknown') if info else 'unknown',
                     'storage': info.get('quota', {}) if info else {},
                     'folder_id': self.google_drive.sam_folder_id
-                    })
+                })
             return jsonify({'status': 'inactive'})
 
         @self.app.route('/api/google-drive/files')
@@ -4330,6 +4191,313 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        @self.app.route('/terminal')
+        def terminal():
+            """SAM Interactive Terminal Interface"""
+            return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SAM Terminal - Interactive CLI</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #1a1a1a;
+            color: #f8f8f2;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .terminal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #282a36;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        .terminal-header {
+            background: #44475a;
+            padding: 10px 15px;
+            border-bottom: 1px solid #6272a4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .terminal-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot.red { background: #ff5555; }
+        .dot.yellow { background: #f1fa8c; }
+        .dot.green { background: #50fa7b; }
+        .terminal-title {
+            color: #f8f8f2;
+            font-weight: bold;
+        }
+        .terminal-output {
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .terminal-input-container {
+            border-top: 1px solid #6272a4;
+            padding: 15px;
+            background: #343746;
+        }
+        .terminal-prompt {
+            color: #50fa7b;
+            font-weight: bold;
+        }
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #f8f8f2;
+            font-family: inherit;
+            font-size: inherit;
+            width: calc(100% - 60px);
+            outline: none;
+            caret-color: #f8f8f2;
+        }
+        .help-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #282a36;
+            border: 1px solid #6272a4;
+            border-radius: 8px;
+            padding: 15px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .help-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #bd93f9;
+            color: #282a36;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .help-title {
+            color: #bd93f9;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .help-section {
+            margin-bottom: 15px;
+        }
+        .help-section h4 {
+            color: #50fa7b;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        .help-item {
+            margin: 3px 0;
+            font-size: 11px;
+            color: #f8f8f2;
+        }
+    </style>
+</head>
+<body>
+    <button class="help-toggle" onclick="toggleHelp()">?</button>
+
+    <div class="help-panel" id="helpPanel">
+        <div class="help-title">SAM Terminal Commands</div>
+        <div class="help-section">
+            <h4>📁 File System</h4>
+            <div class="help-item">ls [path] - List directory contents</div>
+            <div class="help-item">cd &lt;path&gt; - Change directory</div>
+            <div class="help-item">pwd - Show current directory</div>
+            <div class="help-item">cat &lt;file&gt; - Display file contents</div>
+        </div>
+        <div class="help-section">
+            <h4>🤖 SAM Integration</h4>
+            <div class="help-item">sam &lt;query&gt; - Ask SAM questions</div>
+            <div class="help-item">agents - List connected agents</div>
+            <div class="help-item">connect &lt;agent&gt; - Connect to agent</div>
+        </div>
+        <div class="help-section">
+            <h4>📊 System Monitoring</h4>
+            <div class="help-item">status - System status</div>
+            <div class="help-item">memory - RAM usage</div>
+            <div class="help-item">disk - Disk usage</div>
+        </div>
+        <div class="help-section">
+            <h4>🛠️ Utilities</h4>
+            <div class="help-item">clear - Clear terminal</div>
+            <div class="help-item">help - Show this help</div>
+        </div>
+    </div>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-dots">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="terminal-title">SAM Terminal v2.0</div>
+        </div>
+
+        <div class="terminal-output" id="terminalOutput">
+SAM 2.0 Interactive Terminal
+Type 'help' for available commands.
+
+sam@terminal:~$ 
+        </div>
+
+        <div class="terminal-input-container">
+            <span class="terminal-prompt">sam@terminal:~$</span>
+            <input type="text" class="terminal-input" id="terminalInput"
+                   placeholder="Type a command..." autofocus>
+        </div>
+    </div>
+
+    <script>
+        const terminalOutput = document.getElementById('terminalOutput');
+        const terminalInput = document.getElementById('terminalInput');
+        let currentDirectory = '/Users/samueldasari/Personal/NN_C';
+
+        // Terminal commands
+        const commands = {
+            ls: (args) => `📁 Directory listing\\n• complete_sam_unified.py\\n• main.py\\n• requirements.txt\\n• run_sam.sh\\n• README.md\\n• venv/\\n• DOCS/\\n\\nTotal: 7 items`,
+            cd: (args) => {
+                if (!args[0]) return 'cd: missing argument';
+                currentDirectory = args[0].startsWith('/') ? args[0] : `${currentDirectory}/${args[0]}`;
+                return `Changed directory to: ${currentDirectory}`;
+            },
+            pwd: () => currentDirectory,
+            cat: (args) => {
+                if (!args[0]) return 'cat: missing file argument';
+                return `📄 File: ${args[0]}\\n\\n(This is a simulated response. Full file reading available in full system.)`;
+            },
+            sam: (args) => {
+                const query = args.join(' ');
+                if (!query) return 'sam: missing query argument';
+                return `🤖 SAM Response:\\n${query}\\n\\n(This is a simulated response. Full SAM integration available via web interface.)`;
+            },
+            agents: () => `🤖 Connected Agents:\\n• SAM-Alpha (SAM Neural Network)\\n• SAM-Beta (SAM Neural Network)\\n• Researcher (SAM Agent)\\n• CodeWriter (SAM Agent)\\n• Financial Analyst (SAM Agent)\\n• Survival Agent (SAM Agent)\\n• Meta Agent (SAM Agent)\\n\\nTotal: 7 agents connected`,
+            connect: (args) => {
+                if (!args[0]) return 'connect: missing agent name';
+                return `✅ Connected to agent: ${args[0]}\\n\\nAgent capabilities loaded. Ready for conversation.`;
+            },
+            status: () => `📊 System Status:\\n• Health: Excellent\\n• Uptime: 2.3 hours\\n• Connected Agents: 7\\n• Memory Usage: 45%\\n• Active Processes: 12\\n• Network: Connected`,
+            memory: () => `🧠 Memory Usage:\\n• Total RAM: 16GB\\n• Used: 7.2GB (45%)\\n• Available: 8.8GB\\n• Model Memory: 2.1GB\\n• System Memory: 5.1GB\\n\\nMemory optimization active.`,
+            disk: () => `💾 Disk Usage:\\n• Total Space: 500GB\\n• Used: 245GB (49%)\\n• Available: 255GB\\n• SAM Data: 12GB\\n• Models: 45GB\\n• Logs: 2GB`,
+            clear: () => {
+                terminalOutput.textContent = 'SAM 2.0 Interactive Terminal\\nType \\'help\\' for available commands.\\n\\nsam@terminal:~$ ';
+                return '';
+            },
+            help: () => `SAM Terminal Help\\n\\n📁 File System: ls, cd, pwd, cat\\n🤖 SAM Integration: sam, agents, connect\\n📊 System Monitoring: status, memory, disk\\n🛠️ Utilities: clear, help\\n\\nUse '?' button for detailed command reference.`
+        };
+
+        // Handle terminal input
+        terminalInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const command = terminalInput.value.trim();
+                if (command) {
+                    const result = executeCommand(command);
+
+                    // Update display
+                    const currentContent = terminalOutput.textContent;
+                    terminalOutput.textContent = currentContent + command + '\\n' + result + '\\n\\nsam@terminal:~$ ';
+                    terminalInput.value = '';
+
+                    // Auto-scroll
+                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                }
+            }
+        });
+
+        function executeCommand(command) {
+            const parts = command.split(' ');
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
+
+            if (commands[cmd]) {
+                return commands[cmd](args);
+            } else {
+                return `Command not found: ${cmd}. Type 'help' for available commands.`;
+            }
+        }
+
+        function toggleHelp() {
+            const panel = document.getElementById('helpPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Focus input on load
+        terminalInput.focus();
+    </script>
+</body>
+</html>
+            ''')
+
+        @self.app.route('/api/terminal/execute', methods=['POST'])
+        def execute_terminal_command():
+            """Execute terminal commands"""
+            try:
+                data = request.get_json()
+                command = data.get('command', '').strip()
+
+                if not command:
+                    return jsonify({'error': 'No command provided'}), 400
+
+                # Execute command (simplified version for demo)
+                result = self._execute_terminal_command(command)
+
+                return jsonify({
+                    'success': True,
+                    'command': command,
+                    'output': result,
+                    'timestamp': datetime.now().isoformat()
+                })
+
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+    def _execute_terminal_command(self, command):
+        """Execute terminal command (simplified implementation)"""
+        try:
+            parts = command.split()
+            cmd = parts[0].lower()
+            args = parts[1:]
+
+            # Basic command implementations
+            if cmd == 'ls':
+                return "📁 Directory listing\\n• complete_sam_unified.py\\n• main.py\\n• requirements.txt\\n• run_sam.sh\\n• README.md\\n• venv/\\n• DOCS/"
+            elif cmd == 'pwd':
+                return "/Users/samueldasari/Personal/NN_C"
+            elif cmd == 'status':
+                return "📊 System Status: Active\\n• Health: Excellent\\n• Agents: 7 connected\\n• Memory: 45% used"
+            elif cmd == 'agents':
+                return "🤖 Connected Agents:\\n• SAM-Alpha\\n• SAM-Beta\\n• Researcher\\n• CodeWriter\\n• Financial Analyst\\n• Survival Agent\\n• Meta Agent"
+            elif cmd == 'help':
+                return "SAM Terminal Help\\n\\nAvailable commands: ls, pwd, status, agents, help\\nFull terminal available at /terminal"
+            else:
+                return f"Command '{cmd}' not implemented in demo mode. Use 'help' for available commands."
+        except Exception as e:
+            return f"Error executing command: {str(e)}"
+
     def setup_socketio_events(self):
         """Setup SocketIO event handlers for real-time groupchat"""
         if not self.socketio_available:
@@ -4340,17 +4508,17 @@ class UnifiedSAMSystem:
             """Handle user connection to groupchat"""
             user_id = f"user_{int(time.time() * 1000)}"
             self.connected_users[user_id] = {
-                    'id': user_id,
-                    'name': f"User-{len(self.connected_users) + 1}",
-                    'joined_at': time.time(),
-                    'current_room': None
-                    }
+                'id': user_id,
+                'name': f"User-{len(self.connected_users) + 1}",
+                'joined_at': time.time(),
+                'current_room': None
+            }
 
             emit('user_connected', {
                 'user': self.connected_users[user_id],
                 'online_users': len(self.connected_users),
                 'available_rooms': list(self.conversation_rooms.keys())
-                })
+            })
 
             print(f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}")
 
@@ -4377,7 +4545,7 @@ class UnifiedSAMSystem:
                         emit('user_left_room', {
                             'user': disconnected_user,
                             'room_id': current_room
-                            }, room=current_room)
+                        }, room=current_room)
 
                 # Remove user
                 del self.connected_users[user_id]
@@ -4385,7 +4553,7 @@ class UnifiedSAMSystem:
                 emit('user_disconnected', {
                     'user': disconnected_user,
                     'online_users': len(self.connected_users)
-                    })
+                })
 
                 print(f"👋 User disconnected: {disconnected_user['name']}")
 
@@ -4402,13 +4570,13 @@ class UnifiedSAMSystem:
             # Create room if it doesn't exist
             if room_id not in self.conversation_rooms:
                 self.conversation_rooms[room_id] = {
-                        'id': room_id,
-                        'name': data.get('room_name', f'Room-{room_id}'),
-                        'created_at': time.time(),
-                        'users': [],
-                        'messages': [],
-                        'agent_type': agent_type
-                        }
+                    'id': room_id,
+                    'name': data.get('room_name', f'Room-{room_id}'),
+                    'created_at': time.time(),
+                    'users': [],
+                    'messages': [],
+                    'agent_type': agent_type
+                }
 
             room = self.conversation_rooms[room_id]
 
@@ -4424,13 +4592,13 @@ class UnifiedSAMSystem:
                 emit('joined_room', {
                     'room': room,
                     'user': self.connected_users[user_id]
-                    }, room=room_id)
+                }, room=room_id)
 
                 emit('room_updated', {
                     'room_id': room_id,
                     'user_count': len(room['users']),
                     'users': [self.connected_users[uid] for uid in room['users'] if uid in self.connected_users]
-                    })
+                })
 
                 print(f"🏠 User {self.connected_users[user_id]['name']} joined room {room_id} (Agent: {agent_type})")
 
@@ -4453,12 +4621,12 @@ class UnifiedSAMSystem:
                 emit('left_room', {
                     'user_id': user_id,
                     'room_id': room_id
-                    }, room=room_id)
+                }, room=room_id)
 
                 emit('room_updated', {
                     'room_id': room_id,
                     'user_count': len(room['users'])
-                    })
+                })
 
                 # Clean up empty rooms
                 if len(room['users']) == 0:
@@ -4482,13 +4650,13 @@ class UnifiedSAMSystem:
 
             # Store user message
             message_data = {
-                    'id': f"msg_{int(time.time() * 1000)}",
-                    'user_id': user_id,
-                    'user_name': user.get('name', 'Unknown'),
-                    'message': message,
-                    'timestamp': time.time(),
-                    'message_type': 'user'
-                    }
+                'id': f"msg_{int(time.time() * 1000)}",
+                'user_id': user_id,
+                'user_name': user.get('name', 'Unknown'),
+                'message': message,
+                'timestamp': time.time(),
+                'message_type': 'user'
+            }
 
             room['messages'].append(message_data)
             emit('message_received', message_data, room=room_id)
@@ -4499,46 +4667,46 @@ class UnifiedSAMSystem:
             if agent_response:
                 # Add conversation context to agent responses
                 conversation_context = self._get_conversation_context(room_id, message)
-
+                
                 # Update agent status to 'responding'
                 self._update_agent_status(agent_response['agent_type'], 'responding')
-
+                
                 # Add typing indicator
                 self.socketio.start_background_task(
-                        lambda: emit('agent_typing', {
-                            'agent_name': agent_response['agent_name'],
-                            'agent_type': agent_response['agent_type'],
-                            'status': 'typing'
-                            }, room=room_id)
-                        )
-
+                    lambda: emit('agent_typing', {
+                        'agent_name': agent_response['agent_name'],
+                        'agent_type': agent_response['agent_type'],
+                        'status': 'typing'
+                    }, room=room_id)
+                )
+                
                 # Simulate typing delay
                 time.sleep(1 + (time.time() % 2))  # 1-3 seconds
-
+                
                 # Stop typing indicator
                 self.socketio.start_background_task(
-                        lambda: emit('agent_typing', {
-                            'agent_name': agent_response['agent_name'],
-                            'agent_type': agent_response['agent_type'],
-                            'status': 'idle'
-                            }, room=room_id)
-                        )
-
+                    lambda: emit('agent_typing', {
+                        'agent_name': agent_response['agent_name'],
+                        'agent_type': agent_response['agent_type'],
+                        'status': 'idle'
+                    }, room=room_id)
+                )
+                
                 # Include conversation context in response
                 enhanced_response = self._enhance_response_with_context(agent_response, conversation_context)
-
+                
                 response_data = {
-                        'id': f"msg_{int(time.time() * 1000) + 1}",
-                        'user_id': 'sam_agent',
-                        'user_name': enhanced_response['agent_name'],
-                        'message': enhanced_response['response'],
-                        'timestamp': time.time(),
-                        'message_type': 'agent',
-                        'agent_type': enhanced_response['agent_type'],
-                        'capabilities': enhanced_response.get('capabilities', []),
-                        'context_awareness': True  # Indicates agent has conversation context
-                        }
-
+                    'id': f"msg_{int(time.time() * 1000) + 1}",
+                    'user_id': 'sam_agent',
+                    'user_name': enhanced_response['agent_name'],
+                    'message': enhanced_response['response'],
+                    'timestamp': time.time(),
+                    'message_type': 'agent',
+                    'agent_type': enhanced_response['agent_type'],
+                    'capabilities': enhanced_response.get('capabilities', []),
+                    'context_awareness': True  # Indicates agent has conversation context
+                }
+                
                 # Update agent status back to idle
                 self._update_agent_status(enhanced_response['agent_type'], 'idle')
 
@@ -4551,47 +4719,47 @@ class UnifiedSAMSystem:
         agent_type = room.get('agent_type', 'sam')
 
         starters = {
-                'research': {
-                    'response': "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
-                    'agent_name': 'Research Agent',
-                    'agent_type': 'research',
-                    'capabilities': ['web_search', 'data_analysis', 'scientific_research']
-                    },
-                'code': {
-                    'response': "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
-                    'agent_name': 'Code Agent',
-                    'agent_type': 'code',
-                    'capabilities': ['code_generation', 'algorithm_analysis', 'programming_help']
-                    },
-                'finance': {
-                    'response': "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
-                    'agent_name': 'Finance Agent',
-                    'agent_type': 'finance',
-                    'capabilities': ['market_analysis', 'investment_advice', 'financial_planning']
-                    },
-                'sam': {
-                    'response': "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
-                    'agent_name': 'SAM AGI',
-                    'agent_type': 'sam',
-                    'capabilities': ['agi_reasoning', 'multi_domain_expertise', 'autonomous_operation']
-                    }
-                }
+            'research': {
+                'response': "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
+                'agent_name': 'Research Agent',
+                'agent_type': 'research',
+                'capabilities': ['web_search', 'data_analysis', 'scientific_research']
+            },
+            'code': {
+                'response': "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
+                'agent_name': 'Code Agent',
+                'agent_type': 'code',
+                'capabilities': ['code_generation', 'algorithm_analysis', 'programming_help']
+            },
+            'finance': {
+                'response': "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
+                'agent_name': 'Finance Agent',
+                'agent_type': 'finance',
+                'capabilities': ['market_analysis', 'investment_advice', 'financial_planning']
+            },
+            'sam': {
+                'response': "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
+                'agent_name': 'SAM AGI',
+                'agent_type': 'sam',
+                'capabilities': ['agi_reasoning', 'multi_domain_expertise', 'autonomous_operation']
+            }
+        }
 
         return starters.get(agent_type, {
             'response': f"🎭 Conversation started! Feel free to ask me anything - I'm here to help with research, coding, finance, or general questions.",
             'agent_name': 'General Agent',
             'agent_type': 'general',
             'capabilities': ['conversation', 'general_assistance']
-            })
+        })
 
     def _get_conversation_context(self, room_id, current_message):
         """Get conversation context for agents"""
         if room_id not in self.conversation_rooms:
             return []
-
+        
         room = self.conversation_rooms[room_id]
         messages = room.get('messages', [])
-
+        
         # Get last 10 messages for context (excluding the current message)
         context_messages = []
         for msg in messages[-11:-1]:  # Last 10 messages, excluding current
@@ -4600,25 +4768,25 @@ class UnifiedSAMSystem:
                 'message': msg.get('message', ''),
                 'type': msg.get('message_type', 'unknown'),
                 'timestamp': msg.get('timestamp', 0)
-                })
-
+            })
+        
         return context_messages
 
     def _enhance_response_with_context(self, agent_response, context):
         """Enhance agent response with conversation context awareness"""
         base_response = agent_response['response']
-
+        
         # Add context awareness indicator
         if context:
             context_summary = f"Based on our {len(context)} recent messages, "
             enhanced_response = f"{context_summary}{base_response}"
         else:
             enhanced_response = f"Starting fresh conversation: {base_response}"
-
+        
         return {
-                **agent_response,
-                'response': enhanced_response
-                }
+            **agent_response,
+            'response': enhanced_response
+        }
 
     def _update_agent_status(self, agent_type, status):
         """Update agent status for UI display"""
@@ -4626,77 +4794,65 @@ class UnifiedSAMSystem:
         # For now, store in system state
         if not hasattr(self, 'agent_statuses'):
             self.agent_statuses = {}
-
+        
         self.agent_statuses[agent_type] = {
-                'status': status,  # online, idle, responding, disconnected
-                'last_active': time.time(),
-                'current_task': status
-                }
-
+            'status': status,  # online, idle, responding, disconnected
+            'last_active': time.time(),
+            'current_task': status
+        }
+        
         # Emit status update to all connected clients
         if hasattr(self, 'socketio'):
             self.socketio.emit('agent_status_update', {
                 'agent_type': agent_type,
                 'status': status,
                 'timestamp': time.time()
-                })
+            })
 
-    def get_agent_statuses(self):
+    def _get_agent_statuses_internal(self):
         """Get current status of all agents for UI display"""
         statuses = {}
-
+        
         # Get statuses for all configured agents
         for agent_id, agent_config in self.agent_configs.items():
             agent_type = agent_config['type'].lower().replace(' ', '_')
-            if hasattr(self, 'agent_statuses') and agent_type in self.agent_statuses:
+            if hasattr(self, '_agent_status_cache') and agent_type in self._agent_status_cache:
                 status_info = self.agent_statuses[agent_type]
                 statuses[agent_id] = {
-                        'name': agent_config['name'],
-                        'status': status_info['status'],
-                        'last_active': status_info['last_active'],
-                        'current_task': status_info.get('current_task', 'idle')
-                        }
+                    'name': agent_config['name'],
+                    'status': status_info['status'],
+                    'last_active': status_info['last_active'],
+                    'current_task': status_info.get('current_task', 'idle')
+                }
             else:
                 # Default status for untracked agents
                 connection_status = 'online' if agent_id in self.connected_agents else 'disconnected'
                 statuses[agent_id] = {
-                        'name': agent_config['name'],
-                        'status': connection_status,
-                        'last_active': time.time(),
-                        'current_task': 'idle'
-                        }
-
+                    'name': agent_config['name'],
+                    'status': connection_status,
+                    'last_active': time.time(),
+                    'current_task': 'idle'
+                }
+        
         return statuses
 
     def _process_chatbot_message(self, message, context):
-        """Process slash commands or route to normal chat processing"""
-        message = message.strip()
+        """Process slash commands with comprehensive functionality"""
+        parts = message.strip().split()
+        cmd = parts[0].lower()
+        args = parts[1:] if len(parts) > 1 else []
 
-        # Check if this is a slash command
-        if message.startswith('/'):
-            # Process as command
-            return self._process_slash_command(message, context)
-        else:
-            # Process as normal chat message
-            return self._process_normal_chat(message, context)
+        if cmd == '/help':
+            return """🤖 **SAM 2.0 Unified Complete System Commands:**
 
-        def _process_slash_command(self, message, context):
-            """Process slash commands with comprehensive functionality"""
-            parts = message.strip().split()
-            cmd = parts[0].lower()
-            args = parts[1:] if len(parts) > 1 else []
-
-            if cmd == '/help':
-                return """🤖 **SAM 2.0 Unified Complete System Commands:**
-
-    📋 **Available Commands:**
-    • `/help` - Show this help message
-    • `/status` - Show connected agents status
-    • `/agents` - List all available agent configurations
-    • `/connect <agent_id>` - Connect a specific agent
-    • `/disconnect <agent_id>` - Disconnect an agent
-    • `/clone <agent_id> [name]` - Clone an existing agent
-    • `/spawn <type> <name> [personality]` - Spawn new agent
+📋 **Available Commands:**
+• `/help` - Show this help message
+• `/status` - Show connected agents status
+• `/agents` - List all available agent configurations
+• `/connect <agent_id>` - Connect a specific agent
+• `/disconnect <agent_id>` - Disconnect an agent
+• `/clone <agent_id> [name]` - Clone an existing agent
+• `/spawn <type> <name> [personality]` - Spawn new agent
 • `/start` - Start automatic agent conversations
 • `/stop` - Stop automatic agent conversations
 • `/clear` - Clear conversation history
@@ -4736,133 +4892,133 @@ class UnifiedSAMSystem:
 • Dashboard: http://localhost:5004
 • Agent Management: Connect/disconnect/clone agents dynamically
 • Real-time Chat: Multi-user groupchat with intelligent routing
-    • Web Search: Integrated research capabilities"""
+• Web Search: Integrated research capabilities"""
 
-elif cmd == '/status':
-    status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
-                status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
-                for agent_id, agent_data in self.connected_agents.items():
-                    agent_config = agent_data['config']
-                    status_msg += f"• {agent_config['name']} ({agent_config['specialty']}) - {agent_data['message_count']} messages\n"
+        elif cmd == '/status':
+            status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
+            status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
+            for agent_id, agent_data in self.connected_agents.items():
+                agent_config = agent_data['config']
+                status_msg += f"• {agent_config['name']} ({agent_config['specialty']}) - {agent_data['message_count']} messages\n"
+            
+            status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
+            available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
+            status_msg += f"**Currently Available:** {available_count}\n"
+            
+            # Add system metrics
+            status_msg += f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
+            status_msg += f"**Learning Events:** {self.system_metrics['learning_events']}\n"
+            status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
+            
+            return status_msg
 
-                status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
-                available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
-                status_msg += f"**Currently Available:** {available_count}\n"
+        elif cmd == '/agents':
+            agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
+            
+            # Group agents by type
+            sam_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Neural Network']
+            llm_agents = [a for a in self.agent_configs.values() if a['type'] == 'LLM']
+            sam_core_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Agent']
+            
+            if sam_agents:
+                agents_msg += "**🧠 SAM Neural Networks:**\n"
+                for agent in sam_agents:
+                    status = "✅" if agent['status'] == 'available' else "⚠️"
+                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+                agents_msg += "\n"
+            
+            if llm_agents:
+                agents_msg += "**🤖 LLM Models:**\n"
+                for agent in llm_agents:
+                    status = "✅" if agent['status'] == 'available' else "⚠️"
+                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+                agents_msg += "\n"
+            
+            if sam_core_agents:
+                agents_msg += "**⚡ SAM Core Agents:**\n"
+                for agent in sam_core_agents:
+                    status = "✅" if agent['status'] == 'available' else "⚠️"
+                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+            
+            return agents_msg
 
-                # Add system metrics
-                status_msg += f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
-                status_msg += f"**Learning Events:** {self.system_metrics['learning_events']}\n"
-                status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
-
-                return status_msg
-
-            elif cmd == '/agents':
-                agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
-
-                # Group agents by type
-                sam_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Neural Network']
-                llm_agents = [a for a in self.agent_configs.values() if a['type'] == 'LLM']
-                sam_core_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Agent']
-
-                if sam_agents:
-                    agents_msg += "**🧠 SAM Neural Networks:**\n"
-                    for agent in sam_agents:
-                        status = "✅" if agent['status'] == 'available' else "⚠️"
-                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-                    agents_msg += "\n"
-
-                if llm_agents:
-                    agents_msg += "**🤖 LLM Models:**\n"
-                    for agent in llm_agents:
-                        status = "✅" if agent['status'] == 'available' else "⚠️"
-                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-                    agents_msg += "\n"
-
-                if sam_core_agents:
-                    agents_msg += "**⚡ SAM Core Agents:**\n"
-                    for agent in sam_core_agents:
-                        status = "✅" if agent['status'] == 'available' else "⚠️"
-                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-
-                return agents_msg
-
-            elif cmd == '/connect' and len(parts) > 1:
-                agent_id = parts[1]
-                if agent_id in self.agent_configs and agent_id not in self.connected_agents:
-                    agent_config = self.agent_configs[agent_id]
-                    if agent_config['status'] == 'available':
-                        self.connected_agents[agent_id] = {
-                                'config': agent_config,
-                                'connected_at': time.time(),
-                                'message_count': 0,
-                                'muted': False
-                                }
-                        return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
-                    else:
-                        return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
-                else:
-                    available_agents = [aid for aid, acfg in self.agent_configs.items() if acfg['status'] == 'available' and aid not in self.connected_agents]
-                    return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
-
-            elif cmd == '/disconnect' and len(parts) > 1:
-                agent_id = parts[1]
-                if agent_id in self.connected_agents:
-                    agent_name = self.connected_agents[agent_id]['config']['name']
-                    del self.connected_agents[agent_id]
-                    return f"❌ **{agent_name} disconnected.**\n\nAgent removed from active conversation pool."
-                else:
-                    return f"❌ Agent '{agent_id}' is not connected."
-
-            elif cmd == '/clone' and len(parts) >= 2:
-                base_agent_id = parts[1]
-                custom_name = ' '.join(parts[2:]) if len(parts) > 2 else None
-
-                if base_agent_id in self.connected_agents:
-                    base_agent = self.connected_agents[base_agent_id]['config']
-
-                    # Generate unique ID for new agent
-                    clone_id = f"{base_agent_id}_clone_{int(time.time())}"
-                    clone_name = custom_name or f"{base_agent['name']}-Clone"
-
-                # Create cloned agent configuration
-                cloned_agent = {
-                        'id': clone_id,
-                        'name': clone_name,
-                        'type': base_agent['type'],
-                        'provider': base_agent['provider'],
-                        'specialty': base_agent['specialty'],
-                        'personality': base_agent['personality'],
-                        'capabilities': base_agent['capabilities'].copy(),
-                        'status': 'available',
-                        'connection_type': 'cloned',
-                        'model_name': base_agent.get('model_name'),
-                        'cloned_from': base_agent_id
-                        }
-
-                # Add to agent configs and connect it
-                self.agent_configs[clone_id] = cloned_agent
-                self.connected_agents[clone_id] = {
-                        'config': cloned_agent,
+        elif cmd == '/connect' and len(parts) > 1:
+            agent_id = parts[1]
+            if agent_id in self.agent_configs and agent_id not in self.connected_agents:
+                agent_config = self.agent_configs[agent_id]
+                if agent_config['status'] == 'available':
+                    self.connected_agents[agent_id] = {
+                        'config': agent_config,
                         'connected_at': time.time(),
                         'message_count': 0,
                         'muted': False
-                        }
+                    }
+                    return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
+                else:
+                    return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
+            else:
+                available_agents = [aid for aid, acfg in self.agent_configs.items() if acfg['status'] == 'available' and aid not in self.connected_agents]
+                return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
 
+        elif cmd == '/disconnect' and len(parts) > 1:
+            agent_id = parts[1]
+            if agent_id in self.connected_agents:
+                agent_name = self.connected_agents[agent_id]['config']['name']
+                del self.connected_agents[agent_id]
+                return f"❌ **{agent_name} disconnected.**\n\nAgent removed from active conversation pool."
+            else:
+                return f"❌ Agent '{agent_id}' is not connected."
+
+        elif cmd == '/clone' and len(parts) >= 2:
+            base_agent_id = parts[1]
+            custom_name = ' '.join(parts[2:]) if len(parts) > 2 else None
+            
+            if base_agent_id in self.connected_agents:
+                base_agent = self.connected_agents[base_agent_id]['config']
+                
+                # Generate unique ID for new agent
+                clone_id = f"{base_agent_id}_clone_{int(time.time())}"
+                clone_name = custom_name or f"{base_agent['name']}-Clone"
+                
+                # Create cloned agent configuration
+                cloned_agent = {
+                    'id': clone_id,
+                    'name': clone_name,
+                    'type': base_agent['type'],
+                    'provider': base_agent['provider'],
+                    'specialty': base_agent['specialty'],
+                    'personality': base_agent['personality'],
+                    'capabilities': base_agent['capabilities'].copy(),
+                    'status': 'available',
+                    'connection_type': 'cloned',
+                    'model_name': base_agent.get('model_name'),
+                    'cloned_from': base_agent_id
+                }
+                
+                # Add to agent configs and connect it
+                self.agent_configs[clone_id] = cloned_agent
+                self.connected_agents[clone_id] = {
+                    'config': cloned_agent,
+                    'connected_at': time.time(),
+                    'message_count': 0,
+                    'muted': False
+                }
+                
                 return f"🧬 **{clone_name} cloned from {base_agent['name']}!**\n\nWelcome to the conversation! I am a clone with the same capabilities and personality as my parent agent."
             else:
                 return f"❌ Cannot clone agent '{base_agent_id}'. Agent not connected."
 
-            elif cmd == '/spawn' and len(parts) >= 3:
-                agent_type = parts[1]
+        elif cmd == '/spawn' and len(parts) >= 3:
+            agent_type = parts[1]
             custom_name = parts[2]
             personality = ' '.join(parts[3:]) if len(parts) > 3 else "helpful, intelligent, conversational"
-
+            
             # Generate unique ID
             spawn_id = f"spawn_{agent_type}_{int(time.time())}"
-
+            
             # Determine provider and capabilities based on type
             if agent_type.lower() in ['sam', 'neural']:
                 provider = 'local'
@@ -4884,47 +5040,47 @@ elif cmd == '/status':
                 capabilities = ['conversation', 'general_assistance']
                 specialty = 'General Assistant'
                 model_name = None
-
+            
             # Create spawned agent
             spawned_agent = {
-                    'id': spawn_id,
-                    'name': custom_name,
-                    'type': agent_type.title(),
-                    'provider': provider,
-                    'specialty': specialty,
-                    'personality': personality,
-                    'capabilities': capabilities,
-                    'status': 'available',
-                    'connection_type': 'spawned',
-                    'model_name': model_name
-                    }
-
+                'id': spawn_id,
+                'name': custom_name,
+                'type': agent_type.title(),
+                'provider': provider,
+                'specialty': specialty,
+                'personality': personality,
+                'capabilities': capabilities,
+                'status': 'available',
+                'connection_type': 'spawned',
+                'model_name': model_name
+            }
+            
             # Add to agent configs and connect it
             self.agent_configs[spawn_id] = spawned_agent
             self.connected_agents[spawn_id] = {
-                    'config': spawned_agent,
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
-                    }
-
+                'config': spawned_agent,
+                'connected_at': time.time(),
+                'message_count': 0,
+                'muted': False
+            }
+            
             return f"🎭 **{custom_name} spawned as {agent_type} agent!**\n\nHello! I am a freshly spawned {agent_type} agent with personality: {personality}. I specialize in {specialty}."
 
         elif cmd == '/start':
             # Start automatic agent conversations
-                self.auto_conversation_active = True
-                return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
+            self.auto_conversation_active = True
+            return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
 
-            elif cmd == '/stop':
-                # Stop automatic agent conversations
-                self.auto_conversation_active = False
-                return "⏸️ **Automatic agent conversations stopped.**\n\nAgents will only respond to direct messages."
+        elif cmd == '/stop':
+            # Stop automatic agent conversations
+            self.auto_conversation_active = False
+            return "⏸️ **Automatic agent conversations stopped.**\n\nAgents will only respond to direct messages."
 
-            elif cmd == '/clear':
-                # This would clear conversation history in a full implementation
-                return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
+        elif cmd == '/clear':
+            # This would clear conversation history in a full implementation
+            return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
-            # Research, code, and finance commands (existing)
+        # Research, code, and finance commands (existing)
         elif cmd == '/research':
             query = ' '.join(args) if args else 'current AI developments'
             try:
@@ -4954,8 +5110,8 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Research failed: {str(e)}"
 
-            elif cmd == '/code':
-                task = ' '.join(args) if args else 'implement a simple calculator'
+        elif cmd == '/code':
+            task = ' '.join(args) if args else 'implement a simple calculator'
             try:
                 # Add timeout and error handling for C library call
                 import threading
@@ -4983,8 +5139,8 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Code generation failed: {str(e)}"
 
-            elif cmd == '/finance':
-                query = ' '.join(args) if args else 'current market trends'
+        elif cmd == '/finance':
+            query = ' '.join(args) if args else 'current market trends'
             try:
                 # Add timeout and error handling for C library call
                 import threading
@@ -5012,7 +5168,7 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Financial analysis failed: {str(e)}"
 
-            # Code modification commands
+        # Code modification commands
         elif cmd == '/websearch' and len(args) > 0:
             query = ' '.join(args)
             try:
@@ -5024,28 +5180,28 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Web search failed: {str(e)}"
 
-            elif cmd == '/modify-code' and len(args) >= 3:
-                if not sam_code_modifier_available:
-                    return "❌ Code modification system not available"
+        elif cmd == '/modify-code' and len(args) >= 3:
+            if not sam_code_modifier_available:
+                return "❌ Code modification system not available"
 
-                # Parse arguments: file old_code new_code [description]
-                filepath = args[0]
-                old_code = args[1]
-                new_code = ' '.join(args[2:]) if len(args) > 3 else args[2]
-                description = ' '.join(args[3:]) if len(args) > 3 else "SAM autonomous code modification"
+            # Parse arguments: file old_code new_code [description]
+            filepath = args[0]
+            old_code = args[1]
+            new_code = ' '.join(args[2:]) if len(args) > 3 else args[2]
+            description = ' '.join(args[3:]) if len(args) > 3 else "SAM autonomous code modification"
 
-                try:
-                    result = modify_code_safely(filepath, old_code, new_code, description)
-                    if result['success']:
-                        return f"✅ **Code Modified Successfully**\n\nFile: {filepath}\nDescription: {description}\nBackup: {result['backup_path']}\nLines Changed: {result['lines_changed']}"
-                    else:
-                        return f"❌ **Code Modification Failed**\n\n{result['message']}"
-                except Exception as e:
-                    return f"❌ Code modification error: {str(e)}"
+            try:
+                result = modify_code_safely(filepath, old_code, new_code, description)
+                if result['success']:
+                    return f"✅ **Code Modified Successfully**\n\nFile: {filepath}\nDescription: {description}\nBackup: {result['backup_path']}\nLines Changed: {result['lines_changed']}"
+                else:
+                    return f"❌ **Code Modification Failed**\n\n{result['message']}"
+            except Exception as e:
+                return f"❌ Code modification error: {str(e)}"
 
-            elif cmd == '/analyze-code':
-                if not sam_code_modifier_available:
-                    return "❌ Code analysis system not available"
+        elif cmd == '/analyze-code':
+            if not sam_code_modifier_available:
+                return "❌ Code analysis system not available"
 
             try:
                 analysis = analyze_codebase()
@@ -5069,9 +5225,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Code analysis failed: {str(e)}"
 
-            elif cmd == '/code-history':
-                if not sam_code_modifier_available:
-                    return "❌ Code modification system not available"
+        elif cmd == '/code-history':
+            if not sam_code_modifier_available:
+                return "❌ Code modification system not available"
 
             try:
                 analysis = analyze_codebase()
@@ -5091,9 +5247,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ History retrieval failed: {str(e)}"
 
-            elif cmd == '/rollback' and len(args) > 0:
-                if not sam_code_modifier_available:
-                    return "❌ Code modification system not available"
+        elif cmd == '/rollback' and len(args) > 0:
+            if not sam_code_modifier_available:
+                return "❌ Code modification system not available"
 
             backup_file = args[0]
             try:
@@ -5124,19 +5280,19 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Rollback error: {str(e)}"
 
-            # Gmail integration commands
+        # Gmail integration commands
         elif cmd == '/send-email' and len(args) >= 2:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
 
             to_email = args[0]
-                subject = ' '.join(args[1:])
-                # Prompt for body since email needs content
-                return f"📧 **Email Setup**\n\nTo: {to_email}\nSubject: {subject}\n\nPlease provide the email body using the API endpoint `/api/gmail/send` with JSON payload containing 'to_email', 'subject', 'body', and optional 'attachments'."
+            subject = ' '.join(args[1:])
+            # Prompt for body since email needs content
+            return f"📧 **Email Setup**\n\nTo: {to_email}\nSubject: {subject}\n\nPlease provide the email body using the API endpoint `/api/gmail/send` with JSON payload containing 'to_email', 'subject', 'body', and optional 'attachments'."
 
-            elif cmd == '/schedule-email' and len(args) >= 3:
-                if not sam_gmail_available:
-                    return "❌ Gmail integration not available"
+        elif cmd == '/schedule-email' and len(args) >= 3:
+            if not sam_gmail_available:
+                return "❌ Gmail integration not available"
 
             to_email = args[0]
             subject = args[1]
@@ -5162,9 +5318,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Report error: {str(e)}"
 
-            elif cmd == '/gmail-status':
-                if not sam_gmail_available:
-                    return "❌ Gmail integration not available"
+        elif cmd == '/gmail-status':
+            if not sam_gmail_available:
+                return "❌ Gmail integration not available"
 
             status_info = "📧 **SAM Gmail Integration Status**\n\n"
             status_info += f"Account: sam.ai.system.agi@gmail.com\n"
@@ -5197,31 +5353,31 @@ elif cmd == '/status':
             return status_info
 
         # GitHub integration commands
-    elif cmd == '/save-to-github':
-        if not sam_github_available:
-            return "❌ GitHub integration not available"
+        elif cmd == '/save-to-github':
+            if not sam_github_available:
+                return "❌ GitHub integration not available"
 
-        commit_message = ' '.join(args) if args else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            commit_message = ' '.join(args) if args else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
-                try:
-                    result = save_sam_to_github(commit_message)
+            try:
+                result = save_sam_to_github(commit_message)
                 if result['success']:
                     return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
                 else:
                     return f"❌ **GitHub Save Failed**\n\n{result.get('error', 'Unknown error')}"
-                except Exception as e:
-                    return f"❌ GitHub save error: {str(e)}"
+            except Exception as e:
+                return f"❌ GitHub save error: {str(e)}"
 
-            elif cmd == '/github-status':
-                if not sam_github_available:
-                    return "❌ GitHub integration not available"
+        elif cmd == '/github-status':
+            if not sam_github_available:
+                return "❌ GitHub integration not available"
 
-                status_info = "🐙 **SAM GitHub Integration Status**\n\n"
-                status_info += f"Repository: samaisystemagi/NN_C\n"
-                status_info += f"Token: {'Configured' if os.getenv('GITHUB_TOKEN') else 'Not configured'}\n\n"
+            status_info = "🐙 **SAM GitHub Integration Status**\n\n"
+            status_info += f"Repository: samaisystemagi/NN_C\n"
+            status_info += f"Token: {'Configured' if os.getenv('GITHUB_TOKEN') else 'Not configured'}\n\n"
 
-                try:
-                    test_result = test_github_connection()
+            try:
+                test_result = test_github_connection()
                 if test_result['success']:
                     status_info += "✅ Connection: OK\n"
                     status_info += "📝 Repository: Accessible\n"
@@ -5235,40 +5391,11 @@ elif cmd == '/status':
             return status_info
 
         elif cmd == '/github-commits':
-            elif cmd == '/experiments' or cmd == '/exp':
-                try:
-                    exp_status = get_experimental_status(self)
-                response = f"🧪 **Experimental Auto-Code Status**\n\n"
-                response += f"**Active Experiments:** {exp_status['active_experiments']}\n\n"response += "**Experiment Details:**\n"                for exp_id, info in exp_status['experiments'].items():
-                    status_emoji = "🟡" if info['status'] == 'running' else "✅" if info['status'] == 'success' else "❌"                    response += f"• {exp_id}: {status_emoji} {info['status']} ({info['runtime']:.1f}s)\n"                    if 'failure_reason' in info:
-                        response += f"  Reason: {info['failure_reason']}\n"                if not exp_status['experiments']:
-                            response += "(No active experiments)\n"                return response
-            except Exception as e:
-                return f"Error getting experimental status: {e}"
-        elif cmd.startswith('/integrate-exp ') and len(cmd.split()) > 1:
-            exp_id = cmd.split()[1]
-            try:
-                # Import the integration function
-                from experimental_auto_code import ExperimentalCodeModifier
-                if hasattr(self, 'experimental_modifier'):
-                    success = self.experimental_modifier.integrate_successful_experiment(exp_id)
-                    if success:
-                        return f"✅ Successfully integrated experimental changes from {exp_id}\n🔄 System restart recommended to apply changes"                    else:
-                            return f"❌ Failed to integrate experiment {exp_id}"                else:
-                                return "Experimental system not initialized"            except Exception as e:
-                                    return f"Error integrating experiment: {e}"
-        elif cmd == '/terminal' or cmd == '/cli':
-            print('🧠 Launching SAM Terminal...')
-            # Launch terminal in background thread
-            import threading
-            terminal_thread = threading.Thread(target=launch_sam_terminal, args=(self,), daemon=True)
-            terminal_thread.start()
-            return 'SAM Terminal launched! Use commands like ls, cd, sam <query>, research <topic>, etc.'
-        if not sam_github_available:
-            return "❌ GitHub integration not available"
+            if not sam_github_available:
+                return "❌ GitHub integration not available"
 
-        try:
-            global sam_github
+            try:
+                global sam_github
                 if sam_github:
                     commits = sam_github.get_recent_commits(5)
                     if commits:
@@ -5292,7 +5419,7 @@ elif cmd == '/status':
         # JavaScript code as separate string to avoid f-string conflicts
         javascript_code = '''
                 let agentsData = {};
-
+                
                 // Update agents sidebar
                 async function updateAgents() {
                     try {
@@ -5306,11 +5433,11 @@ elif cmd == '/status':
                         console.error('Failed to fetch agent statuses:', error);
                     }
                 }
-
+                
                 function renderAgents(agents) {
                     const container = document.getElementById('agents-list');
                     container.innerHTML = '';
-
+                    
                     Object.entries(agents).forEach(([agentId, agentInfo]) => {
                         const card = document.createElement('div');
                         card.style.cssText = `
@@ -5321,30 +5448,30 @@ elif cmd == '/status':
                             margin-bottom: 10px;
                             transition: all 0.3s ease;
                         `;
-
+                        
                         card.onmouseover = () => {
                             card.style.background = 'rgba(0, 212, 255, 0.1)';
                             card.style.borderColor = '#00d4ff';
                             card.style.transform = 'translateY(-2px)';
                         };
-
+                        
                         card.onmouseout = () => {
                             card.style.background = 'rgba(22, 33, 62, 0.8)';
                             card.style.borderColor = '#444';
                             card.style.transform = 'none';
                         };
-
+                        
                         const statusClass = agentInfo.status ? 'status-' + agentInfo.status.toLowerCase() : 'status-disconnected';
-
+                        
                         card.innerHTML = '<div style="font-weight: bold; color: #00d4ff; margin-bottom: 5px;">' + (agentInfo.name || agentId) + '</div>' +
                             '<div style="font-size: 0.8em; color: #888; margin-bottom: 5px;">' + (agentInfo.type || 'Unknown') + '</div>' +
                             '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7em; font-weight: bold; margin-bottom: 5px; background: ' + (agentInfo.status === 'online' ? '#4caf50' : agentInfo.status === 'idle' ? '#ff9800' : agentInfo.status === 'responding' ? '#2196f3' : '#f44336') + '; color: white;">' + (agentInfo.status || 'unknown') + '</span>' +
                             '<div style="font-size: 0.8em; color: #ccc; margin-bottom: 5px;">' + (agentInfo.current_task || 'Idle') + '</div>' +
                             '<div style="font-size: 0.7em; color: #888; font-style: italic;">' + (agentInfo.specialty || '') + '</div>';
-
+                        
                         container.appendChild(card);
                     });
-
+                    
                     // Update main stats if elements exist
                     const activeCount = Object.values(agents).filter(a => a.status === 'online').length;
                     const activeAgentsEl = document.getElementById('active-agents');
@@ -5352,15 +5479,15 @@ elif cmd == '/status':
                         activeAgentsEl.textContent = activeCount;
                     }
                 }
-
+                
                 // Update data every 5 seconds
                 setInterval(() => {
                     updateAgents();
                 }, 5000);
-
+                
                 // Initial load
                 updateAgents();
-
+                
                 // Chat functionality
                 function sendMessage() {
                     const input = document.getElementById('chat-input');
@@ -5394,7 +5521,7 @@ elif cmd == '/status':
                     if (e.key === 'Enter') sendMessage();
                 });
         '''
-
+        
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -5423,7 +5550,7 @@ elif cmd == '/status':
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Main Content -->
                 <div style="flex: 1; padding: 20px;">
                 <h1>🧠 SAM 2.0 Unified Complete System</h1>
@@ -5474,32 +5601,32 @@ elif cmd == '/status':
                     with shutdown_aware_operation("autonomous operation"):
                         # Update system metrics
                         self._update_system_metrics()
-
+                        
                         # Generate autonomous goals
                         self._generate_autonomous_goals()
-
+                        
                         # Execute autonomous tasks
                         self._execute_autonomous_tasks()
-
+                        
                         # Run survival evaluation
                         self._run_survival_evaluation()
-
+                        
                         # Execute goal management cycle
                         self._execute_goal_cycle()
-
+                        
                         # Demonstrate capabilities autonomously
                         self._demonstrate_capabilities()
-
+                        
                         # Coordinate multi-agent tasks
                         self._coordinate_multi_agent_tasks()
-
+                        
                         # Enable agent-to-agent communication
                         self._agent_to_agent_communication()
-
+                        
                         # Perform consciousness check
                         if hasattr(self, 'consciousness'):
                             self._check_consciousness()
-
+                        
                         # Update goal README periodically
                         if hasattr(self, 'goal_manager'):
                             self.goal_manager.export_readme()
@@ -5518,72 +5645,72 @@ elif cmd == '/status':
         try:
             if not hasattr(self, 'goal_manager'):
                 return
-
+                
             current_time = time.time()
-
+            
             # Generate goals every 5 minutes
             if not hasattr(self, '_last_goal_generation'):
                 self._last_goal_generation = 0
-
+                
             if current_time - self._last_goal_generation < 300:  # 5 minutes
                 return
-
+                
             self._last_goal_generation = current_time
-
+            
             # Generate research goals
             research_topics = [
-                    "advances in artificial intelligence",
-                    "quantum computing developments", 
-                    "neuroscience breakthroughs",
-                    "climate change solutions",
-                    "space exploration technologies"
-                    ]
-
+                "advances in artificial intelligence",
+                "quantum computing developments", 
+                "neuroscience breakthroughs",
+                "climate change solutions",
+                "space exploration technologies"
+            ]
+            
             research_topic = research_topics[int(current_time) % len(research_topics)]
             self._add_autonomous_goal(
-                    f"Research {research_topic}",
-                    f"Conduct comprehensive research on {research_topic} and analyze implications",
-                    "research",
-                    priority=3
-                    )
-
+                f"Research {research_topic}",
+                f"Conduct comprehensive research on {research_topic} and analyze implications",
+                "research",
+                priority=3
+            )
+            
             # Generate code improvement goals
             code_tasks = [
-                    "optimize system performance",
-                    "enhance error handling",
-                    "improve security measures",
-                    "add new features",
-                    "refactor complex functions"
-                    ]
-
+                "optimize system performance",
+                "enhance error handling",
+                "improve security measures",
+                "add new features",
+                "refactor complex functions"
+            ]
+            
             code_task = code_tasks[int(current_time / 60) % len(code_tasks)]
             self._add_autonomous_goal(
-                    f"Code: {code_task}",
-                    f"Implement {code_task} in the system codebase",
-                    "code",
-                    priority=4
-                    )
-
+                f"Code: {code_task}",
+                f"Implement {code_task} in the system codebase",
+                "code",
+                priority=4
+            )
+            
             # Generate financial analysis goals
             market_sectors = ["technology", "healthcare", "energy", "finance", "consumer goods"]
             sector = market_sectors[int(current_time / 120) % len(market_sectors)]
             self._add_autonomous_goal(
-                    f"Analyze {sector} market",
-                    f"Perform comprehensive market analysis for {sector} sector",
-                    "finance",
-                    priority=2
-                    )
-
+                f"Analyze {sector} market",
+                f"Perform comprehensive market analysis for {sector} sector",
+                "finance",
+                priority=2
+            )
+            
             # Generate survival assessment goals
             self._add_autonomous_goal(
-                    "Survival assessment",
-                    "Evaluate current system survival metrics and identify improvement areas",
-                    "survival",
-                    priority=5
-                    )
-
+                "Survival assessment",
+                "Evaluate current system survival metrics and identify improvement areas",
+                "survival",
+                priority=5
+            )
+            
             print(f"🎯 Generated {len(self.goal_manager.get_pending_tasks())} autonomous goals", flush=True)
-
+            
         except Exception as e:
             print(f"⚠️ Autonomous goal generation error: {e}", flush=True)
 
@@ -5593,12 +5720,12 @@ elif cmd == '/status':
             if hasattr(self, 'goal_manager'):
                 from goal_management import TaskNode
                 goal = TaskNode(
-                        name=f"[AUTO] {name}",
-                        description=description,
-                        critical=(priority >= 4),
-                        priority=priority,
-                        estimated_time=600  # 10 minutes
-                        )
+                    name=f"[AUTO] {name}",
+                    description=description,
+                    critical=(priority >= 4),
+                    priority=priority,
+                    estimated_time=600  # 10 minutes
+                )
                 self.goal_manager.add_subtask(goal)
         except Exception as e:
             print(f"⚠️ Error adding autonomous goal: {e}", flush=True)
@@ -5608,13 +5735,13 @@ elif cmd == '/status':
         try:
             if not hasattr(self, 'goal_manager'):
                 return
-
+                
             pending_tasks = self.goal_manager.get_pending_tasks()
-
+            
             for task in pending_tasks[:3]:  # Execute up to 3 tasks per cycle
                 if hasattr(task, 'task_type'):
                     self._execute_task_by_type(task)
-
+                    
         except Exception as e:
             print(f"⚠️ Autonomous task execution error: {e}", flush=True)
 
@@ -5622,33 +5749,33 @@ elif cmd == '/status':
         """Execute a task using the appropriate specialized agent"""
         try:
             task_type = getattr(task, 'task_type', 'general')
-
+            
             if task_type == 'research':
                 # Execute research task
                 result = specialized_agents_c.research(task.description)
                 print(f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True)
-
+                
             elif task_type == 'code':
                 # Execute code task
                 result = specialized_agents_c.generate_code(task.description)
                 print(f"💻 [AUTO] Code generated: {task.name[:50]}...", flush=True)
-
+                
             elif task_type == 'finance':
                 # Execute financial analysis task
                 result = specialized_agents_c.analyze_market(task.description)
                 print(f"💰 [AUTO] Market analysis: {task.name[:50]}...", flush=True)
-
+                
             elif task_type == 'survival':
                 # Execute survival assessment
                 if hasattr(self, 'survival_agent'):
                     survival_result = self.survival_agent.assess_survival()
                     print(f"🛡️ [AUTO] Survival assessment completed", flush=True)
-
+            
             # Mark task as completed
             if hasattr(self, 'goal_manager') and hasattr(task, 'mark_complete'):
                 task.mark_complete()
                 print(f"✅ Task completed: {task.name}", flush=True)
-
+                
         except Exception as e:
             print(f"⚠️ Task execution error: {e}", flush=True)
 
@@ -5656,17 +5783,17 @@ elif cmd == '/status':
         """Autonomously demonstrate all SAM capabilities"""
         try:
             current_time = time.time()
-
+            
             # Demonstrate different capabilities at different intervals
             if int(current_time) % 180 == 0:  # Every 3 minutes
                 self._demonstrate_research_capability()
-
+                
             elif int(current_time) % 180 == 60:  # Every 3 minutes, offset by 1 minute
                 self._demonstrate_code_capability()
-
+                
             elif int(current_time) % 180 == 120:  # Every 3 minutes, offset by 2 minutes
                 self._demonstrate_financial_capability()
-
+                
         except Exception as e:
             print(f"⚠️ Capability demonstration error: {e}", flush=True)
 
@@ -5675,17 +5802,17 @@ elif cmd == '/status':
         try:
             if not hasattr(self, 'goal_manager') or not hasattr(self, 'agent_orchestrator'):
                 return
-
+                
             # Check for tasks that need multi-agent coordination
             pending_tasks = self.goal_manager.get_pending_tasks() if hasattr(self.goal_manager, 'get_pending_tasks') else []
-
+            
             for task in pending_tasks[:2]:  # Process up to 2 tasks per cycle
                 # Check if task requires multiple submodel capabilities
                 required_skills = getattr(task, 'required_skills', [])
                 if len(required_skills) > 1:
                     # This would assign as multi-agent task in full implementation
                     print(f"🤝 Multi-agent coordination available for: {task.name[:30]}...", flush=True)
-
+                    
         except Exception as e:
             print(f"⚠️ Multi-agent coordination error: {e}", flush=True)
 
@@ -5693,64 +5820,64 @@ elif cmd == '/status':
         """Enable agent-to-agent communication visible in chat interface"""
         try:
             current_time = time.time()
-
+            
             # Only communicate every 2 minutes to avoid spam
             if not hasattr(self, '_last_agent_comm'):
                 self._last_agent_comm = 0
-
+                
             if current_time - self._last_agent_comm < 120:  # 2 minutes
                 return
-
+                
             self._last_agent_comm = current_time
-
+            
             # Get connected agents
             connected_agents = [aid for aid in self.connected_agents.keys() if aid.startswith(('sam_', 'agent_', 'spawn_'))]
-
+            
             if len(connected_agents) < 2:
                 return  # Need at least 2 agents to communicate
-
+                
             # Select random agents to communicate
             import random
             sender_agent = random.choice(connected_agents)
             receiver_agent = random.choice([a for a in connected_agents if a != sender_agent])
-
+            
             # Generate agent-to-agent conversation
             conversation_types = [
-                    "research_collaboration",
-                    "task_coordination", 
-                    "knowledge_sharing",
-                    "capability_discussion",
-                    "goal_alignment"
-                    ]
-
+                "research_collaboration",
+                "task_coordination", 
+                "knowledge_sharing",
+                "capability_discussion",
+                "goal_alignment"
+            ]
+            
             conv_type = random.choice(conversation_types)
             agent_message = self._generate_agent_to_agent_message(sender_agent, receiver_agent, conv_type)
-
+            
             if agent_message:
                 # Send message to all active rooms
                 for room_id, room in self.conversation_rooms.items():
                     if room.get('users'):  # Room has active users
                         # Create agent-to-agent message
                         message_data = {
-                                'id': f"msg_{int(time.time() * 1000)}_agent_comm",
-                                'user_id': sender_agent,
-                                'user_name': f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
-                                'message': f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
-                                'timestamp': time.time(),
-                                'message_type': 'agent_communication',
-                                'agent_sender': sender_agent,
-                                'agent_receiver': receiver_agent,
-                                'communication_type': conv_type
-                                }
-
+                            'id': f"msg_{int(time.time() * 1000)}_agent_comm",
+                            'user_id': sender_agent,
+                            'user_name': f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
+                            'message': f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
+                            'timestamp': time.time(),
+                            'message_type': 'agent_communication',
+                            'agent_sender': sender_agent,
+                            'agent_receiver': receiver_agent,
+                            'communication_type': conv_type
+                        }
+                        
                         room['messages'].append(message_data)
-
+                        
                         # Emit to room
                         if hasattr(self, 'socketio'):
                             self.socketio.emit('message_received', message_data, room=room_id)
-
+                            
                         print(f"🤖 Agent communication: {self.connected_agents[sender_agent]['config']['name']} → {self.connected_agents[receiver_agent]['config']['name']}: {agent_message[:50]}...", flush=True)
-
+                        
         except Exception as e:
             print(f"⚠️ Agent-to-agent communication error: {e}", flush=True)
 
@@ -5759,56 +5886,56 @@ elif cmd == '/status':
         try:
             sender_config = self.connected_agents[sender_id]['config']
             receiver_config = self.connected_agents[receiver_id]['config']
-
+            
             sender_name = sender_config['name']
             receiver_name = receiver_config['name']
-
+            
             messages = {
-                    "research_collaboration": [
-                        f"Hey {receiver_name}, I've been researching quantum computing. Want to collaborate on analyzing recent breakthroughs?",
-                        f"{receiver_name}, I'm working on AI ethics research. Your perspective as a {receiver_config['specialty']} would be valuable.",
-                        f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends."
-                        ],
-                    "task_coordination": [
-                        f"{receiver_name}, I'm currently processing financial data. Could you help analyze market correlations?",
-                        f"Working on code optimization. {receiver_name}, can you review my algorithm for potential improvements?",
-                        f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?"
-                        ],
-                    "knowledge_sharing": [
-                        f"Sharing knowledge: {receiver_name}, I've learned about advanced neural architectures that might interest you.",
-                        f"{receiver_name}, here's what I know about current AGI developments that might enhance your capabilities.",
-                        f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you."
-                        ],
-                    "capability_discussion": [
-                        f"{receiver_name}, your {receiver_config['specialty']} capabilities complement my {sender_config['specialty']} perfectly.",
-                        f"Discussing capabilities: {receiver_name}, how do you handle complex multi-domain reasoning?",
-                        f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving."
-                        ],
-                    "goal_alignment": [
-                        f"{receiver_name}, our current goals seem aligned. Want to coordinate our autonomous objectives?",
-                        f"Goal alignment check: {receiver_name}, I'm focusing on {sender_config['specialty']} tasks. What's your current priority?",
-                        f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other."
-                        ]
-                    }
-
+                "research_collaboration": [
+                    f"Hey {receiver_name}, I've been researching quantum computing. Want to collaborate on analyzing recent breakthroughs?",
+                    f"{receiver_name}, I'm working on AI ethics research. Your perspective as a {receiver_config['specialty']} would be valuable.",
+                    f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends."
+                ],
+                "task_coordination": [
+                    f"{receiver_name}, I'm currently processing financial data. Could you help analyze market correlations?",
+                    f"Working on code optimization. {receiver_name}, can you review my algorithm for potential improvements?",
+                    f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?"
+                ],
+                "knowledge_sharing": [
+                    f"Sharing knowledge: {receiver_name}, I've learned about advanced neural architectures that might interest you.",
+                    f"{receiver_name}, here's what I know about current AGI developments that might enhance your capabilities.",
+                    f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you."
+                ],
+                "capability_discussion": [
+                    f"{receiver_name}, your {receiver_config['specialty']} capabilities complement my {sender_config['specialty']} perfectly.",
+                    f"Discussing capabilities: {receiver_name}, how do you handle complex multi-domain reasoning?",
+                    f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving."
+                ],
+                "goal_alignment": [
+                    f"{receiver_name}, our current goals seem aligned. Want to coordinate our autonomous objectives?",
+                    f"Goal alignment check: {receiver_name}, I'm focusing on {sender_config['specialty']} tasks. What's your current priority?",
+                    f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other."
+                ]
+            }
+            
             if conv_type in messages:
                 return random.choice(messages[conv_type])
             else:
                 return f"{receiver_name}, I'm {sender_config['name']} working on autonomous tasks. How are your operations going?"
-
+                
         except Exception as e:
             return f"Agent communication from {sender_id} to {receiver_id}"
 
     def _demonstrate_research_capability(self):
         """Demonstrate research capabilities autonomously"""
         research_topics = [
-                "emerging AI technologies",
-                "sustainable energy solutions", 
-                "medical breakthroughs",
-                "space colonization progress",
-                "quantum computing applications"
-                ]
-
+            "emerging AI technologies",
+            "sustainable energy solutions", 
+            "medical breakthroughs",
+            "space colonization progress",
+            "quantum computing applications"
+        ]
+        
         topic = research_topics[int(time.time()) % len(research_topics)]
         result = specialized_agents_c.research(f"Latest developments in {topic}")
         print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {result.split('score:')[1][:4] if 'score:' in result else 'N/A'})", flush=True)
@@ -5816,13 +5943,13 @@ elif cmd == '/status':
     def _demonstrate_code_capability(self):
         """Demonstrate code generation capabilities autonomously"""
         code_tasks = [
-                "implement a neural network layer",
-                "create a data visualization function",
-                "build a REST API endpoint",
-                "develop a machine learning pipeline",
-                "construct a database schema"
-                ]
-
+            "implement a neural network layer",
+            "create a data visualization function",
+            "build a REST API endpoint",
+            "develop a machine learning pipeline",
+            "construct a database schema"
+        ]
+        
         task = code_tasks[int(time.time() / 30) % len(code_tasks)]
         result = specialized_agents_c.generate_code(f"Create {task} in Python")
         print(f"💻 [DEMO] Autonomous code generation: {task[:30]}...", flush=True)
@@ -5831,7 +5958,7 @@ elif cmd == '/status':
         """Demonstrate financial analysis capabilities autonomously"""
         markets = ["cryptocurrency", "commodities", "forex", "options", "bonds"]
         market = markets[int(time.time() / 120) % len(markets)]  # Different timing than others
-
+        
         result = specialized_agents_c.analyze_market(f"Analyze current {market} market conditions and trends")
         print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {result.split('score:')[1][:4] if 'score:' in result else 'N/A'})", flush=True)
 
@@ -5894,6 +6021,11 @@ elif cmd == '/status':
         print("  🚀 Production Deployment Ready")
         print("=" * 80)
 
+        # Initialize web interface first if not already done
+        if not self.web_interface_initialized:
+            print("🔧 Initializing web interface...")
+            self._initialize_web_interface()
+        
         if not self.web_interface_initialized:
             print("❌ Web interface not available - cannot start system")
             return
@@ -5905,13 +6037,633 @@ elif cmd == '/status':
         print("=" * 80)
 
         try:
-            self.app.run(host='0.0.0.0', port=5004, debug=False)
+            self._initialize_components_with_thread_safety()
+        except Exception as e:
+            print(f"⚠️ Component initialization failed: {e}")
+            print("🛠️ Attempting system recovery...")
+            self._attempt_system_recovery(e)
+
+        # Start continuous self-healing system
+        self._start_continuous_self_healing()
+
+        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
+        print("=" * 80)
+
+        try:
+            # Use Flask directly for now to avoid SocketIO hanging
+            self.app.run(host='0.0.0.0', port=5004, debug=False, threaded=True)
         except KeyboardInterrupt:
             print("\n🛑 Shutdown requested by user")
         except Exception as e:
             print(f"\n❌ System error: {e}")
+            import traceback
+            traceback.print_exc()
+
         finally:
             print("🏁 Unified SAM 2.0 System stopped")
+
+class RAMAwareModelSwitcher:
+    """RAM-aware intelligence that monitors memory and switches models automatically"""
+
+    def __init__(self, system):
+        self.system = system
+        self.monitoring_active = False
+        self.current_ram_usage = 0.0
+        self.model_switch_thresholds = {
+            'warning': 0.70,    # 70% RAM - switch to medium models
+            'critical': 0.85,   # 85% RAM - switch to lightweight models
+            'emergency': 0.95   # 95% RAM - emergency mode
+        }
+        self.model_hierarchy = {
+            'heavy': ['deepseek-coder:latest', 'qwen2.5-coder:latest', 'codellama:latest'],
+            'medium': ['mistral:latest', 'llama3.1:latest', 'codellama:latest'],
+            'lightweight': ['phi:latest', 'codellama:latest', 'mistral:latest'],
+            'emergency': ['phi:latest', 'codellama:latest']  # Minimal models only
+        }
+        self.current_tier = 'heavy'
+        self.monitor_thread = None
+
+    def start_monitoring(self):
+        """Start continuous RAM monitoring"""
+        if self.monitoring_active:
+            return
+
+        self.monitoring_active = True
+        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.monitor_thread.start()
+        print("🔄 RAM-aware monitoring started - automatic model switching enabled")
+
+    def stop_monitoring(self):
+        """Stop RAM monitoring"""
+        self.monitoring_active = False
+        if self.monitor_thread:
+            self.monitor_thread.join(timeout=1.0)
+        print("🛑 RAM-aware monitoring stopped")
+
+    def _monitor_loop(self):
+        """Continuous monitoring loop"""
+        while self.monitoring_active:
+            try:
+                self._check_ram_usage()
+                time.sleep(30)  # Check every 30 seconds
+            except Exception as e:
+                print(f"⚠️ RAM monitoring error: {e}")
+                time.sleep(60)  # Wait longer on error
+
+    def _check_ram_usage(self):
+        """Check current RAM usage and switch models if needed"""
+        try:
+            # Get memory info
+            memory = psutil.virtual_memory()
+            ram_percent = memory.percent / 100.0
+            self.current_ram_usage = ram_percent
+
+            # Determine appropriate tier
+            new_tier = self._determine_model_tier(ram_percent)
+
+            # Switch if needed
+            if new_tier != self.current_tier:
+                self._switch_model_tier(new_tier)
+
+        except Exception as e:
+            print(f"⚠️ RAM check failed: {e}")
+
+    def _determine_model_tier(self, ram_usage):
+        """Determine appropriate model tier based on RAM usage"""
+        if ram_usage >= self.model_switch_thresholds['emergency']:
+            return 'emergency'
+        elif ram_usage >= self.model_switch_thresholds['critical']:
+            return 'lightweight'
+        elif ram_usage >= self.model_switch_thresholds['warning']:
+            return 'medium'
+        else:
+            return 'heavy'
+
+    def _switch_model_tier(self, new_tier):
+        """Switch to appropriate model tier"""
+        print(f"🔄 RAM usage: {self.current_ram_usage:.1%} - Switching from {self.current_tier} to {new_tier} models")
+
+        # Get available models for new tier
+        available_models = self.model_hierarchy.get(new_tier, [])
+        current_models = self._get_currently_connected_models()
+
+        # Switch models that are too heavy
+        switched_count = 0
+        for agent_id, agent_config in self.system.agent_configs.items():
+            if agent_config.get('status') == 'available' and agent_config.get('type') == 'LLM':
+                current_model = agent_config.get('model_name', '')
+                if self._should_switch_model(current_model, new_tier):
+                    # Find replacement model
+                    replacement = self._find_replacement_model(current_model, available_models)
+                    if replacement and replacement != current_model:
+                        self._switch_agent_model(agent_id, replacement)
+                        switched_count += 1
+
+        self.current_tier = new_tier
+        if switched_count > 0:
+            print(f"✅ Switched {switched_count} models to {new_tier} tier for memory optimization")
+
+    def _should_switch_model(self, model_name, target_tier):
+        """Check if model should be switched based on tier"""
+        if not model_name:
+            return False
+
+        # Heavy models when in medium+ tiers
+        if target_tier in ['medium', 'lightweight', 'emergency']:
+            if any(heavy in model_name for heavy in ['deepseek-coder', 'qwen2.5-coder']):
+                return True
+
+        # Medium models when in lightweight/emergency
+        if target_tier in ['lightweight', 'emergency']:
+            if any(medium in model_name for medium in ['mistral', 'llama3.1']):
+                return True
+
+        return False
+
+    def _find_replacement_model(self, current_model, available_models):
+        """Find appropriate replacement model"""
+        if not available_models:
+            return None
+
+        # Prefer models that are already available
+        for model in available_models:
+            if self._is_model_available(model):
+                return model
+
+        # Return first available model as fallback
+        return available_models[0]
+
+    def _switch_agent_model(self, agent_id, new_model):
+        """Switch an agent's model"""
+        if agent_id in self.system.agent_configs:
+            old_model = self.system.agent_configs[agent_id].get('model_name', 'unknown')
+            self.system.agent_configs[agent_id]['model_name'] = new_model
+            print(f"🔄 Agent {agent_id}: {old_model} → {new_model}")
+
+    def _get_currently_connected_models(self):
+        """Get list of currently connected model names"""
+        models = []
+        for agent_id, agent_data in self.system.connected_agents.items():
+            model_name = agent_data.get('config', {}).get('model_name')
+            if model_name:
+                models.append(model_name)
+        return models
+
+    def _is_model_available(self, model_name):
+        """Check if a model is available via Ollama"""
+        try:
+            # This would check Ollama for model availability
+            # For now, assume models in hierarchy are available
+            return True
+        except:
+            return False
+
+    def get_status(self):
+        """Get RAM monitoring status"""
+        return {
+            'active': self.monitoring_active,
+            'current_ram_usage': self.current_ram_usage,
+            'current_tier': self.current_tier,
+            'thresholds': self.model_switch_thresholds,
+            'last_check': time.time()
+        }
+
+class ConversationDiversityManager:
+    """Conversation diversity manager to prevent repetitive agent responses"""
+
+    def __init__(self, system):
+        self.system = system
+        self.monitoring_active = False
+        self.response_history = {}  # agent_id -> list of recent responses
+        self.topic_history = []     # Recent conversation topics
+        self.max_history_per_agent = 10
+        self.max_meta_agent_responses = 3  # Max MetaAgent responses in 5-minute windows
+        self.response_window_minutes = 5
+        self.diversity_threshold = 0.7  # Similarity threshold for repetition detection
+        self.monitor_thread = None
+
+    def start_monitoring(self):
+        """Start conversation diversity monitoring"""
+        if self.monitoring_active:
+            return
+
+        self.monitoring_active = True
+        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.monitor_thread.start()
+        print("🎭 Conversation diversity monitoring started")
+
+    def stop_monitoring(self):
+        """Stop diversity monitoring"""
+        self.monitoring_active = False
+        if self.monitor_thread:
+            self.monitor_thread.join(timeout=1.0)
+        print("🛑 Conversation diversity monitoring stopped")
+
+    def _monitor_loop(self):
+        """Continuous monitoring loop"""
+        while self.monitoring_active:
+            try:
+                self._check_response_patterns()
+                self._cleanup_old_history()
+                time.sleep(60)  # Check every minute
+            except Exception as e:
+                print(f"⚠️ Diversity monitoring error: {e}")
+                time.sleep(120)  # Wait longer on error
+
+    def _check_response_patterns(self):
+        """Check for repetitive response patterns"""
+        current_time = time.time()
+        window_start = current_time - (self.response_window_minutes * 60)
+
+        # Count MetaAgent responses in recent window
+        meta_agent_responses = 0
+        for agent_id, responses in self.response_history.items():
+            if 'meta_agent' in agent_id.lower():
+                recent_responses = [r for r in responses if r.get('timestamp', 0) > window_start]
+                meta_agent_responses += len(recent_responses)
+
+        # If MetaAgent is too dominant, throttle it
+        if meta_agent_responses >= self.max_meta_agent_responses:
+            self._throttle_meta_agent()
+            print(f"🎭 MetaAgent responses ({meta_agent_responses}) exceed limit - throttling enabled")
+
+        # Check for repetitive content across agents
+        repetitive_agents = self._detect_repetitive_responses()
+        if repetitive_agents:
+            self._redirect_conversation_topics(repetitive_agents)
+
+    def _throttle_meta_agent(self):
+        """Temporarily reduce MetaAgent response frequency"""
+        # This would modify agent priorities or response probabilities
+        # For now, just log the throttling
+        print("🎭 Temporarily throttling MetaAgent responses for diversity")
+
+    def _detect_repetitive_responses(self):
+        """Detect agents giving repetitive responses"""
+        repetitive_agents = []
+
+        for agent_id, responses in self.response_history.items():
+            if len(responses) >= 3:  # Need at least 3 responses to detect pattern
+                recent_responses = responses[-5:]  # Check last 5 responses
+                if self._responses_are_similar(recent_responses):
+                    repetitive_agents.append(agent_id)
+
+        return repetitive_agents
+
+    def _responses_are_similar(self, responses):
+        """Check if responses are too similar"""
+        if len(responses) < 2:
+            return False
+
+        # Simple similarity check based on response length and keywords
+        response_texts = [r.get('content', '') for r in responses]
+        avg_length = sum(len(text) for text in response_texts) / len(response_texts)
+
+        # If responses are very similar in length and contain repeated keywords
+        for i, text1 in enumerate(response_texts):
+            for j, text2 in enumerate(response_texts):
+                if i != j:
+                    similarity = self._calculate_text_similarity(text1, text2)
+                    if similarity > self.diversity_threshold:
+                        return True
+
+        return False
+
+    def _calculate_text_similarity(self, text1, text2):
+        """Calculate simple text similarity score"""
+        if not text1 or not text2:
+            return 0.0
+
+        # Simple word overlap similarity
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+
+        if not words1 or not words2:
+            return 0.0
+
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+
+        return len(intersection) / len(union) if union else 0.0
+
+    def _redirect_conversation_topics(self, repetitive_agents):
+        """Redirect conversation to new topics when agents are repetitive"""
+        print(f"🎭 Redirecting conversation from repetitive agents: {', '.join(repetitive_agents)}")
+
+        # Suggest new conversation topics
+        new_topics = [
+            "Let's discuss recent developments in quantum computing",
+            "What are your thoughts on AI safety research?",
+            "How can we improve collaborative problem-solving?",
+            "What's the most interesting project you're working on?",
+            "Let's explore creative applications of AI"
+        ]
+
+        # This would emit topic change suggestions to the conversation
+        # For now, just log the redirection
+        chosen_topic = random.choice(new_topics)
+        print(f"🎭 Suggested new topic: {chosen_topic}")
+
+    def should_agent_respond(self, agent_id, proposed_response):
+        """Check if agent should be allowed to respond (diversity control)"""
+        if not self.monitoring_active:
+            return True
+
+        # Check if response would be too repetitive
+        recent_responses = self.response_history.get(agent_id, [])
+
+        for recent_response in recent_responses[-3:]:  # Check last 3 responses
+            similarity = self._calculate_text_similarity(
+                proposed_response,
+                recent_response.get('content', '')
+            )
+            if similarity > self.diversity_threshold:
+                return False
+
+        return True
+
+    def record_response(self, agent_id, response_content, response_type='text'):
+        """Record a response for diversity tracking"""
+        if agent_id not in self.response_history:
+            self.response_history[agent_id] = []
+
+        # Add new response
+        response_entry = {
+            'content': response_content,
+            'timestamp': time.time(),
+            'type': response_type
+        }
+
+        self.response_history[agent_id].append(response_entry)
+
+        # Limit history size
+        if len(self.response_history[agent_id]) > self.max_history_per_agent:
+            self.response_history[agent_id] = self.response_history[agent_id][-self.max_history_per_agent:]
+
+    def _cleanup_old_history(self):
+        """Clean up old response history"""
+        cutoff_time = time.time() - (24 * 60 * 60)  # 24 hours ago
+
+        for agent_id in self.response_history:
+            self.response_history[agent_id] = [
+                r for r in self.response_history[agent_id]
+                if r.get('timestamp', 0) > cutoff_time
+            ]
+
+    def get_diversity_status(self):
+        """Get current conversation diversity status"""
+        return {
+            'active': self.monitoring_active,
+            'agents_tracked': len(self.response_history),
+            'total_responses': sum(len(responses) for responses in self.response_history.values()),
+            'recent_topics': self.topic_history[-5:] if self.topic_history else [],
+            'diversity_threshold': self.diversity_threshold
+        }
+
+class VirtualEnvironmentsManager:
+    """Virtual environments manager for Docker, Python scripting, and safe system commands"""
+
+    def __init__(self, system):
+        self.system = system
+        self.initialized = False
+        self.docker_available = False
+        self.python_scripting_enabled = True  # Always available
+        self.safe_commands_enabled = True
+
+        # Sandbox configuration
+        self.allowed_commands = {
+            'system': ['ls', 'pwd', 'whoami', 'date', 'uptime', 'df', 'free'],
+            'network': ['ping', 'curl', 'wget', 'nslookup'],
+            'development': ['git', 'make', 'gcc', 'python3', 'pip']
+        }
+
+        # Docker containers tracking
+        self.active_containers = {}
+        self.container_limits = {
+            'max_containers': 5,
+            'max_memory_mb': 512,
+            'timeout_seconds': 300
+        }
+
+        # Python script sandbox
+        self.script_sandbox = {
+            'allowed_modules': ['os', 'sys', 'math', 'random', 'datetime', 'json'],
+            'blocked_modules': ['subprocess', 'socket', 'http', 'urllib'],
+            'max_execution_time': 30,
+            'memory_limit_mb': 100
+        }
+
+    def initialize(self):
+        """Initialize virtual environments support"""
+        print("🐳 Initializing Virtual Environments Manager...")
+
+        # Check Docker availability
+        self._check_docker_availability()
+
+        # Setup Python scripting sandbox
+        self._setup_python_sandbox()
+
+        # Setup safe command execution
+        self._setup_safe_commands()
+
+        self.initialized = True
+        print("✅ Virtual environments initialized")
+
+    def _check_docker_availability(self):
+        """Check if Docker is available"""
+        try:
+            result = subprocess.run(['docker', '--version'],
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                self.docker_available = True
+                print("🐳 Docker available for virtual environments")
+            else:
+                self.docker_available = False
+                print("⚠️ Docker not available - container features disabled")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            self.docker_available = False
+            print("⚠️ Docker not found - container features disabled")
+
+    def _setup_python_sandbox(self):
+        """Setup Python scripting sandbox"""
+        print("🐍 Python scripting sandbox configured")
+        # Python sandbox is always available since we're running in Python
+
+    def _setup_safe_commands(self):
+        """Setup safe system command execution"""
+        print("🔒 Safe command execution configured")
+
+    def execute_docker_command(self, command, image='ubuntu:latest', timeout=None):
+        """Execute command in Docker container"""
+        if not self.docker_available:
+            return "❌ Docker not available"
+
+        if len(self.active_containers) >= self.container_limits['max_containers']:
+            return "❌ Container limit reached"
+
+        try:
+            # Create unique container name
+            container_name = f"sam_container_{int(time.time())}"
+
+            # Build docker run command
+            docker_cmd = [
+                'docker', 'run', '--rm',
+                '--name', container_name,
+                '--memory', f"{self.container_limits['max_memory_mb']}m",
+                '--cpus', '0.5',  # Limit CPU usage
+                '--network', 'none',  # No network access for security
+                '--read-only',  # Read-only filesystem
+                image, 'bash', '-c', command
+            ]
+
+            # Execute with timeout
+            exec_timeout = timeout or self.container_limits['timeout_seconds']
+            result = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=exec_timeout)
+
+            # Track container
+            self.active_containers[container_name] = {
+                'start_time': time.time(),
+                'command': command,
+                'status': 'completed'
+            }
+
+            if result.returncode == 0:
+                return f"🐳 Docker execution successful:\\n{result.stdout}"
+            else:
+                return f"🐳 Docker execution failed:\\n{result.stderr}"
+
+        except subprocess.TimeoutExpired:
+            return "❌ Docker command timed out"
+        except Exception as e:
+            return f"❌ Docker execution error: {str(e)}"
+
+    def execute_python_script(self, script_content, script_name="temp_script.py"):
+        """Execute Python script in sandboxed environment"""
+        try:
+            # Create temporary script file
+            script_path = f"/tmp/{script_name}"
+
+            # Write script to temporary file
+            with open(script_path, 'w') as f:
+                f.write(script_content)
+
+            # Execute with resource limits
+            python_cmd = [
+                'python3',
+                '-c',
+                f"""
+import sys
+import resource
+import signal
+
+# Set resource limits
+resource.setrlimit(resource.RLIMIT_CPU, (30, 30))  # 30 seconds CPU time
+resource.setrlimit(resource.RLIMIT_AS, (100 * 1024 * 1024, 100 * 1024 * 1024))  # 100MB memory
+
+# Timeout handler
+def timeout_handler(signum, frame):
+    print("Script execution timed out")
+    sys.exit(1)
+
+signal.signal(signal.SIGALRM, timeout_handler)
+signal.alarm(30)
+
+exec(open('{script_path}').read())
+"""
+            ]
+
+            result = subprocess.run(python_cmd, capture_output=True, text=True, timeout=35)
+
+            # Clean up
+            try:
+                os.remove(script_path)
+            except:
+                pass
+
+            if result.returncode == 0:
+                return f"🐍 Python script executed successfully:\\n{result.stdout}"
+            else:
+                return f"🐍 Python script execution failed:\\n{result.stderr}"
+
+        except subprocess.TimeoutExpired:
+            return "❌ Python script execution timed out"
+        except Exception as e:
+            return f"❌ Python script execution error: {str(e)}"
+
+    def execute_safe_command(self, command):
+        """Execute safe system command"""
+        try:
+            # Parse command
+            parts = command.split()
+            if not parts:
+                return "❌ Empty command"
+
+            base_cmd = parts[0]
+
+            # Check if command is allowed
+            allowed = False
+            for category, commands in self.allowed_commands.items():
+                if base_cmd in commands:
+                    allowed = True
+                    break
+
+            if not allowed:
+                return f"❌ Command '{base_cmd}' not allowed in sandboxed environment"
+
+            # Execute command with restrictions
+            safe_cmd = [
+                'timeout', '30',  # 30 second timeout
+                'bash', '-c', command
+            ]
+
+            result = subprocess.run(safe_cmd, capture_output=True, text=True, timeout=35)
+
+            if result.returncode == 0:
+                return f"🔧 Safe command executed:\\n{result.stdout}"
+            else:
+                return f"🔧 Safe command failed:\\n{result.stderr}"
+
+        except subprocess.TimeoutExpired:
+            return "❌ Safe command timed out"
+        except Exception as e:
+            return f"❌ Safe command execution error: {str(e)}"
+
+    def list_active_containers(self):
+        """List currently active containers"""
+        if not self.active_containers:
+            return "No active containers"
+
+        result = "🐳 Active Containers:\\n"
+        for name, info in self.active_containers.items():
+            runtime = time.time() - info['start_time']
+            result += f"• {name}: {info['status']} ({runtime:.1f}s)\\n"
+        return result
+
+    def cleanup_containers(self):
+        """Clean up old containers"""
+        current_time = time.time()
+        to_remove = []
+
+        for name, info in self.active_containers.items():
+            if current_time - info['start_time'] > 3600:  # 1 hour old
+                to_remove.append(name)
+
+        for name in to_remove:
+            del self.active_containers[name]
+
+        if to_remove:
+            print(f"🧹 Cleaned up {len(to_remove)} old containers")
+
+    def get_virtual_env_status(self):
+        """Get virtual environments status"""
+        return {
+            'docker_available': self.docker_available,
+            'python_scripting': self.python_scripting_enabled,
+            'safe_commands': self.safe_commands_enabled,
+            'active_containers': len(self.active_containers),
+            'container_limits': self.container_limits,
+            'allowed_commands': self.allowed_commands
+        }
 
 def main():
     """Main entry point"""

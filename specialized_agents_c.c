@@ -10,22 +10,8 @@
 #include <time.h>
 #include <curl/curl.h>  // For web requests (if available)
 
-// Include existing framework
-#include "ORGANIZED/UTILS/SAM/SAM/SAM.h"
-#include "ORGANIZED/UTILS/utils/NN/TRANSFORMER/TRANSFORMER.h"
-#include "ORGANIZED/UTILS/utils/NN/NEAT/NEAT.h"
-
-// ================================
-// AGENT BASE STRUCTURE
-// ================================
-
-typedef struct {
-    char *name;
-    char *capabilities[10];
-    int capability_count;
-    double performance_score;
-    int is_active;
-} AgentBase;
+// Include available headers
+#include "specialized_agents_c.h"
 
 // ================================
 // COHERENCY/TEACHER PREBUILT MODEL
@@ -296,21 +282,8 @@ void bug_fixing_model_free(BugFixingModel *model) {
     }
 }
 
-typedef struct {
-    AgentBase base;
-    char **search_history;
-    size_t history_count;
-    size_t history_capacity;
-    double credibility_score;
-
-    // Web scraping state
-    char *current_search_query;
-    char **found_sources;
-    size_t source_count;
-} ResearchAgent;
-
-ResearchAgent *research_agent_create() {
-    ResearchAgent *agent = malloc(sizeof(ResearchAgent));
+ResearcherAgent *research_agent_create() {
+    ResearcherAgent *agent = malloc(sizeof(ResearcherAgent));
     if (!agent) return NULL;
 
     agent->base.name = strdup("Researcher");
@@ -333,7 +306,7 @@ ResearchAgent *research_agent_create() {
     return agent;
 }
 
-void research_agent_free(ResearchAgent *agent) {
+void research_agent_free(ResearcherAgent *agent) {
     if (agent) {
         free(agent->base.name);
         for (size_t i = 0; i < agent->history_count; i++) {
@@ -351,7 +324,7 @@ void research_agent_free(ResearchAgent *agent) {
     }
 }
 
-char *research_agent_perform_search(ResearchAgent *agent, const char *query) {
+char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
     printf("🔍 Research Agent: Performing web search for '%s'\n", query);
 
     // Store in history
@@ -388,7 +361,7 @@ char *research_agent_perform_search(ResearchAgent *agent, const char *query) {
     return results;
 }
 
-char *research_agent_analyze_data(ResearchAgent *agent, const char *data) {
+char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) {
     printf("📊 Research Agent: Analyzing data patterns\n");
 
     // Use existing analysis framework
@@ -414,20 +387,6 @@ char *research_agent_analyze_data(ResearchAgent *agent, const char *data) {
 // ================================
 // CODE WRITER AGENT - Pure C with Transformer
 // ================================
-
-typedef struct {
-    AgentBase base;
-    Transformer_t *code_transformer;
-    char **generated_code;
-    size_t code_count;
-    size_t code_capacity;
-    double code_quality_score;
-
-    // Code analysis state
-    char *current_task;
-    char **code_patterns;
-    size_t pattern_count;
-} CodeWriterAgent;
 
 CodeWriterAgent *code_writer_agent_create() {
     CodeWriterAgent *agent = malloc(sizeof(CodeWriterAgent));
@@ -566,16 +525,6 @@ char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) {
 // FINANCIAL ANALYSIS AGENT - Pure C with NEAT
 // ================================
 
-typedef struct {
-    AgentBase base;
-    NEAT_t *market_model;
-    double *portfolio_performance;
-    size_t performance_count;
-    double current_portfolio_value;
-    char **trading_history;
-    size_t trade_count;
-} FinancialAgent;
-
 FinancialAgent *financial_agent_create() {
     FinancialAgent *agent = malloc(sizeof(FinancialAgent));
     if (!agent) return NULL;
@@ -682,15 +631,6 @@ char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_d
 // ================================
 // SURVIVAL AGENT - Pure C with Survival Library
 // ================================
-
-typedef struct {
-    AgentBase base;
-    double *threat_assessment;
-    size_t threat_count;
-    double survival_score;
-    char **contingency_plans;
-    size_t plan_count;
-} SurvivalAgent;
 
 SurvivalAgent *survival_agent_create() {
     SurvivalAgent *agent = malloc(sizeof(SurvivalAgent));
@@ -801,20 +741,6 @@ char *survival_agent_assess_threats(SurvivalAgent *agent) {
 // ================================
 // META AGENT - Pure C with Transformer
 // ================================
-
-typedef struct {
-    AgentBase base;
-    Transformer_t *analysis_transformer;
-    char **code_improvements;
-    size_t improvement_count;
-    size_t improvement_capacity;
-
-    // Self-analysis state
-    char *current_analysis_target;
-    double system_health_score;
-    char **identified_issues;
-    size_t issue_count;
-} MetaAgent;
 
 MetaAgent *meta_agent_create() {
     MetaAgent *agent = malloc(sizeof(MetaAgent));
@@ -933,14 +859,6 @@ char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) 
 // ================================
 // AGENT REGISTRY - Pure C
 // ================================
-
-typedef struct {
-    ResearchAgent *researcher;
-    CodeWriterAgent *coder;
-    FinancialAgent *financer;
-    SurvivalAgent *survivor;
-    MetaAgent *meta;
-} AgentRegistry;
 
 AgentRegistry *agent_registry_create() {
     AgentRegistry *registry = malloc(sizeof(AgentRegistry));

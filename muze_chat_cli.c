@@ -1,9 +1,9 @@
-#include "ORGANIZED/UTILS/utils/NN/MUZE/muze_enhanced_model.h"
-#include "ORGANIZED/UTILS/utils/NN/MUZE/muze_enhanced_config.h"
-#include "ORGANIZED/UTILS/utils/NN/MUZE/compressed_obs.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+// Remove non-existent includes - using built-in functionality only
 #include <string.h>
 #include <stdint.h>
 

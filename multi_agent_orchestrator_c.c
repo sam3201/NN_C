@@ -11,99 +11,95 @@
 #include <pthread.h>
 #include <unistd.h>
 
-// Use existing framework components
-#include "ORGANIZED/UTILS/SAM/SAM/SAM.h"
-#include "ORGANIZED/UTILS/utils/NN/NEAT/NEAT.h"
-#include "ORGANIZED/UTILS/utils/NN/TRANSFORMER/TRANSFORMER.h"
+// Use available headers
+#include "multi_agent_orchestrator_c.h"
 
 // ================================
-// MESSAGE SYSTEM - Pure C
+// MESSAGE/AGENT TYPES
 // ================================
 
-typedef enum {
-    MSG_TASK_ASSIGNMENT,
-    MSG_KNOWLEDGE_DISTILLATION,
-    MSG_STATUS_UPDATE,
-    MSG_RESOURCE_REQUEST
-} MessageType;
+typedef struct NEAT_t {
+    int input_dim;
+    int output_dim;
+    int population;
+} NEAT_t;
 
-typedef struct {
-    MessageType type;
-    char *sender;
-    char *recipient;
-    void *payload;
-    size_t payload_size;
-    time_t timestamp;
-} SubmodelMessage;
-
-// ================================
-// AGENT INTERFACES - Pure C
-// ================================
-
-typedef struct {
-    char *name;
-    char *capabilities[10];
-    int capability_count;
-
-    // Function pointers for agent methods
-    int (*process_message)(void *agent, SubmodelMessage *msg);
-    void *(*execute_task)(void *agent, void *task_data);
-    void (*distill_knowledge)(void *agent, void *knowledge);
-
-    // Agent state
-    void *internal_state;
-    double performance_score;
-    int is_active;
-} SubmodelAgent;
+static NEAT_t *NEAT_init(int input_dim, int output_dim, int population) {
+    NEAT_t *model = (NEAT_t *)calloc(1, sizeof(NEAT_t));
+    if (!model) return NULL;
+    model->input_dim = input_dim;
+    model->output_dim = output_dim;
+    model->population = population;
+    return model;
+}
 
 // ================================
-// KNOWLEDGE DISTILLATION - Pure C
+// LIGHTWEIGHT SAM CORE (LOCAL)
 // ================================
 
-typedef struct {
-    char *task_type;
-    double success_rate;
-    void *learned_patterns;
-    void *performance_metrics;
-    time_t distillation_time;
-} DistilledKnowledge;
+SAM_t *SAM_init(int input_dim, int hidden_dim, int layers, int flags) {
+    (void)flags;
+    SAM_t *sam = (SAM_t *)calloc(1, sizeof(SAM_t));
+    if (!sam) return NULL;
+    sam->input_dim = input_dim;
+    sam->hidden_dim = hidden_dim;
+    sam->layers = layers;
+    sam->lr = 0.001L;
+    size_t weight_count = (size_t)input_dim * (size_t)hidden_dim;
+    sam->weights = (long double *)calloc(weight_count, sizeof(long double));
+    if (!sam->weights) {
+        free(sam);
+        return NULL;
+    }
+    for (size_t i = 0; i < weight_count; i++) {
+        sam->weights[i] = ((long double)rand() / (long double)RAND_MAX - 0.5L) * 0.01L;
+    }
+    return sam;
+}
 
-typedef struct {
-    DistilledKnowledge **knowledge_items;
-    size_t item_count;
-    size_t capacity;
+long double *SAM_forward(SAM_t *sam, long double *input, int steps) {
+    (void)steps;
+    if (!sam || !input) return NULL;
+    static __thread long double *output = NULL;
+    static __thread size_t output_cap = 0;
+    if (output_cap < (size_t)sam->hidden_dim) {
+        free(output);
+        output = (long double *)calloc((size_t)sam->hidden_dim, sizeof(long double));
+        output_cap = (size_t)sam->hidden_dim;
+    }
+    for (int i = 0; i < sam->hidden_dim; i++) {
+        long double acc = 0.0L;
+        for (int j = 0; j < sam->input_dim; j++) {
+            acc += sam->weights[(size_t)i * (size_t)sam->input_dim + (size_t)j] * input[j];
+        }
+        output[i] = tanhl(acc);
+    }
+    return output;
+}
 
-    // Knowledge fusion using SAM
-    SAM_t *fusion_model;
-} KnowledgeBase;
+void SAM_train(SAM_t *sam, long double *input, int steps, long double *target) {
+    (void)steps;
+    if (!sam || !input || !target) return;
+    long double *out = SAM_forward(sam, input, 1);
+    if (!out) return;
+    for (int i = 0; i < sam->hidden_dim; i++) {
+        long double err = target[i] - out[i];
+        for (int j = 0; j < sam->input_dim; j++) {
+            size_t idx = (size_t)i * (size_t)sam->input_dim + (size_t)j;
+            sam->weights[idx] += sam->lr * err * input[j];
+        }
+    }
+}
+
+void SAM_destroy(SAM_t *sam) {
+    if (!sam) return;
+    free(sam->weights);
+    free(sam);
+}
 
 // ================================
 // FORWARD DECLARATIONS
 // ================================
-
-// Define the orchestrator struct first
-typedef struct {
-    char *name;
-    SubmodelAgent **submodels;
-    size_t submodel_count;
-
-    // Message queues
-    SubmodelMessage **message_queue;
-    size_t queue_size;
-    size_t queue_capacity;
-    pthread_mutex_t queue_mutex;
-
-    // Knowledge distillation
-    KnowledgeBase *knowledge_base;
-
-    // Orchestration logic
-    SAM_t *orchestrator_brain;  // Uses SAM for decision making
-    NEAT_t **evolution_models;  // Uses NEAT for agent evolution
-
-    // Performance tracking
-    double *performance_history;
-    size_t history_length;
-} MultiAgentOrchestrator;
 
 void knowledge_base_free(KnowledgeBase *kb);
 void multi_agent_orchestrator_free(MultiAgentOrchestrator *orchestrator);
@@ -115,7 +111,7 @@ MultiAgentOrchestrator *create_multi_agent_system();
 
 // Research Agent - Uses web scraping capabilities
 typedef struct {
-    SubmodelAgent base;
+    SubmodelAgent_t base;
     // Research-specific state
     char **search_history;
     size_t history_count;
@@ -124,7 +120,7 @@ typedef struct {
 
 // Code Generation Agent - Uses transformer for code synthesis
 typedef struct {
-    SubmodelAgent base;
+    SubmodelAgent_t base;
     // Code-specific state
     Transformer_t *code_transformer;
     char **generated_code;
@@ -134,7 +130,7 @@ typedef struct {
 
 // Financial Analysis Agent - Uses NEAT for market modeling
 typedef struct {
-    SubmodelAgent base;
+    SubmodelAgent_t base;
     // Finance-specific state
     NEAT_t *market_model;
     double *portfolio_performance;
@@ -144,7 +140,7 @@ typedef struct {
 
 // Survival Agent - Uses C survival library
 typedef struct {
-    SubmodelAgent base;
+    SubmodelAgent_t base;
     // Survival-specific state
     double *threat_assessment;
     double survival_score;
@@ -154,7 +150,7 @@ typedef struct {
 
 // Meta Agent - Uses transformer for self-analysis
 typedef struct {
-    SubmodelAgent base;
+    SubmodelAgent_t base;
     // Meta-specific state
     Transformer_t *analysis_transformer;
     char **code_improvements;
@@ -269,7 +265,7 @@ int knowledge_base_add(KnowledgeBase *kb, DistilledKnowledge *knowledge) {
 
         // Run knowledge fusion through SAM
         long double *target_output = calloc(128, sizeof(long double)); // SAM output dimension
-        SAM_train(kb->fusion_model, &knowledge_input, 1, target_output);
+        SAM_train(kb->fusion_model, knowledge_input, 1, target_output);
 
         free(knowledge_input);
         free(target_output);
@@ -682,9 +678,9 @@ MultiAgentOrchestrator *multi_agent_orchestrator_create(const char *name) {
     return orchestrator;
 }
 
-int multi_agent_orchestrator_add_agent(MultiAgentOrchestrator *orchestrator, SubmodelAgent *agent) {
+int multi_agent_orchestrator_add_agent(MultiAgentOrchestrator *orchestrator, SubmodelAgent_t *agent) {
     orchestrator->submodels = realloc(orchestrator->submodels,
-                                     (orchestrator->submodel_count + 1) * sizeof(SubmodelAgent*));
+                                     (orchestrator->submodel_count + 1) * sizeof(SubmodelAgent_t*));
     if (!orchestrator->submodels) return -1;
 
     orchestrator->submodels[orchestrator->submodel_count++] = agent;
@@ -707,7 +703,7 @@ void *orchestration_thread(void *arg) {
         if (msg) {
             // Route message to appropriate agent
             for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                SubmodelAgent *agent = orchestrator->submodels[i];
+                SubmodelAgent_t *agent = orchestrator->submodels[i];
                 if (strcmp(msg->recipient, agent->name) == 0) {
                     agent->process_message(agent, msg);
                     break;
@@ -740,11 +736,11 @@ void *orchestration_thread(void *arg) {
                 }
 
                 // Run knowledge fusion through SAM
-                long double *fused_knowledge = SAM_forward(orchestrator->orchestrator_brain, &aggregated_knowledge, 1);
+                long double *fused_knowledge = SAM_forward(orchestrator->orchestrator_brain, aggregated_knowledge, 1);
 
                 // Distribute distilled knowledge to agents based on their capabilities
                 for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                    SubmodelAgent *agent = orchestrator->submodels[i];
+                    SubmodelAgent_t *agent = orchestrator->submodels[i];
 
                     // Check if agent can benefit from this knowledge
                     int relevant = 0;
@@ -769,7 +765,7 @@ void *orchestration_thread(void *arg) {
             } else {
                 // Fallback: simple knowledge distribution without SAM fusion
                 for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                    SubmodelAgent *agent = orchestrator->submodels[i];
+                    SubmodelAgent_t *agent = orchestrator->submodels[i];
                     if (agent->distill_knowledge) {
                         agent->distill_knowledge(agent, orchestrator->knowledge_base);
                     }
@@ -828,7 +824,7 @@ void multi_agent_orchestrator_free(MultiAgentOrchestrator *orchestrator) {
 
         for (size_t i = 0; i < orchestrator->submodel_count; i++) {
             // Agent cleanup based on agent type
-            SubmodelAgent *agent = orchestrator->submodels[i];
+            SubmodelAgent_t *agent = orchestrator->submodels[i];
             if (agent) {
                 // Free agent-specific resources
                 if (strcmp(agent->name, "Researcher") == 0) {
@@ -930,7 +926,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
     researcher->base.performance_score = 0.0;
     researcher->credibility_score = 0.8;
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent*)researcher);
+    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)researcher);
 
     // Code Writer Agent
     CodeWriterAgent *coder = malloc(sizeof(CodeWriterAgent));
@@ -944,7 +940,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
     coder->base.performance_score = 0.0;
     coder->code_quality_score = 0.85;
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent*)coder);
+    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)coder);
 
     // Add more agents here...
     // MoneyMakerAgent, SurvivalAgentSubmodel, MetaAgentSubmodel
@@ -963,7 +959,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
     financer->current_portfolio_value = 100000.0;
     financer->portfolio_performance = calloc(365, sizeof(double));
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent*)financer);
+    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)financer);
 
     // Survival Agent (System monitoring and contingency planning)
     SurvivalAgentSubmodel *survivor = malloc(sizeof(SurvivalAgentSubmodel));
@@ -980,7 +976,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
     survivor->threat_assessment = calloc(10, sizeof(double));
     survivor->threat_count = 10;
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent*)survivor);
+    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)survivor);
 
     // Meta Agent (System analysis and self-improvement)
     MetaAgentSubmodel *meta = malloc(sizeof(MetaAgentSubmodel));
@@ -995,7 +991,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
     meta->base.performance_score = 0.0;
     meta->system_health_score = 0.95;
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent*)meta);
+    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)meta);
 
     return orchestrator;
 }
@@ -1115,7 +1111,7 @@ int main() {
 
     // Test agent processing (simplified)
     for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-        SubmodelAgent *agent = orchestrator->submodels[i];
+        SubmodelAgent_t *agent = orchestrator->submodels[i];
         printf("   Agent: %s (%d capabilities)\n", agent->name, agent->capability_count);
     }
 

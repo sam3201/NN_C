@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 VENV_DIR="venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
 REQUIREMENTS_FILE="requirements.txt"
-SAM_SYSTEM="complete_sam_unified.py"
+SAM_SYSTEM="main.py"
 PORT=5004
 
 # Function to print colored output
@@ -98,7 +98,7 @@ if [ -f "$REQUIREMENTS_FILE" ]; then
 else
     print_warning "Requirements file not found: $REQUIREMENTS_FILE"
     print_status "Installing basic dependencies..."
-    pip install flask flask-socketio eventlet requests python-dotenv psutil
+    pip install flask flask-socketio eventlet requests python-dotenv psutil flask-socketio
 fi
 
 # Install additional system dependencies
@@ -174,16 +174,10 @@ fi
 
 # Check imports
 python3 -c "
-try:
-    import sys
-    sys.path.insert(0, '.')
-    from complete_sam_unified import UnifiedSAMSystem
-    print('✅ Main system imports successful')
-except ImportError as e:
-    print(f'❌ Import error: {e}')
-    exit(1)
-except Exception as e:
-    print(f'⚠️ Import warning: {e}')
+import sys
+sys.path.insert(0, '.')
+from SAM_AGI import CompleteSAMSystem
+print('✅ Main system imports successful')
 "
 
 # Check C extensions

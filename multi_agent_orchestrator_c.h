@@ -7,6 +7,23 @@
 #define MULTI_AGENT_ORCHESTRATOR_C_H
 
 #include <stddef.h>
+#include <pthread.h>
+
+typedef struct SAM_t {
+    int input_dim;
+    int hidden_dim;
+    int layers;
+    long double *weights;
+    long double lr;
+} SAM_t;
+typedef struct NEAT_t NEAT_t;
+typedef struct Transformer_t Transformer_t;
+
+// SAM core API (from libsam_core)
+SAM_t *SAM_init(int input_dim, int hidden_dim, int layers, int flags);
+long double *SAM_forward(SAM_t *sam, long double *input, int steps);
+void SAM_train(SAM_t *sam, long double *input, int steps, long double *target);
+void SAM_destroy(SAM_t *sam);
 
 // ================================
 // MESSAGE SYSTEM STRUCTURES
@@ -32,9 +49,7 @@ typedef struct {
 // AGENT INTERFACES
 // ================================
 
-typedef struct SubmodelAgentStruct SubmodelAgent_t;
-
-typedef struct {
+typedef struct SubmodelAgentStruct {
     char *name;
     char *capabilities[10];
     int capability_count;
@@ -49,6 +64,8 @@ typedef struct {
     double performance_score;
     int is_active;
 } SubmodelAgentStruct;
+
+typedef SubmodelAgentStruct SubmodelAgent_t;
 
 // ================================
 // KNOWLEDGE DISTILLATION
@@ -82,7 +99,7 @@ typedef struct {
     SubmodelMessage **message_queue;
     size_t queue_size;
     size_t queue_capacity;
-    void *queue_mutex; // pthread_mutex_t
+    pthread_mutex_t queue_mutex;
 
     // Knowledge distillation
     KnowledgeBase *knowledge_base;

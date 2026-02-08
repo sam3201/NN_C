@@ -8,6 +8,9 @@
 
 #include <stddef.h>
 
+typedef struct NEAT_t NEAT_t;
+typedef struct Transformer_t Transformer_t;
+
 // ================================
 // AGENT BASE STRUCTURE
 // ================================
@@ -28,21 +31,28 @@ typedef struct {
     AgentBase base;
     char **search_history;
     size_t history_count;
+    size_t history_capacity;
     double credibility_score;
+    char *current_search_query;
+    char **found_sources;
+    size_t source_count;
 } ResearcherAgent;
 
 typedef struct {
     AgentBase base;
-    void *code_transformer; // Transformer_t
+    Transformer_t *code_transformer;
     char **generated_code;
     size_t code_count;
     size_t code_capacity;
     double code_quality_score;
+    char *current_task;
+    char **code_patterns;
+    size_t pattern_count;
 } CodeWriterAgent;
 
 typedef struct {
     AgentBase base;
-    void *market_model; // NEAT_t
+    NEAT_t *market_model;
     double *portfolio_performance;
     size_t performance_count;
     double current_portfolio_value;
@@ -61,10 +71,11 @@ typedef struct {
 
 typedef struct {
     AgentBase base;
-    void *analysis_transformer; // Transformer_t
+    Transformer_t *analysis_transformer;
     char **code_improvements;
     size_t improvement_count;
     size_t improvement_capacity;
+    char *current_analysis_target;
     double system_health_score;
     char **identified_issues;
     size_t issue_count;

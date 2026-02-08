@@ -9,11 +9,8 @@
 #include <math.h>
 #include <time.h>
 
-// Use existing SAM framework components
-#include "ORGANIZED/UTILS/SAM/SAM/SAM.h"
-#include "ORGANIZED/UTILS/utils/NN/MUZE/muze_cortex.h"
-#include "ORGANIZED/UTILS/utils/NN/NEAT/NEAT.h"
-#include "ORGANIZED/UTILS/utils/NN/TRANSFORMER/TRANSFORMER.h"
+// Use available consciousness headers
+#include "consciousness_sam_integrated.c"
 
 // ================================
 // CONSCIOUSNESS MODULE - Using SAM Framework

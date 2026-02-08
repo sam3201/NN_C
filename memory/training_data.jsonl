@@ -1,2 +1,0 @@
-{"input": "Test error", "output": "--- a/test.py\n+++ b/test.py\n@@ -1 +1 @@\n-undefined_var\n+defined_var", "success": true, "tests_passed": true, "timestamp": "2026-02-07T00:48:30.760864", "execution_time": null, "metadata": {}}
-{"input": "test error", "output": "--- a/test.py\n+++ b/test.py\n@@ -1 +1 @@\nprint(\"test\")", "success": true, "tests_passed": true, "timestamp": "2026-02-07T00:51:44.367440", "execution_time": null, "metadata": {}}
