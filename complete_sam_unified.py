@@ -1461,9 +1461,9 @@ class MetaAgent:
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
         print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
-            print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
-            print("   📊 Final performance may still have some issues")
-            return False
+        print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
+        print("   📊 Final performance may still have some issues")
+        return False
 
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
@@ -2384,17 +2384,17 @@ Analyze this issue and provide your expert recommendation:"""
         # Apply solution based on type
         if solution_type == 'integration':
             return self._apply_integration_solution(issue, llm_response)
-        elif solution_type == 'configuration':
+            elif solution_type == 'configuration':
             return self._apply_configuration_solution(issue, llm_response)
-        elif solution_type == 'code_change':
+            elif solution_type == 'code_change':
             return self._apply_code_solution(issue, llm_response)
-        else:
+            else:
             print(f"   ⚠️ LLM suggested {solution_type} solution - requires manual intervention")
-            return False
-
+                return False
+        
         except Exception as e:
-            print(f"   ❌ Error applying LLM solution: {e}")
-            return False
+        print(f"   ❌ Error applying LLM solution: {e}")
+        return False
 
     def _apply_text_solution(self, issue, text_response):
         """Apply solution from text response (fallback)"""
