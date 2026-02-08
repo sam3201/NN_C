@@ -3761,7 +3761,14 @@ class UnifiedSAMSystem:
             # Initialize goal management system
             print("  - Creating goal management system...")
             self.goal_manager = GoalManager()
-            create_conversationalist_tasks(self.goal_manager)
+            try:
+                create_conversationalist_tasks(self.goal_manager)
+            except TypeError:
+                tasks = create_conversationalist_tasks()
+                if tasks:
+                    for task in tasks:
+                        self.goal_manager.add_goal(task.get('description', 'Conversationalist Task'),
+                                                   priority=task.get('priority', 'normal'))
             self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager)
             print("  ✅ Goal management system initialized")
 
@@ -4086,6 +4093,17 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
                 'timestamp': datetime.now().isoformat()
+            })
+
+        @self.app.route('/api/health')
+        def health_check():
+            """Lightweight health check"""
+            return jsonify({
+                'status': 'ok',
+                'timestamp': time.time(),
+                'c_core': self.system_metrics.get('c_core_status', 'unknown'),
+                'python_orchestration': self.system_metrics.get('python_orchestration_status', 'unknown'),
+                'web_interface': self.system_metrics.get('web_interface_status', 'unknown')
             })
                 
         @self.app.route('/api/orchestrator/status')

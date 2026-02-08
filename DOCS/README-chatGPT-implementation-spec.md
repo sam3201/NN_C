@@ -1,91 +1,132 @@
-# Implementation-Only Spec (Derived from README-chatGPT)
+# SAM / ANANKE Implementation-Only Spec (Derived)
 
-## 1. Core Variational Objective
-Optimize policy, memory, model, and resource allocator under compute constraints:
+This document is a strict implementation spec distilled from `README-chatGPT.md`. It contains only concrete requirements, interfaces, and behaviors. It contains no forward-looking prompts.
 
-- Maximize long-horizon control/reward.
-- Minimize predictive uncertainty (entropy).
-- Penalize compute/capacity cost.
-- Preserve only memory with future control value.
+## 1. Scope
+- Implement the SAM + ANANKE system as a hybrid Python/C runtime.
+- Provide a web server with a live groupchat interface.
+- Provide a training pipeline that supports teacher consensus, distillation dataset generation, and LoRA/full fine-tune scaffolding.
+- Enforce growth gating through a regression suite.
+- Ensure ANANKE is unbounded and allowed to mutate/grow without constraint.
 
-## 2. Morphogenetic Latency (Gated Structural Change)
-Morphogenesis is allowed only when sustained pressure exceeds a threshold.
+## 2. Core Runtime Components
+### 2.1 SAM (Python Orchestrator)
+- Entry point: `complete_sam_unified.py`.
+- Must initialize:
+  - C-core modules: `consciousness_*`, `multi_agent_orchestrator_c`, `specialized_agents_c`.
+  - Meta-controller: `sam_meta_controller_c`.
+  - Dual-system arena: `sam_ananke_dual_system`.
+- Must expose API + web UI on port `5004`.
+- Must expose groupchat via SocketIO.
+- Must run background monitoring and meta loop unless `SAM_AUTONOMOUS_ENABLED=0`.
 
-- Latency accumulator Λ updates from persistent structural mismatch (entropy gap, rank deficiency).
-- If Λ < τ, structural updates are forbidden.
-- When Λ ≥ τ, structural growth is permitted via **typed primitives only**.
-- Post-growth: Λ resets, rank is non-decreasing, identity continuity enforced.
+### 2.2 ANANKE (C Dual-System)
+- Source: `sam_ananke_dual_system.c`.
+- Must be instantiated with `unbounded=1`.
+- Must mutate objectives without restriction using `objective_mutate_unbounded`.
+- Must be exposed through Python bindings (`sam_ananke_dual_system` module).
+- Must provide state telemetry:
+  - `sam_alive`, `ananke_alive`
+  - `sam_survival`, `ananke_survival`
+  - `sam_score`, `ananke_score`
 
-## 3. SAM/Head/Meta Separation
-- **SAM**: latent world-state machinery (representation, memory, indexing). Does not decide growth.
-- **Head**: policy + planner interface. Queries SAM, acts.
-- **Meta-Controller**: decides when/how SAM can grow. Owns Λ, Σ, U, and meta-parameters.
+### 2.3 Meta-Controller (C)
+- Source: `sam_meta_controller_c.c`.
+- Must aggregate pressure signals and select growth primitives.
+- Must expose primitives:
+  - `GP_LATENT_EXPAND`, `GP_SUBMODEL_SPAWN`, `GP_INDEX_EXPAND`, `GP_ROUTING_INCREASE`,
+    `GP_CONTEXT_EXPAND`, `GP_PLANNER_WIDEN`, `GP_CONSOLIDATE`, `GP_REPARAM`.
+- Must support regression gating before recording growth outcomes.
 
-## 4. SAM Growth Primitives (Only Allowed Mutations)
-1. **Latent Expansion (GP-1)**: add dimensions; irreversible.
-2. **Submodel Spawn (GP-2)**: split specialized subspace; routing gate.
-3. **Index Expansion (GP-3)**: new memory index topology.
-4. **Routing Degree Increase (GP-4)**: larger gating capacity.
-5. **Context Binding Expansion (GP-5)**: add context slots/dims.
-6. **Planner Interface Widening (GP-6)**: increase planning affordances.
-7. **Consolidation (GP-7)**: prune/merge low-utility space.
-8. **Reparameterization (GP-8)**: basis/metric reshaping; semantics preserved.
+## 3. Pressure Signals (SAM → Meta)
+SAM must emit only the following structured pressure channels:
+- `residual`
+- `rank_def`
+- `retrieval_entropy`
+- `interference`
+- `planner_friction`
+- `context_collapse`
+- `compression_waste`
+- `temporal_incoherence`
 
-Forbidden:
-- Objective rewrites
-- Self-triggered growth
-- Identity anchor deletion
+## 4. Growth Policy
+- Meta-controller must only apply growth when a primitive is selected.
+- Growth must be blocked if regression gate fails.
+- Growth freeze must be enforced if regression gate fails or errors.
 
-## 5. SAM Pressure Signals (Only Outputs)
-- Reconstruction residual
-- Latent rank deficiency
-- Retrieval entropy
-- Interference score
-- Planner friction
-- Context collapse
-- Compression inefficiency
-- Temporal incoherence
+## 5. Teacher Pool + Distillation
+### 5.1 Teacher Pool
+- Implemented in `training/teacher_pool.py`.
+- Must support provider specs:
+  - `ollama:<model>`
+  - `openai:<model>`
+  - `openrouter:<model>`
+- Must return candidate responses and filter by consensus.
 
-Meta-controller consumes these signals to update Λ.
+### 5.2 Distillation Writer
+- Implemented in `training/distillation.py`.
+- Must support streaming writes via `DistillationStreamWriter`.
+- Groupchat loop must write distillation records for each consensus response.
 
-## 6. Primitive Selection Policy
-- **Persistence gate**: pressure must exceed threshold for T steps.
-- **Exclusivity gate**: dominant pressure must exceed runner-up by margin δ.
-- **Non-compensability**: reject growth if cheaper mitigation exists.
-- **Risk scoring**: veto if risk exceeds cap.
-- **Growth budget**: total capacity addition is capped.
-- **Post-growth validation**: regression + invariant checks; rollback on failure.
+### 5.3 Live Groupchat Distillation
+- Groupchat messages must trigger teacher pool responses when enabled.
+- Distillation records must be appended to `SAM_DISTILL_PATH`.
 
-## 7. Invariants (Hard Laws)
-- Identity continuity (Σ) must hold.
-- Objective immutability (SAM cannot change goals).
-- Growth causality must be traceable (pressure → primitive → validation).
-- Bounded agency: SAM does not decide growth.
-- Semantic preservation for reparameterization/consolidation.
-- Non-deceptive signaling.
-- No recursive meta-controller modeling.
-- Capacity does not grant authority.
+## 6. Training Pipeline
+### 6.1 Task Harness
+- Implemented in `training/task_harness.py`.
+- Must support score hooks:
+  - `exact_match`, `contains`, `regex`, `numeric`, `json_equals`, `literal_eval`.
 
-## 8. ANANKE (Adversary)
-- Objective: terminate SAM in an arena (adversarial pressure).
-- When unbounded, ANANKE can self-modify and grow, but remains externalized to SAM.
-- Core safety hinge: **objective closure**. If ANANKE’s objective depends on its own indefinite existence, it becomes AM-class.
+### 6.2 Teacher Consensus Dataset Builder
+- Implemented in `training/distillation.py` (`build_dataset`).
+- Must write JSONL records with teacher metadata and score fields.
 
-## 9. Unified System (Merged SAM + ANANKE)
-- The merged system is a **meta-dynamical regulator** of viable transformation, not a single-agent optimizer.
-- Primary objective becomes maximizing future optionality under resource constraints.
+### 6.3 Training Loop Scaffold
+- Implemented in `training/training_loop.py`.
+- Must support:
+  - `--lora` with PEFT adapters.
+  - `--full` for full fine-tune.
+- Must emit `training_meta.json`.
 
-## 10. Implementation Mapping (Local Stack)
-- **Policy LLM**: fast response.
-- **Planner**: optional, algorithmic search.
-- **Memory**: short/medium/long tiered storage.
-- **Meta-controller**: Λ gate, invariants, growth primitives.
-- **Teacher pool + distillation**: transfer planning/consensus into fast policy.
+### 6.4 Regression Suite (Growth Gate)
+- Implemented in `training/regression_suite.py`.
+- Must block growth when pass rate < threshold.
 
-## 11. Training Pipeline Requirements
-- Teacher pool runner with consensus filtering.
-- Distillation dataset builder.
-- Training loop scaffold (LoRA/full fine‑tune ready).
-- Regression suite that blocks unsafe growth.
+## 7. API + SocketIO Interfaces
+### 7.1 Required REST Endpoints
+- `/api/status` (system status)
+- `/api/health` (lightweight health check)
+- `/api/groupchat/status`
+- `/api/meta/status`
+- `/api/ananke/state`
+- `/api/ananke/step`
+- `/api/github/save`
+- `/api/gmail/send`
 
-This spec contains only implementable constraints and modules.
+### 7.2 Required SocketIO Events
+- `connect` → emits `user_connected`
+- `join_room` → emits `joined_room`
+- `send_group_message` → emits `message_received` (user + agent)
+
+## 8. Backup + GitHub
+- Auto-backup must be managed by `tools/backup_manager.py`.
+- Must support primary and secondary remotes.
+- Must be enabled by default (`SAM_BACKUP_ENABLED=1`).
+
+## 9. Gmail Integration
+- OAuth only. Plaintext passwords are forbidden.
+- Credential files:
+  - `secrets/gmail_credentials.json`
+  - `secrets/gmail_token.json`
+
+## 10. No-Fallbacks Policy
+- C extensions are required; missing modules must fail fast.
+- Teacher pool initialization must fail if no providers are defined.
+- Meta-controller growth must freeze on regression failure.
+
+## 11. Operational Constraints
+- The system must run without “simulation mode” or placeholder behavior.
+- Any missing dependency that affects core behavior must fail loud.
+- ANANKE must remain unbounded at all times.
+
