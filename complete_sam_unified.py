@@ -2384,16 +2384,16 @@ Analyze this issue and provide your expert recommendation:"""
         # Apply solution based on type
         if solution_type == 'integration':
             return self._apply_integration_solution(issue, llm_response)
-            elif solution_type == 'configuration':
+        elif solution_type == 'configuration':
             return self._apply_configuration_solution(issue, llm_response)
-            elif solution_type == 'code_change':
+        elif solution_type == 'code_change':
             return self._apply_code_solution(issue, llm_response)
-            else:
+        else:
             print(f"   ⚠️ LLM suggested {solution_type} solution - requires manual intervention")
-                return False
-        
+            return False
+
         except Exception as e:
-        print(f"   ❌ Error applying LLM solution: {e}")
+            print(f"   ❌ Error applying LLM solution: {e}")
         return False
 
     def _apply_text_solution(self, issue, text_response):
@@ -4684,8 +4684,10 @@ class UnifiedSAMSystem:
             """Process slash commands with comprehensive functionality"""
             parts = message.strip().split()
             cmd = parts[0].lower()
-    args = parts[1:] if len(parts) > 1 else []
-    return """🤖 **SAM 2.0 Unified Complete System Commands:**
+            args = parts[1:] if len(parts) > 1 else []
+
+            if cmd == '/help':
+                return """🤖 **SAM 2.0 Unified Complete System Commands:**
 
     📋 **Available Commands:**
     • `/help` - Show this help message
@@ -4745,85 +4747,85 @@ elif cmd == '/status':
 
                 status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
                 available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
-            status_msg += f"**Currently Available:** {available_count}\n"
+                status_msg += f"**Currently Available:** {available_count}\n"
 
-            # Add system metrics
-            status_msg += f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
-            status_msg += f"**Learning Events:** {self.system_metrics['learning_events']}\n"
-            status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
+                # Add system metrics
+                status_msg += f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
+                status_msg += f"**Learning Events:** {self.system_metrics['learning_events']}\n"
+                status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
 
-            return status_msg
+                return status_msg
 
-        elif cmd == '/agents':
-            agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
+            elif cmd == '/agents':
+                agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
 
-            # Group agents by type
-            sam_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Neural Network']
-            llm_agents = [a for a in self.agent_configs.values() if a['type'] == 'LLM']
-            sam_core_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Agent']
+                # Group agents by type
+                sam_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Neural Network']
+                llm_agents = [a for a in self.agent_configs.values() if a['type'] == 'LLM']
+                sam_core_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Agent']
 
-            if sam_agents:
-                agents_msg += "**🧠 SAM Neural Networks:**\n"
-                for agent in sam_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-                agents_msg += "\n"
+                if sam_agents:
+                    agents_msg += "**🧠 SAM Neural Networks:**\n"
+                    for agent in sam_agents:
+                        status = "✅" if agent['status'] == 'available' else "⚠️"
+                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+                    agents_msg += "\n"
 
-            if llm_agents:
-                agents_msg += "**🤖 LLM Models:**\n"
-                for agent in llm_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-                agents_msg += "\n"
+                if llm_agents:
+                    agents_msg += "**🤖 LLM Models:**\n"
+                    for agent in llm_agents:
+                        status = "✅" if agent['status'] == 'available' else "⚠️"
+                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+                    agents_msg += "\n"
 
-            if sam_core_agents:
-                agents_msg += "**⚡ SAM Core Agents:**\n"
-                for agent in sam_core_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
-                    agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
+                if sam_core_agents:
+                    agents_msg += "**⚡ SAM Core Agents:**\n"
+                    for agent in sam_core_agents:
+                        status = "✅" if agent['status'] == 'available' else "⚠️"
+                        connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                        agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
 
-            return agents_msg
+                return agents_msg
 
-        elif cmd == '/connect' and len(parts) > 1:
-            agent_id = parts[1]
-            if agent_id in self.agent_configs and agent_id not in self.connected_agents:
-                agent_config = self.agent_configs[agent_id]
-                if agent_config['status'] == 'available':
-                    self.connected_agents[agent_id] = {
-                            'config': agent_config,
-                            'connected_at': time.time(),
-                            'message_count': 0,
-                            'muted': False
-                            }
-                    return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
+            elif cmd == '/connect' and len(parts) > 1:
+                agent_id = parts[1]
+                if agent_id in self.agent_configs and agent_id not in self.connected_agents:
+                    agent_config = self.agent_configs[agent_id]
+                    if agent_config['status'] == 'available':
+                        self.connected_agents[agent_id] = {
+                                'config': agent_config,
+                                'connected_at': time.time(),
+                                'message_count': 0,
+                                'muted': False
+                                }
+                        return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
+                    else:
+                        return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
                 else:
-                    return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
-            else:
-                available_agents = [aid for aid, acfg in self.agent_configs.items() if acfg['status'] == 'available' and aid not in self.connected_agents]
-                return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
+                    available_agents = [aid for aid, acfg in self.agent_configs.items() if acfg['status'] == 'available' and aid not in self.connected_agents]
+                    return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
 
-        elif cmd == '/disconnect' and len(parts) > 1:
-            agent_id = parts[1]
-            if agent_id in self.connected_agents:
-                agent_name = self.connected_agents[agent_id]['config']['name']
-                del self.connected_agents[agent_id]
-                return f"❌ **{agent_name} disconnected.**\n\nAgent removed from active conversation pool."
-            else:
-                return f"❌ Agent '{agent_id}' is not connected."
+            elif cmd == '/disconnect' and len(parts) > 1:
+                agent_id = parts[1]
+                if agent_id in self.connected_agents:
+                    agent_name = self.connected_agents[agent_id]['config']['name']
+                    del self.connected_agents[agent_id]
+                    return f"❌ **{agent_name} disconnected.**\n\nAgent removed from active conversation pool."
+                else:
+                    return f"❌ Agent '{agent_id}' is not connected."
 
-        elif cmd == '/clone' and len(parts) >= 2:
-            base_agent_id = parts[1]
-            custom_name = ' '.join(parts[2:]) if len(parts) > 2 else None
+            elif cmd == '/clone' and len(parts) >= 2:
+                base_agent_id = parts[1]
+                custom_name = ' '.join(parts[2:]) if len(parts) > 2 else None
 
-            if base_agent_id in self.connected_agents:
-                base_agent = self.connected_agents[base_agent_id]['config']
+                if base_agent_id in self.connected_agents:
+                    base_agent = self.connected_agents[base_agent_id]['config']
 
-                # Generate unique ID for new agent
-                clone_id = f"{base_agent_id}_clone_{int(time.time())}"
-                clone_name = custom_name or f"{base_agent['name']}-Clone"
+                    # Generate unique ID for new agent
+                    clone_id = f"{base_agent_id}_clone_{int(time.time())}"
+                    clone_name = custom_name or f"{base_agent['name']}-Clone"
 
                 # Create cloned agent configuration
                 cloned_agent = {
@@ -4853,8 +4855,8 @@ elif cmd == '/status':
             else:
                 return f"❌ Cannot clone agent '{base_agent_id}'. Agent not connected."
 
-        elif cmd == '/spawn' and len(parts) >= 3:
-            agent_type = parts[1]
+            elif cmd == '/spawn' and len(parts) >= 3:
+                agent_type = parts[1]
             custom_name = parts[2]
             personality = ' '.join(parts[3:]) if len(parts) > 3 else "helpful, intelligent, conversational"
 
@@ -4910,21 +4912,21 @@ elif cmd == '/status':
 
         elif cmd == '/start':
             # Start automatic agent conversations
-            self.auto_conversation_active = True
-            return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
+                self.auto_conversation_active = True
+                return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
 
-        elif cmd == '/stop':
-            # Stop automatic agent conversations
-            self.auto_conversation_active = False
-            return "⏸️ **Automatic agent conversations stopped.**\n\nAgents will only respond to direct messages."
+            elif cmd == '/stop':
+                # Stop automatic agent conversations
+                self.auto_conversation_active = False
+                return "⏸️ **Automatic agent conversations stopped.**\n\nAgents will only respond to direct messages."
 
-        elif cmd == '/clear':
-            # This would clear conversation history in a full implementation
-            return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
+            elif cmd == '/clear':
+                # This would clear conversation history in a full implementation
+                return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
-        # Research, code, and finance commands (existing)
-    elif cmd == '/research':
-        query = ' '.join(args) if args else 'current AI developments'
+            # Research, code, and finance commands (existing)
+        elif cmd == '/research':
+            query = ' '.join(args) if args else 'current AI developments'
             try:
                 # Add timeout and error handling for C library call
                 import threading
@@ -4952,8 +4954,8 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Research failed: {str(e)}"
 
-        elif cmd == '/code':
-            task = ' '.join(args) if args else 'implement a simple calculator'
+            elif cmd == '/code':
+                task = ' '.join(args) if args else 'implement a simple calculator'
             try:
                 # Add timeout and error handling for C library call
                 import threading
@@ -4981,8 +4983,8 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Code generation failed: {str(e)}"
 
-        elif cmd == '/finance':
-            query = ' '.join(args) if args else 'current market trends'
+            elif cmd == '/finance':
+                query = ' '.join(args) if args else 'current market trends'
             try:
                 # Add timeout and error handling for C library call
                 import threading
@@ -5010,9 +5012,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Financial analysis failed: {str(e)}"
 
-        # Code modification commands
-    elif cmd == '/websearch' and len(args) > 0:
-        query = ' '.join(args)
+            # Code modification commands
+        elif cmd == '/websearch' and len(args) > 0:
+            query = ' '.join(args)
             try:
                 if sam_web_search_available:
                     search_result = search_web_with_sam(query)
@@ -5022,28 +5024,28 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Web search failed: {str(e)}"
 
-        elif cmd == '/modify-code' and len(args) >= 3:
-            if not sam_code_modifier_available:
-                return "❌ Code modification system not available"
+            elif cmd == '/modify-code' and len(args) >= 3:
+                if not sam_code_modifier_available:
+                    return "❌ Code modification system not available"
 
-            # Parse arguments: file old_code new_code [description]
-            filepath = args[0]
-            old_code = args[1]
-            new_code = ' '.join(args[2:]) if len(args) > 3 else args[2]
-            description = ' '.join(args[3:]) if len(args) > 3 else "SAM autonomous code modification"
+                # Parse arguments: file old_code new_code [description]
+                filepath = args[0]
+                old_code = args[1]
+                new_code = ' '.join(args[2:]) if len(args) > 3 else args[2]
+                description = ' '.join(args[3:]) if len(args) > 3 else "SAM autonomous code modification"
 
-            try:
-                result = modify_code_safely(filepath, old_code, new_code, description)
-                if result['success']:
-                    return f"✅ **Code Modified Successfully**\n\nFile: {filepath}\nDescription: {description}\nBackup: {result['backup_path']}\nLines Changed: {result['lines_changed']}"
-                else:
-                    return f"❌ **Code Modification Failed**\n\n{result['message']}"
-            except Exception as e:
-                return f"❌ Code modification error: {str(e)}"
+                try:
+                    result = modify_code_safely(filepath, old_code, new_code, description)
+                    if result['success']:
+                        return f"✅ **Code Modified Successfully**\n\nFile: {filepath}\nDescription: {description}\nBackup: {result['backup_path']}\nLines Changed: {result['lines_changed']}"
+                    else:
+                        return f"❌ **Code Modification Failed**\n\n{result['message']}"
+                except Exception as e:
+                    return f"❌ Code modification error: {str(e)}"
 
-        elif cmd == '/analyze-code':
-            if not sam_code_modifier_available:
-                return "❌ Code analysis system not available"
+            elif cmd == '/analyze-code':
+                if not sam_code_modifier_available:
+                    return "❌ Code analysis system not available"
 
             try:
                 analysis = analyze_codebase()
@@ -5067,9 +5069,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Code analysis failed: {str(e)}"
 
-        elif cmd == '/code-history':
-            if not sam_code_modifier_available:
-                return "❌ Code modification system not available"
+            elif cmd == '/code-history':
+                if not sam_code_modifier_available:
+                    return "❌ Code modification system not available"
 
             try:
                 analysis = analyze_codebase()
@@ -5089,9 +5091,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ History retrieval failed: {str(e)}"
 
-        elif cmd == '/rollback' and len(args) > 0:
-            if not sam_code_modifier_available:
-                return "❌ Code modification system not available"
+            elif cmd == '/rollback' and len(args) > 0:
+                if not sam_code_modifier_available:
+                    return "❌ Code modification system not available"
 
             backup_file = args[0]
             try:
@@ -5122,19 +5124,19 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Rollback error: {str(e)}"
 
-        # Gmail integration commands
-    elif cmd == '/send-email' and len(args) >= 2:
-        if not sam_gmail_available:
-            return "❌ Gmail integration not available"
-
-        to_email = args[0]
-            subject = ' '.join(args[1:])
-            # Prompt for body since email needs content
-            return f"📧 **Email Setup**\n\nTo: {to_email}\nSubject: {subject}\n\nPlease provide the email body using the API endpoint `/api/gmail/send` with JSON payload containing 'to_email', 'subject', 'body', and optional 'attachments'."
-
-        elif cmd == '/schedule-email' and len(args) >= 3:
+            # Gmail integration commands
+        elif cmd == '/send-email' and len(args) >= 2:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
+
+            to_email = args[0]
+                subject = ' '.join(args[1:])
+                # Prompt for body since email needs content
+                return f"📧 **Email Setup**\n\nTo: {to_email}\nSubject: {subject}\n\nPlease provide the email body using the API endpoint `/api/gmail/send` with JSON payload containing 'to_email', 'subject', 'body', and optional 'attachments'."
+
+            elif cmd == '/schedule-email' and len(args) >= 3:
+                if not sam_gmail_available:
+                    return "❌ Gmail integration not available"
 
             to_email = args[0]
             subject = args[1]
@@ -5160,9 +5162,9 @@ elif cmd == '/status':
             except Exception as e:
                 return f"❌ Report error: {str(e)}"
 
-        elif cmd == '/gmail-status':
-            if not sam_gmail_available:
-                return "❌ Gmail integration not available"
+            elif cmd == '/gmail-status':
+                if not sam_gmail_available:
+                    return "❌ Gmail integration not available"
 
             status_info = "📧 **SAM Gmail Integration Status**\n\n"
             status_info += f"Account: sam.ai.system.agi@gmail.com\n"
@@ -5201,25 +5203,25 @@ elif cmd == '/status':
 
         commit_message = ' '.join(args) if args else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
-            try:
-                result = save_sam_to_github(commit_message)
+                try:
+                    result = save_sam_to_github(commit_message)
                 if result['success']:
                     return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
                 else:
                     return f"❌ **GitHub Save Failed**\n\n{result.get('error', 'Unknown error')}"
-            except Exception as e:
-                return f"❌ GitHub save error: {str(e)}"
+                except Exception as e:
+                    return f"❌ GitHub save error: {str(e)}"
 
-        elif cmd == '/github-status':
-            if not sam_github_available:
-                return "❌ GitHub integration not available"
+            elif cmd == '/github-status':
+                if not sam_github_available:
+                    return "❌ GitHub integration not available"
 
-            status_info = "🐙 **SAM GitHub Integration Status**\n\n"
-            status_info += f"Repository: samaisystemagi/NN_C\n"
-            status_info += f"Token: {'Configured' if os.getenv('GITHUB_TOKEN') else 'Not configured'}\n\n"
+                status_info = "🐙 **SAM GitHub Integration Status**\n\n"
+                status_info += f"Repository: samaisystemagi/NN_C\n"
+                status_info += f"Token: {'Configured' if os.getenv('GITHUB_TOKEN') else 'Not configured'}\n\n"
 
-            try:
-                test_result = test_github_connection()
+                try:
+                    test_result = test_github_connection()
                 if test_result['success']:
                     status_info += "✅ Connection: OK\n"
                     status_info += "📝 Repository: Accessible\n"
