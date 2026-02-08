@@ -37,7 +37,7 @@ def wait_for_health(url: str, timeout_s: int = 60) -> bool:
     return False
 
 
-def run_groupchat(messages):
+def run_groupchat(messages, wait_s: int = 35):
     try:
         import socketio
     except Exception as exc:
@@ -45,13 +45,32 @@ def run_groupchat(messages):
 
     sio = socketio.Client(logger=False, engineio_logger=False)
     received = []
+    user_info = {"id": None}
+    joined = {"ok": False}
+
+    @sio.on('user_connected')
+    def on_user_connected(data):
+        user = data.get('user') if isinstance(data, dict) else None
+        if user:
+            user_info["id"] = user.get('id')
 
     @sio.on('message_received')
     def on_message(data):
         received.append(data)
 
-    sio.connect('http://localhost:5004')
-    user_id = sio.sid
+    @sio.on('joined_room')
+    def on_joined_room(_data):
+        joined["ok"] = True
+
+    sio.connect('http://localhost:5004', wait_timeout=20)
+
+    deadline = time.time() + 10
+    while time.time() < deadline and not user_info["id"]:
+        time.sleep(0.1)
+    if not user_info["id"]:
+        user_info["id"] = sio.sid
+
+    user_id = user_info["id"]
     room_id = 'soak-room'
     sio.emit('join_room', {
         'user_id': user_id,
@@ -60,6 +79,10 @@ def run_groupchat(messages):
         'agent_type': 'sam'
     })
 
+    deadline = time.time() + 5
+    while time.time() < deadline and not joined["ok"]:
+        time.sleep(0.1)
+
     for msg in messages:
         sio.emit('send_group_message', {
             'user_id': user_id,
@@ -67,20 +90,19 @@ def run_groupchat(messages):
             'message': msg
         })
         time.sleep(3)
-
-    time.sleep(3)
+    time.sleep(wait_s)
     sio.disconnect()
     return received
 
 
 def main():
-    os.environ.setdefault('SAM_TEACHER_POOL_ENABLED', '1')
-    os.environ.setdefault('SAM_TEACHER_POOL', 'ollama:mistral:latest')
-    os.environ.setdefault('SAM_TEACHER_N_PER', '1')
-    os.environ.setdefault('SAM_TEACHER_MIN_SIM', '0.72')
-    os.environ.setdefault('SAM_TEACHER_MIN_VOTES', '1')
-    os.environ.setdefault('SAM_DISTILL_PATH', 'training/distilled/groupchat.jsonl')
-    os.environ.setdefault('SAM_AUTONOMOUS_ENABLED', '0')
+    os.environ['SAM_TEACHER_POOL_ENABLED'] = '1'
+    os.environ['SAM_TEACHER_POOL'] = 'ollama:qwen2.5-coder:7b'
+    os.environ['SAM_TEACHER_N_PER'] = '1'
+    os.environ['SAM_TEACHER_MIN_SIM'] = '0.72'
+    os.environ['SAM_TEACHER_MIN_VOTES'] = '1'
+    os.environ['SAM_DISTILL_PATH'] = 'training/distilled/groupchat.jsonl'
+    os.environ['SAM_AUTONOMOUS_ENABLED'] = '0'
 
     server_proc = mp.Process(target=run_server)
     server_proc.start()
