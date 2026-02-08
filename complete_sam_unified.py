@@ -28,6 +28,7 @@ import random
 import string
 import platform
 import psutil
+from contextlib import contextmanager
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -46,6 +47,55 @@ import specialized_agents_c
 import sam_meta_controller_c
 import sam_ananke_dual_system
 from training.regression_suite import run_regression_suite
+from training.teacher_pool import TeacherPool, build_provider, similarity
+from training.distillation import DistillationStreamWriter
+from tools.backup_manager import BackupManager
+
+# Optional integrations
+try:
+    from sam_web_search import initialize_sam_web_search, search_web_with_sam, SAM_WEB_SEARCH_AVAILABLE
+except Exception:
+    initialize_sam_web_search = None
+    search_web_with_sam = None
+    SAM_WEB_SEARCH_AVAILABLE = False
+
+try:
+    from sam_code_modifier import initialize_sam_code_modifier, analyze_codebase, modify_code_safely, SAM_CODE_MODIFIER_AVAILABLE
+except Exception:
+    initialize_sam_code_modifier = None
+    analyze_codebase = None
+    modify_code_safely = None
+    SAM_CODE_MODIFIER_AVAILABLE = False
+
+try:
+    from sam_github_integration import (
+        initialize_sam_github,
+        test_github_connection,
+        save_to_github,
+        get_recent_commits,
+        SAM_GITHUB_AVAILABLE,
+    )
+except Exception:
+    initialize_sam_github = None
+    test_github_connection = None
+    save_to_github = None
+    get_recent_commits = None
+    SAM_GITHUB_AVAILABLE = False
+
+try:
+    from sam_gmail_integration import initialize_sam_gmail, send_sam_email, schedule_sam_email, SAM_GMAIL_AVAILABLE
+except Exception:
+    initialize_sam_gmail = None
+    send_sam_email = None
+    schedule_sam_email = None
+    SAM_GMAIL_AVAILABLE = False
+
+# Integration availability flags (module-level defaults)
+google_drive_available = False
+sam_web_search_available = SAM_WEB_SEARCH_AVAILABLE
+sam_code_modifier_available = SAM_CODE_MODIFIER_AVAILABLE
+sam_gmail_available = SAM_GMAIL_AVAILABLE
+sam_github_available = SAM_GITHUB_AVAILABLE
 print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
@@ -104,6 +154,13 @@ def shutdown_aware_operation(operation_func, *args, **kwargs):
     except Exception as e:
         print(f"⚠️ Operation failed: {e}")
         return None
+
+
+@contextmanager
+def shutdown_guard(label: str):
+    if is_shutting_down():
+        raise InterruptedError(f"Shutdown in progress: {label}")
+    yield
 
 def initate_shutdown():
     """Initiate system shutdown"""
@@ -2273,6 +2330,12 @@ class UnifiedSAMSystem:
         self.agent_configs = {}
         self.connected_agents = {}
         self._agent_status_cache = {}  # Add agent status cache
+        self.connected_users = {}
+        self.conversation_rooms = {}
+        self.active_conversations = []
+        self.socketio_available = False
+        self.web_search_enabled = False
+        self.google_drive_available = False
 
         # System metrics (initialize early before web interface)
         self.system_metrics = {
@@ -2320,9 +2383,63 @@ class UnifiedSAMSystem:
             "SAM_REGRESSION_TASKS",
             str(self.project_root / "training/tasks/default_tasks.jsonl")
         )
-        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:mistral:latest")
+        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b")
         self.regression_min_pass = float(os.getenv("SAM_REGRESSION_MIN_PASS", "0.7"))
         self.meta_growth_freeze = False
+
+        # Teacher pool + distillation pipeline (live groupchat)
+        self.teacher_pool_enabled = os.getenv("SAM_TEACHER_POOL_ENABLED", "1") == "1"
+        self.teacher_specs = [
+            spec.strip() for spec in os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest").split(",")
+            if spec.strip()
+        ]
+        self.teacher_n_per = int(os.getenv("SAM_TEACHER_N_PER", "1"))
+        self.teacher_min_similarity = float(os.getenv("SAM_TEACHER_MIN_SIM", "0.72"))
+        self.teacher_min_votes = int(os.getenv("SAM_TEACHER_MIN_VOTES", "1"))
+        self.teacher_temperature = float(os.getenv("SAM_TEACHER_TEMP", "0.2"))
+        self.teacher_max_tokens = int(os.getenv("SAM_TEACHER_MAX_TOKENS", "512"))
+        self.teacher_timeout_s = int(os.getenv("SAM_TEACHER_TIMEOUT_S", "60"))
+        self.distill_output = os.getenv(
+            "SAM_DISTILL_PATH",
+            str(self.project_root / "training/distilled/groupchat.jsonl"),
+        )
+        self.distill_include_candidates = os.getenv("SAM_DISTILL_INCLUDE_CANDIDATES", "0") == "1"
+        self.teacher_pool = None
+        self.distill_writer = None
+        self.teacher_pool_lock = threading.Lock()
+
+        if self.teacher_pool_enabled:
+            self._init_teacher_pool()
+
+        # Auto-backup manager (git push to multiple remotes)
+        self.backup_enabled = os.getenv("SAM_BACKUP_ENABLED", "1") == "1"
+        self.backup_required = os.getenv("SAM_BACKUP_REQUIRED", "0") == "1"
+        self.backup_primary = os.getenv("SAM_BACKUP_REMOTE_PRIMARY", "origin")
+        self.backup_secondary = os.getenv("SAM_BACKUP_REMOTE_SECONDARY") or None
+        if not self.backup_secondary:
+            self.backup_secondary = self._detect_secondary_remote(self.backup_primary)
+        self.backup_interval_s = int(os.getenv("SAM_BACKUP_INTERVAL_S", "3600"))
+        self.backup_auto_commit = os.getenv("SAM_BACKUP_AUTO_COMMIT", "1") == "1"
+        self.backup_commit_prefix = os.getenv("SAM_BACKUP_COMMIT_PREFIX", "auto-backup")
+        self.backup_author_name = os.getenv("SAM_BACKUP_AUTHOR_NAME") or None
+        self.backup_author_email = os.getenv("SAM_BACKUP_AUTHOR_EMAIL") or None
+
+        self.backup_manager = BackupManager(
+            repo_path=self.project_root,
+            enabled=self.backup_enabled,
+            interval_s=self.backup_interval_s,
+            primary_remote=self.backup_primary,
+            secondary_remote=self.backup_secondary,
+            auto_commit=self.backup_auto_commit,
+            commit_prefix=self.backup_commit_prefix,
+            author_name=self.backup_author_name,
+            author_email=self.backup_author_email,
+            require_success=self.backup_required,
+        )
+        self.backup_manager.start()
+        self.backup_last_result = None
+        if self.backup_enabled:
+            register_shutdown_handler("backup_manager", self.backup_manager.stop, priority=50)
 
         # Start meta-controller loop
         self._start_meta_loop()
@@ -2362,6 +2479,131 @@ class UnifiedSAMSystem:
             self.system_metrics["system_health"] = "degraded"
             print(f"⚠️ Regression gate error - freezing growth: {exc}")
             return False
+
+    def _init_teacher_pool(self):
+        """Initialize teacher pool and distillation stream writer."""
+        if not self.teacher_specs:
+            raise RuntimeError("SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation")
+        providers = [
+            build_provider(
+                spec,
+                temperature=self.teacher_temperature,
+                max_tokens=self.teacher_max_tokens,
+                timeout_s=self.teacher_timeout_s,
+            )
+            for spec in self.teacher_specs
+        ]
+        self.teacher_pool = TeacherPool(
+            providers,
+            min_similarity=self.teacher_min_similarity,
+            min_votes=self.teacher_min_votes,
+        )
+        self.distill_writer = DistillationStreamWriter(self.distill_output)
+        print(f"✅ Teacher pool initialized ({len(providers)} providers)")
+        print(f"✅ Distillation stream writer ready: {self.distill_output}")
+
+    def _build_teacher_prompt(self, room, user, message, context):
+        agent_type = room.get("agent_type", "sam")
+        user_name = user.get("name", "User")
+        header = (
+            "You are an expert assistant in the SAM groupchat.\n"
+            f"Agent type: {agent_type}\n"
+            "Respond with a helpful, precise answer. If you need to ask a clarifying question, ask one.\n"
+        )
+        context_lines = []
+        for item in context[-10:]:
+            role = item.get("type", "user")
+            sender = item.get("sender", "unknown")
+            content = item.get("message", "")
+            context_lines.append(f"{sender} ({role}): {content}")
+        context_block = "\n".join(context_lines)
+        prompt = (
+            f"{header}\n"
+            f"Conversation context:\n{context_block}\n\n"
+            f"{user_name} (user): {message}\n"
+            "Assistant:"
+        )
+        return prompt
+
+    def _pick_consensus_candidate(self, consensus):
+        if not consensus:
+            raise RuntimeError("Teacher pool returned no candidates")
+        if len(consensus) == 1:
+            return consensus[0]
+        best = None
+        best_score = -1.0
+        for cand in consensus:
+            scores = [similarity(cand.response, other.response) for other in consensus if other != cand]
+            avg_score = sum(scores) / max(1, len(scores))
+            if avg_score > best_score:
+                best_score = avg_score
+                best = cand
+        return best or consensus[0]
+
+    def _record_distillation(
+        self,
+        prompt: str,
+        message_data: Dict[str, Any],
+        room: Dict[str, Any],
+        user: Dict[str, Any],
+        context: List[Dict[str, Any]],
+        candidates,
+        consensus,
+    ):
+        if not self.distill_writer:
+            return
+        metadata = {
+            "room_id": room.get("id"),
+            "room_name": room.get("name"),
+            "agent_type": room.get("agent_type"),
+            "user_id": message_data.get("user_id"),
+            "user_name": user.get("name"),
+            "message_id": message_data.get("id"),
+            "timestamp": message_data.get("timestamp"),
+            "context": context[-10:],
+            "candidate_count": len(candidates),
+            "consensus_count": len(consensus),
+            "min_similarity": self.teacher_min_similarity,
+            "min_votes": self.teacher_min_votes,
+        }
+        if self.distill_include_candidates:
+            metadata["candidates"] = [
+                {
+                    "provider": cand.provider,
+                    "model": cand.model,
+                    "response": cand.response,
+                    "latency_s": cand.latency_s,
+                }
+                for cand in candidates
+            ]
+
+        for idx, cand in enumerate(consensus):
+            record = {
+                "task_id": f"groupchat:{room.get('id')}:{message_data.get('id')}:{idx}",
+                "prompt": prompt,
+                "response": cand.response,
+                "score": None,
+                "passed": None,
+                "scorer": "groupchat",
+                "teacher": {
+                    "provider": cand.provider,
+                    "model": cand.model,
+                    "latency_s": cand.latency_s,
+                },
+                "metadata": metadata,
+            }
+            self.distill_writer.append(record)
+
+    def _generate_teacher_response(self, room, user, message, context, message_data):
+        if not self.teacher_pool_enabled or not self.teacher_pool:
+            raise RuntimeError("Teacher pool not initialized")
+        prompt = self._build_teacher_prompt(room, user, message, context)
+        with self.teacher_pool_lock:
+            candidates = self.teacher_pool.generate(prompt, n_per_teacher=self.teacher_n_per)
+            consensus = self.teacher_pool.consensus_filter(candidates)
+        self._record_distillation(prompt, message_data, room, user, context, candidates, consensus)
+        chosen = self._pick_consensus_candidate(consensus)
+        return chosen.response
 
     def _compute_pressure_signals(self):
         """Compute pressure signals from current system metrics"""
@@ -2507,18 +2749,24 @@ class UnifiedSAMSystem:
         self.goal_executor = None
         self.meta_agent_active = False
 
+        # Integration availability flags (detect real availability)
+        self.sam_gmail_available = bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
+        self.sam_github_available = bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
+        self.sam_web_search_available = bool(globals().get("initialize_sam_web_search")) and SAM_WEB_SEARCH_AVAILABLE
+        self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
+
         # Groupchat features
         self.connected_users = {}
         self.conversation_rooms = {}
         self.active_conversations = {}
-        self.web_search_enabled = True
-
-        # Integration availability flags
-        self.sam_gmail_available = True  # Set to True since we removed fallbacks
-        self.sam_github_available = True
-        self.sam_web_search_available = True
-        self.sam_code_modifier_available = True
+        self.web_search_enabled = self.sam_web_search_available
         self.socketio_available = flask_available  # SocketIO available if Flask is
+        # Sync module-level flags used by background threads
+        global sam_gmail_available, sam_github_available, sam_web_search_available, sam_code_modifier_available
+        sam_gmail_available = self.sam_gmail_available
+        sam_github_available = self.sam_github_available
+        sam_web_search_available = self.sam_web_search_available
+        sam_code_modifier_available = self.sam_code_modifier_available
 
         # Check system capabilities
         self._check_system_capabilities()
@@ -3534,7 +3782,8 @@ class UnifiedSAMSystem:
         print("📁 Initializing Google Drive Integration...")
 
         if not self.google_drive_available:
-            raise Exception("❌ CRITICAL: Google Drive integration not available - cannot continue")
+            print("  ⚠️ Google Drive integration unavailable - skipping")
+            return
 
         try:
             self.google_drive = GoogleDriveIntegration()
@@ -3561,7 +3810,8 @@ class UnifiedSAMSystem:
         print("🔍 Initializing SAM Web Search...")
 
         if not sam_web_search_available:
-            raise Exception("❌ CRITICAL: SAM web search not available - cannot continue")
+            print("  ⚠️ SAM web search unavailable - skipping")
+            return
 
         try:
             # Initialize with Google Drive integration if available
@@ -3582,7 +3832,8 @@ class UnifiedSAMSystem:
         print("🛠️ Initializing SAM Code Modification System...")
 
         if not sam_code_modifier_available:
-            raise Exception("❌ CRITICAL: SAM code modifier not available - cannot continue")
+            print("  ⚠️ SAM code modifier unavailable - skipping")
+            return
 
         try:
             # Initialize with project root
@@ -3610,16 +3861,20 @@ class UnifiedSAMSystem:
         print("📧 Initializing SAM Gmail Integration...")
 
         if not sam_gmail_available:
-            raise Exception("❌ CRITICAL: SAM Gmail integration not available - cannot continue")
+            print("  ⚠️ SAM Gmail integration unavailable - skipping")
+            return
 
         try:
             # Initialize with Google Drive integration if available
             if self.google_drive:
-                initialize_sam_gmail(self.google_drive)
+                sam_instance = initialize_sam_gmail(self.google_drive)
                 print("  ✅ SAM Gmail integration initialized with Google Drive")
             else:
-                initialize_sam_gmail()
+                sam_instance = initialize_sam_gmail()
                 print("  ✅ SAM Gmail integration initialized")
+
+            global sam_gmail
+            sam_gmail = sam_instance
 
             print("  📧 Email capabilities: Send, Schedule, Monitor")
             print("  📅 Automated reports: Available")
@@ -3633,11 +3888,13 @@ class UnifiedSAMSystem:
         print("🐙 Initializing SAM GitHub Integration...")
 
         if not sam_github_available:
-            raise Exception("❌ CRITICAL: SAM GitHub integration not available - cannot continue")
+            print("  ⚠️ SAM GitHub integration unavailable - skipping")
+            return
 
         try:
             # Initialize GitHub integration
-            initialize_sam_github()
+            global sam_github
+            sam_github = initialize_sam_github()
 
             # Test connection
             test_result = test_github_connection()
@@ -3650,6 +3907,78 @@ class UnifiedSAMSystem:
 
         except Exception as e:
             raise Exception(f"❌ CRITICAL: SAM GitHub initialization failed: {e} - cannot continue")
+
+    def _save_sam_to_github(self, commit_message: Optional[str] = None) -> Dict[str, Any]:
+        """Commit and push to configured GitHub remotes."""
+        if not sam_github_available:
+            return {"success": False, "error": "GitHub integration not available"}
+
+        primary = self.backup_primary or "origin"
+        secondary = self.backup_secondary
+
+        result_primary = save_to_github(commit_message, remote=primary)
+        if not result_primary.get("success"):
+            return {"success": False, "error": result_primary.get("error", "primary remote failed")}
+
+        result_secondary = None
+        if secondary:
+            result_secondary = save_to_github(commit_message, remote=secondary)
+            if not result_secondary.get("success"):
+                return {
+                    "success": False,
+                    "error": f"secondary remote failed: {result_secondary.get('error', 'unknown')}"
+                }
+
+        # Capture commit metadata
+        commit_sha = "unknown"
+        files_saved = 0
+        try:
+            sha_proc = subprocess.run(
+                ["git", "-C", str(self.project_root), "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if sha_proc.returncode == 0:
+                commit_sha = sha_proc.stdout.strip()
+
+            files_proc = subprocess.run(
+                ["git", "-C", str(self.project_root), "show", "--name-only", "--pretty=format:"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if files_proc.returncode == 0:
+                files_saved = len([line for line in files_proc.stdout.splitlines() if line.strip()])
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "commit_sha": commit_sha,
+            "files_saved": files_saved,
+            "primary": result_primary,
+            "secondary": result_secondary,
+        }
+
+    def _detect_secondary_remote(self, primary_remote: str) -> Optional[str]:
+        """Detect a secondary git remote if configured in the repo."""
+        try:
+            proc = subprocess.run(
+                ["git", "-C", str(self.project_root), "remote"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode != 0:
+                return None
+            remotes = {r.strip() for r in proc.stdout.splitlines() if r.strip()}
+            for candidate in ("sam", "secondary", "backup"):
+                if candidate in remotes and candidate != primary_remote:
+                    return candidate
+        except Exception:
+            return None
+        return None
 
     def _initialize_web_interface(self):
         """Initialize Unified Web Interface"""
@@ -3730,7 +4059,7 @@ class UnifiedSAMSystem:
         # Create Flask app if not already created
         if not hasattr(self, 'app'):
             print("  🔧 Creating Flask app...")
-            from flask import Flask, request, jsonify, render_template_string
+            from flask import Flask
             from flask_cors import CORS
             self.app = Flask(__name__)
             CORS(self.app)
@@ -3934,6 +4263,38 @@ class UnifiedSAMSystem:
                 return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/backup/run', methods=['POST'])
+        def backup_run():
+            """Run an immediate git backup to configured remotes"""
+            try:
+                result = self.backup_manager.run_once()
+                self.backup_last_result = {
+                    "success": result.success,
+                    "message": result.message,
+                    "details": result.details,
+                    "timestamp": time.time(),
+                }
+                status = 200 if result.success else 500
+                return jsonify(self.backup_last_result), status
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/backup/status')
+        def backup_status():
+            """Get backup configuration and last result"""
+            return jsonify({
+                "enabled": self.backup_enabled,
+                "required": self.backup_required,
+                "primary_remote": self.backup_primary,
+                "secondary_remote": self.backup_secondary,
+                "interval_s": self.backup_interval_s,
+                "auto_commit": self.backup_auto_commit,
+                "commit_prefix": self.backup_commit_prefix,
+                "author_name": self.backup_author_name,
+                "author_email": self.backup_author_email,
+                "last_result": self.backup_last_result,
+            })
 
         @self.app.route('/api/meta/improvements')
         def get_improvements():
@@ -4199,7 +4560,7 @@ class UnifiedSAMSystem:
                 if not sam_github_available:
                     return jsonify({'error': 'GitHub integration not available'}), 503
 
-                result = save_sam_to_github(commit_message)
+                result = self._save_sam_to_github(commit_message)
                 return jsonify(result)
 
             except Exception as e:
@@ -4547,38 +4908,33 @@ sam@terminal:~$
         """Setup SocketIO event handlers for real-time groupchat"""
         if not self.socketio_available:
             return
+        from flask_socketio import join_room as socketio_join_room, leave_room as socketio_leave_room
 
         @self.socketio.on('connect')
-        def handle_connect():
+        def handle_connect(auth=None):
             """Handle user connection to groupchat"""
-            user_id = f"user_{int(time.time() * 1000)}"
+            user_id = request.sid
             self.connected_users[user_id] = {
                 'id': user_id,
                 'name': f"User-{len(self.connected_users) + 1}",
                 'joined_at': time.time(),
-                'current_room': None
+                'current_room': None,
+                'sid': user_id
             }
 
-            emit('user_connected', {
+            self.socketio.emit('user_connected', {
                 'user': self.connected_users[user_id],
                 'online_users': len(self.connected_users),
                 'available_rooms': list(self.conversation_rooms.keys())
-            })
+            }, to=user_id)
 
             print(f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}")
 
         @self.socketio.on('disconnect')
         def handle_disconnect():
             """Handle user disconnection"""
-            disconnected_user = None
-            user_id = None
-
-            # Find the disconnecting user
-            for uid, user in self.connected_users.items():
-                if hasattr(request, 'sid') and uid == request.sid:
-                    user_id = uid
-                    disconnected_user = user
-                    break
+            user_id = request.sid
+            disconnected_user = self.connected_users.get(user_id)
 
             if disconnected_user:
                 # Remove from current room
@@ -4587,7 +4943,7 @@ sam@terminal:~$
                     room = self.conversation_rooms[current_room]
                     if user_id in room['users']:
                         room['users'].remove(user_id)
-                        emit('user_left_room', {
+                        self.socketio.emit('user_left_room', {
                             'user': disconnected_user,
                             'room_id': current_room
                         }, room=current_room)
@@ -4595,10 +4951,10 @@ sam@terminal:~$
                 # Remove user
                 del self.connected_users[user_id]
 
-                emit('user_disconnected', {
+                self.socketio.emit('user_disconnected', {
                     'user': disconnected_user,
                     'online_users': len(self.connected_users)
-                })
+                }, to=user_id)
 
                 print(f"👋 User disconnected: {disconnected_user['name']}")
 
@@ -4631,15 +4987,14 @@ sam@terminal:~$
                 self.connected_users[user_id]['current_room'] = room_id
 
                 # Join SocketIO room
-                from flask_socketio import join_room as socketio_join_room
                 socketio_join_room(room_id)
 
-                emit('joined_room', {
+                self.socketio.emit('joined_room', {
                     'room': room,
                     'user': self.connected_users[user_id]
                 }, room=room_id)
 
-                emit('room_updated', {
+                self.socketio.emit('room_updated', {
                     'room_id': room_id,
                     'user_count': len(room['users']),
                     'users': [self.connected_users[uid] for uid in room['users'] if uid in self.connected_users]
@@ -4660,15 +5015,14 @@ sam@terminal:~$
                 if user_id in self.connected_users:
                     self.connected_users[user_id]['current_room'] = None
 
-                    from flask_socketio import leave_room as socketio_leave_room
                     socketio_leave_room(room_id)
 
-                emit('left_room', {
+                self.socketio.emit('left_room', {
                     'user_id': user_id,
                     'room_id': room_id
                 }, room=room_id)
 
-                emit('room_updated', {
+                self.socketio.emit('room_updated', {
                     'room_id': room_id,
                     'user_count': len(room['users'])
                 })
@@ -4676,7 +5030,7 @@ sam@terminal:~$
                 # Clean up empty rooms
                 if len(room['users']) == 0:
                     del self.conversation_rooms[room_id]
-                    emit('room_deleted', {'room_id': room_id})
+                    self.socketio.emit('room_deleted', {'room_id': room_id})
 
                 print(f"🚪 User {user_id} left room {room_id}")
 
@@ -4704,42 +5058,65 @@ sam@terminal:~$
             }
 
             room['messages'].append(message_data)
-            emit('message_received', message_data, room=room_id)
+            self.socketio.emit('message_received', message_data, room=room_id)
+
+            # Add conversation context to agent responses
+            conversation_context = self._get_conversation_context(room_id, message)
 
             # Generate SAM agent response based on room agent type
             agent_response = self.generate_room_agent_response(message, room, user)
 
             if agent_response:
-                # Add conversation context to agent responses
-                conversation_context = self._get_conversation_context(room_id, message)
-                
                 # Update agent status to 'responding'
                 self._update_agent_status(agent_response['agent_type'], 'responding')
-                
+
                 # Add typing indicator
                 self.socketio.start_background_task(
-                    lambda: emit('agent_typing', {
+                    lambda: self.socketio.emit('agent_typing', {
                         'agent_name': agent_response['agent_name'],
                         'agent_type': agent_response['agent_type'],
                         'status': 'typing'
                     }, room=room_id)
                 )
-                
+
                 # Simulate typing delay
                 time.sleep(1 + (time.time() % 2))  # 1-3 seconds
-                
+
                 # Stop typing indicator
                 self.socketio.start_background_task(
-                    lambda: emit('agent_typing', {
+                    lambda: self.socketio.emit('agent_typing', {
                         'agent_name': agent_response['agent_name'],
                         'agent_type': agent_response['agent_type'],
                         'status': 'idle'
                     }, room=room_id)
                 )
-                
-                # Include conversation context in response
-                enhanced_response = self._enhance_response_with_context(agent_response, conversation_context)
-                
+
+                try:
+                    if self.teacher_pool_enabled:
+                        teacher_response = self._generate_teacher_response(
+                            room, user, message, conversation_context, message_data
+                        )
+                        enhanced_response = {
+                            **agent_response,
+                            'response': teacher_response
+                        }
+                    else:
+                        enhanced_response = self._enhance_response_with_context(agent_response, conversation_context)
+                except Exception as exc:
+                    error_data = {
+                        'id': f"msg_{int(time.time() * 1000) + 1}",
+                        'user_id': 'system_error',
+                        'user_name': 'System',
+                        'message': f"Teacher pool error: {exc}",
+                        'timestamp': time.time(),
+                        'message_type': 'error'
+                    }
+                    room['messages'].append(error_data)
+                    self.socketio.emit('message_received', error_data, room=room_id)
+                    print(f"❌ Teacher pool error: {exc}")
+                    self._update_agent_status(agent_response['agent_type'], 'idle')
+                    return
+
                 response_data = {
                     'id': f"msg_{int(time.time() * 1000) + 1}",
                     'user_id': 'sam_agent',
@@ -4751,12 +5128,12 @@ sam@terminal:~$
                     'capabilities': enhanced_response.get('capabilities', []),
                     'context_awareness': True  # Indicates agent has conversation context
                 }
-                
+
                 # Update agent status back to idle
                 self._update_agent_status(enhanced_response['agent_type'], 'idle')
 
                 room['messages'].append(response_data)
-                emit('message_received', response_data, room=room_id)
+                self.socketio.emit('message_received', response_data, room=room_id)
 
                 print(f"💬 SAM {enhanced_response['agent_name']}: {enhanced_response['response'][:100]}...")
     def generate_room_agent_response(self, message, room, user):
@@ -5368,13 +5745,12 @@ sam@terminal:~$
                 return "❌ Gmail integration not available"
 
             status_info = "📧 **SAM Gmail Integration Status**\n\n"
-            status_info += f"Account: sam.ai.system.agi@gmail.com\n"
+            status_info += f"Account: {os.getenv('SAM_GMAIL_ACCOUNT', 'not set')}\n"
             status_info += "Capabilities:\n"
             status_info += "• ✅ Email sending\n"
             status_info += "• ✅ Email scheduling\n"
             status_info += "• ✅ Automated reports\n"
-            status_info += "• ✅ Email monitoring (requires app password)\n"
-            status_info += "• ✅ Google Drive integration\n\n"
+            status_info += "• ✅ OAuth-based authorization\n\n"
 
             try:
                 test_result = test_github_connection()
@@ -5405,7 +5781,7 @@ sam@terminal:~$
             commit_message = ' '.join(args) if args else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
             try:
-                result = save_sam_to_github(commit_message)
+                result = self._save_sam_to_github(commit_message)
                 if result['success']:
                     return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
                 else:
@@ -5418,7 +5794,26 @@ sam@terminal:~$
                 return "❌ GitHub integration not available"
 
             status_info = "🐙 **SAM GitHub Integration Status**\n\n"
-            status_info += f"Repository: samaisystemagi/NN_C\n"
+            try:
+                remotes_proc = subprocess.run(
+                    ["git", "-C", str(self.project_root), "remote", "-v"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if remotes_proc.returncode == 0:
+                    remotes_map = {}
+                    for line in remotes_proc.stdout.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 3 and parts[2] == "(push)":
+                            remotes_map[parts[0]] = parts[1]
+                    if remotes_map:
+                        status_info += "Remotes:\n"
+                        for name, url in remotes_map.items():
+                            status_info += f"• {name}: {url}\n"
+                        status_info += "\n"
+            except Exception:
+                pass
             status_info += f"Token: {'Configured' if os.getenv('GITHUB_TOKEN') else 'Not configured'}\n\n"
 
             try:
@@ -5461,11 +5856,36 @@ sam@terminal:~$
 
     def _render_dashboard(self):
         """Render the main dashboard"""
-        # JavaScript code as separate string to avoid f-string conflicts
+        c_status = self.system_metrics.get("c_core_status", "unknown")
+        py_status = self.system_metrics.get("python_orchestration_status", "unknown")
+        web_status = self.system_metrics.get("web_interface_status", "unknown")
+
+        def _state(value: str) -> str:
+            if isinstance(value, str):
+                lowered = value.lower()
+                if lowered.startswith("active"):
+                    return "active"
+                if "failed" in lowered:
+                    return "failed"
+                if "inactive" in lowered:
+                    return "inactive"
+            return "unknown"
+
+        c_state = _state(c_status)
+        py_state = _state(py_status)
+        web_state = _state(web_status)
+        survival = getattr(self.survival_agent, "survival_score", 0.0) if self.survival_agent else 0.0
+        active_agents = self.system_metrics.get("active_agents", 0)
+
         javascript_code = '''
                 let agentsData = {};
-                
-                // Update agents sidebar
+
+                function escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+
                 async function updateAgents() {
                     try {
                         const response = await fetch('/api/agent/statuses');
@@ -5478,72 +5898,57 @@ sam@terminal:~$
                         console.error('Failed to fetch agent statuses:', error);
                     }
                 }
-                
+
                 function renderAgents(agents) {
                     const container = document.getElementById('agents-list');
                     container.innerHTML = '';
-                    
-                    Object.entries(agents).forEach(([agentId, agentInfo]) => {
+
+                    const entries = Object.entries(agents);
+                    if (entries.length === 0) {
+                        container.innerHTML = '<div class="agent-empty">No active agents</div>';
+                        return;
+                    }
+
+                    entries.forEach(([agentId, agentInfo]) => {
                         const card = document.createElement('div');
-                        card.style.cssText = `
-                            background: rgba(22, 33, 62, 0.8);
-                            border: 1px solid #444;
-                            border-radius: 8px;
-                            padding: 12px;
-                            margin-bottom: 10px;
-                            transition: all 0.3s ease;
+                        card.className = 'agent-card';
+
+                        const status = agentInfo.status || 'idle';
+                        card.innerHTML = `
+                            <div class="agent-top">
+                                <div>
+                                    <div class="agent-name">${escapeHtml(agentInfo.name || agentId)}</div>
+                                    <div class="agent-type">${escapeHtml(agentInfo.type || 'agent')}</div>
+                                </div>
+                                <span class="agent-state" data-state="${escapeHtml(status)}">${escapeHtml(status)}</span>
+                            </div>
+                            <div class="agent-meta">
+                                <span>${escapeHtml(agentInfo.current_task || 'idle')}</span>
+                                <span>${escapeHtml(agentInfo.last_active || '')}</span>
+                            </div>
                         `;
-                        
-                        card.onmouseover = () => {
-                            card.style.background = 'rgba(0, 212, 255, 0.1)';
-                            card.style.borderColor = '#00d4ff';
-                            card.style.transform = 'translateY(-2px)';
-                        };
-                        
-                        card.onmouseout = () => {
-                            card.style.background = 'rgba(22, 33, 62, 0.8)';
-                            card.style.borderColor = '#444';
-                            card.style.transform = 'none';
-                        };
-                        
-                        const statusClass = agentInfo.status ? 'status-' + agentInfo.status.toLowerCase() : 'status-disconnected';
-                        
-                        card.innerHTML = '<div style="font-weight: bold; color: #00d4ff; margin-bottom: 5px;">' + (agentInfo.name || agentId) + '</div>' +
-                            '<div style="font-size: 0.8em; color: #888; margin-bottom: 5px;">' + (agentInfo.type || 'Unknown') + '</div>' +
-                            '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7em; font-weight: bold; margin-bottom: 5px; background: ' + (agentInfo.status === 'online' ? '#4caf50' : agentInfo.status === 'idle' ? '#ff9800' : agentInfo.status === 'responding' ? '#2196f3' : '#f44336') + '; color: white;">' + (agentInfo.status || 'unknown') + '</span>' +
-                            '<div style="font-size: 0.8em; color: #ccc; margin-bottom: 5px;">' + (agentInfo.current_task || 'Idle') + '</div>' +
-                            '<div style="font-size: 0.7em; color: #888; font-style: italic;">' + (agentInfo.specialty || '') + '</div>';
-                        
                         container.appendChild(card);
                     });
-                    
-                    // Update main stats if elements exist
-                    const activeCount = Object.values(agents).filter(a => a.status === 'online').length;
-                    const activeAgentsEl = document.getElementById('active-agents');
-                    if (activeAgentsEl) {
-                        activeAgentsEl.textContent = activeCount;
-                    }
                 }
-                
-                // Update data every 5 seconds
-                setInterval(() => {
-                    updateAgents();
-                }, 5000);
-                
-                // Initial load
-                updateAgents();
-                
-                // Chat functionality
+
+                function appendMessage(role, name, text) {
+                    const messages = document.getElementById('chat-messages');
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `chat-message ${role}`;
+                    wrapper.innerHTML = `
+                        <div class="chat-meta">${escapeHtml(name)}</div>
+                        <div class="chat-text">${escapeHtml(text)}</div>
+                    `;
+                    messages.appendChild(wrapper);
+                    messages.scrollTop = messages.scrollHeight;
+                }
+
                 function sendMessage() {
                     const input = document.getElementById('chat-input');
-                    const messages = document.getElementById('chat-messages');
-
                     if (!input.value.trim()) return;
 
-                    // Add user message
-                    messages.innerHTML += '<div style="margin-bottom: 8px; padding: 5px; border-radius: 3px; background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff;"><strong>You:</strong> ' + input.value + '</div>';
+                    appendMessage('user', 'You', input.value);
 
-                    // Send to SAM
                     fetch('/api/chatbot', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -5551,81 +5956,439 @@ sam@terminal:~$
                     })
                     .then(response => response.json())
                     .then(data => {
-                        messages.innerHTML += '<div style="margin-bottom: 8px; padding: 5px; border-radius: 3px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50;"><strong>SAM:</strong> ' + data.response + '</div>';
-                        messages.scrollTop = messages.scrollHeight;
+                        appendMessage('sam', 'SAM', data.response || 'No response');
                     })
                     .catch(error => {
-                        messages.innerHTML += '<div style="margin-bottom: 8px; padding: 5px; border-radius: 3px; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800;"><strong>System:</strong> ' + error.message + '</div>';
+                        appendMessage('system', 'System', error.message || 'Request failed');
                     });
 
                     input.value = '';
                 }
 
-                // Enter key support
                 document.getElementById('chat-input').addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') sendMessage();
                 });
+
+                setInterval(updateAgents, 5000);
+                updateAgents();
         '''
-        
+
         html = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>SAM 2.0 Unified Complete System</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
             <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
-                .status {{ background: white; padding: 20px; border-radius: 10px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-                .metric {{ display: inline-block; margin: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px; }}
-                .active {{ color: #4caf50; }}
-                .inactive {{ color: #f44336; }}
-                .chat {{ background: white; padding: 20px; border-radius: 10px; margin-top: 20px; }}
-                #chat-messages {{ height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 10px 0; }}
+                :root {{
+                    --bg: #0b0d12;
+                    --bg-soft: #121723;
+                    --panel: #171c28;
+                    --panel-2: #1b2231;
+                    --stroke: rgba(255, 255, 255, 0.08);
+                    --text: #f5f7ff;
+                    --muted: rgba(229, 233, 255, 0.6);
+                    --accent: #29d3c0;
+                    --accent-2: #f5b94b;
+                    --danger: #ff6b6b;
+                    --success: #2ee59d;
+                    --shadow: 0 24px 60px rgba(8, 12, 20, 0.55);
+                }}
+                * {{ box-sizing: border-box; }}
+                body {{
+                    margin: 0;
+                    font-family: "Space Grotesk", system-ui, sans-serif;
+                    color: var(--text);
+                    background: radial-gradient(1200px 600px at 10% 10%, rgba(41, 211, 192, 0.18), transparent 60%),
+                                radial-gradient(1000px 600px at 90% 20%, rgba(245, 185, 75, 0.18), transparent 60%),
+                                var(--bg);
+                    min-height: 100vh;
+                }}
+                .shell {{
+                    display: grid;
+                    grid-template-columns: 320px 1fr;
+                    min-height: 100vh;
+                }}
+                .sidebar {{
+                    padding: 32px 24px;
+                    background: linear-gradient(180deg, rgba(18, 23, 35, 0.96) 0%, rgba(12, 16, 25, 0.98) 100%);
+                    border-right: 1px solid var(--stroke);
+                    position: relative;
+                    overflow: hidden;
+                }}
+                .sidebar::after {{
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background: radial-gradient(500px 500px at 20% 0%, rgba(41, 211, 192, 0.12), transparent 70%);
+                    pointer-events: none;
+                }}
+                .brand {{
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 28px;
+                }}
+                .logo {{
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #29d3c0, #1f7bf2);
+                    display: grid;
+                    place-items: center;
+                    font-weight: 700;
+                    color: #0b0d12;
+                    letter-spacing: 0.08em;
+                    box-shadow: var(--shadow);
+                }}
+                .brand-text span {{
+                    display: block;
+                }}
+                .brand-text .title {{
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                }}
+                .brand-text .subtitle {{
+                    color: var(--muted);
+                    font-size: 0.85rem;
+                }}
+                .status-stack {{
+                    display: grid;
+                    gap: 10px;
+                    margin-bottom: 28px;
+                }}
+                .status-pill {{
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    background: var(--panel);
+                    border: 1px solid var(--stroke);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    font-size: 0.85rem;
+                }}
+                .status-pill[data-state="active"] {{ color: var(--success); }}
+                .status-pill[data-state="failed"] {{ color: var(--danger); }}
+                .status-pill[data-state="inactive"] {{ color: var(--danger); }}
+                .section-title {{
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.2em;
+                    color: var(--muted);
+                    margin-bottom: 12px;
+                }}
+                .agent-list {{
+                    display: grid;
+                    gap: 12px;
+                    position: relative;
+                    z-index: 1;
+                }}
+                .agent-card {{
+                    background: var(--panel);
+                    border: 1px solid var(--stroke);
+                    border-radius: 14px;
+                    padding: 14px;
+                    box-shadow: 0 10px 30px rgba(7, 12, 20, 0.4);
+                    transition: transform 0.25s ease, border 0.25s ease;
+                }}
+                .agent-card:hover {{
+                    transform: translateY(-4px);
+                    border-color: rgba(41, 211, 192, 0.6);
+                }}
+                .agent-top {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                }}
+                .agent-name {{
+                    font-weight: 600;
+                    font-size: 0.95rem;
+                }}
+                .agent-type {{
+                    color: var(--muted);
+                    font-size: 0.75rem;
+                }}
+                .agent-state {{
+                    padding: 4px 10px;
+                    border-radius: 999px;
+                    font-size: 0.7rem;
+                    background: rgba(255, 255, 255, 0.06);
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                }}
+                .agent-state[data-state="online"] {{ color: var(--success); }}
+                .agent-state[data-state="responding"] {{ color: var(--accent-2); }}
+                .agent-state[data-state="idle"] {{ color: var(--muted); }}
+                .agent-meta {{
+                    display: flex;
+                    justify-content: space-between;
+                    color: var(--muted);
+                    font-size: 0.72rem;
+                }}
+                .agent-empty {{
+                    padding: 24px;
+                    border-radius: 12px;
+                    border: 1px dashed var(--stroke);
+                    text-align: center;
+                    color: var(--muted);
+                }}
+                .main {{
+                    padding: 40px 48px;
+                    display: grid;
+                    gap: 28px;
+                }}
+                .hero {{
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 24px;
+                }}
+                .hero h1 {{
+                    margin: 0;
+                    font-size: 2.4rem;
+                    letter-spacing: -0.02em;
+                }}
+                .hero p {{
+                    margin: 8px 0 0;
+                    color: var(--muted);
+                    max-width: 520px;
+                }}
+                .hero-metrics {{
+                    display: grid;
+                    gap: 12px;
+                }}
+                .pill {{
+                    padding: 10px 16px;
+                    border-radius: 999px;
+                    background: var(--panel);
+                    border: 1px solid var(--stroke);
+                    font-size: 0.85rem;
+                }}
+                .grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    gap: 20px;
+                }}
+                .card {{
+                    background: var(--panel-2);
+                    border-radius: 18px;
+                    padding: 22px;
+                    border: 1px solid var(--stroke);
+                    box-shadow: var(--shadow);
+                    animation: rise 0.6s ease both;
+                }}
+                .card:nth-of-type(2) {{ animation-delay: 0.1s; }}
+                .card:nth-of-type(3) {{ animation-delay: 0.2s; }}
+                .card h3 {{
+                    margin: 0 0 12px;
+                    font-size: 1.05rem;
+                }}
+                .metric-row {{
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                    font-size: 0.9rem;
+                }}
+                .metric-row:last-child {{ border-bottom: none; }}
+                .metric-label {{
+                    color: var(--muted);
+                }}
+                .status-badge {{
+                    font-family: "JetBrains Mono", monospace;
+                    padding: 4px 10px;
+                    border-radius: 999px;
+                    background: rgba(41, 211, 192, 0.15);
+                    color: var(--accent);
+                }}
+                .status-badge[data-state="failed"],
+                .status-badge[data-state="inactive"] {{
+                    background: rgba(255, 107, 107, 0.15);
+                    color: var(--danger);
+                }}
+                .status-badge[data-state="active"] {{
+                    background: rgba(46, 229, 157, 0.2);
+                    color: var(--success);
+                }}
+                .chat-panel {{
+                    background: var(--panel);
+                    border-radius: 20px;
+                    border: 1px solid var(--stroke);
+                    padding: 24px;
+                    display: grid;
+                    gap: 14px;
+                    box-shadow: var(--shadow);
+                }}
+                #chat-messages {{
+                    height: 280px;
+                    overflow-y: auto;
+                    padding-right: 8px;
+                    display: grid;
+                    gap: 10px;
+                }}
+                .chat-message {{
+                    padding: 12px 14px;
+                    border-radius: 14px;
+                    background: rgba(255, 255, 255, 0.04);
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                }}
+                .chat-message.user {{ border-color: rgba(41, 211, 192, 0.4); }}
+                .chat-message.sam {{ border-color: rgba(46, 229, 157, 0.4); }}
+                .chat-message.system {{ border-color: rgba(245, 185, 75, 0.4); }}
+                .chat-meta {{
+                    font-size: 0.7rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.12em;
+                    color: var(--muted);
+                    margin-bottom: 6px;
+                }}
+                .chat-input {{
+                    display: flex;
+                    gap: 10px;
+                }}
+                .chat-input input {{
+                    flex: 1;
+                    background: #0c111c;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
+                    padding: 12px 14px;
+                    color: var(--text);
+                    font-size: 0.95rem;
+                }}
+                .chat-input button {{
+                    background: linear-gradient(135deg, #29d3c0, #1f7bf2);
+                    border: none;
+                    color: #041018;
+                    font-weight: 600;
+                    padding: 0 22px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: transform 0.2s ease;
+                }}
+                .chat-input button:hover {{
+                    transform: translateY(-1px);
+                }}
+                @keyframes rise {{
+                    from {{ opacity: 0; transform: translateY(12px); }}
+                    to {{ opacity: 1; transform: translateY(0); }}
+                }}
+                @media (max-width: 960px) {{
+                    .shell {{ grid-template-columns: 1fr; }}
+                    .sidebar {{ position: relative; }}
+                }}
             </style>
         </head>
         <body>
-            <div style="display: flex; min-height: 100vh;">
-                <!-- Agent Status Sidebar -->
-                <div style="width: 320px; background: rgba(26, 26, 46, 0.95); border-right: 1px solid #333; padding: 20px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.3);">
-                    <h2 style="color: #00d4ff; margin-bottom: 20px; font-size: 1.2em; border-bottom: 1px solid #333; padding-bottom: 10px;">🤖 Agent Ecosystem</h2>
-                    <div id="agents-list">
-                        <div style="background: rgba(22, 33, 62, 0.8); border: 1px solid #444; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                            <div style="font-weight: bold; color: #00d4ff; margin-bottom: 5px;">Loading agents...</div>
-                            <div style="font-size: 0.8em; color: #888;">Initializing system</div>
+            <div class="shell">
+                <aside class="sidebar">
+                    <div class="brand">
+                        <div class="logo">SAM</div>
+                        <div class="brand-text">
+                            <span class="title">SAM 2.0</span>
+                            <span class="subtitle">Unified Complete System</span>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Main Content -->
-                <div style="flex: 1; padding: 20px;">
-                <h1>🧠 SAM 2.0 Unified Complete System</h1>
-                <p>The Final AGI Implementation - Pure C Core + Python Orchestration</p>
-                <div class="metric">Status: <span class="active">ACTIVE</span></div>
-                <div class="metric">Zero Fallbacks: ✅ ACHIEVED</div>
-                <div class="metric">Production Ready: ✅ DEPLOYED</div>
-            </div>
+                    <div class="status-stack">
+                        <div class="status-pill" data-state="active">Status<span>ACTIVE</span></div>
+                        <div class="status-pill" data-state="active">Zero Fallbacks<span>✅ Achieved</span></div>
+                        <div class="status-pill" data-state="active">Production<span>Deployed</span></div>
+                    </div>
+                    <div class="section-title">Agent Ecosystem</div>
+                    <div id="agents-list" class="agent-list">
+                        <div class="agent-card">
+                            <div class="agent-name">Initializing agents...</div>
+                            <div class="agent-type">Bootstrapping</div>
+                        </div>
+                    </div>
+                </aside>
 
-            <div class="status">
-                <h2>🎯 System Components</h2>
-                <div class="metric">C AGI Core: <span class="{self.system_metrics['c_core_status'] == 'active' and 'active' or 'inactive'}">{self.system_metrics['c_core_status'].upper()}</span></div>
-                <div class="metric">Python Orchestration: <span class="{self.system_metrics['python_orchestration_status'] == 'active' and 'active' or 'inactive'}">{self.system_metrics['python_orchestration_status'].upper()}</span></div>
-                <div class="metric">Web Interface: <span class="{self.system_metrics['web_interface_status'] == 'active' and 'active' or 'inactive'}">{self.system_metrics['web_interface_status'].upper()}</span></div>
-                <div class="metric">Active Agents: {self.system_metrics['active_agents']}</div>
-            </div>
+                <main class="main">
+                    <section class="hero">
+                        <div>
+                            <h1>🧠 SAM 2.0 Unified Complete System</h1>
+                            <p>The final AGI implementation combining a pure C core, Python orchestration, and real-time multi-agent governance.</p>
+                        </div>
+                        <div class="hero-metrics">
+                            <div class="pill">Active Agents: {active_agents}</div>
+                            <div class="pill">Survival Score: {survival:.2f}</div>
+                            <div class="pill">Meta Loop: Running</div>
+                        </div>
+                    </section>
 
-            <div class="status">
-                <h2>🧠 AGI Capabilities</h2>
-                <div class="metric">Consciousness: Pure C (64×16)</div>
-                <div class="metric">Multi-Agent: 5 Specialized Agents</div>
-                <div class="metric">Prebuilt Models: Coherency/Teacher/Bug-Fixing</div>
-                <div class="metric">Survival Score: {getattr(self.survival_agent, 'survival_score', 0.0):.2f}</div>
-            </div>
+                    <section class="grid">
+                        <div class="card">
+                            <h3>System Components</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">C AGI Core</span>
+                                <span class="status-badge" data-state="{c_state}">{str(c_status).upper()}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Python Orchestration</span>
+                                <span class="status-badge" data-state="{py_state}">{str(py_status).upper()}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Web Interface</span>
+                                <span class="status-badge" data-state="{web_state}">{str(web_status).upper()}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">ANANKE Mode</span>
+                                <span class="status-badge" data-state="active">UNBOUNDED</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>AGI Capabilities</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Consciousness</span>
+                                <span>Pure C (64×16)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Multi-Agent</span>
+                                <span>5 Specialized Agents</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Prebuilt Models</span>
+                                <span>Coherency / Teacher / Bug-Fixing</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Distillation</span>
+                                <span>Live Groupchat Stream</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Meta Control</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Latency Gate</span>
+                                <span>Active</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Regression Gate</span>
+                                <span>{'Enabled' if self.regression_on_growth else 'Disabled'}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Growth Freeze</span>
+                                <span>{'ON' if self.meta_growth_freeze else 'OFF'}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Backup Loop</span>
+                                <span>{'ON' if self.backup_enabled else 'OFF'}</span>
+                            </div>
+                        </div>
+                    </section>
 
-            <div class="chat">
-                <h2>💬 SAM Chatbot Interface</h2>
-                <div id="chat-messages"></div>
-                <input type="text" id="chat-input" placeholder="Ask SAM anything..." style="width: 80%; padding: 10px;">
-                <button onclick="sendMessage()" style="padding: 10px 20px;">Send</button>
+                    <section class="chat-panel">
+                        <h3>💬 SAM Chatbot Interface</h3>
+                        <div id="chat-messages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="chat-input" placeholder="Ask SAM anything..." />
+                            <button onclick="sendMessage()">Send</button>
+                        </div>
+                    </section>
+                </main>
             </div>
 
             <script>
@@ -5643,35 +6406,35 @@ sam@terminal:~$
         def autonomous_operation_loop():
             while not is_shutting_down():
                 try:
-                    with shutdown_aware_operation("autonomous operation"):
+                    with shutdown_guard("autonomous operation"):
                         # Update system metrics
                         self._update_system_metrics()
-                        
+
                         # Generate autonomous goals
                         self._generate_autonomous_goals()
-                        
+
                         # Execute autonomous tasks
                         self._execute_autonomous_tasks()
-                        
+
                         # Run survival evaluation
                         self._run_survival_evaluation()
-                        
+
                         # Execute goal management cycle
                         self._execute_goal_cycle()
-                        
+
                         # Demonstrate capabilities autonomously
                         self._demonstrate_capabilities()
-                        
+
                         # Coordinate multi-agent tasks
                         self._coordinate_multi_agent_tasks()
-                        
+
                         # Enable agent-to-agent communication
                         self._agent_to_agent_communication()
-                        
+
                         # Perform consciousness check
                         if hasattr(self, 'consciousness'):
                             self._check_consciousness()
-                        
+
                         # Update goal README periodically
                         if hasattr(self, 'goal_manager'):
                             self.goal_manager.export_readme()
@@ -5769,6 +6532,7 @@ sam@terminal:~$
                     description=description,
                     critical=(priority >= 4),
                     priority=priority,
+                    task_type=task_type,
                     estimated_time=600  # 10 minutes
                 )
                 self.goal_manager.add_subtask(goal)
@@ -5817,8 +6581,8 @@ sam@terminal:~$
                     print(f"🛡️ [AUTO] Survival assessment completed", flush=True)
             
             # Mark task as completed
-            if hasattr(self, 'goal_manager') and hasattr(task, 'mark_complete'):
-                task.mark_complete()
+            if hasattr(self, 'goal_manager'):
+                self.goal_manager.complete_task(task)
                 print(f"✅ Task completed: {task.name}", flush=True)
                 
         except Exception as e:
@@ -6011,9 +6775,12 @@ sam@terminal:~$
         """Perform consciousness check and update metrics"""
         try:
             if hasattr(self, 'consciousness') and self.consciousness:
-                # Update consciousness score in metrics
-                self.system_metrics['consciousness_score'] = getattr(self.system_metrics, 'consciousness_score', 0.0)
-                # Simple consciousness check - in full implementation would query the C module
+                try:
+                    stats = consciousness_algorithmic.get_stats()
+                    if isinstance(stats, dict) and 'consciousness_score' in stats:
+                        self.system_metrics['consciousness_score'] = float(stats.get('consciousness_score', 0.0))
+                except Exception:
+                    self.system_metrics['consciousness_score'] = float(self.system_metrics.get('consciousness_score', 0.0))
                 print(f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})", flush=True)
         except Exception as e:
             print(f"⚠️ Consciousness check error: {e}", flush=True)
@@ -6095,8 +6862,10 @@ sam@terminal:~$
         print("=" * 80)
 
         try:
-            # Use Flask directly for now to avoid SocketIO hanging
-            self.app.run(host='0.0.0.0', port=5004, debug=False, threaded=True)
+            if self.socketio_available and self.socketio:
+                self.socketio.run(self.app, host='0.0.0.0', port=5004, debug=False, allow_unsafe_werkzeug=True)
+            else:
+                self.app.run(host='0.0.0.0', port=5004, debug=False, threaded=True)
         except KeyboardInterrupt:
             print("\n🛑 Shutdown requested by user")
         except Exception as e:

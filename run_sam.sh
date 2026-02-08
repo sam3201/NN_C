@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 VENV_DIR="venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
 REQUIREMENTS_FILE="requirements.txt"
-SAM_SYSTEM="main.py"
+SAM_SYSTEM="complete_sam_unified.py"
 PORT=5004
 
 # Function to print colored output
@@ -176,7 +176,7 @@ fi
 python3 -c "
 import sys
 sys.path.insert(0, '.')
-from SAM_AGI import CompleteSAMSystem
+from complete_sam_unified import UnifiedSAMSystem
 print('✅ Main system imports successful')
 "
 

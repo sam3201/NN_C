@@ -1,6 +1,22 @@
 # SAM Goal Management Module
 # Goal management and task coordination for SAM 2.0 AGI
 
+import time
+from dataclasses import dataclass, field
+
+
+@dataclass
+class TaskNode:
+    name: str
+    description: str
+    critical: bool = False
+    priority: int = 3
+    estimated_time: int = 0
+    task_type: str = "general"
+    status: str = "pending"
+    created_at: float = field(default_factory=lambda: time.time())
+    progress: float = 0.0
+
 class GoalManager:
     """Goal manager for tracking and coordinating system goals"""
 
@@ -8,6 +24,7 @@ class GoalManager:
         self.system = system
         self.active_goals = []
         self.completed_goals = []
+        self.subtasks = []
         self.goal_priorities = {
             'survival': 10,
             'stability': 9,
@@ -46,6 +63,31 @@ class GoalManager:
         """Get list of active goals"""
         return sorted(self.active_goals, key=lambda x: x.get('priority_score', 0), reverse=True)
 
+    def add_subtask(self, task: TaskNode):
+        """Add a structured subtask node"""
+        task_id = f"task_{len(self.subtasks)}"
+        task.name = task.name or task_id
+        self.subtasks.append(task)
+        return task_id
+
+    def get_pending_tasks(self):
+        """Return all pending subtasks"""
+        return [task for task in self.subtasks if task.status == "pending"]
+
+    def get_critical_tasks(self):
+        """Return pending critical subtasks"""
+        return [task for task in self.subtasks if task.status == "pending" and task.critical]
+
+    def get_completed_tasks(self):
+        """Return completed subtasks"""
+        return [task for task in self.subtasks if task.status == "completed"]
+
+    def complete_task(self, task: TaskNode):
+        """Mark a subtask as completed"""
+        task.status = "completed"
+        task.progress = 1.0
+        return True
+
     def prioritize_goals(self):
         """Reprioritize goals based on current system state"""
         for goal in self.active_goals:
@@ -53,7 +95,39 @@ class GoalManager:
             goal['priority_score'] = base_priority
 
 
-def create_conversationalist_tasks():
+    def export_readme(self, output_path=None):
+        """Export active/completed goals to a markdown summary"""
+        if output_path is None:
+            output_path = "DOCS/GOALS.md"
+        lines = [
+            "# SAM Goal Summary",
+            "",
+            "## Active Goals",
+        ]
+        if not self.active_goals:
+            lines.append("- None")
+        else:
+            for goal in self.get_active_goals():
+                lines.append(
+                    f"- **{goal.get('description', 'unknown')}** "
+                    f"(id={goal.get('id')}, priority={goal.get('priority')}, "
+                    f"progress={goal.get('progress', 0.0):.2f})"
+                )
+        lines += ["", "## Completed Goals"]
+        if not self.completed_goals:
+            lines.append("- None")
+        else:
+            for goal in self.completed_goals:
+                lines.append(
+                    f"- **{goal.get('description', 'unknown')}** "
+                    f"(id={goal.get('id')})"
+                )
+        with open(output_path, "w", encoding="utf-8") as handle:
+            handle.write("\\n".join(lines) + "\\n")
+        return output_path
+
+
+def create_conversationalist_tasks(goal_manager=None):
     """Create tasks for conversational AI improvement"""
     tasks = [
         {
@@ -69,6 +143,9 @@ def create_conversationalist_tasks():
             'steps': ['quality_metrics', 'feedback_loop', 'continuous_improvement']
         }
     ]
+    if goal_manager is not None:
+        for task in tasks:
+            goal_manager.add_goal(task['description'], priority=task.get('priority', 'normal'))
     return tasks
 
 class SubgoalExecutionAlgorithm:
@@ -95,7 +172,3 @@ class SubgoalExecutionAlgorithm:
             'tasks_executed': executed_tasks
         })
         return {"tasks_executed": executed_tasks}
-
-
-# Import required modules
-import time

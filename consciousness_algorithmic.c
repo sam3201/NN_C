@@ -465,9 +465,34 @@ static PyObject *py_consciousness_optimize(PyObject *self, PyObject *args) {
     }
 }
 
+static PyObject *py_consciousness_get_stats(PyObject *self, PyObject *args) {
+    if (!global_module) {
+        PyErr_SetString(PyExc_RuntimeError, "Consciousness module not initialized");
+        return NULL;
+    }
+
+    double *stats = consciousness_get_stats(global_module);
+    if (!stats) {
+        PyErr_SetString(PyExc_RuntimeError, "Consciousness stats unavailable");
+        return NULL;
+    }
+
+    PyObject *result = PyDict_New();
+    PyDict_SetItemString(result, "lambda_world", PyFloat_FromDouble(stats[0]));
+    PyDict_SetItemString(result, "lambda_self", PyFloat_FromDouble(stats[1]));
+    PyDict_SetItemString(result, "lambda_cons", PyFloat_FromDouble(stats[2]));
+    PyDict_SetItemString(result, "lambda_policy", PyFloat_FromDouble(stats[3]));
+    PyDict_SetItemString(result, "lambda_compute", PyFloat_FromDouble(stats[4]));
+    PyDict_SetItemString(result, "consciousness_score", PyFloat_FromDouble(stats[5]));
+    PyDict_SetItemString(result, "latent_dim", PyLong_FromSize_t(global_module->latent_dim));
+    PyDict_SetItemString(result, "action_dim", PyLong_FromSize_t(global_module->action_dim));
+    return result;
+}
+
 static PyMethodDef ConsciousnessMethods[] = {
     {"create", py_consciousness_create, METH_VARARGS, "Create consciousness module"},
     {"optimize", py_consciousness_optimize, METH_VARARGS, "Run consciousness optimization"},
+    {"get_stats", py_consciousness_get_stats, METH_NOARGS, "Get consciousness stats"},
     {NULL, NULL, 0, NULL}
 };
 

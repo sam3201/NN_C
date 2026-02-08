@@ -1,1 +1,16 @@
 .aider*
+.DS_Store
+__pycache__/
+*.pyc
+build/
+training/distilled/
+venv/
+secrets/
+.env
+.env.*
+*.log
+*.pid
+*.tmp
+*.bak
+.pytest_cache/
+.mypy_cache/

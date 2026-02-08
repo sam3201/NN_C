@@ -163,7 +163,7 @@ class CompleteSAMSystem:
             "SAM_REGRESSION_TASKS",
             str(Path(__file__).parent / "training/tasks/default_tasks.jsonl")
         )
-        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:mistral:latest")
+        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b")
         self.regression_min_pass = float(os.getenv("SAM_REGRESSION_MIN_PASS", "0.7"))
         self.meta_growth_freeze = False
         

@@ -2,10 +2,27 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Dict, List
+from pathlib import Path
+from threading import Lock
+from typing import Any, Dict, List
 
 from training.task_harness import TaskHarness
 from training.teacher_pool import TeacherPool, build_provider
+
+
+class DistillationStreamWriter:
+    """Append-only writer for streaming distillation records."""
+
+    def __init__(self, output_path: str):
+        self.output_path = output_path
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        self._lock = Lock()
+
+    def append(self, record: Dict[str, Any]) -> None:
+        line = json.dumps(record)
+        with self._lock:
+            with open(self.output_path, "a", encoding="utf-8") as out:
+                out.write(line + "\n")
 
 
 def build_dataset(tasks_path: str, output_path: str, teacher_specs: List[str], n_per_teacher: int,

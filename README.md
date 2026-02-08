@@ -13,6 +13,7 @@ SAM 2.0 is a hybrid Python/C multi-agent system with a web dashboard, slash-comm
 - A C compiler toolchain compatible with Python extensions
 - Optional local model backend: Ollama (if using local models)
 - Optional hosted model backends: set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GITHUB_TOKEN`
+- Gmail OAuth dependencies (see Gmail section)
 
 ## Quick Start
 1. Install dependencies
@@ -39,6 +40,7 @@ python3 complete_sam_unified.py
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal
 - Health/API: `/api/health`, `/api/agents`, `/api/command`, `/api/terminal/execute`
+- Groupchat: SocketIO (`/api/groupchat/status`)
 
 ## Slash Commands (subset)
 - `/help`, `/status`, `/agents`
@@ -149,10 +151,58 @@ python -m training.regression_suite \
 ```
 
 Environment overrides:
-- `SAM_POLICY_PROVIDER` (e.g. `ollama:mistral:latest`)
+- `SAM_POLICY_PROVIDER` (default: `ollama:qwen2.5-coder:7b`)
 - `SAM_REGRESSION_TASKS` (default: `training/tasks/default_tasks.jsonl`)
 - `SAM_REGRESSION_MIN_PASS` (default: `0.7`)
 - `SAM_REGRESSION_ON_GROWTH` (default: `1`)
+
+### Live Groupchat Distillation
+The real-time groupchat loop can stream teacher-pool consensus responses directly into a distillation dataset.
+
+Environment overrides:
+- `SAM_TEACHER_POOL_ENABLED` (default: `1`)
+- `SAM_TEACHER_POOL` (default: `ollama:mistral:latest`)
+- `SAM_TEACHER_N_PER` (default: `1`)
+- `SAM_TEACHER_MIN_SIM` (default: `0.72`)
+- `SAM_TEACHER_MIN_VOTES` (default: `1`)
+- `SAM_TEACHER_TEMP` (default: `0.2`)
+- `SAM_TEACHER_MAX_TOKENS` (default: `512`)
+- `SAM_TEACHER_TIMEOUT_S` (default: `60`)
+- `SAM_DISTILL_PATH` (default: `training/distilled/groupchat.jsonl`)
+- `SAM_DISTILL_INCLUDE_CANDIDATES` (default: `0`)
+
+## Implementation Spec (Derived)
+- `DOCS/README-chatGPT-implementation-spec.md` — strict, implementation-only spec distilled from `README-chatGPT.md` (no forward-looking prompts).
+
+## Auto Backup (GitHub)
+The system can auto-commit and push to two git remotes on a schedule.
+
+Configured remotes (default):
+- `origin` → `https://github.com/sam3201/NN_C`
+- `sam` → `https://github.com/samaisystemagi/SAM_AGI`
+
+Environment overrides:
+- `SAM_BACKUP_ENABLED` (default: `1`)
+- `SAM_BACKUP_REQUIRED` (default: `0`)
+- `SAM_BACKUP_REMOTE_PRIMARY` (default: `origin`)
+- `SAM_BACKUP_REMOTE_SECONDARY` (default: auto-detect `sam` if present)
+- `SAM_BACKUP_INTERVAL_S` (default: `3600`)
+- `SAM_BACKUP_AUTO_COMMIT` (default: `1`)
+- `SAM_BACKUP_COMMIT_PREFIX` (default: `auto-backup`)
+- `SAM_BACKUP_AUTHOR_NAME` (default: empty)
+- `SAM_BACKUP_AUTHOR_EMAIL` (default: empty)
+
+## Gmail Integration (OAuth)
+Plaintext passwords are not used. OAuth is required.
+
+1. Create OAuth credentials in Google Cloud Console and download the JSON file.
+2. Place it at `secrets/gmail_credentials.json` (or set `SAM_GMAIL_CREDENTIALS`).
+3. On first run, OAuth will create `secrets/gmail_token.json` (or set `SAM_GMAIL_TOKEN`).
+
+Environment overrides:
+- `SAM_GMAIL_CREDENTIALS` (default: `secrets/gmail_credentials.json`)
+- `SAM_GMAIL_TOKEN` (default: `secrets/gmail_token.json`)
+- `SAM_GMAIL_ACCOUNT` (display name for UI/status)
 
 ## Failure Case Simulation
 ```bash
