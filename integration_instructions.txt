@@ -1,0 +1,64 @@
+# Add these imports at the top of complete_sam_unified.py after the existing imports:
+from ram_model_switcher import (
+    RAMAwareModelSwitcher, 
+    ConversationDiversityManager,
+    initialize_ram_aware_switching,
+    get_optimal_model_for_task,
+    check_model_switch_needed,
+    should_allow_meta_agent_message,
+    record_conversation_message
+)
+# Add this to UnifiedSAMSystem.__init__ after the MetaAgent initialization:
+
+        # Initialize RAM-aware model switching and conversation diversity
+        try:
+            initialize_ram_aware_switching(self)
+        except Exception as e:
+            print(f"⚠️ RAM-aware switching initialization failed: {e}")
+            print("Continuing without RAM-aware model switching")
+
+        # Test optimal model selection
+        try:
+            optimal = get_optimal_model_for_task(self, "general")
+            print(f"🎯 Optimal model for general tasks: {optimal['provider']}/{optimal['model']} (RAM: {optimal.get('ram_percent', 'unknown')}%)")
+        except Exception as e:
+            print(f"⚠️ Model optimization test failed: {e}")
+
+        print("🧠 RAM-Aware Model Switching: ACTIVE")
+        print("🎭 Conversation Diversity: ACTIVE")
+# Add this to the MetaAgent.request_help method (or create it):
+
+    def request_help(self, issue_description: str, urgency: str = "medium") -> bool:
+        """Request help from groupchat participants for complex issues"""
+        if not hasattr(self.system, 'diversity_manager'):
+            # Fallback if diversity manager not available
+            self._send_groupchat_message(f"🤖 META-AGENT HELP NEEDED: {issue_description}")
+            return True
+        
+        # Check conversation diversity before sending
+        if self.system.diversity_manager.should_allow_meta_agent_message("help_request"):
+            message = f"🤖 META-AGENT HELP REQUEST ({urgency}): {issue_description}"
+            self._send_groupchat_message(message)
+            
+            # Record the message for diversity tracking
+            if hasattr(self.system, 'diversity_manager'):
+                self.system.diversity_manager.record_message("meta_agent", "help_request", message)
+            
+            print(f"🆘 MetaAgent requested help: {issue_description[:50]}...")
+            return True
+        else:
+            print(f"🎭 Diversity control: Postponing help request to maintain conversation balance")
+            return False
+    
+    def _send_groupchat_message(self, message: str):
+        """Send a message to the groupchat"""
+        try:
+            # This would integrate with your chat system's message sending
+            # For now, we'll print it (integrate with your actual chat system)
+            print(f"📢 GROUPCHAT: {message}")
+            
+            # If you have a chat system, add the integration here
+            # Example: self.system.broadcast_message("meta_agent", message)
+            
+        except Exception as e:
+            print(f"⚠️ Failed to send groupchat message: {e}")

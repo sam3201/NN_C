@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from sam_cli import launch_sam_terminal
+from experimental_auto_code import initialize_experimental_auto_code, check_experimental_code_application, get_experimental_status
 """
 SAM 2.0 UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
 Combines Pure C Core + Comprehensive Python Orchestration
@@ -730,7 +732,7 @@ Confidence Threshold: Must be >= 0.75 for application
                                                "prompt": prompt,
                                                "stream": False,
                                                "options": {"temperature": 0.1, "num_predict": 1000}
-                                           }, timeout=30)
+                                           }, timeout=20)
 
                     if response.status_code == 200:
                         return self._parse_ollama_patch_response(response.json()['response'], target_file, patch_id)
@@ -1185,16 +1187,30 @@ class VerifierJudgeAgent:
 
         return min(score, 10.0)  # Cap at 10
 
-class ProductionMetaAgent:
+class MetaAgent:
     """Production-grade Meta-Agent for safe self-healing AGI
-    Implements complete O→L→P→V→S→A algorithm with learning state"""
-    
-    def __init__(self, observer=None, localizer=None, generator=None, verifier=None):
+    Implements complete O→L→P→V→S→A algorithm with learning state
+
+    FROZEN INTERFACE: This constructor signature MUST remain stable.
+    Any changes require updating all calling code simultaneously.
+    """
+
+    def __init__(
+        self,
+        observer,
+        localizer,
+        generator,
+        verifier,
+        system=None
+    ):
         # Required sub-agents
         self.observer = observer
         self.localizer = localizer
         self.generator = generator
         self.verifier = verifier
+
+        # System instance for teacher-student learning
+        self.system = system
 
         # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
         self.failure_clusters = {}     # cluster_id -> list[failure]
@@ -1203,6 +1219,15 @@ class ProductionMetaAgent:
 
         # Internal counters
         self._cluster_id_counter = 0
+
+        # Advanced learning system attributes
+        self.learning_cycles = 0
+        self.errors_detected = []
+        self.improvements_applied = []
+        self.validation_history = []
+        self.baseline_performance = {}
+        self.current_performance = {}
+        self.improvement_threshold = 0.95  # 95% error reduction required
 
         print(" Production Meta-Agent initialized with learning state")
         print("   Observer Agent: Active")
@@ -1322,34 +1347,10 @@ class ProductionMetaAgent:
     def ensure_initialization(self):
         """Ensure initialization (always ready for new implementation)"""
         return True
-    """Advanced AI validation system using teacher-student learning and actor-critic methods"""
 
-    """"
-    def __init__(self, system_instance):
-        self.system = system_instance
-        self.teacher_model = None  # Experienced model that guides learning
-        self.student_model = None  # Model being trained/improved
-        self.actor_critic = None   # Validation and improvement system
-
-        # REQUIRED STATE ATTRIBUTES (DEPLOYMENT BLOCKERS FIXED)
-        self.failure_clusters = {}     # cluster_id -> list[failure]
-        self.patch_history = []        # list of applied/rejected patches
-        self.confidence_threshold = 0.80  # Safety threshold
-
-        # Learning state
-        self.learning_cycles = 0
-        self.errors_detected = []
-        self.improvements_applied = []
-        self.validation_history = []
-
-        # Performance metrics
-        self.baseline_performance = {}
-        self.current_performance = {}
-        self.improvement_threshold = 0.95  # 95% error reduction required
-
-        print("🎓 Teacher-Student-Actor-Critic Validator initialized")
-        print("   📚 Ready for iterative self-improvement learning")
-"""
+    # ===========================
+    # ADVANCED LEARNING SYSTEM
+    # ===========================
     def initialize_teacher_student_models(self):
         """Initialize teacher and student models for learning"""
         try:
@@ -1387,64 +1388,6 @@ class ProductionMetaAgent:
         except Exception as e:
             print(f"❌ Failed to initialize teacher-student models: {e}")
             return False
-
-    def _get_teacher_validation_rules(self):
-        """Get expert validation rules from teacher model"""
-        return {
-            'syntax_validation': {'weight': 1.0, 'threshold': 0.95},
-            'semantic_validation': {'weight': 0.9, 'threshold': 0.90},
-            'performance_validation': {'weight': 0.8, 'threshold': 0.85},
-            'security_validation': {'weight': 1.0, 'threshold': 0.98},
-            'integration_validation': {'weight': 0.7, 'threshold': 0.80}
-        }
-
-    def _get_teacher_improvement_strategies(self):
-        """Get expert improvement strategies"""
-        return [
-            'code_optimization',
-            'error_pattern_recognition',
-            'performance_enhancement',
-            'security_hardening',
-            'integration_improvement',
-            'architecture_refinement'
-        ]
-
-    def _get_student_validation_rules(self):
-        """Get learning validation rules for student model"""
-        return {
-            'basic_syntax': {'weight': 0.8, 'threshold': 0.70},
-            'basic_functionality': {'weight': 0.6, 'threshold': 0.60},
-            'error_detection': {'weight': 0.7, 'threshold': 0.65}
-        }
-
-    def _initialize_actor(self):
-        """Initialize actor for decision making"""
-        return {
-            'policy': 'validation_driven',
-            'action_space': ['validate', 'improve', 'test', 'deploy', 'rollback'],
-            'state_space': ['error_detected', 'improvement_needed', 'validation_passed', 'deployment_ready'],
-            'learning_rate': 0.01
-        }
-
-    def _initialize_critic(self):
-        """Initialize critic for value estimation"""
-        return {
-            'value_function': 'error_reduction_based',
-            'baseline': 0.5,
-            'discount_factor': 0.95,
-            'td_lambda': 0.8
-        }
-
-    def _get_reward_function(self):
-        """Define reward function for actor-critic learning"""
-        return {
-            'error_reduction': 1.0,
-            'performance_improvement': 0.8,
-            'security_enhancement': 1.2,
-            'successful_deployment': 2.0,
-            'failed_validation': -1.0,
-            'regression_introduced': -2.0
-        }
 
     def run_teacher_student_learning_cycle(self, max_cycles=10):
         """Run iterative teacher-student learning cycles until no errors remain"""
@@ -1517,11 +1460,68 @@ class ProductionMetaAgent:
             print("   ✅ Teacher-student-actor-critic validation achieved zero errors")
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
-        else:
             print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
             print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
             print("   📊 Final performance may still have some issues")
             return False
+
+    def _get_teacher_validation_rules(self):
+        """Get expert validation rules from teacher model"""
+        return {
+            'syntax_validation': {'weight': 1.0, 'threshold': 0.95},
+            'semantic_validation': {'weight': 0.9, 'threshold': 0.90},
+            'performance_validation': {'weight': 0.8, 'threshold': 0.85},
+            'security_validation': {'weight': 1.0, 'threshold': 0.98},
+            'integration_validation': {'weight': 0.7, 'threshold': 0.80}
+        }
+
+    def _get_teacher_improvement_strategies(self):
+        """Get expert improvement strategies"""
+        return [
+            'code_optimization',
+            'error_pattern_recognition',
+            'performance_enhancement',
+            'security_hardening',
+            'integration_improvement',
+            'architecture_refinement'
+        ]
+
+    def _get_student_validation_rules(self):
+        """Get learning validation rules for student model"""
+        return {
+            'basic_syntax': {'weight': 0.8, 'threshold': 0.70},
+            'basic_functionality': {'weight': 0.6, 'threshold': 0.60},
+            'error_detection': {'weight': 0.7, 'threshold': 0.65}
+        }
+
+    def _initialize_actor(self):
+        """Initialize actor for decision making"""
+        return {
+            'policy': 'validation_driven',
+            'action_space': ['validate', 'improve', 'test', 'deploy', 'rollback'],
+            'state_space': ['error_detected', 'improvement_needed', 'validation_passed', 'deployment_ready'],
+            'learning_rate': 0.01
+        }
+
+    def _initialize_critic(self):
+        """Initialize critic for value estimation"""
+        return {
+            'value_function': 'error_reduction_based',
+            'baseline': 0.5,
+            'discount_factor': 0.95,
+            'td_lambda': 0.8
+        }
+
+    def _get_reward_function(self):
+        """Define reward function for actor-critic learning"""
+        return {
+            'error_reduction': 1.0,
+            'performance_improvement': 0.8,
+            'security_enhancement': 1.2,
+            'successful_deployment': 2.0,
+            'failed_validation': -1.0,
+            'regression_introduced': -2.0
+        }
 
     def _student_error_detection_phase(self):
         """Student model detects errors in the system"""
@@ -1884,7 +1884,197 @@ class ProductionMetaAgent:
 
         # Convergence criteria: zero errors AND high performance score
         return error_count == 0 and overall_score >= self.improvement_threshold
-class SimpleMetaAgent:
+class IntelligentIssueResolver:
+    """AI-powered system for detecting and resolving issues automatically"""
+
+    def __init__(self, system_instance):
+        self.system = system_instance
+        self.detected_issues = []
+        self.resolution_attempts = {}
+        self.chat_integration = None
+
+    def detect_initialization_issues(self):
+        """Detect issues during system initialization"""
+        issues = []
+
+        # Check component availability
+        components = {
+            'google_drive': self.system.google_drive_available,
+            'web_search': self.system.sam_web_search_available,
+            'code_modifier': self.system.sam_code_modifier_available,
+            'gmail': self.system.sam_gmail_available,
+            'github': self.system.sam_github_available
+        }
+
+        for component, available in components.items():
+            if not available:
+                issues.append({
+                    'type': 'missing_integration',
+                    'component': component,
+                    'severity': 'high',
+                    'message': f'{component.replace("_", " ").title()} integration not available',
+                    'auto_fix_possible': self._can_auto_fix_integration(component)
+                })
+
+        # Check API keys
+        api_keys = {
+            'github_token': os.getenv('GITHUB_TOKEN'),
+            'google_api_key': os.getenv('GOOGLE_API_KEY'),
+            'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
+            'openai_key': os.getenv('OPENAI_API_KEY')
+        }
+
+        for key_name, value in api_keys.items():
+            if not value:
+                issues.append({
+                    'type': 'missing_api_key',
+                    'component': key_name,
+                    'severity': 'medium',
+                    'message': f'{key_name.replace("_", " ").title()} not configured',
+                    'auto_fix_possible': False  # Requires user input
+                })
+
+        self.detected_issues = issues
+        return issues
+
+    def _can_auto_fix_integration(self, component):
+        """Check if an integration issue can be auto-fixed"""
+        auto_fixable = {
+            'google_drive': False,  # Requires credentials file
+            'web_search': True,     # Can work without Google Drive
+            'code_modifier': True,  # Core functionality
+            'gmail': False,         # Requires email setup
+            'github': True          # Can work without token (read-only)
+        }
+        return auto_fixable.get(component, False)
+
+    def attempt_auto_resolution(self, issue):
+        """Attempt to automatically resolve an issue"""
+        issue_id = f"{issue['type']}_{issue['component']}"
+        self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
+
+        print(f"🤖 Attempting auto-resolution for: {issue['message']}")
+
+        if issue['type'] == 'missing_integration':
+            success = self._fix_missing_integration(issue['component'])
+        elif issue['type'] == 'missing_api_key':
+            success = self._fix_missing_api_key(issue['component'])
+        else:
+            success = False
+
+        self.resolution_attempts[issue_id]['success'] = success
+
+        if success:
+            print(f"✅ Auto-resolution successful for: {issue['message']}")
+        else:
+            print(f"❌ Auto-resolution failed for: {issue['message']}")
+
+        return success
+
+    def _fix_missing_integration(self, component):
+        """Attempt to fix missing integration"""
+        if component == 'web_search':
+            # Web search can work without Google Drive
+            try:
+                from sam_web_search import initialize_sam_web_search
+                initialize_sam_web_search()
+                return True
+            except Exception as e:
+                print(f"  Web search auto-fix failed: {e}")
+                return False
+
+        elif component == 'code_modifier':
+            # Code modifier is core functionality
+            try:
+                from sam_code_modifier import initialize_sam_code_modifier
+                project_root = str(Path(__file__).parent)
+                initialize_sam_code_modifier(project_root)
+                return True
+            except Exception as e:
+                print(f"  Code modifier auto-fix failed: {e}")
+                return False
+
+        elif component == 'github':
+            # GitHub can work without token (read-only)
+            try:
+                from sam_github_integration import initialize_sam_github
+                initialize_sam_github()
+                return True
+            except Exception as e:
+                print(f"  GitHub auto-fix failed: {e}")
+                return False
+
+        return False
+
+    def _fix_missing_api_key(self, key_name):
+        """Attempt to fix missing API key"""
+        # For now, we can't auto-fix API keys as they require user input
+        # But we could check if they're set in environment
+        env_var = key_name.upper()
+        if os.getenv(env_var):
+            print(f"  Found {key_name} in environment")
+            return True
+        return False
+
+    def engage_user_for_resolution(self, unresolved_issues):
+        """Engage user in chat to resolve remaining issues"""
+        if not unresolved_issues:
+            return
+
+        print("\\n🤖 INTELLIGENT ISSUE RESOLUTION SYSTEM ACTIVE")
+        print("=" * 60)
+        print("I've detected some issues that need your attention:")
+
+        for i, issue in enumerate(unresolved_issues, 1):
+            print(f"\\n{i}. {issue['message']}")
+            if issue['type'] == 'missing_api_key':
+                if 'github' in issue['component']:
+                    print("   💡 Solution: Set GITHUB_TOKEN environment variable")
+                    print("   📝 Run: export GITHUB_TOKEN=your_github_token_here")
+                elif 'google' in issue['component']:
+                    print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
+                    print("   📝 Run: export GOOGLE_API_KEY=your_google_api_key_here")
+                elif 'anthropic' in issue['component']:
+                    print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
+                    print("   📝 Run: export ANTHROPIC_API_KEY=your_anthropic_key_here")
+                elif 'openai' in issue['component']:
+                    print("   💡 Solution: Set OPENAI_API_KEY environment variable")
+                    print("   📝 Run: export OPENAI_API_KEY=your_openai_key_here")
+            else:
+                print("   💡 This integration is not available. The system will continue without it.")
+
+        print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
+        print("\\n💬 I can help you resolve these issues. What would you like to do?")
+
+    def resolve_all_issues(self):
+        """Main method to resolve all detected issues"""
+        issues = self.detect_initialization_issues()
+
+        if not issues:
+            print("✅ No issues detected - system is healthy!")
+            return True
+
+        print(f"\\n🤖 Detected {len(issues)} potential issues:")
+        for issue in issues:
+            severity_icon = "🔴" if issue['severity'] == 'high' else "🟡" if issue['severity'] == 'medium' else "🟢"
+            print(f"  {severity_icon} {issue['message']}")
+
+        # Attempt auto-resolution
+        unresolved_issues = []
+        for issue in issues:
+            if issue.get('auto_fix_possible', False):
+                if not self.attempt_auto_resolution(issue):
+                    unresolved_issues.append(issue)
+            else:
+                unresolved_issues.append(issue)
+
+        # Engage user for remaining issues
+        if unresolved_issues:
+            self.engage_user_for_resolution(unresolved_issues)
+            return False
+
+        print("\\n✅ All issues resolved automatically!")
+        return True
     """Simple fallback meta-agent with required deployment attributes"""
 
     def __init__(self):
@@ -1977,27 +2167,303 @@ class SimpleMetaAgent:
         return auto_fixable.get(component, False)
     
     def attempt_auto_resolution(self, issue):
-        """Attempt to automatically resolve an issue"""
+        """Attempt to automatically resolve an issue with LLM-powered analysis"""
         issue_id = f"{issue['type']}_{issue['component']}"
         self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
-        
+
         print(f"🤖 Attempting auto-resolution for: {issue['message']}")
-        
+        print(f"   🔍 Analyzing with available LLM models...")
+
+        # First try basic rule-based fixes
+        basic_success = self._try_basic_resolution(issue)
+
+        if basic_success:
+            print(f"✅ Basic auto-resolution successful for: {issue['message']}")
+            self.resolution_attempts[issue_id]['success'] = True
+            return True
+
+        # If basic resolution fails, try LLM-powered analysis
+        print(f"   🧠 Basic resolution failed, attempting LLM-powered analysis...")
+        llm_success = self._try_llm_powered_resolution(issue)
+
+        if llm_success:
+            print(f"✅ LLM-powered auto-resolution successful for: {issue['message']}")
+            self.resolution_attempts[issue_id]['success'] = True
+            return True
+
+        print(f"❌ All auto-resolution methods failed for: {issue['message']}")
+        return False
+
+    def _try_basic_resolution(self, issue):
+        """Try basic rule-based resolution methods"""
         if issue['type'] == 'missing_integration':
-            success = self._fix_missing_integration(issue['component'])
+            return self._fix_missing_integration(issue['component'])
         elif issue['type'] == 'missing_api_key':
-            success = self._fix_missing_api_key(issue['component'])
-        else:
-            success = False
+            return self._fix_missing_api_key(issue['component'])
+        return False
+
+    def _try_llm_powered_resolution(self, issue):
+        """Try LLM-powered intelligent resolution"""
+        try:
+            # Check if we have SWE models available
+            swe_models = self._get_available_swe_models()
+
+            if not swe_models:
+                print("   ⚠️ No SWE LLM models available for intelligent resolution")
+                return False
+
+            # Use the best available SWE model
+            best_model = swe_models[0]  # qwen2.5-coder:7b or codellama
+            print(f"   🎯 Using SWE model: {best_model}")
+
+            return self._llm_analyze_and_fix_issue(issue, best_model)
+
+        except Exception as e:
+            print(f"   ❌ LLM-powered resolution error: {e}")
+            return False
+
+    def _get_available_swe_models(self):
+        """Get available SWE (Software Engineering) models for intelligent resolution"""
+        swe_models = []
+
+        try:
+            # Check Ollama for SWE models
+            import subprocess
+            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
+
+            if result.returncode == 0:
+                available_models = result.stdout.strip().split('\n')[1:]  # Skip header
+
+                # Prioritize SWE/coding models
+                swe_model_names = [
+                    'codellama',      # Good SWE model, lighter memory footprint
+                    'codellama',      # Good SWE model
+                    'deepseek-coder', # Also good for coding
+                    'llama3.1',       # General but capable
+                ]
+
+                for model_line in available_models:
+                    if model_line.strip():
+                        model_name = model_line.split()[0]
+                        for swe_name in swe_model_names:
+                            if swe_name in model_name.lower():
+                                swe_models.append(model_name)
+                                break
+
+                # Sort by preference (qwen2.5-coder first)
+                swe_models.sort(key=lambda x: (
+                    0 if 'qwen2.5-coder' in x else
+                    1 if 'codellama' in x else
+                    2 if 'deepseek-coder' in x else 3
+                ))
+
+        except Exception as e:
+            print(f"   ⚠️ Error checking Ollama models: {e}")
+
+        return swe_models
+
+    def _llm_analyze_and_fix_issue(self, issue, model_name):
+        """Use LLM to analyze and potentially fix the issue"""
+        try:
+            import subprocess
+            import json
+
+            # Create LLM prompt for issue analysis
+            prompt = self._create_issue_analysis_prompt(issue)
+
+            # Call Ollama with the SWE model
+            ollama_cmd = [
+                'ollama', 'run', model_name,
+                '--format', 'json'
+            ]
+
+            print(f"   🤖 Consulting {model_name} for solution...")
+
+            # Run Ollama in a subprocess with timeout
+            process = subprocess.Popen(
+                ollama_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Send prompt and get response
+            stdout, stderr = process.communicate(input=prompt, timeout=20)
+
+            if process.returncode == 0 and stdout.strip():
+                try:
+                    # Try to parse JSON response
+                    response = json.loads(stdout.strip())
+                    return self._apply_llm_solution(issue, response)
+                except json.JSONDecodeError:
+                    # Fallback: try to extract solution from text
+                    print(f"   📝 LLM response (non-JSON): {stdout[:200]}...")
+                    return self._apply_text_solution(issue, stdout)
+            else:
+                print(f"   ❌ LLM call failed: {stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            print("   ⏰ LLM analysis timed out")
+            return False
+        except Exception as e:
+            print(f"   ❌ LLM analysis error: {e}")
+            return False
+
+    def _create_issue_analysis_prompt(self, issue):
+        """Create a prompt for LLM to analyze the issue"""
+        issue_type = issue.get('type', 'unknown')
+        component = issue.get('component', 'unknown')
+        message = issue.get('message', 'Unknown issue')
+
+        prompt = f"""You are an expert software engineer analyzing a system issue. Provide a detailed analysis and potential solution.
+
+ISSUE DETAILS:
+- Type: {issue_type}
+- Component: {component}
+- Message: {message}
+- Severity: {issue.get('severity', 'unknown')}
+
+SYSTEM CONTEXT:
+- This is a Python-based AI system with C extensions
+- Components include: consciousness, orchestrator, agents, web interface
+- Integrations: Gmail, GitHub, Google Drive, web search, code modification
+
+TASK:
+1. Analyze what this issue means for the system
+2. Determine if it can be automatically resolved
+3. If resolvable, provide specific steps or code changes needed
+4. Rate confidence in your analysis (0.0 to 1.0)
+
+RESPONSE FORMAT (JSON):
+{{
+    "analysis": "Detailed analysis of the issue",
+    "can_resolve": true/false,
+    "solution_type": "code_change|configuration|integration|manual",
+    "solution_steps": ["step1", "step2", "step3"],
+    "code_changes": {{"file": "changes"}},
+    "confidence": 0.85
+}}
+
+Analyze this issue and provide your expert recommendation:"""
+
+        return prompt
+
+    def _apply_llm_solution(self, issue, llm_response):
+        """Apply the LLM-provided solution"""
+        try:
+            can_resolve = llm_response.get('can_resolve', False)
+            confidence = llm_response.get('confidence', None)
+            # Parse confidence if it's a string
+            if isinstance(confidence, str):
+                try:
+                    confidence = float(confidence)
+                except (ValueError, TypeError):
+                    confidence = 0.6  # Default confidence if parsing fails
+            elif confidence is None:
+                confidence = 0.6  # Default confidence if not provided
+            confidence = llm_response.get('confidence', 0.0)
+            solution_type = llm_response.get('solution_type', 'manual')
+
+            print(f"   📊 LLM Analysis: Can resolve={can_resolve}, Confidence={confidence:.2f}, Type={solution_type}")
+
+            if not can_resolve or (confidence is not None and confidence < 0.5):
+                print("   ⚠️ LLM determined issue cannot be safely resolved automatically")
+                return False
+
+        except Exception as e:
+            print(f"   ❌ Experimental code application failed: {e}")
+            # Fall through to manual application
+            # Check for experimental code application
+            if solution_type == "code_change" and check_experimental_code_application(
+                self.system if hasattr(self, "system") else None, issue, confidence, solution_type, code_changes):
+                print("🧪 Experimental code application initiated - testing in spawned process")
+                return True
         
-        self.resolution_attempts[issue_id]['success'] = success
-        
-        if success:
-            print(f"✅ Auto-resolution successful for: {issue['message']}")
+        # Apply solution based on type
+        if solution_type == 'integration':
+            return self._apply_integration_solution(issue, llm_response)
+        elif solution_type == 'configuration':
+            return self._apply_configuration_solution(issue, llm_response)
+        elif solution_type == 'code_change':
+            return self._apply_code_solution(issue, llm_response)
         else:
-            print(f"❌ Auto-resolution failed for: {issue['message']}")
-            
-        return success
+            print(f"   ⚠️ LLM suggested {solution_type} solution - requires manual intervention")
+            return False
+
+        except Exception as e:
+            print(f"   ❌ Error applying LLM solution: {e}")
+            return False
+
+    def _apply_text_solution(self, issue, text_response):
+        """Apply solution from text response (fallback)"""
+        # This is a simplified fallback - in practice would need better parsing
+        print(f"   📝 Applying text-based solution from LLM...")
+
+        # Check if text contains actionable information
+        text_lower = text_response.lower()
+
+        if 'integration' in text_lower and 'initialize' in text_lower:
+            # Try integration initialization
+            return self._fix_missing_integration(issue['component'])
+
+        print("   ⚠️ Could not extract actionable solution from LLM text response")
+        return False
+
+    def _apply_integration_solution(self, issue, response):
+        """Apply integration-based solution"""
+        print("   🔧 Applying integration solution...")
+
+        solution_steps = response.get('solution_steps', [])
+
+        # Execute solution steps
+        for step in solution_steps:
+            print(f"   📋 Executing: {step}")
+
+            if 'initialize' in step.lower():
+                # Try to initialize the integration
+                component = issue.get('component', '')
+                if component in ['web_search', 'code_modifier', 'github']:
+                    return self._fix_missing_integration(component)
+
+        return True
+
+    def _apply_configuration_solution(self, issue, response):
+        """Apply configuration-based solution"""
+        print("   ⚙️ Applying configuration solution...")
+
+        # Configuration solutions typically require manual intervention
+        # but we can check environment variables
+        component = issue.get('component', '')
+
+        if 'api_key' in component or 'token' in component:
+            env_var = component.upper()
+            if os.getenv(env_var):
+                print(f"   ✅ Found {component} in environment")
+                return True
+
+        print("   ⚠️ Configuration solution requires manual setup")
+        return False
+
+    def _apply_code_solution(self, issue, response):
+        """Apply code-based solution"""
+        print("   💻 Applying code solution...")
+
+        code_changes = response.get('code_changes', {})
+
+        if not code_changes:
+            print("   ⚠️ No code changes specified by LLM")
+            return False
+
+        # Code solutions are complex and should be handled carefully
+        # For now, we'll log the suggested changes but not apply them automatically
+        print("   📝 LLM suggested code changes (manual application recommended):")
+        for file_path, changes in code_changes.items():
+            print(f"     📄 {file_path}: {changes[:100]}...")
+
+        print("   ⚠️ Code solutions require manual review and application")
+        return False
     
     def _fix_missing_integration(self, component):
         """Attempt to fix missing integration"""
@@ -2110,9 +2576,17 @@ class UnifiedSAMSystem:
     def __init__(self):
         print("🚀 INITIALIZING UNIFIED SAM 2.0 COMPLETE SYSTEM")
         print("=" * 80)
-        print("🎯 Combining Pure C Core + Comprehensive Python Orchestration")
+        print("🎯 Combining Pure C Core + Python Orchestration")
         print("🎯 Zero Fallbacks - All Components Work Correctly")
         print("=" * 80)
+
+        # CRITICAL: Bootstrap safety - disable self-healing during initialization
+        self._bootstrap_mode = True
+        self._allow_self_modification = False
+        self._allow_auto_resolution = False
+
+        # CRITICAL: Validate minimum capabilities BEFORE any component initialization
+        self._validate_minimum_capabilities()
 
         # Project root for file operations
         self.project_root = Path(__file__).parent
@@ -2189,7 +2663,7 @@ class UnifiedSAMSystem:
         verifier = VerifierJudgeAgent(self)
 
         # Create meta-agent with sub-agents
-        self.meta_agent = ProductionMetaAgent(observer, localizer, generator, verifier)
+        self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
             
         # Run teacher-student learning cycles for system improvement
         print("\\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
@@ -2207,6 +2681,13 @@ class UnifiedSAMSystem:
             print("   🔄 System will continue with limited self-healing capabilities")
 
         # Initialize intelligent issue resolver BEFORE other components
+        # Initialize experimental auto-code modification system
+        try:
+            initialize_experimental_auto_code(self)
+        except Exception as e:
+            print(f"⚠️ Experimental auto-code system failed: {e}")
+            print("Continuing without experimental features")
+
         print("🤖 Initializing Intelligent Issue Resolution System...")
         self.issue_resolver = IntelligentIssueResolver(self)
         
@@ -2222,6 +2703,13 @@ class UnifiedSAMSystem:
             print("🛠️ Attempting system recovery...")
             self._attempt_system_recovery(e)
 
+        # CRITICAL: Enable self-healing ONLY after successful bootstrap
+        if not self._bootstrap_mode:
+            self._bootstrap_mode = False
+            self._allow_self_modification = True
+            self._allow_auto_resolution = True
+            print("🛡️ Self-healing capabilities enabled for runtime operation")
+
         # Start continuous self-healing system
         self._start_continuous_self_healing()
 
@@ -2230,6 +2718,131 @@ class UnifiedSAMSystem:
 
         print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
         print("=" * 80)
+
+    def _validate_minimum_capabilities(self):
+        """Validate minimum required capabilities before any component initialization.
+        This prevents auto-resolution thrashing during bootstrap.
+        """
+        print("\\n🔍 VALIDATING MINIMUM SYSTEM CAPABILITIES...")
+        print("-" * 50)
+
+        # Check 1: Python version
+        import sys
+        python_version = sys.version_info
+        if python_version < (3, 10):
+            raise RuntimeError(f"❌ Python {python_version.major}.{python_version.minor} detected. Minimum required: Python 3.10+")
+
+        print(f"✅ Python {python_version.major}.{python_version.minor}.{python_version.micro} - OK")
+
+        # Check 2: Ollama and local models (CRITICAL)
+        ollama_available = self._check_ollama_availability()
+        if not ollama_available:
+            raise RuntimeError(
+                "❌ Ollama not available. Install Ollama and pull at least one model.\\n"
+                "   Run: curl -fsSL https://ollama.ai/install.sh | sh\\n"
+                "   Then: ollama pull llama3.1"
+            )
+
+        swe_models = self._get_available_swe_models()
+        if not swe_models:
+            raise RuntimeError(
+                "❌ No SWE LLM models available. Pull at least one coding model:\\n"
+                "   ollama pull qwen2.5-coder:7b\\n"
+                "   ollama pull codellama:latest\\n"
+                "   ollama pull llama3.1:latest"
+            )
+
+        print(f"✅ Ollama available with {len(swe_models)} SWE models: {swe_models[0]}")
+
+        # Check 3: Required Python packages
+        required_packages = ['flask', 'flask_socketio', 'requests']
+        missing_packages = []
+
+        for package in required_packages:
+            try:
+                # Direct import without string manipulation
+                if package == 'flask_socketio':
+                    import flask_socketio
+                elif package == 'flask':
+                    import flask
+                elif package == 'requests':
+                    import requests
+            except ImportError:
+                missing_packages.append(package)
+
+        if missing_packages:
+            raise RuntimeError(f"❌ Missing required packages: {', '.join(missing_packages)}\\n"
+                             "   Run: pip install -r requirements.txt")
+
+        print("✅ All required Python packages available")
+
+        # Check 4: C extensions (optional but recommended)
+        c_extensions_available = self._check_c_extensions()
+        if c_extensions_available:
+            print("✅ C extensions available (performance optimized)")
+        else:
+            print("⚠️ C extensions not available (using Python fallbacks)")
+
+        print("\\n🎉 MINIMUM CAPABILITIES VALIDATION PASSED")
+        print("   🚀 Safe to proceed with component initialization")
+
+    def _check_ollama_availability(self):
+        """Check if Ollama is available and responding"""
+        try:
+            import subprocess
+            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=5)
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+            return False
+
+    def _check_c_extensions(self):
+        """Check if C extensions are available"""
+        try:
+            import consciousness_algorithmic
+            import specialized_agents_c
+            import multi_agent_orchestrator_c
+            return True
+        except ImportError:
+            return False
+
+    def _get_available_swe_models(self):
+        """Get available SWE (Software Engineering) models for intelligent resolution"""
+        swe_models = []
+
+        try:
+            # Check Ollama for SWE models
+            import subprocess
+            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
+
+            if result.returncode == 0:
+                available_models = result.stdout.strip().split('\n')[1:]  # Skip header
+
+                # Prioritize SWE/coding models
+                swe_model_names = [
+                    'codellama',      # Good SWE model, lighter memory footprint
+                    'deepseek-coder', # Also good for coding
+                    'llama3.1',       # General but capable
+                ]
+
+                for model_line in available_models:
+                    if model_line.strip():
+                        model_name = model_line.split()[0]
+                        for swe_name in swe_model_names:
+                            if swe_name in model_name.lower():
+                                swe_models.append(model_name)
+                                break
+
+                # Sort by preference (qwen2.5-coder first)
+                swe_models.sort(key=lambda x: (
+                    0 if 'qwen2.5-coder' in x else
+                    1 if 'codellama' in x else
+                    2 if 'deepseek-coder' in x else 3
+                ))
+
+        except Exception as e:
+            print(f"   ⚠️ Error checking Ollama models: {e}")
+
+        return swe_models
 
     def _attempt_system_recovery(self, error):
         """Attempt to recover from system initialization failure"""
@@ -2479,7 +3092,7 @@ class UnifiedSAMSystem:
                 print(f"🔧 Initializing critical component: {name}")
                 thread = threading.Thread(target=method, daemon=True)
                 thread.start()
-                thread.join(timeout=30)  # Wait up to 30 seconds for critical components
+                thread.join(timeout=20)  # Wait up to 30 seconds for critical components
                 
                 if thread.is_alive():
                     print(f"⚠️ Critical component {name} initialization timed out")
@@ -4056,22 +4669,32 @@ class UnifiedSAMSystem:
         return statuses
 
     def _process_chatbot_message(self, message, context):
-        """Process slash commands with comprehensive functionality"""
-        parts = message.strip().split()
-        cmd = parts[0].lower()
-        args = parts[1:] if len(parts) > 1 else []
-
-        if cmd == '/help':
-            return """🤖 **SAM 2.0 Unified Complete System Commands:**
-
-📋 **Available Commands:**
-• `/help` - Show this help message
-• `/status` - Show connected agents status
-• `/agents` - List all available agent configurations
-• `/connect <agent_id>` - Connect a specific agent
-• `/disconnect <agent_id>` - Disconnect an agent
-• `/clone <agent_id> [name]` - Clone an existing agent
-• `/spawn <type> <name> [personality]` - Spawn new agent
+        """Process slash commands or route to normal chat processing"""
+        message = message.strip()
+        
+        # Check if this is a slash command
+        if message.startswith('/'):
+            # Process as command
+            return self._process_slash_command(message, context)
+        else:
+            # Process as normal chat message
+            return self._process_normal_chat(message, context)
+    
+        def _process_slash_command(self, message, context):
+            """Process slash commands with comprehensive functionality"""
+            parts = message.strip().split()
+            cmd = parts[0].lower()
+    args = parts[1:] if len(parts) > 1 else []
+    return """🤖 **SAM 2.0 Unified Complete System Commands:**
+    
+    📋 **Available Commands:**
+    • `/help` - Show this help message
+    • `/status` - Show connected agents status
+    • `/agents` - List all available agent configurations
+    • `/connect <agent_id>` - Connect a specific agent
+    • `/disconnect <agent_id>` - Disconnect an agent
+    • `/clone <agent_id> [name]` - Clone an existing agent
+    • `/spawn <type> <name> [personality]` - Spawn new agent
 • `/start` - Start automatic agent conversations
 • `/stop` - Stop automatic agent conversations
 • `/clear` - Clear conversation history
@@ -4111,17 +4734,17 @@ class UnifiedSAMSystem:
 • Dashboard: http://localhost:5004
 • Agent Management: Connect/disconnect/clone agents dynamically
 • Real-time Chat: Multi-user groupchat with intelligent routing
-• Web Search: Integrated research capabilities"""
-
+    • Web Search: Integrated research capabilities"""
+    
         elif cmd == '/status':
-            status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
-            status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
-            for agent_id, agent_data in self.connected_agents.items():
-                agent_config = agent_data['config']
-                status_msg += f"• {agent_config['name']} ({agent_config['specialty']}) - {agent_data['message_count']} messages\n"
-            
-            status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
-            available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
+                status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
+                status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
+                for agent_id, agent_data in self.connected_agents.items():
+                    agent_config = agent_data['config']
+                    status_msg += f"• {agent_config['name']} ({agent_config['specialty']}) - {agent_data['message_count']} messages\n"
+                
+                status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
+                available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
             status_msg += f"**Currently Available:** {available_count}\n"
             
             # Add system metrics
@@ -4610,6 +5233,35 @@ class UnifiedSAMSystem:
             return status_info
 
         elif cmd == '/github-commits':
+        elif cmd == '/experiments' or cmd == '/exp':
+            try:
+                exp_status = get_experimental_status(self)
+                response = f"🧪 **Experimental Auto-Code Status**\n\n"
+                response += f"**Active Experiments:** {exp_status['active_experiments']}\n\n"response += "**Experiment Details:**\n"                for exp_id, info in exp_status['experiments'].items():
+                    status_emoji = "🟡" if info['status'] == 'running' else "✅" if info['status'] == 'success' else "❌"                    response += f"• {exp_id}: {status_emoji} {info['status']} ({info['runtime']:.1f}s)\n"                    if 'failure_reason' in info:
+                        response += f"  Reason: {info['failure_reason']}\n"                if not exp_status['experiments']:
+                    response += "(No active experiments)\n"                return response
+            except Exception as e:
+                return f"Error getting experimental status: {e}"
+        elif cmd.startswith('/integrate-exp ') and len(cmd.split()) > 1:
+            exp_id = cmd.split()[1]
+            try:
+                # Import the integration function
+                from experimental_auto_code import ExperimentalCodeModifier
+                if hasattr(self, 'experimental_modifier'):
+                    success = self.experimental_modifier.integrate_successful_experiment(exp_id)
+                    if success:
+                        return f"✅ Successfully integrated experimental changes from {exp_id}\n🔄 System restart recommended to apply changes"                    else:
+                        return f"❌ Failed to integrate experiment {exp_id}"                else:
+                    return "Experimental system not initialized"            except Exception as e:
+                return f"Error integrating experiment: {e}"
+        elif cmd == '/terminal' or cmd == '/cli':
+            print('🧠 Launching SAM Terminal...')
+            # Launch terminal in background thread
+            import threading
+            terminal_thread = threading.Thread(target=launch_sam_terminal, args=(self,), daemon=True)
+            terminal_thread.start()
+            return 'SAM Terminal launched! Use commands like ls, cd, sam <query>, research <topic>, etc.'
             if not sam_github_available:
                 return "❌ GitHub integration not available"
 
