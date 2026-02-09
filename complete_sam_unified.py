@@ -2748,24 +2748,6 @@ class UnifiedSAMSystem:
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
         issue_thread.start()
-        
-        # Initialize all components with thread isolation and resilience
-        try:
-            self._initialize_components_with_thread_safety()
-        except Exception as e:
-            print(f"⚠️ Component initialization failed: {e}")
-            print("🛠️ Attempting system recovery...")
-            self._attempt_system_recovery(e)
-
-        # Start continuous self-healing system
-        self._start_continuous_self_healing()
-
-        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
-        print("=" * 80)
-
-        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
-        print("=" * 80)
-
 
     def _normalize_pressures(self, payload):
         """Normalize pressure signals into 0-1 range"""
