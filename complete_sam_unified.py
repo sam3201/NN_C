@@ -2964,6 +2964,11 @@ class UnifiedSAMSystem:
         self.chat_timeout_s = int(os.getenv("SAM_CHAT_TIMEOUT_S", "60"))
         self.chat_max_tokens = int(os.getenv("SAM_CHAT_MAX_TOKENS", "512"))
         self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
+        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
+        self.distill_dashboard_enabled = os.getenv("SAM_DISTILL_DASHBOARD", "1") == "1"
+        self.learning_memory_enabled = os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
+        self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
+        self.learning_memory = deque(maxlen=self.learning_memory_max)
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
 
@@ -3003,6 +3008,8 @@ class UnifiedSAMSystem:
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
+        if self.distill_dashboard_enabled and not self.distill_writer:
+            self._ensure_distill_writer()
 
         # Revenue operations pipeline (approval + audit)
         self.revenue_ops_enabled = os.getenv("SAM_REVENUE_OPS_ENABLED", "1") == "1"
@@ -3309,6 +3316,16 @@ class UnifiedSAMSystem:
         print(f"✅ Teacher pool initialized ({len(providers)} providers)")
         print(f"✅ Distillation stream writer ready: {self.distill_output}")
 
+    def _ensure_distill_writer(self):
+        """Ensure distillation writer exists even if teacher pool is disabled."""
+        if self.distill_writer or not getattr(self, "distill_dashboard_enabled", False):
+            return
+        try:
+            self.distill_writer = DistillationStreamWriter(self.distill_output)
+            print(f"✅ Distillation stream writer ready: {self.distill_output}")
+        except Exception as exc:
+            log_event("warn", "distill_writer_error", "Distillation writer init failed", reason=str(exc))
+
     def _build_teacher_prompt(self, room, user, message, context):
         agent_type = room.get("agent_type", "sam")
         user_name = user.get("name", "User")
@@ -3317,6 +3334,9 @@ class UnifiedSAMSystem:
             f"Agent type: {agent_type}\n"
             "Respond with a helpful, precise answer. If you need to ask a clarifying question, ask one.\n"
         )
+        learning_context = self._build_learning_context()
+        if learning_context:
+            header += f"\nRecent learned context:\n{learning_context}\n"
         context_lines = []
         for item in context[-10:]:
             role = item.get("type", "user")
@@ -3421,6 +3441,39 @@ class UnifiedSAMSystem:
                 "metadata": metadata,
             }
             self.distill_writer.append(record)
+
+    def _record_chat_distillation(self, prompt: str, response: str, context: List[Dict[str, Any]], user: Dict[str, Any]):
+        if not self.distill_writer:
+            return
+        message_id = f"chatbot:{int(time.time() * 1000)}"
+        metadata = {
+            "room_id": "chatbot",
+            "room_name": "Dashboard Chat",
+            "agent_type": "chatbot",
+            "user_id": user.get("id"),
+            "user_name": user.get("name"),
+            "message_id": message_id,
+            "timestamp": time.time(),
+            "context": (context or [])[-10:],
+            "multi_agent": bool(getattr(self, "chat_multi_agent", False)),
+            "agents_max": int(getattr(self, "chat_agents_max", 3)),
+        }
+        record = {
+            "task_id": message_id,
+            "prompt": prompt,
+            "response": response,
+            "score": None,
+            "passed": None,
+            "scorer": "chatbot",
+            "teacher": {
+                "provider": "local",
+                "model": "sam",
+                "latency_s": None,
+            },
+            "metadata": metadata,
+        }
+        self.distill_writer.append(record)
+        log_event("info", "distill_chat_record", "Chatbot distillation record appended", task_id=message_id)
 
     def _generate_teacher_response(self, room, user, message, context, message_data):
         if not self.teacher_pool_enabled or not self.teacher_pool:
