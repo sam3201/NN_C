@@ -4,6 +4,7 @@ ANANKE Web UI - Flask front-end for SAM/ANANKE dual system.
 """
 
 import time
+import os
 from flask import Flask, jsonify, request, render_template_string
 
 try:
@@ -80,8 +81,11 @@ def api_step():
         return jsonify({"error": "ananke unavailable"}), 503
     payload = request.get_json(silent=True) or {}
     steps = int(payload.get("steps", 1))
+    max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
     if steps < 1:
         steps = 1
+    if steps > max_steps:
+        return jsonify({"error": f"steps exceeds limit ({steps} > {max_steps})"}), 400
     ananke_module.run(ARENA, steps)
     return jsonify(ananke_module.get_state(ARENA))
 

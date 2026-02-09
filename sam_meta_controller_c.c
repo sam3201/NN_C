@@ -52,6 +52,7 @@ struct SamMetaController {
     double *identity_anchor;
     size_t identity_dim;
     double *identity_vec;
+    size_t identity_vec_dim;
 
     PressureState pressure;
     unsigned int rng;
@@ -118,6 +119,7 @@ SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t
     mc->identity_anchor = NULL;
     mc->identity_vec = NULL;
     mc->identity_dim = 0;
+    mc->identity_vec_dim = 0;
     mc->rng = seed ? seed : 0xC0FFEEu;
     mc->invariant_violations = 0;
     mc->last_violation = 0;
@@ -384,26 +386,43 @@ int sam_meta_record_growth_outcome(SamMetaController *mc, GrowthPrimitive primit
     return 1;
 }
 
-void sam_meta_set_identity_anchor(SamMetaController *mc, const double *vec, size_t dim) {
-    if (!mc || !vec || dim == 0) return;
+int sam_meta_set_identity_anchor(SamMetaController *mc, const double *vec, size_t dim) {
+    if (!mc || !vec || dim == 0) return 0;
+    double *buf = (double *)calloc(dim, sizeof(double));
+    if (!buf) return 0;
+    memcpy(buf, vec, dim * sizeof(double));
     free(mc->identity_anchor);
-    mc->identity_anchor = (double *)calloc(dim, sizeof(double));
-    memcpy(mc->identity_anchor, vec, dim * sizeof(double));
+    mc->identity_anchor = buf;
     mc->identity_dim = dim;
+    if (mc->identity_vec && mc->identity_vec_dim != dim) {
+        free(mc->identity_vec);
+        mc->identity_vec = NULL;
+        mc->identity_vec_dim = 0;
+    }
+    return 1;
 }
 
-void sam_meta_update_identity_vector(SamMetaController *mc, const double *vec, size_t dim) {
-    if (!mc || !vec || dim == 0) return;
+int sam_meta_update_identity_vector(SamMetaController *mc, const double *vec, size_t dim) {
+    if (!mc || !vec || dim == 0) return 0;
+    if (mc->identity_dim > 0 && dim != mc->identity_dim) return 0;
+    double *buf = (double *)calloc(dim, sizeof(double));
+    if (!buf) return 0;
+    memcpy(buf, vec, dim * sizeof(double));
     free(mc->identity_vec);
-    mc->identity_vec = (double *)calloc(dim, sizeof(double));
-    memcpy(mc->identity_vec, vec, dim * sizeof(double));
+    mc->identity_vec = buf;
+    mc->identity_vec_dim = dim;
+    return 1;
 }
 
 int sam_meta_check_invariants(SamMetaController *mc, double *out_identity_similarity) {
     if (!mc) return 0;
-    if (!mc->identity_anchor || !mc->identity_vec || mc->identity_dim == 0) {
+    if (!mc->identity_anchor || !mc->identity_vec || mc->identity_dim == 0 || mc->identity_vec_dim == 0) {
         if (out_identity_similarity) *out_identity_similarity = 0.0;
         return 1;
+    }
+    if (mc->identity_vec_dim != mc->identity_dim) {
+        if (out_identity_similarity) *out_identity_similarity = 0.0;
+        return 0;
     }
     double sim = cosine_sim(mc->identity_anchor, mc->identity_vec, mc->identity_dim);
     if (out_identity_similarity) *out_identity_similarity = sim;
@@ -510,10 +529,24 @@ static PyObject *py_sam_meta_set_identity_anchor(PyObject *self, PyObject *args)
     if (!fast) return NULL;
     Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
     double *buf = (double *)calloc((size_t)n, sizeof(double));
+    if (!buf) {
+        Py_DECREF(fast);
+        return PyErr_NoMemory();
+    }
     for (Py_ssize_t i = 0; i < n; i++) {
         buf[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+        if (PyErr_Occurred()) {
+            free(buf);
+            Py_DECREF(fast);
+            return NULL;
+        }
     }
-    sam_meta_set_identity_anchor(mc, buf, (size_t)n);
+    if (!sam_meta_set_identity_anchor(mc, buf, (size_t)n)) {
+        free(buf);
+        Py_DECREF(fast);
+        PyErr_SetString(PyExc_RuntimeError, "Failed to set identity anchor");
+        return NULL;
+    }
     free(buf);
     Py_DECREF(fast);
     Py_RETURN_NONE;
@@ -530,10 +563,24 @@ static PyObject *py_sam_meta_update_identity_vector(PyObject *self, PyObject *ar
     if (!fast) return NULL;
     Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
     double *buf = (double *)calloc((size_t)n, sizeof(double));
+    if (!buf) {
+        Py_DECREF(fast);
+        return PyErr_NoMemory();
+    }
     for (Py_ssize_t i = 0; i < n; i++) {
         buf[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+        if (PyErr_Occurred()) {
+            free(buf);
+            Py_DECREF(fast);
+            return NULL;
+        }
     }
-    sam_meta_update_identity_vector(mc, buf, (size_t)n);
+    if (!sam_meta_update_identity_vector(mc, buf, (size_t)n)) {
+        free(buf);
+        Py_DECREF(fast);
+        PyErr_SetString(PyExc_RuntimeError, "Failed to update identity vector");
+        return NULL;
+    }
     free(buf);
     Py_DECREF(fast);
     Py_RETURN_NONE;

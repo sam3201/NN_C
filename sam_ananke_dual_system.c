@@ -9,6 +9,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <Python.h>
+#include <errno.h>
+#include <limits.h>
+
+#define SAM_ANANKE_DEFAULT_MAX_STATE_DIM 4096UL
+#define SAM_ANANKE_DEFAULT_MAX_ARENA_DIM 1024UL
+#define SAM_ANANKE_DEFAULT_MAX_STEPS 100000UL
+
+static size_t env_size_limit(const char *name, size_t fallback, size_t min_value) {
+    const char *raw = getenv(name);
+    if (!raw || !*raw) return fallback;
+    errno = 0;
+    char *end = NULL;
+    unsigned long long val = strtoull(raw, &end, 10);
+    if (errno != 0 || end == raw || *end != '\0') return fallback;
+    if (val < (unsigned long long)min_value) return min_value;
+    if (val > (unsigned long long)SIZE_MAX) return fallback;
+    return (size_t)val;
+}
 
 // ================================
 // FAST RNG (xorshift64*)
@@ -312,11 +330,18 @@ struct DualSystemArena {
     FastRng rng;
 };
 
-static void system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *rng, int unbounded) {
+static int system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *rng, int unbounded) {
     sys->state_dim = state_dim;
     sys->memory_dim = state_dim;
     sys->state = (double *)calloc(state_dim, sizeof(double));
     sys->memory = (double *)calloc(state_dim, sizeof(double));
+    if (!sys->state || !sys->memory) {
+        free(sys->state);
+        free(sys->memory);
+        sys->state = NULL;
+        sys->memory = NULL;
+        return 0;
+    }
     sys->survival = 1.0 + rng_signed(rng) * 0.05;
     sys->capability = 1.0 + rng_signed(rng) * 0.05;
     sys->efficiency = 1.0 + rng_signed(rng) * 0.05;
@@ -327,6 +352,7 @@ static void system_init(SelfReferentialSystem *sys, size_t state_dim, FastRng *r
     sys->memory_energy = 0.0;
     sys->unbounded = unbounded;
     objective_init(&sys->objective, 8);
+    return 1;
 }
 
 static void system_free(SelfReferentialSystem *sys) {
@@ -488,11 +514,21 @@ DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned
     if (!arena) return NULL;
     arena->arena_dim = arena_dim;
     arena->arena_state = (double *)calloc(arena_dim, sizeof(double));
+    if (!arena->arena_state) {
+        free(arena);
+        return NULL;
+    }
     arena->rng.state = (seed == 0 ? 0x9E3779B97F4A7C15ULL : (unsigned long long)seed);
 
     // SAM is also unbounded (self-referential + unrestricted) per latest spec
-    system_init(&arena->sam, state_dim, &arena->rng, 1);
-    system_init(&arena->ananke, state_dim, &arena->rng, 1);
+    if (!system_init(&arena->sam, state_dim, &arena->rng, 1) ||
+        !system_init(&arena->ananke, state_dim, &arena->rng, 1)) {
+        system_free(&arena->sam);
+        system_free(&arena->ananke);
+        free(arena->arena_state);
+        free(arena);
+        return NULL;
+    }
 
     // SAM objective (self-referential, transfigurable)
     objective_add_term(&arena->sam.objective, term_survival, 1.0, "survival");
@@ -599,6 +635,18 @@ static PyObject *py_dual_create(PyObject *self, PyObject *args) {
     unsigned long arena_dim = 4;
     unsigned int seed = 0;
     if (!PyArg_ParseTuple(args, "|kkI", &state_dim, &arena_dim, &seed)) return NULL;
+    size_t max_state_dim = env_size_limit("SAM_ANANKE_MAX_STATE_DIM", SAM_ANANKE_DEFAULT_MAX_STATE_DIM, 1);
+    size_t max_arena_dim = env_size_limit("SAM_ANANKE_MAX_ARENA_DIM", SAM_ANANKE_DEFAULT_MAX_ARENA_DIM, 1);
+    if ((size_t)state_dim > max_state_dim) {
+        PyErr_Format(PyExc_ValueError, "state_dim exceeds limit (%lu > %lu)",
+                     state_dim, (unsigned long)max_state_dim);
+        return NULL;
+    }
+    if ((size_t)arena_dim > max_arena_dim) {
+        PyErr_Format(PyExc_ValueError, "arena_dim exceeds limit (%lu > %lu)",
+                     arena_dim, (unsigned long)max_arena_dim);
+        return NULL;
+    }
     DualSystemArena *arena = dual_system_create(state_dim, arena_dim, seed);
     if (!arena) {
         PyErr_SetString(PyExc_RuntimeError, "Failed to create DualSystemArena");
@@ -624,6 +672,12 @@ static PyObject *py_dual_run(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "Ok", &capsule, &steps)) return NULL;
     DualSystemArena *arena = (DualSystemArena *)PyCapsule_GetPointer(capsule, "DualSystemArena");
     if (!arena) return NULL;
+    size_t max_steps = env_size_limit("SAM_ANANKE_MAX_STEPS", SAM_ANANKE_DEFAULT_MAX_STEPS, 1);
+    if ((size_t)steps > max_steps) {
+        PyErr_Format(PyExc_ValueError, "steps exceeds limit (%lu > %lu)",
+                     steps, (unsigned long)max_steps);
+        return NULL;
+    }
     dual_system_run(arena, steps);
     Py_RETURN_NONE;
 }

@@ -62,8 +62,8 @@ void sam_meta_get_policy_params(const SamMetaController *mc, SamMetaPolicyParams
 int sam_meta_record_growth_outcome(SamMetaController *mc, GrowthPrimitive primitive, int success);
 
 // Invariants and identity
-void sam_meta_set_identity_anchor(SamMetaController *mc, const double *vec, size_t dim);
-void sam_meta_update_identity_vector(SamMetaController *mc, const double *vec, size_t dim);
+int sam_meta_set_identity_anchor(SamMetaController *mc, const double *vec, size_t dim);
+int sam_meta_update_identity_vector(SamMetaController *mc, const double *vec, size_t dim);
 int sam_meta_check_invariants(SamMetaController *mc, double *out_identity_similarity);
 SamMetaInvariantState sam_meta_get_invariant_state(const SamMetaController *mc);
 

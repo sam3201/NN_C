@@ -52,6 +52,7 @@ from training.teacher_pool import TeacherPool, build_provider, similarity
 from training.distillation import DistillationStreamWriter
 from tools.backup_manager import BackupManager
 from revenue_ops import RevenueOpsEngine
+from banking_ledger import BankingLedger
 
 # Optional integrations
 try:
@@ -2560,6 +2561,33 @@ class UnifiedSAMSystem:
         if self.revenue_ops and self.revenue_sequence_executor_enabled:
             self._start_revenue_sequence_executor()
 
+        # Banking sandbox ledger (approval-gated, no real money access)
+        self.banking_enabled = os.getenv("SAM_BANKING_SANDBOX_ENABLED", "1") == "1"
+        self.banking_data_dir = Path(os.getenv(
+            "SAM_BANKING_DATA_DIR",
+            str(self.project_root / "sam_data" / "banking")
+        ))
+        self.banking_ledger_path = Path(os.getenv(
+            "SAM_BANKING_LEDGER_PATH",
+            str(self.project_root / "sam_data" / "banking" / "ledger.json")
+        ))
+        self.banking_requests_path = Path(os.getenv(
+            "SAM_BANKING_REQUESTS_PATH",
+            str(self.project_root / "sam_data" / "banking" / "requests.json")
+        ))
+        self.banking_audit_log = Path(os.getenv(
+            "SAM_BANKING_AUDIT_LOG",
+            str(self.project_root / "logs" / "banking_audit.jsonl")
+        ))
+        self.banking_ledger = None
+        if self.banking_enabled:
+            self.banking_ledger = BankingLedger(
+                data_dir=self.banking_data_dir,
+                ledger_path=self.banking_ledger_path,
+                requests_path=self.banking_requests_path,
+                audit_log=self.banking_audit_log,
+            )
+
         # Auto-backup manager (git push to multiple remotes)
         self.backup_enabled = os.getenv("SAM_BACKUP_ENABLED", "1") == "1"
         self.backup_required = os.getenv("SAM_BACKUP_REQUIRED", "0") == "1"
@@ -4527,8 +4555,11 @@ class UnifiedSAMSystem:
             try:
                 payload = request.get_json(silent=True) or {}
                 steps = int(payload.get('steps', 1))
+                max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
                 if steps < 1:
                     steps = 1
+                if steps > max_steps:
+                    return jsonify({"error": f"steps exceeds limit ({steps} > {max_steps})"}), 400
                 sam_ananke_dual_system.run(self.ananke_arena, steps)
                 return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
             except Exception as e:
@@ -5104,6 +5135,160 @@ class UnifiedSAMSystem:
                     limit_leads=limit_leads,
                 )
                 return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/status')
+        def banking_status():
+            """Sandbox banking snapshot."""
+            try:
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                return jsonify(self.banking_ledger.get_snapshot())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/accounts')
+        def banking_accounts():
+            """List sandbox accounts."""
+            try:
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                return jsonify({'accounts': self.banking_ledger.list_accounts()})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/account', methods=['POST'])
+        def banking_create_account():
+            """Create sandbox account."""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                data = request.get_json() or {}
+                name = data.get('name')
+                initial_balance = float(data.get('initial_balance', 0.0))
+                currency = data.get('currency', 'USD')
+                account = self.banking_ledger.create_account(name, initial_balance, currency)
+                return jsonify({'account': account})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/requests')
+        def banking_requests():
+            """List spend requests."""
+            try:
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                status = request.args.get('status')
+                return jsonify({'requests': self.banking_ledger.list_requests(status=status)})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/spend', methods=['POST'])
+        def banking_spend_request():
+            """Submit a spend request (approval required)."""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                data = request.get_json() or {}
+                account_id = data.get('account_id')
+                amount = float(data.get('amount', 0))
+                memo = data.get('memo', '')
+                requested_by = data.get('requested_by', 'api')
+                requires_approval = bool(data.get('requires_approval', True))
+                req = self.banking_ledger.request_spend(
+                    account_id=account_id,
+                    amount=amount,
+                    memo=memo,
+                    requested_by=requested_by,
+                    requires_approval=requires_approval,
+                )
+                return jsonify({'request': req.__dict__})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/approve', methods=['POST'])
+        def banking_approve_request():
+            """Approve a spend request."""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                data = request.get_json() or {}
+                request_id = data.get('request_id')
+                approver = data.get('approver', 'operator')
+                auto_execute = bool(data.get('auto_execute', True))
+                if not request_id:
+                    return jsonify({'error': 'request_id required'}), 400
+                result = self.banking_ledger.approve_request(request_id, approver, auto_execute=auto_execute)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/reject', methods=['POST'])
+        def banking_reject_request():
+            """Reject a spend request."""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                data = request.get_json() or {}
+                request_id = data.get('request_id')
+                approver = data.get('approver', 'operator')
+                reason = data.get('reason')
+                if not request_id:
+                    return jsonify({'error': 'request_id required'}), 400
+                result = self.banking_ledger.reject_request(request_id, approver, reason=reason)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/execute', methods=['POST'])
+        def banking_execute_request():
+            """Execute a spend request explicitly."""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                data = request.get_json() or {}
+                request_id = data.get('request_id')
+                actor = data.get('actor', 'operator')
+                if not request_id:
+                    return jsonify({'error': 'request_id required'}), 400
+                result = self.banking_ledger.execute_request(request_id, actor)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/audit')
+        def banking_audit():
+            """Tail of banking audit log."""
+            try:
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                limit = int(request.args.get('limit', '50'))
+                if not self.banking_audit_log.exists():
+                    return jsonify({'entries': []})
+                lines = self.banking_audit_log.read_text(encoding='utf-8').splitlines()
+                entries = [json.loads(l) for l in lines[-limit:] if l.strip()]
+                return jsonify({'entries': entries})
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
@@ -6509,6 +6694,26 @@ sam@terminal:~$
 
         javascript_code = '''
                 let agentsData = {};
+                let samAdminToken = localStorage.getItem('sam_admin_token') || '';
+
+                function setAdminToken() {
+                    const input = document.getElementById('admin-token-input');
+                    if (!input) return;
+                    samAdminToken = input.value.trim();
+                    if (samAdminToken) {
+                        localStorage.setItem('sam_admin_token', samAdminToken);
+                    } else {
+                        localStorage.removeItem('sam_admin_token');
+                    }
+                }
+
+                function adminHeaders() {
+                    const headers = {'Content-Type': 'application/json'};
+                    if (samAdminToken) {
+                        headers['X-SAM-ADMIN-TOKEN'] = samAdminToken;
+                    }
+                    return headers;
+                }
 
                 function escapeHtml(text) {
                     const div = document.createElement('div');
@@ -6656,6 +6861,7 @@ sam@terminal:~$
                             <div class="revenue-actions">
                                 <button onclick="openInvoiceHtml('${inv.invoice_id}')">HTML</button>
                                 <button class="ghost" onclick="openInvoicePdf('${inv.invoice_id}')">PDF</button>
+                                <button class="ghost" onclick="queueInvoicePayment('${inv.invoice_id}')">Mark Paid</button>
                             </div>
                         `;
                         container.appendChild(row);
@@ -6689,10 +6895,134 @@ sam@terminal:~$
                     });
                 }
 
+                async function updateBanking() {
+                    try {
+                        const [statusResp, accountsResp, requestsResp] = await Promise.all([
+                            fetch('/api/banking/status'),
+                            fetch('/api/banking/accounts'),
+                            fetch('/api/banking/requests?status=PENDING')
+                        ]);
+                        if (statusResp.ok) {
+                            const status = await statusResp.json();
+                            const target = document.getElementById('banking-status');
+                            if (target) {
+                                target.textContent = JSON.stringify(status, null, 2);
+                            }
+                        }
+                        if (accountsResp.ok) {
+                            const data = await accountsResp.json();
+                            renderBankingAccounts(data.accounts || []);
+                        }
+                        if (requestsResp.ok) {
+                            const data = await requestsResp.json();
+                            renderBankingRequests(data.requests || []);
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch banking status:', error);
+                    }
+                }
+
+                function renderBankingAccounts(accounts) {
+                    const container = document.getElementById('banking-accounts');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    if (!accounts.length) {
+                        container.innerHTML = '<div class="revenue-empty">No accounts</div>';
+                        return;
+                    }
+                    accounts.forEach(acct => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-row';
+                        row.innerHTML = `
+                            <div>
+                                <div class="revenue-title">${escapeHtml(acct.name || acct.account_id)}</div>
+                                <div class="revenue-meta">${escapeHtml(acct.account_id)} • ${escapeHtml(acct.currency || '')}</div>
+                            </div>
+                            <div class="revenue-meta">${Number(acct.balance || 0).toFixed(2)}</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                function renderBankingRequests(requests) {
+                    const container = document.getElementById('banking-requests');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    if (!requests.length) {
+                        container.innerHTML = '<div class="revenue-empty">No pending requests</div>';
+                        return;
+                    }
+                    requests.forEach(req => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-row';
+                        row.innerHTML = `
+                            <div>
+                                <div class="revenue-title">${escapeHtml(req.request_id || 'request')}</div>
+                                <div class="revenue-meta">${escapeHtml(req.account_id || '')} • ${escapeHtml(req.currency || '')}</div>
+                            </div>
+                            <div class="revenue-actions">
+                                <button onclick="approveBankingRequest('${req.request_id}')">Approve</button>
+                                <button class="ghost" onclick="rejectBankingRequest('${req.request_id}')">Reject</button>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                async function createBankingAccount() {
+                    const name = document.getElementById('banking-account-name').value.trim();
+                    const balance = parseFloat(document.getElementById('banking-account-balance').value || '0');
+                    const currency = document.getElementById('banking-account-currency').value.trim() || 'USD';
+                    if (!name) {
+                        alert('Account name required.');
+                        return;
+                    }
+                    await fetch('/api/banking/account', {
+                        method: 'POST',
+                        headers: adminHeaders(),
+                        body: JSON.stringify({name, initial_balance: balance, currency})
+                    });
+                    updateBanking();
+                }
+
+                async function submitBankingSpend() {
+                    const accountId = document.getElementById('banking-spend-account').value.trim();
+                    const amount = parseFloat(document.getElementById('banking-spend-amount').value || '0');
+                    const memo = document.getElementById('banking-spend-memo').value.trim();
+                    if (!accountId || !amount) {
+                        alert('Account ID and amount required.');
+                        return;
+                    }
+                    await fetch('/api/banking/spend', {
+                        method: 'POST',
+                        headers: adminHeaders(),
+                        body: JSON.stringify({account_id: accountId, amount, memo, requested_by: 'ui'})
+                    });
+                    updateBanking();
+                }
+
+                async function approveBankingRequest(requestId) {
+                    await fetch('/api/banking/approve', {
+                        method: 'POST',
+                        headers: adminHeaders(),
+                        body: JSON.stringify({request_id: requestId, approver: 'operator', auto_execute: true})
+                    });
+                    updateBanking();
+                }
+
+                async function rejectBankingRequest(requestId) {
+                    await fetch('/api/banking/reject', {
+                        method: 'POST',
+                        headers: adminHeaders(),
+                        body: JSON.stringify({request_id: requestId, approver: 'operator', reason: 'UI reject'})
+                    });
+                    updateBanking();
+                }
+
                 async function approveRevenue(actionId) {
                     await fetch('/api/revenue/approve', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: adminHeaders(),
                         body: JSON.stringify({action_id: actionId, approver: 'operator'})
                     });
                     updateRevenueOps();
@@ -6701,7 +7031,7 @@ sam@terminal:~$
                 async function rejectRevenue(actionId) {
                     await fetch('/api/revenue/reject', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: adminHeaders(),
                         body: JSON.stringify({action_id: actionId, approver: 'operator', reason: 'UI reject'})
                     });
                     updateRevenueOps();
@@ -6787,6 +7117,24 @@ sam@terminal:~$
                     window.open(`/api/revenue/invoice/pdf?invoice_id=${invoiceId}&download=1`, '_blank');
                 }
 
+                async function queueInvoicePayment(invoiceId) {
+                    if (!invoiceId) {
+                        alert('Invoice ID required');
+                        return;
+                    }
+                    const note = prompt('Payment details (optional):', 'Manual payment');
+                    const payload = {
+                        invoice_id: invoiceId,
+                        payment_details: { note: note || 'Manual payment' }
+                    };
+                    await fetch('/api/revenue/action', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({action_type: 'record_payment', payload, requested_by: 'ui', requires_approval: true})
+                    });
+                    updateRevenueOps();
+                }
+
                 async function loadRevenuePlaybooks() {
                     const target = document.getElementById('revenue-playbooks');
                     if (!target) return;
@@ -6855,10 +7203,17 @@ sam@terminal:~$
                     if (e.key === 'Enter') sendMessage();
                 });
 
+                const adminInput = document.getElementById('admin-token-input');
+                if (adminInput && samAdminToken) {
+                    adminInput.value = samAdminToken;
+                }
+
                 setInterval(updateAgents, 5000);
                 updateAgents();
                 setInterval(updateRevenueOps, 10000);
                 updateRevenueOps();
+                setInterval(updateBanking, 12000);
+                updateBanking();
         '''
 
         html = f"""
@@ -7404,6 +7759,11 @@ sam@terminal:~$
                         </div>
                         <div class="card revenue-form">
                             <h3>Revenue Ops Actions</h3>
+                            <label>Admin Token (for approvals)</label>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <input id="admin-token-input" placeholder="SAM_ADMIN_TOKEN" />
+                                <button class="ghost" onclick="setAdminToken()">Set</button>
+                            </div>
                             <label>Action Type</label>
                             <input id="revenue-action-type" placeholder="create_lead / create_invoice / schedule_sequence" />
                             <label>Payload (JSON)</label>
@@ -7430,6 +7790,38 @@ sam@terminal:~$
                                 <button onclick="importRevenuePlaybooks()">Import Playbooks</button>
                             </div>
                             <textarea id="revenue-playbooks" placeholder="Playbook JSON will appear here"></textarea>
+                        </div>
+                    </section>
+
+                    <section class="revenue-grid">
+                        <div class="card">
+                            <h3>🏦 Banking Sandbox</h3>
+                            <div class="revenue-meta">Read-only snapshot (no real money access)</div>
+                            <pre id="banking-status" class="revenue-audit"></pre>
+                            <h4 style="margin-top:18px;">Accounts</h4>
+                            <div id="banking-accounts" class="revenue-list"></div>
+                            <h4 style="margin-top:18px;">Pending Spend Requests</h4>
+                            <div id="banking-requests" class="revenue-list"></div>
+                        </div>
+                        <div class="card revenue-form">
+                            <h3>Banking Actions</h3>
+                            <label>Account Name</label>
+                            <input id="banking-account-name" placeholder="Sandbox Ops" />
+                            <label>Initial Balance</label>
+                            <input id="banking-account-balance" placeholder="1000" />
+                            <label>Currency</label>
+                            <input id="banking-account-currency" placeholder="USD" />
+                            <button onclick="createBankingAccount()">Create Account</button>
+
+                            <div style="margin-top:16px;">
+                                <label>Spend Request Account ID</label>
+                                <input id="banking-spend-account" placeholder="acct_xxxxx" />
+                                <label>Amount</label>
+                                <input id="banking-spend-amount" placeholder="125.00" />
+                                <label>Memo</label>
+                                <input id="banking-spend-memo" placeholder="Manual payment (approval required)" />
+                                <button onclick="submitBankingSpend()">Submit Spend Request</button>
+                            </div>
                         </div>
                     </section>
                 </main>

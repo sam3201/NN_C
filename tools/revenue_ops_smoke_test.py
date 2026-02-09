@@ -34,6 +34,7 @@ def main():
     env = os.environ.copy()
     env["SAM_AUTONOMOUS_ENABLED"] = "0"
     env["SAM_TEACHER_POOL_ENABLED"] = "0"
+    env["SAM_ADMIN_TOKEN"] = env.get("SAM_ADMIN_TOKEN", "smoke_test_token")
 
     server_proc = mp.Process(target=run_server, args=(env,))
     server_proc.start()
@@ -67,10 +68,13 @@ def main():
         ).json()
         action_id = lead_action["action"]["action_id"]
 
+        headers = {"X-SAM-ADMIN-TOKEN": env["SAM_ADMIN_TOKEN"]}
+
         # Approve and execute
         approved = requests.post(
             "http://localhost:5004/api/revenue/approve",
             json={"action_id": action_id, "approver": "smoke_test"},
+            headers=headers,
             timeout=10,
         ).json()
         assert approved.get("result")

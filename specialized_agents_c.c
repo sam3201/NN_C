@@ -939,6 +939,10 @@ static PyObject *py_research_task(PyObject *self, PyObject *args) {
     }
 
     char *result = research_agent_perform_search(global_agents->researcher, query);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Research agent returned no result");
+        return NULL;
+    }
     PyObject *py_result = PyUnicode_FromString(result);
     free(result); // Free the C string after creating Python object
     return py_result;
@@ -956,6 +960,10 @@ static PyObject *py_code_generation(PyObject *self, PyObject *args) {
     }
 
     char *result = code_writer_agent_generate_code(global_agents->coder, spec);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Code writer agent returned no result");
+        return NULL;
+    }
     PyObject *py_result = PyUnicode_FromString(result);
     free(result);
     return py_result;
@@ -973,6 +981,10 @@ static PyObject *py_financial_analysis(PyObject *self, PyObject *args) {
     }
 
     char *result = financial_agent_analyze_market(global_agents->financer, market);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Financial agent returned no result");
+        return NULL;
+    }
     PyObject *py_result = PyUnicode_FromString(result);
     free(result);
     return py_result;
@@ -985,6 +997,10 @@ static PyObject *py_survival_assessment(PyObject *self, PyObject *args) {
     }
 
     char *result = survival_agent_assess_threats(global_agents->survivor);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Survival agent returned no result");
+        return NULL;
+    }
     PyObject *py_result = PyUnicode_FromString(result);
     free(result);
     return py_result;
@@ -1044,6 +1060,10 @@ static PyObject *py_meta_analysis(PyObject *self, PyObject *args) {
     }
 
     char *result = meta_agent_analyze_system(global_agents->meta, component);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Meta agent returned no result");
+        return NULL;
+    }
     PyObject *py_result = PyUnicode_FromString(result);
     free(result);
     return py_result;
