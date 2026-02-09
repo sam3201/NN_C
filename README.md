@@ -79,6 +79,15 @@ When agent outputs do not include a `score:` field, the system marks the result 
 ## Live Log Panel
 The dashboard includes a **Live Event Log** panel. It streams `logs/sam_runtime.jsonl` in real time and provides a snapshot that summarizes the moving window, counts by level, and top event types.
 
+## Secure Remote Access (Free)
+Recommended: **Tailscale** for private, secure access with no public exposure.
+1. Install Tailscale on the host machine.
+2. Join the same tailnet on your device.
+3. Access the app via the host’s Tailscale IP and port 5004.
+4. Use the app login (email + password) for access control.
+
+When you purchase a domain, switch to Cloudflare Tunnel + Access for a permanent public URL.
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal

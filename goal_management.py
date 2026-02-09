@@ -152,6 +152,17 @@ def create_conversationalist_tasks(goal_manager=None):
             goal_manager.add_goal(task['description'], priority=task.get('priority', 'normal'))
     return tasks
 
+
+def ensure_domain_goal(goal_manager=None):
+    """Ensure a domain acquisition goal exists."""
+    if goal_manager is None:
+        return None
+    goal_text = "Purchase a domain and enable Cloudflare Tunnel + Access for public deployment"
+    for goal in goal_manager.active_goals:
+        if goal.get("description") == goal_text:
+            return goal.get("id")
+    return goal_manager.add_goal(goal_text, priority="high")
+
 class SubgoalExecutionAlgorithm:
     """Algorithm for executing subgoals and coordinating task execution"""
     

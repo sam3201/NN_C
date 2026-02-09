@@ -199,7 +199,7 @@ def _summarize_jsonl_log(path: str, window: int = 200):
 
 # Import SAM components
 from survival_agent import SURVIVAL_PROMPT
-from goal_management import GoalManager, create_conversationalist_tasks
+from goal_management import GoalManager, create_conversationalist_tasks, ensure_domain_goal
 from sam_config import config   
 
 # C Core Modules - Direct Imports (No Fallbacks)
@@ -263,7 +263,7 @@ sam_github_available = SAM_GITHUB_AVAILABLE
 print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
-from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context
+from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context, session, redirect
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_compress import Compress
@@ -4503,6 +4503,11 @@ class UnifiedSAMSystem:
                     task_fn(self.goal_manager)
             except Exception as exc:
                 print(f"  ⚠️ Conversationalist task init failed: {exc}")
+            # Ensure domain acquisition goal exists
+            try:
+                ensure_domain_goal(self.goal_manager)
+            except Exception as exc:
+                print(f"  ⚠️ Domain goal init failed: {exc}")
             self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager)
             print("  ✅ Goal management system initialized")
 
@@ -4749,6 +4754,18 @@ class UnifiedSAMSystem:
             print("  🔧 Creating Flask app...")
             self.app = Flask(__name__)
             CORS(self.app)
+            # Session secret for login/auth
+            session_secret = os.getenv("SAM_SESSION_SECRET")
+            if not session_secret:
+                session_secret = os.urandom(24).hex()
+                print("  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)")
+            self.app.secret_key = session_secret
+            # Harden session cookies where possible
+            self.app.config.update(
+                SESSION_COOKIE_HTTPONLY=True,
+                SESSION_COOKIE_SAMESITE="Lax",
+                SESSION_COOKIE_SECURE=bool(os.getenv("SAM_COOKIE_SECURE", "0") == "1"),
+            )
             print("  ✅ Flask app created")
 
             # Setup SocketIO for real-time communication (optional)
@@ -4826,9 +4843,15 @@ class UnifiedSAMSystem:
         print("  🔧 Registering routes...")
 
         def _require_admin_token():
+            # Require authenticated admin session
+            if not session.get("user_email"):
+                return False, ("Login required", 401)
+            if not session.get("is_admin"):
+                return False, ("Admin session required", 403)
+
             token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
             if not token:
-                return False, ("Admin token not configured", 503)
+                return True, None
             auth_header = request.headers.get("Authorization", "")
             candidate = None
             if auth_header.startswith("Bearer "):
@@ -4849,6 +4872,90 @@ class UnifiedSAMSystem:
             if resolved != project_root and project_root not in resolved.parents:
                 raise ValueError("Path escapes repository root")
             return resolved
+
+        def _login_required():
+            if session.get("user_email"):
+                return None
+            # Allow health endpoint without login
+            if request.path in ("/api/health",):
+                return None
+            # Allow login/logout and static
+            if request.path in ("/login", "/logout") or request.path.startswith("/static"):
+                return None
+            # Default: require login
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Login required"}), 401
+            return redirect("/login")
+
+        @self.app.before_request
+        def _enforce_login():
+            result = _login_required()
+            if result is not None:
+                return result
+
+        @self.app.route("/login", methods=["GET", "POST"])
+        def login():
+            if request.method == "GET":
+                return render_template_string(
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <meta charset="utf-8">
+                      <title>SAM Login</title>
+                      <style>
+                        body { font-family: Arial, sans-serif; background: #f6f1ea; padding: 40px; }
+                        .card { background: #fff; padding: 24px; border-radius: 16px; max-width: 420px; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
+                        label { display:block; margin-top: 12px; font-size: 13px; color: #444; }
+                        input { width: 100%; padding: 10px; margin-top: 6px; border-radius: 8px; border: 1px solid #ddd; }
+                        button { margin-top: 16px; width: 100%; padding: 10px; border: none; background: #1f7a6d; color: #fff; border-radius: 8px; font-weight: 600; cursor: pointer; }
+                        .hint { font-size: 12px; color: #666; margin-top: 10px; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="card">
+                        <h2>Login to SAM</h2>
+                        <form method="POST">
+                          <label>Email</label>
+                          <input type="email" name="email" required />
+                          <label>Password</label>
+                          <input type="password" name="password" required />
+                          <button type="submit">Login</button>
+                        </form>
+                        <div class="hint">Access is restricted to approved emails.</div>
+                      </div>
+                    </body>
+                    </html>
+                    """
+                )
+
+            email = (request.form.get("email") or "").strip().lower()
+            password = request.form.get("password") or ""
+            allowed = [e.strip().lower() for e in os.getenv("SAM_ALLOWED_EMAILS", "").split(",") if e.strip()]
+            owner = os.getenv("SAM_OWNER_EMAIL", "").strip().lower()
+            admins = [e.strip().lower() for e in os.getenv("SAM_ADMIN_EMAILS", "").split(",") if e.strip()]
+
+            if owner and owner not in allowed:
+                allowed.append(owner)
+            if owner and owner not in admins:
+                admins.append(owner)
+
+            login_password = os.getenv("SAM_LOGIN_PASSWORD")
+            if not login_password:
+                return ("Login password not configured (SAM_LOGIN_PASSWORD)", 503)
+            if email not in allowed:
+                return ("Unauthorized email", 403)
+            if password != login_password:
+                return ("Invalid credentials", 403)
+
+            session["user_email"] = email
+            session["is_admin"] = email in admins or (not admins and email in allowed)
+            return redirect("/")
+
+        @self.app.route("/logout")
+        def logout():
+            session.clear()
+            return redirect("/login")
 
         @self.app.route('/')
         def dashboard():
@@ -9358,6 +9465,7 @@ sam@terminal:~$
                 "Research score unavailable; marking as pending and scheduling retry",
                 topic=topic,
                 reason=reason,
+                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
                 action="retry_score_inference",
             )
 
@@ -9391,6 +9499,7 @@ sam@terminal:~$
                 "Market score unavailable; marking as pending and scheduling retry",
                 market=market,
                 reason=reason,
+                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
                 action="retry_score_inference",
             )
 
@@ -9406,6 +9515,7 @@ sam@terminal:~$
                 return match.group(1), None
             # Try to infer meaning when no score is present
             lower = text.lower()
+            sample = text[:200]
             if any(k in lower for k in ("initializ", "warmup", "loading", "queued", "waiting")):
                 reason = "initializing"
                 action = "retry_later"
@@ -9421,7 +9531,7 @@ sam@terminal:~$
             else:
                 reason = "no score field"
                 action = "fallback_required"
-            log_event("warn", "score_missing", "Agent result has no score field", reason=reason, action=action)
+            log_event("warn", "score_missing", "Agent result has no score field", reason=reason, action=action, sample=sample)
             return "N/A", reason
         except Exception as exc:
             log_event("warn", "score_missing", "Score parse error", reason=exc.__class__.__name__)
