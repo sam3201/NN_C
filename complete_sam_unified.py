@@ -334,7 +334,13 @@ class ObserverAgent:
         )
 
         self.failure_history.append(failure_event)
-        print(f"👁️ Observer Agent: Detected failure - {failure_event.error_type} (severity={severity})")
+        msg = str(exception) if exception else "no exception message"
+        meaning = _explain_exception(exception) if exception else "No exception provided (context-triggered failure)"
+        print(
+            f"👁️ Observer Agent: Detected failure id={failure_event.id} "
+            f"type={failure_event.error_type} severity={severity} context={failure_event.context} "
+            f"msg={msg} | meaning: {meaning}"
+        )
         return failure_event
 
     def _classify_severity(self, exception, context):
@@ -2224,16 +2230,16 @@ class IntelligentIssueResolver:
             if issue['type'] == 'missing_api_key':
                 if 'github' in issue['component']:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=[REDACTED]")
+                    print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
                 elif 'google' in issue['component']:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=[REDACTED]")
+                    print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
                 elif 'anthropic' in issue['component']:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=[REDACTED]")
+                    print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
                 elif 'openai' in issue['component']:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=[REDACTED]")
+                    print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
             else:
                 print("   💡 This integration is not available. The system will continue without it.")
 
@@ -2447,16 +2453,16 @@ class IntelligentIssueResolver:
             if issue['type'] == 'missing_api_key':
                 if 'github' in issue['component']:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=[REDACTED]")
+                    print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
                 elif 'google' in issue['component']:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=[REDACTED]")
+                    print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
                 elif 'anthropic' in issue['component']:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=[REDACTED]")
+                    print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
                 elif 'openai' in issue['component']:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=[REDACTED]")
+                    print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
             else:
                 print("   💡 This integration is not available. The system will continue without it.")
         

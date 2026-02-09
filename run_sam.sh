@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Ensure bash even if invoked as `sh run_sam.sh`
+if [ -z "$BASH_VERSION" ]; then
+  exec /bin/bash "$0" "$@"
+fi
+
 # SAM 2.0 Unified Complete System - Production Launch Script
 # Ensures proper virtual environment, dependencies, and system startup
 
