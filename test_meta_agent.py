@@ -483,9 +483,9 @@ def load_config():
     def _create_meta_agent(self, system):
         """Create MetaAgent with mock sub-agents"""
         observer = ObserverAgent()
-        localizer = FaultLocalizer()
-        generator = PatchGenerator()
-        verifier = VerifierJudge()
+        localizer = FaultLocalizerAgent()
+        generator = PatchGeneratorAgent()
+        verifier = VerifierJudgeAgent()
         
         return MetaAgent(observer, localizer, generator, verifier, system)
     
