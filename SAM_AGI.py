@@ -835,6 +835,17 @@ class CompleteSAMSystem:
     
     def _setup_socketio_events(self):
         """Setup SocketIO event handlers"""
+        def _socketio_admin_ok(payload: dict) -> bool:
+            token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
+            if not token:
+                return False
+            candidate = payload.get("token") or payload.get("admin_token")
+            if not candidate:
+                auth_header = payload.get("authorization", "")
+                if auth_header.startswith("Bearer "):
+                    candidate = auth_header.split(" ", 1)[1].strip()
+            return candidate == token
+
         @self.socketio.on('connect')
         def handle_connect():
             print_status(f"Client connected: {request.sid}")
@@ -851,6 +862,11 @@ class CompleteSAMSystem:
                 context = data.get('context', {})
                 
                 if message:
+                    cmd = message.strip().split()[0].lower()
+                    if cmd in {'/modify-code', '/rollback', '/save-to-github', '/send-email', '/schedule-email', '/system-report'}:
+                        if not _socketio_admin_ok(data or {}):
+                            emit('error', {'error': 'Unauthorized: admin token required'})
+                            return
                     result = self._process_slash_command(message, context)
                     emit('message', {
                         'type': 'response',

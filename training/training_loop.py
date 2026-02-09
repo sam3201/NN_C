@@ -89,6 +89,8 @@ def main() -> None:
     parser.add_argument("--log-level", default=os.getenv("SAM_TRAIN_LOG_LEVEL", "INFO"))
     parser.add_argument("--log-file", default=os.getenv("SAM_TRAIN_LOG_FILE"))
     parser.add_argument("--logging-steps", type=int, default=10)
+    parser.add_argument("--trust-remote-code", action="store_true",
+                        default=os.getenv("SAM_TRAIN_TRUST_REMOTE_CODE", "0") == "1")
     args = parser.parse_args()
 
     logger = _setup_logger(args.log_level, args.log_file)
@@ -103,7 +105,7 @@ def main() -> None:
     logger.info("max_seq_len=%d batch_size=%d grad_accum=%d epochs=%d lr=%s",
                 args.max_seq_len, args.batch_size, args.grad_accum, args.epochs, args.lr)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True, trust_remote_code=args.trust_remote_code)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -115,7 +117,7 @@ def main() -> None:
 
     dataset = dataset.map(tokenize, batched=True, remove_columns=["text"])
 
-    model = AutoModelForCausalLM.from_pretrained(args.model)
+    model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
     if args.lora:
         target_modules = args.target_modules or ["q_proj", "v_proj"]
