@@ -253,12 +253,14 @@ def initiate_shutdown():
 class FailureEvent:
     """Structured failure event data using C consciousness framework for analysis"""
     """Structured failure event data"""
-    def __init__(self, error_type, stack_trace, failing_tests=None, logs=None, timestamp=None):
+    def __init__(self, error_type, stack_trace, failing_tests=None, logs=None, timestamp=None, severity="medium", context=None):
         self.error_type = error_type
         self.stack_trace = stack_trace
         self.failing_tests = failing_tests or []
         self.logs = logs or ""
         self.timestamp = timestamp or datetime.now().isoformat()
+        self.severity = severity
+        self.context = context or "runtime"
         self.id = f"{error_type}_{int(time.time()*1000)}"
 
     def to_dict(self):
@@ -270,6 +272,8 @@ class FailureEvent:
             "failing_tests": self.failing_tests,
             "logs": self.logs,
             "timestamp": self.timestamp,
+            "severity": self.severity,
+            "context": self.context,
         }
 
     def get(self, key, default=None):
@@ -291,17 +295,34 @@ class ObserverAgent:
 
     def detect_failure(self, exception=None, context=None):
         """Detect and structure failure events using C consciousness framework"""
+        severity = self._classify_severity(exception, context)
         failure_event = FailureEvent(
             error_type=type(exception).__name__ if exception else "unknown",
             stack_trace=self._get_stack_trace(exception),
             failing_tests=self._get_failing_tests(),
             logs=self._get_recent_logs(),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
+            severity=severity,
+            context=context or "runtime",
         )
 
         self.failure_history.append(failure_event)
-        print(f"👁️ Observer Agent: Detected failure - {failure_event.error_type}")
+        print(f"👁️ Observer Agent: Detected failure - {failure_event.error_type} (severity={severity})")
         return failure_event
+
+    def _classify_severity(self, exception, context):
+        """Classify severity for routing meta-agent deployment."""
+        context = (context or "").lower()
+        message = str(exception).lower() if exception else ""
+        if any(keyword in message for keyword in ("critical", "fatal", "segfault", "corrupt", "out of memory", "oom")):
+            return "critical"
+        if context in ("system_recovery", "self_healing", "connectivity"):
+            return "high"
+        if any(keyword in message for keyword in ("permission", "denied", "unauthorized", "forbidden")):
+            return "high"
+        if isinstance(exception, (KeyError, ValueError, TypeError)):
+            return "medium"
+        return "medium"
 
     def _get_stack_trace(self, exception):
         """Extract stack trace from exception"""
@@ -2938,6 +2959,9 @@ class UnifiedSAMSystem:
         self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
         self.sam_code_modifier_ready = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
+        self.require_meta_agent = os.getenv("SAM_REQUIRE_META_AGENT", "1") == "1"
+        self.meta_only_boot = os.getenv("SAM_META_ONLY_BOOT", "1") == "1"
+        self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
         if self.require_self_mod and not self.sam_code_modifier_available:
             raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
 
@@ -2990,6 +3014,9 @@ class UnifiedSAMSystem:
         # Note: Learning cycles are now handled by the meta-agent internally
         print("   📚 Meta-agent learning integrated into continuous operation")
         
+        if self.require_meta_agent and (not self.meta_agent or not self.meta_agent.is_fully_initialized()):
+            raise RuntimeError("❌ CRITICAL: MetaAgent required but not initialized. Aborting startup.")
+
         if self.meta_agent and self.meta_agent.is_fully_initialized():
             print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
             print("   ✅ Production-grade debugging and repair capabilities online")
@@ -3082,10 +3109,20 @@ class UnifiedSAMSystem:
             self._last_meta_repair = now
 
             failure_event = self.meta_agent.observer.detect_failure(error, context)
+            severity = getattr(failure_event, "severity", "medium")
+            if not self._severity_allows_repair(severity):
+                print(f"🛡️ Meta-agent repair skipped (severity={severity} below threshold)")
+                return False
             return self.meta_agent.handle_failure(failure_event)
         except Exception as exc:
             print(f"⚠️ Meta-agent repair failed: {exc}")
             return False
+
+    def _severity_allows_repair(self, severity: str) -> bool:
+        """Check severity threshold before allowing meta-agent deployment."""
+        order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+        threshold = getattr(self, "meta_agent_min_severity", "medium")
+        return order.get(severity, 1) >= order.get(threshold, 1)
 
     def _start_continuous_self_healing(self):
         """Start continuous self-healing system that runs forever"""
@@ -3252,11 +3289,13 @@ class UnifiedSAMSystem:
         
         # Test agent system
         try:
-            if hasattr(self, 'agent_configs') and len(self.agent_configs) < 5:
-                connectivity_issues.append({
-                    'component': 'agent_system',
-                    'error': 'Insufficient agents connected'
-                })
+            if hasattr(self, 'agent_configs'):
+                min_agents = 1 if getattr(self, "meta_only_boot", False) else 5
+                if len(self.agent_configs) < min_agents:
+                    connectivity_issues.append({
+                        'component': 'agent_system',
+                        'error': 'Insufficient agents connected'
+                    })
         except Exception as e:
             connectivity_issues.append({
                 'component': 'agent_system',
@@ -3769,6 +3808,22 @@ class UnifiedSAMSystem:
 
     def auto_connect_agents(self):
         """Auto-connect 10+ diverse AI agents for comprehensive multi-model conversations"""
+        if getattr(self, "meta_only_boot", False):
+            print("🤖 Meta-only boot enabled: connecting MetaAgent only.", flush=True)
+            if 'meta_agent' not in self.agent_configs:
+                if getattr(self, "require_meta_agent", False):
+                    raise RuntimeError("❌ CRITICAL: MetaAgent config missing in meta-only boot.")
+                return
+            self.connected_agents = {
+                'meta_agent': {
+                    'config': self.agent_configs['meta_agent'],
+                    'connected_at': time.time(),
+                    'message_count': 0,
+                    'muted': False
+                }
+            }
+            return
+
         print("🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...", flush=True)
         
         # Connect SAM agents if available
