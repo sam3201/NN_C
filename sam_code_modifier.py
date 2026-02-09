@@ -25,7 +25,14 @@ def initialize_sam_code_modifier(project_root: str) -> None:
 def _load_history() -> list[Dict[str, Any]]:
     if not _history_path or not _history_path.exists():
         return []
-    return json.loads(_history_path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(_history_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        # Preserve corrupt history for inspection
+        corrupt_path = _history_path.with_suffix(".corrupt.json")
+        corrupt_path.write_text(_history_path.read_text(encoding="utf-8"), encoding="utf-8")
+        _history_path.write_text("[]", encoding="utf-8")
+        return []
 
 
 def _save_history(entries: list[Dict[str, Any]]) -> None:
@@ -99,6 +106,11 @@ def rollback_modification(backup_path: str) -> Dict[str, Any]:
         raise RuntimeError("Code modifier not initialized")
 
     backup_file = Path(backup_path)
+    if _backup_dir:
+        backup_dir = _backup_dir.resolve()
+        backup_file = backup_file.resolve()
+        if backup_file != backup_dir and backup_dir not in backup_file.parents:
+            return {"success": False, "message": "Backup path escapes backup directory"}
     if not backup_file.exists():
         return {"success": False, "message": "Backup file not found"}
 

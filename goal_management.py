@@ -25,6 +25,8 @@ class GoalManager:
         self.active_goals = []
         self.completed_goals = []
         self.subtasks = []
+        self._goal_counter = 0
+        self._task_counter = 0
         self.goal_priorities = {
             'survival': 10,
             'stability': 9,
@@ -35,8 +37,9 @@ class GoalManager:
 
     def add_goal(self, goal, priority='normal'):
         """Add a new goal to the system"""
+        self._goal_counter += 1
         goal_entry = {
-            'id': f"goal_{len(self.active_goals)}",
+            'id': f"goal_{self._goal_counter}",
             'description': goal,
             'priority': priority,
             'status': 'active',
@@ -65,7 +68,8 @@ class GoalManager:
 
     def add_subtask(self, task: TaskNode):
         """Add a structured subtask node"""
-        task_id = f"task_{len(self.subtasks)}"
+        self._task_counter += 1
+        task_id = f"task_{self._task_counter}"
         task.name = task.name or task_id
         self.subtasks.append(task)
         return task_id

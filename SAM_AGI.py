@@ -812,7 +812,7 @@ class CompleteSAMSystem:
                 context = data.get('context', {})
                 if message:
                     cmd = message.strip().split()[0].lower()
-                    if cmd in {'/modify-code', '/rollback'}:
+                    if cmd in {'/modify-code', '/rollback', '/save-to-github', '/send-email', '/schedule-email', '/system-report'}:
                         ok, error = _require_admin_token()
                         if not ok:
                             msg, status = error

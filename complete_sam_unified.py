@@ -8520,6 +8520,7 @@ sam@terminal:~$
             self.meta_only_boot = True
         if getattr(self, "meta_only_boot", False):
             self.autonomous_enabled = False
+            self.socketio_available = False
             meta_cfg = self.agent_configs.get("meta_agent")
             if meta_cfg:
                 self.agent_configs = {"meta_agent": meta_cfg}
