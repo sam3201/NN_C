@@ -2647,6 +2647,123 @@ class UnifiedSAMSystem:
 
         # Start meta-controller loop
         self._start_meta_loop()
+        # C Core Components
+        self.consciousness = None
+        self.orchestrator = None
+        self.specialized_agents = None
+
+        # Python Orchestration Components
+        self.survival_agent = None
+        self.goal_manager = None
+        self.goal_executor = None
+        self.meta_agent_active = False
+
+        # Integration availability flags (detect real availability)
+        self.sam_gmail_available = bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
+        self.sam_github_available = bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
+        self.sam_web_search_available = bool(globals().get("initialize_sam_web_search")) and SAM_WEB_SEARCH_AVAILABLE
+        self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
+        self.sam_code_modifier_ready = False
+        self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
+        require_meta_env = os.getenv("SAM_REQUIRE_META_AGENT", "1")
+        self.require_meta_agent = str(require_meta_env).strip().lower() in ("1", "true", "yes", "on")
+        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "1")
+        self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
+        if self.require_meta_agent:
+            self.meta_only_boot = True
+        print(f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})", flush=True)
+        self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
+        if self.require_self_mod and not self.sam_code_modifier_available:
+            raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
+
+        # Groupchat features
+        self.connected_users = {}
+        self.conversation_rooms = {}
+        self.active_conversations = {}
+        self.web_search_enabled = self.sam_web_search_available
+        self.socketio_available = flask_available  # SocketIO available if Flask is
+        self.google_drive = None
+        # Sync module-level flags used by background threads
+        globals()["sam_gmail_available"] = self.sam_gmail_available
+        globals()["sam_github_available"] = self.sam_github_available
+        globals()["sam_web_search_available"] = self.sam_web_search_available
+        globals()["sam_code_modifier_available"] = self.sam_code_modifier_available
+
+        # Check system capabilities
+        self._check_system_capabilities()
+        
+        # Initialize comprehensive agent configurations
+        self.agent_configs = {}
+        self.connected_agents = {}
+        self.initialize_agent_configs()
+        print(f"🔎 Agent configs loaded: {len(self.agent_configs)}", flush=True)
+        if self.require_meta_agent and 'meta_agent' not in self.agent_configs:
+            raise RuntimeError("❌ CRITICAL: MetaAgent config missing after initialization.")
+        
+        # Auto-connect core agents
+        self.auto_connect_agents()
+
+        # Initialize production-grade meta-agent controller
+        print("🎓 Initializing Production-Grade Meta-Agent System...")
+        # Create sub-agents first
+        observer = ObserverAgent(self)
+        localizer = FaultLocalizerAgent(self)
+        generator = PatchGeneratorAgent(self)
+        verifier = VerifierJudgeAgent(self)
+
+        # Create meta-agent with sub-agents
+        self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
+            
+        # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
+        self.bootstrap_complete = True
+        self.allow_self_modification = True
+        self.allow_auto_resolution = True
+        print("🔓 Bootstrap protection lifted - self-healing capabilities enabled")
+            
+        # Run teacher-student learning cycles for system improvement
+        print("\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
+        print("   🎯 Training system until zero errors achieved...")
+        
+        # Note: Learning cycles are now handled by the meta-agent internally
+        print("   📚 Meta-agent learning integrated into continuous operation")
+        
+        if self.require_meta_agent and (not self.meta_agent or not self.meta_agent.is_fully_initialized()):
+            raise RuntimeError("❌ CRITICAL: MetaAgent required but not initialized. Aborting startup.")
+
+        if self.meta_agent and self.meta_agent.is_fully_initialized():
+            self.meta_agent_active = True
+            print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
+            print("   ✅ Production-grade debugging and repair capabilities online")
+            print("   📚 Continuous learning and self-improvement active")
+        else:
+            print("\n⚠️ Meta-agent initialization incomplete - basic functionality available")
+            print("   🔄 System will continue with limited self-healing capabilities")
+
+        # Initialize intelligent issue resolver BEFORE other components
+        print("🤖 Initializing Intelligent Issue Resolution System...")
+        self.issue_resolver = IntelligentIssueResolver(self)
+        
+        # Start issue resolver in separate thread for safety
+        issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
+        issue_thread.start()
+        
+        # Initialize all components with thread isolation and resilience
+        try:
+            self._initialize_components_with_thread_safety()
+        except Exception as e:
+            print(f"⚠️ Component initialization failed: {e}")
+            print("🛠️ Attempting system recovery...")
+            self._attempt_system_recovery(e)
+
+        # Start continuous self-healing system
+        self._start_continuous_self_healing()
+
+        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
+        print("=" * 80)
+
+        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
+        print("=" * 80)
+
 
     def _normalize_pressures(self, payload):
         """Normalize pressure signals into 0-1 range"""
@@ -2942,124 +3059,6 @@ class UnifiedSAMSystem:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             print("❌ Could not check Ollama models")
             return False
-
-        # C Core Components
-        self.consciousness = None
-        self.orchestrator = None
-        self.specialized_agents = None
-
-        # Python Orchestration Components
-        self.survival_agent = None
-        self.goal_manager = None
-        self.goal_executor = None
-        self.meta_agent_active = False
-
-        # Integration availability flags (detect real availability)
-        self.sam_gmail_available = bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
-        self.sam_github_available = bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
-        self.sam_web_search_available = bool(globals().get("initialize_sam_web_search")) and SAM_WEB_SEARCH_AVAILABLE
-        self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
-        self.sam_code_modifier_ready = False
-        self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
-        require_meta_env = os.getenv("SAM_REQUIRE_META_AGENT", "1")
-        self.require_meta_agent = str(require_meta_env).strip().lower() in ("1", "true", "yes", "on")
-        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "1")
-        self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
-        if self.require_meta_agent:
-            self.meta_only_boot = True
-        print(f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})", flush=True)
-        self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
-        if self.require_self_mod and not self.sam_code_modifier_available:
-            raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
-
-        # Groupchat features
-        self.connected_users = {}
-        self.conversation_rooms = {}
-        self.active_conversations = {}
-        self.web_search_enabled = self.sam_web_search_available
-        self.socketio_available = flask_available  # SocketIO available if Flask is
-        self.google_drive = None
-        # Sync module-level flags used by background threads
-        global sam_gmail_available, sam_github_available, sam_web_search_available, sam_code_modifier_available
-        sam_gmail_available = self.sam_gmail_available
-        sam_github_available = self.sam_github_available
-        sam_web_search_available = self.sam_web_search_available
-        sam_code_modifier_available = self.sam_code_modifier_available
-
-        # Check system capabilities
-        self._check_system_capabilities()
-        
-        # Initialize comprehensive agent configurations
-        self.agent_configs = {}
-        self.connected_agents = {}
-        self.initialize_agent_configs()
-        print(f"🔎 Agent configs loaded: {len(self.agent_configs)}", flush=True)
-        if self.require_meta_agent and 'meta_agent' not in self.agent_configs:
-            raise RuntimeError("❌ CRITICAL: MetaAgent config missing after initialization.")
-        
-        # Auto-connect core agents
-        self.auto_connect_agents()
-
-        # Initialize production-grade meta-agent controller
-        print("🎓 Initializing Production-Grade Meta-Agent System...")
-        # Create sub-agents first
-        observer = ObserverAgent(self)
-        localizer = FaultLocalizerAgent(self)
-        generator = PatchGeneratorAgent(self)
-        verifier = VerifierJudgeAgent(self)
-
-        # Create meta-agent with sub-agents
-        self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
-            
-        # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
-        self.bootstrap_complete = True
-        self.allow_self_modification = True
-        self.allow_auto_resolution = True
-        print("🔓 Bootstrap protection lifted - self-healing capabilities enabled")
-            
-        # Run teacher-student learning cycles for system improvement
-        print("\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
-        print("   🎯 Training system until zero errors achieved...")
-        
-        # Note: Learning cycles are now handled by the meta-agent internally
-        print("   📚 Meta-agent learning integrated into continuous operation")
-        
-        if self.require_meta_agent and (not self.meta_agent or not self.meta_agent.is_fully_initialized()):
-            raise RuntimeError("❌ CRITICAL: MetaAgent required but not initialized. Aborting startup.")
-
-        if self.meta_agent and self.meta_agent.is_fully_initialized():
-            self.meta_agent_active = True
-            print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
-            print("   ✅ Production-grade debugging and repair capabilities online")
-            print("   📚 Continuous learning and self-improvement active")
-        else:
-            print("\n⚠️ Meta-agent initialization incomplete - basic functionality available")
-            print("   🔄 System will continue with limited self-healing capabilities")
-
-        # Initialize intelligent issue resolver BEFORE other components
-        print("🤖 Initializing Intelligent Issue Resolution System...")
-        self.issue_resolver = IntelligentIssueResolver(self)
-        
-        # Start issue resolver in separate thread for safety
-        issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
-        issue_thread.start()
-        
-        # Initialize all components with thread isolation and resilience
-        try:
-            self._initialize_components_with_thread_safety()
-        except Exception as e:
-            print(f"⚠️ Component initialization failed: {e}")
-            print("🛠️ Attempting system recovery...")
-            self._attempt_system_recovery(e)
-
-        # Start continuous self-healing system
-        self._start_continuous_self_healing()
-
-        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
-        print("=" * 80)
-
-        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
-        print("=" * 80)
 
     def _attempt_system_recovery(self, error):
         """Attempt to recover from system initialization failure"""
