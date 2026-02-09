@@ -203,6 +203,7 @@ class HFLocalProvider(Provider):
                 self.model,
                 torch_dtype=dtype,
                 device_map=self.device_map,
+                low_cpu_mem_usage=True,
             )
             if self.adapter_path:
                 try:
@@ -227,17 +228,36 @@ class HFLocalProvider(Provider):
                 inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
             gen_kwargs = {
                 "max_new_tokens": self.max_tokens,
-                "do_sample": self.temperature > 0,
                 "pad_token_id": self._tokenizer.pad_token_id,
                 "eos_token_id": self._tokenizer.eos_token_id,
             }
-            if self.temperature > 0:
+            force_greedy = os.getenv("SAM_HF_FORCE_GREEDY", "1") == "1"
+            if force_greedy:
+                gen_kwargs["do_sample"] = False
+            else:
+                gen_kwargs["do_sample"] = self.temperature > 0
+            if self.temperature > 0 and not force_greedy:
                 gen_kwargs["temperature"] = self.temperature
-            with torch.inference_mode():
-                output = self._model.generate(
-                    **inputs,
-                    **gen_kwargs,
-                )
+            try:
+                with torch.inference_mode():
+                    output = self._model.generate(
+                        **inputs,
+                        **gen_kwargs,
+                    )
+            except RuntimeError as exc:
+                # Fallback to greedy if sampling produces NaNs/Infs on MPS/CPU
+                msg = str(exc).lower()
+                if "probability tensor" in msg or "nan" in msg or "inf" in msg:
+                    logger.warning("HFLocalProvider sampling failed; retrying greedy. error=%s", exc)
+                    gen_kwargs.pop("temperature", None)
+                    gen_kwargs["do_sample"] = False
+                    with torch.inference_mode():
+                        output = self._model.generate(
+                            **inputs,
+                            **gen_kwargs,
+                        )
+                else:
+                    raise
             text = self._tokenizer.decode(output[0], skip_special_tokens=True)
             if text.startswith(prompt):
                 text = text[len(prompt):].lstrip()
