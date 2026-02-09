@@ -17,6 +17,7 @@ export SAM_POLICY_PROVIDER_PRIMARY="hf:Qwen/Qwen2.5-1.5B@/Users/samueldasari/Per
 export SAM_POLICY_PROVIDER_FALLBACK="ollama:qwen2.5-coder:7b"
 export SAM_TEACHER_POOL_PRIMARY="hf:Qwen/Qwen2.5-1.5B@/Users/samueldasari/Personal/NN_C/training/output_lora_qwen2.5_1.5b_fp16_v2"
 export SAM_TEACHER_POOL_FALLBACK="ollama:mistral:latest"
+export SAM_CHAT_PROVIDER="${SAM_CHAT_PROVIDER:-ollama:qwen2.5-coder:7b}"
 
 export SAM_HF_DEVICE_MAP=cpu
 export SAM_HF_DTYPE=float16

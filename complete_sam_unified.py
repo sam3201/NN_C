@@ -2518,6 +2518,13 @@ class UnifiedSAMSystem:
         self.regression_timeout_s = int(os.getenv("SAM_REGRESSION_TIMEOUT_S", "120"))
         self.meta_growth_freeze = False
 
+        # Chat provider (optional override for dashboard chat)
+        self.chat_provider_spec = os.getenv("SAM_CHAT_PROVIDER", "").strip()
+        self.chat_timeout_s = int(os.getenv("SAM_CHAT_TIMEOUT_S", "60"))
+        self.chat_max_tokens = int(os.getenv("SAM_CHAT_MAX_TOKENS", "512"))
+        self._chat_provider = None
+        self._chat_provider_lock = threading.Lock()
+
         # Teacher pool + distillation pipeline (live groupchat)
         self.teacher_pool_enabled = os.getenv("SAM_TEACHER_POOL_ENABLED", "1") == "1"
         self.teacher_pool_primary = os.getenv("SAM_TEACHER_POOL_PRIMARY", os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"))
@@ -2855,6 +2862,25 @@ class UnifiedSAMSystem:
             "Assistant:"
         )
         return prompt
+
+    def _get_chat_provider(self):
+        if not self.chat_provider_spec:
+            return None
+        if self._chat_provider is not None:
+            return self._chat_provider
+        with self._chat_provider_lock:
+            if self._chat_provider is not None:
+                return self._chat_provider
+            try:
+                self._chat_provider = build_provider(
+                    self.chat_provider_spec,
+                    max_tokens=self.chat_max_tokens,
+                    timeout_s=self.chat_timeout_s,
+                )
+                return self._chat_provider
+            except Exception as exc:
+                print(f"⚠️ Chat provider init failed: {exc}", flush=True)
+                return None
 
     def _pick_consensus_candidate(self, consensus):
         if not consensus:
@@ -4462,6 +4488,11 @@ class UnifiedSAMSystem:
         def dashboard():
             """Main dashboard"""
             return self._render_dashboard()
+
+        @self.app.route('/chat')
+        def chat_app():
+            """Dedicated chat UI"""
+            return self._render_chat_app()
 
         @self.app.route('/api/status')
         def system_status():
@@ -6158,6 +6189,22 @@ sam@terminal:~$
 
         def _chat_fallback():
             try:
+                provider = self._get_chat_provider()
+                if provider:
+                    history = (context or {}).get("history", []) or []
+                    prompt_lines = []
+                    for item in history[-8:]:
+                        role = item.get("type", "user")
+                        content = item.get("message", "")
+                        if role == "assistant":
+                            prompt_lines.append(f"Assistant: {content}")
+                        else:
+                            prompt_lines.append(f"User: {content}")
+                    prompt_lines.append(f"User: {message}")
+                    prompt_lines.append("Assistant:")
+                    prompt = "\n".join(prompt_lines)
+                    response, _ = provider.generate(prompt)
+                    return response.strip()
                 if self.teacher_pool_enabled and self.teacher_pool:
                     room = {"id": "chatbot", "name": "Dashboard Chat", "agent_type": "chatbot"}
                     user = {
@@ -8138,6 +8185,207 @@ sam@terminal:~$
         """
         return html
 
+    def _render_chat_app(self):
+        """Render dedicated ChatGPT-like chat UI"""
+        html_template = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>SAM Local Chat</title>
+            <style>
+                :root {
+                    --bg: #0f1117;
+                    --panel: #151a23;
+                    --accent: #5eead4;
+                    --text: #e5e7eb;
+                    --muted: #9aa3b2;
+                    --user: #1f2937;
+                    --sam: #111827;
+                }
+                * { box-sizing: border-box; }
+                body {
+                    margin: 0;
+                    font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                    background: radial-gradient(1200px 700px at 10% -10%, #1e293b 0%, #0f1117 55%);
+                    color: var(--text);
+                }
+                .app {
+                    display: grid;
+                    grid-template-rows: auto 1fr auto;
+                    min-height: 100vh;
+                }
+                header {
+                    padding: 18px 24px;
+                    border-bottom: 1px solid #202635;
+                    background: rgba(21, 26, 35, 0.9);
+                    backdrop-filter: blur(8px);
+                }
+                header h1 {
+                    margin: 0;
+                    font-size: 20px;
+                    letter-spacing: 0.04em;
+                }
+                header p {
+                    margin: 6px 0 0;
+                    color: var(--muted);
+                    font-size: 12px;
+                }
+                .status {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 8px;
+                    font-size: 12px;
+                    color: var(--muted);
+                }
+                .status span strong { color: var(--accent); }
+                main {
+                    padding: 20px;
+                    overflow-y: auto;
+                }
+                .message {
+                    max-width: 900px;
+                    margin: 0 auto 16px;
+                    padding: 14px 16px;
+                    border-radius: 12px;
+                    line-height: 1.5;
+                    white-space: pre-wrap;
+                }
+                .message.user { background: var(--user); }
+                .message.sam { background: var(--sam); border: 1px solid #1f2937; }
+                .message.system { background: #0b1220; color: var(--muted); font-size: 12px; }
+                .composer {
+                    padding: 16px 20px;
+                    border-top: 1px solid #202635;
+                    background: rgba(15, 17, 23, 0.95);
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 12px;
+                }
+                textarea {
+                    width: 100%;
+                    min-height: 64px;
+                    max-height: 200px;
+                    resize: vertical;
+                    padding: 12px;
+                    background: #0b1220;
+                    color: var(--text);
+                    border: 1px solid #283142;
+                    border-radius: 10px;
+                    font-family: inherit;
+                    font-size: 13px;
+                }
+                button {
+                    background: var(--accent);
+                    color: #0f1117;
+                    border: none;
+                    padding: 10px 18px;
+                    border-radius: 10px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    height: 42px;
+                    align-self: end;
+                }
+                button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="app">
+                <header>
+                    <h1>SAM Local Chat</h1>
+                    <p>Private local chat UI. No extra guardrails beyond your system invariants.</p>
+                    <div class="status" id="statusLine">
+                        <span>Core: <strong id="coreStatus">…</strong></span>
+                        <span>Orchestration: <strong id="pyStatus">…</strong></span>
+                        <span>SocketIO: <strong id="socketStatus">…</strong></span>
+                    </div>
+                </header>
+                <main id="chatLog">
+                    <div class="message system">Type /start to enable agent conversations.</div>
+                </main>
+                <div class="composer">
+                    <textarea id="chatInput" placeholder="Type a message or command…"></textarea>
+                    <button id="sendBtn">Send</button>
+                </div>
+            </div>
+            <script>
+                const chatLog = document.getElementById('chatLog');
+                const chatInput = document.getElementById('chatInput');
+                const sendBtn = document.getElementById('sendBtn');
+                const coreStatus = document.getElementById('coreStatus');
+                const pyStatus = document.getElementById('pyStatus');
+                const socketStatus = document.getElementById('socketStatus');
+
+                function addMessage(text, cls) {
+                    const div = document.createElement('div');
+                    div.className = `message ${cls}`;
+                    div.textContent = text;
+                    chatLog.appendChild(div);
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                }
+
+                async function refreshStatus() {
+                    try {
+                        const statusResp = await fetch('/api/status');
+                        if (statusResp.ok) {
+                            const data = await statusResp.json();
+                            coreStatus.textContent = data.c_core || 'unknown';
+                            pyStatus.textContent = data.python_orchestration || 'unknown';
+                        }
+                        const groupResp = await fetch('/api/groupchat/status');
+                        if (groupResp.ok) {
+                            const data = await groupResp.json();
+                            socketStatus.textContent = data.socketio_available ? 'on' : 'off';
+                        }
+                    } catch (err) {
+                        coreStatus.textContent = 'offline';
+                        pyStatus.textContent = 'offline';
+                        socketStatus.textContent = 'offline';
+                    }
+                }
+
+                async function sendMessage() {
+                    const message = chatInput.value.trim();
+                    if (!message) return;
+                    addMessage(message, 'user');
+                    chatInput.value = '';
+                    sendBtn.disabled = true;
+                    try {
+                        const resp = await fetch('/api/chatbot', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                message,
+                                context: {user_id: 'local_chat', user_name: 'Local Chat'}
+                            })
+                        });
+                        const data = await resp.json();
+                        addMessage(data.response || 'No response', 'sam');
+                    } catch (err) {
+                        addMessage('Chat error: ' + err, 'system');
+                    } finally {
+                        sendBtn.disabled = false;
+                    }
+                }
+
+                sendBtn.addEventListener('click', sendMessage);
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        sendMessage();
+                    }
+                });
+                refreshStatus();
+                setInterval(refreshStatus, 5000);
+            </script>
+        </body>
+        </html>
+        """
+        return render_template_string(html_template)
+
     def _start_revenue_autoplanner(self):
         """Start revenue auto-planner loop (creates actions, waits for approval)."""
         if not self.revenue_ops:
@@ -8549,8 +8797,8 @@ sam@terminal:~$
                 
             self._last_agent_comm = current_time
             
-            # Get connected agents
-            connected_agents = [aid for aid in self.connected_agents.keys() if aid.startswith(('sam_', 'agent_', 'spawn_'))]
+            # Get connected agents (exclude meta-agent only)
+            connected_agents = [aid for aid in self.connected_agents.keys() if aid != 'meta_agent']
             
             if len(connected_agents) < 2:
                 return  # Need at least 2 agents to communicate
