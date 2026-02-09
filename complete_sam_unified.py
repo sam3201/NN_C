@@ -883,6 +883,11 @@ class PatchGeneratorAgent:
 
     def _create_patch_prompt(self, failure_event, target_file, file_content):
         """Create a safe patch generation prompt with confidence threshold requirements"""
+        research_notes = ""
+        try:
+            research_notes = getattr(failure_event, "research_notes", "") or ""
+        except Exception:
+            research_notes = ""
         return f"""
 Given this failure:
 {failure_event.error_type}: {failure_event.stack_trace[:500]}...
@@ -891,6 +896,9 @@ And this file: {target_file}
 
 Content preview:
 {file_content[:1000]}...
+
+Research notes:
+{research_notes[:1000] if research_notes else 'None'}
 
 Generate a minimal fix that:
 - Does not refactor
@@ -1500,6 +1508,87 @@ class MetaAgent:
         print(f"   Confidence Threshold: {self.confidence_threshold}")
         if self.research_enabled:
             print(f"   Meta-Research: {self.research_mode}")
+
+    def _get_failure_attr(self, failure, name, default=None):
+        if isinstance(failure, dict):
+            return failure.get(name, default)
+        return getattr(failure, name, default)
+
+    def _local_research(self, failure, localized_files):
+        parts = []
+        error_type = self._get_failure_attr(failure, "error_type", "unknown")
+        parts.append(f"Error type: {error_type}")
+        stack = self._get_failure_attr(failure, "stack_trace", "") or ""
+        if stack:
+            stack_lines = stack.strip().splitlines()[-6:]
+            parts.append("Stack tail:\n" + "\n".join(stack_lines))
+            match = re.search(r'File "([^"]+)", line (\d+)', stack)
+            if match:
+                file_path = match.group(1)
+                line_no = int(match.group(2))
+                file_abs = Path(file_path)
+                if not file_abs.is_absolute():
+                    file_abs = Path(self.system.project_root) / file_path
+                if file_abs.exists():
+                    try:
+                        content = file_abs.read_text(encoding="utf-8", errors="ignore").splitlines()
+                        start = max(0, line_no - 3)
+                        end = min(len(content), line_no + 2)
+                        snippet = "\n".join(f"{i+1}: {content[i]}" for i in range(start, end))
+                        parts.append(f"Context ({file_abs}):\n{snippet}")
+                    except Exception:
+                        pass
+        if localized_files:
+            top = [f.get("file") for f in localized_files[:3] if isinstance(f, dict)]
+            if top:
+                parts.append("Top localized files: " + ", ".join(top))
+        logs = self._get_failure_attr(failure, "logs", "")
+        if logs:
+            parts.append("Recent logs (tail): " + logs[-400:])
+        return "\n".join(parts).strip()
+
+    def _web_research(self, failure):
+        query_parts = []
+        error_type = self._get_failure_attr(failure, "error_type", "")
+        if error_type:
+            query_parts.append(error_type)
+        stack = self._get_failure_attr(failure, "stack_trace", "")
+        if stack:
+            # extract first error line
+            lines = [ln for ln in stack.splitlines() if ln.strip()]
+            if lines:
+                query_parts.append(lines[-1][:120])
+        query = " ".join(query_parts).strip()
+        if not query:
+            return ""
+        if not getattr(self.system, "web_search_enabled", False):
+            return ""
+        try:
+            results = search_web_with_sam(query, save_to_drive=False, max_results=5)
+            rows = []
+            for item in results.get("results", []):
+                title = item.get("title", "")
+                url = item.get("url", "")
+                rows.append(f"- {title} ({url})")
+            return "Web results:\n" + "\n".join(rows)
+        except Exception:
+            return ""
+
+    def _gather_research(self, failure, localized_files):
+        mode = (self.research_mode or "both").lower()
+        notes = []
+        if mode in ("local", "both", "all"):
+            local = self._local_research(failure, localized_files)
+            if local:
+                notes.append("LOCAL RESEARCH\n" + local)
+        if mode in ("web", "both", "all"):
+            web = self._web_research(failure)
+            if web:
+                notes.append("WEB RESEARCH\n" + web)
+        if not notes:
+            return ""
+        combined = "\n\n".join(notes)
+        return combined[: self.research_max_chars]
 
     # ===========================
     # FAILURE CLUSTERING
@@ -5267,6 +5356,9 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
                 'sam_available': bool(getattr(self, "sam_available", False)),
+                'ollama_available': bool(getattr(self, "ollama_available", False)),
+                'active_agents': len(getattr(self, "connected_agents", {}) or {}),
+                'survival_score': getattr(self.survival_agent, 'survival_score', 0.0) if self.survival_agent else 0.0,
                 'finance': self._collect_finance_summary(),
                 'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
                 'strict_local_only': bool(getattr(self, "strict_local_only", False)),
