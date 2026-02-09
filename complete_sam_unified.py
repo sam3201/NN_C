@@ -494,6 +494,7 @@ class ObserverAgent:
     def detect_failure(self, exception=None, context=None):
         """Detect and structure failure events using C consciousness framework"""
         severity = self._classify_severity(exception, context)
+        msg = str(exception) if exception else "no exception message"
         failure_event = FailureEvent(
             error_type=type(exception).__name__ if exception else "unknown",
             stack_trace=self._get_stack_trace(exception),
@@ -502,10 +503,10 @@ class ObserverAgent:
             timestamp=datetime.now().isoformat(),
             severity=severity,
             context=context or "runtime",
+            message=msg,
         )
 
         self.failure_history.append(failure_event)
-        msg = str(exception) if exception else "no exception message"
         meaning = _explain_exception(exception) if exception else "No exception provided (context-triggered failure)"
         print(
             f"👁️ Observer Agent: Detected failure id={failure_event.id} "
