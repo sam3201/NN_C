@@ -18,7 +18,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 
 from complete_sam_unified import (
-    MetaAgent, ObserverAgent, FaultLocalizer, PatchGenerator, VerifierJudge,
+    MetaAgent, ObserverAgent, FaultLocalizerAgent, PatchGeneratorAgent, VerifierJudgeAgent,
     FailureEvent, UnifiedSAMSystem
 )
 
