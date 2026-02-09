@@ -2721,6 +2721,10 @@ class UnifiedSAMSystem:
         globals()["sam_web_search_available"] = self.sam_web_search_available
         globals()["sam_code_modifier_available"] = self.sam_code_modifier_available
 
+        # Auto-start chat (no /start required)
+        self.auto_conversation_active = True
+        self._ensure_default_chat_ready()
+
         # Check system capabilities
         self._check_system_capabilities()
         
@@ -6467,32 +6471,9 @@ sam@terminal:~$
             return f"🎭 **{custom_name} spawned as {agent_type} agent!**\n\nHello! I am a freshly spawned {agent_type} agent with personality: {personality}. I specialize in {specialty}."
 
         elif cmd == '/start':
-            # Start automatic agent conversations
+            # Auto-start is always on; /start just ensures readiness.
             self.auto_conversation_active = True
-            # Ensure a default room exists and user is joined for agent-to-agent chatter
-            room_id = "chatbot"
-            user_id = (context or {}).get("user_id", "dashboard")
-            user_name = (context or {}).get("user_name", "User")
-            if user_id not in self.connected_users:
-                self.connected_users[user_id] = {
-                    "id": user_id,
-                    "name": user_name,
-                    "connected_at": time.time(),
-                    "current_room": None
-                }
-            if room_id not in self.conversation_rooms:
-                self.conversation_rooms[room_id] = {
-                    "id": room_id,
-                    "name": "Dashboard Chat",
-                    "agent_type": "chatbot",
-                    "users": [],
-                    "messages": []
-                }
-            room = self.conversation_rooms[room_id]
-            if user_id not in room["users"]:
-                room["users"].append(user_id)
-                self.connected_users[user_id]["current_room"] = room_id
-            # Seed one agent-to-agent message immediately
+            self._ensure_default_chat_ready()
             try:
                 self._agent_to_agent_communication()
             except Exception:
@@ -8559,6 +8540,9 @@ sam@terminal:~$
         # Rebuild full agent configs + connect agents
         self.initialize_agent_configs()
         self.auto_connect_agents()
+        # Ensure chat is auto-started after promotion
+        self.auto_conversation_active = True
+        self._ensure_default_chat_ready()
 
         # Re-enable autonomous loops (if configured)
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
@@ -8847,6 +8831,34 @@ sam@terminal:~$
                         
         except Exception as e:
             print(f"⚠️ Agent-to-agent communication error: {e}", flush=True)
+
+    def _ensure_default_chat_ready(self):
+        """Ensure a default chat room and system user exist so chat is auto-started."""
+        try:
+            room_id = "chatbot"
+            user_id = "system"
+            user_name = "System"
+            if user_id not in self.connected_users:
+                self.connected_users[user_id] = {
+                    "id": user_id,
+                    "name": user_name,
+                    "connected_at": time.time(),
+                    "current_room": None
+                }
+            if room_id not in self.conversation_rooms:
+                self.conversation_rooms[room_id] = {
+                    "id": room_id,
+                    "name": "Dashboard Chat",
+                    "agent_type": "chatbot",
+                    "users": [],
+                    "messages": []
+                }
+            room = self.conversation_rooms[room_id]
+            if user_id not in room["users"]:
+                room["users"].append(user_id)
+                self.connected_users[user_id]["current_room"] = room_id
+        except Exception as exc:
+            print(f"⚠️ Failed to auto-start chat: {exc}", flush=True)
 
     def _generate_agent_to_agent_message(self, sender_id, receiver_id, conv_type):
         """Generate agent-to-agent conversation messages"""
