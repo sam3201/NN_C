@@ -447,7 +447,7 @@ def initiate_shutdown():
 class FailureEvent:
     """Structured failure event data using C consciousness framework for analysis"""
     """Structured failure event data"""
-    def __init__(self, error_type, stack_trace, failing_tests=None, logs=None, timestamp=None, severity="medium", context=None):
+    def __init__(self, error_type, stack_trace, failing_tests=None, logs=None, timestamp=None, severity="medium", context=None, research_notes: str = ""):
         self.error_type = error_type
         self.stack_trace = stack_trace
         self.failing_tests = failing_tests or []
@@ -455,6 +455,7 @@ class FailureEvent:
         self.timestamp = timestamp or datetime.now().isoformat()
         self.severity = severity
         self.context = context or "runtime"
+        self.research_notes = research_notes or ""
         self.id = f"{error_type}_{int(time.time()*1000)}"
 
     def to_dict(self):
@@ -468,6 +469,7 @@ class FailureEvent:
             "timestamp": self.timestamp,
             "severity": self.severity,
             "context": self.context,
+            "research_notes": self.research_notes,
         }
 
     def get(self, key, default=None):
