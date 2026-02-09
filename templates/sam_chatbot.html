@@ -179,6 +179,10 @@
             color: var(--ink-soft);
         }
 
+        .header-status {
+            margin-top: 8px;
+        }
+
         .header-metrics {
             display: flex;
             gap: 16px;
@@ -503,6 +507,9 @@
                 <div>
                     <h1>🧠 SAM Chat Interface</h1>
                     <p>Live groupchat with evaluation + distillation loop.</p>
+                    <div class="header-status">
+                        <span class="status-item active" id="sam-status">SAM Model: ✅</span>
+                    </div>
                 </div>
                 <div class="header-metrics">
                     <div class="metric">
