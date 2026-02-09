@@ -13,7 +13,13 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-VENV_DIR="venv"
+if [ -d ".venv" ]; then
+    VENV_DIR=".venv"
+elif [ -d "venv" ]; then
+    VENV_DIR="venv"
+else
+    VENV_DIR=".venv"
+fi
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
 REQUIREMENTS_FILE="requirements.txt"
 SAM_SYSTEM="complete_sam_unified.py"
@@ -79,6 +85,15 @@ if [[ "$VIRTUAL_ENV" != *"$VENV_DIR" ]]; then
 fi
 
 print_status "Virtual environment activated: $VIRTUAL_ENV"
+
+# Load local environment overrides (tokens, providers, etc.)
+if [ -f ".env.local" ]; then
+    print_header "LOADING LOCAL ENV"
+    print_status "Loading .env.local..."
+    set -a
+    source .env.local
+    set +a
+fi
 
 # Upgrade pip
 print_header "UPGRADING PIP"
@@ -215,8 +230,4 @@ export FLASK_ENV=production
 export PYTHONPATH="$PWD:$PYTHONPATH"
 
 # Launch with proper error handling
-python3 "$SAM_SYSTEM" || {
-    print_error "SAM system exited with error"
-    print_status "Check logs above for details"
-    exit 1
-}
+exec /Users/samueldasari/Personal/NN_C/tools/run_sam_two_phase.sh
