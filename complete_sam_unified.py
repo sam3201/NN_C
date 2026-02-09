@@ -2683,7 +2683,8 @@ class IntelligentIssueResolver:
                     'component': component,
                     'severity': 'high',
                     'message': f'{component.replace("_", " ").title()} integration not available',
-                    'auto_fix_possible': self._can_auto_fix_integration(component)
+                    'auto_fix_possible': self._can_auto_fix_integration(component),
+                    'escalate_to_meta': False
                 })
         
         # Check API keys
@@ -2701,7 +2702,8 @@ class IntelligentIssueResolver:
                     'component': key_name,
                     'severity': 'medium',
                     'message': f'{key_name.replace("_", " ").title()} not configured',
-                    'auto_fix_possible': False  # Requires user input
+                    'auto_fix_possible': False,  # Requires user input
+                    'escalate_to_meta': False
                 })
         
         self.detected_issues = issues
