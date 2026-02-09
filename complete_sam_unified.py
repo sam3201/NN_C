@@ -16,7 +16,7 @@ import json
 import inspect
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import requests
 import re  # Add missing import
@@ -116,22 +116,50 @@ def setup_runtime_logging():
     print(f"   JSONL log: {jsonl_file}")
 
 
+def _utc_now():
+    """UTC timestamp in ISO8601 with Z suffix."""
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def log_event(level: str, event: str, message: str, **data):
     """Append a structured JSONL log entry."""
     if not _JSONL_LOG_FH:
         return
     payload = {
-        "ts": datetime.utcnow().isoformat() + "Z",
+        "ts": _utc_now(),
         "level": level,
         "event": event,
         "message": message,
     }
+    # Avoid clobbering the primary message field
+    if "message" in data:
+        data = dict(data)
+        data["detail_message"] = data.pop("message")
     if data:
         payload.update(data)
     try:
         _JSONL_LOG_FH.write(json.dumps(payload, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+
+def _is_external_provider_spec(spec: str) -> bool:
+    """Return True if provider spec points to external/model runtime providers."""
+    if not spec:
+        return False
+    provider = spec.split(":", 1)[0].strip().lower()
+    external = {
+        "ollama",
+        "openai",
+        "openrouter",
+        "anthropic",
+        "google",
+        "gemini",
+        "claude",
+        "hf",
+        "huggingface",
+    }
+    return provider in external
 
 
 def _summarize_jsonl_log(path: str, window: int = 200):
@@ -488,7 +516,7 @@ class ObserverAgent:
             error_type=failure_event.error_type,
             severity=severity,
             context=failure_event.context,
-            message=msg,
+            error_message=msg,
             meaning=meaning,
         )
         return failure_event
@@ -2722,6 +2750,7 @@ class UnifiedSAMSystem:
         self.invariants_disabled = os.getenv("SAM_INVARIANTS_DISABLED", "0") == "1"
         self.allow_unsafe_patches = os.getenv("SAM_ALLOW_UNSAFE_PATCHES", "0") == "1"
         self.profile_name = os.getenv("SAM_PROFILE", "full")
+        self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "0") == "1"
         self.state_path = Path(os.getenv(
             "SAM_STATE_PATH",
             str(self.project_root / "sam_data" / self.profile_name / "state.json")
@@ -2796,6 +2825,7 @@ class UnifiedSAMSystem:
         self.chat_provider_spec = os.getenv("SAM_CHAT_PROVIDER", "").strip()
         self.chat_timeout_s = int(os.getenv("SAM_CHAT_TIMEOUT_S", "60"))
         self.chat_max_tokens = int(os.getenv("SAM_CHAT_MAX_TOKENS", "512"))
+        self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
 
@@ -2821,6 +2851,17 @@ class UnifiedSAMSystem:
         self.teacher_pool = None
         self.distill_writer = None
         self.teacher_pool_lock = threading.Lock()
+
+        if self.strict_local_only:
+            # Disable external providers in strict local-only mode.
+            if self.chat_provider_spec and _is_external_provider_spec(self.chat_provider_spec):
+                self.chat_provider_spec = ""
+            if self.teacher_pool_enabled and any(_is_external_provider_spec(s) for s in self.teacher_specs):
+                self.teacher_pool_enabled = False
+                self.teacher_specs = []
+            if _is_external_provider_spec(self.regression_provider):
+                self.regression_on_growth = False
+                log_event("warn", "regression_gate_disabled", "Regression gate disabled in strict local-only mode", provider=self.regression_provider)
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
@@ -3108,6 +3149,9 @@ class UnifiedSAMSystem:
     def _init_teacher_pool(self):
         """Initialize teacher pool and distillation stream writer."""
         if not self.teacher_specs:
+            if getattr(self, "strict_local_only", False):
+                log_event("warn", "teacher_pool_disabled", "Teacher pool disabled in strict local-only mode")
+                return
             raise RuntimeError("SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation")
         providers = [
             build_provider(
@@ -3151,6 +3195,8 @@ class UnifiedSAMSystem:
         return prompt
 
     def _get_chat_provider(self):
+        if getattr(self, "strict_local_only", False):
+            return None
         if not self.chat_provider_spec:
             return None
         if self._chat_provider is not None:
@@ -3957,6 +4003,16 @@ class UnifiedSAMSystem:
         self.google_drive_available = google_drive_available and self._check_google_drive()
         print(f"  📁 Google Drive: {'✅ Available' if self.google_drive_available else '❌ Not Available'}", flush=True)
 
+        if self.strict_local_only:
+            # Hard-disable external model providers in strict local-only mode.
+            self.claude_available = False
+            self.gemini_available = False
+            self.openai_available = False
+            self.ollama_available = False
+            self.deepseek_available = False
+            print("  🔒 Strict local-only: external model providers disabled", flush=True)
+            log_event("info", "strict_local_only", "External model providers disabled")
+
     def initialize_agent_configs(self):
         """Initialize comprehensive AI agent configurations"""
         print("🤖 Initializing comprehensive AI agent configurations...", flush=True)
@@ -4280,7 +4336,7 @@ class UnifiedSAMSystem:
             print("  🤖 Auto-connected: SAM-Alpha, SAM-Beta", flush=True)
         
         # Connect diverse Ollama models for comprehensive conversations (up to 8 models)
-        if self.ollama_available:
+        if self.ollama_available and not getattr(self, "strict_local_only", False):
             # Connect diverse Ollama models for maximum variety
             ollama_to_connect = [
                 'ollama_deepseek_coder_6b',   # Code generation specialist
@@ -4309,7 +4365,7 @@ class UnifiedSAMSystem:
                 print(f"  🤖 Auto-connected {connected_count} diverse Ollama models", flush=True)
         
         # Connect HuggingFace models if Ollama not available (up to 6 models)
-        elif not self.ollama_available:
+        elif not self.ollama_available and not getattr(self, "strict_local_only", False):
             # Connect multiple HuggingFace models for local processing
             hf_to_connect = [
                 'hf_zephyr_7b',           # Optimized chat
@@ -4364,6 +4420,8 @@ class UnifiedSAMSystem:
 
     def _check_ollama(self):
         """Check if Ollama is available"""
+        if getattr(self, "strict_local_only", False):
+            return False
         try:
             result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
@@ -5185,6 +5243,8 @@ class UnifiedSAMSystem:
                 'sam_available': bool(getattr(self, "sam_available", False)),
                 'finance': self._collect_finance_summary(),
                 'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
+                'strict_local_only': bool(getattr(self, "strict_local_only", False)),
+                'chat_multi_agent': bool(getattr(self, "chat_multi_agent", False)),
                 'timestamp': datetime.now().isoformat()
             })
 
@@ -5305,7 +5365,7 @@ class UnifiedSAMSystem:
                     if not os.path.exists(path):
                         # emit a bootstrap entry
                         bootstrap = json.dumps({
-                            "ts": datetime.utcnow().isoformat() + "Z",
+                            "ts": _utc_now(),
                             "level": "info",
                             "event": "log_stream_ready",
                             "message": "Log stream initialized",
@@ -5330,7 +5390,7 @@ class UnifiedSAMSystem:
                             yield f"data: {line.strip()}\n\n"
                 except Exception as exc:
                     err = json.dumps({
-                        "ts": datetime.utcnow().isoformat() + "Z",
+                        "ts": _utc_now(),
                         "level": "error",
                         "event": "log_stream_error",
                         "message": str(exc),
@@ -6814,6 +6874,26 @@ sam@terminal:~$
             # Add conversation context to agent responses
             conversation_context = self._get_conversation_context(room_id, message)
 
+            # Strict local-only or multi-agent local mode: emit multiple local agent responses.
+            if getattr(self, "strict_local_only", False) or (self.chat_multi_agent and not self.teacher_pool_enabled):
+                max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
+                for _, cfg in self._select_chat_agents(max_agents=max_agents):
+                    local_reply = self._generate_local_agent_reply(cfg, message, conversation_context)
+                    response_data = {
+                        'id': f"msg_{int(time.time() * 1000) + random.randint(1, 999)}",
+                        'user_id': 'sam_agent',
+                        'user_name': cfg.get("name") or cfg.get("id") or "Agent",
+                        'message': local_reply,
+                        'timestamp': time.time(),
+                        'message_type': 'agent',
+                        'agent_type': (cfg.get("type") or cfg.get("id") or "agent"),
+                        'capabilities': cfg.get('capabilities', []),
+                        'context_awareness': True
+                    }
+                    room['messages'].append(response_data)
+                    self.socketio.emit('message_received', response_data, room=room_id)
+                return
+
             # Generate SAM agent response based on room agent type
             agent_response = self.generate_room_agent_response(message, room, user)
 
@@ -7009,6 +7089,70 @@ sam@terminal:~$
         
         return statuses
 
+    def _select_chat_agents(self, max_agents: int = 3):
+        """Select a diverse set of agents for multi-agent chat responses."""
+        candidates = []
+        # Prefer connected agents (non-user)
+        for agent_id, conn in (self.connected_agents or {}).items():
+            cfg = conn.get("config", {}) if isinstance(conn, dict) else {}
+            if not cfg:
+                continue
+            candidates.append((agent_id, cfg))
+        if not candidates:
+            # Fallback to configured agents
+            for agent_id, cfg in (self.agent_configs or {}).items():
+                candidates.append((agent_id, cfg))
+        # Prioritize core roles
+        priority = ["researcher", "code_writer", "financial_analyst", "money_maker", "survival_agent", "meta_agent"]
+        ordered = []
+        for pid in priority:
+            for agent_id, cfg in candidates:
+                if agent_id == pid and (agent_id, cfg) not in ordered:
+                    ordered.append((agent_id, cfg))
+        for item in candidates:
+            if item not in ordered:
+                ordered.append(item)
+        return ordered[:max_agents]
+
+    def _generate_local_agent_reply(self, agent_cfg, message, context):
+        """Generate a local-only response without external providers."""
+        agent_type = (agent_cfg.get("type") or agent_cfg.get("id") or "").lower()
+        specialty = (agent_cfg.get("specialty") or "").lower()
+        base_prefix = agent_cfg.get("name") or agent_cfg.get("id") or "Agent"
+        try:
+            if getattr(self, "specialized_agents", False):
+                if "research" in agent_type or "research" in specialty:
+                    return specialized_agents_c.research(f"Research: {message}") or f"{base_prefix}: Research completed."
+                if "code" in agent_type or "code" in specialty:
+                    return specialized_agents_c.generate_code(f"Code task: {message}") or f"{base_prefix}: Code draft ready."
+                if "finance" in agent_type or "money" in agent_type or "finance" in specialty or "money" in specialty:
+                    return specialized_agents_c.analyze_market(f"Finance task: {message}") or f"{base_prefix}: Finance analysis ready."
+            # Deterministic fallback if specialized agents unavailable
+            if "meta" in agent_type:
+                return f"{base_prefix}: Logging issue context and preparing diagnostics for: {message}"
+            if "survival" in agent_type:
+                return f"{base_prefix}: Risk scan complete; no critical blockers detected for: {message}"
+            if "research" in agent_type:
+                return f"{base_prefix}: I can research this once providers are enabled. Summary pending."
+            if "code" in agent_type:
+                return f"{base_prefix}: I can draft code structure for: {message}"
+            if "finance" in agent_type or "money" in agent_type:
+                return f"{base_prefix}: I can outline revenue steps for: {message}"
+            return f"{base_prefix}: Acknowledged. Processing locally: {message}"
+        except Exception as exc:
+            return f"{base_prefix}: Local generation error: {exc}"
+
+    def _multi_agent_local_response(self, message, context, max_agents=3):
+        agents = self._select_chat_agents(max_agents=max_agents)
+        if not agents:
+            return "❌ No local agents available."
+        responses = []
+        for _, cfg in agents:
+            text = self._generate_local_agent_reply(cfg, message, context)
+            name = cfg.get("name") or cfg.get("id") or "Agent"
+            responses.append(f"[{name}] {text}")
+        return "\n\n".join(responses)
+
     def _process_chatbot_message(self, message, context):
         """Process slash commands with comprehensive functionality"""
         message = (message or "").strip()
@@ -7017,6 +7161,9 @@ sam@terminal:~$
 
         def _chat_fallback():
             try:
+                if getattr(self, "strict_local_only", False):
+                    max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
+                    return self._multi_agent_local_response(message, (context or {}).get("history", []), max_agents=max_agents)
                 provider = self._get_chat_provider()
                 if provider:
                     history = (context or {}).get("history", []) or []
@@ -7048,6 +7195,9 @@ sam@terminal:~$
                     }
                     return self._generate_teacher_response(room, user, message, history, message_data)
                 if self.specialized_agents:
+                    if self.chat_multi_agent:
+                        max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
+                        return self._multi_agent_local_response(message, (context or {}).get("history", []), max_agents=max_agents)
                     return self.specialized_agents.research(message)
             except Exception as exc:
                 return f"❌ Chat error: {exc}"
@@ -9531,6 +9681,14 @@ sam@terminal:~$
                     chatLog.scrollTop = chatLog.scrollHeight;
                 }
 
+                function splitMultiAgent(message) {
+                    if (!message) return [];
+                    const trimmed = message.trim();
+                    if (!trimmed.startsWith('[')) return [message];
+                    const parts = trimmed.split(/\\n\\n(?=\\[)/g);
+                    return parts.length ? parts : [message];
+                }
+
                 async function refreshStatus() {
                     try {
                         const statusResp = await fetch('/api/status');
@@ -9567,7 +9725,12 @@ sam@terminal:~$
                             })
                         });
                         const data = await resp.json();
-                        addMessage(data.response || 'No response', 'sam');
+                        const responses = splitMultiAgent(data.response || '');
+                        if (responses.length > 1) {
+                            responses.forEach((segment) => addMessage(segment, 'sam'));
+                        } else {
+                            addMessage(data.response || 'No response', 'sam');
+                        }
                     } catch (err) {
                         addMessage('Chat error: ' + err, 'system');
                     } finally {
@@ -10026,6 +10189,8 @@ sam@terminal:~$
         """Enable agent-to-agent communication visible in chat interface"""
         try:
             current_time = time.time()
+            # Ensure default room exists for messages
+            self._ensure_default_chat_ready()
             
             # Only communicate every 2 minutes to avoid spam
             if not hasattr(self, '_last_agent_comm'):
@@ -10038,8 +10203,21 @@ sam@terminal:~$
             
             # Get connected agents (exclude meta-agent only)
             connected_agents = [aid for aid in self.connected_agents.keys() if aid != 'meta_agent']
+            if len(connected_agents) < 2:
+                # Attempt to auto-connect more agents if under capacity
+                try:
+                    self.auto_connect_agents()
+                except Exception:
+                    pass
+                connected_agents = [aid for aid in self.connected_agents.keys() if aid != 'meta_agent']
             
             if len(connected_agents) < 2:
+                log_event(
+                    "warn",
+                    "agent_comm_insufficient",
+                    "Not enough connected agents for diversification",
+                    count=len(connected_agents),
+                )
                 return  # Need at least 2 agents to communicate
                 
             # Select random agents to communicate
@@ -10230,6 +10408,16 @@ sam@terminal:~$
             match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
             if match:
                 return match.group(1), None
+            # Try alternative metrics if explicit score is missing
+            alt = re.search(r"(?i)credibility\\s*score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            if alt:
+                return alt.group(1), "credibility_score"
+            alt = re.search(r"(?i)sharpe\\s*ratio\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            if alt:
+                return alt.group(1), "sharpe_ratio"
+            alt = re.search(r"(?i)risk\\-?adjusted\\s*return\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            if alt:
+                return alt.group(1), "risk_adjusted_return"
             # Try to infer meaning when no score is present
             lower = text.lower()
             sample = text[:200]

@@ -257,4 +257,13 @@ export FLASK_ENV=production
 export PYTHONPATH="$PWD:$PYTHONPATH"
 
 # Launch with proper error handling
+if [ "${SAM_HOT_RELOAD:-0}" = "1" ]; then
+    if command -v watchmedo >/dev/null 2>&1; then
+        print_status "Hot reload enabled (watchmedo auto-restart)"
+        exec watchmedo auto-restart --pattern="*.py;*.html;*.css;*.js" --recursive -- /Users/samueldasari/Personal/NN_C/tools/run_sam_two_phase.sh
+    else
+        print_warning "Hot reload requested but watchmedo not found. Install watchdog or disable SAM_HOT_RELOAD."
+    fi
+fi
+
 exec /Users/samueldasari/Personal/NN_C/tools/run_sam_two_phase.sh

@@ -884,6 +884,16 @@
                 const text = document.createElement('div');
                 text.className = 'text';
                 text.textContent = payload.message || JSON.stringify(payload);
+                const detailParts = [];
+                if (payload.reason) detailParts.push(`reason=${payload.reason}`);
+                if (payload.action) detailParts.push(`action=${payload.action}`);
+                if (payload.detail_message) detailParts.push(`detail=${payload.detail_message}`);
+                if (detailParts.length) {
+                    const detail = document.createElement('div');
+                    detail.className = 'meta';
+                    detail.textContent = detailParts.join(' • ');
+                    entry.appendChild(detail);
+                }
                 entry.appendChild(meta);
                 entry.appendChild(text);
                 this.logPanel.appendChild(entry);
@@ -951,7 +961,14 @@
 
                     if (response.ok) {
                         this.hideTypingIndicator();
-                        this.addMessageWithEvaluation(data.message, data.evaluation, 'bot');
+                        const segments = this.splitMultiAgent(data.message || '');
+                        if (segments.length > 1) {
+                            segments.forEach((segment) => {
+                                this.addMessageWithEvaluation(segment, data.evaluation, 'bot');
+                            });
+                        } else {
+                            this.addMessageWithEvaluation(data.message, data.evaluation, 'bot');
+                        }
                     } else {
                         this.hideTypingIndicator();
                         this.addMessage(`Error: ${data.error}`, 'bot', true);
@@ -1018,6 +1035,14 @@
                     sender,
                     timestamp: Date.now()
                 });
+            }
+
+            splitMultiAgent(message) {
+                if (!message) return [];
+                const trimmed = message.trim();
+                if (!trimmed.startsWith('[')) return [message];
+                const parts = trimmed.split(/\n\n(?=\[)/g);
+                return parts.length ? parts : [message];
             }
 
             showTypingIndicator() {
