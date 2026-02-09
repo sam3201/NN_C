@@ -2435,6 +2435,7 @@ class UnifiedSAMSystem:
         self.socketio_available = False
         self.web_search_enabled = False
         self.google_drive_available = False
+        self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
 
         # System metrics (initialize early before web interface)
         self.system_metrics = {
