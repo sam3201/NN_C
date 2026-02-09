@@ -4959,7 +4959,15 @@ class UnifiedSAMSystem:
             if request.path in ("/api/health",):
                 return None
             # Allow login/logout and static
-            if request.path in ("/login", "/logout") or request.path.startswith("/static"):
+            if request.path in (
+                "/login",
+                "/logout",
+                "/login/google",
+                "/login/google/callback",
+                "/login/github",
+                "/login/github/callback",
+                "/api/oauth/help",
+            ) or request.path.startswith("/static"):
                 return None
             # Default: require login
             if request.path.startswith("/api/"):
