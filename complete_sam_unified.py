@@ -3560,6 +3560,8 @@ class UnifiedSAMSystem:
                 "auto_conversation_active": bool(getattr(self, "auto_conversation_active", False)),
                 "autonomous_enabled": bool(getattr(self, "autonomous_enabled", False)),
             }
+            if getattr(self, "learning_memory_enabled", False):
+                state["learning_memory"] = list(self.learning_memory)
             if getattr(self, "goal_manager", None):
                 try:
                     state["goals"] = {
@@ -3592,6 +3594,10 @@ class UnifiedSAMSystem:
                 self.meta_state = data.get("meta_state", self.meta_state)
                 self.provider_mode = data.get("provider_mode", getattr(self, "provider_mode", "primary"))
                 self.meta_growth_freeze = data.get("meta_growth_freeze", getattr(self, "meta_growth_freeze", False))
+                if getattr(self, "learning_memory_enabled", False) and data.get("learning_memory"):
+                    self.learning_memory.clear()
+                    for item in data.get("learning_memory", [])[-self.learning_memory_max:]:
+                        self.learning_memory.append(item)
             return data
         except Exception as exc:
             print(f"⚠️ Failed to load system state: {exc}", flush=True)
