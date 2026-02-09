@@ -3228,10 +3228,13 @@ class UnifiedSAMSystem:
         }
         
         # Check critical components
+        c_core_status = str(self.system_metrics.get('c_core_status', 'unknown')).lower()
+        py_status = str(self.system_metrics.get('python_orchestration_status', 'unknown')).lower()
+        web_status = str(self.system_metrics.get('web_interface_status', 'unknown')).lower()
         critical_checks = [
-            ('c_core', hasattr(self, 'consciousness') and self.consciousness is not None),
-            ('python_orchestration', hasattr(self, 'goal_manager') and self.goal_manager is not None),
-            ('web_interface', hasattr(self, 'app') and self.app is not None),
+            ('c_core', c_core_status in ('active', 'ok') or getattr(self, 'c_core_initialized', False)),
+            ('python_orchestration', py_status in ('active', 'ok') or getattr(self, 'python_orchestration_initialized', False)),
+            ('web_interface', web_status in ('active', 'ok') or getattr(self, 'web_interface_initialized', False)),
         ]
         
         for component, is_healthy in critical_checks:
@@ -4623,7 +4626,10 @@ class UnifiedSAMSystem:
             """Get meta-agent health analysis"""
             try:
                 if meta_agent_available:
-                    health = meta_agent.analyze_system_health()
+                    agent = meta_agent if meta_agent is not None else getattr(self, "meta_agent", None)
+                    if agent is None:
+                        return jsonify({"status": "uninitialized", "message": "Meta agent not initialized"}), 503
+                    health = agent.analyze_system_health()
                     return jsonify(health)
                 else:
                     return jsonify({"status": "mock", "components_analyzed": 0})
