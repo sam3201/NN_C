@@ -8,6 +8,8 @@ logs/
 sam_data/
 training/output_*/
 training/tasks/*.jsonl
+CHAT_LOGS/
+personal_ai_conversation_*.json
 venv/
 secrets/
 .env
