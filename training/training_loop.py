@@ -22,10 +22,13 @@ _require("datasets")
 _require("transformers")
 _require("accelerate")
 
+import torch  # type: ignore
+
 from datasets import load_dataset  # type: ignore
 from transformers import (  # type: ignore
     AutoModelForCausalLM,
     AutoTokenizer,
+    BitsAndBytesConfig,
     DataCollatorForLanguageModeling,
     Trainer,
     TrainingArguments,
@@ -68,6 +71,27 @@ def _count_params(model) -> dict:
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     return {"total": total, "trainable": trainable}
 
+def _parse_max_memory(spec: str | None) -> dict | None:
+    if not spec:
+        return None
+    spec = spec.strip()
+    if not spec:
+        return None
+    if spec.startswith("{"):
+        try:
+            return json.loads(spec)
+        except Exception as exc:
+            raise SystemExit(f"Invalid --max-memory JSON: {exc}") from exc
+    result = {}
+    for item in spec.split(","):
+        if not item.strip():
+            continue
+        if "=" not in item:
+            raise SystemExit("Invalid --max-memory format. Use cpu=10GiB,mps=4GiB or JSON.")
+        key, value = item.split("=", 1)
+        result[key.strip()] = value.strip()
+    return result or None
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Training loop scaffold (LoRA or full fine-tune)")
@@ -91,6 +115,26 @@ def main() -> None:
     parser.add_argument("--logging-steps", type=int, default=10)
     parser.add_argument("--trust-remote-code", action="store_true",
                         default=os.getenv("SAM_TRAIN_TRUST_REMOTE_CODE", "0") == "1")
+    parser.add_argument("--torch-dtype", default=os.getenv("SAM_TRAIN_TORCH_DTYPE", "float16"))
+    parser.add_argument("--device-map", default=os.getenv("SAM_TRAIN_DEVICE_MAP", "auto"))
+    parser.add_argument("--low-cpu-mem-usage", action="store_true",
+                        default=os.getenv("SAM_TRAIN_LOW_CPU_MEM", "1") == "1")
+    parser.add_argument("--gradient-checkpointing", action="store_true",
+                        default=os.getenv("SAM_TRAIN_GRAD_CHECKPOINT", "1") == "1")
+    parser.add_argument("--load-in-4bit", action="store_true",
+                        default=os.getenv("SAM_TRAIN_LOAD_4BIT", "0") == "1")
+    parser.add_argument("--load-in-8bit", action="store_true",
+                        default=os.getenv("SAM_TRAIN_LOAD_8BIT", "0") == "1")
+    parser.add_argument("--llm-int8-fp32-cpu-offload", action="store_true",
+                        default=os.getenv("SAM_TRAIN_LLM_INT8_FP32_CPU_OFFLOAD", "0") == "1")
+    parser.add_argument("--custom-device-map", type=str, default=None,
+                        help="Custom device mapping JSON string or file path")
+    parser.add_argument("--max-memory", type=str, default=os.getenv("SAM_TRAIN_MAX_MEMORY"),
+                        help="Max memory per device (e.g. cpu=10GiB,mps=4GiB) or JSON string")
+    parser.add_argument("--offload-dir", type=str, default=os.getenv("SAM_TRAIN_OFFLOAD_DIR"),
+                        help="Folder for disk offload when max memory is exceeded")
+    parser.add_argument("--offload-state-dict", action="store_true",
+                        default=os.getenv("SAM_TRAIN_OFFLOAD_STATE_DICT", "0") == "1")
     args = parser.parse_args()
 
     logger = _setup_logger(args.log_level, args.log_file)
@@ -117,7 +161,88 @@ def main() -> None:
 
     dataset = dataset.map(tokenize, batched=True, remove_columns=["text"])
 
-    model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+    dtype_name = args.torch_dtype.lower()
+    if not hasattr(torch, dtype_name):
+        raise SystemExit(f"Unknown torch dtype: {args.torch_dtype}")
+    torch_dtype = getattr(torch, dtype_name)
+    
+    # Handle custom device mapping
+    device_map = None
+    if args.custom_device_map:
+        try:
+            # Try to parse as JSON string first
+            if args.custom_device_map.startswith('{'):
+                device_map = json.loads(args.custom_device_map)
+            else:
+                # Try to load as file path
+                with open(args.custom_device_map, 'r') as f:
+                    device_map = json.load(f)
+            logger.info("Using custom device map: %s", device_map)
+        except Exception as e:
+            logger.warning("Failed to load custom device map: %s. Using default.", e)
+            device_map = None if args.device_map.lower() in ("none", "null", "off") else args.device_map
+    else:
+        device_map = None if args.device_map.lower() in ("none", "null", "off") else args.device_map
+    if args.load_in_4bit and args.load_in_8bit:
+        raise SystemExit("Choose only one: --load-in-4bit or --load-in-8bit")
+
+    quant_config = None
+    if args.load_in_4bit or args.load_in_8bit:
+        if args.load_in_8bit and not args.llm_int8_fp32_cpu_offload:
+            # Auto-enable CPU offload for int8 to allow CPU/disk dispatch.
+            args.llm_int8_fp32_cpu_offload = True
+            logger.info("Auto-enabled llm_int8_fp32_cpu_offload for 8-bit load.")
+        try:
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=bool(args.load_in_4bit),
+                load_in_8bit=bool(args.load_in_8bit),
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+                llm_int8_enable_fp32_cpu_offload=args.llm_int8_fp32_cpu_offload,
+            )
+            logger.info("LLM int8 FP32 CPU offload enabled: %s", args.llm_int8_fp32_cpu_offload)
+        except Exception as exc:
+            raise SystemExit(f"Quantized load requested but bitsandbytes is unavailable: {exc}")
+
+    if args.load_in_8bit and device_map == "auto" and not args.custom_device_map:
+        # Without CUDA, default to CPU placement to satisfy offload requirements.
+        has_cuda = torch.cuda.is_available()
+        has_mps = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        if not has_cuda:
+            device_map = "cpu" if not has_mps else "cpu"
+            logger.info("Using device_map=%s for 8-bit load (no CUDA).", device_map)
+
+    max_memory = _parse_max_memory(args.max_memory)
+    if max_memory:
+        logger.info("Using max_memory=%s", max_memory)
+        if args.offload_dir:
+            os.makedirs(args.offload_dir, exist_ok=True)
+            logger.info("Using offload_dir=%s", args.offload_dir)
+
+    logger.info(
+        "torch_dtype=%s device_map=%s low_cpu_mem=%s grad_ckpt=%s load_in_4bit=%s load_in_8bit=%s llm_int8_fp32_cpu_offload=%s max_memory=%s offload_dir=%s",
+        args.torch_dtype,
+        device_map or "none",
+        args.low_cpu_mem_usage,
+        args.gradient_checkpointing,
+        args.load_in_4bit,
+        args.load_in_8bit,
+        args.llm_int8_fp32_cpu_offload,
+        max_memory or "none",
+        args.offload_dir or "none",
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        trust_remote_code=args.trust_remote_code,
+        torch_dtype=torch_dtype,
+        device_map=device_map,
+        low_cpu_mem_usage=args.low_cpu_mem_usage,
+        quantization_config=quant_config,
+        max_memory=max_memory,
+        offload_folder=args.offload_dir,
+        offload_state_dict=args.offload_state_dict,
+    )
 
     if args.lora:
         target_modules = args.target_modules or ["q_proj", "v_proj"]
@@ -132,6 +257,13 @@ def main() -> None:
             task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, config)
+    if args.gradient_checkpointing:
+        try:
+            model.gradient_checkpointing_enable()
+            if hasattr(model.config, "use_cache"):
+                model.config.use_cache = False
+        except Exception as exc:
+            logger.warning("Gradient checkpointing enable failed: %s", exc)
 
     param_counts = _count_params(model)
     logger.info("Params: total=%d trainable=%d", param_counts["total"], param_counts["trainable"])
@@ -145,7 +277,7 @@ def main() -> None:
         num_train_epochs=args.epochs,
         learning_rate=args.lr,
         warmup_ratio=args.warmup_ratio,
-        fp16=False,
+        fp16=bool(dtype_name == "float16"),
         logging_steps=args.logging_steps,
         save_strategy="steps",
         save_steps=200,
