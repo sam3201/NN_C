@@ -4629,8 +4629,19 @@ class UnifiedSAMSystem:
                     agent = meta_agent if meta_agent is not None else getattr(self, "meta_agent", None)
                     if agent is None:
                         return jsonify({"status": "uninitialized", "message": "Meta agent not initialized"}), 503
-                    health = agent.analyze_system_health()
-                    return jsonify(health)
+                    if hasattr(agent, "analyze_system_health"):
+                        health = agent.analyze_system_health()
+                        return jsonify(health)
+                    return jsonify({
+                        "status": "available",
+                        "components_analyzed": 0,
+                        "note": "Meta agent lacks analyze_system_health; returning minimal status",
+                        "system_metrics": {
+                            "c_core": self.system_metrics.get("c_core_status", "unknown"),
+                            "python_orchestration": self.system_metrics.get("python_orchestration_status", "unknown"),
+                            "web_interface": self.system_metrics.get("web_interface_status", "unknown"),
+                        }
+                    })
                 else:
                     return jsonify({"status": "mock", "components_analyzed": 0})
             except Exception as e:
