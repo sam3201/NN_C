@@ -575,6 +575,7 @@
                     <button id="logPauseBtn">Pause</button>
                     <button id="logClearBtn">Clear</button>
                     <button id="logSnapshotBtn">Snapshot</button>
+                    <button id="logDownloadBtn">Download Log</button>
                 </div>
                 <div class="log-summary" id="logSummary"></div>
             </div>
@@ -663,6 +664,7 @@
                 this.logPauseBtn = document.getElementById('logPauseBtn');
                 this.logClearBtn = document.getElementById('logClearBtn');
                 this.logSnapshotBtn = document.getElementById('logSnapshotBtn');
+                this.logDownloadBtn = document.getElementById('logDownloadBtn');
                 this.logSummary = document.getElementById('logSummary');
                 this.logPaused = false;
                 this.logSource = null;
@@ -697,6 +699,9 @@
                 });
 
                 this.logSnapshotBtn.addEventListener('click', () => this.fetchLogSnapshot());
+                this.logDownloadBtn.addEventListener('click', () => {
+                    window.open('/api/logs/download?kind=jsonl', '_blank');
+                });
             }
 
             async checkServerStatus() {

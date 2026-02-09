@@ -29,6 +29,7 @@ import random
 import string
 import platform
 import psutil
+import ipaddress
 from contextlib import contextmanager
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -65,6 +66,7 @@ def _format_exception(context: str, exc: Exception) -> str:
 
 
 _JSONL_LOG_PATH = None
+_HUMAN_LOG_PATH = None
 _JSONL_LOG_FH = None
 
 
@@ -94,7 +96,7 @@ class _TeeStream:
 
 def setup_runtime_logging():
     """Configure human-readable log + JSONL event log."""
-    global _JSONL_LOG_PATH, _JSONL_LOG_FH
+    global _JSONL_LOG_PATH, _HUMAN_LOG_PATH, _JSONL_LOG_FH
     log_dir = os.getenv("SAM_LOG_DIR", "logs")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.getenv("SAM_LOG_FILE", os.path.join(log_dir, "sam_runtime.log"))
@@ -105,6 +107,7 @@ def setup_runtime_logging():
     sys.stdout = _TeeStream(sys.stdout, log_fp)
     sys.stderr = _TeeStream(sys.stderr, log_fp)
 
+    _HUMAN_LOG_PATH = log_file
     _JSONL_LOG_PATH = jsonl_file
     _JSONL_LOG_FH = open(jsonl_file, "a", encoding="utf-8", buffering=1)
 
@@ -264,6 +267,7 @@ print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
 from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context, session, redirect
+from requests_oauthlib import OAuth2Session
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_compress import Compress
@@ -4873,6 +4877,49 @@ class UnifiedSAMSystem:
                 raise ValueError("Path escapes repository root")
             return resolved
 
+        def _get_client_ip():
+            if os.getenv("SAM_TRUST_PROXY", "0") == "1":
+                forwarded = request.headers.get("X-Forwarded-For", "")
+                if forwarded:
+                    return forwarded.split(",")[0].strip()
+            return request.remote_addr or "unknown"
+
+        def _ip_allowed():
+            allowed_raw = os.getenv("SAM_ALLOWED_IPS", "")
+            allowed = [a.strip() for a in allowed_raw.split(",") if a.strip()]
+            if not allowed:
+                return True
+            ip = _get_client_ip()
+            try:
+                ip_obj = ipaddress.ip_address(ip)
+            except Exception:
+                return False
+            for entry in allowed:
+                try:
+                    if "/" in entry:
+                        net = ipaddress.ip_network(entry, strict=False)
+                        if ip_obj in net:
+                            return True
+                    else:
+                        if ip_obj == ipaddress.ip_address(entry):
+                            return True
+                except Exception:
+                    continue
+            return False
+
+        def _authorized_email(email: str):
+            allowed = [e.strip().lower() for e in os.getenv("SAM_ALLOWED_EMAILS", "").split(",") if e.strip()]
+            owner = os.getenv("SAM_OWNER_EMAIL", "").strip().lower()
+            admins = [e.strip().lower() for e in os.getenv("SAM_ADMIN_EMAILS", "").split(",") if e.strip()]
+            if owner and owner not in allowed:
+                allowed.append(owner)
+            if owner and owner not in admins:
+                admins.append(owner)
+            if not allowed:
+                # If no allowlist, only allow owner if set
+                return (email == owner) if owner else False, False
+            return email in allowed, (email in admins) or (email == owner)
+
         def _login_required():
             if session.get("user_email"):
                 return None
@@ -4889,6 +4936,8 @@ class UnifiedSAMSystem:
 
         @self.app.before_request
         def _enforce_login():
+            if not _ip_allowed():
+                return ("IP not allowed", 403)
             result = _login_required()
             if result is not None:
                 return result
@@ -4922,6 +4971,11 @@ class UnifiedSAMSystem:
                           <input type="password" name="password" required />
                           <button type="submit">Login</button>
                         </form>
+                        <div class="hint" style="margin-top:16px;">Or use OAuth:</div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                          <a href="/login/google" style="flex:1; text-align:center; padding:10px; background:#fff; border:1px solid #ddd; border-radius:8px; text-decoration:none;">Google</a>
+                          <a href="/login/github" style="flex:1; text-align:center; padding:10px; background:#fff; border:1px solid #ddd; border-radius:8px; text-decoration:none;">GitHub</a>
+                        </div>
                         <div class="hint">Access is restricted to approved emails.</div>
                       </div>
                     </body>
@@ -4931,31 +4985,105 @@ class UnifiedSAMSystem:
 
             email = (request.form.get("email") or "").strip().lower()
             password = request.form.get("password") or ""
-            allowed = [e.strip().lower() for e in os.getenv("SAM_ALLOWED_EMAILS", "").split(",") if e.strip()]
-            owner = os.getenv("SAM_OWNER_EMAIL", "").strip().lower()
-            admins = [e.strip().lower() for e in os.getenv("SAM_ADMIN_EMAILS", "").split(",") if e.strip()]
-
-            if owner and owner not in allowed:
-                allowed.append(owner)
-            if owner and owner not in admins:
-                admins.append(owner)
+            allowed_ok, is_admin = _authorized_email(email)
 
             login_password = os.getenv("SAM_LOGIN_PASSWORD")
             if not login_password:
                 return ("Login password not configured (SAM_LOGIN_PASSWORD)", 503)
-            if email not in allowed:
+            if not allowed_ok:
                 return ("Unauthorized email", 403)
             if password != login_password:
                 return ("Invalid credentials", 403)
 
             session["user_email"] = email
-            session["is_admin"] = email in admins or (not admins and email in allowed)
+            session["is_admin"] = is_admin
             return redirect("/")
 
         @self.app.route("/logout")
         def logout():
             session.clear()
             return redirect("/login")
+
+        @self.app.route("/login/google")
+        def login_google():
+            client_id = os.getenv("SAM_GOOGLE_CLIENT_ID")
+            client_secret = os.getenv("SAM_GOOGLE_CLIENT_SECRET")
+            if not client_id or not client_secret:
+                return ("Google OAuth not configured", 503)
+            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_uri = f"{redirect_base}/login/google/callback"
+            oauth = OAuth2Session(client_id, scope=["openid", "email", "profile"], redirect_uri=redirect_uri)
+            auth_url, state = oauth.authorization_url(
+                "https://accounts.google.com/o/oauth2/v2/auth",
+                access_type="offline",
+                prompt="consent",
+            )
+            session["oauth_state"] = state
+            return redirect(auth_url)
+
+        @self.app.route("/login/google/callback")
+        def login_google_callback():
+            client_id = os.getenv("SAM_GOOGLE_CLIENT_ID")
+            client_secret = os.getenv("SAM_GOOGLE_CLIENT_SECRET")
+            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_uri = f"{redirect_base}/login/google/callback"
+            oauth = OAuth2Session(client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri)
+            token = oauth.fetch_token(
+                "https://oauth2.googleapis.com/token",
+                client_secret=client_secret,
+                authorization_response=request.url,
+            )
+            userinfo = oauth.get("https://openidconnect.googleapis.com/v1/userinfo").json()
+            email = (userinfo.get("email") or "").strip().lower()
+            allowed_ok, is_admin = _authorized_email(email)
+            if not allowed_ok:
+                return ("Unauthorized email", 403)
+            session["user_email"] = email
+            session["is_admin"] = is_admin
+            return redirect("/")
+
+        @self.app.route("/login/github")
+        def login_github():
+            client_id = os.getenv("SAM_GITHUB_CLIENT_ID")
+            client_secret = os.getenv("SAM_GITHUB_CLIENT_SECRET")
+            if not client_id or not client_secret:
+                return ("GitHub OAuth not configured", 503)
+            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_uri = f"{redirect_base}/login/github/callback"
+            oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
+            auth_url, state = oauth.authorization_url("https://github.com/login/oauth/authorize")
+            session["oauth_state"] = state
+            return redirect(auth_url)
+
+        @self.app.route("/login/github/callback")
+        def login_github_callback():
+            client_id = os.getenv("SAM_GITHUB_CLIENT_ID")
+            client_secret = os.getenv("SAM_GITHUB_CLIENT_SECRET")
+            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_uri = f"{redirect_base}/login/github/callback"
+            oauth = OAuth2Session(client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri)
+            token = oauth.fetch_token(
+                "https://github.com/login/oauth/access_token",
+                client_secret=client_secret,
+                authorization_response=request.url,
+                include_client_id=True,
+            )
+            # GitHub email API
+            emails = oauth.get("https://api.github.com/user/emails").json()
+            email = ""
+            for item in emails:
+                if item.get("primary") and item.get("verified"):
+                    email = item.get("email")
+                    break
+            if not email and emails:
+                email = emails[0].get("email", "")
+            email = (email or "").strip().lower()
+            allowed_ok, is_admin = _authorized_email(email)
+            if not allowed_ok:
+                return ("Unauthorized email", 403)
+            session["user_email"] = email
+            session["is_admin"] = is_admin
+            return redirect("/")
 
         @self.app.route('/')
         def dashboard():
@@ -5123,6 +5251,19 @@ class UnifiedSAMSystem:
             window = int(request.args.get("window", "200"))
             path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
             return jsonify(_summarize_jsonl_log(path, window=window))
+
+        @self.app.route('/api/logs/download')
+        def download_logs():
+            """Download the current log file."""
+            kind = request.args.get("kind", "jsonl").lower()
+            if kind == "human":
+                path = _HUMAN_LOG_PATH or os.getenv("SAM_LOG_FILE", "logs/sam_runtime.log")
+            else:
+                path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+            if not os.path.exists(path):
+                return jsonify({"error": "log file not found"}), 404
+            filename = os.path.basename(path)
+            return send_file(path, as_attachment=True, download_name=filename)
 
         @self.app.route('/api/groupchat/rooms')
         def get_rooms():

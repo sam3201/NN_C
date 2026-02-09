@@ -37,7 +37,7 @@
     },
     {
       "task_id": "t4_regex",
-      "response": " Here is a code snippet in Python that generates a UUID v4 string:\n\n```python\nimport uuid\nuuid_str = str(uuid.uuid4())\nprint(uuid_str)\n```\n\nWhen you run this code, it will print a UUID v4 string like `3ba8a6c1-b97d-4e5f-a20a-b8d5b1c23456`. You can replace the print statement with your desired variable assignment if needed.\n\nFor other programming languages, you can use their respective libraries to generate UUIDs. For example, in Java:\n\n```java\nimport java.util.UUID;\nUUID uuid = UUID.randomUUID();\nString uuidStr = uuid.toString();\nSystem.out.println(uuidStr);\n```\n\nIn JavaScript (Node.js):\n\n```javascript\nconst { v4: uuidv4 } = require('uuid');\nconsole.log(uuidv4());\n```",
+      "response": " Here is a simple example of how to generate a UUID v4 string in Python:\n\n```python\nimport uuid\n\nuuid_str = str(uuid.uuid4())\nprint(uuid_str)\n```\n\nThis code imports the `uuid` module, creates a new UUID using `uuid.uuid4()`, and then converts it to a string for easier handling. The resulting UUID will be in the format like this: `550e8400-e29b-41d4-a716-446655440000`.",
       "score": 1.0,
       "passed": true,
       "details": {

@@ -88,6 +88,21 @@ Recommended: **Tailscale** for private, secure access with no public exposure.
 
 When you purchase a domain, switch to Cloudflare Tunnel + Access for a permanent public URL.
 
+## Login + OAuth + IP Allowlist
+Set these in `.env.local`:
+- `SAM_LOGIN_PASSWORD` — required for password login
+- `SAM_ALLOWED_EMAILS` — comma‑separated allowlist
+- `SAM_OWNER_EMAIL` — always treated as admin
+- `SAM_ADMIN_EMAILS` — comma‑separated admin list
+- `SAM_SESSION_SECRET` — session secret
+- `SAM_ALLOWED_IPS` — optional allowlist (comma‑separated IPs/CIDRs)
+- `SAM_TRUST_PROXY=1` — use `X-Forwarded-For` when behind proxy
+
+OAuth (optional):
+- `SAM_GOOGLE_CLIENT_ID`, `SAM_GOOGLE_CLIENT_SECRET`
+- `SAM_GITHUB_CLIENT_ID`, `SAM_GITHUB_CLIENT_SECRET`
+- `SAM_OAUTH_REDIRECT_BASE` — e.g. `http://localhost:5004`
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal
