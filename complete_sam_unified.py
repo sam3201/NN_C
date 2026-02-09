@@ -2962,7 +2962,10 @@ class UnifiedSAMSystem:
         self.sam_code_modifier_ready = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
         self.require_meta_agent = os.getenv("SAM_REQUIRE_META_AGENT", "1") == "1"
-        self.meta_only_boot = os.getenv("SAM_META_ONLY_BOOT", "1") == "1"
+        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "1")
+        self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
+        if self.require_meta_agent:
+            self.meta_only_boot = True
         self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
         if self.require_self_mod and not self.sam_code_modifier_available:
             raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
