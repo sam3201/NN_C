@@ -4485,6 +4485,10 @@ class UnifiedSAMSystem:
         def morpho_update():
             """Update morphogenetic pressure signals"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
                 payload = request.get_json(silent=True) or {}
                 pressures = self._normalize_pressures(payload)
                 lambda_val = sam_meta_controller_c.update_pressure(
@@ -4666,6 +4670,22 @@ class UnifiedSAMSystem:
                 data = request.get_json()
                 user_message = data.get('message', '')
                 context = data.get('context', {})
+
+                msg_lower = (user_message or "").strip().lower()
+                if msg_lower.startswith("/"):
+                    sensitive_prefixes = (
+                        "/modify-code",
+                        "/rollback",
+                        "/save-to-github",
+                        "/send-email",
+                        "/schedule-email",
+                        "/system-report",
+                    )
+                    if msg_lower.startswith(sensitive_prefixes) or msg_lower.startswith("/revenue approve") or msg_lower.startswith("/revenue reject") or msg_lower.startswith("/revenue submit"):
+                        ok, error = _require_admin_token()
+                        if not ok:
+                            message, status = error
+                            return jsonify({'error': message}), status
 
                 # Process through SAM system
                 response = self._process_chatbot_message(user_message, context)
@@ -6008,7 +6028,32 @@ sam@terminal:~$
 
     def _process_chatbot_message(self, message, context):
         """Process slash commands with comprehensive functionality"""
-        parts = message.strip().split()
+        message = (message or "").strip()
+        if not message:
+            return "❌ Empty message."
+        if not message.startswith("/"):
+            try:
+                if self.teacher_pool_enabled and self.teacher_pool:
+                    room = {"id": "chatbot", "name": "Dashboard Chat", "agent_type": "chatbot"}
+                    user = {
+                        "id": context.get("user_id", "dashboard"),
+                        "name": context.get("user_name", "User"),
+                    }
+                    history = context.get("history", []) or []
+                    message_data = {
+                        "id": f"chatbot:{int(time.time() * 1000)}",
+                        "timestamp": time.time(),
+                        "user_id": user["id"],
+                        "user_name": user["name"],
+                    }
+                    return self._generate_teacher_response(room, user, message, history, message_data)
+                if self.specialized_agents:
+                    return self.specialized_agents.research(message)
+            except Exception as exc:
+                return f"❌ Chat error: {exc}"
+            return "❌ Chat capability not available."
+
+        parts = message.split()
         cmd = parts[0].lower()
         args = parts[1:] if len(parts) > 1 else []
 
@@ -6978,11 +7023,19 @@ sam@terminal:~$
                         alert('Account name required.');
                         return;
                     }
-                    await fetch('/api/banking/account', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/banking/account', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({name, initial_balance: balance, currency})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to create account.');
+                    }
                     updateBanking();
                 }
 
@@ -6994,47 +7047,87 @@ sam@terminal:~$
                         alert('Account ID and amount required.');
                         return;
                     }
-                    await fetch('/api/banking/spend', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/banking/spend', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({account_id: accountId, amount, memo, requested_by: 'ui'})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to submit spend request.');
+                    }
                     updateBanking();
                 }
 
                 async function approveBankingRequest(requestId) {
-                    await fetch('/api/banking/approve', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/banking/approve', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({request_id: requestId, approver: 'operator', auto_execute: true})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to approve request.');
+                    }
                     updateBanking();
                 }
 
                 async function rejectBankingRequest(requestId) {
-                    await fetch('/api/banking/reject', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/banking/reject', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({request_id: requestId, approver: 'operator', reason: 'UI reject'})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to reject request.');
+                    }
                     updateBanking();
                 }
 
                 async function approveRevenue(actionId) {
-                    await fetch('/api/revenue/approve', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/revenue/approve', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({action_id: actionId, approver: 'operator'})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to approve action.');
+                    }
                     updateRevenueOps();
                 }
 
                 async function rejectRevenue(actionId) {
-                    await fetch('/api/revenue/reject', {
+                    if (!samAdminToken) {
+                        alert('Set admin token first.');
+                        return;
+                    }
+                    const resp = await fetch('/api/revenue/reject', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({action_id: actionId, approver: 'operator', reason: 'UI reject'})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to reject action.');
+                    }
                     updateRevenueOps();
                 }
 
@@ -7052,11 +7145,15 @@ sam@terminal:~$
                         alert('Payload must be valid JSON.');
                         return;
                     }
-                    await fetch('/api/revenue/action', {
+                    const resp = await fetch('/api/revenue/action', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({action_type: type, payload, requested_by: 'ui'})
                     });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        alert(err.error || 'Failed to submit revenue action.');
+                    }
                     updateRevenueOps();
                 }
 
@@ -7186,12 +7283,25 @@ sam@terminal:~$
 
                     fetch('/api/chatbot', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({message: input.value})
+                        headers: adminHeaders(),
+                        body: JSON.stringify({
+                            message: input.value,
+                            context: {user_name: 'Dashboard', history: []}
+                        })
                     })
-                    .then(response => response.json())
+                    .then(async response => {
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw new Error(data.error || `Request failed (${response.status})`);
+                        }
+                        return data;
+                    })
                     .then(data => {
-                        appendMessage('sam', 'SAM', data.response || 'No response');
+                        if (data.error) {
+                            appendMessage('system', 'System', data.error);
+                        } else {
+                            appendMessage('sam', 'SAM', data.response || 'No response');
+                        }
                     })
                     .catch(error => {
                         appendMessage('system', 'System', error.message || 'Request failed');
@@ -7207,6 +7317,13 @@ sam@terminal:~$
                 const adminInput = document.getElementById('admin-token-input');
                 if (adminInput && samAdminToken) {
                     adminInput.value = samAdminToken;
+                }
+                if (adminInput) {
+                    adminInput.addEventListener('change', setAdminToken);
+                    adminInput.addEventListener('blur', setAdminToken);
+                    adminInput.addEventListener('keyup', function(e) {
+                        if (e.key === 'Enter') setAdminToken();
+                    });
                 }
 
                 setInterval(updateAgents, 5000);
