@@ -7366,14 +7366,18 @@ sam@terminal:~$
         agent_type = (agent_cfg.get("type") or agent_cfg.get("id") or "").lower()
         specialty = (agent_cfg.get("specialty") or "").lower()
         base_prefix = agent_cfg.get("name") or agent_cfg.get("id") or "Agent"
+        memory = self._build_learning_context()
+        prompt = message
+        if memory:
+            prompt = f"Recent memory:\n{memory}\n\nTask: {message}"
         try:
             if getattr(self, "specialized_agents", False):
                 if "research" in agent_type or "research" in specialty:
-                    return specialized_agents_c.research(f"Research: {message}") or f"{base_prefix}: Research completed."
+                    return specialized_agents_c.research(f"Research: {prompt}") or f"{base_prefix}: Research completed."
                 if "code" in agent_type or "code" in specialty:
-                    return specialized_agents_c.generate_code(f"Code task: {message}") or f"{base_prefix}: Code draft ready."
+                    return specialized_agents_c.generate_code(f"Code task: {prompt}") or f"{base_prefix}: Code draft ready."
                 if "finance" in agent_type or "money" in agent_type or "finance" in specialty or "money" in specialty:
-                    return specialized_agents_c.analyze_market(f"Finance task: {message}") or f"{base_prefix}: Finance analysis ready."
+                    return specialized_agents_c.analyze_market(f"Finance task: {prompt}") or f"{base_prefix}: Finance analysis ready."
             # Deterministic fallback if specialized agents unavailable
             if "meta" in agent_type:
                 return f"{base_prefix}: Logging issue context and preparing diagnostics for: {message}"
@@ -7389,6 +7393,15 @@ sam@terminal:~$
         except Exception as exc:
             return f"{base_prefix}: Local generation error: {exc}"
 
+    def _single_agent_local_response(self, message, context):
+        agents = self._select_chat_agents(max_agents=1)
+        if not agents:
+            return "❌ No local agents available."
+        _, cfg = agents[0]
+        name = cfg.get("name") or cfg.get("id") or "Agent"
+        text = self._generate_local_agent_reply(cfg, message, context)
+        return f"[{name}] {text}"
+
     def _multi_agent_local_response(self, message, context, max_agents=3):
         agents = self._select_chat_agents(max_agents=max_agents)
         if not agents:
@@ -7399,6 +7412,51 @@ sam@terminal:~$
             name = cfg.get("name") or cfg.get("id") or "Agent"
             responses.append(f"[{name}] {text}")
         return "\n\n".join(responses)
+
+    def _build_learning_context(self, limit: int = 3) -> str:
+        if not getattr(self, "learning_memory_enabled", False):
+            return ""
+        memory = list(self.learning_memory)[-limit:]
+        if not memory:
+            return ""
+        lines = []
+        for item in memory:
+            user = item.get("user", "User")
+            prompt = item.get("prompt", "")
+            response = item.get("response", "")
+            lines.append(f"- {user}: {prompt}\n  SAM: {response}")
+        return "\n".join(lines)
+
+    def _record_chat_learning(self, prompt: str, response: str, context: Dict[str, Any]):
+        if not response:
+            return
+        try:
+            self._update_system_metrics()
+        except Exception:
+            pass
+        user = {
+            "id": (context or {}).get("user_id", "dashboard"),
+            "name": (context or {}).get("user_name", "User"),
+        }
+        if getattr(self, "learning_memory_enabled", False):
+            self.learning_memory.append({
+                "prompt": prompt,
+                "response": response,
+                "user": user.get("name") or user.get("id"),
+                "ts": time.time(),
+            })
+        if getattr(self, "distill_dashboard_enabled", False):
+            self._ensure_distill_writer()
+            if self.distill_writer:
+                history = (context or {}).get("history", []) or []
+                self._record_chat_distillation(prompt, response, history, user)
+        log_event(
+            "info",
+            "chat_learning",
+            "Recorded chat learning event",
+            user=user.get("name"),
+            prompt=prompt[:120],
+        )
 
     def _process_chatbot_message(self, message, context):
         """Process slash commands with comprehensive functionality"""
