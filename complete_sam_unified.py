@@ -900,6 +900,11 @@ class PatchGeneratorAgent:
             research_notes = getattr(failure_event, "research_notes", "") or ""
         except Exception:
             research_notes = ""
+        learning_context = ""
+        try:
+            learning_context = self.system._build_learning_context()
+        except Exception:
+            learning_context = ""
         return f"""
 Given this failure:
 {failure_event.error_type}: {failure_event.stack_trace[:500]}...
@@ -911,6 +916,9 @@ Content preview:
 
 Research notes:
 {research_notes[:1000] if research_notes else 'None'}
+
+Learning memory:
+{learning_context[:1000] if learning_context else 'None'}
 
 Generate a minimal fix that:
 - Does not refactor
@@ -932,12 +940,17 @@ Confidence Threshold: Must be >= 0.75 for application
         """Actually generate patches using integrated LLM systems with sandbox testing"""
         try:
             # Try different LLM systems in order of preference
-            llm_systems = [
-                ('claude', self._try_claude_patch_generation),
-                ('openai', self._try_openai_patch_generation),
-                ('ollama', self._try_ollama_patch_generation),
-                ('sam', self._try_sam_patch_generation)
-            ]
+            if getattr(self.system, "strict_local_only", False):
+                llm_systems = [
+                    ('sam', self._try_sam_patch_generation),
+                ]
+            else:
+                llm_systems = [
+                    ('claude', self._try_claude_patch_generation),
+                    ('openai', self._try_openai_patch_generation),
+                    ('ollama', self._try_ollama_patch_generation),
+                    ('sam', self._try_sam_patch_generation)
+                ]
 
             for system_name, generator_func in llm_systems:
                 try:
@@ -1535,6 +1548,68 @@ class MetaAgent:
             return failure.get(name, default)
         return getattr(failure, name, default)
 
+    def _load_error_patterns(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Merged enhanced error patterns for deterministic fixes."""
+        return {
+            "syntax_errors": [
+                {"pattern": r"SyntaxError.*missing.*colon", "type": "missing_colon", "severity": "high", "auto_fixable": True},
+                {"pattern": r"SyntaxError.*invalid.*syntax", "type": "invalid_syntax", "severity": "high", "auto_fixable": True},
+                {"pattern": r"IndentationError", "type": "indentation_error", "severity": "medium", "auto_fixable": True},
+                {"pattern": r"NameError.*not defined", "type": "name_error", "severity": "medium", "auto_fixable": True},
+            ],
+            "import_errors": [
+                {"pattern": r"ModuleNotFoundError.*No module named", "type": "missing_module", "severity": "high", "auto_fixable": True},
+                {"pattern": r"ImportError.*cannot import", "type": "import_error", "severity": "high", "auto_fixable": True},
+            ],
+            "runtime_errors": [
+                {"pattern": r"ZeroDivisionError", "type": "division_by_zero", "severity": "high", "auto_fixable": True},
+                {"pattern": r"IndexError.*list index out of range", "type": "index_out_of_range", "severity": "high", "auto_fixable": True},
+                {"pattern": r"KeyError", "type": "key_error", "severity": "medium", "auto_fixable": True},
+                {"pattern": r"TypeError", "type": "type_mismatch", "severity": "medium", "auto_fixable": True},
+            ],
+        }
+
+    def _load_fix_strategies(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Merged fix strategies (used for guidance + logging)."""
+        return {
+            "missing_colon": [{"strategy": "add_colon", "confidence": 0.9}],
+            "invalid_syntax": [{"strategy": "syntax_correction", "confidence": 0.8}],
+            "indentation_error": [{"strategy": "fix_indentation", "confidence": 0.9}],
+            "name_error": [{"strategy": "define_variable", "confidence": 0.8}],
+            "missing_module": [{"strategy": "install_package", "confidence": 0.7}],
+            "division_by_zero": [{"strategy": "add_zero_check", "confidence": 0.95}],
+            "index_out_of_range": [{"strategy": "add_bounds_check", "confidence": 0.9}],
+            "key_error": [{"strategy": "add_key_check", "confidence": 0.85}],
+        }
+
+    def _match_error_patterns(self, failure) -> List[Dict[str, Any]]:
+        """Return matched error pattern records."""
+        stack = self._get_failure_attr(failure, "stack_trace", "") or ""
+        msg = self._get_failure_attr(failure, "message", "") or ""
+        text = f"{msg} {stack}"
+        matches = []
+        for category, patterns in (self.error_patterns or {}).items():
+            for pattern_info in patterns:
+                if re.search(pattern_info["pattern"], text, re.IGNORECASE):
+                    record = dict(pattern_info)
+                    record["category"] = category
+                    matches.append(record)
+        return matches
+
+    def ingest_learning_event(self, prompt: str, response: str, user: Optional[str] = None):
+        """Accept learning events so meta-agent can adapt."""
+        try:
+            if not prompt or not response:
+                return
+            self.learning_log.append({
+                "prompt": prompt,
+                "response": response,
+                "user": user or "user",
+                "ts": time.time(),
+            })
+        except Exception:
+            pass
+
     def _local_research(self, failure, localized_files):
         parts = []
         error_type = self._get_failure_attr(failure, "error_type", "unknown")
@@ -1681,6 +1756,17 @@ class MetaAgent:
             stack_trace = failure.stack_trace or ""
         else:
             stack_trace = failure.get("stack_trace", "")
+        pattern_matches = self._match_error_patterns(failure)
+
+        file_match = re.search(r'File "([^"]+)", line (\d+)', stack_trace)
+        file_path = None
+        line_no = None
+        if file_match:
+            file_path = file_match.group(1)
+            try:
+                line_no = int(file_match.group(2))
+            except Exception:
+                line_no = None
 
         # Fix missing attributes on UnifiedSAMSystem by adding safe defaults in __init__
         attr_match = re.search(
@@ -1720,6 +1806,113 @@ class MetaAgent:
                             "generated_by": "deterministic_patch_registry"
                         })
                         break
+
+        # Fix missing colon / syntax artifacts when a concrete file + line is available
+        if file_path and line_no:
+            file_abs = Path(file_path)
+            if not file_abs.is_absolute():
+                file_abs = Path(self.system.project_root) / file_path
+            if file_abs.exists():
+                try:
+                    lines = file_abs.read_text(encoding="utf-8", errors="ignore").splitlines(True)
+                    if 0 < line_no <= len(lines):
+                        line = lines[line_no - 1]
+                        # Repair accidental escaped quotes in f-strings
+                        if "f\\\"" in line or "\\\"" in line:
+                            fixed = line.replace("f\\\"", "f\"").replace("\\\"", "\"")
+                            if fixed != line:
+                                rel = str(file_abs)
+                                try:
+                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                except Exception:
+                                    pass
+                                patches.append({
+                                    "id": "deterministic_unescape_fstring",
+                                    "target_file": rel,
+                                    "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
+                                    "intent": "Fix invalid escaped quotes in f-string",
+                                    "risk_level": "low",
+                                    "confidence": 0.9,
+                                    "assumptions": ["Escaped quotes were introduced by faulty patching"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry"
+                                })
+                        # Missing colon in Python block headers
+                        if any(p.get("type") == "missing_colon" for p in pattern_matches):
+                            stripped = line.rstrip("\n")
+                            if stripped and not stripped.rstrip().endswith(":"):
+                                if re.match(r"^\s*(def |if |elif |else|for |while |try|except|finally|class )", stripped):
+                                    fixed = stripped + ":\n"
+                                    rel = str(file_abs)
+                                    try:
+                                        rel = str(file_abs.relative_to(self.system.project_root))
+                                    except Exception:
+                                        pass
+                                    patches.append({
+                                        "id": "deterministic_missing_colon",
+                                        "target_file": rel,
+                                        "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
+                                        "intent": "Add missing colon to Python block header",
+                                        "risk_level": "low",
+                                        "confidence": 0.9,
+                                        "assumptions": ["SyntaxError indicates missing colon at this line"],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry"
+                                    })
+                        # Indentation errors caused by tabs
+                        if any(p.get("type") == "indentation_error" for p in pattern_matches):
+                            if "\t" in line:
+                                fixed = line.replace("\t", "    ")
+                                rel = str(file_abs)
+                                try:
+                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                except Exception:
+                                    pass
+                                patches.append({
+                                    "id": "deterministic_fix_indentation_tabs",
+                                    "target_file": rel,
+                                    "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
+                                    "intent": "Replace tabs with 4 spaces to fix indentation",
+                                    "risk_level": "low",
+                                    "confidence": 0.85,
+                                    "assumptions": ["IndentationError caused by tabs"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry"
+                                })
+                except Exception:
+                    pass
+
+        # NameError for missing helper function
+        name_match = re.search(r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace)
+        if name_match:
+            missing_name = name_match.group(1)
+            if missing_name == "_utc_now":
+                target_file = "complete_sam_unified.py"
+                try:
+                    file_path = Path(self.system.project_root) / target_file
+                    content = file_path.read_text(encoding="utf-8")
+                except Exception:
+                    content = ""
+                if content and "def _utc_now" not in content:
+                    anchor = "def log_event"
+                    if anchor in content:
+                        new_code = (
+                            "def _utc_now():\n"
+                            "    \"\"\"UTC timestamp in ISO8601 with Z suffix.\"\"\"\n"
+                            "    return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\n\n"
+                            + anchor
+                        )
+                        patches.append({
+                            "id": "deterministic_add_utc_now",
+                            "target_file": target_file,
+                            "changes": [{"type": "replace", "old_code": anchor, "new_code": new_code}],
+                            "intent": "Add missing _utc_now helper",
+                            "risk_level": "low",
+                            "confidence": 0.9,
+                            "assumptions": ["Missing _utc_now caused NameError"],
+                            "unknowns": [],
+                            "generated_by": "deterministic_patch_registry"
+                        })
 
         return patches
 
@@ -7579,6 +7772,11 @@ sam@terminal:~$
             if self.distill_writer:
                 history = (context or {}).get("history", []) or []
                 self._record_chat_distillation(prompt, response, history, user)
+        if getattr(self, "meta_agent", None):
+            try:
+                self.meta_agent.ingest_learning_event(prompt, response, user.get("name"))
+            except Exception:
+                pass
         log_event(
             "info",
             "chat_learning",

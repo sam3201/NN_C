@@ -1060,6 +1060,49 @@
                 }
             }
 
+            async fetchLearningMemory() {
+                if (!this.learningMemory) return;
+                try {
+                    const res = await fetch('/api/learning/memory?limit=12');
+                    if (res.status === 401) {
+                        this.learningMemory.innerHTML = '<div class="memory-item">Admin-only. Log in to view memory.</div>';
+                        return;
+                    }
+                    const data = await res.json();
+                    if (data.error) {
+                        this.learningMemory.innerHTML = `<div class="memory-item">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    if (this.distillCountEl) {
+                        this.distillCountEl.textContent = String(data.distill_count ?? 0);
+                    }
+                    if (this.memorySizeEl) {
+                        this.memorySizeEl.textContent = String(data.memory_size ?? 0);
+                    }
+                    if (this.memoryMaxEl) {
+                        this.memoryMaxEl.textContent = String(data.memory_max ?? 0);
+                    }
+                    const items = data.items || [];
+                    if (!items.length) {
+                        this.learningMemory.innerHTML = '<div class="memory-item">No learning memory captured yet.</div>';
+                        return;
+                    }
+                    this.learningMemory.innerHTML = '';
+                    items.slice().reverse().forEach((item) => {
+                        const div = document.createElement('div');
+                        div.className = 'memory-item';
+                        const user = item.user || 'User';
+                        const prompt = item.prompt || '';
+                        const response = item.response || '';
+                        const ts = item.ts ? new Date(item.ts * 1000).toLocaleTimeString() : '';
+                        div.innerHTML = `<strong>${user}</strong> (${ts})<br>${prompt}<br><em>${response}</em>`;
+                        this.learningMemory.appendChild(div);
+                    });
+                } catch (err) {
+                    this.learningMemory.innerHTML = `<div class="memory-item">Memory fetch error: ${err.message}</div>`;
+                }
+            }
+
             updateMultiAgentLabel() {
                 if (!this.logMultiAgentBtn) return;
                 this.logMultiAgentBtn.textContent = this.chatMultiAgentEnabled ? 'Multi-Agent: On' : 'Multi-Agent: Off';
@@ -1183,12 +1226,23 @@
 
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
-                avatar.textContent = '🧠';
+                avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+                // Extract agent prefix like [AgentName]
+                let agentName = null;
+                let cleaned = content || '';
+                const match = cleaned.match(/^\s*\[([^\]]+)\]\s*/);
+                if (match) {
+                    agentName = match[1];
+                    cleaned = cleaned.slice(match[0].length);
+                }
 
                 const messageContent = document.createElement('div');
+                const evaluationText = evaluation ? `📊 Evaluation: ${evaluation}` : '📊 Evaluation: N/A';
                 messageContent.innerHTML = `
-                    <div class="message-content">${content}</div>
-                    <div class="evaluation">📊 Evaluation: ${evaluation}</div>
+                    <div class="message-content">${cleaned}</div>
+                    ${agentName ? `<div class="evaluation">Agent: ${agentName}</div>` : ''}
+                    <div class="evaluation">${evaluationText}</div>
                     <div class="message-time">${this.getCurrentTime()}</div>
                 `;
 
