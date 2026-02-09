@@ -1488,6 +1488,9 @@ class MetaAgent:
         self.baseline_performance = {}
         self.current_performance = {}
         self.improvement_threshold = 0.95  # 95% error reduction required
+        self.research_enabled = os.getenv("SAM_META_RESEARCH_ENABLED", "1") == "1"
+        self.research_mode = os.getenv("SAM_META_RESEARCH_MODE", "both").lower()
+        self.research_max_chars = int(os.getenv("SAM_META_RESEARCH_MAX_CHARS", "2000"))
 
         print(" Production Meta-Agent initialized with learning state")
         print("   Observer Agent: Active")
@@ -1495,6 +1498,8 @@ class MetaAgent:
         print("   Patch Generator: Active")
         print("   Verifier Judge: Active")
         print(f"   Confidence Threshold: {self.confidence_threshold}")
+        if self.research_enabled:
+            print(f"   Meta-Research: {self.research_mode}")
 
     # ===========================
     # FAILURE CLUSTERING
@@ -1649,6 +1654,23 @@ class MetaAgent:
         if not localization:
             print(" Production Meta-Agent: No localization results")
             return False
+
+        # Optional research step (local + web)
+        if self.research_enabled:
+            try:
+                research_notes = self._gather_research(failure, localization)
+                if research_notes:
+                    if hasattr(failure, "research_notes"):
+                        failure.research_notes = research_notes
+                    log_event(
+                        "info",
+                        "meta_research",
+                        "Meta-agent research gathered",
+                        mode=self.research_mode,
+                        chars=len(research_notes),
+                    )
+            except Exception as exc:
+                log_event("warn", "meta_research_error", "Meta-agent research failed", reason=str(exc))
 
         # Step 2: Propose
         patches = self._deterministic_patches(failure)
