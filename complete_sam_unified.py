@@ -2966,6 +2966,7 @@ class UnifiedSAMSystem:
         self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
         if self.require_meta_agent:
             self.meta_only_boot = True
+        print(f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent})", flush=True)
         self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
         if self.require_self_mod and not self.sam_code_modifier_available:
             raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
