@@ -1,6 +1,6 @@
 # SAM / ANANKE Implementation-Only Spec (Derived)
 
-This document is a strict implementation spec distilled from `README-chatGPT.md`. It contains only concrete requirements, interfaces, and behaviors. It contains no forward-looking prompts.
+This document is a strict implementation spec distilled from `DOCS/README-chatGPT-source.md`. It contains only concrete requirements, interfaces, and behaviors. It contains no forward-looking prompts.
 
 ## 1. Scope
 - Implement the SAM + ANANKE system as a hybrid Python/C runtime.
@@ -129,4 +129,3 @@ SAM must emit only the following structured pressure channels:
 - The system must run without “simulation mode” or placeholder behavior.
 - Any missing dependency that affects core behavior must fail loud.
 - ANANKE must remain unbounded at all times.
-

@@ -192,7 +192,7 @@ Environment overrides:
 - `SAM_REVENUE_DEFAULT_INVOICE_AMOUNT` (default: `0` -> disabled unless set)
 
 ## Implementation Spec (Derived)
-- `DOCS/README-chatGPT-implementation-spec.md` — strict, implementation-only spec distilled from `README-chatGPT.md` (no forward-looking prompts).
+- `DOCS/README-chatGPT-implementation-spec.md` — strict, implementation-only spec distilled from `DOCS/README-chatGPT-source.md` (no forward-looking prompts).
 
 ## Auto Backup (GitHub)
 The system can auto-commit and push to two git remotes on a schedule.
