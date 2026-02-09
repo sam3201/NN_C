@@ -100,17 +100,17 @@ Then open: http://127.0.0.1:8080
 
 ### Claude (Anthropic)
 ```bash
-export ANTHROPIC_API_KEY='your-claude-api-key'
+export ANTHROPIC_API_KEY=[REDACTED]
 ```
 
 ### Gemini (Google)
 ```bash
-export GOOGLE_API_KEY='your-gemini-api-key'
+export GOOGLE_API_KEY=[REDACTED]
 ```
 
 ### OpenAI (GPT)
 ```bash
-export OPENAI_API_KEY='your-openai-api-key'
+export OPENAI_API_KEY=[REDACTED]
 ```
 
 ### HuggingFace

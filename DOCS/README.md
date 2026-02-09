@@ -147,9 +147,9 @@ help                # Command documentation
 ### Environment Variables
 ```bash
 # API Keys (optional - system uses local models if not set)
-export OPENAI_API_KEY="your-openai-key"
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export GOOGLE_API_KEY="your-google-key"
+export OPENAI_API_KEY=[REDACTED]
+export ANTHROPIC_API_KEY=[REDACTED]
+export GOOGLE_API_KEY=[REDACTED]
 export GITHUB_TOKEN="your-github-token"
 ```
 

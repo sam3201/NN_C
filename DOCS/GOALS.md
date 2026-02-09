@@ -1,1 +1,1 @@
-# SAM Goal Summary\n\n## Active Goals\n- **Improve conversation diversity and engagement** (id=goal_1, priority=high, progress=0.30)\n- **Enhance response quality and relevance** (id=goal_2, priority=high, progress=0.30)\n\n## Completed Goals\n- None\n
+# SAM Goal Summary\n\n## Active Goals\n- None\n\n## Completed Goals\n- **Improve conversation diversity and engagement** (id=goal_1)\n- **Enhance response quality and relevance** (id=goal_2)\n

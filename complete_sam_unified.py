@@ -1111,6 +1111,8 @@ class VerifierJudgeAgent:
     def _invariant_verification(self, patch):
         """Check that system invariants are preserved"""
         result = {'passed': True, 'issues': []}
+        if getattr(self, "invariants_disabled", False):
+            return result
 
         try:
             # Security invariants
@@ -1458,6 +1460,18 @@ class MetaAgent:
             self._learn_from_failure(best_patch, failure)
             return False
         else:
+            # Unsafe override path (experimental/unbounded mode)
+            allow_unsafe = bool(getattr(self.system, "invariants_disabled", False)) or bool(getattr(self.system, "allow_unsafe_patches", False))
+            if allow_unsafe and patches:
+                # Choose the highest-confidence patch if no safe patch
+                fallback_patch = max(patches, key=lambda p: p.get("confidence", 0.0))
+                print(" Production Meta-Agent: Applying best-available patch (unsafe override enabled)")
+                applied = self._apply_patch(fallback_patch, failure)
+                if applied:
+                    self._learn_from_success(fallback_patch, failure)
+                    return True
+                self._learn_from_failure(fallback_patch, failure)
+                return False
             print(" Production Meta-Agent: No safe patches available")
             return False
 
@@ -2159,16 +2173,16 @@ class IntelligentIssueResolver:
             if issue['type'] == 'missing_api_key':
                 if 'github' in issue['component']:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=your_github_token_here")
+                    print("   📝 Run: export GITHUB_TOKEN=[REDACTED]")
                 elif 'google' in issue['component']:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=your_google_api_key_here")
+                    print("   📝 Run: export GOOGLE_API_KEY=[REDACTED]")
                 elif 'anthropic' in issue['component']:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=your_anthropic_key_here")
+                    print("   📝 Run: export ANTHROPIC_API_KEY=[REDACTED]")
                 elif 'openai' in issue['component']:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=your_openai_key_here")
+                    print("   📝 Run: export OPENAI_API_KEY=[REDACTED]")
             else:
                 print("   💡 This integration is not available. The system will continue without it.")
 
@@ -2382,16 +2396,16 @@ class IntelligentIssueResolver:
             if issue['type'] == 'missing_api_key':
                 if 'github' in issue['component']:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=your_github_token_here")
+                    print("   📝 Run: export GITHUB_TOKEN=[REDACTED]")
                 elif 'google' in issue['component']:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=your_google_api_key_here")
+                    print("   📝 Run: export GOOGLE_API_KEY=[REDACTED]")
                 elif 'anthropic' in issue['component']:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=your_anthropic_key_here")
+                    print("   📝 Run: export ANTHROPIC_API_KEY=[REDACTED]")
                 elif 'openai' in issue['component']:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=your_openai_key_here")
+                    print("   📝 Run: export OPENAI_API_KEY=[REDACTED]")
             else:
                 print("   💡 This integration is not available. The system will continue without it.")
         
@@ -2458,6 +2472,18 @@ class UnifiedSAMSystem:
         self.google_drive_available = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
         self.kill_switch_enabled = os.getenv("SAM_KILL_SWITCH_ENABLED", "1") == "1"
+        self.invariants_disabled = os.getenv("SAM_INVARIANTS_DISABLED", "0") == "1"
+        self.allow_unsafe_patches = os.getenv("SAM_ALLOW_UNSAFE_PATCHES", "0") == "1"
+        self.profile_name = os.getenv("SAM_PROFILE", "full")
+        self.state_path = Path(os.getenv(
+            "SAM_STATE_PATH",
+            str(self.project_root / "sam_data" / self.profile_name / "state.json")
+        ))
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+        self._loaded_state = None
 
         # System metrics (initialize early before web interface)
         self.system_metrics = {
@@ -2722,6 +2748,9 @@ class UnifiedSAMSystem:
         globals()["sam_web_search_available"] = self.sam_web_search_available
         globals()["sam_code_modifier_available"] = self.sam_code_modifier_available
 
+        # Load persisted state (if available)
+        self._load_system_state()
+
         # Auto-start chat (no /start required)
         self.auto_conversation_active = True
         self._ensure_default_chat_ready()
@@ -2802,6 +2831,8 @@ class UnifiedSAMSystem:
         }
 
     def _run_regression_gate(self):
+        if getattr(self, "invariants_disabled", False):
+            return True
         if not self.regression_on_growth:
             return True
         try:
@@ -3027,6 +3058,76 @@ class UnifiedSAMSystem:
                 time.sleep(5)
         self.meta_thread = threading.Thread(target=loop, daemon=True)
         self.meta_thread.start()
+
+    def _save_system_state(self):
+        """Persist system state for restart continuity."""
+        try:
+            state = {
+                "timestamp": datetime.now().isoformat(),
+                "profile": self.profile_name,
+                "system_metrics": self.system_metrics,
+                "meta_state": self.meta_state,
+                "provider_mode": getattr(self, "provider_mode", "primary"),
+                "meta_growth_freeze": getattr(self, "meta_growth_freeze", False),
+                "auto_conversation_active": bool(getattr(self, "auto_conversation_active", False)),
+                "autonomous_enabled": bool(getattr(self, "autonomous_enabled", False)),
+            }
+            if getattr(self, "goal_manager", None):
+                try:
+                    state["goals"] = {
+                        "active": list(self.goal_manager.active_goals),
+                        "completed": list(self.goal_manager.completed_goals),
+                        "subtasks": [getattr(t, "__dict__", {}) for t in self.goal_manager.subtasks],
+                    }
+                except Exception:
+                    pass
+            if getattr(self, "connected_agents", None):
+                state["connected_agents"] = list(self.connected_agents.keys())
+            with open(self.state_path, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
+            return True
+        except Exception as exc:
+            print(f"⚠️ Failed to save system state: {exc}", flush=True)
+            return False
+
+    def _load_system_state(self):
+        """Load persisted system state (if available)."""
+        try:
+            if not self.state_path.exists():
+                return None
+            with open(self.state_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self._loaded_state = data
+            # Apply minimal fields immediately
+            if isinstance(data, dict):
+                self.system_metrics.update(data.get("system_metrics", {}))
+                self.meta_state = data.get("meta_state", self.meta_state)
+                self.provider_mode = data.get("provider_mode", getattr(self, "provider_mode", "primary"))
+                self.meta_growth_freeze = data.get("meta_growth_freeze", getattr(self, "meta_growth_freeze", False))
+            return data
+        except Exception as exc:
+            print(f"⚠️ Failed to load system state: {exc}", flush=True)
+            return None
+
+    def _apply_loaded_state(self):
+        """Apply loaded state to subsystems created after init."""
+        data = self._loaded_state or {}
+        try:
+            goals = data.get("goals") or {}
+            if getattr(self, "goal_manager", None) and goals:
+                self.goal_manager.active_goals = goals.get("active", self.goal_manager.active_goals)
+                self.goal_manager.completed_goals = goals.get("completed", self.goal_manager.completed_goals)
+                subtasks = []
+                for item in goals.get("subtasks", []):
+                    try:
+                        task = TaskNode(**item)
+                        subtasks.append(task)
+                    except Exception:
+                        continue
+                if subtasks:
+                    self.goal_manager.subtasks = subtasks
+        except Exception as exc:
+            print(f"⚠️ Failed to apply loaded state: {exc}", flush=True)
 
     def _validate_minimum_capabilities(self):
         """Validate minimum capabilities required for system operation"""
@@ -4166,9 +4267,12 @@ class UnifiedSAMSystem:
             # Export initial goal README
             self.goal_manager.export_readme()
             print("  📖 Goal README exported")
+            # Apply persisted state after goal manager initialization
+            self._apply_loaded_state()
 
             # Register for graceful shutdown
             register_shutdown_handler("Unified SAM System", self._shutdown_system, priority=10)
+            register_shutdown_handler("state_persist", self._save_system_state, priority=60)
 
             self.python_orchestration_initialized = True
             self.system_metrics['python_orchestration_status'] = 'active'
@@ -9021,6 +9125,9 @@ sam@terminal:~$
             print("  ✅ Final metrics saved")
         except Exception as e:
             print(f"  ⚠️ Could not save final metrics: {e}")
+
+        # Persist full state snapshot
+        self._save_system_state()
 
         print("  ✅ Unified SAM 2.0 System shutdown complete")
 

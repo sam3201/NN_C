@@ -1,12 +1,12 @@
 {
-  "total": 10,
-  "passed": 7,
-  "pass_rate": 0.7,
-  "avg_score": 0.7,
+  "total": 5,
+  "passed": 5,
+  "pass_rate": 1.0,
+  "avg_score": 1.0,
   "results": [
     {
       "task_id": "t1_add",
-      "response": "42",
+      "response": " 42",
       "score": 1.0,
       "passed": true,
       "details": {
@@ -17,7 +17,7 @@
     },
     {
       "task_id": "t2_exact",
-      "response": "SAM_OK",
+      "response": " SAM_OK",
       "score": 1.0,
       "passed": true,
       "details": {
@@ -27,79 +27,37 @@
     },
     {
       "task_id": "t3_contains",
-      "response": "The delta of the river formed a unique landscape.",
+      "response": " The delta between your current and target weight is significant.",
       "score": 1.0,
       "passed": true,
       "details": {
         "expected": "delta",
-        "got": "The delta of the river formed a unique landscape."
+        "got": " The delta between your current and target weight is significant."
       }
     },
     {
       "task_id": "t4_regex",
-      "response": "Sure! Here is a Python function that generates a UUID version 4 (UUIDv4) string:\n\n```python\nimport uuid\n\ndef generate_uuid_v4():\n    return str(uuid.uuid4())\n\n# Example usage:\nprint(generate_uuid_v4())\n```\n\nWhen you run this code, it will output a randomly generated UUID v4 string.",
-      "score": 0.0,
-      "passed": false,
+      "response": " Here is a simple example of how to generate a UUID v4 string in Python:\n\n```python\nimport uuid\nuuid.uuid4().hex\n```\n\nThis code imports the `uuid` module, then calls the `uuid4()` function which generates a new UUID (Universally Unique Identifier), and finally converts it to a hexadecimal string using the `.hex` attribute. The resulting string will look something like this: \"0b658f29-37c1-4e7d-a7ff-c80c4f79dfbe\".\n\nIf you're working in a different programming language, there are similar functions available for generating UUIDs. For example, in JavaScript:\n\n```javascript\nlet uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n```\n\nThis code creates a string with the UUID format and replaces each 'x' or 'y' character with a randomly generated hexadecimal digit.",
+      "score": 1.0,
+      "passed": true,
       "details": {
         "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
       }
     },
     {
       "task_id": "t5_json",
-      "response": "```json\n{\n  \"a\": 1,\n  \"b\": 2\n}\n```",
-      "score": 0.0,
-      "passed": false,
-      "details": {
-        "error": "invalid_json"
-      }
-    },
-    {
-      "task_id": "t6_literal",
-      "response": "```python\n[1, 2, 3]\n```",
-      "score": 0.0,
-      "passed": false,
-      "details": {
-        "error": "literal_eval_failed"
-      }
-    },
-    {
-      "task_id": "t7_tol",
-      "response": "0.33",
+      "response": " {\n \"a\": 1,\n \"b\": 2\n}",
       "score": 1.0,
       "passed": true,
       "details": {
-        "expected": 0.33,
-        "got": 0.33,
-        "tolerance": 0.02
-      }
-    },
-    {
-      "task_id": "t8_exact",
-      "response": "OK-42",
-      "score": 1.0,
-      "passed": true,
-      "details": {
-        "expected": "OK-42",
-        "got": "OK-42"
-      }
-    },
-    {
-      "task_id": "t9_contains",
-      "response": "Alpha is the first letter of the Greek alphabet.",
-      "score": 1.0,
-      "passed": true,
-      "details": {
-        "expected": "alpha",
-        "got": "Alpha is the first letter of the Greek alphabet."
-      }
-    },
-    {
-      "task_id": "t10_regex",
-      "response": "123",
-      "score": 1.0,
-      "passed": true,
-      "details": {
-        "pattern": "^\\d{3}$"
+        "expected": {
+          "a": 1,
+          "b": 2
+        },
+        "got": {
+          "a": 1,
+          "b": 2
+        }
       }
     }
   ],

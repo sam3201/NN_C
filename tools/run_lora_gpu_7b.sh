@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Run 7B LoRA on a CUDA machine. Requires: CUDA + bitsandbytes + transformers + peft.
 # Usage:
-#   HF_TOKEN=... ./tools/run_lora_gpu_7b.sh
+#   HF_TOKEN=[REDACTED] ./tools/run_lora_gpu_7b.sh
 
 BASE_MODEL="Qwen/Qwen2.5-7B"
 DATASET="training/distilled/merged_distill_v2.jsonl"

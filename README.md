@@ -56,6 +56,23 @@ By default, `run_sam.sh` loads the **full** profile. To override:
 SAM_PROFILE=experimental ./run_sam.sh
 ```
 
+## ChatGPT Research Archive
+The raw ChatGPT research transcript (sanitized) and a cleaned summary are available:
+- `README-chatGPT-raw.md` (verbatim, private info redacted)
+- `README-chatGPT-clean.md` (structured summary)
+
+## Canonical Equation + Alignment
+- `DOCS/GOD_EQUATION.md` — full, canonical objective formulation
+- `DOCS/ALIGNMENT.md` — recursive alignment checklist (full vs experimental)
+
+### SAM-D / OmniSynapse Equation (Top-Level)
+G = Σ_{i=1}^{∞} [ α_i · F_i(x⃗, t) + β_i · dF_i/dt + γ_i · ∇_{F_i} L + δ_i · μ_i + ζ_i · Φ(G) ]
+
+Recursive layer
+Φ(G) = lim_{n→∞} ( G_n + λ · dG_n/dn + ρ · d^2 G_n/dn^2 + … )
+
+Full canonical expansion and appendix live in `DOCS/GOD_EQUATION.md`.
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal
@@ -85,7 +102,7 @@ The C extension `sam_ananke_dual_system` implements a self-referential dual-syst
 The `sam_meta_controller_c` extension provides:
 - Pressure aggregation across residuals, interference, retrieval entropy, and more
 - Growth primitive selection (latent expansion, submodel spawn, routing, consolidation)
-- Identity anchoring and invariant checks
+- Identity anchoring and optional invariant checks (disabled by default in current profiles)
 - Objective contract evaluation (minimax-style)
 - Policy gates: persistence thresholds, dominance margin, cooldowns, and risk caps
 
@@ -104,7 +121,8 @@ SAM emits only structured pressure channels:
 - `GP_CONSOLIDATE` (compression/pruning)
 - `GP_REPARAM` (representation reparameterization)
 
-### Invariants (Must Never Be Violated)
+### Invariants (Optional, Disabled in Current Profiles)
+These constraints are available when `SAM_INVARIANTS_DISABLED=0`.
 - Growth causality: every mutation must follow a valid pressure → selection → apply path
 - Identity continuity: anchor similarity must remain above threshold
 - Cooldown enforcement: structural changes are rate-limited
@@ -128,6 +146,18 @@ python3 -c "from complete_sam_unified import UnifiedSAMSystem; print('System imp
 ```bash
 SAM_TEST_MODE=1 ./venv/bin/python -c "from SAM_AGI import CompleteSAMSystem; s=CompleteSAMSystem(); s.run_comprehensive_tests()"
 ```
+
+## Recursive Checks (README‑Aligned)
+Run the recursive alignment checks + regression gate:
+```bash
+./tools/run_recursive_checks.sh
+```
+
+## State Persistence
+On shutdown, SAM saves a state snapshot and reloads it on next start.
+State file is profile‑scoped:
+- `sam_data/full/state.json`
+- `sam_data/experimental/state.json`
 
 ## Training Pipeline
 ### 1) Install training requirements
