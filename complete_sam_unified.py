@@ -2751,6 +2751,8 @@ class UnifiedSAMSystem:
         self.allow_unsafe_patches = os.getenv("SAM_ALLOW_UNSAFE_PATCHES", "0") == "1"
         self.profile_name = os.getenv("SAM_PROFILE", "full")
         self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "0") == "1"
+        default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "0") == "1" else "0"
+        self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
         self.state_path = Path(os.getenv(
             "SAM_STATE_PATH",
             str(self.project_root / "sam_data" / self.profile_name / "state.json")
