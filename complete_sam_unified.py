@@ -1725,9 +1725,13 @@ class MetaAgent:
     # ===========================
     def handle_failure(self, failure):
         """Complete O→L→P→V→S→A meta-agent algorithm"""
-        failure_id = failure.get("id", "unknown") if isinstance(failure, dict) else "unknown"
-        failure_type = failure.get("type", "unknown") if isinstance(failure, dict) else "unknown"
-        failure_msg = failure.get("message", "unknown") if isinstance(failure, dict) else "unknown"
+        failure_id = self._get_failure_attr(failure, "id", "unknown")
+        failure_type = self._get_failure_attr(
+            failure,
+            "error_type",
+            self._get_failure_attr(failure, "type", "unknown"),
+        )
+        failure_msg = self._get_failure_attr(failure, "message", "unknown")
         print(f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}")
         log_event(
             "info",
