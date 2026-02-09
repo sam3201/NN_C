@@ -3819,8 +3819,17 @@ class UnifiedSAMSystem:
                             issues_found += 1
                     else:
                         # Escalate unresolved issues to meta-agent self-repair
-                        self._invoke_meta_agent_repair(Exception(issue.get('message', 'unknown_issue')),
-                                                       context="self_healing")
+                        if issue.get("escalate_to_meta", True):
+                            self._invoke_meta_agent_repair(Exception(issue.get('message', 'unknown_issue')),
+                                                           context="self_healing")
+                        else:
+                            log_event(
+                                "info",
+                                "self_healing_skip",
+                                "Issue not escalated to meta-agent",
+                                reason=issue.get("message", "unknown_issue"),
+                                context="self_healing",
+                            )
             
             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
