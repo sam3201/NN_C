@@ -5263,6 +5263,22 @@ class UnifiedSAMSystem:
                     return jsonify({"status": "error", "error": str(exc)}), 500
                 return jsonify({"status": "shutting_down"})
 
+        if getattr(self, "restart_enabled", False):
+            @self.app.route('/api/restart', methods=['POST'])
+            def restart_system():
+                """Admin-only restart (requires hot-reload runner)."""
+                ok, resp = _require_admin()
+                if not ok:
+                    return resp
+                log_event("warn", "server_restart", "Admin requested server restart")
+
+                def _do_restart():
+                    time.sleep(1.0)
+                    os._exit(3)
+
+                threading.Thread(target=_do_restart, daemon=True).start()
+                return jsonify({"status": "restarting", "note": "Process will exit and be relaunched by watcher if enabled."})
+
         @self.app.route('/api/health')
         def health_check():
             """Lightweight health check"""
