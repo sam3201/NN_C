@@ -167,6 +167,7 @@ Environment overrides:
 - `SAM_TWO_PHASE_BOOT` (default: `0`) — start meta-only then auto-promote to full
 - `SAM_TWO_PHASE_DELAY_S` (default: `5`)
 - `SAM_TWO_PHASE_TIMEOUT_S` (default: `180`)
+- `SAM_AUTONOMOUS_LOOP_INTERVAL_S` (default: `2`) — throttle autonomous loop to avoid CPU spin
 - HF provider (local LoRA) syntax: `hf:<base_model>@<adapter_path>`
   - Example: `hf:Qwen/Qwen2.5-1.5B@training/output_lora_qwen2.5_1.5b_fp16_v2`
   - Optional env: `SAM_HF_DEVICE_MAP` (default: `auto`), `SAM_HF_DTYPE` (default: `float16`), `SAM_HF_FORCE_GREEDY` (default: `1`)

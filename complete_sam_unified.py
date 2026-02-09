@@ -2653,6 +2653,7 @@ class UnifiedSAMSystem:
 
         # Autonomous loops
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+        self.autonomous_loop_interval_s = float(os.getenv("SAM_AUTONOMOUS_LOOP_INTERVAL_S", "2"))
         if getattr(self, "meta_only_boot", False):
             self.autonomous_enabled = False
 
@@ -8208,6 +8209,7 @@ sam@terminal:~$
                 except Exception as e:
                     print(f"⚠️ Autonomous operation error: {e}", flush=True)
                     time.sleep(5)
+                time.sleep(max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2))))
 
         monitor_thread = threading.Thread(target=autonomous_operation_loop, daemon=True)
         monitor_thread.start()
@@ -8463,15 +8465,22 @@ sam@terminal:~$
         """Autonomously demonstrate all SAM capabilities"""
         try:
             current_time = time.time()
-            
-            # Demonstrate different capabilities at different intervals
-            if int(current_time) % 180 == 0:  # Every 3 minutes
+            # Demonstrate different capabilities at controlled intervals
+            if not hasattr(self, "_last_demo_research"):
+                self._last_demo_research = 0.0
+            if not hasattr(self, "_last_demo_code"):
+                self._last_demo_code = 0.0
+            if not hasattr(self, "_last_demo_finance"):
+                self._last_demo_finance = 0.0
+
+            if current_time - self._last_demo_research >= 180:
+                self._last_demo_research = current_time
                 self._demonstrate_research_capability()
-                
-            elif int(current_time) % 180 == 60:  # Every 3 minutes, offset by 1 minute
+            elif current_time - self._last_demo_code >= 180:
+                self._last_demo_code = current_time
                 self._demonstrate_code_capability()
-                
-            elif int(current_time) % 180 == 120:  # Every 3 minutes, offset by 2 minutes
+            elif current_time - self._last_demo_finance >= 180:
+                self._last_demo_finance = current_time
                 self._demonstrate_financial_capability()
                 
         except Exception as e:
