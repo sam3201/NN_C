@@ -3290,12 +3290,19 @@ class UnifiedSAMSystem:
         # Test agent system
         try:
             if hasattr(self, 'agent_configs'):
-                min_agents = 1 if getattr(self, "meta_only_boot", False) else 5
-                if len(self.agent_configs) < min_agents:
-                    connectivity_issues.append({
-                        'component': 'agent_system',
-                        'error': 'Insufficient agents connected'
-                    })
+                if getattr(self, "meta_only_boot", False):
+                    if 'meta_agent' not in self.agent_configs or 'meta_agent' not in self.connected_agents:
+                        connectivity_issues.append({
+                            'component': 'agent_system',
+                            'error': 'MetaAgent missing or disconnected in meta-only boot'
+                        })
+                else:
+                    min_agents = 5
+                    if len(self.agent_configs) < min_agents:
+                        connectivity_issues.append({
+                            'component': 'agent_system',
+                            'error': 'Insufficient agents connected'
+                        })
         except Exception as e:
             connectivity_issues.append({
                 'component': 'agent_system',
@@ -3805,6 +3812,16 @@ class UnifiedSAMSystem:
             'status': 'available',
             'connection_type': 'core'
         }
+
+        if getattr(self, "meta_only_boot", False):
+            # Enforce MetaAgent-only existence at startup
+            meta_cfg = self.agent_configs.get('meta_agent')
+            self.agent_configs = {}
+            if meta_cfg:
+                self.agent_configs['meta_agent'] = meta_cfg
+                print("🧠 Meta-only boot: pruning agent configs to MetaAgent only.", flush=True)
+            elif getattr(self, "require_meta_agent", False):
+                raise RuntimeError("❌ CRITICAL: MetaAgent config missing during meta-only boot.")
 
     def auto_connect_agents(self):
         """Auto-connect 10+ diverse AI agents for comprehensive multi-model conversations"""
