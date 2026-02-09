@@ -37,7 +37,7 @@
     },
     {
       "task_id": "t4_regex",
-      "response": " Here is a simple example of how to generate a UUID v4 string in Python:\n\n```python\nimport uuid\nuuid.uuid4().hex\n```\n\nThis code imports the `uuid` module, then calls the `uuid4()` function which generates a new UUID (Universally Unique Identifier), and finally converts it to a hexadecimal string using the `.hex` attribute. The resulting string will look something like this: \"0b658f29-37c1-4e7d-a7ff-c80c4f79dfbe\".\n\nIf you're working in a different programming language, there are similar functions available for generating UUIDs. For example, in JavaScript:\n\n```javascript\nlet uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n```\n\nThis code creates a string with the UUID format and replaces each 'x' or 'y' character with a randomly generated hexadecimal digit.",
+      "response": " Here is a simple example of how to generate a UUID v4 string in Python:\n\n```python\nimport uuid\n\nuuid_str = str(uuid.uuid4())\nprint(uuid_str)\n```\n\nThis code imports the `uuid` module, creates a new UUID using `uuid.uuid4()`, converts it to a string, and then prints it out. The resulting UUID will be in standard format, such as:\n\n`3ba816bf-b9a6-41d0-a7be-34e27e4e92db`",
       "score": 1.0,
       "passed": true,
       "details": {
@@ -46,7 +46,7 @@
     },
     {
       "task_id": "t5_json",
-      "response": " {\n \"a\": 1,\n \"b\": 2\n}",
+      "response": " {\"a\": 1, \"b\": 2}",
       "score": 1.0,
       "passed": true,
       "details": {

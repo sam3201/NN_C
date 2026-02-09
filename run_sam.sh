@@ -108,6 +108,15 @@ else
     print_warning "Profile not found: $PROFILE_FILE (continuing with defaults)"
 fi
 
+# Resolved profile banner
+print_header "BOOT PROFILE"
+print_status "Profile: ${PROFILE_NAME}"
+print_status "Invariants disabled: ${SAM_INVARIANTS_DISABLED:-0}"
+print_status "Kill switch enabled: ${SAM_KILL_SWITCH_ENABLED:-1}"
+print_status "State path: ${SAM_STATE_PATH:-sam_data/${PROFILE_NAME}/state.json}"
+print_status "Data dir: ${SAM_PROFILE_DATA_DIR:-sam_data/${PROFILE_NAME}}"
+print_status "Training dir: ${SAM_PROFILE_TRAINING_DIR:-training}"
+
 # Upgrade pip
 print_header "UPGRADING PIP"
 print_status "Upgrading pip to latest version..."

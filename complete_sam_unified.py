@@ -36,6 +36,33 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Callable, Any, Union, Tuple
 
+# ---------------------------
+# Error / logging helpers
+# ---------------------------
+def _explain_exception(exc: Exception) -> str:
+    """Return a short human-readable meaning for common exceptions."""
+    if isinstance(exc, FileNotFoundError):
+        return "Expected file not found (check path/config)."
+    if isinstance(exc, PermissionError):
+        return "Permission denied (check filesystem or token permissions)."
+    if isinstance(exc, TimeoutError):
+        return "Operation timed out (service slow or unavailable)."
+    if isinstance(exc, KeyError):
+        return "Missing expected key in a dict or payload."
+    if isinstance(exc, ValueError):
+        return "Invalid value or format."
+    if isinstance(exc, TypeError):
+        return "Unexpected type for an operation or argument."
+    if isinstance(exc, ImportError):
+        return "Dependency/module missing or not installed."
+    if isinstance(exc, ConnectionError):
+        return "Network connection failed or service unreachable."
+    return "Unhandled exception; check stack trace for context."
+
+
+def _format_exception(context: str, exc: Exception) -> str:
+    return f"{context} | {exc.__class__.__name__}: {exc} | meaning: {_explain_exception(exc)}"
+
 # Import SAM components
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import GoalManager, create_conversationalist_tasks
@@ -1396,6 +1423,7 @@ class MetaAgent:
         for change in patch.get("changes", []):
             if change.get("type") == "replace":
                 description = patch.get("intent", "Meta-agent patch")
+                target_file = patch.get("target_file", "")
                 result = modify_code_safely(
                     patch.get("target_file", ""),
                     change.get("old_code", ""),
@@ -1403,7 +1431,8 @@ class MetaAgent:
                     description
                 )
                 if not result.get("success"):
-                    print(f" Production Meta-Agent: Patch apply failed: {result.get('message')}")
+                    msg = result.get("message") or result.get("error") or "unknown error"
+                    print(f" Production Meta-Agent: Patch apply failed ({target_file}) intent='{description}': {msg}")
                     success = False
                     break
         return success
@@ -1413,7 +1442,10 @@ class MetaAgent:
     # ===========================
     def handle_failure(self, failure):
         """Complete O→L→P→V→S→A meta-agent algorithm"""
-        print(f" Production Meta-Agent: Handling failure {failure.get('id', 'unknown')}")
+        failure_id = failure.get("id", "unknown") if isinstance(failure, dict) else "unknown"
+        failure_type = failure.get("type", "unknown") if isinstance(failure, dict) else "unknown"
+        failure_msg = failure.get("message", "unknown") if isinstance(failure, dict) else "unknown"
+        print(f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}")
 
         # Register failure for clustering
         self.register_failure(failure)
@@ -1434,21 +1466,32 @@ class MetaAgent:
         # Step 3: Verify, Score & Select
         best_patch = None
         best_score = -1
+        total_patches = len(patches)
+        below_conf = 0
+        verify_failed = 0
+        safe_candidates = 0
+        issue_counts = {}
 
         for patch in patches:
             # Check confidence threshold first
             confidence = patch.get("confidence", 0.0)
             if confidence < self.confidence_threshold:
+                below_conf += 1
                 self._learn_from_failure(patch, failure)
                 continue
 
             # Verify safety
             verification = self.verifier.verify_patch(patch)
             if verification.get('overall_safe', False):
+                safe_candidates += 1
                 score = verification.get('score', 0)
                 if score > best_score:
                     best_patch = patch
                     best_score = score
+            else:
+                verify_failed += 1
+                for issue in verification.get('issues', []):
+                    issue_counts[issue] = issue_counts.get(issue, 0) + 1
 
         # Step 4: Apply or Reject
         if best_patch and best_score >= 7.0:  # Minimum quality threshold
@@ -1462,17 +1505,25 @@ class MetaAgent:
         else:
             # Unsafe override path (experimental/unbounded mode)
             allow_unsafe = bool(getattr(self.system, "invariants_disabled", False)) or bool(getattr(self.system, "allow_unsafe_patches", False))
+            summary = f"total={total_patches}, below_conf={below_conf}, verify_failed={verify_failed}, safe_candidates={safe_candidates}"
+            if issue_counts:
+                top_issues = sorted(issue_counts.items(), key=lambda kv: kv[1], reverse=True)[:3]
+                issue_str = ", ".join([f"{k}({v})" for k, v in top_issues])
+                print(f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}")
+            else:
+                print(f" Production Meta-Agent: No safe patches available. Summary: {summary}")
             if allow_unsafe and patches:
                 # Choose the highest-confidence patch if no safe patch
                 fallback_patch = max(patches, key=lambda p: p.get("confidence", 0.0))
                 print(" Production Meta-Agent: Applying best-available patch (unsafe override enabled)")
+                print(f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled")
+                print(f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}")
                 applied = self._apply_patch(fallback_patch, failure)
                 if applied:
                     self._learn_from_success(fallback_patch, failure)
                     return True
                 self._learn_from_failure(fallback_patch, failure)
                 return False
-            print(" Production Meta-Agent: No safe patches available")
             return False
 
     # ===========================
@@ -9054,7 +9105,9 @@ sam@terminal:~$
         
         topic = research_topics[int(time.time()) % len(research_topics)]
         result = specialized_agents_c.research(f"Latest developments in {topic}")
-        print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {result.split('score:')[1][:4] if 'score:' in result else 'N/A'})", flush=True)
+        score, reason = self._extract_score(result)
+        suffix = f"; reason: {reason}" if reason else ""
+        print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})", flush=True)
 
     def _demonstrate_code_capability(self):
         """Demonstrate code generation capabilities autonomously"""
@@ -9076,7 +9129,22 @@ sam@terminal:~$
         market = markets[int(time.time() / 120) % len(markets)]  # Different timing than others
         
         result = specialized_agents_c.analyze_market(f"Analyze current {market} market conditions and trends")
-        print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {result.split('score:')[1][:4] if 'score:' in result else 'N/A'})", flush=True)
+        score, reason = self._extract_score(result)
+        suffix = f"; reason: {reason}" if reason else ""
+        print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})", flush=True)
+
+    def _extract_score(self, result):
+        """Extract score from agent output with explanation when missing."""
+        try:
+            if result is None:
+                return "N/A", "empty result"
+            text = result if isinstance(result, str) else str(result)
+            match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            if match:
+                return match.group(1), None
+            return "N/A", "no score field"
+        except Exception as exc:
+            return "N/A", f"parse error: {exc.__class__.__name__}"
 
     def _check_consciousness(self):
         """Perform consciousness check and update metrics"""
@@ -9090,7 +9158,7 @@ sam@terminal:~$
                     self.system_metrics['consciousness_score'] = float(self.system_metrics.get('consciousness_score', 0.0))
                 print(f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})", flush=True)
         except Exception as e:
-            print(f"⚠️ Consciousness check error: {e}", flush=True)
+            print(f"⚠️ {_format_exception('Consciousness check error', e)}", flush=True)
 
     def _update_system_metrics(self):
         """Update system metrics"""
