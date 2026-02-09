@@ -2505,14 +2505,25 @@ class UnifiedSAMSystem:
             str(self.project_root / "training/tasks/default_tasks.jsonl")
         )
         self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b")
+        # Provider auto-switch (policy + teacher pool)
+        self.provider_auto_switch = os.getenv("SAM_PROVIDER_AUTO_SWITCH", "1") == "1"
+        self.provider_ram_threshold = float(os.getenv("SAM_PROVIDER_RAM_THRESHOLD", "0.85"))
+        self.provider_ram_recover = float(os.getenv("SAM_PROVIDER_RAM_RECOVER", "0.75"))
+        self.policy_provider_primary = os.getenv("SAM_POLICY_PROVIDER_PRIMARY", self.regression_provider)
+        self.policy_provider_fallback = os.getenv("SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b")
+        self.provider_mode = "primary"
+        # Use primary policy provider by default
+        self.regression_provider = self.policy_provider_primary
         self.regression_min_pass = float(os.getenv("SAM_REGRESSION_MIN_PASS", "0.7"))
         self.regression_timeout_s = int(os.getenv("SAM_REGRESSION_TIMEOUT_S", "120"))
         self.meta_growth_freeze = False
 
         # Teacher pool + distillation pipeline (live groupchat)
         self.teacher_pool_enabled = os.getenv("SAM_TEACHER_POOL_ENABLED", "1") == "1"
+        self.teacher_pool_primary = os.getenv("SAM_TEACHER_POOL_PRIMARY", os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"))
+        self.teacher_pool_fallback = os.getenv("SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest")
         self.teacher_specs = [
-            spec.strip() for spec in os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest").split(",")
+            spec.strip() for spec in self.teacher_pool_primary.split(",")
             if spec.strip()
         ]
         self.teacher_n_per = int(os.getenv("SAM_TEACHER_N_PER", "1"))
@@ -2667,10 +2678,17 @@ class UnifiedSAMSystem:
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
         require_meta_env = os.getenv("SAM_REQUIRE_META_AGENT", "1")
         self.require_meta_agent = str(require_meta_env).strip().lower() in ("1", "true", "yes", "on")
+        self.two_phase_boot = os.getenv("SAM_TWO_PHASE_BOOT", "0") == "1"
+        self.two_phase_delay_s = int(os.getenv("SAM_TWO_PHASE_DELAY_S", "5"))
+        self.two_phase_timeout_s = int(os.getenv("SAM_TWO_PHASE_TIMEOUT_S", "180"))
+        self.two_phase_promoted = False
         meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "1")
         self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
         if self.require_meta_agent:
             self.meta_only_boot = True
+        if self.two_phase_boot:
+            self.meta_only_boot = True
+            self.require_meta_agent = True
         print(f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})", flush=True)
         self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
         if self.meta_only_boot:
@@ -2685,7 +2703,7 @@ class UnifiedSAMSystem:
         self.web_search_enabled = self.sam_web_search_available
         disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
         self.disable_socketio = str(disable_socketio_env).strip().lower() in ("1", "true", "yes", "on")
-        if self.meta_only_boot:
+        if self.meta_only_boot and not self.two_phase_boot:
             self.disable_socketio = True
         self.socketio_available = flask_available and not self.disable_socketio
         self.google_drive = None
@@ -2752,6 +2770,8 @@ class UnifiedSAMSystem:
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
         issue_thread.start()
+        if self.two_phase_boot:
+            self._start_two_phase_promotion_thread()
 
     def _normalize_pressures(self, payload):
         """Normalize pressure signals into 0-1 range"""
@@ -4337,7 +4357,7 @@ class UnifiedSAMSystem:
             print("  ✅ Flask app created")
 
             # Setup SocketIO for real-time communication (optional)
-            if getattr(self, "disable_socketio", False) or getattr(self, "meta_only_boot", False):
+            if getattr(self, "disable_socketio", False) or (getattr(self, "meta_only_boot", False) and not getattr(self, "two_phase_boot", False)):
                 self.socketio = None
                 self.socketio_available = False
                 print("  ⚠️ SocketIO disabled (meta-only or SAM_DISABLE_SOCKETIO)")
@@ -8139,6 +8159,9 @@ sam@terminal:~$
 
     def _start_monitoring_system(self):
         """Start background monitoring system with autonomous operation"""
+        if getattr(self, "_monitoring_started", False):
+            return
+        self._monitoring_started = True
         print("📊 Starting background monitoring and autonomous operation system...")
 
         if not self.autonomous_enabled:
@@ -8189,6 +8212,112 @@ sam@terminal:~$
         monitor_thread = threading.Thread(target=autonomous_operation_loop, daemon=True)
         monitor_thread.start()
         print("✅ Autonomous operation system active - SAM will generate and execute its own goals!")
+
+    def _start_two_phase_promotion_thread(self):
+        """Start background thread to promote from meta-only boot to full system."""
+        if getattr(self, "_two_phase_thread_started", False):
+            return
+        self._two_phase_thread_started = True
+
+        def _promote_loop():
+            delay = max(0, int(getattr(self, "two_phase_delay_s", 5)))
+            if delay:
+                time.sleep(delay)
+            deadline = time.time() + max(10, int(getattr(self, "two_phase_timeout_s", 180)))
+            while not is_shutting_down():
+                if self._can_promote_to_full_boot():
+                    self._promote_to_full_boot()
+                    return
+                if time.time() >= deadline:
+                    print("⚠️ Two-phase promotion timed out - staying in meta-only mode", flush=True)
+                    return
+                time.sleep(2)
+
+        thread = threading.Thread(target=_promote_loop, daemon=True)
+        thread.start()
+
+    def _can_promote_to_full_boot(self) -> bool:
+        if not getattr(self, "two_phase_boot", False):
+            return False
+        if not getattr(self, "meta_only_boot", False):
+            return False
+        if not getattr(self, "meta_agent_active", False):
+            return False
+        if getattr(self, "require_self_mod", False) and not getattr(self, "sam_code_modifier_ready", False):
+            return False
+        if not getattr(self, "c_core_initialized", False):
+            return False
+        if not getattr(self, "python_orchestration_initialized", False):
+            return False
+        if not getattr(self, "web_interface_initialized", False):
+            return False
+        return True
+
+    def _promote_to_full_boot(self):
+        if getattr(self, "two_phase_promoted", False):
+            return
+        self.two_phase_promoted = True
+        self.meta_only_boot = False
+        # Restore socketio unless explicitly disabled
+        disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
+        self.disable_socketio = str(disable_socketio_env).strip().lower() in ("1", "true", "yes", "on")
+        if not self.disable_socketio and not self.socketio_available and getattr(self, "app", None):
+            try:
+                from flask_socketio import SocketIO
+                async_mode = 'eventlet'
+                try:
+                    import eventlet  # noqa: F401
+                except Exception:
+                    async_mode = 'threading'
+                self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode=async_mode)
+                self.socketio_available = True
+                self.setup_socketio_events()
+                print("✅ Two-phase promotion: SocketIO enabled", flush=True)
+            except Exception as exc:
+                print(f"⚠️ Two-phase promotion: failed to enable SocketIO: {exc}", flush=True)
+
+        # Rebuild full agent configs + connect agents
+        self.initialize_agent_configs()
+        self.auto_connect_agents()
+
+        # Re-enable autonomous loops (if configured)
+        self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+        if self.autonomous_enabled:
+            self._start_monitoring_system()
+
+        print("🚀 Two-phase promotion complete: full SAM+ANANKE enabled", flush=True)
+
+    def _maybe_switch_providers(self, ram_percent: float):
+        """Auto-switch policy/teacher providers based on RAM usage."""
+        if not getattr(self, "provider_auto_switch", False):
+            return
+        if self.provider_mode == "primary" and ram_percent >= self.provider_ram_threshold:
+            self._switch_provider_mode("fallback")
+        elif self.provider_mode == "fallback" and ram_percent <= self.provider_ram_recover:
+            self._switch_provider_mode("primary")
+
+    def _switch_provider_mode(self, mode: str):
+        if mode == self.provider_mode:
+            return
+        if mode not in ("primary", "fallback"):
+            return
+        if mode == "primary":
+            new_policy = self.policy_provider_primary
+            new_teacher_specs = self.teacher_pool_primary
+        else:
+            new_policy = self.policy_provider_fallback
+            new_teacher_specs = self.teacher_pool_fallback
+
+        self.regression_provider = new_policy
+        self.teacher_specs = [spec.strip() for spec in new_teacher_specs.split(",") if spec.strip()]
+        self.provider_mode = mode
+        print(f"🔄 Provider mode switched to {mode}: policy={new_policy} teachers={new_teacher_specs}", flush=True)
+        if self.teacher_pool_enabled:
+            try:
+                with self.teacher_pool_lock:
+                    self._init_teacher_pool()
+            except Exception as exc:
+                print(f"⚠️ Provider switch failed to re-init teacher pool: {exc}", flush=True)
 
     def _generate_autonomous_goals(self):
         """Generate autonomous goals based on system state and survival priorities"""
@@ -8576,11 +8705,12 @@ sam@terminal:~$
         print("=" * 80)
 
         # Fail-safe enforcement of meta-only boot constraints
-        if getattr(self, "require_meta_agent", False):
+        if getattr(self, "require_meta_agent", False) and not getattr(self, "two_phase_boot", False):
             self.meta_only_boot = True
         if getattr(self, "meta_only_boot", False):
             self.autonomous_enabled = False
-            self.socketio_available = False
+            if not getattr(self, "two_phase_boot", False):
+                self.socketio_available = False
             meta_cfg = self.agent_configs.get("meta_agent")
             if meta_cfg:
                 self.agent_configs = {"meta_agent": meta_cfg}
@@ -8700,6 +8830,9 @@ class RAMAwareModelSwitcher:
             # Switch if needed
             if new_tier != self.current_tier:
                 self._switch_model_tier(new_tier)
+            # Switch providers if configured
+            if hasattr(self.system, "_maybe_switch_providers"):
+                self.system._maybe_switch_providers(ram_percent)
 
         except Exception as e:
             print(f"⚠️ RAM check failed: {e}")

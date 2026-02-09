@@ -154,14 +154,22 @@ python -m training.regression_suite \
 
 Environment overrides:
 - `SAM_POLICY_PROVIDER` (default: `ollama:qwen2.5-coder:7b`)
+- `SAM_POLICY_PROVIDER_PRIMARY` (default: `SAM_POLICY_PROVIDER`)
+- `SAM_POLICY_PROVIDER_FALLBACK` (default: `ollama:qwen2.5-coder:7b`)
+- `SAM_PROVIDER_AUTO_SWITCH` (default: `1`)
+- `SAM_PROVIDER_RAM_THRESHOLD` (default: `0.85`)
+- `SAM_PROVIDER_RAM_RECOVER` (default: `0.75`)
 - `SAM_REGRESSION_TASKS` (default: `training/tasks/default_tasks.jsonl`)
 - `SAM_REGRESSION_MIN_PASS` (default: `0.7`)
 - `SAM_REGRESSION_ON_GROWTH` (default: `1`)
 - `SAM_REGRESSION_TIMEOUT_S` (default: `120`)
 - `SAM_REQUIRE_SELF_MOD` (default: `1`)
+- `SAM_TWO_PHASE_BOOT` (default: `0`) — start meta-only then auto-promote to full
+- `SAM_TWO_PHASE_DELAY_S` (default: `5`)
+- `SAM_TWO_PHASE_TIMEOUT_S` (default: `180`)
 - HF provider (local LoRA) syntax: `hf:<base_model>@<adapter_path>`
   - Example: `hf:Qwen/Qwen2.5-1.5B@training/output_lora_qwen2.5_1.5b_fp16_v2`
-  - Optional env: `SAM_HF_DEVICE_MAP` (default: `auto`), `SAM_HF_DTYPE` (default: `float16`)
+  - Optional env: `SAM_HF_DEVICE_MAP` (default: `auto`), `SAM_HF_DTYPE` (default: `float16`), `SAM_HF_FORCE_GREEDY` (default: `1`)
 
 ### Live Groupchat Distillation
 The real-time groupchat loop can stream teacher-pool consensus responses directly into a distillation dataset.
@@ -169,6 +177,8 @@ The real-time groupchat loop can stream teacher-pool consensus responses directl
 Environment overrides:
 - `SAM_TEACHER_POOL_ENABLED` (default: `1`)
 - `SAM_TEACHER_POOL` (default: `ollama:mistral:latest`)
+  - `SAM_TEACHER_POOL_PRIMARY` (default: `SAM_TEACHER_POOL`)
+  - `SAM_TEACHER_POOL_FALLBACK` (default: `ollama:mistral:latest`)
   - HF local LoRA example: `hf:Qwen/Qwen2.5-1.5B@training/output_lora_qwen2.5_1.5b_fp16_v2`
 - `SAM_TEACHER_N_PER` (default: `1`)
 - `SAM_TEACHER_MIN_SIM` (default: `0.72`)
