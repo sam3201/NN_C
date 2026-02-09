@@ -3547,8 +3547,23 @@ class UnifiedSAMSystem:
         """Check system capabilities for external APIs"""
         print("🔍 Checking system capabilities...", flush=True)
         
-        # Check SAM model
-        self.sam_available = Path("/Users/samueldasari/Personal/NN_C/ORGANIZED/UTILS/SAM/SAM/SAM.h").exists()
+        # Check SAM core/model availability (prefer actual built artifacts)
+        sam_root = getattr(self, "project_root", Path(__file__).parent)
+        sam_candidates = [
+            sam_root / "libsam_core.dylib",
+            sam_root / "sam_cortex",
+        ]
+        sam_candidates.extend(sam_root.glob("consciousness_algorithmic*.so"))
+        sam_candidates.extend(sam_root.glob("sam_meta_controller_c*.so"))
+        sam_candidates.extend(sam_root.glob("sam_ananke_dual_system*.so"))
+        # Optional override
+        env_override = os.getenv("SAM_MODEL_AVAILABLE", "").strip().lower()
+        if env_override in ("1", "true", "yes", "on"):
+            self.sam_available = True
+        elif env_override in ("0", "false", "no", "off"):
+            self.sam_available = False
+        else:
+            self.sam_available = any(p.exists() for p in sam_candidates)
         print(f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}", flush=True)
         
         # Check external API availability
