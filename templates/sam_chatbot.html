@@ -591,6 +591,8 @@
                     <button id="logClearBtn">Clear</button>
                     <button id="logSnapshotBtn">Snapshot</button>
                     <button id="logDownloadBtn">Download Log</button>
+                    <button id="logMultiAgentBtn">Multi-Agent: On</button>
+                    <button id="logRestartBtn">Restart</button>
                 </div>
                 <div class="log-filters">
                     <select id="logSourceFilter">
@@ -701,6 +703,8 @@
                 this.logClearBtn = document.getElementById('logClearBtn');
                 this.logSnapshotBtn = document.getElementById('logSnapshotBtn');
                 this.logDownloadBtn = document.getElementById('logDownloadBtn');
+                this.logMultiAgentBtn = document.getElementById('logMultiAgentBtn');
+                this.logRestartBtn = document.getElementById('logRestartBtn');
                 this.logSummary = document.getElementById('logSummary');
                 this.logSourceFilter = document.getElementById('logSourceFilter');
                 this.logLevelFilter = document.getElementById('logLevelFilter');
@@ -709,12 +713,16 @@
                 this.logPaused = false;
                 this.logSource = null;
                 this.isAdmin = false;
+                this.chatMultiAgentEnabled = true;
+                this.chatAgentsMax = 3;
+                this.userEmail = null;
 
                 this.messageHistory = [];
                 this.isTyping = false;
 
                 this.initEventListeners();
                 this.checkServerStatus();
+                this.fetchChatConfig();
                 this.initLogStream();
             }
 
@@ -751,6 +759,12 @@
                     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
                     window.open(`/api/logs/download?kind=${kind}${tokenParam}`, '_blank');
                 });
+                if (this.logMultiAgentBtn) {
+                    this.logMultiAgentBtn.addEventListener('click', () => this.toggleMultiAgent());
+                }
+                if (this.logRestartBtn) {
+                    this.logRestartBtn.addEventListener('click', () => this.restartServer());
+                }
                 if (this.logSourceFilter) {
                     this.logSourceFilter.addEventListener('change', () => {
                         this.initLogStream();
@@ -795,6 +809,7 @@
                     try {
                         const auth = await fetch('/api/auth/status').then((r) => r.json());
                         this.isAdmin = !!auth.is_admin;
+                        this.userEmail = auth.email || null;
                         this.applyAdminControls();
                     } catch (err) {
                         this.isAdmin = false;
@@ -940,6 +955,69 @@
                     this.logDownloadBtn.disabled = !isAdmin;
                     this.logDownloadBtn.title = isAdmin ? '' : 'Admin only';
                 }
+                if (this.logRestartBtn) {
+                    this.logRestartBtn.disabled = !isAdmin;
+                    this.logRestartBtn.title = isAdmin ? '' : 'Admin only';
+                }
+                if (this.logMultiAgentBtn) {
+                    this.logMultiAgentBtn.disabled = !isAdmin;
+                    this.logMultiAgentBtn.title = isAdmin ? '' : 'Admin only';
+                }
+            }
+
+            async fetchChatConfig() {
+                try {
+                    const res = await fetch('/api/chat/config');
+                    const data = await res.json();
+                    if (data && typeof data.chat_multi_agent === 'boolean') {
+                        this.chatMultiAgentEnabled = data.chat_multi_agent;
+                        if (typeof data.chat_agents_max === 'number') {
+                            this.chatAgentsMax = data.chat_agents_max;
+                        }
+                        this.updateMultiAgentLabel();
+                    }
+                } catch (err) {
+                    console.warn('Failed to load chat config:', err);
+                }
+            }
+
+            updateMultiAgentLabel() {
+                if (!this.logMultiAgentBtn) return;
+                this.logMultiAgentBtn.textContent = this.chatMultiAgentEnabled ? 'Multi-Agent: On' : 'Multi-Agent: Off';
+            }
+
+            async toggleMultiAgent() {
+                try {
+                    const next = !this.chatMultiAgentEnabled;
+                    const res = await fetch('/api/chat/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_multi_agent: next, chat_agents_max: this.chatAgentsMax })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        this.addMessage(`Admin error: ${err.error || 'Unable to update chat config'}`, 'bot', true);
+                        return;
+                    }
+                    this.chatMultiAgentEnabled = next;
+                    this.updateMultiAgentLabel();
+                } catch (err) {
+                    this.addMessage(`Config error: ${err.message}`, 'bot', true);
+                }
+            }
+
+            async restartServer() {
+                try {
+                    const res = await fetch('/api/restart', { method: 'POST' });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        this.addMessage(`Restart failed: ${err.error || 'unknown error'}`, 'bot', true);
+                        return;
+                    }
+                    this.addMessage('Restart requested. Hot reload will bring SAM back up.', 'bot');
+                } catch (err) {
+                    this.addMessage(`Restart error: ${err.message}`, 'bot', true);
+                }
             }
 
             async sendMessage() {
@@ -951,23 +1029,35 @@
                 this.showTypingIndicator();
 
                 try {
-                    const response = await fetch('/api/chat', {
+                    const history = this.messageHistory.slice(-12).map((item) => ({
+                        type: item.sender === 'bot' ? 'assistant' : 'user',
+                        message: item.content,
+                        sender: item.sender === 'bot' ? 'assistant' : 'user'
+                    }));
+                    const response = await fetch('/api/chatbot', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message })
+                        body: JSON.stringify({
+                            message: message,
+                            context: {
+                                history,
+                                user_name: this.userEmail || 'User'
+                            }
+                        })
                     });
 
                     const data = await response.json();
 
                     if (response.ok) {
                         this.hideTypingIndicator();
-                        const segments = this.splitMultiAgent(data.message || '');
+                        const reply = data.message || data.response || '';
+                        const segments = this.splitMultiAgent(reply);
                         if (segments.length > 1) {
                             segments.forEach((segment) => {
                                 this.addMessageWithEvaluation(segment, data.evaluation, 'bot');
                             });
                         } else {
-                            this.addMessageWithEvaluation(data.message, data.evaluation, 'bot');
+                            this.addMessageWithEvaluation(reply, data.evaluation, 'bot');
                         }
                     } else {
                         this.hideTypingIndicator();
