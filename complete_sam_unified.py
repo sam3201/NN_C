@@ -2992,6 +2992,9 @@ class UnifiedSAMSystem:
         self.agent_configs = {}
         self.connected_agents = {}
         self.initialize_agent_configs()
+        print(f"🔎 Agent configs loaded: {len(self.agent_configs)}", flush=True)
+        if self.require_meta_agent and 'meta_agent' not in self.agent_configs:
+            raise RuntimeError("❌ CRITICAL: MetaAgent config missing after initialization.")
         
         # Auto-connect core agents
         self.auto_connect_agents()

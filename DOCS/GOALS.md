@@ -1,1 +1,0 @@
-# SAM Goal Summary\n\n## Active Goals\n- None\n\n## Completed Goals\n- **Improve conversation diversity and engagement** (id=goal_0)\n- **Enhance response quality and relevance** (id=goal_1)\n
