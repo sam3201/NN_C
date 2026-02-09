@@ -13,6 +13,7 @@ This is the unified system that brings together:
 import sys
 import os
 import json
+import inspect
 import time
 import threading
 from datetime import datetime
@@ -3969,13 +3970,25 @@ class UnifiedSAMSystem:
             print("  - Creating goal management system...")
             self.goal_manager = GoalManager()
             try:
-                create_conversationalist_tasks(self.goal_manager)
-            except TypeError:
-                tasks = create_conversationalist_tasks()
-                if tasks:
-                    for task in tasks:
-                        self.goal_manager.add_goal(task.get('description', 'Conversationalist Task'),
-                                                   priority=task.get('priority', 'normal'))
+                task_fn = create_conversationalist_tasks
+                try:
+                    params = inspect.signature(task_fn).parameters
+                except (TypeError, ValueError):
+                    params = None
+
+                if params is not None and len(params) == 0:
+                    tasks = task_fn()
+                    if tasks:
+                        for task in tasks:
+                            self.goal_manager.add_goal(
+                                task.get('description', 'Conversationalist Task'),
+                                priority=task.get('priority', 'normal')
+                            )
+                else:
+                    # Preferred path: allow helper to register tasks directly
+                    task_fn(self.goal_manager)
+            except Exception as exc:
+                print(f"  ⚠️ Conversationalist task init failed: {exc}")
             self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager)
             print("  ✅ Goal management system initialized")
 
