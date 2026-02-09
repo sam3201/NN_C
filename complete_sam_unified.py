@@ -2642,6 +2642,8 @@ class UnifiedSAMSystem:
 
         # Autonomous loops
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+        if getattr(self, "meta_only_boot", False):
+            self.autonomous_enabled = False
 
         # Start meta-controller loop
         self._start_meta_loop()
@@ -3018,6 +3020,7 @@ class UnifiedSAMSystem:
             raise RuntimeError("❌ CRITICAL: MetaAgent required but not initialized. Aborting startup.")
 
         if self.meta_agent and self.meta_agent.is_fully_initialized():
+            self.meta_agent_active = True
             print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
             print("   ✅ Production-grade debugging and repair capabilities online")
             print("   📚 Continuous learning and self-improvement active")
@@ -4533,14 +4536,19 @@ class UnifiedSAMSystem:
         def meta_agent_status():
             """Get comprehensive meta-agent status"""
             try:
+                status = {}
                 if meta_agent_available:
-                    return jsonify(get_meta_agent_status())
+                    status.update(get_meta_agent_status())
                 else:
-                    return jsonify({
-                        "status": "not_available", 
+                    status.update({
+                        "status": "not_available",
                         "message": "Autonomous meta agent not available",
                         "capabilities": ["code_analysis", "patching", "evolution"]
                     })
+                status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
+                status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
+                status["severity_threshold"] = getattr(self, "meta_agent_min_severity", "medium")
+                return jsonify(status)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
