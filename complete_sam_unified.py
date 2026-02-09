@@ -7512,7 +7512,7 @@ sam@terminal:~$
         return "\n".join(lines)
 
     def _record_chat_learning(self, prompt: str, response: str, context: Dict[str, Any]):
-        if not response:
+        if not response or str(response).strip().startswith("❌"):
             return
         try:
             self._update_system_metrics()
