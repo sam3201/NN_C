@@ -6115,15 +6115,16 @@ sam@terminal:~$
         message = (message or "").strip()
         if not message:
             return "❌ Empty message."
-        if not message.startswith("/"):
+
+        def _chat_fallback():
             try:
                 if self.teacher_pool_enabled and self.teacher_pool:
                     room = {"id": "chatbot", "name": "Dashboard Chat", "agent_type": "chatbot"}
                     user = {
-                        "id": context.get("user_id", "dashboard"),
-                        "name": context.get("user_name", "User"),
+                        "id": (context or {}).get("user_id", "dashboard"),
+                        "name": (context or {}).get("user_name", "User"),
                     }
-                    history = context.get("history", []) or []
+                    history = (context or {}).get("history", []) or []
                     message_data = {
                         "id": f"chatbot:{int(time.time() * 1000)}",
                         "timestamp": time.time(),
@@ -6136,6 +6137,9 @@ sam@terminal:~$
             except Exception as exc:
                 return f"❌ Chat error: {exc}"
             return "❌ Chat capability not available."
+
+        if not message.startswith("/"):
+            return _chat_fallback()
 
         parts = message.split()
         cmd = parts[0].lower()
@@ -6797,6 +6801,10 @@ sam@terminal:~$
                 return f"❌ GitHub commits error: {str(e)}"
 
         else:
+            # Fallback to normal chat if a user accidentally types a leading slash
+            fallback = _chat_fallback()
+            if fallback and not fallback.startswith("❌ Chat capability not available."):
+                return fallback
             return f"❌ **Unknown command:** `{cmd}`\n\nType `/help` to see all available commands."
 
     def _render_dashboard(self):
@@ -6849,6 +6857,21 @@ sam@terminal:~$
                     const div = document.createElement('div');
                     div.textContent = text;
                     return div.innerHTML;
+                }
+
+                function showUiAlert(message) {
+                    const target = document.getElementById('ui-alert');
+                    if (!target) {
+                        alert(message);
+                        return;
+                    }
+                    target.textContent = message;
+                    target.style.display = 'block';
+                    clearTimeout(target._hideTimer);
+                    target._hideTimer = setTimeout(() => {
+                        target.textContent = '';
+                        target.style.display = 'none';
+                    }, 5000);
                 }
 
                 async function updateAgents() {
@@ -7104,11 +7127,11 @@ sam@terminal:~$
                     const balance = parseFloat(document.getElementById('banking-account-balance').value || '0');
                     const currency = document.getElementById('banking-account-currency').value.trim() || 'USD';
                     if (!name) {
-                        alert('Account name required.');
+                        showUiAlert('Account name required.');
                         return;
                     }
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/banking/account', {
@@ -7118,7 +7141,7 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to create account.');
+                        showUiAlert(err.error || 'Failed to create account.');
                     }
                     updateBanking();
                 }
@@ -7128,11 +7151,11 @@ sam@terminal:~$
                     const amount = parseFloat(document.getElementById('banking-spend-amount').value || '0');
                     const memo = document.getElementById('banking-spend-memo').value.trim();
                     if (!accountId || !amount) {
-                        alert('Account ID and amount required.');
+                        showUiAlert('Account ID and amount required.');
                         return;
                     }
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/banking/spend', {
@@ -7142,14 +7165,14 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to submit spend request.');
+                        showUiAlert(err.error || 'Failed to submit spend request.');
                     }
                     updateBanking();
                 }
 
                 async function approveBankingRequest(requestId) {
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/banking/approve', {
@@ -7159,14 +7182,14 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to approve request.');
+                        showUiAlert(err.error || 'Failed to approve request.');
                     }
                     updateBanking();
                 }
 
                 async function rejectBankingRequest(requestId) {
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/banking/reject', {
@@ -7176,14 +7199,14 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to reject request.');
+                        showUiAlert(err.error || 'Failed to reject request.');
                     }
                     updateBanking();
                 }
 
                 async function approveRevenue(actionId) {
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/revenue/approve', {
@@ -7193,14 +7216,14 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to approve action.');
+                        showUiAlert(err.error || 'Failed to approve action.');
                     }
                     updateRevenueOps();
                 }
 
                 async function rejectRevenue(actionId) {
                     if (!samAdminToken) {
-                        alert('Set admin token first.');
+                        showUiAlert('Set admin token first.');
                         return;
                     }
                     const resp = await fetch('/api/revenue/reject', {
@@ -7210,7 +7233,7 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to reject action.');
+                        showUiAlert(err.error || 'Failed to reject action.');
                     }
                     updateRevenueOps();
                 }
@@ -7219,14 +7242,14 @@ sam@terminal:~$
                     const type = document.getElementById('revenue-action-type').value.trim();
                     const payloadText = document.getElementById('revenue-action-payload').value.trim();
                     if (!type || !payloadText) {
-                        alert('Action type and payload are required.');
+                        showUiAlert('Action type and payload are required.');
                         return;
                     }
                     let payload;
                     try {
                         payload = JSON.parse(payloadText);
                     } catch (e) {
-                        alert('Payload must be valid JSON.');
+                        showUiAlert('Payload must be valid JSON.');
                         return;
                     }
                     const resp = await fetch('/api/revenue/action', {
@@ -7236,7 +7259,7 @@ sam@terminal:~$
                     });
                     if (!resp.ok) {
                         const err = await resp.json().catch(() => ({}));
-                        alert(err.error || 'Failed to submit revenue action.');
+                        showUiAlert(err.error || 'Failed to submit revenue action.');
                     }
                     updateRevenueOps();
                 }
@@ -7301,7 +7324,7 @@ sam@terminal:~$
 
                 async function queueInvoicePayment(invoiceId) {
                     if (!invoiceId) {
-                        alert('Invoice ID required');
+                        showUiAlert('Invoice ID required.');
                         return;
                     }
                     const note = prompt('Payment details (optional):', 'Manual payment');
@@ -7341,9 +7364,9 @@ sam@terminal:~$
                             body: JSON.stringify({create_sequences: true, create_leads: true, limit_leads: 1})
                         });
                         updateRevenueOps();
-                        alert('Playbooks imported.');
+                        showUiAlert('Playbooks imported.');
                     } catch (e) {
-                        alert('Playbook import failed.');
+                        showUiAlert('Playbook import failed.');
                     }
                 }
 
@@ -7723,6 +7746,15 @@ sam@terminal:~$
                     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
                     gap: 20px;
                 }}
+                .ui-alert {{
+                    margin: 10px 0 14px;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    background: rgba(245, 185, 75, 0.14);
+                    border: 1px solid rgba(245, 185, 75, 0.4);
+                    color: #f5b94b;
+                    font-size: 0.85rem;
+                }}
                 .revenue-row {{
                     display: flex;
                     align-items: center;
@@ -7961,6 +7993,7 @@ sam@terminal:~$
                         </div>
                         <div class="card revenue-form">
                             <h3>Revenue Ops Actions</h3>
+                            <div id="ui-alert" class="ui-alert" style="display:none;"></div>
                             <label>Admin Token (for approvals)</label>
                             <div style="display:flex; gap:8px; align-items:center;">
                                 <input id="admin-token-input" placeholder="SAM_ADMIN_TOKEN" />
