@@ -107,6 +107,68 @@
             color: var(--ink-soft);
         }
 
+        .log-panel {
+            background: #f9f4ec;
+            border: 1px solid var(--panel-edge);
+            border-radius: 16px;
+            padding: 12px;
+            max-height: 220px;
+            overflow-y: auto;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink);
+        }
+
+        .log-entry {
+            padding: 6px 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            background: #ffffff;
+            border: 1px solid #efe8dd;
+        }
+
+        .log-entry .meta {
+            font-size: 10px;
+            color: var(--ink-soft);
+            margin-bottom: 4px;
+        }
+
+        .log-entry.level-warn {
+            border-color: rgba(242, 185, 79, 0.6);
+            background: rgba(242, 185, 79, 0.12);
+        }
+
+        .log-entry.level-error {
+            border-color: rgba(211, 60, 60, 0.4);
+            background: rgba(211, 60, 60, 0.1);
+        }
+
+        .log-entry.level-info {
+            border-color: rgba(31, 122, 109, 0.25);
+            background: rgba(31, 122, 109, 0.08);
+        }
+
+        .log-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .log-actions button {
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--panel-edge);
+            background: #fff;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .log-summary {
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--ink-soft);
+        }
+
         .status-grid {
             display: flex;
             flex-direction: column;
@@ -500,6 +562,22 @@
                     <span><span class="capability-dot"></span>/save-to-github · /system-report</span>
                 </div>
             </div>
+
+            <div class="panel-section">
+                <h3>Live Event Log</h3>
+                <div class="log-panel" id="logPanel">
+                    <div class="log-entry level-info">
+                        <div class="meta">Waiting for log stream…</div>
+                        <div class="text">The live JSONL stream will appear here.</div>
+                    </div>
+                </div>
+                <div class="log-actions">
+                    <button id="logPauseBtn">Pause</button>
+                    <button id="logClearBtn">Clear</button>
+                    <button id="logSnapshotBtn">Snapshot</button>
+                </div>
+                <div class="log-summary" id="logSummary"></div>
+            </div>
         </aside>
 
         <section class="chat-panel">
@@ -581,12 +659,20 @@
                 this.connectionStatus = document.querySelectorAll('#connection-status');
                 this.agentCount = document.getElementById('agent-count');
                 this.survivalScore = document.getElementById('survival-score');
+                this.logPanel = document.getElementById('logPanel');
+                this.logPauseBtn = document.getElementById('logPauseBtn');
+                this.logClearBtn = document.getElementById('logClearBtn');
+                this.logSnapshotBtn = document.getElementById('logSnapshotBtn');
+                this.logSummary = document.getElementById('logSummary');
+                this.logPaused = false;
+                this.logSource = null;
 
                 this.messageHistory = [];
                 this.isTyping = false;
 
                 this.initEventListeners();
                 this.checkServerStatus();
+                this.initLogStream();
             }
 
             initEventListeners() {
@@ -600,6 +686,17 @@
                 this.clearButton.addEventListener('click', () => this.clearChat());
                 this.saveButton.addEventListener('click', () => this.saveChat());
                 this.statusButton.addEventListener('click', () => this.showStatus());
+
+                this.logPauseBtn.addEventListener('click', () => {
+                    this.logPaused = !this.logPaused;
+                    this.logPauseBtn.textContent = this.logPaused ? 'Resume' : 'Pause';
+                });
+
+                this.logClearBtn.addEventListener('click', () => {
+                    this.logPanel.innerHTML = '';
+                });
+
+                this.logSnapshotBtn.addEventListener('click', () => this.fetchLogSnapshot());
             }
 
             async checkServerStatus() {
@@ -637,6 +734,85 @@
                         el.textContent = 'Server: ❌';
                     });
                     console.error('Server status check failed:', error);
+                }
+            }
+
+            initLogStream() {
+                if (!this.logPanel) return;
+                if (!!window.EventSource) {
+                    const source = new EventSource('/api/logs/stream?tail=50');
+                    this.logSource = source;
+                    source.onmessage = (event) => {
+                        if (this.logPaused) return;
+                        this.addLogEntry(event.data);
+                    };
+                    source.onerror = () => {
+                        this.addLogEntry(JSON.stringify({
+                            level: 'warn',
+                            event: 'log_stream_error',
+                            message: 'Log stream disconnected. Retrying…'
+                        }));
+                    };
+                } else {
+                    this.addLogEntry(JSON.stringify({
+                        level: 'error',
+                        event: 'log_stream_unsupported',
+                        message: 'EventSource not supported by this browser.'
+                    }));
+                }
+            }
+
+            async fetchLogSnapshot() {
+                if (!this.logSummary) return;
+                try {
+                    const res = await fetch('/api/logs/view?window=200');
+                    const data = await res.json();
+                    const summary = data.summary || {};
+                    const levels = summary.levels || {};
+                    const topEvents = summary.top_events || [];
+                    const levelText = Object.keys(levels).map((k) => `${k}:${levels[k]}`).join(' · ');
+                    const topText = topEvents.map((e) => `${e[0]}(${e[1]})`).join(', ');
+                    const dropped = summary.dropped || 0;
+                    this.logSummary.textContent = `Window: ${summary.window || 0} · Dropped: ${dropped} · Levels: ${levelText} · Top events: ${topText}`;
+
+                    // Show last error/warn as entries (if available)
+                    if (summary.last_error) {
+                        this.addLogEntry(JSON.stringify(summary.last_error));
+                    }
+                    if (summary.last_warn) {
+                        this.addLogEntry(JSON.stringify(summary.last_warn));
+                    }
+                } catch (err) {
+                    this.logSummary.textContent = `Snapshot error: ${err.message}`;
+                }
+            }
+
+            addLogEntry(raw) {
+                let payload = null;
+                try {
+                    payload = JSON.parse(raw);
+                } catch (e) {
+                    payload = { level: 'info', event: 'log_line', message: raw };
+                }
+                const level = (payload.level || 'info').toLowerCase();
+                const entry = document.createElement('div');
+                entry.className = `log-entry level-${level}`;
+                const meta = document.createElement('div');
+                meta.className = 'meta';
+                const ts = payload.ts ? new Date(payload.ts).toLocaleTimeString() : '';
+                meta.textContent = `${ts} • ${payload.event || 'event'} • ${payload.level || 'info'}`;
+                const text = document.createElement('div');
+                text.className = 'text';
+                text.textContent = payload.message || JSON.stringify(payload);
+                entry.appendChild(meta);
+                entry.appendChild(text);
+                this.logPanel.appendChild(entry);
+                this.logPanel.scrollTop = this.logPanel.scrollHeight;
+
+                // Keep last 200 entries
+                const entries = this.logPanel.querySelectorAll('.log-entry');
+                if (entries.length > 200) {
+                    entries[0].remove();
                 }
             }
 

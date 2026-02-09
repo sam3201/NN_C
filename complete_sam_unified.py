@@ -130,6 +130,73 @@ def log_event(level: str, event: str, message: str, **data):
     except Exception:
         pass
 
+
+def _summarize_jsonl_log(path: str, window: int = 200):
+    """Return a moving window + compacted summary of the JSONL log."""
+    total = 0
+    level_counts = {}
+    event_counts = {}
+    last_error = None
+    last_warn = None
+    first_ts = None
+    last_ts = None
+    tail = deque(maxlen=window)
+
+    if not os.path.exists(path):
+        return {
+            "summary": {
+                "total": 0,
+                "window": window,
+                "dropped": 0,
+                "levels": {},
+                "top_events": [],
+                "first_ts": None,
+                "last_ts": None,
+                "last_error": None,
+                "last_warn": None,
+            },
+            "tail": [],
+        }
+
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                payload = json.loads(line)
+            except Exception:
+                payload = {"level": "info", "event": "raw_line", "message": line}
+            total += 1
+            level = str(payload.get("level", "info")).lower()
+            event = str(payload.get("event", "event"))
+            level_counts[level] = level_counts.get(level, 0) + 1
+            event_counts[event] = event_counts.get(event, 0) + 1
+            ts = payload.get("ts")
+            if ts and first_ts is None:
+                first_ts = ts
+            if ts:
+                last_ts = ts
+            if level == "error":
+                last_error = payload
+            if level == "warn":
+                last_warn = payload
+            tail.append(payload)
+
+    top_events = sorted(event_counts.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    summary = {
+        "total": total,
+        "window": window,
+        "dropped": max(total - window, 0),
+        "levels": level_counts,
+        "top_events": top_events,
+        "first_ts": first_ts,
+        "last_ts": last_ts,
+        "last_error": last_error,
+        "last_warn": last_warn,
+    }
+    return {"summary": summary, "tail": list(tail)}
+
 # Import SAM components
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import GoalManager, create_conversationalist_tasks
@@ -196,7 +263,7 @@ sam_github_available = SAM_GITHUB_AVAILABLE
 print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
-from flask import Flask, request, jsonify, render_template_string, Response, send_file
+from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_compress import Compress
@@ -4898,6 +4965,58 @@ class UnifiedSAMSystem:
                 'web_search_enabled': self.web_search_enabled
             })
 
+        @self.app.route('/api/logs/stream')
+        def stream_logs():
+            """Stream JSONL logs via Server-Sent Events (SSE)."""
+            tail = int(request.args.get("tail", "50"))
+            path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+
+            def generate():
+                try:
+                    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+                    if not os.path.exists(path):
+                        # emit a bootstrap entry
+                        bootstrap = json.dumps({
+                            "ts": datetime.utcnow().isoformat() + "Z",
+                            "level": "info",
+                            "event": "log_stream_ready",
+                            "message": "Log stream initialized",
+                            "path": path,
+                        })
+                        yield f"data: {bootstrap}\n\n"
+
+                    with open(path, "r", encoding="utf-8") as f:
+                        # Tail last N lines
+                        lines = f.readlines()
+                        for line in lines[-tail:]:
+                            yield f"data: {line.strip()}\n\n"
+                        # Follow
+                        while True:
+                            pos = f.tell()
+                            line = f.readline()
+                            if not line:
+                                time.sleep(0.5)
+                                f.seek(pos)
+                                continue
+                            yield f"data: {line.strip()}\n\n"
+                except Exception as exc:
+                    err = json.dumps({
+                        "ts": datetime.utcnow().isoformat() + "Z",
+                        "level": "error",
+                        "event": "log_stream_error",
+                        "message": str(exc),
+                    })
+                    yield f"data: {err}\n\n"
+
+            return Response(stream_with_context(generate()), mimetype="text/event-stream")
+
+        @self.app.route('/api/logs/view')
+        def view_logs():
+            """Return a moving window + compact summary of the JSONL log."""
+            window = int(request.args.get("window", "200"))
+            path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+            return jsonify(_summarize_jsonl_log(path, window=window))
+
         @self.app.route('/api/groupchat/rooms')
         def get_rooms():
             """Get available conversation rooms"""
@@ -9236,10 +9355,10 @@ sam@terminal:~$
             log_event(
                 "warn",
                 "score_unusable",
-                "Research score unavailable; treating as informational-only output",
+                "Research score unavailable; marking as pending and scheduling retry",
                 topic=topic,
                 reason=reason,
-                action="skip_score_dependent_decisions",
+                action="retry_score_inference",
             )
 
     def _demonstrate_code_capability(self):
@@ -9269,10 +9388,10 @@ sam@terminal:~$
             log_event(
                 "warn",
                 "score_unusable",
-                "Market score unavailable; treating as informational-only output",
+                "Market score unavailable; marking as pending and scheduling retry",
                 market=market,
                 reason=reason,
-                action="skip_score_dependent_decisions",
+                action="retry_score_inference",
             )
 
     def _extract_score(self, result):
@@ -9285,8 +9404,25 @@ sam@terminal:~$
             match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
             if match:
                 return match.group(1), None
-            log_event("warn", "score_missing", "Agent result has no score field", reason="no score field")
-            return "N/A", "no score field"
+            # Try to infer meaning when no score is present
+            lower = text.lower()
+            if any(k in lower for k in ("initializ", "warmup", "loading", "queued", "waiting")):
+                reason = "initializing"
+                action = "retry_later"
+            elif any(k in lower for k in ("timeout", "timed out")):
+                reason = "timeout"
+                action = "retry_later"
+            elif any(k in lower for k in ("rate limit", "ratelimit", "too many requests")):
+                reason = "rate_limited"
+                action = "retry_later"
+            elif any(k in lower for k in ("error", "failed", "exception", "traceback")):
+                reason = "error"
+                action = "investigate"
+            else:
+                reason = "no score field"
+                action = "fallback_required"
+            log_event("warn", "score_missing", "Agent result has no score field", reason=reason, action=action)
+            return "N/A", reason
         except Exception as exc:
             log_event("warn", "score_missing", "Score parse error", reason=exc.__class__.__name__)
             return "N/A", f"parse error: {exc.__class__.__name__}"

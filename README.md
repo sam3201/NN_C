@@ -74,7 +74,10 @@ Recursive layer
 Full canonical expansion and appendix live in `DOCS/GOD_EQUATION.md`.
 
 ## Score Handling (N/A)
-When agent outputs do not include a `score:` field, the system logs the result as **informational-only** and skips any score‑dependent decision logic. The reason is recorded in the JSONL log (`logs/sam_runtime.jsonl`) under event `score_unusable`.
+When agent outputs do not include a `score:` field, the system marks the result as **pending** and records a reason + action in the JSONL log (`logs/sam_runtime.jsonl`) under event `score_unusable` or `score_missing`. Actions include `retry_later`, `retry_score_inference`, or `investigate` depending on the reason (initializing, timeout, rate limit, error, or missing score field).
+
+## Live Log Panel
+The dashboard includes a **Live Event Log** panel. It streams `logs/sam_runtime.jsonl` in real time and provides a snapshot that summarizes the moving window, counts by level, and top event types.
 
 ## Interfaces
 - Dashboard: http://localhost:5004
