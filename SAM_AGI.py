@@ -461,6 +461,20 @@ class CompleteSAMSystem:
     def _setup_web_routes(self):
         """Setup Flask web routes"""
         print_status("Setting up web routes...")
+
+        def _require_admin_token():
+            token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
+            if not token:
+                return False, ("Admin token not configured", 503)
+            auth_header = request.headers.get("Authorization", "")
+            candidate = None
+            if auth_header.startswith("Bearer "):
+                candidate = auth_header.split(" ", 1)[1].strip()
+            if not candidate:
+                candidate = request.headers.get("X-SAM-ADMIN-TOKEN") or request.args.get("token")
+            if candidate != token:
+                return False, ("Unauthorized", 403)
+            return True, None
         
         @self.app.route('/')
         def index():
@@ -591,6 +605,10 @@ class CompleteSAMSystem:
         def meta_update():
             if not sam_meta_module or not self.meta_controller:
                 return jsonify({'error': 'meta-controller unavailable'}), 503
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({'error': message}), status
             payload = request.get_json(silent=True) or {}
             pressures = self._normalize_pressures(payload)
             lambda_val = sam_meta_module.update_pressure(
@@ -632,8 +650,15 @@ class CompleteSAMSystem:
         def ananke_step():
             if ananke_module and self.ananke_arena:
                 steps = int((request.get_json(silent=True) or {}).get('steps', 1))
+                max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
                 if steps < 1:
                     steps = 1
+                if steps > max_steps:
+                    return jsonify({'error': f"steps exceeds limit ({steps} > {max_steps})"}), 400
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
                 ananke_module.run(self.ananke_arena, steps)
                 return jsonify(ananke_module.get_state(self.ananke_arena))
             return jsonify({'error': 'ananke unavailable'}), 503
@@ -785,6 +810,13 @@ class CompleteSAMSystem:
                 data = request.get_json()
                 message = data.get('message', '')
                 context = data.get('context', {})
+                if message:
+                    cmd = message.strip().split()[0].lower()
+                    if cmd in {'/modify-code', '/rollback'}:
+                        ok, error = _require_admin_token()
+                        if not ok:
+                            msg, status = error
+                            return jsonify({'success': False, 'error': msg}), status
                 
                 if message:
                     result = self._process_slash_command(message, context)
