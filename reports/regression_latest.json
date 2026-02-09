@@ -27,17 +27,17 @@
     },
     {
       "task_id": "t3_contains",
-      "response": " The delta between our plans and reality often requires adjustments.",
+      "response": " The delta between the two graphs is quite noticeable.",
       "score": 1.0,
       "passed": true,
       "details": {
         "expected": "delta",
-        "got": " The delta between our plans and reality often requires adjustments."
+        "got": " The delta between the two graphs is quite noticeable."
       }
     },
     {
       "task_id": "t4_regex",
-      "response": " Here is a code snippet in Python that generates a UUID v4 string:\n\n```python\nimport uuid\nuuid_str = str(uuid.uuid4())\nprint(uuid_str)\n```\n\nWhen you run this code, it will print out a UUID v4 string like this: `3ba816bf-b9a6-41d0-a7be-34e27e4e92db`.",
+      "response": " Here is a simple example of how to generate a UUID v4 string in Python:\n\n```python\nimport uuid\n\nuuid_str = str(uuid.uuid4())\nprint(uuid_str)\n```\n\nThis code imports the `uuid` module, creates a new UUID using `uuid.uuid4()`, and then converts it to a string for printing. The resulting UUID will be in the standard format of 32 lowercase hexadecimal characters separated by hyphens, like this:\n\n```\n550e8400-e29b-41d4-a716-446655440000\n```",
       "score": 1.0,
       "passed": true,
       "details": {
@@ -46,7 +46,7 @@
     },
     {
       "task_id": "t5_json",
-      "response": " {\n \"a\": 1,\n \"b\": 2\n}",
+      "response": " {\"a\": 1, \"b\": 2}",
       "score": 1.0,
       "passed": true,
       "details": {

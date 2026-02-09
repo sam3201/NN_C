@@ -73,6 +73,9 @@ Recursive layer
 
 Full canonical expansion and appendix live in `DOCS/GOD_EQUATION.md`.
 
+## Score Handling (N/A)
+When agent outputs do not include a `score:` field, the system logs the result as **informational-only** and skips any score‑dependent decision logic. The reason is recorded in the JSONL log (`logs/sam_runtime.jsonl`) under event `score_unusable`.
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal

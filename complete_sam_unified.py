@@ -63,6 +63,73 @@ def _explain_exception(exc: Exception) -> str:
 def _format_exception(context: str, exc: Exception) -> str:
     return f"{context} | {exc.__class__.__name__}: {exc} | meaning: {_explain_exception(exc)}"
 
+
+_JSONL_LOG_PATH = None
+_JSONL_LOG_FH = None
+
+
+class _TeeStream:
+    def __init__(self, *streams):
+        self._streams = [s for s in streams if s is not None]
+
+    def write(self, data):
+        for s in self._streams:
+            try:
+                s.write(data)
+                s.flush()
+            except Exception:
+                pass
+        return len(data)
+
+    def flush(self):
+        for s in self._streams:
+            try:
+                s.flush()
+            except Exception:
+                pass
+
+    def isatty(self):
+        return False
+
+
+def setup_runtime_logging():
+    """Configure human-readable log + JSONL event log."""
+    global _JSONL_LOG_PATH, _JSONL_LOG_FH
+    log_dir = os.getenv("SAM_LOG_DIR", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.getenv("SAM_LOG_FILE", os.path.join(log_dir, "sam_runtime.log"))
+    jsonl_file = os.getenv("SAM_LOG_JSONL", os.path.join(log_dir, "sam_runtime.jsonl"))
+
+    # Tee stdout/stderr to human-readable log
+    log_fp = open(log_file, "a", encoding="utf-8", buffering=1)
+    sys.stdout = _TeeStream(sys.stdout, log_fp)
+    sys.stderr = _TeeStream(sys.stderr, log_fp)
+
+    _JSONL_LOG_PATH = jsonl_file
+    _JSONL_LOG_FH = open(jsonl_file, "a", encoding="utf-8", buffering=1)
+
+    print(f"🧾 Runtime logging enabled")
+    print(f"   Human log: {log_file}")
+    print(f"   JSONL log: {jsonl_file}")
+
+
+def log_event(level: str, event: str, message: str, **data):
+    """Append a structured JSONL log entry."""
+    if not _JSONL_LOG_FH:
+        return
+    payload = {
+        "ts": datetime.utcnow().isoformat() + "Z",
+        "level": level,
+        "event": event,
+        "message": message,
+    }
+    if data:
+        payload.update(data)
+    try:
+        _JSONL_LOG_FH.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
 # Import SAM components
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import GoalManager, create_conversationalist_tasks
@@ -340,6 +407,17 @@ class ObserverAgent:
             f"👁️ Observer Agent: Detected failure id={failure_event.id} "
             f"type={failure_event.error_type} severity={severity} context={failure_event.context} "
             f"msg={msg} | meaning: {meaning}"
+        )
+        log_event(
+            "error",
+            "failure_detected",
+            "Observer detected failure",
+            failure_id=failure_event.id,
+            error_type=failure_event.error_type,
+            severity=severity,
+            context=failure_event.context,
+            message=msg,
+            meaning=meaning,
         )
         return failure_event
 
@@ -1452,6 +1530,14 @@ class MetaAgent:
         failure_type = failure.get("type", "unknown") if isinstance(failure, dict) else "unknown"
         failure_msg = failure.get("message", "unknown") if isinstance(failure, dict) else "unknown"
         print(f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}")
+        log_event(
+            "info",
+            "meta_handle_failure",
+            "Meta-agent handling failure",
+            failure_id=failure_id,
+            failure_type=failure_type,
+            failure_msg=failure_msg,
+        )
 
         # Register failure for clustering
         self.register_failure(failure)
@@ -1502,6 +1588,15 @@ class MetaAgent:
         # Step 4: Apply or Reject
         if best_patch and best_score >= 7.0:  # Minimum quality threshold
             print(f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})")
+            log_event(
+                "info",
+                "patch_apply_safe",
+                "Applying safe patch",
+                patch_id=best_patch.get("id"),
+                score=best_score,
+                intent=best_patch.get("intent"),
+                target_file=best_patch.get("target_file"),
+            )
             applied = self._apply_patch(best_patch, failure)
             if applied:
                 self._learn_from_success(best_patch, failure)
@@ -1516,14 +1611,37 @@ class MetaAgent:
                 top_issues = sorted(issue_counts.items(), key=lambda kv: kv[1], reverse=True)[:3]
                 issue_str = ", ".join([f"{k}({v})" for k, v in top_issues])
                 print(f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}")
+                log_event(
+                    "warn",
+                    "patch_no_safe",
+                    "No safe patches available",
+                    summary=summary,
+                    top_issues=top_issues,
+                )
             else:
                 print(f" Production Meta-Agent: No safe patches available. Summary: {summary}")
+                log_event(
+                    "warn",
+                    "patch_no_safe",
+                    "No safe patches available",
+                    summary=summary,
+                )
             if allow_unsafe and patches:
                 # Choose the highest-confidence patch if no safe patch
                 fallback_patch = max(patches, key=lambda p: p.get("confidence", 0.0))
                 print(" Production Meta-Agent: Applying best-available patch (unsafe override enabled)")
                 print(f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled")
                 print(f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}")
+                log_event(
+                    "warn",
+                    "patch_apply_unsafe",
+                    "Applying best-available patch (unsafe override)",
+                    patch_id=fallback_patch.get("id"),
+                    confidence=fallback_patch.get("confidence", 0.0),
+                    risk=fallback_patch.get("risk_level", "unknown"),
+                    intent=fallback_patch.get("intent", "n/a"),
+                    reason="invariants disabled or allow_unsafe_patches enabled",
+                )
                 applied = self._apply_patch(fallback_patch, failure)
                 if applied:
                     self._learn_from_success(fallback_patch, failure)
@@ -9114,6 +9232,15 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})", flush=True)
+        if score == "N/A":
+            log_event(
+                "warn",
+                "score_unusable",
+                "Research score unavailable; treating as informational-only output",
+                topic=topic,
+                reason=reason,
+                action="skip_score_dependent_decisions",
+            )
 
     def _demonstrate_code_capability(self):
         """Demonstrate code generation capabilities autonomously"""
@@ -9138,18 +9265,30 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})", flush=True)
+        if score == "N/A":
+            log_event(
+                "warn",
+                "score_unusable",
+                "Market score unavailable; treating as informational-only output",
+                market=market,
+                reason=reason,
+                action="skip_score_dependent_decisions",
+            )
 
     def _extract_score(self, result):
         """Extract score from agent output with explanation when missing."""
         try:
             if result is None:
+                log_event("warn", "score_missing", "Agent result is empty", reason="empty result")
                 return "N/A", "empty result"
             text = result if isinstance(result, str) else str(result)
             match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
             if match:
                 return match.group(1), None
+            log_event("warn", "score_missing", "Agent result has no score field", reason="no score field")
             return "N/A", "no score field"
         except Exception as exc:
+            log_event("warn", "score_missing", "Score parse error", reason=exc.__class__.__name__)
             return "N/A", f"parse error: {exc.__class__.__name__}"
 
     def _check_consciousness(self):
@@ -9923,6 +10062,7 @@ exec(open('{script_path}').read())
 
 def main():
     """Main entry point"""
+    setup_runtime_logging()
     print("🎯 SAM 2.0 UNIFIED COMPLETE SYSTEM")
     print("=" * 80)
     print("🚀 Combining Pure C Core + Python Orchestration")
