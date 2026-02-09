@@ -50,6 +50,7 @@ from training.regression_suite import run_regression_suite
 from training.teacher_pool import TeacherPool, build_provider, similarity
 from training.distillation import DistillationStreamWriter
 from tools.backup_manager import BackupManager
+from revenue_ops import RevenueOpsEngine
 
 # Optional integrations
 try:
@@ -99,7 +100,7 @@ sam_github_available = SAM_GITHUB_AVAILABLE
 print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, Response, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_compress import Compress
@@ -182,6 +183,7 @@ from goal_management import GoalManager, SubgoalExecutionAlgorithm, create_conve
 from concurrent_executor import task_executor
 from circuit_breaker import resilience_manager
 from autonomous_meta_agent import meta_agent, auto_patch, get_meta_agent_status, emergency_stop_meta_agent
+meta_agent_available = True
 
 print("✅ All Python orchestration components available")
 
@@ -256,6 +258,20 @@ class FailureEvent:
         self.logs = logs or ""
         self.timestamp = timestamp or datetime.now().isoformat()
         self.id = f"{error_type}_{int(time.time()*1000)}"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "type": self.error_type,
+            "error_type": self.error_type,
+            "stack_trace": self.stack_trace,
+            "failing_tests": self.failing_tests,
+            "logs": self.logs,
+            "timestamp": self.timestamp,
+        }
+
+    def get(self, key, default=None):
+        return self.to_dict().get(key, default)
 
 class ObserverAgent:
     """Non-LLM failure detection agent - deterministic and reliable
@@ -992,12 +1008,14 @@ class VerifierJudgeAgent:
         try:
             # Check syntax validity of the patch
             for change in patch.get('changes', []):
-                if change.get('type') == 'code_block':
-                    try:
-                        ast.parse(change['content'])
-                    except SyntaxError as e:
-                        result['issues'].append(f"Syntax error in patch: {e}")
-                        result['passed'] = False
+                if change.get('type') in ('code_block', 'replace', 'insert_after'):
+                    code_payload = change.get('content') or change.get('new_code')
+                    if code_payload:
+                        try:
+                            ast.parse(code_payload)
+                        except SyntaxError as e:
+                            result['issues'].append(f"Syntax error in patch: {e}")
+                            result['passed'] = False
 
             # Check for dangerous patterns that could compromise security
             dangerous_patterns = [
@@ -1010,8 +1028,8 @@ class VerifierJudgeAgent:
             ]
 
             for change in patch.get('changes', []):
-                if change.get('type') == 'code_block':
-                    code_content = change['content']
+                if change.get('type') in ('code_block', 'replace', 'insert_after'):
+                    code_content = change.get('content') or change.get('new_code') or ""
                     for pattern in dangerous_patterns:
                         if re.search(pattern, code_content):
                             result['issues'].append(f"Dangerous pattern detected: {pattern}")
@@ -1290,6 +1308,81 @@ class MetaAgent:
             "timestamp": datetime.now().isoformat()
         })
 
+    def _deterministic_patches(self, failure):
+        """Generate deterministic patches for known failure signatures."""
+        patches = []
+        stack_trace = ""
+        if hasattr(failure, "stack_trace"):
+            stack_trace = failure.stack_trace or ""
+        else:
+            stack_trace = failure.get("stack_trace", "")
+
+        # Fix missing attributes on UnifiedSAMSystem by adding safe defaults in __init__
+        attr_match = re.search(
+            r"AttributeError: 'UnifiedSAMSystem' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'",
+            stack_trace
+        )
+        if attr_match:
+            missing_attr = attr_match.group(1)
+            target_file = "complete_sam_unified.py"
+            try:
+                file_path = Path(self.system.project_root) / target_file
+                content = file_path.read_text(encoding="utf-8")
+            except Exception:
+                content = ""
+
+            if content and f"self.{missing_attr} =" not in content:
+                anchors = [
+                    "        self.conversation_rooms = {}\n",
+                    "        self.connected_users = {}\n",
+                ]
+                for anchor in anchors:
+                    if anchor in content:
+                        new_code = anchor + f"        self.{missing_attr} = None\n"
+                        patches.append({
+                            "id": f"deterministic_attr_{missing_attr}",
+                            "target_file": target_file,
+                            "changes": [{
+                                "type": "replace",
+                                "old_code": anchor,
+                                "new_code": new_code
+                            }],
+                            "intent": f"Initialize missing attribute self.{missing_attr} to prevent AttributeError",
+                            "risk_level": "low",
+                            "confidence": 0.95,
+                            "assumptions": ["Missing attribute can be safely initialized to None"],
+                            "unknowns": [],
+                            "generated_by": "deterministic_patch_registry"
+                        })
+                        break
+
+        return patches
+
+    def _apply_patch(self, patch, failure):
+        """Apply a patch using the safe code modifier."""
+        if not getattr(self.system, "allow_self_modification", False):
+            print(" Production Meta-Agent: Self-modification disabled - patch not applied")
+            return False
+        if not getattr(self.system, "sam_code_modifier_available", False) or modify_code_safely is None:
+            print(" Production Meta-Agent: Code modifier unavailable - patch not applied")
+            return False
+
+        success = True
+        for change in patch.get("changes", []):
+            if change.get("type") == "replace":
+                description = patch.get("intent", "Meta-agent patch")
+                result = modify_code_safely(
+                    patch.get("target_file", ""),
+                    change.get("old_code", ""),
+                    change.get("new_code", ""),
+                    description
+                )
+                if not result.get("success"):
+                    print(f" Production Meta-Agent: Patch apply failed: {result.get('message')}")
+                    success = False
+                    break
+        return success
+
     # ===========================
     # CORE META LOOP
     # ===========================
@@ -1307,7 +1400,8 @@ class MetaAgent:
             return False
 
         # Step 2: Propose
-        patches = self.generator.generate_patches(failure, localization)
+        patches = self._deterministic_patches(failure)
+        patches.extend(self.generator.generate_patches(failure, localization))
         if not patches:
             print(" Production Meta-Agent: No patch proposals generated")
             return False
@@ -1333,10 +1427,13 @@ class MetaAgent:
 
         # Step 4: Apply or Reject
         if best_patch and best_score >= 7.0:  # Minimum quality threshold
-            # Apply patch (in real system, this would use safe code modifier)
             print(f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})")
-            self._learn_from_success(best_patch, failure)
-            return True
+            applied = self._apply_patch(best_patch, failure)
+            if applied:
+                self._learn_from_success(best_patch, failure)
+                return True
+            self._learn_from_failure(best_patch, failure)
+            return False
         else:
             print(" Production Meta-Agent: No safe patches available")
             return False
@@ -2385,6 +2482,7 @@ class UnifiedSAMSystem:
         )
         self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b")
         self.regression_min_pass = float(os.getenv("SAM_REGRESSION_MIN_PASS", "0.7"))
+        self.regression_timeout_s = int(os.getenv("SAM_REGRESSION_TIMEOUT_S", "120"))
         self.meta_growth_freeze = False
 
         # Teacher pool + distillation pipeline (live groupchat)
@@ -2410,6 +2508,56 @@ class UnifiedSAMSystem:
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
+
+        # Revenue operations pipeline (approval + audit)
+        self.revenue_ops_enabled = os.getenv("SAM_REVENUE_OPS_ENABLED", "1") == "1"
+        self.revenue_data_dir = Path(os.getenv(
+            "SAM_REVENUE_DATA_DIR",
+            str(self.project_root / "sam_data" / "revenue_ops")
+        ))
+        self.revenue_queue_path = Path(os.getenv(
+            "SAM_REVENUE_QUEUE_PATH",
+            str(self.project_root / "sam_data" / "revenue_ops" / "queue.json")
+        ))
+        self.revenue_audit_log = Path(os.getenv(
+            "SAM_REVENUE_AUDIT_LOG",
+            str(self.project_root / "logs" / "revenue_ops_audit.jsonl")
+        ))
+
+        def _send_email_wrapper(to_email: str, subject: str, body: str):
+            if not send_sam_email:
+                raise RuntimeError("Gmail integration not available")
+            return send_sam_email(to_email, subject, body, [])
+
+        def _schedule_email_wrapper(to_email: str, subject: str, body: str, send_time: str):
+            if not schedule_sam_email:
+                raise RuntimeError("Gmail integration not available")
+            return schedule_sam_email(to_email, subject, body, send_time)
+
+        self.revenue_ops = None
+        if self.revenue_ops_enabled:
+            self.revenue_ops = RevenueOpsEngine(
+                data_dir=self.revenue_data_dir,
+                queue_path=self.revenue_queue_path,
+                audit_log=self.revenue_audit_log,
+                send_email=_send_email_wrapper if sam_gmail_available else None,
+                schedule_email=_schedule_email_wrapper if sam_gmail_available else None,
+            )
+
+        # Revenue auto-planner (creates actions but requires approval)
+        self.revenue_autoplanner_enabled = os.getenv("SAM_REVENUE_AUTOPLANNER_ENABLED", "1") == "1"
+        self.revenue_autoplanner_interval_s = int(os.getenv("SAM_REVENUE_AUTOPLANNER_INTERVAL_S", "600"))
+        self.revenue_autoplanner_max_pending = int(os.getenv("SAM_REVENUE_AUTOPLANNER_MAX_PENDING", "10"))
+        self.revenue_autoplanner_sequence_id = os.getenv("SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID") or None
+        self.revenue_autoplanner_thread = None
+        if self.revenue_ops and self.revenue_autoplanner_enabled:
+            self._start_revenue_autoplanner()
+
+        # Revenue sequence executor (sends scheduled emails)
+        self.revenue_sequence_executor_enabled = os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED", "1") == "1"
+        self.revenue_sequence_executor_interval_s = int(os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S", "120"))
+        if self.revenue_ops and self.revenue_sequence_executor_enabled:
+            self._start_revenue_sequence_executor()
 
         # Auto-backup manager (git push to multiple remotes)
         self.backup_enabled = os.getenv("SAM_BACKUP_ENABLED", "1") == "1"
@@ -2470,6 +2618,7 @@ class UnifiedSAMSystem:
                 tasks_path=self.regression_tasks_path,
                 provider_spec=self.regression_provider,
                 min_pass_rate=self.regression_min_pass,
+                timeout_s=self.regression_timeout_s,
             )
             if not result.get("passed_gate", False):
                 self.meta_growth_freeze = True
@@ -2757,6 +2906,10 @@ class UnifiedSAMSystem:
         self.sam_github_available = bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
         self.sam_web_search_available = bool(globals().get("initialize_sam_web_search")) and SAM_WEB_SEARCH_AVAILABLE
         self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
+        self.sam_code_modifier_ready = False
+        self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
+        if self.require_self_mod and not self.sam_code_modifier_available:
+            raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
 
         # Groupchat features
         self.connected_users = {}
@@ -2874,10 +3027,34 @@ class UnifiedSAMSystem:
                 return True
             else:
                 print("❌ System recovery failed - too many critical components unavailable")
+                self._invoke_meta_agent_repair(error, context="system_recovery")
                 return False
                 
         except Exception as e:
             print(f"❌ System recovery process failed: {e}")
+            self._invoke_meta_agent_repair(e, context="system_recovery")
+            return False
+
+    def _invoke_meta_agent_repair(self, error, context="runtime"):
+        """Invoke meta-agent self-repair pipeline if available."""
+        try:
+            if not getattr(self, "meta_agent", None):
+                return False
+            if not getattr(self, "allow_self_modification", False):
+                return False
+            if not getattr(self, "sam_code_modifier_ready", False):
+                return False
+            # Throttle to prevent repair loops
+            now = time.time()
+            last = getattr(self, "_last_meta_repair", 0)
+            if now - last < 120:
+                return False
+            self._last_meta_repair = now
+
+            failure_event = self.meta_agent.observer.detect_failure(error, context)
+            return self.meta_agent.handle_failure(failure_event)
+        except Exception as exc:
+            print(f"⚠️ Meta-agent repair failed: {exc}")
             return False
 
     def _start_continuous_self_healing(self):
@@ -2959,12 +3136,19 @@ class UnifiedSAMSystem:
                     if issue.get('auto_fix_possible', False):
                         if self.issue_resolver.attempt_auto_resolution(issue):
                             issues_found += 1
+                    else:
+                        # Escalate unresolved issues to meta-agent self-repair
+                        self._invoke_meta_agent_repair(Exception(issue.get('message', 'unknown_issue')),
+                                                       context="self_healing")
             
             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             for issue in connectivity_issues:
                 if self._attempt_component_recovery(issue.get('component', 'unknown'), issue.get('error', 'connectivity')):
                     issues_found += 1
+                else:
+                    self._invoke_meta_agent_repair(Exception(issue.get('error', 'connectivity')),
+                                                   context="connectivity")
                     
         except Exception as e:
             print(f"⚠️ Self-healing check error: {e}")
@@ -3075,7 +3259,7 @@ class UnifiedSAMSystem:
             ('Web Interface', self._initialize_web_interface_threaded, True),  # Critical
             ('Google Drive', self._initialize_google_drive_threaded, False),  # Non-critical
             ('Web Search', self._initialize_sam_web_search_threaded, False),  # Non-critical
-            ('Code Modifier', self._initialize_sam_code_modifier_threaded, False),  # Non-critical
+            ('Code Modifier', self._initialize_sam_code_modifier_threaded, self.require_self_mod),  # Critical if required
             ('Gmail', self._initialize_sam_gmail_threaded, False),  # Non-critical
             ('GitHub', self._initialize_sam_github_threaded, False),  # Non-critical
         ]
@@ -3456,6 +3640,29 @@ class UnifiedSAMSystem:
             'status': 'available',
             'connection_type': 'core'
         }
+
+        self.agent_configs['money_maker'] = {
+            'id': 'money_maker',
+            'name': 'Revenue Operator',
+            'type': 'SAM Agent',
+            'provider': 'sam',
+            'specialty': 'Real-world revenue strategy & execution planning',
+            'personality': 'practical, ROI-driven, compliance-aware, execution-focused',
+            'capabilities': [
+                'revenue_strategy',
+                'business_modeling',
+                'pricing_strategy',
+                'market_validation',
+                'lead_generation',
+                'sales_enablement',
+                'cost_optimization',
+                'risk_compliance'
+            ],
+            'execution_mode': 'advisory_only',
+            'requires_human_approval': True,
+            'status': 'available',
+            'connection_type': 'core'
+        }
         
         self.agent_configs['survival_agent'] = {
             'id': 'survival_agent',
@@ -3607,7 +3814,7 @@ class UnifiedSAMSystem:
                 print(f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing", flush=True)
         
         # Always connect core SAM agents (now expanded to 9 agents)
-        core_agents = ['researcher', 'code_writer', 'financial_analyst', 'survival_agent', 'meta_agent', 
+        core_agents = ['researcher', 'code_writer', 'financial_analyst', 'money_maker', 'survival_agent', 'meta_agent',
                       'creative_writer', 'data_analyst', 'ethics_advisor', 'project_manager']
         core_connected = 0
         for agent_id in core_agents:
@@ -3843,6 +4050,8 @@ class UnifiedSAMSystem:
         print("🛠️ Initializing SAM Code Modification System...")
 
         if not sam_code_modifier_available:
+            if getattr(self, "require_self_mod", False):
+                raise Exception("❌ CRITICAL: SAM code modifier required but unavailable")
             print("  ⚠️ SAM code modifier unavailable - skipping")
             return
 
@@ -3850,6 +4059,7 @@ class UnifiedSAMSystem:
             # Initialize with project root
             project_root = str(Path(__file__).parent)
             initialize_sam_code_modifier(project_root)
+            self.sam_code_modifier_ready = True
 
             print("  ✅ SAM code modification system initialized")
             print("  🔒 Safe self-modification enabled")
@@ -4569,6 +4779,251 @@ class UnifiedSAMSystem:
                 else:
                     return jsonify({'scheduled_emails': []})
 
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/action', methods=['POST'])
+        def revenue_submit_action():
+            """Submit a revenue action (approval required)."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                action_type = data.get('action_type')
+                payload = data.get('payload', {})
+                requested_by = data.get('requested_by', 'api')
+                requires_approval = bool(data.get('requires_approval', True))
+                if not action_type:
+                    return jsonify({'error': 'action_type required'}), 400
+                action = self.revenue_ops.submit_action(
+                    action_type=action_type,
+                    payload=payload,
+                    requested_by=requested_by,
+                    requires_approval=requires_approval,
+                )
+                return jsonify({'action': action.__dict__})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/queue')
+        def revenue_queue():
+            """List revenue actions."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                status = request.args.get('status')
+                return jsonify({'actions': self.revenue_ops.list_actions(status=status)})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/approve', methods=['POST'])
+        def revenue_approve():
+            """Approve a revenue action and execute."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                action_id = data.get('action_id')
+                approver = data.get('approver', 'operator')
+                auto_execute = bool(data.get('auto_execute', True))
+                if not action_id:
+                    return jsonify({'error': 'action_id required'}), 400
+                result = self.revenue_ops.approve_action(action_id, approver, auto_execute=auto_execute)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/reject', methods=['POST'])
+        def revenue_reject():
+            """Reject a revenue action."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                action_id = data.get('action_id')
+                approver = data.get('approver', 'operator')
+                reason = data.get('reason')
+                if not action_id:
+                    return jsonify({'error': 'action_id required'}), 400
+                result = self.revenue_ops.reject_action(action_id, approver, reason=reason)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/execute', methods=['POST'])
+        def revenue_execute():
+            """Execute a revenue action explicitly."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                action_id = data.get('action_id')
+                actor = data.get('actor', 'operator')
+                if not action_id:
+                    return jsonify({'error': 'action_id required'}), 400
+                result = self.revenue_ops.execute_action(action_id, actor)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/leads')
+        def revenue_leads():
+            """CRM snapshot."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                return jsonify(self.revenue_ops.get_crm_snapshot())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/sequences')
+        def revenue_sequences():
+            """Email sequences snapshot."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                snapshot = self.revenue_ops.get_sequence_snapshot()
+                status_filter = request.args.get('status')
+                if status_filter:
+                    snapshot['runs'] = [r for r in snapshot.get('runs', []) if r.get('status') == status_filter]
+                return jsonify(snapshot)
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/invoices')
+        def revenue_invoices():
+            """Invoices snapshot."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                return jsonify(self.revenue_ops.get_invoice_snapshot())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/audit')
+        def revenue_audit():
+            """Tail of revenue audit log."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                limit = int(request.args.get('limit', '50'))
+                if not self.revenue_audit_log.exists():
+                    return jsonify({'entries': []})
+                lines = self.revenue_audit_log.read_text(encoding='utf-8').splitlines()
+                entries = [json.loads(l) for l in lines[-limit:] if l.strip()]
+                return jsonify({'entries': entries})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/crm/export')
+        def revenue_crm_export():
+            """Export CRM leads as CSV."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                csv_text = self.revenue_ops.export_leads_csv()
+                return Response(
+                    csv_text,
+                    mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=crm_leads.csv"},
+                )
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/crm/import', methods=['POST'])
+        def revenue_crm_import():
+            """Import CRM leads from CSV content."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                csv_text = data.get('csv', '')
+                if not csv_text:
+                    return jsonify({'error': 'csv field required'}), 400
+                result = self.revenue_ops.import_leads_csv(csv_text)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/invoice/html', methods=['POST'])
+        def revenue_invoice_html():
+            """Generate invoice HTML."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                invoice_id = data.get('invoice_id')
+                payload = data.get('payload')
+                result = self.revenue_ops.generate_invoice_html(invoice_id=invoice_id, payload=payload)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/invoice/html')
+        def revenue_invoice_html_get():
+            """Download invoice HTML."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                invoice_id = request.args.get('invoice_id')
+                result = self.revenue_ops.generate_invoice_html(invoice_id=invoice_id, payload=None)
+                return Response(result['html'], mimetype="text/html")
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/invoice/pdf', methods=['POST'])
+        def revenue_invoice_pdf():
+            """Generate invoice PDF."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json()
+                invoice_id = data.get('invoice_id')
+                payload = data.get('payload')
+                result = self.revenue_ops.generate_invoice_pdf(invoice_id=invoice_id, payload=payload)
+                return jsonify({'result': result})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/invoice/pdf')
+        def revenue_invoice_pdf_get():
+            """Download invoice PDF."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                invoice_id = request.args.get('invoice_id')
+                download = request.args.get('download') == '1'
+                result = self.revenue_ops.generate_invoice_pdf(invoice_id=invoice_id, payload=None)
+                return send_file(result['pdf_path'], mimetype="application/pdf", as_attachment=download)
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/playbooks')
+        def revenue_playbooks():
+            """Get revenue ops playbook templates."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                return jsonify(self.revenue_ops.get_playbook_templates())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/revenue/playbooks/import', methods=['POST'])
+        def revenue_playbooks_import():
+            """Import playbook templates into CRM/sequences."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                data = request.get_json() or {}
+                create_sequences = bool(data.get('create_sequences', True))
+                create_leads = bool(data.get('create_leads', True))
+                limit_leads = int(data.get('limit_leads', 1))
+                result = self.revenue_ops.import_playbooks(
+                    create_sequences=create_sequences,
+                    create_leads=create_leads,
+                    limit_leads=limit_leads,
+                )
+                return jsonify({'result': result})
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
@@ -5322,6 +5777,16 @@ sam@terminal:~$
 • `/system-report <email>` - Send system status report via email
 • `/gmail-status` - Check Gmail integration status
 
+💰 **Revenue Ops Commands:**
+• `/revenue` - Show revenue ops help
+• `/revenue queue` - List pending actions
+• `/revenue approve <id>` - Approve + execute
+• `/revenue reject <id> [reason]` - Reject
+• `/revenue submit <type> <json>` - Submit action
+• `/revenue leads` - CRM snapshot
+• `/revenue invoices` - Invoice snapshot
+• `/revenue sequences` - Email sequences snapshot
+
 🐙 **GitHub Integration Commands:**
 • `/save-to-github [message]` - Save SAM system to GitHub repository
 • `/github-status` - Check GitHub integration and connection
@@ -5330,7 +5795,7 @@ sam@terminal:~$
 🧠 **Available Agent Types:**
 • **SAM Neural Networks**: sam_alpha, sam_beta (Research & Synthesis)
 • **LLM Models**: claude_sonnet, claude_haiku, gemini_pro, gpt4, gpt35_turbo, ollama_deepseek
-• **SAM Core Agents**: researcher, code_writer, financial_analyst, survival_agent, meta_agent
+• **SAM Core Agents**: researcher, code_writer, financial_analyst, money_maker, survival_agent, meta_agent
 
 🌐 **System Access:**
 • Dashboard: http://localhost:5004
@@ -5795,6 +6260,64 @@ sam@terminal:~$
 
             return status_info
 
+        # Revenue operations commands
+        elif cmd == '/revenue':
+            if not self.revenue_ops:
+                return "❌ Revenue ops not available"
+            if not args:
+                return (
+                    "💰 **Revenue Ops Commands**\n\n"
+                    "• `/revenue queue` - List pending actions\n"
+                    "• `/revenue approve <action_id>` - Approve + execute\n"
+                    "• `/revenue reject <action_id> [reason]` - Reject\n"
+                    "• `/revenue submit <action_type> <json_payload>` - Submit action\n"
+                    "• `/revenue leads` - Show CRM leads\n"
+                    "• `/revenue invoices` - Show invoices\n"
+                    "• `/revenue sequences` - Show email sequences\n"
+                )
+            sub = args[0]
+            if sub == 'queue':
+                actions = self.revenue_ops.list_actions(status="PENDING")
+                if not actions:
+                    return "✅ No pending revenue actions."
+                lines = ["📋 **Pending Revenue Actions**"]
+                for action in actions[:10]:
+                    lines.append(f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}")
+                return "\n".join(lines)
+            if sub == 'approve' and len(args) >= 2:
+                action_id = args[1]
+                result = self.revenue_ops.approve_action(action_id, approver="operator", auto_execute=True)
+                return f"✅ Approved: {action_id}\nStatus: {result.get('status')}"
+            if sub == 'reject' and len(args) >= 2:
+                action_id = args[1]
+                reason = " ".join(args[2:]) if len(args) > 2 else None
+                result = self.revenue_ops.reject_action(action_id, approver="operator", reason=reason)
+                return f"🚫 Rejected: {action_id}\nStatus: {result.get('status')}"
+            if sub == 'submit' and len(args) >= 3:
+                action_type = args[1]
+                payload_text = " ".join(args[2:])
+                try:
+                    payload = json.loads(payload_text)
+                except Exception:
+                    return "❌ Payload must be valid JSON."
+                action = self.revenue_ops.submit_action(
+                    action_type=action_type,
+                    payload=payload,
+                    requested_by="operator",
+                    requires_approval=True,
+                )
+                return f"📥 Submitted action {action.action_id} ({action.action_type})"
+            if sub == 'leads':
+                snapshot = self.revenue_ops.get_crm_snapshot()
+                return f"📈 Leads: {len(snapshot.get('leads', []))}"
+            if sub == 'invoices':
+                snapshot = self.revenue_ops.get_invoice_snapshot()
+                return f"🧾 Invoices: {len(snapshot.get('invoices', []))}"
+            if sub == 'sequences':
+                snapshot = self.revenue_ops.get_sequence_snapshot()
+                return f"📨 Sequences: {len(snapshot.get('sequences', []))} | Runs: {len(snapshot.get('runs', []))}"
+            return "❌ Unknown revenue subcommand."
+
         # GitHub integration commands
         elif cmd == '/save-to-github':
             if not sam_github_available:
@@ -5953,6 +6476,262 @@ sam@terminal:~$
                     });
                 }
 
+                let revenueRuns = [];
+
+                async function updateRevenueOps() {
+                    try {
+                        const [queueResp, auditResp, invoiceResp, sequencesResp] = await Promise.all([
+                            fetch('/api/revenue/queue?status=PENDING'),
+                            fetch('/api/revenue/audit?limit=25'),
+                            fetch('/api/revenue/invoices'),
+                            fetch('/api/revenue/sequences')
+                        ]);
+                        if (queueResp.ok) {
+                            const queueData = await queueResp.json();
+                            renderRevenueQueue(queueData.actions || []);
+                        }
+                        if (auditResp.ok) {
+                            const auditData = await auditResp.json();
+                            renderRevenueAudit(auditData.entries || []);
+                        }
+                        if (invoiceResp.ok) {
+                            const invoiceData = await invoiceResp.json();
+                            renderRevenueInvoices(invoiceData.invoices || []);
+                        }
+                        if (sequencesResp.ok) {
+                            const seqData = await sequencesResp.json();
+                            revenueRuns = seqData.runs || [];
+                            renderRevenueRuns(revenueRuns);
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch revenue ops:', error);
+                    }
+                }
+
+                function renderRevenueQueue(actions) {
+                    const container = document.getElementById('revenue-queue');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    if (!actions.length) {
+                        container.innerHTML = '<div class="revenue-empty">No pending actions</div>';
+                        return;
+                    }
+                    actions.forEach(action => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-row';
+                        row.innerHTML = `
+                            <div>
+                                <div class="revenue-title">${escapeHtml(action.action_type)}</div>
+                                <div class="revenue-meta">${escapeHtml(action.action_id)} • ${escapeHtml(action.requested_by)}</div>
+                            </div>
+                            <div class="revenue-actions">
+                                <button onclick="approveRevenue('${action.action_id}')">Approve</button>
+                                <button class="ghost" onclick="rejectRevenue('${action.action_id}')">Reject</button>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                function renderRevenueAudit(entries) {
+                    const container = document.getElementById('revenue-audit');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    if (!entries.length) {
+                        container.innerHTML = '<div class="revenue-empty">No audit entries</div>';
+                        return;
+                    }
+                    entries.forEach(entry => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-audit-row';
+                        row.innerHTML = `
+                            <div class="revenue-meta">${escapeHtml(entry.timestamp || '')}</div>
+                            <div class="revenue-title">${escapeHtml(entry.event || '')}: ${escapeHtml(entry.action?.action_type || '')}</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                function renderRevenueInvoices(invoices) {
+                    const container = document.getElementById('revenue-invoices');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    if (!invoices.length) {
+                        container.innerHTML = '<div class="revenue-empty">No invoices</div>';
+                        return;
+                    }
+                    invoices.forEach(inv => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-row';
+                        row.innerHTML = `
+                            <div>
+                                <div class="revenue-title">${escapeHtml(inv.invoice_id || 'invoice')}</div>
+                                <div class="revenue-meta">${escapeHtml(inv.client || '')} • ${escapeHtml(inv.status || '')}</div>
+                            </div>
+                            <div class="revenue-actions">
+                                <button onclick="openInvoiceHtml('${inv.invoice_id}')">HTML</button>
+                                <button class="ghost" onclick="openInvoicePdf('${inv.invoice_id}')">PDF</button>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                function renderRevenueRuns(runs) {
+                    const container = document.getElementById('revenue-runs');
+                    if (!container) return;
+                    const filter = document.getElementById('revenue-run-filter');
+                    let filtered = runs;
+                    if (filter && filter.value && filter.value !== 'all') {
+                        filtered = runs.filter(r => r.status === filter.value);
+                    }
+                    container.innerHTML = '';
+                    if (!filtered.length) {
+                        container.innerHTML = '<div class="revenue-empty">No sequence runs</div>';
+                        return;
+                    }
+                    filtered.forEach(run => {
+                        const row = document.createElement('div');
+                        row.className = 'revenue-row';
+                        row.innerHTML = `
+                            <div>
+                                <div class="revenue-title">${escapeHtml(run.sequence_id || 'sequence')}</div>
+                                <div class="revenue-meta">${escapeHtml(run.to_email || '')} • ${escapeHtml(run.status || '')}</div>
+                            </div>
+                            <div class="revenue-meta">step ${run.current_step || 0}</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                async function approveRevenue(actionId) {
+                    await fetch('/api/revenue/approve', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({action_id: actionId, approver: 'operator'})
+                    });
+                    updateRevenueOps();
+                }
+
+                async function rejectRevenue(actionId) {
+                    await fetch('/api/revenue/reject', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({action_id: actionId, approver: 'operator', reason: 'UI reject'})
+                    });
+                    updateRevenueOps();
+                }
+
+                async function submitRevenueAction() {
+                    const type = document.getElementById('revenue-action-type').value.trim();
+                    const payloadText = document.getElementById('revenue-action-payload').value.trim();
+                    if (!type || !payloadText) {
+                        alert('Action type and payload are required.');
+                        return;
+                    }
+                    let payload;
+                    try {
+                        payload = JSON.parse(payloadText);
+                    } catch (e) {
+                        alert('Payload must be valid JSON.');
+                        return;
+                    }
+                    await fetch('/api/revenue/action', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({action_type: type, payload, requested_by: 'ui'})
+                    });
+                    updateRevenueOps();
+                }
+
+                function exportCRM() {
+                    window.open('/api/revenue/crm/export', '_blank');
+                }
+
+                async function importCRM() {
+                    const csvText = document.getElementById('crm-import-text').value.trim();
+                    if (!csvText) {
+                        alert('Paste CSV data first.');
+                        return;
+                    }
+                    await fetch('/api/revenue/crm/import', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({csv: csvText})
+                    });
+                    alert('CRM import queued.');
+                }
+
+                async function generateInvoiceHtml() {
+                    const invoiceId = document.getElementById('invoice-id').value.trim();
+                    if (!invoiceId) {
+                        alert('Enter an invoice ID.');
+                        return;
+                    }
+                    openInvoiceHtml(invoiceId);
+                }
+
+                async function generateInvoicePdf() {
+                    const invoiceId = document.getElementById('invoice-id').value.trim();
+                    if (!invoiceId) {
+                        alert('Enter an invoice ID.');
+                        return;
+                    }
+                    openInvoicePdf(invoiceId);
+                }
+
+                function openInvoiceHtml(invoiceId) {
+                    const frame = document.getElementById('invoice-preview');
+                    if (frame) {
+                        frame.src = `/api/revenue/invoice/html?invoice_id=${invoiceId}`;
+                    } else {
+                        window.open(`/api/revenue/invoice/html?invoice_id=${invoiceId}`, '_blank');
+                    }
+                }
+
+                function openInvoicePdf(invoiceId) {
+                    const frame = document.getElementById('invoice-preview');
+                    if (frame) {
+                        frame.src = `/api/revenue/invoice/pdf?invoice_id=${invoiceId}`;
+                    } else {
+                        window.open(`/api/revenue/invoice/pdf?invoice_id=${invoiceId}`, '_blank');
+                    }
+                }
+
+                function downloadInvoicePdf(invoiceId) {
+                    window.open(`/api/revenue/invoice/pdf?invoice_id=${invoiceId}&download=1`, '_blank');
+                }
+
+                async function loadRevenuePlaybooks() {
+                    const target = document.getElementById('revenue-playbooks');
+                    if (!target) return;
+                    try {
+                        const resp = await fetch('/api/revenue/playbooks');
+                        if (!resp.ok) {
+                            target.value = 'Failed to load playbooks.';
+                            return;
+                        }
+                        const data = await resp.json();
+                        target.value = JSON.stringify(data, null, 2);
+                    } catch (e) {
+                        target.value = 'Playbook fetch error.';
+                    }
+                }
+
+                async function importRevenuePlaybooks() {
+                    try {
+                        await fetch('/api/revenue/playbooks/import', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({create_sequences: true, create_leads: true, limit_leads: 1})
+                        });
+                        updateRevenueOps();
+                        alert('Playbooks imported.');
+                    } catch (e) {
+                        alert('Playbook import failed.');
+                    }
+                }
+
                 function appendMessage(role, name, text) {
                     const messages = document.getElementById('chat-messages');
                     const wrapper = document.createElement('div');
@@ -5993,6 +6772,8 @@ sam@terminal:~$
 
                 setInterval(updateAgents, 5000);
                 updateAgents();
+                setInterval(updateRevenueOps, 10000);
+                updateRevenueOps();
         '''
 
         html = f"""
@@ -6295,6 +7076,103 @@ sam@terminal:~$
                 .chat-input button:hover {{
                     transform: translateY(-1px);
                 }}
+                .revenue-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                    gap: 20px;
+                }}
+                .revenue-row {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    background: rgba(255, 255, 255, 0.04);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    margin-bottom: 8px;
+                }}
+                .revenue-title {{
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                }}
+                .revenue-meta {{
+                    font-size: 0.72rem;
+                    color: var(--muted);
+                }}
+                .revenue-actions button {{
+                    padding: 6px 10px;
+                    border-radius: 10px;
+                    border: none;
+                    background: var(--accent);
+                    color: #041018;
+                    font-weight: 600;
+                    cursor: pointer;
+                    margin-left: 6px;
+                }}
+                .revenue-actions button.ghost {{
+                    background: transparent;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    color: var(--text);
+                }}
+                .revenue-empty {{
+                    padding: 12px;
+                    color: var(--muted);
+                    border: 1px dashed rgba(255, 255, 255, 0.2);
+                    border-radius: 12px;
+                    text-align: center;
+                }}
+                .revenue-form textarea {{
+                    width: 100%;
+                    min-height: 90px;
+                    background: #0c111c;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
+                    padding: 10px;
+                    color: var(--text);
+                    font-size: 0.85rem;
+                    margin-top: 8px;
+                    white-space: pre;
+                }}
+                .revenue-form input {{
+                    width: 100%;
+                    background: #0c111c;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
+                    padding: 10px;
+                    color: var(--text);
+                    font-size: 0.85rem;
+                    margin-top: 8px;
+                }}
+                .revenue-grid select {{
+                    background: #0c111c;
+                    color: var(--text);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 10px;
+                    padding: 6px 8px;
+                }}
+                .revenue-form button {{
+                    margin-top: 10px;
+                }}
+                .revenue-audit {{
+                    max-height: 160px;
+                    overflow-y: auto;
+                    display: grid;
+                    gap: 8px;
+                }}
+                .revenue-audit-row {{
+                    padding: 8px 10px;
+                    border-radius: 10px;
+                    background: rgba(255, 255, 255, 0.04);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                }}
+                .invoice-preview {{
+                    width: 100%;
+                    min-height: 280px;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
+                    background: #0c111c;
+                    margin-top: 12px;
+                }}
                 @keyframes rise {{
                     from {{ opacity: 0; transform: translateY(12px); }}
                     to {{ opacity: 1; transform: translateY(0); }}
@@ -6410,6 +7288,65 @@ sam@terminal:~$
                             <button onclick="sendMessage()">Send</button>
                         </div>
                     </section>
+
+                    <section class="revenue-grid">
+                        <div class="card">
+                            <h3>💰 Revenue Ops Queue</h3>
+                            <div id="revenue-queue" class="revenue-list"></div>
+                        </div>
+                        <div class="card">
+                            <h3>🧾 Invoices</h3>
+                            <div id="revenue-invoices" class="revenue-list"></div>
+                            <iframe id="invoice-preview" class="invoice-preview" title="Invoice preview"></iframe>
+                            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                                <button onclick="generateInvoiceHtml()">Preview HTML</button>
+                                <button class="ghost" onclick="downloadInvoicePdf(document.getElementById('invoice-id').value.trim())">Download PDF</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>📨 Sequence Runs</h3>
+                            <div style="margin-bottom:8px; display:flex; gap:8px; align-items:center;">
+                                <label style="font-size:0.8rem; color:var(--muted);">Filter</label>
+                                <select id="revenue-run-filter" onchange="renderRevenueRuns(revenueRuns)">
+                                    <option value="all">All</option>
+                                    <option value="active">Active</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="failed">Failed</option>
+                                </select>
+                            </div>
+                            <div id="revenue-runs" class="revenue-list"></div>
+                        </div>
+                        <div class="card revenue-form">
+                            <h3>Revenue Ops Actions</h3>
+                            <label>Action Type</label>
+                            <input id="revenue-action-type" placeholder="create_lead / create_invoice / schedule_sequence" />
+                            <label>Payload (JSON)</label>
+                            <textarea id="revenue-action-payload" placeholder='{{"name":"Lead","email":"lead@company.com"}}'></textarea>
+                            <button onclick="submitRevenueAction()">Submit for Approval</button>
+                            <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+                                <button onclick="exportCRM()">Export CRM CSV</button>
+                                <button class="ghost" onclick="importCRM()">Import CRM CSV</button>
+                            </div>
+                            <textarea id="crm-import-text" placeholder="Paste CRM CSV here"></textarea>
+                            <div style="margin-top:16px;">
+                                <label>Invoice ID</label>
+                                <input id="invoice-id" placeholder="inv_xxxxx" />
+                                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                                    <button onclick="generateInvoiceHtml()">Open Invoice HTML</button>
+                                    <button class="ghost" onclick="generateInvoicePdf()">Open Invoice PDF</button>
+                                </div>
+                            </div>
+                            <h4 style="margin-top:18px;">Audit Trail</h4>
+                            <div id="revenue-audit" class="revenue-audit"></div>
+                            <h4 style="margin-top:18px;">Playbook Templates</h4>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <button class="ghost" onclick="loadRevenuePlaybooks()">Load Playbooks</button>
+                                <button onclick="importRevenuePlaybooks()">Import Playbooks</button>
+                            </div>
+                            <textarea id="revenue-playbooks" placeholder="Playbook JSON will appear here"></textarea>
+                        </div>
+                    </section>
                 </main>
             </div>
 
@@ -6420,6 +7357,56 @@ sam@terminal:~$
         </html>
         """
         return html
+
+    def _start_revenue_autoplanner(self):
+        """Start revenue auto-planner loop (creates actions, waits for approval)."""
+        if not self.revenue_ops:
+            return
+
+        def auto_plan_loop():
+            while not is_shutting_down():
+                try:
+                    with shutdown_guard("revenue auto-planner"):
+                        pending = self.revenue_ops.list_actions(status="PENDING")
+                        if len(pending) < self.revenue_autoplanner_max_pending:
+                            actions = self.revenue_ops.autoplan(
+                                max_actions=self.revenue_autoplanner_max_pending,
+                                default_sequence_id=self.revenue_autoplanner_sequence_id,
+                                requested_by="revenue_autoplanner",
+                            )
+                            if actions:
+                                print(f"💰 Revenue auto-planner queued {len(actions)} action(s)", flush=True)
+                except InterruptedError:
+                    break
+                except Exception as exc:
+                    print(f"⚠️ Revenue auto-planner error: {exc}", flush=True)
+                time.sleep(self.revenue_autoplanner_interval_s)
+
+        self.revenue_autoplanner_thread = threading.Thread(target=auto_plan_loop, daemon=True)
+        self.revenue_autoplanner_thread.start()
+        print("✅ Revenue auto-planner active (approval required)", flush=True)
+
+    def _start_revenue_sequence_executor(self):
+        """Start revenue sequence executor loop (sends scheduled emails)."""
+        if not self.revenue_ops:
+            return
+
+        def executor_loop():
+            while not is_shutting_down():
+                try:
+                    with shutdown_guard("revenue sequence executor"):
+                        result = self.revenue_ops.process_sequence_runs()
+                        if result.get("sent"):
+                            print(f"📨 Revenue sequences sent: {result['sent']}", flush=True)
+                except InterruptedError:
+                    break
+                except Exception as exc:
+                    print(f"⚠️ Revenue sequence executor error: {exc}", flush=True)
+                time.sleep(self.revenue_sequence_executor_interval_s)
+
+        thread = threading.Thread(target=executor_loop, daemon=True)
+        thread.start()
+        print("✅ Revenue sequence executor active", flush=True)
 
     def _start_monitoring_system(self):
         """Start background monitoring system with autonomous operation"""

@@ -255,6 +255,7 @@ class CompleteSAMSystem:
                 "researcher": {"name": "Researcher", "type": "SAM Core Agent", "status": "available"},
                 "code_writer": {"name": "Code Writer", "type": "SAM Core Agent", "status": "available"},
                 "financial_analyst": {"name": "Financial Analyst", "type": "SAM Core Agent", "status": "available"},
+                "money_maker": {"name": "Revenue Operator", "type": "SAM Core Agent", "status": "available"},
                 "survival_agent": {"name": "Survival Agent", "type": "SAM Core Agent", "status": "available"},
                 "meta_agent": {"name": "Meta Agent", "type": "SAM Core Agent", "status": "available"}
             }
@@ -877,7 +878,7 @@ class CompleteSAMSystem:
 🧠 **Available Agent Types:**
 • **SAM Neural Networks**: sam_alpha, sam_beta (Research & Synthesis)
 • **LLM Models**: claude_sonnet, claude_haiku, gemini_pro, gpt4, gpt35_turbo, ollama_deepseek
-• **SAM Core Agents**: researcher, code_writer, financial_analyst, survival_agent, meta_agent
+• **SAM Core Agents**: researcher, code_writer, financial_analyst, money_maker, survival_agent, meta_agent
 
 🌐 **System Access:**
 • Dashboard: http://localhost:5004

@@ -104,7 +104,7 @@ def run_groupchat(messages, wait_s: int = 45):
 
 def main():
     parser = argparse.ArgumentParser(description="Live groupchat soak test with distillation verification")
-    parser.add_argument("--teacher", default=os.getenv("SAM_TEACHER_POOL", "ollama:qwen2.5-coder:7b"))
+    parser.add_argument("--teacher", default=os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"))
     parser.add_argument("--distill-path", default=os.getenv("SAM_DISTILL_PATH", "training/distilled/groupchat.jsonl"))
     parser.add_argument("--wait", type=int, default=60)
     parser.add_argument("--messages", type=int, default=2)

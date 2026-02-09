@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAM + Ollama Chatbot - Web Interface</title>
+    <title>SAM 2.0 Unified System</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg-base: #f6f1ea;
+            --bg-soft: #fbf7f1;
+            --ink: #151515;
+            --ink-soft: #4b4b4b;
+            --accent: #1f7a6d;
+            --accent-bright: #26a69a;
+            --accent-warm: #f2b94f;
+            --panel: #ffffff;
+            --panel-edge: #e6e0d8;
+            --danger: #d33c3c;
+            --success: #1f7a6d;
+            --shadow: 0 20px 60px rgba(21, 21, 21, 0.12);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,91 +29,212 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at top left, #ffffff 0%, #f6f1ea 45%, #efe8dd 100%);
+            color: var(--ink);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            padding: 24px;
         }
 
-        .chat-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-            height: 600px;
+        .app-shell {
+            display: grid;
+            grid-template-columns: minmax(240px, 320px) 1fr;
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .system-panel {
+            background: var(--panel);
+            border-radius: 24px;
+            border: 1px solid var(--panel-edge);
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            gap: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--ink-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-pill {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f0ebe3;
+            color: var(--ink-soft);
+        }
+
+        .status-pill.active {
+            background: rgba(31, 122, 109, 0.15);
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .panel-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ink-soft);
+        }
+
+        .status-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-item {
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+
+        .status-item.active {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-item.inactive {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .capability-list {
+            font-size: 13px;
+            color: var(--ink-soft);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .capability-list span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .capability-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .chat-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: calc(100vh - 48px);
         }
 
         .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 20px 20px 0 0;
+            background: var(--panel);
+            border-radius: 24px;
+            border: 1px solid var(--panel-edge);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
         }
 
         .chat-header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
         .chat-header p {
             font-size: 14px;
-            opacity: 0.9;
+            color: var(--ink-soft);
         }
 
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background: #4CAF50;
-            border-radius: 50%;
-            margin-left: 10px;
-            animation: pulse 2s infinite;
+        .header-metrics {
+            display: flex;
+            gap: 16px;
+            font-family: 'IBM Plex Mono', monospace;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .metric {
+            background: #f5efe6;
+            padding: 10px 12px;
+            border-radius: 14px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 11px;
+            color: var(--ink-soft);
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .chat-container {
+            background: var(--panel);
+            border-radius: 24px;
+            border: 1px solid var(--panel-edge);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1;
         }
 
         .model-status {
-            padding: 10px 20px;
-            background: #f0f0f0;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            background: #f5efe6;
+            border-bottom: 1px solid var(--panel-edge);
             font-size: 12px;
-            color: #666;
-        }
-
-        .model-status .status-item {
-            display: inline-block;
-            margin-right: 15px;
-        }
-
-        .model-status .status-item.active {
-            color: #4CAF50;
-        }
-
-        .model-status .status-item.inactive {
-            color: #f44336;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .chat-messages {
             flex: 1;
-            padding: 20px;
+            padding: 24px;
             overflow-y: auto;
-            background: #f8f9fa;
+            background: var(--bg-soft);
         }
 
         .message {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             display: flex;
             align-items: flex-start;
         }
@@ -105,74 +243,69 @@
             justify-content: flex-end;
         }
 
-        .message.bot {
-            justify-content: flex-start;
-        }
-
         .message-content {
             max-width: 70%;
-            padding: 12px 16px;
+            padding: 14px 18px;
             border-radius: 18px;
             word-wrap: break-word;
+            line-height: 1.4;
         }
 
         .message.user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--accent);
+            color: #ffffff;
             margin-left: auto;
         }
 
         .message.bot .message-content {
-            background: white;
-            color: #333;
-            border: 1px solid #e0e0e0;
-            margin-right: auto;
+            background: #ffffff;
+            color: var(--ink);
+            border: 1px solid var(--panel-edge);
         }
 
         .message-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            margin: 0 10px;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            margin: 0 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 600;
         }
 
         .message.user .message-avatar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--accent-bright);
+            color: #ffffff;
             order: 1;
         }
 
         .message.bot .message-avatar {
-            background: #4CAF50;
-            color: white;
+            background: #f2b94f;
+            color: #1b1b1b;
         }
 
         .message-time {
             font-size: 11px;
-            opacity: 0.7;
-            margin-top: 5px;
+            opacity: 0.6;
+            margin-top: 6px;
         }
 
         .evaluation {
             font-size: 11px;
-            color: #666;
-            margin-top: 5px;
-            padding: 5px;
-            background: #f0f0f0;
-            border-radius: 5px;
-            font-style: italic;
+            color: var(--ink-soft);
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: #f5efe6;
+            border-radius: 10px;
+            font-family: 'IBM Plex Mono', monospace;
         }
 
         .chat-input {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            border-radius: 0 0 20px 20px;
+            padding: 18px 20px;
+            background: #ffffff;
+            border-top: 1px solid var(--panel-edge);
         }
 
         .input-container {
@@ -183,32 +316,33 @@
         .chat-input input {
             flex: 1;
             padding: 12px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 25px;
+            border: 1px solid var(--panel-edge);
+            border-radius: 14px;
             font-size: 14px;
             outline: none;
             transition: border-color 0.3s;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .chat-input input:focus {
-            border-color: #667eea;
+            border-color: var(--accent);
         }
 
         .chat-input button {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px 20px;
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 14px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .chat-input button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(31, 122, 109, 0.2);
         }
 
         .chat-input button:disabled {
@@ -217,10 +351,33 @@
             transform: none;
         }
 
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 8px 14px;
+            background: #f5efe6;
+            color: var(--ink-soft);
+            border: 1px solid var(--panel-edge);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .controls button:hover {
+            background: #efe5d6;
+        }
+
         .typing-indicator {
             display: none;
             align-items: center;
-            margin-bottom: 15px;
+            margin: 0 24px 12px;
+            gap: 10px;
         }
 
         .typing-indicator.show {
@@ -233,9 +390,9 @@
         }
 
         .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: #667eea;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
             border-radius: 50%;
             animation: typing 1.4s infinite;
         }
@@ -250,106 +407,156 @@
 
         @keyframes typing {
             0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .controls button {
-            padding: 8px 16px;
-            background: #f0f0f0;
-            color: #666;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background-color 0.2s;
-        }
-
-        .controls button:hover {
-            background: #e0e0e0;
+            30% { transform: translateY(-6px); }
         }
 
         .error-message {
-            color: #f44336;
-            padding: 10px;
-            background: #ffebee;
-            border-radius: 5px;
-            margin: 10px 0;
+            color: var(--danger);
+            padding: 8px 12px;
+            background: #fff3f3;
+            border-radius: 10px;
+            margin-top: 6px;
             font-size: 12px;
         }
 
-        @media (max-width: 600px) {
-            .chat-container {
-                height: 100vh;
-                border-radius: 0;
-                max-width: 100%;
+        @media (max-width: 960px) {
+            .app-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-panel {
+                height: auto;
             }
 
             .chat-header {
-                border-radius: 0;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-metrics {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+
+            .chat-container {
+                border-radius: 18px;
             }
 
             .message-content {
                 max-width: 85%;
             }
-
-            .chat-input {
-                border-radius: 0;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>SAM + Ollama Chatbot</h1>
-            <p>Trained SAM responds, Ollama evaluates quality</p>
-            <span class="status-indicator"></span>
-        </div>
-
-        <div class="model-status">
-            <span class="status-item active" id="sam-status">SAM Model: ✅</span>
-            <span class="status-item active" id="ollama-status">Ollama: ✅</span>
-            <span class="status-item" id="connection-status">Server: 🔄</span>
-        </div>
-
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                <div class="message-avatar">🧠</div>
-                <div>
-                    <div class="message-content">
-                        Hello! I'm your SAM + Ollama Chatbot. I've been trained to answer questions correctly, and Ollama evaluates my responses for quality. Ask me anything!
-                    </div>
-                    <div class="message-time">Just now</div>
+    <div class="app-shell">
+        <aside class="system-panel">
+            <div class="brand">
+                <div class="brand-title">🤖 Agent Ecosystem</div>
+                <div class="brand-subtitle">SAM 2.0 Unified Complete System</div>
+                <div class="status-row">
+                    <span class="status-pill active">Status: ACTIVE</span>
+                    <span class="status-pill">Zero Fallbacks: ✅</span>
+                    <span class="status-pill">Production Ready: ✅</span>
                 </div>
             </div>
-        </div>
 
-        <div class="typing-indicator" id="typingIndicator">
-            <div class="message-avatar">🧠</div>
-            <div class="typing-dots">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
+            <div class="panel-section">
+                <h3>System Components</h3>
+                <div class="status-grid">
+                    <span class="status-item active" id="sam-status">SAM Model: ✅</span>
+                    <span class="status-item" id="ollama-status">Ollama: ✅</span>
+                    <span class="status-item" id="connection-status">Server: 🔄</span>
+                    <span class="status-item">C AGI Core: Initializing</span>
+                    <span class="status-item">Python Orchestration: Awaiting</span>
+                    <span class="status-item">Web Interface: Active</span>
+                </div>
             </div>
-        </div>
 
-        <div class="chat-input">
-            <div class="input-container">
-                <input type="text" id="messageInput" placeholder="Ask SAM a question..." autocomplete="off">
-                <button id="sendButton">Send</button>
+            <div class="panel-section">
+                <h3>AGI Capabilities</h3>
+                <div class="capability-list">
+                    <span><span class="capability-dot"></span>Consciousness Core (C 64×16)</span>
+                    <span><span class="capability-dot"></span>Multi-Agent: 5 Specialized Agents</span>
+                    <span><span class="capability-dot"></span>Prebuilt Models: Coherency / Teacher / Bug-Fixing</span>
+                    <span><span class="capability-dot"></span>Survival Score Monitor</span>
+                </div>
             </div>
-            <div class="controls">
-                <button id="clearButton">Clear Chat</button>
-                <button id="saveButton">Save Chat</button>
-                <button id="statusButton">Status</button>
+
+            <div class="panel-section">
+                <h3>Quick Commands</h3>
+                <div class="capability-list">
+                    <span><span class="capability-dot"></span>/status · /agents · /start</span>
+                    <span><span class="capability-dot"></span>/research · /code · /modify-code</span>
+                    <span><span class="capability-dot"></span>/save-to-github · /system-report</span>
+                </div>
             </div>
-        </div>
+        </aside>
+
+        <section class="chat-panel">
+            <header class="chat-header">
+                <div>
+                    <h1>🧠 SAM Chat Interface</h1>
+                    <p>Live groupchat with evaluation + distillation loop.</p>
+                </div>
+                <div class="header-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Active Agents</span>
+                        <span class="metric-value" id="agent-count">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Survival Score</span>
+                        <span class="metric-value" id="survival-score">1.00</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-container">
+                <div class="model-status">
+                    <span class="status-item active" id="sam-status">SAM Model: ✅</span>
+                    <span class="status-item" id="ollama-status">Ollama: ✅</span>
+                    <span class="status-item" id="connection-status">Server: 🔄</span>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot">
+                        <div class="message-avatar">🧠</div>
+                        <div>
+                            <div class="message-content">
+                                Welcome to SAM 2.0. Live orchestration is enabled. Ask a question, or issue a command.
+                            </div>
+                            <div class="message-time">Just now</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar">🧠</div>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+
+                <div class="chat-input">
+                    <div class="input-container">
+                        <input type="text" id="messageInput" placeholder="Ask SAM a question..." autocomplete="off">
+                        <button id="sendButton">Send</button>
+                    </div>
+                    <div class="controls">
+                        <button id="clearButton">Clear Chat</button>
+                        <button id="saveButton">Save Chat</button>
+                        <button id="statusButton">Status</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -362,13 +569,15 @@
                 this.saveButton = document.getElementById('saveButton');
                 this.statusButton = document.getElementById('statusButton');
                 this.typingIndicator = document.getElementById('typingIndicator');
-                this.samStatus = document.getElementById('sam-status');
-                this.ollamaStatus = document.getElementById('ollama-status');
-                this.connectionStatus = document.getElementById('connection-status');
-                
+                this.samStatus = document.querySelectorAll('#sam-status');
+                this.ollamaStatus = document.querySelectorAll('#ollama-status');
+                this.connectionStatus = document.querySelectorAll('#connection-status');
+                this.agentCount = document.getElementById('agent-count');
+                this.survivalScore = document.getElementById('survival-score');
+
                 this.messageHistory = [];
                 this.isTyping = false;
-                
+
                 this.initEventListeners();
                 this.checkServerStatus();
             }
@@ -380,7 +589,7 @@
                         this.sendMessage();
                     }
                 });
-                
+
                 this.clearButton.addEventListener('click', () => this.clearChat());
                 this.saveButton.addEventListener('click', () => this.saveChat());
                 this.statusButton.addEventListener('click', () => this.showStatus());
@@ -390,29 +599,36 @@
                 try {
                     const response = await fetch('/api/status');
                     const data = await response.json();
-                    
-                    if (data.sam_available) {
-                        this.samStatus.className = 'status-item active';
-                        this.samStatus.textContent = 'SAM Model: ✅';
-                    } else {
-                        this.samStatus.className = 'status-item inactive';
-                        this.samStatus.textContent = 'SAM Model: ❌';
+
+                    const samOkay = data.sam_available;
+                    const ollamaOkay = data.ollama_available;
+
+                    this.samStatus.forEach((el) => {
+                        el.className = samOkay ? 'status-item active' : 'status-item inactive';
+                        el.textContent = samOkay ? 'SAM Model: ✅' : 'SAM Model: ❌';
+                    });
+
+                    this.ollamaStatus.forEach((el) => {
+                        el.className = ollamaOkay ? 'status-item active' : 'status-item inactive';
+                        el.textContent = ollamaOkay ? 'Ollama: ✅' : 'Ollama: ❌';
+                    });
+
+                    this.connectionStatus.forEach((el) => {
+                        el.className = 'status-item active';
+                        el.textContent = 'Server: ✅';
+                    });
+
+                    if (typeof data.active_agents === 'number') {
+                        this.agentCount.textContent = data.active_agents;
                     }
-                    
-                    if (data.ollama_available) {
-                        this.ollamaStatus.className = 'status-item active';
-                        this.ollamaStatus.textContent = 'Ollama: ✅';
-                    } else {
-                        this.ollamaStatus.className = 'status-item inactive';
-                        this.ollamaStatus.textContent = 'Ollama: ❌';
+                    if (data.survival_score !== undefined) {
+                        this.survivalScore.textContent = Number(data.survival_score).toFixed(2);
                     }
-                    
-                    this.connectionStatus.className = 'status-item active';
-                    this.connectionStatus.textContent = 'Server: ✅';
-                    
                 } catch (error) {
-                    this.connectionStatus.className = 'status-item inactive';
-                    this.connectionStatus.textContent = 'Server: ❌';
+                    this.connectionStatus.forEach((el) => {
+                        el.className = 'status-item inactive';
+                        el.textContent = 'Server: ❌';
+                    });
                     console.error('Server status check failed:', error);
                 }
             }
@@ -421,36 +637,27 @@
                 const message = this.messageInput.value.trim();
                 if (!message || this.isTyping) return;
 
-                // Add user message
                 this.addMessage(message, 'user');
                 this.messageInput.value = '';
-                
-                // Show typing indicator
                 this.showTypingIndicator();
-                
+
                 try {
-                    // Send message to server
                     const response = await fetch('/api/chat', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: message })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (response.ok) {
-                        // Hide typing indicator
                         this.hideTypingIndicator();
-                        
-                        // Add SAM response with evaluation
                         this.addMessageWithEvaluation(data.message, data.evaluation, 'bot');
                     } else {
                         this.hideTypingIndicator();
                         this.addMessage(`Error: ${data.error}`, 'bot', true);
                     }
-                    
+
                 } catch (error) {
                     this.hideTypingIndicator();
                     this.addMessage(`Connection error: ${error.message}`, 'bot', true);
@@ -461,17 +668,17 @@
             addMessage(content, sender, isError = false) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                
+
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
                 avatar.textContent = sender === 'user' ? '👤' : '🧠';
-                
+
                 const messageContent = document.createElement('div');
                 messageContent.innerHTML = `
                     <div class="message-content ${isError ? 'error-message' : ''}">${content}</div>
                     <div class="message-time">${this.getCurrentTime()}</div>
                 `;
-                
+
                 if (sender === 'user') {
                     messageDiv.appendChild(messageContent);
                     messageDiv.appendChild(avatar);
@@ -479,41 +686,38 @@
                     messageDiv.appendChild(avatar);
                     messageDiv.appendChild(messageContent);
                 }
-                
+
                 this.chatMessages.appendChild(messageDiv);
                 this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                
-                // Add to history
                 this.messageHistory.push({ content, sender, timestamp: Date.now() });
             }
 
             addMessageWithEvaluation(content, evaluation, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
-                
+
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
                 avatar.textContent = '🧠';
-                
+
                 const messageContent = document.createElement('div');
                 messageContent.innerHTML = `
                     <div class="message-content">${content}</div>
-                    <div class="evaluation">📊 Ollama Evaluation: ${evaluation}</div>
+                    <div class="evaluation">📊 Evaluation: ${evaluation}</div>
                     <div class="message-time">${this.getCurrentTime()}</div>
                 `;
-                
+
                 messageDiv.appendChild(avatar);
                 messageDiv.appendChild(messageContent);
-                
+
                 this.chatMessages.appendChild(messageDiv);
                 this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                
-                // Add to history
-                this.messageHistory.push({ 
-                    content, 
-                    evaluation, 
-                    sender, 
-                    timestamp: Date.now() 
+
+                this.messageHistory.push({
+                    content,
+                    evaluation,
+                    sender,
+                    timestamp: Date.now()
                 });
             }
 
@@ -528,60 +732,24 @@
                 this.typingIndicator.classList.remove('show');
             }
 
-            async clearChat() {
-                try {
-                    const response = await fetch('/api/clear');
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        // Clear messages except the first bot message
-                        while (this.chatMessages.children.length > 1) {
-                            this.chatMessages.removeChild(this.chatMessages.lastChild);
-                        }
-                        this.messageHistory = [];
-                        this.addMessage("Chat cleared! Ready for new conversation.", 'bot');
-                    } else {
-                        this.addMessage(`Error clearing chat: ${data.error}`, 'bot', true);
-                    }
-                } catch (error) {
-                    this.addMessage(`Clear chat error: ${error.message}`, 'bot', true);
-                }
+            clearChat() {
+                this.chatMessages.innerHTML = '';
+                this.messageHistory = [];
             }
 
-            async saveChat() {
-                try {
-                    const response = await fetch('/api/save');
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        this.addMessage(`Chat saved to: ${data.filename}`, 'bot');
-                    } else {
-                        this.addMessage(`Error saving chat: ${data.error}`, 'bot', true);
-                    }
-                } catch (error) {
-                    this.addMessage(`Save chat error: ${error.message}`, 'bot', true);
-                }
+            saveChat() {
+                const blob = new Blob([JSON.stringify(this.messageHistory, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sam_chat_${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
             }
 
             async showStatus() {
-                try {
-                    const response = await fetch('/api/status');
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        const statusText = `
-                            🧠 SAM Model: ${data.sam_available ? '✅' : '❌'}
-                            🤖 Ollama: ${data.ollama_available ? '✅' : '❌'}
-                            💬 Conversations: ${data.conversation_count}
-                            ⏱️ Session: ${Math.floor(data.session_duration)}s
-                        `;
-                        this.addMessage(statusText, 'bot');
-                    } else {
-                        this.addMessage(`Error getting status: ${data.error}`, 'bot', true);
-                    }
-                } catch (error) {
-                    this.addMessage(`Status error: ${error.message}`, 'bot', true);
-                }
+                await this.checkServerStatus();
+                alert('Status refreshed.');
             }
 
             getCurrentTime() {
@@ -590,10 +758,7 @@
             }
         }
 
-        // Initialize chatbot when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new SAMOllamaChatbot();
-        });
+        new SAMOllamaChatbot();
     </script>
 </body>
 </html>

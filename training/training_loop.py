@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
+import time
 from typing import List
 
 
@@ -49,6 +51,24 @@ def build_dataset(path: str, max_seq_len: int):
     return ds
 
 
+def _setup_logger(level: str, log_file: str | None) -> logging.Logger:
+    handlers: List[logging.Handler] = [logging.StreamHandler()]
+    if log_file:
+        handlers.append(logging.FileHandler(log_file))
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=handlers,
+    )
+    return logging.getLogger("training")
+
+
+def _count_params(model) -> dict:
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return {"total": total, "trainable": trainable}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Training loop scaffold (LoRA or full fine-tune)")
     parser.add_argument("--model", required=True, help="Base model name or path")
@@ -66,18 +86,29 @@ def main() -> None:
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--lora-dropout", type=float, default=0.05)
     parser.add_argument("--target-modules", nargs="*", default=None)
+    parser.add_argument("--log-level", default=os.getenv("SAM_TRAIN_LOG_LEVEL", "INFO"))
+    parser.add_argument("--log-file", default=os.getenv("SAM_TRAIN_LOG_FILE"))
+    parser.add_argument("--logging-steps", type=int, default=10)
     args = parser.parse_args()
+
+    logger = _setup_logger(args.log_level, args.log_file)
 
     if args.lora and not PEFT_AVAILABLE:
         raise SystemExit("peft is not installed. Install training requirements.")
     if not args.lora and not args.full:
         raise SystemExit("Specify --lora or --full")
 
+    logger.info("Loading model=%s dataset=%s output=%s", args.model, args.dataset, args.output)
+    logger.info("Mode: %s", "lora" if args.lora else "full")
+    logger.info("max_seq_len=%d batch_size=%d grad_accum=%d epochs=%d lr=%s",
+                args.max_seq_len, args.batch_size, args.grad_accum, args.epochs, args.lr)
+
     tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     dataset = build_dataset(args.dataset, args.max_seq_len)
+    logger.info("Dataset loaded: %d rows", len(dataset))
 
     def tokenize(batch):
         return tokenizer(batch["text"], truncation=True, max_length=args.max_seq_len)
@@ -88,6 +119,8 @@ def main() -> None:
 
     if args.lora:
         target_modules = args.target_modules or ["q_proj", "v_proj"]
+        logger.info("LoRA target_modules=%s r=%d alpha=%d dropout=%.3f",
+                    ",".join(target_modules), args.lora_r, args.lora_alpha, args.lora_dropout)
         config = LoraConfig(
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
@@ -97,6 +130,9 @@ def main() -> None:
             task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, config)
+
+    param_counts = _count_params(model)
+    logger.info("Params: total=%d trainable=%d", param_counts["total"], param_counts["trainable"])
 
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
@@ -108,7 +144,7 @@ def main() -> None:
         learning_rate=args.lr,
         warmup_ratio=args.warmup_ratio,
         fp16=False,
-        logging_steps=10,
+        logging_steps=args.logging_steps,
         save_strategy="steps",
         save_steps=200,
         save_total_limit=3,
@@ -121,7 +157,10 @@ def main() -> None:
         data_collator=data_collator,
     )
 
+    start = time.time()
     trainer.train()
+    elapsed = time.time() - start
+    logger.info("Training complete in %.2fs", elapsed)
     trainer.save_model(args.output)
     tokenizer.save_pretrained(args.output)
 
@@ -131,6 +170,7 @@ def main() -> None:
         "output": args.output,
         "lora": args.lora,
         "epochs": args.epochs,
+        "elapsed_s": elapsed,
     }
     with open(os.path.join(args.output, "training_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)

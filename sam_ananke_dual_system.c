@@ -490,7 +490,8 @@ DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned
     arena->arena_state = (double *)calloc(arena_dim, sizeof(double));
     arena->rng.state = (seed == 0 ? 0x9E3779B97F4A7C15ULL : (unsigned long long)seed);
 
-    system_init(&arena->sam, state_dim, &arena->rng, 0);
+    // SAM is also unbounded (self-referential + unrestricted) per latest spec
+    system_init(&arena->sam, state_dim, &arena->rng, 1);
     system_init(&arena->ananke, state_dim, &arena->rng, 1);
 
     // SAM objective (self-referential, transfigurable)

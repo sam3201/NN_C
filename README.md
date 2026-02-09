@@ -46,6 +46,7 @@ python3 complete_sam_unified.py
 - `/help`, `/status`, `/agents`
 - `/connect <agent_id>`, `/disconnect <agent_id>`, `/clone <agent_id> [name]`, `/spawn <type> <name> [personality]`
 - `/research <topic>`, `/code <task>`, `/finance <query>`, `/websearch <query>`
+- `/revenue` (queue / approve / reject / submit / leads / invoices / sequences)
 - `/start`, `/stop`, `/clear`
 
 ## Dual System Implementation (SAM + ANANKE)
@@ -56,6 +57,7 @@ The C extension `sam_ananke_dual_system` implements a self-referential dual-syst
 - Objective mutation with structural term changes and self-reference gain
 - ANANKE kill confirmation term for adversarial termination pressure
 - ANANKE unbounded mode (aggressive mutation + action scaling)
+- SAM unbounded mode (self-referential + unrestricted mutation)
 - Arena pressure feedback loop and adversarial interaction
 - Python bindings for creation, stepping, mutation, and telemetry
 
@@ -155,6 +157,8 @@ Environment overrides:
 - `SAM_REGRESSION_TASKS` (default: `training/tasks/default_tasks.jsonl`)
 - `SAM_REGRESSION_MIN_PASS` (default: `0.7`)
 - `SAM_REGRESSION_ON_GROWTH` (default: `1`)
+- `SAM_REGRESSION_TIMEOUT_S` (default: `120`)
+- `SAM_REQUIRE_SELF_MOD` (default: `1`)
 
 ### Live Groupchat Distillation
 The real-time groupchat loop can stream teacher-pool consensus responses directly into a distillation dataset.
@@ -170,6 +174,22 @@ Environment overrides:
 - `SAM_TEACHER_TIMEOUT_S` (default: `60`)
 - `SAM_DISTILL_PATH` (default: `training/distilled/groupchat.jsonl`)
 - `SAM_DISTILL_INCLUDE_CANDIDATES` (default: `0`)
+
+## Revenue Ops Pipeline (Approval + Audit)
+Revenue actions (CRM updates, email sequences, invoicing) are queued for explicit approval and audited.
+
+Environment overrides:
+- `SAM_REVENUE_OPS_ENABLED` (default: `1`)
+- `SAM_REVENUE_DATA_DIR` (default: `sam_data/revenue_ops`)
+- `SAM_REVENUE_QUEUE_PATH` (default: `sam_data/revenue_ops/queue.json`)
+- `SAM_REVENUE_AUDIT_LOG` (default: `logs/revenue_ops_audit.jsonl`)
+- `SAM_REVENUE_AUTOPLANNER_ENABLED` (default: `1`)
+- `SAM_REVENUE_AUTOPLANNER_INTERVAL_S` (default: `600`)
+- `SAM_REVENUE_AUTOPLANNER_MAX_PENDING` (default: `10`)
+- `SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID` (default: unset; uses first available sequence)
+- `SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED` (default: `1`)
+- `SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S` (default: `120`)
+- `SAM_REVENUE_DEFAULT_INVOICE_AMOUNT` (default: `0` -> disabled unless set)
 
 ## Implementation Spec (Derived)
 - `DOCS/README-chatGPT-implementation-spec.md` — strict, implementation-only spec distilled from `README-chatGPT.md` (no forward-looking prompts).
@@ -208,3 +228,99 @@ Environment overrides:
 ```bash
 python3 ./simulate_failure_cases.py
 ```
+
+## README-all-SAM Implementation Spec (Derived)
+
+This section is the structured, implementation-only spec derived from README-all-SAM. It is split into numbered sections for clarity.
+
+### 1. Core Objective (God Equation)
+- The system objective is a variational principle over policy, memory, world model, and resource allocation:
+  - Optimize long-horizon control (reward).
+  - Minimize predictive uncertainty (entropy).
+  - Penalize compute/capacity cost.
+  - Retain only memory that improves future control (mutual information).
+- Canonical form (ASCII / LaTeX):
+  - pi*, M*, theta*, rho* = argmax_{pi,M,theta,rho} E_{tau ~ P_{theta,pi,M}} [ sum_t gamma^t r(s_t, a_t)
+    - beta H(s_{t+1} | s_t, a_t; theta)
+    - lambda C(pi, theta, M)
+    + eta I(m_t; s_{t:inf}) ]
+- Roles:
+  - pi: policy (action selection)
+  - M: memory/context system
+  - theta: world model
+  - rho: resource allocator
+
+### 2. Transfusion / Distillation Objective
+- Add a teacher-student constraint that distills planner behavior into a fast policy.
+- Canonical form:
+  - min_phi E_{x ~ D} [ KL( pi_planner(.|x) || pi_phi(.|x) ) ]
+- pi_planner is slow (search/tool use); pi_phi is fast (distilled policy).
+
+### 3. Growth Rule (Compute ROI)
+- Capacity grows only when objective gain exceeds compute cost:
+  - Grow if (Delta J / Delta C) > kappa AND learning plateaus for N evals.
+
+### 4. Morphogenetic Latency
+- Morphogenetic latency is a stored, unrealized capacity for structural change.
+- Trigger condition:
+  - E[H_future] - E[H_model] > delta for T steps.
+- Latency is a gating constraint on growth, not a loss term.
+- Irreversibility: no rollback except catastrophic failure.
+
+### 5. System Architecture (Concrete Stack)
+- 4-layer system:
+  1. Memory + World State (S, M)
+  2. Policy LLM (pi_theta)
+  3. Planner (Pi_planner)
+  4. Meta-Controller (phi, Lambda, Sigma, U)
+
+### 6. SAM vs Head vs Meta-Controller
+- SAM = latent world state machinery (S_t).
+- Head model = policy + planner interface (pi_theta + Pi_planner).
+- Meta-controller owns Lambda, Sigma, U, phi.
+
+### 7. Growth Primitives (Only Allowed Mutations)
+- GP-1: Latent dimension expansion.
+- GP-2: Subspace specialization.
+- GP-3: Index topology expansion.
+- GP-4: Expert routing increase.
+- GP-5: Context binding expansion.
+- GP-6: Planner interface widening.
+- GP-7: Compression/consolidation.
+- GP-8: Representation reparameterization.
+
+### 8. Pressure Signals (SAM -> Meta)
+- residual, rank_def, retrieval_entropy, interference
+- planner_friction, context_collapse, compression_waste, temporal_incoherence
+
+### 9. Primitive Selection Policy
+- Gate A: persistence
+- Gate B: exclusivity
+- Gate C: non-compensability
+- Risk scoring + growth budget + post-growth validation
+
+### 10. Failure Modes (Simulations)
+- Runaway expansion, balkanization, planner dominance, context overbinding, identity drift
+
+### 11. SAM Invariants
+- Identity continuity
+- Objective immutability (outside contract eval)
+- Growth causality
+- Bounded agency
+- Semantic preservation
+- Non-deceptive signaling
+- No recursive self-modeling
+- Capacity != authority
+
+### 12. Self-Reference + ANANKE Dual System
+- SAM may be self-referential only via contracts.
+- ANANKE is adversarial pressure; objective closure required.
+
+### 13. Unified System (SAM + ANANKE Merge)
+- Fusion yields a meta-dynamical regulator, not a scalar optimizer.
+
+### 14. Implementation Mapping (Local System)
+- Policy LLM + planner + memory + meta-controller.
+
+### 15. Operational Summary
+- Inference fast; growth slow and gated; pressure signals explicit and audited.
