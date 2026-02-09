@@ -4885,6 +4885,11 @@ class UnifiedSAMSystem:
         def revenue_approve():
             """Approve a revenue action and execute."""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 if not self.revenue_ops:
                     return jsonify({'error': 'Revenue ops not available'}), 503
                 data = request.get_json()
@@ -4902,6 +4907,11 @@ class UnifiedSAMSystem:
         def revenue_reject():
             """Reject a revenue action."""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 if not self.revenue_ops:
                     return jsonify({'error': 'Revenue ops not available'}), 503
                 data = request.get_json()
@@ -4919,6 +4929,11 @@ class UnifiedSAMSystem:
         def revenue_execute():
             """Execute a revenue action explicitly."""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 if not self.revenue_ops:
                     return jsonify({'error': 'Revenue ops not available'}), 503
                 data = request.get_json()
