@@ -3895,9 +3895,10 @@ class UnifiedSAMSystem:
                 'ollama_phi'                 # Mathematical reasoning
             ]
             connected_count = 0
+            max_ollama = int(os.getenv("SAM_AUTOCONNECT_OLLAMA_MAX", "8"))
             
             for agent_id in ollama_to_connect:
-                if agent_id in self.agent_configs and connected_count < 8:
+                if agent_id in self.agent_configs and connected_count < max_ollama:
                     self.connected_agents[agent_id] = {
                         'config': self.agent_configs[agent_id],
                         'connected_at': time.time(),
@@ -3921,9 +3922,10 @@ class UnifiedSAMSystem:
                 'hf_neural_chat_7b'       # Intel neural chat
             ]
             hf_connected = 0
+            max_hf = int(os.getenv("SAM_AUTOCONNECT_HF_MAX", "6"))
             
             for agent_id in hf_to_connect:
-                if agent_id in self.agent_configs and hf_connected < 6:
+                if agent_id in self.agent_configs and hf_connected < max_hf:
                     # Mark as available if we can attempt connection
                     self.agent_configs[agent_id]['status'] = 'available'
                     self.connected_agents[agent_id] = {
@@ -6420,6 +6422,34 @@ sam@terminal:~$
         elif cmd == '/start':
             # Start automatic agent conversations
             self.auto_conversation_active = True
+            # Ensure a default room exists and user is joined for agent-to-agent chatter
+            room_id = "chatbot"
+            user_id = (context or {}).get("user_id", "dashboard")
+            user_name = (context or {}).get("user_name", "User")
+            if user_id not in self.connected_users:
+                self.connected_users[user_id] = {
+                    "id": user_id,
+                    "name": user_name,
+                    "connected_at": time.time(),
+                    "current_room": None
+                }
+            if room_id not in self.conversation_rooms:
+                self.conversation_rooms[room_id] = {
+                    "id": room_id,
+                    "name": "Dashboard Chat",
+                    "agent_type": "chatbot",
+                    "users": [],
+                    "messages": []
+                }
+            room = self.conversation_rooms[room_id]
+            if user_id not in room["users"]:
+                room["users"].append(user_id)
+                self.connected_users[user_id]["current_room"] = room_id
+            # Seed one agent-to-agent message immediately
+            try:
+                self._agent_to_agent_communication()
+            except Exception:
+                pass
             return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
 
         elif cmd == '/stop':
