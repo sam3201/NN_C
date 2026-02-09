@@ -27,17 +27,17 @@
     },
     {
       "task_id": "t3_contains",
-      "response": "The delta of the river is a fertile land.",
+      "response": "The delta of the river formed a unique landscape.",
       "score": 1.0,
       "passed": true,
       "details": {
         "expected": "delta",
-        "got": "The delta of the river is a fertile land."
+        "got": "The delta of the river formed a unique landscape."
       }
     },
     {
       "task_id": "t4_regex",
-      "response": "Sure! Here is a Python function that generates a UUID version 4 (UUIDv4) string:\n\n```python\nimport uuid\n\ndef generate_uuid_v4():\n    return str(uuid.uuid4())\n\n# Example usage:\nprint(generate_uuid_v4())\n```\n\nWhen you run this code, it will output a randomly generated UUIDv4 string.",
+      "response": "Sure! Here is a Python function that generates a UUID version 4 (UUIDv4) string:\n\n```python\nimport uuid\n\ndef generate_uuid_v4():\n    return str(uuid.uuid4())\n\n# Example usage:\nprint(generate_uuid_v4())\n```\n\nWhen you run this code, it will output a randomly generated UUID v4 string.",
       "score": 0.0,
       "passed": false,
       "details": {
