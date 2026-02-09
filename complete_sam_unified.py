@@ -2877,6 +2877,7 @@ class UnifiedSAMSystem:
         self._agent_status_cache = {}  # Add agent status cache
         self.connected_users = {}
         self.conversation_rooms = {}
+        self.meta_agent_test_attr = None
         self.active_conversations = []
         self.socketio_available = False
         self.web_search_enabled = False
