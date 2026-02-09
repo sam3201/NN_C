@@ -7779,29 +7779,53 @@ sam@terminal:~$
         elif cmd == '/research':
             query = ' '.join(args) if args else 'current AI developments'
             try:
-                # Add timeout and error handling for C library call
-                import threading
-                result = [None]
-                error = [None]
-
-                def run_research():
+                sources = []
+                source_lines = []
+                if getattr(self, "web_search_enabled", False):
                     try:
-                        result[0] = specialized_agents_c.research(f"Research: {query}")
-                    except Exception as e:
-                        error[0] = str(e)
+                        results_blob = search_web_with_sam(query, save_to_drive=False, max_results=6)
+                        sources = results_blob.get("results", []) or []
+                    except Exception as exc:
+                        log_event("warn", "web_search_error", "Web search failed", reason=str(exc))
+                        sources = []
 
-                thread = threading.Thread(target=run_research)
-                thread.daemon = True
-                thread.start()
-                thread.join(timeout=10)  # 10 second timeout
+                for item in sources[:6]:
+                    title = item.get("title") or item.get("source") or "source"
+                    url = item.get("url") or item.get("link") or ""
+                    snippet = item.get("snippet") or item.get("content") or ""
+                    line = f"- {title} ({url})" if url else f"- {title}"
+                    if snippet:
+                        line += f": {snippet[:220]}"
+                    source_lines.append(line)
 
-                if thread.is_alive():
-                    return "🔍 **Research timed out**\n\nC library call took too long. System is running autonomously."
-                elif error[0]:
-                    return f"🔍 **Research error: {error[0]}**\n\nSystem is running autonomously."
-                else:
-                    return f"🔍 **Research Results for: {query}**\n\n{result[0][:500]}..."
+                summary = None
+                if sources:
+                    synthesis_prompt = (
+                        "You are a research assistant. Synthesize the key takeaways and implications.\n"
+                        f"Topic: {query}\n"
+                        "Provide:\n"
+                        "- Key points (3-5 bullets)\n"
+                        "- Implications / impact\n"
+                        "- Open questions or unknowns\n\n"
+                        "Sources:\n" + "\n".join(source_lines)
+                    )
+                    provider = self._get_chat_provider()
+                    if provider:
+                        summary, _ = provider.generate(synthesis_prompt)
+                        summary = (summary or "").strip()
+                    elif self.specialized_agents:
+                        summary = specialized_agents_c.research(synthesis_prompt)
 
+                if not summary:
+                    if self.specialized_agents:
+                        summary = specialized_agents_c.research(f"Research: {query}")
+                    else:
+                        summary = "Research engine unavailable."
+
+                output = f"🔍 **Research Results for: {query}**\n\n{summary}"
+                if source_lines:
+                    output += "\n\n**Sources:**\n" + "\n".join(source_lines)
+                return output
             except Exception as e:
                 return f"❌ Research failed: {str(e)}"
 
