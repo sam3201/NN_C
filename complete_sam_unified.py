@@ -121,20 +121,29 @@ def _utc_now():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def log_event(level: str, event: str, message: str, **data):
-    """Append a structured JSONL log entry."""
+def log_event(level: str, event: str, *args, **data):
+    """Append a structured JSONL log entry.
+
+    Accepts `message` either positionally or via kwargs without raising
+    conflicts when callers pass a `message` key inside **data.
+    """
     if not _JSONL_LOG_FH:
         return
-    payload = {
-        "ts": _utc_now(),
-        "level": level,
-        "event": event,
-        "message": message,
-    }
+    log_message = ""
+    if args:
+        log_message = args[0]
+    elif "message" in data:
+        log_message = data.pop("message")
     # Avoid clobbering the primary message field
     if "message" in data:
         data = dict(data)
         data["detail_message"] = data.pop("message")
+    payload = {
+        "ts": _utc_now(),
+        "level": level,
+        "event": event,
+        "message": log_message,
+    }
     if data:
         payload.update(data)
     try:
