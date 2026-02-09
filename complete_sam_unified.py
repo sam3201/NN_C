@@ -5932,6 +5932,7 @@ class UnifiedSAMSystem:
                 response = self._process_chatbot_message(user_message, context)
 
                 return jsonify({
+                    'message': response,
                     'response': response,
                     'timestamp': datetime.now().isoformat(),
                     'sam_integration': True
@@ -5939,6 +5940,40 @@ class UnifiedSAMSystem:
 
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/chat', methods=['POST'])
+        def chat_alias():
+            """Compatibility alias for chatbot endpoint."""
+            return chatbot_endpoint()
+
+        @self.app.route('/api/chat/config', methods=['GET', 'POST'])
+        def chat_config():
+            """Get or update chat settings (admin-only for updates)."""
+            if request.method == 'GET':
+                return jsonify({
+                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
+                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                    "learning_memory_enabled": bool(getattr(self, "learning_memory_enabled", False)),
+                    "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
+                })
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            data = request.get_json() or {}
+            if "chat_multi_agent" in data:
+                self.chat_multi_agent = bool(data.get("chat_multi_agent"))
+            if "chat_agents_max" in data:
+                try:
+                    self.chat_agents_max = max(1, int(data.get("chat_agents_max")))
+                except Exception:
+                    pass
+            log_event("info", "chat_config_update", "Chat config updated", chat_multi_agent=self.chat_multi_agent, chat_agents_max=self.chat_agents_max)
+            return jsonify({
+                "chat_multi_agent": bool(self.chat_multi_agent),
+                "chat_agents_max": int(self.chat_agents_max),
+                "updated": True
+            })
 
         @self.app.route('/api/google-drive/status')
         def google_drive_status():
