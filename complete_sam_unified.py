@@ -5486,9 +5486,10 @@ class UnifiedSAMSystem:
             @self.app.route('/api/shutdown', methods=['POST'])
             def shutdown_system():
                 """Admin-only kill switch (full mode only)"""
-                ok, resp = _require_admin()
+                ok, error = _require_admin_token()
                 if not ok:
-                    return resp
+                    message, status = error
+                    return jsonify({"error": message}), status
                 try:
                     initiate_shutdown()
                 except Exception as exc:
@@ -5499,9 +5500,10 @@ class UnifiedSAMSystem:
             @self.app.route('/api/restart', methods=['POST'])
             def restart_system():
                 """Admin-only restart (requires hot-reload runner)."""
-                ok, resp = _require_admin()
+                ok, error = _require_admin_token()
                 if not ok:
-                    return resp
+                    message, status = error
+                    return jsonify({"error": message}), status
                 log_event("warn", "server_restart", "Admin requested server restart")
 
                 def _do_restart():
