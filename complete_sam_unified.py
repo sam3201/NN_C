@@ -2683,7 +2683,11 @@ class UnifiedSAMSystem:
         self.conversation_rooms = {}
         self.active_conversations = {}
         self.web_search_enabled = self.sam_web_search_available
-        self.socketio_available = flask_available  # SocketIO available if Flask is
+        disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
+        self.disable_socketio = str(disable_socketio_env).strip().lower() in ("1", "true", "yes", "on")
+        if self.meta_only_boot:
+            self.disable_socketio = True
+        self.socketio_available = flask_available and not self.disable_socketio
         self.google_drive = None
         # Sync module-level flags used by background threads
         globals()["sam_gmail_available"] = self.sam_gmail_available
@@ -4329,18 +4333,24 @@ class UnifiedSAMSystem:
             CORS(self.app)
             print("  ✅ Flask app created")
 
-            # Setup SocketIO for real-time communication
-            try:
-                print("  🔧 Setting up SocketIO...")
-                from flask_socketio import SocketIO
-                self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
-                self.socketio_available = True
-                print("  ✅ SocketIO initialized for real-time groupchat")
-            except ImportError as e:
-                print(f"  ⚠️ SocketIO import error: {e}")
+            # Setup SocketIO for real-time communication (optional)
+            if getattr(self, "disable_socketio", False) or getattr(self, "meta_only_boot", False):
                 self.socketio = None
                 self.socketio_available = False
-                print("  ⚠️ SocketIO not available - real-time features disabled")
+                print("  ⚠️ SocketIO disabled (meta-only or SAM_DISABLE_SOCKETIO)")
+            else:
+                try:
+                    print("  🔧 Setting up SocketIO...")
+                    from flask_socketio import SocketIO
+                    async_mode = os.getenv("SAM_SOCKETIO_ASYNC_MODE", "threading")
+                    self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode=async_mode)
+                    self.socketio_available = True
+                    print(f"  ✅ SocketIO initialized for real-time groupchat (async_mode={async_mode})")
+                except ImportError as e:
+                    print(f"  ⚠️ SocketIO import error: {e}")
+                    self.socketio = None
+                    self.socketio_available = False
+                    print("  ⚠️ SocketIO not available - real-time features disabled")
 
             # Apply optimizations
             print("  🔧 Applying optimizations...")
