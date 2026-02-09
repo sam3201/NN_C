@@ -4554,6 +4554,8 @@ class UnifiedSAMSystem:
                     })
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
+                status["require_meta_agent"] = getattr(self, "require_meta_agent", False)
+                status["env_meta_only_boot"] = os.getenv("SAM_META_ONLY_BOOT")
                 status["severity_threshold"] = getattr(self, "meta_agent_min_severity", "medium")
                 return jsonify(status)
             except Exception as e:
@@ -8527,6 +8529,25 @@ sam@terminal:~$
         print("  🎯 Zero Fallbacks - All Components Work Correctly")
         print("  🚀 Production Deployment Ready")
         print("=" * 80)
+
+        # Fail-safe enforcement of meta-only boot constraints
+        if getattr(self, "require_meta_agent", False):
+            self.meta_only_boot = True
+        if getattr(self, "meta_only_boot", False):
+            self.autonomous_enabled = False
+            meta_cfg = self.agent_configs.get("meta_agent")
+            if meta_cfg:
+                self.agent_configs = {"meta_agent": meta_cfg}
+                self.connected_agents = {
+                    "meta_agent": {
+                        "config": meta_cfg,
+                        "connected_at": time.time(),
+                        "message_count": 0,
+                        "muted": False
+                    }
+                }
+            elif getattr(self, "require_meta_agent", False):
+                raise RuntimeError("❌ CRITICAL: MetaAgent config missing during run() enforcement.")
 
         # Initialize web interface first if not already done
         if not self.web_interface_initialized:
