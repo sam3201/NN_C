@@ -159,6 +159,9 @@ Environment overrides:
 - `SAM_REGRESSION_ON_GROWTH` (default: `1`)
 - `SAM_REGRESSION_TIMEOUT_S` (default: `120`)
 - `SAM_REQUIRE_SELF_MOD` (default: `1`)
+- HF provider (local LoRA) syntax: `hf:<base_model>@<adapter_path>`
+  - Example: `hf:Qwen/Qwen2.5-1.5B@training/output_lora_qwen2.5_1.5b_fp16_v2`
+  - Optional env: `SAM_HF_DEVICE_MAP` (default: `auto`), `SAM_HF_DTYPE` (default: `float16`)
 
 ### Live Groupchat Distillation
 The real-time groupchat loop can stream teacher-pool consensus responses directly into a distillation dataset.
@@ -166,6 +169,7 @@ The real-time groupchat loop can stream teacher-pool consensus responses directl
 Environment overrides:
 - `SAM_TEACHER_POOL_ENABLED` (default: `1`)
 - `SAM_TEACHER_POOL` (default: `ollama:mistral:latest`)
+  - HF local LoRA example: `hf:Qwen/Qwen2.5-1.5B@training/output_lora_qwen2.5_1.5b_fp16_v2`
 - `SAM_TEACHER_N_PER` (default: `1`)
 - `SAM_TEACHER_MIN_SIM` (default: `0.72`)
 - `SAM_TEACHER_MIN_VOTES` (default: `1`)

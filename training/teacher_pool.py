@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import os
 import time
+import threading
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional
@@ -172,6 +173,82 @@ class OpenRouterProvider(Provider):
             raise
 
 
+class HFLocalProvider(Provider):
+    def __init__(self, model: str, adapter_path: Optional[str] = None,
+                 device_map: Optional[str] = None, torch_dtype: Optional[str] = None, **kwargs: Any):
+        super().__init__("hf", model, **kwargs)
+        self.adapter_path = adapter_path
+        self.device_map = device_map or os.getenv("SAM_HF_DEVICE_MAP", "auto")
+        self.torch_dtype_name = torch_dtype or os.getenv("SAM_HF_DTYPE", "float16")
+        self._model = None
+        self._tokenizer = None
+        self._lock = threading.Lock()
+
+    def _ensure_loaded(self) -> None:
+        if self._model is not None:
+            return
+        with self._lock:
+            if self._model is not None:
+                return
+            try:
+                import torch
+                from transformers import AutoModelForCausalLM, AutoTokenizer
+            except Exception as exc:
+                raise RuntimeError(f"HFLocalProvider requires torch+transformers: {exc}") from exc
+            dtype = getattr(torch, self.torch_dtype_name, torch.float16)
+            tokenizer = AutoTokenizer.from_pretrained(self.model, use_fast=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model,
+                torch_dtype=dtype,
+                device_map=self.device_map,
+            )
+            if self.adapter_path:
+                try:
+                    from peft import PeftModel
+                except Exception as exc:
+                    raise RuntimeError(f"HFLocalProvider requires peft for adapters: {exc}") from exc
+                adapter_path = str(Path(self.adapter_path).expanduser())
+                model = PeftModel.from_pretrained(model, adapter_path)
+            model.eval()
+            self._tokenizer = tokenizer
+            self._model = model
+
+    def generate(self, prompt: str):
+        self._log_start(len(prompt))
+        start = time.time()
+        try:
+            self._ensure_loaded()
+            assert self._model is not None and self._tokenizer is not None
+            import torch
+            inputs = self._tokenizer(prompt, return_tensors="pt")
+            if hasattr(self._model, "device"):
+                inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
+            gen_kwargs = {
+                "max_new_tokens": self.max_tokens,
+                "do_sample": self.temperature > 0,
+                "pad_token_id": self._tokenizer.pad_token_id,
+                "eos_token_id": self._tokenizer.eos_token_id,
+            }
+            if self.temperature > 0:
+                gen_kwargs["temperature"] = self.temperature
+            with torch.inference_mode():
+                output = self._model.generate(
+                    **inputs,
+                    **gen_kwargs,
+                )
+            text = self._tokenizer.decode(output[0], skip_special_tokens=True)
+            if text.startswith(prompt):
+                text = text[len(prompt):].lstrip()
+            latency = time.time() - start
+            self._log_done(latency, len(text))
+            return text, latency
+        except Exception as exc:
+            self._log_fail(time.time() - start, exc)
+            raise
+
+
 def build_provider(spec: str, temperature: float = 0.2, max_tokens: int = 512, timeout_s: int = 60) -> Provider:
     if ":" not in spec:
         raise ValueError("Provider spec must be like 'ollama:mistral:latest' or 'openrouter:model'")
@@ -182,6 +259,13 @@ def build_provider(spec: str, temperature: float = 0.2, max_tokens: int = 512, t
         return OpenAIProvider(model, temperature=temperature, max_tokens=max_tokens, timeout_s=timeout_s)
     if provider == "openrouter":
         return OpenRouterProvider(model, temperature=temperature, max_tokens=max_tokens, timeout_s=timeout_s)
+    if provider == "hf":
+        adapter_path = None
+        base_model = model
+        if "@" in model:
+            base_model, adapter_path = model.split("@", 1)
+        return HFLocalProvider(base_model, adapter_path=adapter_path,
+                               temperature=temperature, max_tokens=max_tokens, timeout_s=timeout_s)
     raise ValueError(f"Unknown provider: {provider}")
 
 
