@@ -5704,6 +5704,44 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
+        @self.app.route('/api/meta/test', methods=['POST'])
+        def meta_agent_test():
+            """Trigger a controlled meta-agent repair test (admin-only)."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            payload = request.get_json(silent=True) or {}
+            dry_run = bool(payload.get("dry_run", False))
+            try:
+                if not getattr(self, "meta_agent", None):
+                    return jsonify({"error": "Meta-agent not initialized"}), 400
+                # Synthetic failure that should map to deterministic patch
+                fake_trace = "AttributeError: 'UnifiedSAMSystem' object has no attribute 'meta_agent_test_attr'"
+                failure = FailureEvent(
+                    error_type="MetaAgentTestError",
+                    stack_trace=fake_trace,
+                    failing_tests=[],
+                    logs="meta-agent test",
+                    timestamp=datetime.now().isoformat(),
+                    severity="medium",
+                    context="meta_test",
+                    message="Synthetic failure for meta-agent repair test",
+                )
+                original_self_mod = getattr(self, "allow_self_modification", False)
+                if dry_run:
+                    self.allow_self_modification = False
+                result = self.meta_agent.handle_failure(failure)
+                self.allow_self_modification = original_self_mod
+                return jsonify({
+                    "status": "ok",
+                    "dry_run": dry_run,
+                    "patched": bool(result),
+                    "note": "If patched=true, a harmless attribute may be added to __init__ once.",
+                })
+            except Exception as exc:
+                return jsonify({"error": str(exc)}), 500
+
         @self.app.route('/api/morpho/state')
         def morpho_state():
             """Get morphogenetic meta-controller state"""
