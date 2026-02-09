@@ -103,6 +103,9 @@ OAuth (optional):
 - `SAM_GITHUB_CLIENT_ID`, `SAM_GITHUB_CLIENT_SECRET`
 - `SAM_OAUTH_REDIRECT_BASE` — e.g. `http://localhost:5004`
 
+OAuth helper:
+- `GET /api/oauth/help` returns the exact redirect URIs to paste into Google/GitHub.
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal

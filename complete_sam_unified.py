@@ -4920,6 +4920,38 @@ class UnifiedSAMSystem:
                 return (email == owner) if owner else False, False
             return email in allowed, (email in admins) or (email == owner)
 
+        @self.app.route("/api/auth/status")
+        def auth_status():
+            """Return current auth status for UI gating."""
+            return jsonify({
+                "authenticated": bool(session.get("user_email")),
+                "email": session.get("user_email"),
+                "is_admin": bool(session.get("is_admin")),
+                "ip_allowed": _ip_allowed(),
+            })
+
+        @self.app.route("/api/oauth/help")
+        def oauth_help():
+            """Return OAuth setup instructions with exact redirect URIs."""
+            base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            return jsonify({
+                "redirect_base": base,
+                "google_redirect_uri": f"{base}/login/google/callback",
+                "github_redirect_uri": f"{base}/login/github/callback",
+                "required_env": [
+                    "SAM_GOOGLE_CLIENT_ID",
+                    "SAM_GOOGLE_CLIENT_SECRET",
+                    "SAM_GITHUB_CLIENT_ID",
+                    "SAM_GITHUB_CLIENT_SECRET",
+                    "SAM_OAUTH_REDIRECT_BASE"
+                ],
+                "notes": [
+                    "Set redirect URIs exactly as shown for each provider.",
+                    "Ensure SAM_OAUTH_REDIRECT_BASE matches the public URL.",
+                    "For localhost testing, use http://localhost:5004."
+                ]
+            })
+
         def _login_required():
             if session.get("user_email"):
                 return None
@@ -4977,10 +5009,15 @@ class UnifiedSAMSystem:
                           <a href="/login/github" style="flex:1; text-align:center; padding:10px; background:#fff; border:1px solid #ddd; border-radius:8px; text-decoration:none;">GitHub</a>
                         </div>
                         <div class="hint">Access is restricted to approved emails.</div>
+                        <div class="hint" style="margin-top:8px;">OAuth redirect base: <code>{{base}}</code></div>
+                        <div class="hint">Google callback: <code>{{base}}/login/google/callback</code></div>
+                        <div class="hint">GitHub callback: <code>{{base}}/login/github/callback</code></div>
                       </div>
                     </body>
                     </html>
                     """
+                    ,
+                    base=os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
                 )
 
             email = (request.form.get("email") or "").strip().lower()

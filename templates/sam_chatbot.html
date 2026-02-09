@@ -163,6 +163,21 @@
             cursor: pointer;
         }
 
+        .log-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .log-filters select,
+        .log-filters input {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-edge);
+            font-size: 11px;
+        }
+
         .log-summary {
             margin-top: 10px;
             font-size: 11px;
@@ -577,6 +592,20 @@
                     <button id="logSnapshotBtn">Snapshot</button>
                     <button id="logDownloadBtn">Download Log</button>
                 </div>
+                <div class="log-filters">
+                    <select id="logLevelFilter">
+                        <option value="all">All levels</option>
+                        <option value="error">Error</option>
+                        <option value="warn">Warn</option>
+                        <option value="info">Info</option>
+                    </select>
+                    <input id="logEventFilter" placeholder="Filter event (e.g., meta_*)" />
+                    <select id="logScopeFilter">
+                        <option value="all">All events</option>
+                        <option value="meta">Meta-agent only</option>
+                        <option value="score">Score only</option>
+                    </select>
+                </div>
                 <div class="log-summary" id="logSummary"></div>
             </div>
         </aside>
@@ -666,8 +695,12 @@
                 this.logSnapshotBtn = document.getElementById('logSnapshotBtn');
                 this.logDownloadBtn = document.getElementById('logDownloadBtn');
                 this.logSummary = document.getElementById('logSummary');
+                this.logLevelFilter = document.getElementById('logLevelFilter');
+                this.logEventFilter = document.getElementById('logEventFilter');
+                this.logScopeFilter = document.getElementById('logScopeFilter');
                 this.logPaused = false;
                 this.logSource = null;
+                this.isAdmin = false;
 
                 this.messageHistory = [];
                 this.isTyping = false;
@@ -702,6 +735,9 @@
                 this.logDownloadBtn.addEventListener('click', () => {
                     window.open('/api/logs/download?kind=jsonl', '_blank');
                 });
+                this.logEventFilter.addEventListener('input', () => this.refreshLogVisibility());
+                this.logLevelFilter.addEventListener('change', () => this.refreshLogVisibility());
+                this.logScopeFilter.addEventListener('change', () => this.refreshLogVisibility());
             }
 
             async checkServerStatus() {
@@ -732,6 +768,15 @@
                     }
                     if (data.survival_score !== undefined) {
                         this.survivalScore.textContent = Number(data.survival_score).toFixed(2);
+                    }
+
+                    try {
+                        const auth = await fetch('/api/auth/status').then((r) => r.json());
+                        this.isAdmin = !!auth.is_admin;
+                        this.applyAdminControls();
+                    } catch (err) {
+                        this.isAdmin = false;
+                        this.applyAdminControls();
                     }
                 } catch (error) {
                     this.connectionStatus.forEach((el) => {
@@ -800,12 +845,15 @@
                     payload = { level: 'info', event: 'log_line', message: raw };
                 }
                 const level = (payload.level || 'info').toLowerCase();
+                const eventName = payload.event || 'event';
                 const entry = document.createElement('div');
                 entry.className = `log-entry level-${level}`;
+                entry.dataset.level = level;
+                entry.dataset.event = eventName;
                 const meta = document.createElement('div');
                 meta.className = 'meta';
                 const ts = payload.ts ? new Date(payload.ts).toLocaleTimeString() : '';
-                meta.textContent = `${ts} • ${payload.event || 'event'} • ${payload.level || 'info'}`;
+                meta.textContent = `${ts} • ${eventName} • ${payload.level || 'info'}`;
                 const text = document.createElement('div');
                 text.className = 'text';
                 text.textContent = payload.message || JSON.stringify(payload);
@@ -818,6 +866,42 @@
                 const entries = this.logPanel.querySelectorAll('.log-entry');
                 if (entries.length > 200) {
                     entries[0].remove();
+                }
+                this.refreshLogVisibility();
+            }
+
+            refreshLogVisibility() {
+                const level = this.logLevelFilter.value;
+                const eventFilter = this.logEventFilter.value.trim().toLowerCase();
+                const scope = this.logScopeFilter.value;
+                const entries = this.logPanel.querySelectorAll('.log-entry');
+
+                entries.forEach((entry) => {
+                    const entryLevel = entry.dataset.level || 'info';
+                    const entryEvent = (entry.dataset.event || '').toLowerCase();
+                    let visible = true;
+
+                    if (level !== 'all' && entryLevel !== level) {
+                        visible = false;
+                    }
+                    if (eventFilter && !entryEvent.includes(eventFilter)) {
+                        visible = false;
+                    }
+                    if (scope === 'meta' && !entryEvent.startsWith('meta_') && !entryEvent.includes('meta')) {
+                        visible = false;
+                    }
+                    if (scope === 'score' && !entryEvent.includes('score')) {
+                        visible = false;
+                    }
+                    entry.style.display = visible ? 'block' : 'none';
+                });
+            }
+
+            applyAdminControls() {
+                const isAdmin = this.isAdmin;
+                if (this.logDownloadBtn) {
+                    this.logDownloadBtn.disabled = !isAdmin;
+                    this.logDownloadBtn.title = isAdmin ? '' : 'Admin only';
                 }
             }
 
