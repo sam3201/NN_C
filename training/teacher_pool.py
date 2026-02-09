@@ -201,7 +201,16 @@ class TeacherPool:
         candidates: List[Candidate] = []
         for provider in self.providers:
             for _ in range(n_per_teacher):
-                response, latency = provider.generate(prompt)
+                try:
+                    response, latency = provider.generate(prompt)
+                except Exception as exc:
+                    logger.warning(
+                        "Teacher provider failed provider=%s model=%s error=%s",
+                        provider.name,
+                        provider.model,
+                        exc,
+                    )
+                    continue
                 candidates.append(Candidate(provider=provider.name, model=provider.model,
                                             prompt=prompt, response=response, latency_s=latency))
         return candidates

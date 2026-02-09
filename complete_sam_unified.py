@@ -4749,6 +4749,11 @@ class UnifiedSAMSystem:
         def send_email():
             """Send email using SAM's Gmail account"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 data = request.get_json()
                 to_email = data.get('to_email', '')
                 subject = data.get('subject', '')
@@ -4772,6 +4777,11 @@ class UnifiedSAMSystem:
         def schedule_email():
             """Schedule email using SAM's Gmail account"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 data = request.get_json()
                 to_email = data.get('to_email', '')
                 subject = data.get('subject', '')
@@ -4794,6 +4804,11 @@ class UnifiedSAMSystem:
         def send_system_report():
             """Send system report via email"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 data = request.get_json()
                 recipient = data.get('recipient', '')
                 report_type = data.get('report_type', 'daily')
@@ -5081,6 +5096,11 @@ class UnifiedSAMSystem:
         def save_to_github():
             """Save SAM system to GitHub"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 data = request.get_json()
                 commit_message = data.get('commit_message', None)
 
@@ -8304,7 +8324,7 @@ class VirtualEnvironmentsManager:
         self.system = system
         self.initialized = False
         self.docker_available = False
-        self.python_scripting_enabled = True  # Always available
+        self.python_scripting_enabled = os.getenv("SAM_PYTHON_SCRIPTING_ENABLED", "1") == "1"
         self.safe_commands_enabled = True
 
         # Sandbox configuration
@@ -8329,6 +8349,7 @@ class VirtualEnvironmentsManager:
             'max_execution_time': 30,
             'memory_limit_mb': 100
         }
+        self.blocked_builtins = {'exec', 'eval', 'compile', '__import__', 'open'}
 
     def initialize(self):
         """Initialize virtual environments support"""
@@ -8417,6 +8438,13 @@ class VirtualEnvironmentsManager:
     def execute_python_script(self, script_content, script_name="temp_script.py"):
         """Execute Python script in sandboxed environment"""
         try:
+            if not self.python_scripting_enabled:
+                return "❌ Python scripting disabled (set SAM_PYTHON_SCRIPTING_ENABLED=1 to enable)"
+
+            validation_error = self._validate_python_script(script_content)
+            if validation_error:
+                return f"❌ Python script rejected: {validation_error}"
+
             # Create temporary script file
             script_path = f"/tmp/{script_name}"
 
@@ -8467,6 +8495,36 @@ exec(open('{script_path}').read())
         except Exception as e:
             return f"❌ Python script execution error: {str(e)}"
 
+    def _validate_python_script(self, script_content: str) -> str | None:
+        """Basic static validation to enforce sandboxed imports."""
+        try:
+            tree = ast.parse(script_content)
+        except Exception as exc:
+            return f"Syntax error: {exc}"
+
+        allowed = set(self.script_sandbox.get('allowed_modules', []))
+        blocked = set(self.script_sandbox.get('blocked_modules', []))
+
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                mods = []
+                if isinstance(node, ast.Import):
+                    mods = [alias.name.split('.')[0] for alias in node.names]
+                else:
+                    if node.module:
+                        mods = [node.module.split('.')[0]]
+                for mod in mods:
+                    if mod in blocked:
+                        return f"Blocked module import: {mod}"
+                    if allowed and mod not in allowed:
+                        return f"Module not allowed: {mod}"
+            if isinstance(node, ast.Name) and node.id in self.blocked_builtins:
+                return f"Blocked builtin usage: {node.id}"
+            if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+                if node.value.id in {"os", "sys"} and node.attr in {"system", "popen", "spawn"}:
+                    return f"Blocked attribute usage: {node.value.id}.{node.attr}"
+        return None
+
     def execute_safe_command(self, command):
         """Execute safe system command"""
         try:
@@ -8487,13 +8545,9 @@ exec(open('{script_path}').read())
             if not allowed:
                 return f"❌ Command '{base_cmd}' not allowed in sandboxed environment"
 
-            # Execute command with restrictions
-            safe_cmd = [
-                'timeout', '30',  # 30 second timeout
-                'bash', '-c', command
-            ]
-
-            result = subprocess.run(safe_cmd, capture_output=True, text=True, timeout=35)
+            # Execute command with restrictions (portable timeout)
+            safe_cmd = ['bash', '-c', command]
+            result = subprocess.run(safe_cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 return f"🔧 Safe command executed:\\n{result.stdout}"
