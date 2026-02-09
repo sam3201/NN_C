@@ -53,6 +53,9 @@ def modify_code_safely(filepath: str, old_code: str, new_code: str, description:
     path = Path(filepath)
     if not path.is_absolute():
         path = _project_root / path
+    path = path.resolve()
+    if path != _project_root and _project_root not in path.parents:
+        return {"success": False, "message": "Path escapes project root", "file": str(path)}
 
     if not path.exists():
         return {"success": False, "message": "File not found", "file": str(path)}
@@ -107,6 +110,9 @@ def rollback_modification(backup_path: str) -> Dict[str, Any]:
     original_path = Path(meta["original"])
     if not original_path.is_absolute():
         original_path = _project_root / original_path
+    original_path = original_path.resolve()
+    if original_path != _project_root and _project_root not in original_path.parents:
+        return {"success": False, "message": "Original path escapes project root"}
 
     original_path.write_text(backup_file.read_text(encoding="utf-8"), encoding="utf-8")
     return {

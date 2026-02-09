@@ -6,6 +6,7 @@ import json
 import os
 import threading
 import time
+import mimetypes
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -55,6 +56,23 @@ class SAMGmail:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(body)
+
+        if attachments:
+            for attachment in attachments:
+                path = Path(attachment)
+                if not path.exists():
+                    raise RuntimeError(f"Attachment not found: {path}")
+                mime_type, _ = mimetypes.guess_type(str(path))
+                if mime_type:
+                    maintype, subtype = mime_type.split("/", 1)
+                else:
+                    maintype, subtype = "application", "octet-stream"
+                message.add_attachment(
+                    path.read_bytes(),
+                    maintype=maintype,
+                    subtype=subtype,
+                    filename=path.name,
+                )
 
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
         sent = self.service.users().messages().send(userId="me", body={"raw": raw}).execute()

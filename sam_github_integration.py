@@ -14,12 +14,22 @@ sam_github_instance: Optional["SAMGitHub"] = None
 def _run_git(*args: str) -> subprocess.CompletedProcess:
     if _repo_root is None:
         raise RuntimeError("Git repository not initialized")
-    return subprocess.run(
-        ["git", "-C", str(_repo_root), *args],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    timeout_s = int(os.getenv("SAM_GIT_TIMEOUT_S", "60"))
+    try:
+        return subprocess.run(
+            ["git", "-C", str(_repo_root), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(
+            exc.cmd,
+            returncode=124,
+            stdout=exc.stdout or "",
+            stderr="git command timed out",
+        )
 
 
 def initialize_sam_github(repo_path: Optional[str] = None) -> "SAMGitHub":
