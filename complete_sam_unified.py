@@ -3678,15 +3678,43 @@ class UnifiedSAMSystem:
         """Invoke meta-agent self-repair pipeline if available."""
         try:
             if not getattr(self, "meta_agent", None):
+                log_event(
+                    "warn",
+                    "meta_repair_skipped",
+                    "Meta-agent not available",
+                    reason="meta_agent_missing",
+                    context=context,
+                )
                 return False
             if not getattr(self, "allow_self_modification", False):
+                log_event(
+                    "warn",
+                    "meta_repair_skipped",
+                    "Meta-agent repair blocked",
+                    reason="self_mod_disabled",
+                    context=context,
+                )
                 return False
             if not getattr(self, "sam_code_modifier_ready", False):
+                log_event(
+                    "warn",
+                    "meta_repair_skipped",
+                    "Meta-agent repair blocked",
+                    reason="code_modifier_not_ready",
+                    context=context,
+                )
                 return False
             # Throttle to prevent repair loops
             now = time.time()
             last = getattr(self, "_last_meta_repair", 0)
             if now - last < 120:
+                log_event(
+                    "warn",
+                    "meta_repair_skipped",
+                    "Meta-agent repair throttled",
+                    reason="throttled",
+                    context=context,
+                )
                 return False
             self._last_meta_repair = now
 
