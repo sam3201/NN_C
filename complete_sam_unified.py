@@ -1604,8 +1604,20 @@ class MetaAgent:
     def _assign_cluster(self, failure):
         """Assign failure to appropriate cluster using simple baseline clustering"""
         # Simple baseline clustering by error type (upgrade later with embeddings)
+        failure_type = self._get_failure_attr(
+            failure,
+            "error_type",
+            self._get_failure_attr(failure, "type", "unknown"),
+        )
         for cid, failures in self.failure_clusters.items():
-            if failure.get("type") == failures[0].get("type"):
+            if not failures:
+                continue
+            existing_type = self._get_failure_attr(
+                failures[0],
+                "error_type",
+                self._get_failure_attr(failures[0], "type", "unknown"),
+            )
+            if failure_type == existing_type:
                 return cid
 
         self._cluster_id_counter += 1
