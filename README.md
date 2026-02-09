@@ -79,6 +79,11 @@ When agent outputs do not include a `score:` field, the system marks the result 
 ## Live Log Panel
 The dashboard includes a **Live Event Log** panel. It streams `logs/sam_runtime.jsonl` in real time and provides a snapshot that summarizes the moving window, counts by level, and top event types.
 
+Finance summary is available in the dashboard and via:
+- `/api/finance/summary` (combined revenue + banking)
+- `/api/revenue/metrics`, `/api/banking/metrics`
+- Snapshot interval is configurable in the UI or via `POST /api/finance/config` (admin).
+
 ## Secure Remote Access (Free)
 Recommended: **Tailscale** for private, secure access with no public exposure.
 1. Install Tailscale on the host machine.

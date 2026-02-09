@@ -6131,6 +6131,27 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        @self.app.route('/api/finance/config', methods=['GET', 'POST'])
+        def finance_config():
+            """Get or set finance snapshot interval."""
+            try:
+                if request.method == 'GET':
+                    return jsonify({
+                        "interval_s": getattr(self, "finance_log_interval_s", 0),
+                    })
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+                data = request.get_json() or {}
+                interval = float(data.get("interval_s", 0))
+                if interval < 0:
+                    return jsonify({'error': 'interval_s must be >= 0'}), 400
+                self.finance_log_interval_s = interval
+                return jsonify({"interval_s": self.finance_log_interval_s})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
         @self.app.route('/api/banking/accounts')
         def banking_accounts():
             """List sandbox accounts."""
@@ -7783,6 +7804,45 @@ sam@terminal:~$
                     return parts.length ? parts.join(' · ') : '—';
                 }
 
+                async function loadFinanceConfig() {
+                    try {
+                        const resp = await fetch('/api/finance/config');
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        const current = document.getElementById('finance-interval-current');
+                        const input = document.getElementById('finance-interval-input');
+                        const interval = Number(data.interval_s || 0);
+                        if (current) current.textContent = `${interval.toFixed(0)}s`;
+                        if (input && !input.value) input.placeholder = interval.toFixed(0);
+                    } catch (error) {
+                        console.error('Failed to load finance config:', error);
+                    }
+                }
+
+                async function updateFinanceInterval() {
+                    const input = document.getElementById('finance-interval-input');
+                    if (!input) return;
+                    const raw = input.value.trim();
+                    const interval = Number(raw);
+                    if (!raw || isNaN(interval) || interval < 0) {
+                        showUiAlert('Enter a valid interval (seconds).');
+                        return;
+                    }
+                    const resp = await fetch('/api/finance/config', {
+                        method: 'POST',
+                        headers: adminHeaders(),
+                        body: JSON.stringify({interval_s: interval})
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        showUiAlert(err.error || 'Failed to update interval.');
+                        return;
+                    }
+                    input.value = '';
+                    loadFinanceConfig();
+                    showUiAlert('Finance snapshot interval updated.');
+                }
+
                 async function updateFinanceSummary() {
                     try {
                         const resp = await fetch('/api/finance/summary');
@@ -7802,13 +7862,23 @@ sam@terminal:~$
                             Object.entries(revenue.by_currency).map(([k, v]) => [k, v.outstanding || 0])
                         ) : {});
                         if (savedEl) savedEl.textContent = formatCurrencyMap(banking.balances_by_currency || {});
-                        if (spentEl) spentEl.textContent = banking.total_spent !== undefined
-                            ? `USD ${Number(banking.total_spent || 0).toFixed(2)}`
-                            : '—';
+                        if (spentEl) {
+                            const spentMap = banking.spent_by_currency || {};
+                            spentEl.textContent = Object.keys(spentMap).length
+                                ? formatCurrencyMap(spentMap)
+                                : (banking.total_spent !== undefined
+                                    ? `USD ${Number(banking.total_spent || 0).toFixed(2)}`
+                                    : '—');
+                        }
                         if (noteEl) {
-                            const currencies = Object.keys(revenue.by_currency || {});
+                            const currencies = new Set([
+                                ...Object.keys(revenue.by_currency || {}),
+                                ...Object.keys(banking.balances_by_currency || {}),
+                                ...Object.keys(banking.spent_by_currency || {}),
+                            ]);
+                            const list = Array.from(currencies);
                             noteEl.textContent = currencies.length
-                                ? `Currencies: ${currencies.join(', ')}`
+                                ? `Currencies: ${list.join(', ')}`
                                 : 'Currency: USD (default)';
                         }
                     } catch (error) {
@@ -8545,6 +8615,7 @@ sam@terminal:~$
                 setInterval(updateFinanceSummary, 15000);
                 updateFinanceSummary();
                 updateAuthStatus();
+                loadFinanceConfig();
                 initDashboardLogStream();
                 fetchDashboardLogSnapshot();
         '''
@@ -9129,6 +9200,16 @@ sam@terminal:~$
                                 <span id="finance-banking-spent">—</span>
                             </div>
                             <div class="revenue-meta" id="finance-currency-note">Currency: USD (default)</div>
+                            <div style="margin-top:12px;">
+                                <div class="metric-row">
+                                    <span class="metric-label">Snapshot Interval</span>
+                                    <span id="finance-interval-current">—</span>
+                                </div>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="finance-interval-input" placeholder="120" style="flex:1; background:#0c111c; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <button onclick="updateFinanceInterval()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--accent); color:#041018; font-weight:600;">Set</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card">
                             <h3>Meta Control</h3>
