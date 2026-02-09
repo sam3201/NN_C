@@ -4521,6 +4521,7 @@ class UnifiedSAMSystem:
                 'status': 'active',
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
+                'sam_available': bool(getattr(self, "sam_available", False)),
                 'timestamp': datetime.now().isoformat()
             })
 
@@ -4532,7 +4533,8 @@ class UnifiedSAMSystem:
                 'timestamp': time.time(),
                 'c_core': self.system_metrics.get('c_core_status', 'unknown'),
                 'python_orchestration': self.system_metrics.get('python_orchestration_status', 'unknown'),
-                'web_interface': self.system_metrics.get('web_interface_status', 'unknown')
+                'web_interface': self.system_metrics.get('web_interface_status', 'unknown'),
+                'sam_available': bool(getattr(self, "sam_available", False))
             })
                 
         @self.app.route('/api/orchestrator/status')
