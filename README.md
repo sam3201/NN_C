@@ -91,12 +91,21 @@ When you purchase a domain, switch to Cloudflare Tunnel + Access for a permanent
 ## Login + OAuth + IP Allowlist
 Set these in `.env.local`:
 - `SAM_LOGIN_PASSWORD` — required for password login
+- `SAM_LOGIN_PASSWORD_FILE` — optional file path (read and trimmed at runtime)
+- `SAM_LOGIN_PASSWORD_KEYCHAIN_SERVICE` + `SAM_LOGIN_PASSWORD_KEYCHAIN_ACCOUNT` — macOS Keychain lookup (preferred)
 - `SAM_ALLOWED_EMAILS` — comma‑separated allowlist
 - `SAM_OWNER_EMAIL` — always treated as admin
 - `SAM_ADMIN_EMAILS` — comma‑separated admin list
 - `SAM_SESSION_SECRET` — session secret
 - `SAM_ALLOWED_IPS` — optional allowlist (comma‑separated IPs/CIDRs)
 - `SAM_TRUST_PROXY=1` — use `X-Forwarded-For` when behind proxy
+
+Keychain (macOS) example:
+```
+security add-generic-password -s "SAM_LOGIN" -a "you@example.com" -w
+SAM_LOGIN_PASSWORD_KEYCHAIN_SERVICE=SAM_LOGIN
+SAM_LOGIN_PASSWORD_KEYCHAIN_ACCOUNT=you@example.com
+```
 
 OAuth (optional):
 - `SAM_GOOGLE_CLIENT_ID`, `SAM_GOOGLE_CLIENT_SECRET`

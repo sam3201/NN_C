@@ -593,6 +593,13 @@
                     <button id="logDownloadBtn">Download Log</button>
                 </div>
                 <div class="log-filters">
+                    <select id="logSourceFilter">
+                        <option value="runtime">Runtime</option>
+                        <option value="distill">Distillation</option>
+                        <option value="revenue">Revenue Audit</option>
+                        <option value="banking">Banking Audit</option>
+                        <option value="human">Human Log</option>
+                    </select>
                     <select id="logLevelFilter">
                         <option value="all">All levels</option>
                         <option value="error">Error</option>
@@ -695,6 +702,7 @@
                 this.logSnapshotBtn = document.getElementById('logSnapshotBtn');
                 this.logDownloadBtn = document.getElementById('logDownloadBtn');
                 this.logSummary = document.getElementById('logSummary');
+                this.logSourceFilter = document.getElementById('logSourceFilter');
                 this.logLevelFilter = document.getElementById('logLevelFilter');
                 this.logEventFilter = document.getElementById('logEventFilter');
                 this.logScopeFilter = document.getElementById('logScopeFilter');
@@ -725,6 +733,11 @@
                 this.logPauseBtn.addEventListener('click', () => {
                     this.logPaused = !this.logPaused;
                     this.logPauseBtn.textContent = this.logPaused ? 'Resume' : 'Pause';
+                    if (!this.logPaused) {
+                        this.initLogStream();
+                    } else if (this.logSource) {
+                        this.logSource.close();
+                    }
                 });
 
                 this.logClearBtn.addEventListener('click', () => {
@@ -733,8 +746,17 @@
 
                 this.logSnapshotBtn.addEventListener('click', () => this.fetchLogSnapshot());
                 this.logDownloadBtn.addEventListener('click', () => {
-                    window.open('/api/logs/download?kind=jsonl', '_blank');
+                    const kind = this.logSourceFilter ? this.logSourceFilter.value : 'runtime';
+                    const token = localStorage.getItem('sam_admin_token');
+                    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+                    window.open(`/api/logs/download?kind=${kind}${tokenParam}`, '_blank');
                 });
+                if (this.logSourceFilter) {
+                    this.logSourceFilter.addEventListener('change', () => {
+                        this.initLogStream();
+                        this.fetchLogSnapshot();
+                    });
+                }
                 this.logEventFilter.addEventListener('input', () => this.refreshLogVisibility());
                 this.logLevelFilter.addEventListener('change', () => this.refreshLogVisibility());
                 this.logScopeFilter.addEventListener('change', () => this.refreshLogVisibility());
@@ -789,8 +811,12 @@
 
             initLogStream() {
                 if (!this.logPanel) return;
+                if (this.logSource) {
+                    this.logSource.close();
+                }
                 if (!!window.EventSource) {
-                    const source = new EventSource('/api/logs/stream?tail=50');
+                    const kind = this.logSourceFilter ? this.logSourceFilter.value : 'runtime';
+                    const source = new EventSource(`/api/logs/stream?tail=50&kind=${kind}`);
                     this.logSource = source;
                     source.onmessage = (event) => {
                         if (this.logPaused) return;
@@ -815,7 +841,8 @@
             async fetchLogSnapshot() {
                 if (!this.logSummary) return;
                 try {
-                    const res = await fetch('/api/logs/view?window=200');
+                    const kind = this.logSourceFilter ? this.logSourceFilter.value : 'runtime';
+                    const res = await fetch(`/api/logs/view?window=200&kind=${kind}`);
                     const data = await res.json();
                     const summary = data.summary || {};
                     const levels = summary.levels || {};

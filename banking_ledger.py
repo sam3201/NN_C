@@ -215,6 +215,34 @@ class BankingLedger:
             "total_balance": sum(a.get("balance", 0.0) for a in accounts),
         }
 
+    def get_metrics(self) -> dict:
+        accounts = self.list_accounts()
+        transactions = self.ledger.get("transactions", [])
+        balance_by_currency: Dict[str, float] = {}
+        for acct in accounts:
+            currency = acct.get("currency", "USD")
+            balance_by_currency[currency] = balance_by_currency.get(currency, 0.0) + float(acct.get("balance", 0.0))
+
+        total_spent = sum(
+            abs(float(txn.get("amount", 0.0)))
+            for txn in transactions
+            if float(txn.get("amount", 0.0)) < 0
+        )
+        total_incoming = sum(
+            float(txn.get("amount", 0.0))
+            for txn in transactions
+            if float(txn.get("amount", 0.0)) > 0
+        )
+
+        return {
+            "total_balance": sum(balance_by_currency.values()),
+            "balances_by_currency": balance_by_currency,
+            "total_spent": round(total_spent, 2),
+            "total_incoming": round(total_incoming, 2),
+            "transaction_count": len(transactions),
+            "account_count": len(accounts),
+        }
+
     def _get_request(self, request_id: str) -> dict:
         for req in self.requests.get("requests", []):
             if req.get("request_id") == request_id:

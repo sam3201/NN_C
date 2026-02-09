@@ -633,6 +633,62 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
     def get_invoice_snapshot(self) -> Dict[str, Any]:
         return {"invoices": self.data_store.list_invoices()}
 
+    def get_financial_metrics(self) -> Dict[str, Any]:
+        invoices = self.data_store.list_invoices()
+        total_invoiced = 0.0
+        total_paid = 0.0
+        total_outstanding = 0.0
+        paid_count = 0
+        open_count = 0
+        by_currency: Dict[str, Dict[str, Any]] = {}
+
+        for inv in invoices:
+            currency = str(inv.get("currency") or "USD")
+            amount = inv.get("amount")
+            if amount is None:
+                items = inv.get("items", []) or []
+                amount = sum(
+                    (item.get("qty", 1) or 1) * (item.get("unit_price", 0) or 0)
+                    for item in items
+                )
+            try:
+                amount = float(amount)
+            except Exception:
+                amount = 0.0
+
+            bucket = by_currency.setdefault(currency, {
+                "invoiced": 0.0,
+                "paid": 0.0,
+                "outstanding": 0.0,
+                "count": 0,
+                "paid_count": 0,
+                "open_count": 0,
+            })
+            bucket["invoiced"] += amount
+            bucket["count"] += 1
+            total_invoiced += amount
+
+            if str(inv.get("status", "")).lower() == "paid":
+                total_paid += amount
+                paid_count += 1
+                bucket["paid"] += amount
+                bucket["paid_count"] += 1
+            else:
+                total_outstanding += amount
+                open_count += 1
+                bucket["outstanding"] += amount
+                bucket["open_count"] += 1
+
+        return {
+            "total_invoiced": round(total_invoiced, 2),
+            "total_paid": round(total_paid, 2),
+            "total_outstanding": round(total_outstanding, 2),
+            "invoice_count": len(invoices),
+            "paid_count": paid_count,
+            "open_count": open_count,
+            "by_currency": by_currency,
+        }
+
     def process_sequence_runs(self, now_ts: Optional[float] = None) -> Dict[str, int]:
         """Send scheduled sequence emails that are due."""
         if not self.send_email:

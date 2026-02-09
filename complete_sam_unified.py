@@ -172,7 +172,8 @@ def _summarize_jsonl_log(path: str, window: int = 200):
                 payload = {"level": "info", "event": "raw_line", "message": line}
             total += 1
             level = str(payload.get("level", "info")).lower()
-            event = str(payload.get("event", "event"))
+            event = payload.get("event") or payload.get("type") or "event"
+            event = str(event)
             level_counts[level] = level_counts.get(level, 0) + 1
             event_counts[event] = event_counts.get(event, 0) + 1
             ts = payload.get("ts")
@@ -2874,6 +2875,10 @@ class UnifiedSAMSystem:
         if self.revenue_ops and self.revenue_sequence_executor_enabled:
             self._start_revenue_sequence_executor()
 
+        # Finance logging snapshot interval (seconds)
+        self.finance_log_interval_s = float(os.getenv("SAM_FINANCE_LOG_INTERVAL_S", "120"))
+        self._last_finance_log_ts = 0.0
+
         # Banking sandbox ledger (approval-gated, no real money access)
         self.banking_enabled = os.getenv("SAM_BANKING_SANDBOX_ENABLED", "1") == "1"
         self.banking_data_dir = Path(os.getenv(
@@ -4920,6 +4925,35 @@ class UnifiedSAMSystem:
                 return (email == owner) if owner else False, False
             return email in allowed, (email in admins) or (email == owner)
 
+        def _get_login_password():
+            """Resolve admin login password from env, file, or macOS Keychain."""
+            env_password = os.getenv("SAM_LOGIN_PASSWORD")
+            if env_password:
+                return env_password
+            password_file = os.getenv("SAM_LOGIN_PASSWORD_FILE")
+            if password_file:
+                try:
+                    path = Path(password_file).expanduser()
+                    if path.exists():
+                        return path.read_text(encoding="utf-8").strip()
+                except Exception:
+                    pass
+            keychain_service = os.getenv("SAM_LOGIN_PASSWORD_KEYCHAIN_SERVICE")
+            keychain_account = os.getenv("SAM_LOGIN_PASSWORD_KEYCHAIN_ACCOUNT")
+            if keychain_service and keychain_account:
+                try:
+                    result = subprocess.run(
+                        ["security", "find-generic-password", "-s", keychain_service, "-a", keychain_account, "-w"],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    if result.returncode == 0:
+                        return result.stdout.strip()
+                except Exception:
+                    pass
+            return None
+
         @self.app.route("/api/auth/status")
         def auth_status():
             """Return current auth status for UI gating."""
@@ -5032,9 +5066,9 @@ class UnifiedSAMSystem:
             password = request.form.get("password") or ""
             allowed_ok, is_admin = _authorized_email(email)
 
-            login_password = os.getenv("SAM_LOGIN_PASSWORD")
+            login_password = _get_login_password()
             if not login_password:
-                return ("Login password not configured (SAM_LOGIN_PASSWORD)", 503)
+                return ("Login password not configured (SAM_LOGIN_PASSWORD / SAM_LOGIN_PASSWORD_FILE / Keychain)", 503)
             if not allowed_ok:
                 return ("Unauthorized email", 403)
             if password != login_password:
@@ -5149,6 +5183,7 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
                 'sam_available': bool(getattr(self, "sam_available", False)),
+                'finance': self._collect_finance_summary(),
                 'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
                 'timestamp': datetime.now().isoformat()
             })
@@ -5245,11 +5280,24 @@ class UnifiedSAMSystem:
                 'web_search_enabled': self.web_search_enabled
             })
 
+        def _resolve_log_path(kind: str) -> str:
+            kind = (kind or "runtime").lower()
+            if kind == "human":
+                return _HUMAN_LOG_PATH or os.getenv("SAM_LOG_FILE", "logs/sam_runtime.log")
+            if kind == "revenue":
+                return str(self.revenue_audit_log) if hasattr(self, "revenue_audit_log") else "logs/revenue_ops_audit.jsonl"
+            if kind == "banking":
+                return str(self.banking_audit_log) if hasattr(self, "banking_audit_log") else "logs/banking_audit.jsonl"
+            if kind == "distill":
+                return str(getattr(self, "distill_output", "training/distilled/groupchat.jsonl"))
+            return _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+
         @self.app.route('/api/logs/stream')
         def stream_logs():
             """Stream JSONL logs via Server-Sent Events (SSE)."""
             tail = int(request.args.get("tail", "50"))
-            path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+            kind = request.args.get("kind", "runtime")
+            path = _resolve_log_path(kind)
 
             def generate():
                 try:
@@ -5262,6 +5310,7 @@ class UnifiedSAMSystem:
                             "event": "log_stream_ready",
                             "message": "Log stream initialized",
                             "path": path,
+                            "kind": kind,
                         })
                         yield f"data: {bootstrap}\n\n"
 
@@ -5294,17 +5343,19 @@ class UnifiedSAMSystem:
         def view_logs():
             """Return a moving window + compact summary of the JSONL log."""
             window = int(request.args.get("window", "200"))
-            path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+            kind = request.args.get("kind", "runtime")
+            path = _resolve_log_path(kind)
             return jsonify(_summarize_jsonl_log(path, window=window))
 
         @self.app.route('/api/logs/download')
         def download_logs():
             """Download the current log file."""
-            kind = request.args.get("kind", "jsonl").lower()
-            if kind == "human":
-                path = _HUMAN_LOG_PATH or os.getenv("SAM_LOG_FILE", "logs/sam_runtime.log")
-            else:
-                path = _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+            kind = request.args.get("kind", "runtime")
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            path = _resolve_log_path(kind)
             if not os.path.exists(path):
                 return jsonify({"error": "log file not found"}), 404
             filename = os.path.basename(path)
@@ -5915,6 +5966,16 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        @self.app.route('/api/revenue/metrics')
+        def revenue_metrics():
+            """Revenue financial summary."""
+            try:
+                if not self.revenue_ops:
+                    return jsonify({'error': 'Revenue ops not available'}), 503
+                return jsonify(self.revenue_ops.get_financial_metrics())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
         @self.app.route('/api/revenue/audit')
         def revenue_audit():
             """Tail of revenue audit log."""
@@ -6049,6 +6110,24 @@ class UnifiedSAMSystem:
                 if not self.banking_ledger:
                     return jsonify({'error': 'Banking sandbox not available'}), 503
                 return jsonify(self.banking_ledger.get_snapshot())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/banking/metrics')
+        def banking_metrics():
+            """Banking financial summary."""
+            try:
+                if not self.banking_ledger:
+                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                return jsonify(self.banking_ledger.get_metrics())
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/finance/summary')
+        def finance_summary():
+            """Combined finance summary (revenue + banking)."""
+            try:
+                return jsonify(self._collect_finance_summary())
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
@@ -7694,6 +7773,165 @@ sam@terminal:~$
                     }, 5000);
                 }
 
+                let dashLogPaused = false;
+                let dashLogEventSource = null;
+                let dashIsAdmin = false;
+
+                function formatCurrencyMap(map) {
+                    if (!map || typeof map !== 'object') return '—';
+                    const parts = Object.entries(map).map(([cur, val]) => `${cur} ${Number(val || 0).toFixed(2)}`);
+                    return parts.length ? parts.join(' · ') : '—';
+                }
+
+                async function updateFinanceSummary() {
+                    try {
+                        const resp = await fetch('/api/finance/summary');
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        const revenue = data.revenue || {};
+                        const banking = data.banking || {};
+                        const paidEl = document.getElementById('finance-revenue-paid');
+                        const outEl = document.getElementById('finance-revenue-outstanding');
+                        const savedEl = document.getElementById('finance-banking-saved');
+                        const spentEl = document.getElementById('finance-banking-spent');
+                        const noteEl = document.getElementById('finance-currency-note');
+                        if (paidEl) paidEl.textContent = formatCurrencyMap(revenue.by_currency ? Object.fromEntries(
+                            Object.entries(revenue.by_currency).map(([k, v]) => [k, v.paid || 0])
+                        ) : {});
+                        if (outEl) outEl.textContent = formatCurrencyMap(revenue.by_currency ? Object.fromEntries(
+                            Object.entries(revenue.by_currency).map(([k, v]) => [k, v.outstanding || 0])
+                        ) : {});
+                        if (savedEl) savedEl.textContent = formatCurrencyMap(banking.balances_by_currency || {});
+                        if (spentEl) spentEl.textContent = banking.total_spent !== undefined
+                            ? `USD ${Number(banking.total_spent || 0).toFixed(2)}`
+                            : '—';
+                        if (noteEl) {
+                            const currencies = Object.keys(revenue.by_currency || {});
+                            noteEl.textContent = currencies.length
+                                ? `Currencies: ${currencies.join(', ')}`
+                                : 'Currency: USD (default)';
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch finance summary:', error);
+                    }
+                }
+
+                async function updateAuthStatus() {
+                    try {
+                        const auth = await fetch('/api/auth/status').then((r) => r.json());
+                        dashIsAdmin = !!auth.is_admin;
+                        const downloadBtn = document.getElementById('dash-log-download');
+                        if (downloadBtn) {
+                            downloadBtn.disabled = !dashIsAdmin;
+                            downloadBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
+                    } catch (err) {
+                        dashIsAdmin = false;
+                    }
+                }
+
+                function addDashboardLogEntry(raw) {
+                    const panel = document.getElementById('dashboard-log-panel');
+                    if (!panel) return;
+                    let payload = null;
+                    try {
+                        payload = JSON.parse(raw);
+                    } catch (e) {
+                        payload = { level: 'info', event: 'log_line', message: raw };
+                    }
+                    const level = (payload.level || 'info').toLowerCase();
+                    const eventName = payload.event || payload.type || 'event';
+                    const entry = document.createElement('div');
+                    entry.className = `log-entry level-${level}`;
+                    entry.dataset.level = level;
+                    entry.dataset.event = eventName.toString().toLowerCase();
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    const ts = payload.ts ? new Date(payload.ts).toLocaleTimeString() : '';
+                    meta.textContent = `${ts} • ${eventName} • ${payload.level || 'info'}`;
+                    const text = document.createElement('div');
+                    text.className = 'text';
+                    text.textContent = payload.message || JSON.stringify(payload);
+                    entry.appendChild(meta);
+                    entry.appendChild(text);
+                    panel.appendChild(entry);
+                    panel.scrollTop = panel.scrollHeight;
+
+                    const entries = panel.querySelectorAll('.log-entry');
+                    if (entries.length > 200) {
+                        entries[0].remove();
+                    }
+                    refreshDashboardLogVisibility();
+                }
+
+                function refreshDashboardLogVisibility() {
+                    const panel = document.getElementById('dashboard-log-panel');
+                    if (!panel) return;
+                    const level = (document.getElementById('dash-log-level') || {}).value || 'all';
+                    const eventFilter = ((document.getElementById('dash-log-event') || {}).value || '').trim().toLowerCase();
+                    const scope = (document.getElementById('dash-log-scope') || {}).value || 'all';
+                    const entries = panel.querySelectorAll('.log-entry');
+                    entries.forEach((entry) => {
+                        const entryLevel = entry.dataset.level || 'info';
+                        const entryEvent = entry.dataset.event || '';
+                        let visible = true;
+                        if (level !== 'all' && entryLevel !== level) visible = false;
+                        if (eventFilter && !entryEvent.includes(eventFilter)) visible = false;
+                        if (scope === 'meta' && !entryEvent.startsWith('meta_') && !entryEvent.includes('meta')) visible = false;
+                        if (scope === 'score' && !entryEvent.includes('score')) visible = false;
+                        entry.style.display = visible ? 'block' : 'none';
+                    });
+                }
+
+                function initDashboardLogStream() {
+                    const source = (document.getElementById('dash-log-source') || {}).value || 'runtime';
+                    if (dashLogEventSource) {
+                        dashLogEventSource.close();
+                    }
+                    if (dashLogPaused) return;
+                    if (!!window.EventSource) {
+                        dashLogEventSource = new EventSource(`/api/logs/stream?kind=${source}`);
+                        dashLogEventSource.onmessage = (event) => {
+                            addDashboardLogEntry(event.data);
+                        };
+                        dashLogEventSource.onerror = () => {
+                            addDashboardLogEntry(JSON.stringify({
+                                level: 'warn',
+                                event: 'log_stream_error',
+                                message: 'Dashboard log stream error. Retrying...'
+                            }));
+                        };
+                    } else {
+                        addDashboardLogEntry(JSON.stringify({
+                            level: 'error',
+                            event: 'log_stream_unsupported',
+                            message: 'EventSource not supported by this browser.'
+                        }));
+                    }
+                }
+
+                async function fetchDashboardLogSnapshot() {
+                    const source = (document.getElementById('dash-log-source') || {}).value || 'runtime';
+                    const summaryEl = document.getElementById('dashboard-log-summary');
+                    try {
+                        const res = await fetch(`/api/logs/view?window=200&kind=${source}`);
+                        const data = await res.json();
+                        const summary = data.summary || {};
+                        const levels = summary.levels || {};
+                        const topEvents = summary.top_events || [];
+                        const levelText = Object.keys(levels).map((k) => `${k}:${levels[k]}`).join(' · ');
+                        const topText = topEvents.map((e) => `${e[0]}(${e[1]})`).join(', ');
+                        const dropped = summary.dropped || 0;
+                        if (summaryEl) {
+                            summaryEl.textContent = `Window: ${summary.window || 0} · Dropped: ${dropped} · Levels: ${levelText} · Top events: ${topText}`;
+                        }
+                        if (summary.last_error) addDashboardLogEntry(JSON.stringify(summary.last_error));
+                        if (summary.last_warn) addDashboardLogEntry(JSON.stringify(summary.last_warn));
+                    } catch (err) {
+                        if (summaryEl) summaryEl.textContent = `Snapshot error: ${err.message}`;
+                    }
+                }
+
                 async function updateAgents() {
                     try {
                         const response = await fetch('/api/agent/statuses');
@@ -8253,12 +8491,62 @@ sam@terminal:~$
                     });
                 }
 
+                const dashLogPause = document.getElementById('dash-log-pause');
+                const dashLogClear = document.getElementById('dash-log-clear');
+                const dashLogSnapshot = document.getElementById('dash-log-snapshot');
+                const dashLogDownload = document.getElementById('dash-log-download');
+                const dashLogSource = document.getElementById('dash-log-source');
+                const dashLogLevel = document.getElementById('dash-log-level');
+                const dashLogEvent = document.getElementById('dash-log-event');
+                const dashLogScope = document.getElementById('dash-log-scope');
+
+                if (dashLogPause) {
+                    dashLogPause.addEventListener('click', () => {
+                        dashLogPaused = !dashLogPaused;
+                        dashLogPause.textContent = dashLogPaused ? 'Resume' : 'Pause';
+                        if (!dashLogPaused) initDashboardLogStream();
+                        if (dashLogEventSource && dashLogPaused) {
+                            dashLogEventSource.close();
+                        }
+                    });
+                }
+                if (dashLogClear) {
+                    dashLogClear.addEventListener('click', () => {
+                        const panel = document.getElementById('dashboard-log-panel');
+                        if (panel) panel.innerHTML = '';
+                    });
+                }
+                if (dashLogSnapshot) {
+                    dashLogSnapshot.addEventListener('click', () => fetchDashboardLogSnapshot());
+                }
+                if (dashLogDownload) {
+                    dashLogDownload.addEventListener('click', () => {
+                        const source = (dashLogSource || {}).value || 'runtime';
+                        const token = samAdminToken ? `&token=${encodeURIComponent(samAdminToken)}` : '';
+                        window.open(`/api/logs/download?kind=${source}${token}`, '_blank');
+                    });
+                }
+                if (dashLogSource) {
+                    dashLogSource.addEventListener('change', () => {
+                        initDashboardLogStream();
+                        fetchDashboardLogSnapshot();
+                    });
+                }
+                if (dashLogLevel) dashLogLevel.addEventListener('change', refreshDashboardLogVisibility);
+                if (dashLogEvent) dashLogEvent.addEventListener('input', refreshDashboardLogVisibility);
+                if (dashLogScope) dashLogScope.addEventListener('change', refreshDashboardLogVisibility);
+
                 setInterval(updateAgents, 5000);
                 updateAgents();
                 setInterval(updateRevenueOps, 10000);
                 updateRevenueOps();
                 setInterval(updateBanking, 12000);
                 updateBanking();
+                setInterval(updateFinanceSummary, 15000);
+                updateFinanceSummary();
+                updateAuthStatus();
+                initDashboardLogStream();
+                fetchDashboardLogSnapshot();
         '''
 
         html = f"""
@@ -8561,6 +8849,75 @@ sam@terminal:~$
                 .chat-input button:hover {{
                     transform: translateY(-1px);
                 }}
+                .log-panel {{
+                    background: rgba(12, 17, 28, 0.7);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 14px;
+                    padding: 12px;
+                    max-height: 220px;
+                    overflow-y: auto;
+                    font-family: "JetBrains Mono", monospace;
+                    font-size: 0.75rem;
+                }}
+                .log-entry {{
+                    padding: 8px 10px;
+                    border-radius: 10px;
+                    margin-bottom: 8px;
+                    background: rgba(255, 255, 255, 0.04);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                }}
+                .log-entry .meta {{
+                    font-size: 0.65rem;
+                    color: var(--muted);
+                    margin-bottom: 4px;
+                }}
+                .log-entry.level-warn {{
+                    border-color: rgba(245, 185, 75, 0.5);
+                    background: rgba(245, 185, 75, 0.08);
+                }}
+                .log-entry.level-error {{
+                    border-color: rgba(255, 107, 107, 0.5);
+                    background: rgba(255, 107, 107, 0.08);
+                }}
+                .log-entry.level-info {{
+                    border-color: rgba(41, 211, 192, 0.35);
+                    background: rgba(41, 211, 192, 0.08);
+                }}
+                .log-actions {{
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                }}
+                .log-actions button {{
+                    padding: 6px 10px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    background: transparent;
+                    color: var(--text);
+                    font-size: 0.7rem;
+                    cursor: pointer;
+                }}
+                .log-filters {{
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                }}
+                .log-filters select,
+                .log-filters input {{
+                    background: #0c111c;
+                    color: var(--text);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 10px;
+                    padding: 6px 8px;
+                    font-size: 0.7rem;
+                }}
+                .log-summary {{
+                    margin-top: 8px;
+                    font-size: 0.7rem;
+                    color: var(--muted);
+                }}
                 .revenue-grid {{
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -8754,6 +9111,26 @@ sam@terminal:~$
                             </div>
                         </div>
                         <div class="card">
+                            <h3>💰 Finance Summary</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Revenue Paid</span>
+                                <span id="finance-revenue-paid">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Revenue Outstanding</span>
+                                <span id="finance-revenue-outstanding">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Saved (Banking)</span>
+                                <span id="finance-banking-saved">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Spent (Banking)</span>
+                                <span id="finance-banking-spent">—</span>
+                            </div>
+                            <div class="revenue-meta" id="finance-currency-note">Currency: USD (default)</div>
+                        </div>
+                        <div class="card">
                             <h3>Meta Control</h3>
                             <div class="metric-row">
                                 <span class="metric-label">Latency Gate</span>
@@ -8780,6 +9157,46 @@ sam@terminal:~$
                         <div class="chat-input">
                             <input type="text" id="chat-input" placeholder="Ask SAM anything..." />
                             <button onclick="sendMessage()">Send</button>
+                        </div>
+                    </section>
+
+                    <section class="grid">
+                        <div class="card">
+                            <h3>📜 Live Event Log</h3>
+                            <div class="log-panel" id="dashboard-log-panel">
+                                <div class="log-entry level-info">
+                                    <div class="meta">Waiting for log stream…</div>
+                                    <div class="text">Select a source and start streaming JSONL events.</div>
+                                </div>
+                            </div>
+                            <div class="log-actions">
+                                <button id="dash-log-pause">Pause</button>
+                                <button id="dash-log-clear">Clear</button>
+                                <button id="dash-log-snapshot">Snapshot</button>
+                                <button id="dash-log-download">Download</button>
+                            </div>
+                            <div class="log-filters">
+                                <select id="dash-log-source">
+                                    <option value="runtime">Runtime</option>
+                                    <option value="distill">Distillation</option>
+                                    <option value="revenue">Revenue Audit</option>
+                                    <option value="banking">Banking Audit</option>
+                                    <option value="human">Human Log</option>
+                                </select>
+                                <select id="dash-log-level">
+                                    <option value="all">All levels</option>
+                                    <option value="error">Error</option>
+                                    <option value="warn">Warn</option>
+                                    <option value="info">Info</option>
+                                </select>
+                                <input id="dash-log-event" placeholder="Filter event (e.g., meta_*)" />
+                                <select id="dash-log-scope">
+                                    <option value="all">All events</option>
+                                    <option value="meta">Meta-agent only</option>
+                                    <option value="score">Score only</option>
+                                </select>
+                            </div>
+                            <div class="log-summary" id="dashboard-log-summary"></div>
                         </div>
                     </section>
 
@@ -9141,6 +9558,31 @@ sam@terminal:~$
         thread.start()
         print("✅ Revenue sequence executor active", flush=True)
 
+    def _collect_finance_summary(self) -> Dict[str, Any]:
+        revenue = self.revenue_ops.get_financial_metrics() if self.revenue_ops else {}
+        banking = self.banking_ledger.get_metrics() if self.banking_ledger else {}
+        return {
+            "revenue": revenue,
+            "banking": banking,
+            "timestamp": _utc_now(),
+        }
+
+    def _log_finance_snapshot(self):
+        summary = self._collect_finance_summary()
+        revenue = summary.get("revenue") or {}
+        banking = summary.get("banking") or {}
+        log_event(
+            "info",
+            "finance_snapshot",
+            "Finance summary snapshot",
+            revenue_paid=revenue.get("total_paid"),
+            revenue_outstanding=revenue.get("total_outstanding"),
+            revenue_invoiced=revenue.get("total_invoiced"),
+            banking_saved=banking.get("total_balance"),
+            banking_spent=banking.get("total_spent"),
+            banking_accounts=banking.get("account_count"),
+        )
+
     def _start_monitoring_system(self):
         """Start background monitoring system with autonomous operation"""
         if getattr(self, "_monitoring_started", False):
@@ -9153,6 +9595,7 @@ sam@terminal:~$
             return
 
         def autonomous_operation_loop():
+            last_finance_log = 0.0
             while not is_shutting_down():
                 try:
                     with shutdown_guard("autonomous operation"):
@@ -9187,6 +9630,13 @@ sam@terminal:~$
                         # Update goal README periodically
                         if hasattr(self, 'goal_manager'):
                             self.goal_manager.export_readme()
+
+                        # Periodic finance snapshot logging
+                        if self.finance_log_interval_s > 0:
+                            now_ts = time.time()
+                            if (now_ts - last_finance_log) >= self.finance_log_interval_s:
+                                self._log_finance_snapshot()
+                                last_finance_log = now_ts
                 except InterruptedError:
                     break
                 except Exception as e:
