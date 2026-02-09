@@ -1495,10 +1495,18 @@ class MetaAgent:
         # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
         self.failure_clusters = {}     # cluster_id -> list[failure]
         self.patch_history = []        # list of applied/rejected patches
-        self.confidence_threshold = 0.80  # Fixed confidence threshold
+        self.confidence_threshold = float(
+            os.getenv("SAM_META_CONFIDENCE_THRESHOLD", "0.8")
+        )
 
         # Internal counters
         self._cluster_id_counter = 0
+
+        # Enhanced pattern library (merged from enhanced meta-agent)
+        self.error_patterns = self._load_error_patterns()
+        self.fix_strategies = self._load_fix_strategies()
+        self.successful_fixes = []
+        self.failed_attempts = []
 
         # Advanced learning system attributes
         self.learning_cycles = 0
@@ -1508,6 +1516,7 @@ class MetaAgent:
         self.baseline_performance = {}
         self.current_performance = {}
         self.improvement_threshold = 0.95  # 95% error reduction required
+        self.learning_log = deque(maxlen=int(os.getenv("SAM_META_LEARNING_LOG_MAX", "50")))
         self.research_enabled = os.getenv("SAM_META_RESEARCH_ENABLED", "1") == "1"
         self.research_mode = os.getenv("SAM_META_RESEARCH_MODE", "both").lower()
         self.research_max_chars = int(os.getenv("SAM_META_RESEARCH_MAX_CHARS", "2000"))
