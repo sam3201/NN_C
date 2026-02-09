@@ -1,13 +1,13 @@
-# SAM / ANANKE Implementation-Only Spec (Derived)
+# SAM / SAV Implementation-Only Spec (Derived)
 
 This document is a strict implementation spec distilled from `DOCS/README-chatGPT-source.md`. It contains only concrete requirements, interfaces, and behaviors. It contains no forward-looking prompts.
 
 ## 1. Scope
-- Implement the SAM + ANANKE system as a hybrid Python/C runtime.
+- Implement the SAM + SAV system as a hybrid Python/C runtime.
 - Provide a web server with a live groupchat interface.
 - Provide a training pipeline that supports teacher consensus, distillation dataset generation, and LoRA/full fine-tune scaffolding.
 - Enforce growth gating through a regression suite.
-- Ensure ANANKE is unbounded and allowed to mutate/grow without constraint.
+- Ensure SAV is unbounded and allowed to mutate/grow without constraint.
 
 ## 2. Core Runtime Components
 ### 2.1 SAM (Python Orchestrator)
@@ -15,20 +15,20 @@ This document is a strict implementation spec distilled from `DOCS/README-chatGP
 - Must initialize:
   - C-core modules: `consciousness_*`, `multi_agent_orchestrator_c`, `specialized_agents_c`.
   - Meta-controller: `sam_meta_controller_c`.
-  - Dual-system arena: `sam_ananke_dual_system`.
+  - Dual-system arena: `sam_sav_dual_system`.
 - Must expose API + web UI on port `5004`.
 - Must expose groupchat via SocketIO.
 - Must run background monitoring and meta loop unless `SAM_AUTONOMOUS_ENABLED=0`.
 
-### 2.2 ANANKE (C Dual-System)
-- Source: `sam_ananke_dual_system.c`.
+### 2.2 SAV (C Dual-System)
+- Source: `sam_sav_dual_system.c`.
 - Must be instantiated with `unbounded=1`.
 - Must mutate objectives without restriction using `objective_mutate_unbounded`.
-- Must be exposed through Python bindings (`sam_ananke_dual_system` module).
+- Must be exposed through Python bindings (`sam_sav_dual_system` module).
 - Must provide state telemetry:
-  - `sam_alive`, `ananke_alive`
-  - `sam_survival`, `ananke_survival`
-  - `sam_score`, `ananke_score`
+  - `sam_alive`, `sav_alive`
+  - `sam_survival`, `sav_survival`
+  - `sam_score`, `sav_score`
 
 ### 2.3 Meta-Controller (C)
 - Source: `sam_meta_controller_c.c`.
@@ -99,8 +99,8 @@ SAM must emit only the following structured pressure channels:
 - `/api/health` (lightweight health check)
 - `/api/groupchat/status`
 - `/api/meta/status`
-- `/api/ananke/state`
-- `/api/ananke/step`
+- `/api/sav/state`
+- `/api/sav/step`
 - `/api/github/save`
 - `/api/gmail/send`
 
@@ -128,4 +128,4 @@ SAM must emit only the following structured pressure channels:
 ## 11. Operational Constraints
 - The system must run without “simulation mode” or placeholder behavior.
 - Any missing dependency that affects core behavior must fail loud.
-- ANANKE must remain unbounded at all times.
+- SAV must remain unbounded at all times.

@@ -7,7 +7,7 @@ This document is a cleaned, structured summary of the ChatGPT research archive. 
 - Define morphogenetic latency as a stateful gate on structural change.
 - Map theory to a local, implementable LLM + planner + meta-controller stack.
 - Specify SAM growth primitives, pressure signals, selection policy, and invariants.
-- Define the SAM/ANANKE dual-system dynamics and safety boundaries.
+- Define the SAM/SAV dual-system dynamics and safety boundaries.
 - Outline training, distillation, regression gating, and ops pipelines.
 
 ## Core Objective (God Equation)
@@ -22,11 +22,11 @@ This document is a cleaned, structured summary of the ChatGPT research archive. 
 - Morphogenesis is irreversible unless catastrophic failure occurs.
 - Latency does not affect inference; it gates architecture changes only.
 
-## SAM / ANANKE Roles
+## SAM / SAV Roles
 - SAM is the latent world state machinery and memory substrate.
 - The head model performs policy, planning, and tool use.
 - The meta-controller decides when and how SAM grows.
-- ANANKE provides adversarial pressure to prevent unilateral runaway.
+- SAV provides adversarial pressure to prevent unilateral runaway.
 
 ## Growth Primitives (Only Allowed Mutations)
 - Latent dimension expansion.
@@ -96,14 +96,14 @@ This document is a cleaned, structured summary of the ChatGPT research archive. 
 - Core recursive form for subsystem aggregation with reflexive term.
 - Behavioral identity objective (policy over state, memory, worldview, self).
 - Morphogenetic update equation (utility + wisdom + reflection).
-- Reflexive SAM ⇄ ANANKE coupling with second-order acceleration.
+- Reflexive SAM ⇄ SAV coupling with second-order acceleration.
 - Self-updating mechanics (meta-derivative on the update equation).
 
 ## God Equation Family (Expanded)
 - Core recursive form G(t) with subsystem dynamics + reflexive meta‑term.
 - Behavioral identity objective I(t) over policy, memory, worldview, and evolving self.
 - Morphogenetic update equation governing structural change via utility, wisdom, reflection.
-- SAM ⇄ ANANKE coupling with second‑order reflexive acceleration.
+- SAM ⇄ SAV coupling with second‑order reflexive acceleration.
 - Meta‑reflexive update equation describing rule‑updates on the objective itself.
 - Synthesis: multi‑scale feedback, co‑evolving topology, recursion, and meta‑feedback.
 

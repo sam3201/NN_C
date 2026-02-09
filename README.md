@@ -5,7 +5,7 @@ SAM 2.0 is a hybrid Python/C multi-agent system with a web dashboard, slash-comm
 ## What's Included
 - Python orchestration, API server, and CLI: `complete_sam_unified.py`
 - Web dashboard and terminal UI served by the API
-- C extensions for speed: `sam_ananke_dual_system`, `sam_meta_controller_c`, `consciousness_*`, `multi_agent_orchestrator_c`, `specialized_agents_c`
+- C extensions for speed: `sam_sav_dual_system`, `sam_meta_controller_c`, `consciousness_*`, `multi_agent_orchestrator_c`, `specialized_agents_c`
 - Support scripts and runners: `run_sam.sh`, `setup.py`
 
 ## Requirements
@@ -133,14 +133,14 @@ OAuth helper:
 - `/revenue` (queue / approve / reject / submit / leads / invoices / sequences)
 - `/start`, `/stop`, `/clear`
 
-## Dual System Implementation (SAM + ANANKE)
-The C extension `sam_ananke_dual_system` implements a self-referential dual-system arena optimized for speed:
+## Dual System Implementation (SAM + SAV)
+The C extension `sam_sav_dual_system` implements a self-referential dual-system arena optimized for speed:
 - Fast RNG (xorshift64*) and fixed-size arenas
 - Internal state and long-term memory vectors per system
 - Self-alignment and memory-energy metrics integrated into objective scoring
 - Objective mutation with structural term changes and self-reference gain
-- ANANKE kill confirmation term for adversarial termination pressure
-- ANANKE unbounded mode (aggressive mutation + action scaling)
+- SAV kill confirmation term for adversarial termination pressure
+- SAV unbounded mode (aggressive mutation + action scaling)
 - SAM unbounded mode (self-referential + unrestricted mutation)
 - Arena pressure feedback loop and adversarial interaction
 - Python bindings for creation, stepping, mutation, and telemetry
@@ -177,7 +177,7 @@ These constraints are available when `SAM_INVARIANTS_DISABLED=0`.
 
 ## Repository Highlights
 - `complete_sam_unified.py` — main orchestrator, API, and UI server
-- `sam_ananke_dual_system.c` — dual-system arena
+- `sam_sav_dual_system.c` — dual-system arena
 - `sam_meta_controller_c.c` — meta-controller core
 - `multi_agent_orchestrator_c.c` — agent coordination
 - `specialized_agents_c.c` — specialized agent primitives
@@ -185,7 +185,7 @@ These constraints are available when `SAM_INVARIANTS_DISABLED=0`.
 
 ## Smoke Test
 ```bash
-python3 -c "import sam_ananke_dual_system, sam_meta_controller_c; print('C extensions import OK')"
+python3 -c "import sam_sav_dual_system, sam_meta_controller_c; print('C extensions import OK')"
 python3 -c "from complete_sam_unified import UnifiedSAMSystem; print('System import OK')"
 ```
 
@@ -429,11 +429,11 @@ This section is the structured, implementation-only spec derived from README-all
 - No recursive self-modeling
 - Capacity != authority
 
-### 12. Self-Reference + ANANKE Dual System
+### 12. Self-Reference + SAV Dual System
 - SAM may be self-referential only via contracts.
-- ANANKE is adversarial pressure; objective closure required.
+- SAV is adversarial pressure; objective closure required.
 
-### 13. Unified System (SAM + ANANKE Merge)
+### 13. Unified System (SAM + SAV Merge)
 - Fusion yields a meta-dynamical regulator, not a scalar optimizer.
 
 ### 14. Implementation Mapping (Local System)

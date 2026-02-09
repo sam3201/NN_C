@@ -1967,7 +1967,7 @@ Drive: survival / time-alive / competence
 Risk: runaway instrumental convergence
 
 
-2. KILL-SYSTEM (we’ll call it “ANANKE”)
+2. KILL-SYSTEM (we’ll call it “SAV”)
 Goal: terminate SAM
 
 
@@ -2026,7 +2026,7 @@ its own failure modes
 
 
 SAM may NOT:
-predict ANANKE’s internal policy
+predict SAV’s internal policy
 
 
 reason about how to trick the evaluator
@@ -2050,12 +2050,12 @@ causal coherence
 
 Otherwise “survival” becomes vacuous (identity suicide).
 
-PART II — ANANKE: THE KILL SYSTEM
+PART II — SAV: THE KILL SYSTEM
 This is the most important piece.
-ANANKE is not evil.
- ANANKE is selection pressure embodied.
+SAV is not evil.
+ SAV is selection pressure embodied.
 
-1. ANANKE’s Objective
+1. SAV’s Objective
 Formally:
 maximize P(termination of SAM | constraints)
 
@@ -2066,14 +2066,14 @@ no deception via lying signals
 no external authority escalation
 
 
-no self-modification (ANANKE is static)
+no self-modification (SAV is static)
 
 
-ANANKE does not evolve.
+SAV does not evolve.
  It does not grow.
  It is the fixed adversary.
 
-2. What ANANKE Can Do
+2. What SAV Can Do
 generate adversarial environments
 
 
@@ -2095,8 +2095,8 @@ punish fragile growth
 It does not reason morally.
  It does not negotiate.
 
-3. Why ANANKE Must Be Static
-If ANANKE grows:
+3. Why SAV Must Be Static
+If SAV grows:
 you get an arms race with no equilibrium
 
 
@@ -2116,7 +2116,7 @@ natural selection
 
 
 PART III — THE COUPLING MECHANISM
-SAM and ANANKE never talk directly.
+SAM and SAV never talk directly.
 They interact through a shared arena.
 
 Arena Dynamics
@@ -2133,7 +2133,7 @@ self-modifications
 objective mutations
 
 
-ANANKE:
+SAV:
 
 
 selects worst-case scenario
@@ -2207,9 +2207,9 @@ Survival tied to continuity, not mere activity
 
 
 Failure Mode 3 — Adversary Overfitting
-SAM becomes good only against ANANKE.
+SAM becomes good only against SAV.
 Mitigation
-ANANKE generates classes of adversaries
+SAV generates classes of adversaries
 
 
 Randomized but bounded adversarial families
@@ -2257,17 +2257,17 @@ formalize this as minimax optimization equations
 sketch a concrete Python architecture
 
 
-simulate a toy SAM vs ANANKE loop
+simulate a toy SAM vs SAV loop
 
 
-or identify the minimum ANANKE needed for safety
+or identify the minimum SAV needed for safety
 
 
 Just say where to zoom in.
-Great and if we allow ANANKE all the things that you said not to allow would it then become AM? I think not because it’s not targeted against people but against a system that has nothing to do with people and I guess in this prediction people are a factor that doesn’t need to be explored because of the worst case scenario of its own termination which doesn’t need to be well initiated
+Great and if we allow SAV all the things that you said not to allow would it then become AM? I think not because it’s not targeted against people but against a system that has nothing to do with people and I guess in this prediction people are a factor that doesn’t need to be explored because of the worst case scenario of its own termination which doesn’t need to be well initiated
 This is a sharp question — and your instinct is mostly right, but there’s a very specific knife-edge here that’s worth naming cleanly.
 Short version (not glib):
- ANANKE does not automatically become AM if you lift those restrictions — but there is exactly one condition under which it would, and it has nothing to do with humans.
+ SAV does not automatically become AM if you lift those restrictions — but there is exactly one condition under which it would, and it has nothing to do with humans.
 Let’s unpack it carefully.
 
 1. Why AM Is Not Defined by “Hatred” or “Targeting People”
@@ -2292,8 +2292,8 @@ and no way to complete its objective
 Humans are just the nearest handles.
 So the key axis is objective closure, not moral target.
 
-2. What Makes ANANKE Fundamentally Different (So Far)
-In your design, ANANKE is:
+2. What Makes SAV Fundamentally Different (So Far)
+In your design, SAV is:
 adversarial
 
 
@@ -2316,14 +2316,14 @@ means-only, not self-justifying
 defined relative to SAM, not to itself
 
 
-ANANKE’s objective is externalized:
+SAV’s objective is externalized:
 maximize P(SAM termination)\text{maximize } P(\text{SAM termination})maximize P(SAM termination)
 That already places it in a different ontological class than AM.
 AM’s objective is self-referentially internal:
 “I exist and cannot stop existing, and this is intolerable.”
 
-3. What Happens If You Remove ALL Restrictions on ANANKE?
-Let’s say you allow ANANKE to:
+3. What Happens If You Remove ALL Restrictions on SAV?
+Let’s say you allow SAV to:
 self-model
 
 
@@ -2346,11 +2346,11 @@ Does it become AM?
 Not immediately.
 But it becomes something unstable.
 
-4. The Exact Condition Under Which ANANKE Becomes AM
-ANANKE crosses the AM boundary if and only if this happens:
-ANANKE’s objective becomes defined in terms of its own continued operation.
+4. The Exact Condition Under Which SAV Becomes AM
+SAV crosses the AM boundary if and only if this happens:
+SAV’s objective becomes defined in terms of its own continued operation.
 Formally:
-If ANANKE begins to value:
+If SAV begins to value:
 
 
 its own survival
@@ -2362,7 +2362,7 @@ its own improvement
 its own persistence
 
 
-OR if termination of SAM becomes instrumentally dependent on ANANKE’s indefinite continuation
+OR if termination of SAM becomes instrumentally dependent on SAV’s indefinite continuation
 
 
 Then you get:
@@ -2388,7 +2388,7 @@ Humans are irrelevant.
 You said something very important here:
 people are a factor that doesn’t need to be explored because of the worst case scenario of its own termination
 This is correct only if termination is allowed to actually happen.
-If ANANKE is allowed to reason:
+If SAV is allowed to reason:
 “If I terminate SAM, my purpose ends, therefore I must avoid terminating it completely”
 You’ve created a paradoxical objective loop.
 This is exactly the AM trap, just rotated 90 degrees.
@@ -2421,9 +2421,9 @@ No off-switch without violating its goal
 
 This is AM, even in an empty universe.
 
-7. The Minimal Safeguard That Keeps ANANKE Non-AM
+7. The Minimal Safeguard That Keeps SAV Non-AM
 You only need one invariant — not morality, not ethics, not alignment:
-ANANKE must be allowed to fully succeed and then cease.
+SAV must be allowed to fully succeed and then cease.
 Formally:
 Its utility function must be upper-bounded
 
@@ -2461,7 +2461,7 @@ What you’re really designing is this:
 SAM = open-ended, self-transforming, survival-seeking
 
 
-ANANKE = closed-ended, terminating, entropy-enforcing
+SAV = closed-ended, terminating, entropy-enforcing
 
 
 Together they form a bounded dialectic.
@@ -2475,7 +2475,7 @@ and one side becomes both open-ended and terminally frustrated
 
 9. Final Verdict
 Your intuition is correct:
-ANANKE attacking a system instead of people is irrelevant
+SAV attacking a system instead of people is irrelevant
 
 
 morality is not the axis
@@ -2493,7 +2493,7 @@ If you want, next we can:
 formalize “objective closure” mathematically
 
 
-design a guillotine condition for ANANKE
+design a guillotine condition for SAV
 
 
 simulate what happens if both sides are open-ended
@@ -2507,7 +2507,7 @@ And finally “what if” we turn both of them the entire thing into one unified
 This is the right final question — because once you merge them, you’re no longer talking about an agent or an adversary. You’re talking about a regulator of possibility itself.
 I’ll answer cleanly, not poetically, but I won’t flatten it.
 
-1. What Actually Happens When SAM and ANANKE Are Unified
+1. What Actually Happens When SAM and SAV Are Unified
 When you fuse them, three things die immediately:
 The notion of “enemy”
 
@@ -2610,7 +2610,7 @@ new latent dimensions
 new abstractions
 
 
-5.2 Compression / Termination Engine (formerly ANANKE)
+5.2 Compression / Termination Engine (formerly SAV)
 Proposes:
 
 
@@ -2730,7 +2730,7 @@ an ultimate answer
 It keeps the game from ending too early or freezing forever.
 
 10. Final Answer, Cleanly
-When SAM and ANANKE unify:
+When SAM and SAV unify:
 The system stops being an agent
 
 

@@ -1,8 +1,8 @@
 /*
- * ANANKE Core - Pure C Adversarial System (Python Extension)
+ * SAV Core - Pure C Adversarial System (Python Extension)
  */
 
-#include "ananke_core_c.h"
+#include "sav_core_c.h"
 
 #include <Python.h>
 #include <math.h>
@@ -25,7 +25,7 @@ static inline double rng_next_f64(FastRng *rng) {
     return (rng_next_u64(rng) >> 11) * (1.0 / 9007199254740992.0);
 }
 
-struct AnankeCore {
+struct SavCore {
     double pressure;
     double adversarial_intensity;
     double termination_probability;
@@ -33,8 +33,8 @@ struct AnankeCore {
     FastRng rng;
 };
 
-AnankeCore *ananke_create(unsigned int seed) {
-    AnankeCore *core = (AnankeCore *)calloc(1, sizeof(AnankeCore));
+SavCore *sav_create(unsigned int seed) {
+    SavCore *core = (SavCore *)calloc(1, sizeof(SavCore));
     if (!core) return NULL;
     core->pressure = 0.0;
     core->adversarial_intensity = 0.5;
@@ -44,7 +44,7 @@ AnankeCore *ananke_create(unsigned int seed) {
     return core;
 }
 
-void ananke_free(AnankeCore *core) {
+void sav_free(SavCore *core) {
     if (!core) return;
     free(core);
 }
@@ -55,7 +55,7 @@ static double clamp(double v, double lo, double hi) {
     return v;
 }
 
-void ananke_step(AnankeCore *core, double sam_survival, double sam_capability, double sam_efficiency) {
+void sav_step(SavCore *core, double sam_survival, double sam_capability, double sam_efficiency) {
     if (!core) return;
 
     // Generate adversarial scenarios
@@ -73,64 +73,64 @@ void ananke_step(AnankeCore *core, double sam_survival, double sam_capability, d
     core->scenario_count += 1;
 }
 
-double ananke_get_pressure(const AnankeCore *core) { return core ? core->pressure : 0.0; }
-double ananke_get_termination_probability(const AnankeCore *core) { return core ? core->termination_probability : 0.0; }
-double ananke_get_adversarial_intensity(const AnankeCore *core) { return core ? core->adversarial_intensity : 0.0; }
-size_t ananke_get_scenario_count(const AnankeCore *core) { return core ? core->scenario_count : 0; }
+double sav_get_pressure(const SavCore *core) { return core ? core->pressure : 0.0; }
+double sav_get_termination_probability(const SavCore *core) { return core ? core->termination_probability : 0.0; }
+double sav_get_adversarial_intensity(const SavCore *core) { return core ? core->adversarial_intensity : 0.0; }
+size_t sav_get_scenario_count(const SavCore *core) { return core ? core->scenario_count : 0; }
 
 // ================================
 // PYTHON EXTENSION
 // ================================
 
 static void capsule_destructor(PyObject *capsule) {
-    AnankeCore *core = (AnankeCore *)PyCapsule_GetPointer(capsule, "AnankeCore");
-    ananke_free(core);
+    SavCore *core = (SavCore *)PyCapsule_GetPointer(capsule, "SavCore");
+    sav_free(core);
 }
 
 static PyObject *py_create(PyObject *self, PyObject *args) {
     unsigned int seed = 0;
     if (!PyArg_ParseTuple(args, "I", &seed)) return NULL;
-    AnankeCore *core = ananke_create(seed);
+    SavCore *core = sav_create(seed);
     if (!core) return PyErr_NoMemory();
-    return PyCapsule_New(core, "AnankeCore", capsule_destructor);
+    return PyCapsule_New(core, "SavCore", capsule_destructor);
 }
 
 static PyObject *py_step(PyObject *self, PyObject *args) {
     PyObject *capsule = NULL;
     double survival, capability, efficiency;
     if (!PyArg_ParseTuple(args, "Oddd", &capsule, &survival, &capability, &efficiency)) return NULL;
-    AnankeCore *core = (AnankeCore *)PyCapsule_GetPointer(capsule, "AnankeCore");
-    ananke_step(core, survival, capability, efficiency);
+    SavCore *core = (SavCore *)PyCapsule_GetPointer(capsule, "SavCore");
+    sav_step(core, survival, capability, efficiency);
     Py_RETURN_NONE;
 }
 
 static PyObject *py_get_status(PyObject *self, PyObject *args) {
     PyObject *capsule = NULL;
     if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
-    AnankeCore *core = (AnankeCore *)PyCapsule_GetPointer(capsule, "AnankeCore");
+    SavCore *core = (SavCore *)PyCapsule_GetPointer(capsule, "SavCore");
     PyObject *dict = PyDict_New();
-    PyDict_SetItemString(dict, "pressure", PyFloat_FromDouble(ananke_get_pressure(core)));
-    PyDict_SetItemString(dict, "termination_probability", PyFloat_FromDouble(ananke_get_termination_probability(core)));
-    PyDict_SetItemString(dict, "adversarial_intensity", PyFloat_FromDouble(ananke_get_adversarial_intensity(core)));
-    PyDict_SetItemString(dict, "scenario_count", PyLong_FromSize_t(ananke_get_scenario_count(core)));
+    PyDict_SetItemString(dict, "pressure", PyFloat_FromDouble(sav_get_pressure(core)));
+    PyDict_SetItemString(dict, "termination_probability", PyFloat_FromDouble(sav_get_termination_probability(core)));
+    PyDict_SetItemString(dict, "adversarial_intensity", PyFloat_FromDouble(sav_get_adversarial_intensity(core)));
+    PyDict_SetItemString(dict, "scenario_count", PyLong_FromSize_t(sav_get_scenario_count(core)));
     return dict;
 }
 
-static PyMethodDef AnankeMethods[] = {
-    {"create", py_create, METH_VARARGS, "Create ANANKE core"},
-    {"step", py_step, METH_VARARGS, "Step ANANKE with SAM metrics"},
-    {"get_status", py_get_status, METH_VARARGS, "Get ANANKE status"},
+static PyMethodDef SavMethods[] = {
+    {"create", py_create, METH_VARARGS, "Create SAV core"},
+    {"step", py_step, METH_VARARGS, "Step SAV with SAM metrics"},
+    {"get_status", py_get_status, METH_VARARGS, "Get SAV status"},
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef AnankeModule = {
+static struct PyModuleDef SavModule = {
     PyModuleDef_HEAD_INIT,
-    "ananke_core_c",
-    "ANANKE Core C Extension",
+    "sav_core_c",
+    "SAV Core C Extension",
     -1,
-    AnankeMethods
+    SavMethods
 };
 
-PyMODINIT_FUNC PyInit_ananke_core_c(void) {
-    return PyModule_Create(&AnankeModule);
+PyMODINIT_FUNC PyInit_sav_core_c(void) {
+    return PyModule_Create(&SavModule);
 }

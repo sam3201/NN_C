@@ -61,11 +61,11 @@ except ImportError:
     meta_controller_module = None
 
 try:
-    import ananke_core_c as ananke_module
-    print('✅ ANANKE core available')
+    import sav_core_c as sav_module
+    print('✅ SAV core available')
 except ImportError:
-    print('⚠️ ANANKE core not available - using fallback')
-    ananke_module = None
+    print('⚠️ SAV core not available - using fallback')
+    sav_module = None
 
 try:
     import multi_agent_orchestrator_c as orchestrator_module
@@ -81,13 +81,13 @@ except ImportError:
     print('⚠️ SAM meta-controller not available - using fallback')
     sam_meta_module = None
 
-if ananke_module is None:
+if sav_module is None:
     try:
-        import sam_ananke_dual_system as ananke_module
-        print('✅ SAM/ANANKE dual system available')
+        import sam_sav_dual_system as sav_module
+        print('✅ SAM/SAV dual system available')
     except ImportError:
-        print('⚠️ SAM/ANANKE dual system not available - using fallback')
-        ananke_module = None
+        print('⚠️ SAM/SAV dual system not available - using fallback')
+        sav_module = None
 
 try:
     from autonomous_meta_agent import MetaAgent
@@ -145,8 +145,8 @@ class CompleteSAMSystem:
         self.orchestrator = orchestrator_module
         self.specialized_agents = specialized_agents_module
         self.meta_controller_module = meta_controller_module
-        self.ananke_module = ananke_module
-        self.ananke_is_dual_system = bool(self.ananke_module and getattr(self.ananke_module, "__name__", "") == "sam_ananke_dual_system")
+        self.sav_module = sav_module
+        self.sav_is_dual_system = bool(self.sav_module and getattr(self.sav_module, "__name__", "") == "sam_sav_dual_system")
         self.meta_agent = MetaAgent(self) if meta_agent_available else None
         self._healing_active = bool(self.meta_agent)
         try:
@@ -177,9 +177,9 @@ class CompleteSAMSystem:
             'last_activity': None
         }
 
-        # Meta-controller + ANANKE arena
+        # Meta-controller + SAV arena
         self.meta_controller = None
-        self.ananke_arena = None
+        self.sav_arena = None
         self.meta_state = {}
         
         # Survival and goal management
@@ -193,8 +193,8 @@ class CompleteSAMSystem:
         self.meta_thread = None
         self.meta_loop_active = True
 
-        # ANANKE adversarial core
-        self.ananke_core = None
+        # SAV adversarial core
+        self.sav_core = None
 
         # Auto-conversation state
         self.auto_conversation_active = False
@@ -269,13 +269,13 @@ class CompleteSAMSystem:
             except Exception as e:
                 print_error(f"Meta-controller initialization failed: {e}")
 
-        # Initialize SAM/ANANKE dual arena
-        if ananke_module:
+        # Initialize SAM/SAV dual arena
+        if sav_module:
             try:
-                self.ananke_arena = ananke_module.create(16, 4, 42)
-                print_status("✅ SAM/ANANKE dual system initialized")
+                self.sav_arena = sav_module.create(16, 4, 42)
+                print_status("✅ SAM/SAV dual system initialized")
             except Exception as e:
-                print_error(f"ANANKE initialization failed: {e}")
+                print_error(f"SAV initialization failed: {e}")
 
         # Initialize meta-controller (SAM lifecycle)
         if self.meta_controller_module:
@@ -286,13 +286,13 @@ class CompleteSAMSystem:
             except Exception as e:
                 print_error(f"Meta-controller initialization failed: {e}")
 
-        # Initialize ANANKE core
-        if self.ananke_module:
+        # Initialize SAV core
+        if self.sav_module:
             try:
-                self.ananke_core = self.ananke_module.create(int(time.time()) ^ 0xA5A5A5A5)
-                print_status("✅ ANANKE core initialized")
+                self.sav_core = self.sav_module.create(int(time.time()) ^ 0xA5A5A5A5)
+                print_status("✅ SAV core initialized")
             except Exception as e:
-                print_error(f"ANANKE initialization failed: {e}")
+                print_error(f"SAV initialization failed: {e}")
         
         # Setup web routes
         if not self.test_mode:
@@ -365,8 +365,8 @@ class CompleteSAMSystem:
             issues.append("consciousness_unavailable")
         if not self.meta_controller:
             issues.append("meta_controller_unavailable")
-        if not self.ananke_arena:
-            issues.append("ananke_arena_unavailable")
+        if not self.sav_arena:
+            issues.append("sav_arena_unavailable")
         if self.survival_score < 0.2:
             issues.append("survival_score_low")
         status = "healthy" if not issues else "degraded"
@@ -414,14 +414,14 @@ class CompleteSAMSystem:
         while self.meta_loop_active and self.meta_controller:
             pressures = self._estimate_pressures()
             try:
-                # Update ANANKE adversarial pressure
-                if self.ananke_core:
+                # Update SAV adversarial pressure
+                if self.sav_core:
                     capability = 1.0 + (len(self.connected_agents) / 10.0)
                     efficiency = 1.0 - min(0.7, pressures["compression_waste"])
-                    if self.ananke_is_dual_system:
-                        self.ananke_module.step(self.ananke_core)
+                    if self.sav_is_dual_system:
+                        self.sav_module.step(self.sav_core)
                     else:
-                        self.ananke_module.step(self.ananke_core, self.survival_score, capability, efficiency)
+                        self.sav_module.step(self.sav_core, self.survival_score, capability, efficiency)
 
                 lambda_val = self.meta_controller_module.update_pressure(
                     self.meta_controller,
@@ -640,17 +640,17 @@ class CompleteSAMSystem:
                 'state': self.meta_state
             })
 
-        @self.app.route('/api/ananke/state')
-        def ananke_state():
-            if ananke_module and self.ananke_arena:
-                return jsonify(ananke_module.get_state(self.ananke_arena))
-            return jsonify({'error': 'ananke unavailable'})
+        @self.app.route('/api/sav/state')
+        def sav_state():
+            if sav_module and self.sav_arena:
+                return jsonify(sav_module.get_state(self.sav_arena))
+            return jsonify({'error': 'sav unavailable'})
 
-        @self.app.route('/api/ananke/step', methods=['POST'])
-        def ananke_step():
-            if ananke_module and self.ananke_arena:
+        @self.app.route('/api/sav/step', methods=['POST'])
+        def sav_step():
+            if sav_module and self.sav_arena:
                 steps = int((request.get_json(silent=True) or {}).get('steps', 1))
-                max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
+                max_steps = int(os.getenv("SAM_SAV_MAX_STEPS", "10000"))
                 if steps < 1:
                     steps = 1
                 if steps > max_steps:
@@ -659,9 +659,9 @@ class CompleteSAMSystem:
                 if not ok:
                     message, status = error
                     return jsonify({'error': message}), status
-                ananke_module.run(self.ananke_arena, steps)
-                return jsonify(ananke_module.get_state(self.ananke_arena))
-            return jsonify({'error': 'ananke unavailable'}), 503
+                sav_module.run(self.sav_arena, steps)
+                return jsonify(sav_module.get_state(self.sav_arena))
+            return jsonify({'error': 'sav unavailable'}), 503
 
     def _normalize_pressures(self, payload):
         """Normalize pressure signals into 0-1 range"""
@@ -765,15 +765,15 @@ class CompleteSAMSystem:
                 accepted = self.meta_controller_module.evaluate_contract(self.meta_controller, baseline, proposed)
                 return jsonify({'available': True, 'accepted': bool(accepted)}), 200
 
-        if 'ananke_status' not in self.app.view_functions:
-            @self.app.route('/api/ananke/status')
-            def ananke_status():
-                if not self.ananke_core:
+        if 'sav_status' not in self.app.view_functions:
+            @self.app.route('/api/sav/status')
+            def sav_status():
+                if not self.sav_core:
                     return jsonify({'available': False}), 200
-                if hasattr(self.ananke_module, "get_status"):
-                    status = self.ananke_module.get_status(self.ananke_core)
+                if hasattr(self.sav_module, "get_status"):
+                    status = self.sav_module.get_status(self.sav_core)
                 else:
-                    status = self.ananke_module.get_state(self.ananke_core)
+                    status = self.sav_module.get_state(self.sav_core)
                 return jsonify({'available': True, 'status': status}), 200
         
         @self.app.route('/api/health', methods=['GET'])

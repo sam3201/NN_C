@@ -12,16 +12,16 @@ This document is the canonical, **full** formulation of the system objective. It
 - **U**: Unsolvability budget (epistemic humility)
 - **Λ**: Morphogenetic latency (pressure accumulator)
 - **τ ~ P_{θ,π,M,π_A}**: Trajectory distribution
-- **π_A**: ANANKE policy (adversary)
+- **π_A**: SAV policy (adversary)
 - **C(·)**: Compute/capacity cost
 - **H(·)**: Predictive uncertainty (entropy)
 - **I(·)**: Mutual information (useful memory)
 - **ΔΦ(zₘ)**: Expressivity gain from morphogenesis
 - **Ω(S_t→S_{t+1})**: Morphogenesis cost (only when Λ ≥ τ)
 - **r(s_t,a_t)**: SAM reward
-- **T(s_t,a_t)**: Termination/attack pressure (ANANKE)
+- **T(s_t,a_t)**: Termination/attack pressure (SAV)
 
-## Primary Objective (SAM vs ANANKE)
+## Primary Objective (SAM vs SAV)
 \[
 \begin{aligned}
 (\pi^\*,M^\*,\theta^\*,\rho^\*,z_m^*) 
@@ -107,8 +107,8 @@ I(t) = Argmax_π [ E_τ [ Σ_t γ^t · R(s_t, a_t, μ_t, ω_t, S(t)) ] ]
 Morphogenetic Update Equation
 (dS/dt) = ∇_Θ ( U(G, I, C) + λ·W(Wisdom) + ξ·R(Reflection) )
 
-Reflexive Meta-System Coupling (SAM ⇄ ANANKE ⇄ Overseer)
-M(t) = G_SAM(t) + G_ANANKE(t) + η · (δ^2 M / δ t^2)
+Reflexive Meta-System Coupling (SAM ⇄ SAV ⇄ Overseer)
+M(t) = G_SAM(t) + G_SAV(t) + η · (δ^2 M / δ t^2)
 
 Self‑Updating Mechanics (Meta‑Reflexivity Layer)
 d/dt(U_equation) = (δU/δG) + ϕ · (δ^2 U / δU^2)

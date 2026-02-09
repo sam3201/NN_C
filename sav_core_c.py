@@ -1,4 +1,4 @@
-"""ANANKE core adapter backed by sam_ananke_dual_system.
+"""SAV core adapter backed by sam_sav_dual_system.
 
 This provides a stable API for SAM_AGI while using the dual-system arena
 internally for adversarial pressure testing.
@@ -6,14 +6,14 @@ internally for adversarial pressure testing.
 
 from __future__ import annotations
 
-import sam_ananke_dual_system as _dual
+import sam_sav_dual_system as _dual
 
 DEFAULT_STATE_DIM = 16
 DEFAULT_ARENA_DIM = 4
 
 
 def create(*args):
-    """Create an ANANKE core arena.
+    """Create an SAV core arena.
 
     Supported call patterns:
     - create() -> defaults
@@ -53,11 +53,11 @@ def get_status(arena):
     state = _dual.get_state(arena)
     return {
         "sam_alive": bool(state.get("sam_alive", False)),
-        "ananke_alive": bool(state.get("ananke_alive", False)),
+        "sav_alive": bool(state.get("sav_alive", False)),
         "sam_survival": state.get("sam_survival", 0.0),
-        "ananke_survival": state.get("ananke_survival", 0.0),
+        "sav_survival": state.get("sav_survival", 0.0),
         "sam_score": state.get("sam_score", 0.0),
-        "ananke_score": state.get("ananke_score", 0.0),
+        "sav_score": state.get("sav_score", 0.0),
     }
 
 

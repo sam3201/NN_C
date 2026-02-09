@@ -184,6 +184,38 @@
             color: var(--ink-soft);
         }
 
+        .memory-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 11px;
+            color: var(--ink-soft);
+        }
+
+        .memory-meta strong {
+            color: var(--ink);
+        }
+
+        .memory-list {
+            background: #f9f4ec;
+            border: 1px solid var(--panel-edge);
+            border-radius: 14px;
+            padding: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--ink);
+        }
+
+        .memory-item {
+            padding: 6px 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            background: #ffffff;
+            border: 1px solid #efe8dd;
+        }
+
         .status-grid {
             display: flex;
             flex-direction: column;
@@ -617,6 +649,17 @@
                 </div>
                 <div class="log-summary" id="logSummary"></div>
             </div>
+
+            <div class="panel-section" id="learningPanel">
+                <h3>Learning Memory</h3>
+                <div class="memory-meta">
+                    <span>Distill count: <strong id="distillCount">0</strong></span>
+                    <span>Memory size: <strong id="memorySize">0</strong>/<span id="memoryMax">0</span></span>
+                </div>
+                <div class="memory-list" id="learningMemory">
+                    <div class="memory-item">Admin-only. Log in to view memory.</div>
+                </div>
+            </div>
         </aside>
 
         <section class="chat-panel">
@@ -710,12 +753,19 @@
                 this.logLevelFilter = document.getElementById('logLevelFilter');
                 this.logEventFilter = document.getElementById('logEventFilter');
                 this.logScopeFilter = document.getElementById('logScopeFilter');
+                this.learningPanel = document.getElementById('learningPanel');
+                this.learningMemory = document.getElementById('learningMemory');
+                this.distillCountEl = document.getElementById('distillCount');
+                this.memorySizeEl = document.getElementById('memorySize');
+                this.memoryMaxEl = document.getElementById('memoryMax');
                 this.logPaused = false;
                 this.logSource = null;
                 this.isAdmin = false;
                 this.chatMultiAgentEnabled = true;
                 this.chatAgentsMax = 3;
                 this.userEmail = null;
+                this.logReconnectDelay = 2000;
+                this.logReconnectTimer = null;
 
                 this.messageHistory = [];
                 this.isTyping = false;
@@ -724,6 +774,9 @@
                 this.checkServerStatus();
                 this.fetchChatConfig();
                 this.initLogStream();
+                this.fetchLearningMemory();
+                setInterval(() => this.checkServerStatus(), 5000);
+                setInterval(() => this.fetchLearningMemory(), 8000);
             }
 
             initEventListeners() {
@@ -779,31 +832,43 @@
             async checkServerStatus() {
                 try {
                     const response = await fetch('/api/status');
-                    const data = await response.json();
-
-                    const samOkay = data.sam_available;
-                    const ollamaOkay = data.ollama_available;
-
-                    this.samStatus.forEach((el) => {
-                        el.className = samOkay ? 'status-item active' : 'status-item inactive';
-                        el.textContent = samOkay ? 'SAM Model: ✅' : 'SAM Model: ❌';
-                    });
-
-                    this.ollamaStatus.forEach((el) => {
-                        el.className = ollamaOkay ? 'status-item active' : 'status-item inactive';
-                        el.textContent = ollamaOkay ? 'Ollama: ✅' : 'Ollama: ❌';
-                    });
-
-                    this.connectionStatus.forEach((el) => {
-                        el.className = 'status-item active';
-                        el.textContent = 'Server: ✅';
-                    });
-
-                    if (typeof data.active_agents === 'number') {
-                        this.agentCount.textContent = data.active_agents;
+                    let data = null;
+                    if (response.status === 401) {
+                        this.connectionStatus.forEach((el) => {
+                            el.className = 'status-item inactive';
+                            el.textContent = 'Server: 🔒';
+                        });
+                    } else if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        throw new Error(`status ${response.status}`);
                     }
-                    if (data.survival_score !== undefined) {
-                        this.survivalScore.textContent = Number(data.survival_score).toFixed(2);
+
+                    if (data) {
+                        const samOkay = data.sam_available;
+                        const ollamaOkay = data.ollama_available;
+
+                        this.samStatus.forEach((el) => {
+                            el.className = samOkay ? 'status-item active' : 'status-item inactive';
+                            el.textContent = samOkay ? 'SAM Model: ✅' : 'SAM Model: ❌';
+                        });
+
+                        this.ollamaStatus.forEach((el) => {
+                            el.className = ollamaOkay ? 'status-item active' : 'status-item inactive';
+                            el.textContent = ollamaOkay ? 'Ollama: ✅' : 'Ollama: ❌';
+                        });
+
+                        this.connectionStatus.forEach((el) => {
+                            el.className = 'status-item active';
+                            el.textContent = 'Server: ✅';
+                        });
+
+                        if (typeof data.active_agents === 'number') {
+                            this.agentCount.textContent = data.active_agents;
+                        }
+                        if (data.survival_score !== undefined) {
+                            this.survivalScore.textContent = Number(data.survival_score).toFixed(2);
+                        }
                     }
 
                     try {
@@ -837,12 +902,26 @@
                         if (this.logPaused) return;
                         this.addLogEntry(event.data);
                     };
+                    source.onopen = () => {
+                        this.logReconnectDelay = 2000;
+                    };
                     source.onerror = () => {
+                        if (this.logPaused) return;
+                        if (this.logSource) {
+                            this.logSource.close();
+                        }
                         this.addLogEntry(JSON.stringify({
                             level: 'warn',
                             event: 'log_stream_error',
                             message: 'Log stream disconnected. Retrying…'
                         }));
+                        if (this.logReconnectTimer) return;
+                        const delay = this.logReconnectDelay;
+                        this.logReconnectDelay = Math.min(Math.floor(this.logReconnectDelay * 1.7), 15000);
+                        this.logReconnectTimer = setTimeout(() => {
+                            this.logReconnectTimer = null;
+                            this.initLogStream();
+                        }, delay);
                     };
                 } else {
                     this.addLogEntry(JSON.stringify({

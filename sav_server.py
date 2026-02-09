@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ANANKE Web UI - Flask front-end for SAM/ANANKE dual system.
+SAV Web UI - Flask front-end for SAM/SAV dual system.
 """
 
 import time
@@ -8,12 +8,12 @@ import os
 from flask import Flask, jsonify, request, render_template_string
 
 try:
-    import sam_ananke_dual_system as ananke_module
+    import sam_sav_dual_system as sav_module
 except ImportError:
-    ananke_module = None
+    sav_module = None
 
 APP = Flask(__name__)
-ARENA = ananke_module.create(16, 4, 42) if ananke_module else None
+ARENA = sav_module.create(16, 4, 42) if sav_module else None
 
 INDEX_HTML = """
 <!doctype html>
@@ -21,7 +21,7 @@ INDEX_HTML = """
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>ANANKE Control</title>
+  <title>SAV Control</title>
   <style>
     body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #0b0e14; color: #e6edf3; margin: 0; }
     header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
@@ -33,8 +33,8 @@ INDEX_HTML = """
 </head>
 <body>
   <header>
-    <h2>ANANKE Dual System</h2>
-    <div>Live SAM/ANANKE arena metrics</div>
+    <h2>SAV Dual System</h2>
+    <div>Live SAM/SAV arena metrics</div>
   </header>
   <section class="grid">
     <div class="card">
@@ -71,23 +71,23 @@ def index():
 
 @APP.route("/api/state")
 def api_state():
-    if not ananke_module or not ARENA:
-        return jsonify({"error": "ananke unavailable"}), 503
-    return jsonify(ananke_module.get_state(ARENA))
+    if not sav_module or not ARENA:
+        return jsonify({"error": "sav unavailable"}), 503
+    return jsonify(sav_module.get_state(ARENA))
 
 @APP.route("/api/step", methods=["POST"])
 def api_step():
-    if not ananke_module or not ARENA:
-        return jsonify({"error": "ananke unavailable"}), 503
+    if not sav_module or not ARENA:
+        return jsonify({"error": "sav unavailable"}), 503
     payload = request.get_json(silent=True) or {}
     steps = int(payload.get("steps", 1))
-    max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
+    max_steps = int(os.getenv("SAM_SAV_MAX_STEPS", "10000"))
     if steps < 1:
         steps = 1
     if steps > max_steps:
         return jsonify({"error": f"steps exceeds limit ({steps} > {max_steps})"}), 400
-    ananke_module.run(ARENA, steps)
-    return jsonify(ananke_module.get_state(ARENA))
+    sav_module.run(ARENA, steps)
+    return jsonify(sav_module.get_state(ARENA))
 
 if __name__ == "__main__":
     APP.run(host="0.0.0.0", port=5006, debug=False)

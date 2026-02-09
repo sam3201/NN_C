@@ -39,8 +39,17 @@ extensions = [
         extra_link_args=[]
     ),
     Extension(
-        'sam_ananke_dual_system',
-        sources=['sam_ananke_dual_system.c'],
+        'sav_core_c',
+        sources=['sav_core_c.c'],
+        include_dirs=['.'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=['-O3', '-march=native'],
+        extra_link_args=[]
+    ),
+    Extension(
+        'sam_sav_dual_system',
+        sources=['sam_sav_dual_system.c'],
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],

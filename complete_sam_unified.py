@@ -239,7 +239,7 @@ import consciousness_algorithmic
 import multi_agent_orchestrator_c
 import specialized_agents_c
 import sam_meta_controller_c
-import sam_ananke_dual_system
+import sam_sav_dual_system
 from training.regression_suite import run_regression_suite
 from training.teacher_pool import TeacherPool, build_provider, similarity
 from training.distillation import DistillationStreamWriter
@@ -2911,6 +2911,7 @@ class UnifiedSAMSystem:
             'coherence_score': 0.0,
             'survival_score': 1.0,
             'learning_events': 0,
+            'distill_count': 0,
             'optimization_events': 0,
             'active_agents': 0,
             'system_health': 'excellent'
@@ -2933,10 +2934,10 @@ class UnifiedSAMSystem:
         self.python_orchestration_initialized = False
         self.web_interface_initialized = False
 
-        # Meta-controller + ANANKE arena
+        # Meta-controller + SAV arena
         self.meta_controller = sam_meta_controller_c.create(64, 16, 4, 42)
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
-        self.ananke_arena = sam_ananke_dual_system.create(16, 4, 42)
+        self.sav_arena = sam_sav_dual_system.create(16, 4, 42)
         self.meta_loop_active = True
         self.meta_thread = None
 
@@ -3442,6 +3443,8 @@ class UnifiedSAMSystem:
                 "metadata": metadata,
             }
             self.distill_writer.append(record)
+        if consensus:
+            self.system_metrics['distill_count'] = self.system_metrics.get('distill_count', 0) + len(consensus)
 
     def _record_chat_distillation(self, prompt: str, response: str, context: List[Dict[str, Any]], user: Dict[str, Any]):
         if not self.distill_writer:
@@ -3474,6 +3477,7 @@ class UnifiedSAMSystem:
             "metadata": metadata,
         }
         self.distill_writer.append(record)
+        self.system_metrics['distill_count'] = self.system_metrics.get('distill_count', 0) + 1
         log_event("info", "distill_chat_record", "Chatbot distillation record appended", task_id=message_id)
 
     def _generate_teacher_response(self, room, user, message, context, message_data):
@@ -4189,7 +4193,7 @@ class UnifiedSAMSystem:
         ]
         sam_candidates.extend(sam_root.glob("consciousness_algorithmic*.so"))
         sam_candidates.extend(sam_root.glob("sam_meta_controller_c*.so"))
-        sam_candidates.extend(sam_root.glob("sam_ananke_dual_system*.so"))
+        sam_candidates.extend(sam_root.glob("sam_sav_dual_system*.so"))
         # Optional override
         env_override = os.getenv("SAM_MODEL_AVAILABLE", "").strip().lower()
         if env_override in ("1", "true", "yes", "on"):
@@ -5486,6 +5490,7 @@ class UnifiedSAMSystem:
                 'chat_agents_max': int(getattr(self, "chat_agents_max", 3)),
                 'learning_memory_enabled': bool(getattr(self, "learning_memory_enabled", False)),
                 'distill_enabled': bool(getattr(self, "distill_dashboard_enabled", False)),
+                'distill_count': int(self.system_metrics.get('distill_count', 0)),
                 'timestamp': datetime.now().isoformat()
             })
 
@@ -5680,6 +5685,27 @@ class UnifiedSAMSystem:
             filename = os.path.basename(path)
             return send_file(path, as_attachment=True, download_name=filename)
 
+        @self.app.route('/api/learning/memory')
+        def learning_memory():
+            """Admin-only view of recent learning memory + distillation counts."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            limit = int(request.args.get("limit", "10"))
+            limit = max(1, min(limit, 200))
+            items = []
+            if getattr(self, "learning_memory_enabled", False):
+                items = list(self.learning_memory)[-limit:]
+            return jsonify({
+                "enabled": bool(getattr(self, "learning_memory_enabled", False)),
+                "memory_size": len(getattr(self, "learning_memory", []) or []),
+                "memory_max": int(getattr(self, "learning_memory_max", 0)),
+                "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
+                "distill_count": int(self.system_metrics.get("distill_count", 0)),
+                "items": items,
+            })
+
         @self.app.route('/api/groupchat/rooms')
         def get_rooms():
             """Get available conversation rooms"""
@@ -5837,27 +5863,27 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/ananke/state')
-        def ananke_state():
-            """Get ANANKE arena state"""
+        @self.app.route('/api/sav/state')
+        def sav_state():
+            """Get SAV arena state"""
             try:
-                return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
+                return jsonify(sam_sav_dual_system.get_state(self.sav_arena))
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/ananke/step', methods=['POST'])
-        def ananke_step():
-            """Advance ANANKE arena"""
+        @self.app.route('/api/sav/step', methods=['POST'])
+        def sav_step():
+            """Advance SAV arena"""
             try:
                 payload = request.get_json(silent=True) or {}
                 steps = int(payload.get('steps', 1))
-                max_steps = int(os.getenv("SAM_ANANKE_MAX_STEPS", "10000"))
+                max_steps = int(os.getenv("SAM_SAV_MAX_STEPS", "10000"))
                 if steps < 1:
                     steps = 1
                 if steps > max_steps:
                     return jsonify({"error": f"steps exceeds limit ({steps} > {max_steps})"}), 400
-                sam_ananke_dual_system.run(self.ananke_arena, steps)
-                return jsonify(sam_ananke_dual_system.get_state(self.ananke_arena))
+                sam_sav_dual_system.run(self.sav_arena, steps)
+                return jsonify(sam_sav_dual_system.get_state(self.sav_arena))
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -7557,6 +7583,8 @@ sam@terminal:~$
                     if self.chat_multi_agent:
                         return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
                     return self._single_agent_local_response(message, history)
+                if self.chat_multi_agent:
+                    return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
                 provider = self._get_chat_provider()
                 if provider:
                     prompt_lines = []
@@ -9729,7 +9757,7 @@ sam@terminal:~$
                                 <span class="status-badge" data-state="{web_state}">{str(web_status).upper()}</span>
                             </div>
                             <div class="metric-row">
-                                <span class="metric-label">ANANKE Mode</span>
+                                <span class="metric-label">SAV Mode</span>
                                 <span class="status-badge" data-state="active">UNBOUNDED</span>
                             </div>
                         </div>
@@ -10388,7 +10416,7 @@ sam@terminal:~$
         if self.autonomous_enabled:
             self._start_monitoring_system()
 
-        print("🚀 Two-phase promotion complete: full SAM+ANANKE enabled", flush=True)
+        print("🚀 Two-phase promotion complete: full SAM+SAV enabled", flush=True)
 
     def _maybe_switch_providers(self, ram_percent: float):
         """Auto-switch policy/teacher providers based on RAM usage."""

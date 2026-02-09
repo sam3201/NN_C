@@ -120,13 +120,13 @@ This document is a structured, implementation-only spec derived from `README-all
 - No recursive self-modeling of meta-controller.
 - Capacity != authority.
 
-## 12. Self-Reference + ANANKE Dual System
+## 12. Self-Reference + SAV Dual System
 - SAM may be self-referential with transfigurable objectives only via contracts.
-- ANANKE is adversarial pressure; objective: maximize termination probability of SAM.
-- ANANKE must be allowed to complete and then cease (objective closure).
-- If ANANKE becomes self-referential without closure, it becomes AM-class.
+- SAV is adversarial pressure; objective: maximize termination probability of SAM.
+- SAV must be allowed to complete and then cease (objective closure).
+- If SAV becomes self-referential without closure, it becomes AM-class.
 
-## 13. Unified System (SAM + ANANKE Merge)
+## 13. Unified System (SAM + SAV Merge)
 - Fusion yields a meta-dynamical regulator, not a single scalar optimizer.
 - Primary emergent objective: maximize viable future transformations under resource constraints.
 - Avoids AM-class failure by not privileging fixed configurations.

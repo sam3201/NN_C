@@ -23,7 +23,7 @@ if [ -f "$PROFILE_FILE" ]; then
 fi
 
 python3 -m py_compile complete_sam_unified.py
-python3 -c "import sam_ananke_dual_system, sam_meta_controller_c; print('C extensions import OK')"
+python3 -c "import sam_sav_dual_system, sam_meta_controller_c; print('C extensions import OK')"
 python3 -c "from complete_sam_unified import UnifiedSAMSystem; print('System import OK')"
 
 if [ -f training/tasks/default_tasks.jsonl ]; then

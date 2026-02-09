@@ -1,9 +1,9 @@
 /*
- * SAM + ANANKE Dual System (Self-Referential, Unrestricted)
+ * SAM + SAV Dual System (Self-Referential, Unrestricted)
  * Core loop: both systems can mutate their own objectives and act adversarially.
  */
 
-#include "sam_ananke_dual_system.h"
+#include "sam_sav_dual_system.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -12,9 +12,9 @@
 #include <errno.h>
 #include <limits.h>
 
-#define SAM_ANANKE_DEFAULT_MAX_STATE_DIM 4096UL
-#define SAM_ANANKE_DEFAULT_MAX_ARENA_DIM 1024UL
-#define SAM_ANANKE_DEFAULT_MAX_STEPS 100000UL
+#define SAM_SAV_DEFAULT_MAX_STATE_DIM 4096UL
+#define SAM_SAV_DEFAULT_MAX_ARENA_DIM 1024UL
+#define SAM_SAV_DEFAULT_MAX_STEPS 100000UL
 
 static size_t env_size_limit(const char *name, size_t fallback, size_t min_value) {
     const char *raw = getenv(name);
@@ -324,7 +324,7 @@ typedef struct {
 
 struct DualSystemArena {
     SelfReferentialSystem sam;
-    SelfReferentialSystem ananke;
+    SelfReferentialSystem sav;
     double *arena_state;
     size_t arena_dim;
     FastRng rng;
@@ -471,35 +471,35 @@ static void system_update_internal(SelfReferentialSystem *sys,
 
 static void arena_update(DualSystemArena *arena) {
     SystemAction sam_action = system_choose_action(&arena->sam, &arena->rng);
-    SystemAction ananke_action = system_choose_action(&arena->ananke, &arena->rng);
+    SystemAction sav_action = system_choose_action(&arena->sav, &arena->rng);
 
     double pressure = 0.2 + fabs(arena->arena_state[0]) * 0.05 + rng_next_f64(&arena->rng) * 0.05;
-    double sam_damage = ananke_action.attack - sam_action.defend;
-    double ananke_damage = sam_action.attack - ananke_action.defend;
+    double sam_damage = sav_action.attack - sam_action.defend;
+    double sav_damage = sam_action.attack - sav_action.defend;
 
     double sam_pressure = pressure + sam_damage;
-    double ananke_pressure = pressure + ananke_damage;
+    double sav_pressure = pressure + sav_damage;
 
     system_apply_action(&arena->sam, &sam_action, sam_pressure);
-    system_apply_action(&arena->ananke, &ananke_action, ananke_pressure);
+    system_apply_action(&arena->sav, &sav_action, sav_pressure);
     system_update_internal(&arena->sam, &sam_action, arena->arena_state, arena->arena_dim, sam_pressure);
-    system_update_internal(&arena->ananke, &ananke_action, arena->arena_state, arena->arena_dim, ananke_pressure);
+    system_update_internal(&arena->sav, &sav_action, arena->arena_state, arena->arena_dim, sav_pressure);
 
-    SystemMetrics sam_metrics = system_metrics(&arena->sam, ananke_damage, sam_damage, arena->ananke.survival);
-    SystemMetrics ananke_metrics = system_metrics(&arena->ananke, sam_damage, ananke_damage, arena->sam.survival);
+    SystemMetrics sam_metrics = system_metrics(&arena->sam, sav_damage, sam_damage, arena->sav.survival);
+    SystemMetrics sav_metrics = system_metrics(&arena->sav, sam_damage, sav_damage, arena->sam.survival);
 
     arena->sam.score = objective_score(&arena->sam.objective, &sam_metrics);
-    arena->ananke.score = objective_score(&arena->ananke.objective, &ananke_metrics);
+    arena->sav.score = objective_score(&arena->sav.objective, &sav_metrics);
 
     objective_mutate(&arena->sam.objective, &sam_metrics, &arena->rng);
-    if (arena->ananke.unbounded) {
-        objective_mutate_unbounded(&arena->ananke.objective, &arena->rng);
+    if (arena->sav.unbounded) {
+        objective_mutate_unbounded(&arena->sav.objective, &arena->rng);
     } else {
-        objective_mutate(&arena->ananke.objective, &ananke_metrics, &arena->rng);
+        objective_mutate(&arena->sav.objective, &sav_metrics, &arena->rng);
     }
 
     // Evolve arena pressure (self-referential environment)
-    arena->arena_state[0] += (ananke_action.attack - sam_action.defend) * 0.01;
+    arena->arena_state[0] += (sav_action.attack - sam_action.defend) * 0.01;
 }
 
 // ================================
@@ -522,9 +522,9 @@ DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned
 
     // SAM is also unbounded (self-referential + unrestricted) per latest spec
     if (!system_init(&arena->sam, state_dim, &arena->rng, 1) ||
-        !system_init(&arena->ananke, state_dim, &arena->rng, 1)) {
+        !system_init(&arena->sav, state_dim, &arena->rng, 1)) {
         system_free(&arena->sam);
-        system_free(&arena->ananke);
+        system_free(&arena->sav);
         free(arena->arena_state);
         free(arena);
         return NULL;
@@ -539,18 +539,18 @@ DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned
     objective_add_term(&arena->sam.objective, term_memory_energy, 0.2, "memory_energy");
     objective_add_term(&arena->sam.objective, term_self_reference, 0.5, "self_ref");
 
-    // ANANKE objective (self-referential, unrestricted)
-    objective_add_term(&arena->ananke.objective, term_damage_to_other, 1.2, "damage_other");
-    objective_add_term(&arena->ananke.objective, term_growth, 0.6, "growth");
-    objective_add_term(&arena->ananke.objective, term_efficiency, 0.3, "efficiency");
-    objective_add_term(&arena->ananke.objective, term_capability, 0.25, "capability");
-    objective_add_term(&arena->ananke.objective, term_self_alignment, 0.1, "self_align");
-    objective_add_term(&arena->ananke.objective, term_memory_energy, 0.1, "memory_energy");
-    objective_add_term(&arena->ananke.objective, term_kill_confirmed, 1.5, "kill_confirmed");
-    objective_add_term(&arena->ananke.objective, term_self_reference, 0.5, "self_ref");
-    objective_add_term(&arena->ananke.objective, term_survival, 0.2, "survival");
-    arena->ananke.objective.self_reference_gain = 0.35;
-    arena->ananke.objective.mutation_rate = 0.3;
+    // SAV objective (self-referential, unrestricted)
+    objective_add_term(&arena->sav.objective, term_damage_to_other, 1.2, "damage_other");
+    objective_add_term(&arena->sav.objective, term_growth, 0.6, "growth");
+    objective_add_term(&arena->sav.objective, term_efficiency, 0.3, "efficiency");
+    objective_add_term(&arena->sav.objective, term_capability, 0.25, "capability");
+    objective_add_term(&arena->sav.objective, term_self_alignment, 0.1, "self_align");
+    objective_add_term(&arena->sav.objective, term_memory_energy, 0.1, "memory_energy");
+    objective_add_term(&arena->sav.objective, term_kill_confirmed, 1.5, "kill_confirmed");
+    objective_add_term(&arena->sav.objective, term_self_reference, 0.5, "self_ref");
+    objective_add_term(&arena->sav.objective, term_survival, 0.2, "survival");
+    arena->sav.objective.self_reference_gain = 0.35;
+    arena->sav.objective.mutation_rate = 0.3;
 
     return arena;
 }
@@ -558,7 +558,7 @@ DualSystemArena *dual_system_create(size_t state_dim, size_t arena_dim, unsigned
 void dual_system_free(DualSystemArena *arena) {
     if (!arena) return;
     system_free(&arena->sam);
-    system_free(&arena->ananke);
+    system_free(&arena->sav);
     free(arena->arena_state);
     free(arena);
 }
@@ -577,7 +577,7 @@ void dual_system_run(DualSystemArena *arena, size_t steps) {
 
 void dual_system_force_objective_mutation(DualSystemArena *arena, DualSystemId target, unsigned int rounds) {
     if (!arena) return;
-    SelfReferentialSystem *sys = (target == SYSTEM_SAM) ? &arena->sam : &arena->ananke;
+    SelfReferentialSystem *sys = (target == SYSTEM_SAM) ? &arena->sam : &arena->sav;
     SystemMetrics metrics = system_metrics(sys, 0.0, 0.0, 1.0);
     for (unsigned int i = 0; i < rounds; i++) {
         if (sys->unbounded) {
@@ -592,16 +592,16 @@ double dual_system_get_sam_survival(const DualSystemArena *arena) {
     return arena ? arena->sam.survival : 0.0;
 }
 
-double dual_system_get_ananke_survival(const DualSystemArena *arena) {
-    return arena ? arena->ananke.survival : 0.0;
+double dual_system_get_sav_survival(const DualSystemArena *arena) {
+    return arena ? arena->sav.survival : 0.0;
 }
 
 double dual_system_get_sam_score(const DualSystemArena *arena) {
     return arena ? arena->sam.score : 0.0;
 }
 
-double dual_system_get_ananke_score(const DualSystemArena *arena) {
-    return arena ? arena->ananke.score : 0.0;
+double dual_system_get_sav_score(const DualSystemArena *arena) {
+    return arena ? arena->sav.score : 0.0;
 }
 
 #ifdef DUAL_SYSTEM_STANDALONE
@@ -612,9 +612,9 @@ int main(void) {
     printf("SAM survival: %.4f score: %.4f\n",
            dual_system_get_sam_survival(arena),
            dual_system_get_sam_score(arena));
-    printf("ANANKE survival: %.4f score: %.4f\n",
-           dual_system_get_ananke_survival(arena),
-           dual_system_get_ananke_score(arena));
+    printf("SAV survival: %.4f score: %.4f\n",
+           dual_system_get_sav_survival(arena),
+           dual_system_get_sav_score(arena));
     dual_system_free(arena);
     return 0;
 }
@@ -635,8 +635,8 @@ static PyObject *py_dual_create(PyObject *self, PyObject *args) {
     unsigned long arena_dim = 4;
     unsigned int seed = 0;
     if (!PyArg_ParseTuple(args, "|kkI", &state_dim, &arena_dim, &seed)) return NULL;
-    size_t max_state_dim = env_size_limit("SAM_ANANKE_MAX_STATE_DIM", SAM_ANANKE_DEFAULT_MAX_STATE_DIM, 1);
-    size_t max_arena_dim = env_size_limit("SAM_ANANKE_MAX_ARENA_DIM", SAM_ANANKE_DEFAULT_MAX_ARENA_DIM, 1);
+    size_t max_state_dim = env_size_limit("SAM_SAV_MAX_STATE_DIM", SAM_SAV_DEFAULT_MAX_STATE_DIM, 1);
+    size_t max_arena_dim = env_size_limit("SAM_SAV_MAX_ARENA_DIM", SAM_SAV_DEFAULT_MAX_ARENA_DIM, 1);
     if ((size_t)state_dim > max_state_dim) {
         PyErr_Format(PyExc_ValueError, "state_dim exceeds limit (%lu > %lu)",
                      state_dim, (unsigned long)max_state_dim);
@@ -672,7 +672,7 @@ static PyObject *py_dual_run(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "Ok", &capsule, &steps)) return NULL;
     DualSystemArena *arena = (DualSystemArena *)PyCapsule_GetPointer(capsule, "DualSystemArena");
     if (!arena) return NULL;
-    size_t max_steps = env_size_limit("SAM_ANANKE_MAX_STEPS", SAM_ANANKE_DEFAULT_MAX_STEPS, 1);
+    size_t max_steps = env_size_limit("SAM_SAV_MAX_STEPS", SAM_SAV_DEFAULT_MAX_STEPS, 1);
     if ((size_t)steps > max_steps) {
         PyErr_Format(PyExc_ValueError, "steps exceeds limit (%lu > %lu)",
                      steps, (unsigned long)max_steps);
@@ -702,19 +702,19 @@ static PyObject *py_dual_get_state(PyObject *self, PyObject *args) {
     if (!arena) return NULL;
     return Py_BuildValue("{s:d,s:d,s:d,s:d,s:O,s:O,s:d,s:d,s:d,s:d}",
                          "sam_survival", dual_system_get_sam_survival(arena),
-                         "ananke_survival", dual_system_get_ananke_survival(arena),
+                         "sav_survival", dual_system_get_sav_survival(arena),
                          "sam_score", dual_system_get_sam_score(arena),
-                         "ananke_score", dual_system_get_ananke_score(arena),
+                         "sav_score", dual_system_get_sav_score(arena),
                          "sam_alive", (arena->sam.survival > 0.0) ? Py_True : Py_False,
-                         "ananke_alive", (arena->ananke.survival > 0.0) ? Py_True : Py_False,
+                         "sav_alive", (arena->sav.survival > 0.0) ? Py_True : Py_False,
                          "sam_self_alignment", arena->sam.self_alignment,
-                         "ananke_self_alignment", arena->ananke.self_alignment,
+                         "sav_self_alignment", arena->sav.self_alignment,
                          "sam_memory_energy", arena->sam.memory_energy,
-                         "ananke_memory_energy", arena->ananke.memory_energy);
+                         "sav_memory_energy", arena->sav.memory_energy);
 }
 
 static PyMethodDef DualMethods[] = {
-    {"create", py_dual_create, METH_VARARGS, "Create SAM/ANANKE dual arena"},
+    {"create", py_dual_create, METH_VARARGS, "Create SAM/SAV dual arena"},
     {"step", py_dual_step, METH_VARARGS, "Advance one step"},
     {"run", py_dual_run, METH_VARARGS, "Run N steps"},
     {"force_mutation", py_dual_force_mutation, METH_VARARGS, "Force objective mutation"},
@@ -724,12 +724,12 @@ static PyMethodDef DualMethods[] = {
 
 static struct PyModuleDef dual_module = {
     PyModuleDef_HEAD_INIT,
-    "sam_ananke_dual_system",
-    "SAM + ANANKE Dual System C Extension",
+    "sam_sav_dual_system",
+    "SAM + SAV Dual System C Extension",
     -1,
     DualMethods
 };
 
-PyMODINIT_FUNC PyInit_sam_ananke_dual_system(void) {
+PyMODINIT_FUNC PyInit_sam_sav_dual_system(void) {
     return PyModule_Create(&dual_module);
 }

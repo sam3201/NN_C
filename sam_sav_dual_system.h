@@ -1,16 +1,16 @@
 /*
- * SAM + ANANKE Dual System (Self-Referential, Unrestricted)
+ * SAM + SAV Dual System (Self-Referential, Unrestricted)
  * Pure C implementation optimized for speed and direct control.
  */
 
-#ifndef SAM_ANANKE_DUAL_SYSTEM_H
-#define SAM_ANANKE_DUAL_SYSTEM_H
+#ifndef SAM_SAV_DUAL_SYSTEM_H
+#define SAM_SAV_DUAL_SYSTEM_H
 
 #include <stddef.h>
 
 typedef enum {
     SYSTEM_SAM = 0,
-    SYSTEM_ANANKE = 1
+    SYSTEM_SAV = 1
 } DualSystemId;
 
 typedef struct DualSystemArena DualSystemArena;
@@ -28,8 +28,8 @@ void dual_system_force_objective_mutation(DualSystemArena *arena, DualSystemId t
 
 // Lightweight telemetry
 double dual_system_get_sam_survival(const DualSystemArena *arena);
-double dual_system_get_ananke_survival(const DualSystemArena *arena);
+double dual_system_get_sav_survival(const DualSystemArena *arena);
 double dual_system_get_sam_score(const DualSystemArena *arena);
-double dual_system_get_ananke_score(const DualSystemArena *arena);
+double dual_system_get_sav_score(const DualSystemArena *arena);
 
-#endif // SAM_ANANKE_DUAL_SYSTEM_H
+#endif // SAM_SAV_DUAL_SYSTEM_H
