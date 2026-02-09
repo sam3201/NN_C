@@ -7466,13 +7466,17 @@ sam@terminal:~$
 
         def _chat_fallback():
             try:
+                history = (context or {}).get("history", []) or []
+                memory = self._build_learning_context()
                 if getattr(self, "strict_local_only", False):
-                    max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
-                    return self._multi_agent_local_response(message, (context or {}).get("history", []), max_agents=max_agents)
+                    if self.chat_multi_agent:
+                        return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
+                    return self._single_agent_local_response(message, history)
                 provider = self._get_chat_provider()
                 if provider:
-                    history = (context or {}).get("history", []) or []
                     prompt_lines = []
+                    if memory:
+                        prompt_lines.append("System memory:\n" + memory)
                     for item in history[-8:]:
                         role = item.get("type", "user")
                         content = item.get("message", "")
@@ -7491,7 +7495,6 @@ sam@terminal:~$
                         "id": (context or {}).get("user_id", "dashboard"),
                         "name": (context or {}).get("user_name", "User"),
                     }
-                    history = (context or {}).get("history", []) or []
                     message_data = {
                         "id": f"chatbot:{int(time.time() * 1000)}",
                         "timestamp": time.time(),
@@ -7501,15 +7504,19 @@ sam@terminal:~$
                     return self._generate_teacher_response(room, user, message, history, message_data)
                 if self.specialized_agents:
                     if self.chat_multi_agent:
-                        max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
-                        return self._multi_agent_local_response(message, (context or {}).get("history", []), max_agents=max_agents)
-                    return self.specialized_agents.research(message)
+                        return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
+                    return self._single_agent_local_response(message, history)
             except Exception as exc:
                 return f"❌ Chat error: {exc}"
             return "❌ Chat capability not available."
 
         if not message.startswith("/"):
-            return _chat_fallback()
+            response = _chat_fallback()
+            try:
+                self._record_chat_learning(message, response, context or {})
+            except Exception:
+                pass
+            return response
 
         parts = message.split()
         cmd = parts[0].lower()
