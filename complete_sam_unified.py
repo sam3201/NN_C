@@ -2457,6 +2457,7 @@ class UnifiedSAMSystem:
         self.web_search_enabled = False
         self.google_drive_available = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
+        self.kill_switch_enabled = os.getenv("SAM_KILL_SWITCH_ENABLED", "1") == "1"
 
         # System metrics (initialize early before web interface)
         self.system_metrics = {
@@ -4522,8 +4523,22 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics['c_core_status'],
                 'python_orchestration': self.system_metrics['python_orchestration_status'],
                 'sam_available': bool(getattr(self, "sam_available", False)),
+                'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
                 'timestamp': datetime.now().isoformat()
             })
+
+        if getattr(self, "kill_switch_enabled", False):
+            @self.app.route('/api/shutdown', methods=['POST'])
+            def shutdown_system():
+                """Admin-only kill switch (full mode only)"""
+                ok, resp = _require_admin()
+                if not ok:
+                    return resp
+                try:
+                    initiate_shutdown()
+                except Exception as exc:
+                    return jsonify({"status": "error", "error": str(exc)}), 500
+                return jsonify({"status": "shutting_down"})
 
         @self.app.route('/api/health')
         def health_check():
@@ -4534,7 +4549,8 @@ class UnifiedSAMSystem:
                 'c_core': self.system_metrics.get('c_core_status', 'unknown'),
                 'python_orchestration': self.system_metrics.get('python_orchestration_status', 'unknown'),
                 'web_interface': self.system_metrics.get('web_interface_status', 'unknown'),
-                'sam_available': bool(getattr(self, "sam_available", False))
+                'sam_available': bool(getattr(self, "sam_available", False)),
+                'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False))
             })
                 
         @self.app.route('/api/orchestrator/status')

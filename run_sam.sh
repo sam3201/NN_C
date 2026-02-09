@@ -95,6 +95,19 @@ if [ -f ".env.local" ]; then
     set +a
 fi
 
+# Load profile (full by default)
+PROFILE_NAME="${SAM_PROFILE:-full}"
+PROFILE_FILE="profiles/${PROFILE_NAME}.env"
+if [ -f "$PROFILE_FILE" ]; then
+    print_header "LOADING PROFILE"
+    print_status "Loading $PROFILE_FILE..."
+    set -a
+    source "$PROFILE_FILE"
+    set +a
+else
+    print_warning "Profile not found: $PROFILE_FILE (continuing with defaults)"
+fi
+
 # Upgrade pip
 print_header "UPGRADING PIP"
 print_status "Upgrading pip to latest version..."

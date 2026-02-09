@@ -36,6 +36,26 @@ ollama pull codellama:latest
 python3 complete_sam_unified.py
 ```
 
+## Profiles (Full vs Experimental)
+This repo ships two execution profiles:
+- **Full** (stable + kill switch enabled)
+- **Experimental** (no kill switch by design)
+
+Profile configs live in `profiles/`:
+- `profiles/full.env`
+- `profiles/experimental.env`
+
+Launch scripts:
+```bash
+./run_sam_full.sh         # full profile (kill switch enabled)
+./run_sam_experimental.sh # experimental profile (no kill switch)
+```
+
+By default, `run_sam.sh` loads the **full** profile. To override:
+```bash
+SAM_PROFILE=experimental ./run_sam.sh
+```
+
 ## Interfaces
 - Dashboard: http://localhost:5004
 - Terminal: http://localhost:5004/terminal
