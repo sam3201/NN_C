@@ -4301,7 +4301,32 @@ class UnifiedSAMSystem:
         
         # Register all routes
         print("  🔧 Registering routes...")
-        
+
+        def _require_admin_token():
+            token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
+            if not token:
+                return False, ("Admin token not configured", 503)
+            auth_header = request.headers.get("Authorization", "")
+            candidate = None
+            if auth_header.startswith("Bearer "):
+                candidate = auth_header.split(" ", 1)[1].strip()
+            if not candidate:
+                candidate = request.headers.get("X-SAM-ADMIN-TOKEN") or request.args.get("token")
+            if candidate != token:
+                return False, ("Unauthorized", 403)
+            return True, None
+
+        def _resolve_repo_path(path_value: str) -> Path:
+            project_root = Path(self.project_root).resolve()
+            candidate = Path(path_value)
+            if candidate.is_absolute():
+                resolved = candidate.resolve()
+            else:
+                resolved = (project_root / candidate).resolve()
+            if resolved != project_root and project_root not in resolved.parents:
+                raise ValueError("Path escapes repository root")
+            return resolved
+
         @self.app.route('/')
         def dashboard():
             """Main dashboard"""
@@ -4663,6 +4688,11 @@ class UnifiedSAMSystem:
         def modify_code():
             """Safe code modification endpoint"""
             try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({'error': message}), status
+
                 data = request.get_json()
                 filepath = data.get('filepath', '')
                 old_code = data.get('old_code', '')
@@ -4672,10 +4702,17 @@ class UnifiedSAMSystem:
                 if not filepath or not old_code or not new_code:
                     return jsonify({'error': 'Missing required parameters'}), 400
 
+                try:
+                    target_path = _resolve_repo_path(filepath)
+                except Exception as exc:
+                    return jsonify({'error': str(exc)}), 400
+                if not target_path.exists() or not target_path.is_file():
+                    return jsonify({'error': 'Target file not found'}), 404
+
                 if not sam_code_modifier_available:
                     return jsonify({'error': 'Code modification system not available'}), 503
 
-                result = modify_code_safely(filepath, old_code, new_code, description)
+                result = modify_code_safely(str(target_path), old_code, new_code, description)
                 return jsonify(result)
 
             except Exception as e:

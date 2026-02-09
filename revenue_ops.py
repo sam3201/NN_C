@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import csv
+import html
 import io
 import json
 import os
+import re
+import sys
 import time
 import uuid
 from dataclasses import asdict, dataclass
@@ -72,8 +75,24 @@ class RevenueDataStore:
             return default
         try:
             return json.loads(path.read_text())
-        except Exception:
-            return default
+        except Exception as exc:
+            # Preserve the corrupt payload and fail fast to avoid silent data loss
+            try:
+                raw = path.read_text()
+                corrupt_path = path.with_suffix(path.suffix + f".corrupt.{int(time.time())}")
+                corrupt_path.write_text(raw, encoding="utf-8")
+                print(
+                    f"[revenue_ops] Corrupt JSON detected in {path}. "
+                    f"Backup written to {corrupt_path}.",
+                    file=sys.stderr,
+                )
+            except Exception as backup_exc:
+                print(
+                    f"[revenue_ops] Corrupt JSON detected in {path}, "
+                    f"but failed to write backup: {backup_exc}",
+                    file=sys.stderr,
+                )
+            raise RuntimeError(f"Corrupt JSON in {path}") from exc
 
     def _save(self, path: Path, data) -> None:
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -285,10 +304,12 @@ class RevenueOpsEngine:
         invoice = payload or self._find_invoice(invoice_id)
         if not invoice:
             raise ValueError("invoice not found")
-        invoice_id = invoice.get("invoice_id") or f"inv_{uuid.uuid4().hex[:10]}"
+        invoice_id = self._safe_invoice_id(invoice.get("invoice_id"))
         items = invoice.get("items", [])
         total = invoice.get("amount") or sum((item.get("qty", 1) * item.get("unit_price", 0)) for item in items)
-        currency = invoice.get("currency", "USD")
+        currency = self._escape(invoice.get("currency", "USD"))
+        client_name = self._escape(invoice.get("client", "Client"))
+        client_email = self._escape(invoice.get("client_email", ""))
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -310,13 +331,13 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
     <div class="header">
       <div>
         <div class="title">Invoice</div>
-        <div class="meta">Invoice ID: {invoice_id}</div>
+        <div class="meta">Invoice ID: {self._escape(invoice_id)}</div>
         <div class="meta">Date: {_utc_now()}</div>
       </div>
       <div>
         <div class="meta">Bill To</div>
-        <div>{invoice.get("client", "Client")}</div>
-        <div class="meta">{invoice.get("client_email", "")}</div>
+        <div>{client_name}</div>
+        <div class="meta">{client_email}</div>
       </div>
     </div>
     <table>
@@ -324,7 +345,13 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
         <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
       </thead>
       <tbody>
-        {''.join([f"<tr><td>{item.get('name','Service')}</td><td>{item.get('qty',1)}</td><td>{item.get('unit_price',0):.2f}</td><td>{(item.get('qty',1)*item.get('unit_price',0)):.2f}</td></tr>" for item in items])}
+        {''.join([
+            f"<tr><td>{self._escape(item.get('name','Service'))}</td>"
+            f"<td>{item.get('qty',1)}</td>"
+            f"<td>{item.get('unit_price',0):.2f}</td>"
+            f"<td>{(item.get('qty',1)*item.get('unit_price',0)):.2f}</td></tr>"
+            for item in items
+        ])}
       </tbody>
     </table>
     <div class="total">Total: {currency} {total:.2f}</div>
@@ -342,7 +369,7 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
         invoice = payload or self._find_invoice(invoice_id)
         if not invoice:
             raise ValueError("invoice not found")
-        invoice_id = invoice.get("invoice_id") or f"inv_{uuid.uuid4().hex[:10]}"
+        invoice_id = self._safe_invoice_id(invoice.get("invoice_id"))
         items = invoice.get("items", [])
         total = invoice.get("amount") or sum((item.get("qty", 1) * item.get("unit_price", 0)) for item in items)
         currency = invoice.get("currency", "USD")
@@ -375,6 +402,18 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
         pdf_path = self.render_dir / f"{invoice_id}.pdf"
         pdf.output(str(pdf_path))
         return {"invoice_id": invoice_id, "pdf_path": str(pdf_path)}
+
+    @staticmethod
+    def _escape(value: Any) -> str:
+        return html.escape(str(value), quote=True)
+
+    @staticmethod
+    def _safe_invoice_id(value: Optional[str]) -> str:
+        if not value:
+            return f"inv_{uuid.uuid4().hex[:10]}"
+        safe = re.sub(r"[^A-Za-z0-9_-]", "_", str(value))
+        safe = safe.strip("._-")
+        return safe or f"inv_{uuid.uuid4().hex[:10]}"
 
     def autoplan(
         self,
