@@ -1426,6 +1426,8 @@ class VerifierJudgeAgent:
                 mode = "compile"
             if target_file and os.path.isabs(target_file) and mode == "import":
                 mode = "compile"
+            if target_file and os.path.isabs(target_file) and mode == "import":
+                mode = "compile"
 
             if mode in ("skip", "none"):
                 return result
