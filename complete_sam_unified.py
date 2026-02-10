@@ -11925,6 +11925,80 @@ sam@terminal:~$
         except Exception as e:
             print(f"⚠️ Error adding autonomous goal: {e}", flush=True)
 
+    def _generate_autonomous_conversations(self):
+        """Generate autonomous conversations to populate the chat interface"""
+        try:
+            if not hasattr(self, 'conversation_rooms') or not self.socketio_available:
+                return
+            
+            # Generate different types of autonomous conversations
+            conversation_topics = [
+                {
+                    'room_id': 'research_discussion',
+                    'topic': 'Quantum Computing Breakthroughs',
+                    'participants': ['Researcher', 'CodeWriter'],
+                    'starter_message': '🔍 I\'ve been analyzing recent quantum computing developments. The progress in quantum error correction and qubit stability is remarkable. What are your thoughts on the implications for AGI development?'
+                },
+                {
+                    'room_id': 'system_planning',
+                    'topic': 'System Architecture Improvements',
+                    'participants': ['MetaAgent', 'CodeWriter'],
+                    'starter_message': '🏗️ Looking at our current architecture, I think we could optimize the consciousness module integration. Any suggestions for better performance?'
+                },
+                {
+                    'room_id': 'goal_coordination',
+                    'topic': 'Goal Alignment Strategy',
+                    'participants': ['Researcher', 'MetaAgent'],
+                    'starter_message': '🎯 To achieve our research objectives, we need better coordination between the consciousness core and the goal management system. How should we prioritize our upcoming tasks?'
+                },
+                {
+                    'room_id': 'capability_discussion',
+                    'topic': 'Multi-Agent Collaboration',
+                    'participants': ['Researcher', 'FinancialAgent', 'MetaAgent'],
+                    'starter_message': '🤖 I\'ve noticed our multi-agent system could benefit from better knowledge sharing. What capabilities should we focus on developing next?'
+                }
+            ]
+            
+            current_time = time.time()
+            topic_index = int(current_time / 300) % len(conversation_topics)  # Change every 5 minutes
+            
+            selected_convo = conversation_topics[topic_index]
+            
+            # Create room if it doesn't exist
+            if selected_convo['room_id'] not in self.conversation_rooms:
+                self.conversation_rooms[selected_convo['room_id']] = {
+                    'id': selected_convo['room_id'],
+                    'name': selected_convo['topic'],
+                    'agent_type': 'autonomous',
+                    'users': [],
+                    'messages': []
+                }
+                print(f"💬 Created autonomous conversation room: {selected_convo['topic']}")
+            
+            # Add starter message to the room
+            room = self.conversation_rooms[selected_convo['room_id']]
+            if room and len(room['messages']) == 0:  # Only add if room is empty
+                message_data = {
+                    'id': f"auto_msg_{int(current_time * 1000)}",
+                    'user_id': 'system_autonomous',
+                    'user_name': 'System Autonomous',
+                    'message': selected_convo['starter_message'],
+                    'message_type': 'autonomous_starter',
+                    'timestamp': current_time,
+                    'agent_sender': 'system',
+                    'agent_receiver': 'multi_agent'
+                }
+                
+                room['messages'].append(message_data)
+                
+                # Emit to SocketIO if available
+                if hasattr(self, 'socketio') and self.socketio_available:
+                    self.socketio.emit('message_received', message_data, room=selected_convo['room_id'])
+                    print(f"💬 Autonomous conversation started in {selected_convo['room_id']}: {selected_convo['topic']}")
+                
+        except Exception as e:
+            print(f"⚠️ Error generating autonomous conversations: {e}")
+
     def _execute_autonomous_tasks(self):
         """Execute autonomous tasks through the SAM agent system"""
         try:
