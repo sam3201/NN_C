@@ -10042,8 +10042,17 @@ sam@terminal:~$
                         dashLogEventSource.close();
                     }
                     if (dashLogPaused) return;
+                    if (!dashIsAdmin) {
+                        addDashboardLogEntry(JSON.stringify({
+                            level: 'warn',
+                            event: 'log_stream_blocked',
+                            message: 'Admin only: log streaming is restricted.'
+                        }));
+                        return;
+                    }
                     if (!!window.EventSource) {
-                        dashLogEventSource = new EventSource(`/api/logs/stream?kind=${source}`);
+                        const token = adminTokenQuery();
+                        dashLogEventSource = new EventSource(`/api/logs/stream?kind=${source}${token}`);
                         dashLogEventSource.onmessage = (event) => {
                             addDashboardLogEntry(event.data);
                         };
@@ -10067,7 +10076,14 @@ sam@terminal:~$
                     const source = (document.getElementById('dash-log-source') || {}).value || 'runtime';
                     const summaryEl = document.getElementById('dashboard-log-summary');
                     try {
-                        const res = await fetch(`/api/logs/view?window=200&kind=${source}`);
+                        const res = await fetch(`/api/logs/view?window=200&kind=${source}${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            if (summaryEl) summaryEl.textContent = err.error || 'Admin token required for logs.';
+                            return;
+                        }
                         const data = await res.json();
                         const summary = data.summary || {};
                         const levels = summary.levels || {};
