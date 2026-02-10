@@ -12542,6 +12542,7 @@ sam@terminal:~$
                 self.system_metrics["last_growth_attempt_ts"] = time.time()
                 self.system_metrics["last_growth_attempt_primitive"] = 0
                 self.system_metrics["last_growth_attempt_result"] = "frozen"
+                self.system_metrics["last_growth_reason"] = "growth_freeze_enabled"
                 return
             
             # Update meta-controller with current pressure signals
@@ -12571,6 +12572,7 @@ sam@terminal:~$
             if primitive and primitive != 0:
                 self.system_metrics["last_growth_attempt_ts"] = time.time()
                 self.system_metrics["last_growth_attempt_primitive"] = primitive
+                self.system_metrics["last_growth_reason"] = "primitive_selected"
                 print(f"🌱 Growth primitive selected: {primitive}")
                 
                 # Apply primitive
@@ -12587,18 +12589,22 @@ sam@terminal:~$
                         self.system_metrics["last_growth_ts"] = time.time()
                         self.system_metrics["last_growth_primitive"] = primitive
                         self.system_metrics["last_growth_attempt_result"] = "applied"
+                        self.system_metrics["last_growth_reason"] = "regression_gate_passed"
                         print(f"🎯 Growth successful: {primitive}")
                     else:
                         sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, False)
                         self.system_metrics["last_growth_attempt_result"] = "regression_blocked"
+                        self.system_metrics["last_growth_reason"] = "regression_gate_blocked"
                         print(f"⚠️ Growth failed regression gate: {primitive}")
                 else:
                     self.system_metrics["last_growth_attempt_result"] = "apply_failed"
+                    self.system_metrics["last_growth_reason"] = "primitive_apply_failed"
                     print(f"❌ Failed to apply growth primitive: {primitive}")
             else:
                 self.system_metrics["last_growth_attempt_ts"] = time.time()
                 self.system_metrics["last_growth_attempt_primitive"] = 0
                 self.system_metrics["last_growth_attempt_result"] = "no_primitive"
+                self.system_metrics["last_growth_reason"] = "no_primitive_selected"
                 print("🌱 No growth primitive selected")
                 
         except Exception as e:
