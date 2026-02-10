@@ -618,6 +618,11 @@ class FaultLocalizerAgent:
                             # Use C consciousness framework for deeper analysis
                             consciousness_score = self._get_consciousness_file_score(filepath, failure_event)
                             scores[filepath] = scores.get(filepath, 0) + (10 * consciousness_score)
+                no_error_match = re.search(r"No error detected in (.+)", failure_event.stack_trace)
+                if no_error_match:
+                    filepath = no_error_match.group(1).strip()
+                    if filepath and os.path.exists(filepath):
+                        scores[filepath] = scores.get(filepath, 0) + 8
 
             # 2. Recent changes analysis
             recent_files = self._get_recently_modified_files()
@@ -642,6 +647,19 @@ class FaultLocalizerAgent:
                 semantic_scores = self._calculate_semantic_similarity_scores(failure_event, list(scores.keys()))
                 for filepath, semantic_score in semantic_scores.items():
                     scores[filepath] = scores.get(filepath, 0) + (2 * semantic_score)
+
+            # 6. Research notes / message hints
+            hint_text = " ".join(filter(None, [
+                getattr(failure_event, "research_notes", ""),
+                getattr(failure_event, "message", ""),
+            ]))
+            if hint_text:
+                for token in re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text):
+                    resolved = token
+                    if not os.path.isabs(resolved):
+                        resolved = os.path.join(self.system.project_root, resolved)
+                    if os.path.exists(resolved):
+                        scores[resolved] = scores.get(resolved, 0) + 6
 
         except Exception as e:
             print(f"⚠️ Spectrum-based scoring failed, using fallback: {e}")
