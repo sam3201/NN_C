@@ -194,8 +194,4 @@ extern PyObject *pSearchWebWithSamFunc __attribute__((visibility("default")));
 extern int sam_web_search_is_initialized __attribute__((visibility("default")));
 extern int init_python_web_search() __attribute__((visibility("default")));
 
-// Safety helpers (static function in .c, but prototype needed for consistency if it were public)
-// For now, keep it internal to .c since it's only used there.
-// extern void safe_copy(char *dest, size_t dest_size, const char *src);
-
 #endif // SPECIALIZED_AGENTS_C_H

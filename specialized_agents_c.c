@@ -18,8 +18,10 @@
 #define MAX_QUERY_LEN 512
 #define MAX_SPEC_LEN 512
 #define MAX_COMPONENT_LEN 256
+#define MAX_RESULT_BUFFER_LEN 8192 // Maximum length for total research result buffer
+#define MAX_RESULT_FIELD_LEN 512   // Maximum length for individual title/url/snippet fields
 
-void safe_copy(char *dest, size_t dest_size, const char *src) {
+static void safe_copy(char *dest, size_t dest_size, const char *src) {
     if (!dest || dest_size == 0) {
         return;
     }
@@ -444,19 +446,29 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) _
     char *c_result_buffer = NULL;
     size_t current_len = 0;
     const char *header_format = "Research Results for '%s':\n\n";
-    size_t header_len = snprintf(NULL, 0, header_format, display_query);
-    c_result_buffer = (char *)malloc(header_len + 1);
-    if (c_result_buffer) {
-        snprintf(c_result_buffer, header_len + 1, header_format, display_query);
-        current_len = header_len;
-    } else {
+    size_t header_len = snprintf(NULL, 0, header_format, display_query); // Calculate needed size without writing
+    
+    // Allocate initial buffer
+    // Ensure header itself doesn't exceed MAX_RESULT_BUFFER_LEN
+    size_t initial_buffer_size = (header_len + 1 > MAX_RESULT_BUFFER_LEN) ? MAX_RESULT_BUFFER_LEN : (header_len + 1);
+    c_result_buffer = (char *)malloc(initial_buffer_size);
+    if (!c_result_buffer) {
         Py_XDECREF(pResultDict);
         PyGILState_Release(gstate);
         return strdup("Error: Memory allocation failed for C result buffer.");
     }
+    snprintf(c_result_buffer, initial_buffer_size, header_format, display_query);
+    current_len = strlen(c_result_buffer); // Use actual written length
 
     Py_ssize_t num_results = PyList_Size(pResultsList);
     for (Py_ssize_t i = 0; i < num_results; ++i) {
+        // Stop if adding more results would exceed the maximum buffer length
+        // We leave enough room for an item (MAX_RESULT_FIELD_LEN * 4 is a generous estimate for 3 fields + formatting)
+        if (current_len >= MAX_RESULT_BUFFER_LEN - (MAX_RESULT_FIELD_LEN * 4)) {
+             fprintf(stderr, "Warning: Research result buffer limit reached. Truncating results.\n");
+             break;
+        }
+
         PyObject *pItem = PyList_GetItem(pResultsList, i); // Borrowed reference
         if (pItem == NULL || !PyDict_Check(pItem)) {
             continue; // Skip if not a dict
@@ -466,32 +478,48 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) _
         PyObject *pUrl = PyDict_GetItemString(pItem, "url");
         PyObject *pSnippet = PyDict_GetItemString(pItem, "snippet");
 
-        const char *title = (pTitle && PyUnicode_Check(pTitle)) ? PyUnicode_AsUTF8(pTitle) : "N/A";
-        const char *url = (pUrl && PyUnicode_Check(pUrl)) ? PyUnicode_AsUTF8(pUrl) : "N/A";
-        const char *snippet = (pSnippet && PyUnicode_Check(pSnippet)) ? PyUnicode_AsUTF8(pSnippet) : "N/A";
+        // Safely extract and truncate title, url, snippet
+        char title_buf[MAX_RESULT_FIELD_LEN + 1];
+        safe_copy(title_buf, sizeof(title_buf), (pTitle && PyUnicode_Check(pTitle)) ? PyUnicode_AsUTF8(pTitle) : "N/A");
+        char url_buf[MAX_RESULT_FIELD_LEN + 1];
+        safe_copy(url_buf, sizeof(url_buf), (pUrl && PyUnicode_Check(pUrl)) ? PyUnicode_AsUTF8(pUrl) : "N/A");
+        char snippet_buf[MAX_RESULT_FIELD_LEN + 1];
+        safe_copy(snippet_buf, sizeof(snippet_buf), (pSnippet && PyUnicode_Check(pSnippet)) ? PyUnicode_AsUTF8(pSnippet) : "N/A");
+
 
         const char *item_format = "• Title: %s\n  URL: %s\n  Snippet: %s\n\n";
-        size_t item_len = snprintf(NULL, 0, item_format, title, url, snippet);
+        
+        // Calculate the actual length needed for this item (considering truncated fields)
+        size_t needed_for_item = snprintf(NULL, 0, item_format, title_buf, url_buf, snippet_buf);
 
-        char *new_buffer = (char *)realloc(c_result_buffer, current_len + item_len + 1);
+        // Check again before realloc to prevent over-allocation if item is huge
+        if (current_len + needed_for_item + 1 > MAX_RESULT_BUFFER_LEN) {
+            fprintf(stderr, "Warning: Individual research result item too large or buffer near limit. Skipping.\n");
+            break;
+        }
+
+        char *new_buffer = (char *)realloc(c_result_buffer, current_len + needed_for_item + 1);
         if (new_buffer) {
             c_result_buffer = new_buffer;
-            snprintf(c_result_buffer + current_len, item_len + 1, item_format, title, url, snippet);
-            current_len += item_len;
+            // Use snprintf with remaining buffer size
+            snprintf(c_result_buffer + current_len, (MAX_RESULT_BUFFER_LEN - current_len), item_format, title_buf, url_buf, snippet_buf);
+            current_len = strlen(c_result_buffer); // Update actual current length
         } else {
-            fprintf(stderr, "Warning: Failed to reallocate memory for search result item.\n");
+            fprintf(stderr, "Warning: Failed to reallocate memory for search result item. Stopping.\n");
             break; // Stop adding more results if realloc fails
         }
     }
 
-    if (num_results == 0) {
+    if (num_results == 0 && current_len < MAX_RESULT_BUFFER_LEN) { // Only add if buffer not full
          const char *no_results_msg = "• No relevant results found.\n";
          size_t no_results_len = strlen(no_results_msg);
-         char *new_buffer = (char *)realloc(c_result_buffer, current_len + no_results_len + 1);
-         if (new_buffer) {
-             c_result_buffer = new_buffer;
-             strcpy(c_result_buffer + current_len, no_results_msg);
-             current_len += no_results_len;
+         if (current_len + no_results_len + 1 < MAX_RESULT_BUFFER_LEN) {
+             char *new_buffer = (char *)realloc(c_result_buffer, current_len + no_results_len + 1);
+             if (new_buffer) {
+                 c_result_buffer = new_buffer;
+                 strcpy(c_result_buffer + current_len, no_results_msg);
+                 current_len += no_results_len;
+             }
          }
     }
 

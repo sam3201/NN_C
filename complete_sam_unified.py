@@ -2431,6 +2431,9 @@ class MetaAgent:
         self.last_distill_ts = record.get("ts", time.time())
         self.last_distilled = record.get("summary", "")
         self.learning_cycles += 1
+        self.system.log_event("info", "meta_distill_success", "Meta-agent distilled learning events",
+                                distilled_count=len(self.distilled_memory),
+                                summary=record.get("summary", "")[:120]) # Log first 120 chars of summary
         try:
             if getattr(self.system, "system_metrics", None) is not None:
                 self.system.system_metrics["meta_distill_count"] = (
@@ -2624,14 +2627,13 @@ class MetaAgent:
     # ===========================
     def _learn_from_success(self, patch, failure):
         """Learn from successful patch application"""
-        self.patch_history.append(
-            {
-                "patch": patch,
-                "failure": failure,
-                "result": "success",
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        record = {
+            "patch": patch,
+            "failure": failure,
+            "result": "success",
+            "timestamp": datetime.now().isoformat(),
+        }
+        self.patch_history.append(record)
         self.successful_fixes.append(
             {
                 "patch": patch,
@@ -2650,17 +2652,19 @@ class MetaAgent:
         )
         self.learning_cycles += 1
         self._adjust_confidence_threshold()
+        self.system.log_event("info", "meta_patch_success", "Meta-agent successfully applied patch", 
+                                patch_id=patch.get("id"), failure_type=failure.get("error_type"),
+                                confidence=patch.get("confidence"))
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
-        self.patch_history.append(
-            {
-                "patch": patch,
-                "failure": failure,
-                "result": "rejected",
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        record = {
+            "patch": patch,
+            "failure": failure,
+            "result": "rejected",
+            "timestamp": datetime.now().isoformat(),
+        }
+        self.patch_history.append(record)
         self.failed_attempts.append(
             {
                 "patch": patch,
@@ -2675,6 +2679,9 @@ class MetaAgent:
             }
         )
         self.learning_cycles += 1
+        self.system.log_event("warn", "meta_patch_failure", "Meta-agent failed to apply patch", 
+                                patch_id=patch.get("id"), failure_type=failure.get("error_type"),
+                                reason="rejected_by_verifier")
         self._adjust_confidence_threshold()
 
     def _extract_failure_location(self, failure, stack_trace: str):
@@ -8732,6 +8739,8 @@ class UnifiedSAMSystem:
                         "confidence_threshold": getattr(
                             self.meta_agent, "confidence_threshold", None
                         ),
+                        "last_patch_outcome": last_patch_outcome,
+                        "last_repair_time": last_repair_time,
                     }
                 return jsonify(status)
             except Exception as e:
@@ -8743,6 +8752,37 @@ class UnifiedSAMSystem:
             try:
                 if not getattr(self, "meta_agent", None):
                     return jsonify({"status": "uninitialized"}), 503
+                meta_agent_instance = self.meta_agent
+                patch_history = getattr(meta_agent_instance, "patch_history", []) or []
+                
+                last_patch_outcome = None
+                last_repair_time = None
+                if patch_history:
+                    last_patch = patch_history[-1]
+                    last_patch_outcome = last_patch.get("result") # Using 'result' field for outcome
+                    last_repair_time = last_patch.get("timestamp") # Using 'timestamp' field
+                    
+                status["local_meta_agent"] = {
+                    "active": bool(getattr(self, "meta_agent_active", False)),
+                    "patch_history": len(patch_history),
+                    "successful_fixes": len(
+                        getattr(meta_agent_instance, "successful_fixes", []) or []
+                    ),
+                    "failed_attempts": len(
+                        getattr(meta_agent_instance, "failed_attempts", []) or []
+                    ),
+                    "learning_events": len(
+                        getattr(meta_agent_instance, "learning_log", []) or []
+                    ),
+                    "distilled_count": len(
+                        getattr(meta_agent_instance, "distilled_memory", []) or []
+                    ),
+                    "confidence_threshold": getattr(
+                        meta_agent_instance, "confidence_threshold", None
+                    ),
+                    "last_patch_outcome": last_patch_outcome,
+                    "last_repair_time": last_repair_time,
+                }
                 if hasattr(self.meta_agent, "get_learning_state"):
                     return jsonify(self.meta_agent.get_learning_state())
                 return jsonify({"status": "unsupported"}), 501
@@ -8752,6 +8792,7 @@ class UnifiedSAMSystem:
         @self.app.route("/api/meta/test", methods=["POST"])
         def meta_agent_test():
             """Trigger a controlled meta-agent repair test (admin-only)."""
+            self.system.log_event("info", "meta_test_triggered", "Meta-agent repair test initiated by admin")
             ok, error = _require_admin_token()
             if not ok:
                 message, status = error
@@ -13553,6 +13594,33 @@ sam@terminal:~$
                             <div class="metric-row">
                                 <span class="metric-label">Backup Loop</span>
                                 <span>{"ON" if self.backup_enabled else "OFF"}</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>MetaAgent Validation</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Last Patch Outcome</span>
+                                <span id="meta-last-patch-outcome">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Last Repair Time</span>
+                                <span id="meta-last-repair-time">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Distill Count</span>
+                                <span id="meta-distill-count">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Successful Fixes</span>
+                                <span id="meta-successful-fixes">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Failed Attempts</span>
+                                <span id="meta-failed-attempts">—</span>
+                            </div>
+                            <div style="margin-top:12px;">
+                                <button onclick="triggerMetaAgentTest()" style="width:100%; padding:8px 12px; border-radius:10px; border:none; background:var(--accent); color:#041018; font-weight:600;">Trigger Meta Test</button>
+                                <div id="meta-test-result" style="margin-top:8px; font-size:0.85rem; color:var(--muted);"></div>
                             </div>
                         </div>
                     </section>

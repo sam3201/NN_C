@@ -489,6 +489,7 @@ Fastest way for me to complete the “deep scan everything” you asked for
 If you want a true deep scan, do one of these (no extra back-and-forth needed):
 
 /Users/samueldasari/Personal/NN_C/Recursive\ intelligence\ framework\ diagram.png
+/Users/samueldasari/Personal/NN_C/ChatGPT\ Image\ Feb\ 10,\ 2026,\ 03_36_35\ PM.png 
 
 Upload a zip of the repo here (best).
 Or paste the output of:
