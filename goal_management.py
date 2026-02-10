@@ -103,11 +103,19 @@ class GoalManager:
         """Export active/completed goals to a markdown summary"""
         if output_path is None:
             output_path = "DOCS/GOALS.md"
+        
+        # Ensure directory exists
+        import os
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
         lines = [
             "# SAM Goal Summary",
             "",
             "## Active Goals",
         ]
+        
         if not self.active_goals:
             lines.append("- None")
         else:
@@ -117,18 +125,43 @@ class GoalManager:
                     f"(id={goal.get('id')}, priority={goal.get('priority')}, "
                     f"progress={goal.get('progress', 0.0):.2f})"
                 )
+        
         lines += ["", "## Completed Goals"]
+        
         if not self.completed_goals:
             lines.append("- None")
         else:
             for goal in self.completed_goals:
                 lines.append(
                     f"- **{goal.get('description', 'unknown')}** "
-                    f"(id={goal.get('id')})"
+                    f"(id={goal.get('id')}, completed at {goal.get('completed_at', 'unknown')})"
                 )
-        with open(output_path, "w", encoding="utf-8") as handle:
-            handle.write("\\n".join(lines) + "\\n")
-        return output_path
+        
+        lines += [
+            "",
+            f"Last updated: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"Total active goals: {len(self.active_goals)}",
+            f"Total completed goals: {len(self.completed_goals)}",
+            f"Total subtasks: {len(self.subtasks)}"
+        ]
+        
+        with open(output_path, 'w') as f:
+            f.write('\n'.join(lines))
+        
+        print(f"📖 Goal README exported to {output_path}")
+
+
+    def complete_task(self, task: TaskNode):
+        """Mark a subtask as completed"""
+        task.status = "completed"
+        task.progress = 1.0
+        return True
+
+    def prioritize_goals(self):
+        """Reprioritize goals based on current system state"""
+        for goal in self.active_goals:
+            base_priority = self.goal_priorities.get(goal.get('type', 'normal'), 5)
+            goal['priority_score'] = base_priority
 
 
 def create_conversationalist_tasks(goal_manager=None):
