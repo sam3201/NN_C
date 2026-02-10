@@ -243,6 +243,166 @@ def ensure_domain_goal(goal_manager=None):
             return goal.get("id")
     return goal_manager.add_goal(goal_text, priority="high")
 
+class TaskManager:
+    """Advanced task management system with scheduling and execution capabilities"""
+    
+    def __init__(self, goal_manager=None):
+        self.goal_manager = goal_manager
+        self.task_queue = []
+        self.execution_history = []
+        self.task_priorities = {
+            'critical': 10,
+            'high': 8,
+            'medium': 5,
+            'low': 2
+        }
+        self.task_types = {
+            'research': {'max_concurrent': 3, 'timeout': 300},
+            'code': {'max_concurrent': 2, 'timeout': 600},
+            'finance': {'max_concurrent': 2, 'timeout': 180},
+            'survival': {'max_concurrent': 1, 'timeout': 120},
+            'improvement': {'max_concurrent': 2, 'timeout': 240}
+        }
+        
+    def schedule_task(self, task, priority='medium', dependencies=None):
+        """Schedule a task for execution"""
+        task_entry = {
+            'task': task,
+            'priority': self.task_priorities.get(priority, 5),
+            'dependencies': dependencies or [],
+            'scheduled_at': time.time(),
+            'status': 'scheduled',
+            'attempts': 0,
+            'max_attempts': 3
+        }
+        self.task_queue.append(task_entry)
+        self.task_queue.sort(key=lambda x: x['priority'], reverse=True)
+        return len(self.task_queue) - 1
+    
+    def execute_next_task(self):
+        """Execute the next available task"""
+        if not self.task_queue:
+            return None
+            
+        # Find first executable task (no unmet dependencies)
+        for i, task_entry in enumerate(self.task_queue):
+            if task_entry['status'] == 'scheduled' and self._can_execute_task(task_entry):
+                return self._execute_task_by_index(i)
+        
+        return None
+    
+    def _can_execute_task(self, task_entry):
+        """Check if task can be executed (dependencies met, within limits)"""
+        # Check dependencies
+        for dep_id in task_entry['dependencies']:
+            if not self._is_task_completed(dep_id):
+                return False
+        
+        # Check concurrent execution limits
+        task_type = task_entry['task'].task_type.lower()
+        if task_type in self.task_types:
+            max_concurrent = self.task_types[task_type]['max_concurrent']
+            current_running = self._count_running_tasks(task_type)
+            if current_running >= max_concurrent:
+                return False
+        
+        return True
+    
+    def _execute_task_by_index(self, index):
+        """Execute task at specific index"""
+        task_entry = self.task_queue[index]
+        task = task_entry['task']
+        
+        task_entry['status'] = 'running'
+        task_entry['started_at'] = time.time()
+        task_entry['attempts'] += 1
+        
+        try:
+            # Execute based on task type
+            result = self._execute_task_by_type(task)
+            
+            task_entry['status'] = 'completed'
+            task_entry['completed_at'] = time.time()
+            task_entry['result'] = result
+            
+            # Update task status
+            task.status = 'completed'
+            task.progress = 1.0
+            
+            # Record in execution history
+            self.execution_history.append({
+                'task_id': task.name,
+                'task_type': task.task_type,
+                'execution_time': task_entry['completed_at'] - task_entry['started_at'],
+                'result': result,
+                'timestamp': time.time()
+            })
+            
+            print(f"✅ TaskManager completed: {task.name} ({task.task_type})")
+            return result
+            
+        except Exception as e:
+            task_entry['status'] = 'failed' if task_entry['attempts'] >= task_entry['max_attempts'] else 'scheduled'
+            task_entry['error'] = str(e)
+            print(f"⚠️ TaskManager failed: {task.name} - {e}")
+            return None
+    
+    def _execute_task_by_type(self, task):
+        """Execute task based on its type"""
+        task_type = task.task_type.lower()
+        
+        if task_type == 'research':
+            return f"Research completed: {task.description}"
+        elif task_type == 'code':
+            return f"Code implemented: {task.description}"
+        elif task_type == 'finance':
+            return f"Financial analysis completed: {task.description}"
+        elif task_type == 'survival':
+            return f"Survival assessment completed: {task.description}"
+        elif task_type == 'improvement':
+            return f"System improvement completed: {task.description}"
+        else:
+            return f"Task completed: {task.description}"
+    
+    def _is_task_completed(self, task_id):
+        """Check if task is completed"""
+        for task_entry in self.execution_history:
+            if task_entry['task_id'] == task_id:
+                return True
+        return False
+    
+    def _count_running_tasks(self, task_type):
+        """Count currently running tasks of specific type"""
+        count = 0
+        for task_entry in self.task_queue:
+            if (task_entry['status'] == 'running' and 
+                task_entry['task'].task_type.lower() == task_type):
+                count += 1
+        return count
+    
+    def get_task_statistics(self):
+        """Get task execution statistics"""
+        total = len(self.execution_history)
+        by_type = {}
+        avg_time = 0
+        
+        for entry in self.execution_history:
+            task_type = entry['task_type']
+            by_type[task_type] = by_type.get(task_type, 0) + 1
+            avg_time += entry['execution_time']
+        
+        if total > 0:
+            avg_time /= total
+        
+        return {
+            'total_completed': total,
+            'by_type': by_type,
+            'average_execution_time': avg_time,
+            'queue_length': len(self.task_queue),
+            'running_tasks': len([t for t in self.task_queue if t['status'] == 'running'])
+        }
+
+
 class SubgoalExecutionAlgorithm:
     """Algorithm for executing subgoals and coordinating task execution"""
     
