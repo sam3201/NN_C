@@ -35,6 +35,47 @@ class GoalManager:
             'expansion': 5,
             'optimization': 6
         }
+        
+        # Ensure base goals are always present
+        self._ensure_base_goals()
+    
+    def _ensure_base_goals(self):
+        """Ensure base goals are always present in the system"""
+        try:
+            # Base conversationalist goals
+            base_goals = [
+                {
+                    'description': 'Improve conversation diversity and engagement',
+                    'priority': 'high',
+                    'type': 'conversation_improvement'
+                },
+                {
+                    'description': 'Enhance response quality and relevance', 
+                    'priority': 'high',
+                    'type': 'response_quality'
+                },
+                {
+                    'description': 'Purchase a domain and enable Cloudflare Tunnel + Access for public deployment',
+                    'priority': 'high',
+                    'type': 'domain_acquisition'
+                }
+            ]
+            
+            for goal_spec in base_goals:
+                # Check if goal already exists
+                existing = None
+                for goal in self.active_goals:
+                    if goal.get('description') == goal_spec['description']:
+                        existing = goal
+                        break
+                
+                # Add goal if it doesn't exist
+                if not existing:
+                    self.add_goal(goal_spec['description'], priority=goal_spec['priority'])
+                    print(f"✅ Base goal ensured: {goal_spec['description']}")
+                    
+        except Exception as e:
+            print(f"⚠️ Error ensuring base goals: {e}")
 
     def add_goal(self, goal, priority='normal'):
         """Add a new goal to the system"""
