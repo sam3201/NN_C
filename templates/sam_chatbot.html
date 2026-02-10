@@ -1182,13 +1182,21 @@
                     if (response.ok) {
                         this.hideTypingIndicator();
                         const reply = data.message || data.response || '';
-                        const segments = this.splitMultiAgent(reply);
-                        if (segments.length > 1) {
-                            segments.forEach((segment) => {
-                                this.addMessageWithEvaluation(segment, data.evaluation, 'bot');
+                        const messages = Array.isArray(data.messages) ? data.messages : null;
+                        if (messages && messages.length) {
+                            messages.forEach((msg) => {
+                                const agentLabel = msg.agent ? `[${msg.agent}] ` : '';
+                                this.addMessageWithEvaluation(`${agentLabel}${msg.content || ''}`, data.evaluation, 'bot');
                             });
                         } else {
-                            this.addMessageWithEvaluation(reply, data.evaluation, 'bot');
+                            const segments = this.splitMultiAgent(reply);
+                            if (segments.length > 1) {
+                                segments.forEach((segment) => {
+                                    this.addMessageWithEvaluation(segment, data.evaluation, 'bot');
+                                });
+                            } else {
+                                this.addMessageWithEvaluation(reply, data.evaluation, 'bot');
+                            }
                         }
                     } else {
                         this.hideTypingIndicator();
