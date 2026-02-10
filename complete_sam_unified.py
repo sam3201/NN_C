@@ -1927,6 +1927,14 @@ class MetaAgent:
             "failure": failure,
             "timestamp": datetime.now().isoformat(),
         })
+        self.improvements_applied.append({
+            "type": "patch_success",
+            "patch_id": patch.get("id"),
+            "intent": patch.get("intent"),
+            "confidence": patch.get("confidence"),
+            "timestamp": datetime.now().isoformat(),
+        })
+        self.learning_cycles += 1
         self._adjust_confidence_threshold()
 
     def _learn_from_failure(self, patch, failure):
@@ -1942,6 +1950,11 @@ class MetaAgent:
             "failure": failure,
             "timestamp": datetime.now().isoformat(),
         })
+        self.errors_detected.append({
+            "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
+            "timestamp": datetime.now().isoformat(),
+        })
+        self.learning_cycles += 1
         self._adjust_confidence_threshold()
 
     def _deterministic_patches(self, failure):
