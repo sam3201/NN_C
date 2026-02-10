@@ -184,17 +184,17 @@ fi
 print_header "CHECKING API CONFIGURATION"
 API_KEYS_CONFIGURED=0
 
-if [ -n "$ANTHROPIC_API_KEY" ]; then
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     ((API_KEYS_CONFIGURED++))
     print_status "Anthropic API key configured"
 fi
 
-if [ -n "$GOOGLE_API_KEY" ]; then
+if [ -n "${GOOGLE_API_KEY:-}" ]; then
     ((API_KEYS_CONFIGURED++))
     print_status "Google API key configured"
 fi
 
-if [ -n "$OPENAI_API_KEY" ]; then
+if [ -n "${OPENAI_API_KEY:-}" ]; then
     ((API_KEYS_CONFIGURED++))
     print_status "OpenAI API key configured"
 fi
@@ -262,7 +262,7 @@ echo ""
 
 # Set environment variables
 export FLASK_ENV=production
-export PYTHONPATH="$PWD:$PYTHONPATH"
+export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 
 # Launch with proper error handling
 if [ "${SAM_HOT_RELOAD:-0}" = "1" ]; then
