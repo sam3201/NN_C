@@ -11640,7 +11640,10 @@ sam@terminal:~$
 
                         # Generate autonomous goals
                         self._generate_autonomous_goals()
-
+                        
+                        # Generate autonomous conversations to populate chat
+                        self._generate_autonomous_conversations()
+                        
                         # Execute autonomous tasks
                         self._execute_autonomous_tasks()
 
