@@ -16,6 +16,7 @@ class TaskNode:
     status: str = "pending"
     created_at: float = field(default_factory=lambda: time.time())
     progress: float = 0.0
+    goal_id: str = ""  # Add goal_id field
 
 class GoalManager:
     """Goal manager for tracking and coordinating system goals"""
