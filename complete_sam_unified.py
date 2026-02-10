@@ -6882,6 +6882,10 @@ class UnifiedSAMSystem:
         @self.app.route('/api/logs/stream')
         def stream_logs():
             """Stream JSONL logs via Server-Sent Events (SSE)."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
             tail = int(request.args.get("tail", "50"))
             kind = request.args.get("kind", "runtime")
             path = _resolve_log_path(kind)
@@ -6929,6 +6933,10 @@ class UnifiedSAMSystem:
         @self.app.route('/api/logs/view')
         def view_logs():
             """Return a moving window + compact summary of the JSONL log."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
             window = int(request.args.get("window", "200"))
             kind = request.args.get("kind", "runtime")
             path = _resolve_log_path(kind)
