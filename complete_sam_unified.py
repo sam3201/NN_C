@@ -11890,33 +11890,33 @@ sam@terminal:~$
                 # Create specific subtasks for this goal
                 if task_type == "research":
                     subtasks = [
-                        TaskNode(name="Gather data sources", task_type="research", priority=4, goal_id=goal_id),
-                        TaskNode(name="Analyze findings", task_type="research", priority=3, goal_id=goal_id),
-                        TaskNode(name="Generate report", task_type="research", priority=2, goal_id=goal_id)
+                        TaskNode(name="Gather data sources", description="Collect relevant data sources for research", task_type="research", priority=4, goal_id=goal_id),
+                        TaskNode(name="Analyze findings", description="Analyze collected research findings", task_type="research", priority=3, goal_id=goal_id),
+                        TaskNode(name="Generate report", description="Generate comprehensive research report", task_type="research", priority=2, goal_id=goal_id)
                     ]
                 elif task_type == "code":
                     subtasks = [
-                        TaskNode(name="Design solution", task_type="code", priority=4, goal_id=goal_id),
-                        TaskNode(name="Implement code", task_type="code", priority=3, goal_id=goal_id),
-                        TaskNode(name="Test implementation", task_type="code", priority=2, goal_id=goal_id)
+                        TaskNode(name="Design solution", description="Design technical solution approach", task_type="code", priority=4, goal_id=goal_id),
+                        TaskNode(name="Implement code", description="Implement the designed solution", task_type="code", priority=3, goal_id=goal_id),
+                        TaskNode(name="Test implementation", description="Test and validate implementation", task_type="code", priority=2, goal_id=goal_id)
                     ]
                 elif task_type == "finance":
                     subtasks = [
-                        TaskNode(name="Market research", task_type="finance", priority=4, goal_id=goal_id),
-                        TaskNode(name="Data analysis", task_type="finance", priority=3, goal_id=goal_id),
-                        TaskNode(name="Generate insights", task_type="finance", priority=2, goal_id=goal_id)
+                        TaskNode(name="Market research", description="Conduct market research and analysis", task_type="finance", priority=4, goal_id=goal_id),
+                        TaskNode(name="Data analysis", description="Analyze financial data and trends", task_type="finance", priority=3, goal_id=goal_id),
+                        TaskNode(name="Generate insights", description="Generate actionable financial insights", task_type="finance", priority=2, goal_id=goal_id)
                     ]
                 elif task_type == "survival":
                     subtasks = [
-                        TaskNode(name="System assessment", task_type="survival", priority=4, goal_id=goal_id),
-                        TaskNode(name="Identify threats", task_type="survival", priority=3, goal_id=goal_id),
-                        TaskNode(name="Implement safeguards", task_type="survival", priority=2, goal_id=goal_id)
+                        TaskNode(name="System assessment", description="Assess current system health and status", task_type="survival", priority=4, goal_id=goal_id),
+                        TaskNode(name="Identify threats", description="Identify potential system threats and vulnerabilities", task_type="survival", priority=3, goal_id=goal_id),
+                        TaskNode(name="Implement safeguards", description="Implement protective measures and safeguards", task_type="survival", priority=2, goal_id=goal_id)
                     ]
                 else:
                     subtasks = [
-                        TaskNode(name="Plan approach", task_type="improvement", priority=4, goal_id=goal_id),
-                        TaskNode(name="Execute plan", task_type="improvement", priority=3, goal_id=goal_id),
-                        TaskNode(name="Verify results", task_type="improvement", priority=2, goal_id=goal_id)
+                        TaskNode(name="Plan approach", description="Plan systematic approach to improvement", task_type="improvement", priority=4, goal_id=goal_id),
+                        TaskNode(name="Execute plan", description="Execute the improvement plan", task_type="improvement", priority=3, goal_id=goal_id),
+                        TaskNode(name="Verify results", description="Verify and validate improvement results", task_type="improvement", priority=2, goal_id=goal_id)
                     ]
                 
                 # Add all subtasks to the goal manager
