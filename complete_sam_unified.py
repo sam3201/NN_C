@@ -12019,6 +12019,58 @@ sam@terminal:~$
         except Exception as e:
             print(f"⚠️ Error generating autonomous conversations: {e}")
 
+    def _trigger_growth_system(self):
+        """Trigger the meta-growth system"""
+        try:
+            if not hasattr(self, 'meta_controller') or not self.meta_controller:
+                return
+                
+            # Check if growth is frozen
+            if getattr(self, 'meta_growth_freeze', False):
+                print("🧊 Growth system frozen - skipping trigger")
+                return
+            
+            # Get system signals for growth decision
+            signals = {
+                'performance_pressure': self.system_metrics.get('cpu_usage', 0) > 80,
+                'memory_pressure': self.system_metrics.get('memory_usage', 0) > 80,
+                'task_completion_rate': len([t for t in getattr(self, 'task_manager', {}).get('execution_history', [])]) / max(1, len(getattr(self, 'task_manager', {}).get('task_queue', []))),
+                'goal_progress': self.system_metrics.get('goal_progress', 0),
+                'survival_score': self.system_metrics.get('survival_score', 0.5)
+            }
+            
+            # Select and apply growth primitive
+            import autonomous_meta_agent
+            primitive = autonomous_meta_agent.sam_meta_controller_c.select_primitive(self.meta_controller)
+            
+            if primitive and primitive != 0:
+                print(f"🌱 Growth primitive selected: {primitive}")
+                
+                # Apply primitive
+                applied = autonomous_meta_agent.sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                
+                if applied:
+                    print(f"✅ Growth primitive applied: {primitive}")
+                    
+                    # Run regression gate
+                    gate_ok = self._run_regression_gate()
+                    
+                    if gate_ok:
+                        autonomous_meta_agent.sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, True)
+                        self.system_metrics["last_growth_ts"] = time.time()
+                        self.system_metrics["last_growth_primitive"] = primitive
+                        print(f"🎯 Growth successful: {primitive}")
+                    else:
+                        autonomous_meta_agent.sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, False)
+                        print(f"⚠️ Growth failed regression gate: {primitive}")
+                else:
+                    print(f"❌ Failed to apply growth primitive: {primitive}")
+            else:
+                print("🌱 No growth primitive selected")
+                
+        except Exception as e:
+            print(f"⚠️ Growth trigger error: {e}")
+
     def _execute_autonomous_tasks(self):
         """Execute autonomous tasks through the SAM agent system"""
         try:
