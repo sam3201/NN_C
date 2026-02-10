@@ -7122,15 +7122,11 @@ class UnifiedSAMSystem:
         def meta_agent_status():
             """Get comprehensive meta-agent status"""
             try:
-                status = {}
-                if meta_agent_available:
-                    status.update(get_meta_agent_status())
-                else:
-                    status.update({
-                        "status": "not_available",
-                        "message": "Autonomous meta agent not available",
-                        "capabilities": ["code_analysis", "patching", "evolution"]
-                    })
+                status = {
+                    "status": "ok" if getattr(self, "meta_agent", None) else "uninitialized",
+                    "message": "Meta-agent active" if getattr(self, "meta_agent", None) else "Meta-agent not initialized",
+                    "capabilities": ["code_analysis", "patching", "evolution", "learning", "research"],
+                }
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
                 status["require_meta_agent"] = getattr(self, "require_meta_agent", False)
@@ -7143,6 +7139,10 @@ class UnifiedSAMSystem:
                     "last_attempt_ts": self.system_metrics.get("last_growth_attempt_ts"),
                     "last_attempt_primitive": self.system_metrics.get("last_growth_attempt_primitive"),
                     "last_attempt_result": self.system_metrics.get("last_growth_attempt_result"),
+                    "last_growth_lambda": self.system_metrics.get("last_growth_lambda"),
+                    "last_growth_signals": self.system_metrics.get("last_growth_signals"),
+                    "last_growth_dominant": self.system_metrics.get("last_growth_dominant"),
+                    "last_growth_signal_ts": self.system_metrics.get("last_growth_signal_ts"),
                     "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
                 }
                 if getattr(self, "meta_agent", None):
