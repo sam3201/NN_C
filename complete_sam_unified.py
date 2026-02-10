@@ -4552,7 +4552,7 @@ class UnifiedSAMSystem:
             residual = 0.3
             temporal_incoherence = 0.2
 
-        return {
+        signals = {
             'residual': residual,
             'rank_def': rank_def,
             'retrieval_entropy': retrieval_entropy,
@@ -4562,6 +4562,26 @@ class UnifiedSAMSystem:
             'compression_waste': compression_waste,
             'temporal_incoherence': temporal_incoherence
         }
+
+        # Nudge one dominant signal to ensure a growth primitive can be selected.
+        dominant_key = max(signals, key=signals.get)
+        if growth_idle > 300:
+            dominant_key = 'planner_friction'
+        if not self.connected_agents:
+            dominant_key = 'retrieval_entropy'
+        if self.system_metrics.get('survival_score', 1.0) < 0.5:
+            dominant_key = 'residual'
+
+        margin = 0.08
+        top_val = signals.get(dominant_key, 0.0)
+        second_val = max([v for k, v in signals.items() if k != dominant_key] or [0.0])
+        if top_val - second_val < margin:
+            signals[dominant_key] = min(1.0, second_val + margin)
+
+        for key, value in signals.items():
+            signals[key] = max(0.0, min(1.0, float(value)))
+
+        return signals
 
     def _start_meta_loop(self):
         """Background loop to update meta-controller from system signals"""
