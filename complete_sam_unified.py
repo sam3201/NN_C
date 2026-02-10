@@ -1862,6 +1862,12 @@ class MetaAgent:
             "result": "success",
             "timestamp": datetime.now().isoformat()
         })
+        self.successful_fixes.append({
+            "patch": patch,
+            "failure": failure,
+            "timestamp": datetime.now().isoformat(),
+        })
+        self._adjust_confidence_threshold()
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
@@ -1871,6 +1877,12 @@ class MetaAgent:
             "result": "rejected",
             "timestamp": datetime.now().isoformat()
         })
+        self.failed_attempts.append({
+            "patch": patch,
+            "failure": failure,
+            "timestamp": datetime.now().isoformat(),
+        })
+        self._adjust_confidence_threshold()
 
     def _deterministic_patches(self, failure):
         """Generate deterministic patches for known failure signatures."""
