@@ -6428,7 +6428,6 @@ class UnifiedSAMSystem:
             is_admin = email == owner or email in admins
             
             return allowed, is_admin
-            return email in allowed, (email in admins) or (email == owner)
 
         def _get_login_password():
             """Resolve admin login password from env, file, or macOS Keychain."""
