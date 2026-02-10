@@ -305,7 +305,6 @@ print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
 from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context, session, redirect
-from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_compress import Compress
 flask_available = True
