@@ -1565,7 +1565,12 @@ class VerifierJudgeAgent:
 
         # Read the current file to check for API changes
         try:
-            with open(os.path.join(self.system.project_root, target_file), 'r', encoding='utf-8') as f:
+            path = Path(target_file)
+            if not path.is_absolute():
+                path = Path(self.system.project_root) / target_file
+            if not path.exists():
+                return issues
+            with open(path, 'r', encoding='utf-8') as f:
                 current_content = f.read()
 
             # Look for function/class definitions that might be API
