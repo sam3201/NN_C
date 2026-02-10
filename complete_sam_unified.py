@@ -11228,9 +11228,14 @@ sam@terminal:~$
 
                     <section class="chat-panel">
                         <h3>💬 SAM Chatbot Interface</h3>
+                        <div class="chat-controls">
+                            <label><input type="checkbox" id="chat-multi-toggle" /> Multi-agent</label>
+                            <label>Max agents <input type="number" id="chat-agents-max" min="1" max="8" value="3" /></label>
+                            <button class="ghost" id="chat-config-apply" onclick="updateChatConfig()">Apply</button>
+                        </div>
                         <div id="chat-messages"></div>
                         <div class="chat-input">
-                            <input type="text" id="chat-input" placeholder="Ask SAM anything..." />
+                            <textarea id="chat-input" placeholder="Ask SAM anything... (Shift+Enter for newline)"></textarea>
                             <button onclick="sendMessage()">Send</button>
                         </div>
                     </section>
