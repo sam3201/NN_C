@@ -11653,6 +11653,21 @@ sam@terminal:~$
 
                         # Execute goal management cycle
                         self._execute_goal_cycle()
+                        
+                        # Execute TaskManager cycle
+                        if hasattr(self, 'task_manager'):
+                            result = self.task_manager.execute_next_task()
+                            if result:
+                                print(f"🔧 TaskManager executed: {result}")
+                        
+                        # Trigger growth system occasionally
+                        if not hasattr(self, '_last_growth_trigger'):
+                            self._last_growth_trigger = 0
+                        
+                        current_time = time.time()
+                        if current_time - self._last_growth_trigger > 180:  # Every 3 minutes
+                            self._trigger_growth_system()
+                            self._last_growth_trigger = current_time
 
                         # Demonstrate capabilities autonomously
                         self._demonstrate_capabilities()
