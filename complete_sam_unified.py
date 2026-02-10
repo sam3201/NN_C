@@ -1542,6 +1542,13 @@ class MetaAgent:
         self.research_enabled = os.getenv("SAM_META_RESEARCH_ENABLED", "1") == "1"
         self.research_mode = os.getenv("SAM_META_RESEARCH_MODE", "both").lower()
         self.research_max_chars = int(os.getenv("SAM_META_RESEARCH_MAX_CHARS", "2000"))
+        self.distilled_memory = deque(maxlen=int(os.getenv("SAM_META_DISTILLED_MAX", "50")))
+        self.distill_every = max(1, int(os.getenv("SAM_META_DISTILL_EVERY", "5")))
+        self._learning_event_counter = 0
+        self.last_distill_ts = 0.0
+        self.last_distilled = ""
+        self.confidence_min = float(os.getenv("SAM_META_CONFIDENCE_MIN", "0.5"))
+        self.confidence_max = float(os.getenv("SAM_META_CONFIDENCE_MAX", "0.95"))
 
         print(" Production Meta-Agent initialized with learning state")
         print("   Observer Agent: Active")
