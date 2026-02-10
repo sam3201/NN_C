@@ -2,6 +2,7 @@
 # Goal management and task coordination for SAM 2.0 AGI
 
 import time
+import re
 from dataclasses import dataclass, field
 
 
@@ -39,6 +40,78 @@ class GoalManager:
         
         # Ensure base goals are always present
         self._ensure_base_goals()
+        self._sync_goal_counter()
+
+    def _goal_key(self, description: str) -> str:
+        return (description or "").strip().lower()
+
+    def _sync_goal_counter(self):
+        """Sync goal counter with existing goal ids to avoid collisions."""
+        max_id = 0
+        for goal in list(self.active_goals) + list(self.completed_goals):
+            goal_id = goal.get("id") if isinstance(goal, dict) else None
+            if not goal_id:
+                continue
+            match = re.match(r"goal_(\d+)$", str(goal_id))
+            if match:
+                max_id = max(max_id, int(match.group(1)))
+        if max_id > self._goal_counter:
+            self._goal_counter = max_id
+
+    def dedupe_goals(self):
+        """Remove duplicate goals by description and remap subtasks."""
+        id_map = {}
+
+        def choose_keep(existing, candidate):
+            existing_prog = float(existing.get("progress", 0.0) or 0.0)
+            candidate_prog = float(candidate.get("progress", 0.0) or 0.0)
+            if candidate_prog > existing_prog:
+                return candidate
+            if candidate_prog < existing_prog:
+                return existing
+            # Tie-breaker: older created_at wins
+            existing_created = existing.get("created_at") or 0
+            candidate_created = candidate.get("created_at") or 0
+            return existing if existing_created <= candidate_created else candidate
+
+        def dedupe_list(goals):
+            by_key = {}
+            new_list = []
+            for goal in goals:
+                desc = goal.get("description") if isinstance(goal, dict) else None
+                key = self._goal_key(desc)
+                if not key:
+                    new_list.append(goal)
+                    continue
+                if key not in by_key:
+                    by_key[key] = goal
+                    new_list.append(goal)
+                    continue
+                keep = choose_keep(by_key[key], goal)
+                if keep is not by_key[key]:
+                    try:
+                        idx = new_list.index(by_key[key])
+                        new_list[idx] = keep
+                    except ValueError:
+                        pass
+                    id_map[by_key[key].get("id")] = keep.get("id")
+                    by_key[key] = keep
+                else:
+                    id_map[goal.get("id")] = keep.get("id")
+            return new_list
+
+        self.active_goals = dedupe_list(self.active_goals)
+        self.completed_goals = dedupe_list(self.completed_goals)
+
+        if id_map:
+            for task in self.subtasks:
+                try:
+                    if task.goal_id in id_map:
+                        task.goal_id = id_map[task.goal_id]
+                except Exception:
+                    continue
+
+        self._sync_goal_counter()
     
     def _ensure_base_goals(self):
         """Ensure base goals are always present in the system"""
@@ -89,6 +162,15 @@ class GoalManager:
 
     def add_goal(self, goal, priority='normal', goal_id=None, goal_type=None):
         """Add a new goal to the system"""
+        # Prevent duplicate goals with same description
+        existing = None
+        goal_key = self._goal_key(goal)
+        for g in self.active_goals:
+            if self._goal_key(g.get("description")) == goal_key:
+                existing = g
+                break
+        if existing:
+            return existing.get("id")
         self._goal_counter += 1
         if not goal_id:
             goal_id = f"goal_{self._goal_counter}"
@@ -108,6 +190,7 @@ class GoalManager:
                 self.ensure_subtasks_for_goal(goal_entry)
             except Exception:
                 pass
+        self._sync_goal_counter()
         return goal_id
 
     def update_goal_progress(self, goal_id, progress):
