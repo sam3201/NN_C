@@ -9122,6 +9122,30 @@ sam@terminal:~$
             responses.append(f"[{name}] {text}")
         return "\n\n".join(responses)
 
+    def _parse_agent_messages(self, text: str) -> list[dict]:
+        """Split a multi-agent response into structured messages."""
+        if not text:
+            return []
+        messages = []
+        current = None
+        for line in text.splitlines():
+            match = re.match(r"^\\[(.+?)\\]\\s*(.*)$", line.strip())
+            if match:
+                if current:
+                    messages.append(current)
+                current = {"agent": match.group(1).strip(), "content": match.group(2).strip()}
+            else:
+                if current:
+                    if current["content"]:
+                        current["content"] += "\n" + line
+                    else:
+                        current["content"] = line
+        if current:
+            messages.append(current)
+        if not messages:
+            messages = [{"agent": "SAM", "content": text.strip()}]
+        return messages
+
     def _build_learning_context(self, limit: int = 3) -> str:
         if not getattr(self, "learning_memory_enabled", False):
             return ""
