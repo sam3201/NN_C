@@ -8600,6 +8600,33 @@ sam@terminal:~$
         ]
         return "\n".join(summary_lines)
 
+    def _truncate_c_prompt(self, prompt: str) -> str:
+        text = (prompt or "").strip()
+        max_chars = max(64, int(getattr(self, "c_agent_max_chars", 512)))
+        if len(text) > max_chars:
+            return text[:max_chars]
+        return text
+
+    def _c_agents_available(self) -> bool:
+        if getattr(self, "disable_c_agents", False):
+            return False
+        return bool(getattr(self, "specialized_agents", False))
+
+    def _call_c_agent(self, func_name: str, prompt: str) -> Optional[str]:
+        if not self._c_agents_available():
+            return None
+        if func_name == "research" and not getattr(self, "c_research_enabled", True):
+            return None
+        safe_prompt = self._truncate_c_prompt(prompt)
+        try:
+            func = getattr(specialized_agents_c, func_name, None)
+            if not func:
+                return None
+            return func(safe_prompt)
+        except Exception as exc:
+            log_event("warn", "c_agent_error", "C agent call failed", agent=func_name, reason=str(exc))
+            return None
+
     def _generate_local_agent_reply(self, agent_cfg, message, context):
         """Generate a local-only response without external providers."""
         agent_type = (agent_cfg.get("type") or agent_cfg.get("id") or "").lower()
