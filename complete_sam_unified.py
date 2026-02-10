@@ -12649,7 +12649,18 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})", flush=True)
-        if float(score) < 0.5:
+        parsed_score = self._score_to_float(score)
+        if parsed_score is None:
+            log_event(
+                "warn",
+                "score_unavailable",
+                "Research score unavailable; investigating score source",
+                topic=topic,
+                reason=reason,
+                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                action="investigate_score_source",
+            )
+        elif parsed_score < 0.5:
             log_event(
                 "warn",
                 "score_unusable",
@@ -12683,7 +12694,18 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})", flush=True)
-        if float(score) < 0.5:
+        parsed_score = self._score_to_float(score)
+        if parsed_score is None:
+            log_event(
+                "warn",
+                "score_unavailable",
+                "Market score unavailable; investigating score source",
+                market=market,
+                reason=reason,
+                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                action="investigate_score_source",
+            )
+        elif parsed_score < 0.5:
             log_event(
                 "warn",
                 "score_unusable",
@@ -12701,6 +12723,8 @@ sam@terminal:~$
                 log_event("warn", "score_missing", "Agent result is empty", reason="empty result")
                 return "N/A", "empty result"
             text = result if isinstance(result, str) else str(result)
+            if re.search(r"(?i)score\\s*[:=]\\s*(n/?a|none|unknown)", text):
+                return "N/A", "explicit_na"
             match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
             if match:
                 return match.group(1), None
@@ -12766,6 +12790,21 @@ sam@terminal:~$
         except Exception as exc:
             log_event("warn", "score_missing", "Score parse error", reason=exc.__class__.__name__)
             return "N/A", f"parse error: {exc.__class__.__name__}"
+
+    def _score_to_float(self, score):
+        if score is None:
+            return None
+        if isinstance(score, (int, float)):
+            return float(score)
+        text = str(score).strip()
+        if not text:
+            return None
+        if text.lower() in ("n/a", "na", "none", "null", "unknown"):
+            return None
+        try:
+            return float(text)
+        except Exception:
+            return None
 
     def _check_consciousness(self):
         """Perform consciousness check and update metrics"""
