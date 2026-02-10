@@ -7263,11 +7263,13 @@ class UnifiedSAMSystem:
         def emergency_stop():
             """Emergency stop meta-agent operations"""
             try:
-                if meta_agent_available:
-                    emergency_stop_meta_agent()
-                    return jsonify({"status": "stopped", "message": "Meta agent emergency stop activated"})
-                else:
-                    return jsonify({"status": "not_available", "message": "Meta agent not available"}), 404
+                if not getattr(self, "meta_agent", None):
+                    return jsonify({"status": "not_available", "message": "Meta agent not initialized"}), 404
+                self.meta_agent_active = False
+                self.allow_self_modification = False
+                self.allow_auto_resolution = False
+                log_event("warn", "meta_agent_stop", "Meta-agent emergency stop activated")
+                return jsonify({"status": "stopped", "message": "Meta agent emergency stop activated"})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -7275,25 +7277,22 @@ class UnifiedSAMSystem:
         def meta_health_check():
             """Get meta-agent health analysis"""
             try:
-                if meta_agent_available:
-                    agent = meta_agent if meta_agent is not None else getattr(self, "meta_agent", None)
-                    if agent is None:
-                        return jsonify({"status": "uninitialized", "message": "Meta agent not initialized"}), 503
-                    if hasattr(agent, "analyze_system_health"):
-                        health = agent.analyze_system_health()
-                        return jsonify(health)
-                    return jsonify({
-                        "status": "available",
-                        "components_analyzed": 0,
-                        "note": "Meta agent lacks analyze_system_health; returning minimal status",
-                        "system_metrics": {
-                            "c_core": self.system_metrics.get("c_core_status", "unknown"),
-                            "python_orchestration": self.system_metrics.get("python_orchestration_status", "unknown"),
-                            "web_interface": self.system_metrics.get("web_interface_status", "unknown"),
-                        }
-                    })
-                else:
-                    return jsonify({"status": "mock", "components_analyzed": 0})
+                agent = getattr(self, "meta_agent", None)
+                if agent is None:
+                    return jsonify({"status": "uninitialized", "message": "Meta agent not initialized"}), 503
+                if hasattr(agent, "analyze_system_health"):
+                    health = agent.analyze_system_health()
+                    return jsonify(health)
+                return jsonify({
+                    "status": "available",
+                    "components_analyzed": 0,
+                    "note": "Meta agent lacks analyze_system_health; returning minimal status",
+                    "system_metrics": {
+                        "c_core": self.system_metrics.get("c_core_status", "unknown"),
+                        "python_orchestration": self.system_metrics.get("python_orchestration_status", "unknown"),
+                        "web_interface": self.system_metrics.get("web_interface_status", "unknown"),
+                    }
+                })
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -7357,11 +7356,11 @@ class UnifiedSAMSystem:
         def get_improvements():
             """Get system improvement recommendations"""
             try:
-                if meta_agent_available:
-                    improvements = meta_agent.generate_system_improvements()
-                    return jsonify(improvements)
-                else:
-                    return jsonify({"improvement_phases": []})
+                agent = getattr(self, "meta_agent", None)
+                if not agent:
+                    return jsonify({"status": "uninitialized", "improvement_phases": []}), 503
+                improvements = agent.generate_system_improvements()
+                return jsonify(improvements)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
