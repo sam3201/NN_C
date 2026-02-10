@@ -31,7 +31,7 @@ import platform
 import psutil
 import ipaddress
 from contextlib import contextmanager
-from collections import deque
+from collections import deque, Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import Enum
