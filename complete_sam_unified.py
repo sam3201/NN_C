@@ -1304,7 +1304,7 @@ class VerifierJudgeAgent:
         if not target_file:
             return None, issues
         try:
-            path = os.path.join(self.system.project_root, target_file)
+            path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
             if not os.path.exists(path):
                 return None, [f"Target file not found: {target_file}"]
             content = Path(path).read_text(encoding="utf-8", errors="ignore")
