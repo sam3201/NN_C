@@ -1,3 +1,5 @@
+#include <Python.h>
+
 /*
  * Pure C Individual Agents - Using Existing Framework Components
  * Complete implementations for all specialized agents
@@ -172,6 +174,43 @@ typedef struct {
 // Global instance of bug-fixing model
 static BugFixingModel *global_bug_fixing_model = NULL;
 
+// Global Python objects for web search integration
+static PyObject *pSamWebSearchModule = NULL;
+static PyObject *pSearchWebWithSamFunc = NULL;
+static int sam_web_search_is_initialized = 0; // Flag to ensure one-time initialization
+
+// Function to initialize Python web search module
+static int init_python_web_search() {
+    if (sam_web_search_is_initialized) {
+        return 1; // Already initialized
+    }
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure(); // Acquire GIL
+
+    pSamWebSearchModule = PyImport_ImportModule("sam_web_search");
+    if (pSamWebSearchModule == NULL) {
+        PyErr_Print();
+        fprintf(stderr, "Error: Could not import Python module sam_web_search\n");
+        PyGILState_Release(gstate);
+        return 0;
+    }
+
+    pSearchWebWithSamFunc = PyObject_GetAttrString(pSamWebSearchModule, "search_web_with_sam");
+    if (pSearchWebWithSamFunc == NULL || !PyCallable_Check(pSearchWebWithSamFunc)) {
+        PyErr_Print();
+        fprintf(stderr, "Error: Could not find or call Python function search_web_with_sam\n");
+        Py_XDECREF(pSamWebSearchModule);
+        PyGILState_Release(gstate);
+        return 0;
+    }
+
+    sam_web_search_is_initialized = 1;
+    printf("✅ Python module sam_web_search and function search_web_with_sam initialized.\n");
+    PyGILState_Release(gstate); // Release GIL
+    return 1;
+}
+
 BugFixingModel *bug_fixing_model_create() {
     BugFixingModel *model = malloc(sizeof(BugFixingModel));
     if (!model) return NULL;
@@ -342,67 +381,153 @@ void research_agent_free(ResearcherAgent *agent) {
 }
 
 char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
-    char safe_query[MAX_QUERY_LEN + 1];
-    safe_copy(safe_query, sizeof(safe_query), query);
+    char display_query[MAX_QUERY_LEN + 1];
+    safe_copy(display_query, sizeof(display_query), query);
 
-    // Use a bounded display query to avoid oversized logs and formatting buffers.
-    char display_query[256];
-    if (strlen(safe_query) > 200) {
-        snprintf(display_query, sizeof(display_query), "%.*s...", 200, safe_query);
+    // Use a bounded display query for logs
+    char log_query[256];
+    if (strlen(display_query) > 200) {
+        snprintf(log_query, sizeof(log_query), "%.*s...", 200, display_query);
     } else {
-        safe_copy(display_query, sizeof(display_query), safe_query);
+        safe_copy(log_query, sizeof(log_query), display_query);
     }
-    printf("🔍 Research Agent: Performing web search for '%s'\n", display_query);
+    printf("🔍 Research Agent: Performing web search for '%s' via Python module.\n", log_query);
 
     // Store in history
     if (agent->history_count < agent->history_capacity) {
-    agent->search_history[agent->history_count++] = strdup(safe_query);
+        agent->search_history[agent->history_count++] = strdup(display_query);
     }
 
     if (agent->current_search_query) {
         free(agent->current_search_query);
     }
-    agent->current_search_query = strdup(safe_query);
+    agent->current_search_query = strdup(display_query);
 
-    // Implement actual web search using framework utilities
-    // This would integrate with existing web scraping components
+    if (!sam_web_search_is_initialized || pSearchWebWithSamFunc == NULL) {
+        fprintf(stderr, "Error: Python web search not initialized.\n");
+        // Fallback to simulated results or return error
+        char *error_result = malloc(MAX_QUERY_LEN + 100);
+        if (error_result) {
+            snprintf(error_result, MAX_QUERY_LEN + 100,
+                     "Research Results for '%s':\n• Error: Python web search not available. (Simulated fallback)\n", display_query);
+        }
+        return error_result;
+    }
 
-    // For now, simulate research results
-    const char *template_str =
-        "Research Results for '%s':\n"
-        "• Found %d relevant sources from trusted domains\n"
-        "• Credibility score: %.2f\n"
-        "• Key findings: Multiple corroborating sources\n"
-        "• Data quality: High confidence (%.1f%%)\n"
-        "• Sources verified: Academic institutions, peer-reviewed journals\n"
-        "• Cross-referenced: %d independent confirmations\n"
-        "• Bias assessment: Minimal detected\n"
-        "• Timeliness: Current data (last 30 days)";
-    int needed = snprintf(NULL, 0, template_str,
-                          display_query,
-                          15 + rand() % 20,
-                          agent->credibility_score,
-                          agent->credibility_score * 100,
-                          3 + rand() % 5);
-    if (needed < 0) {
-        return NULL;
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure(); // Acquire GIL
+
+    PyObject *pQuery = PyUnicode_FromString(query);
+    if (pQuery == NULL) {
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return strdup("Error: Failed to convert query to Python string.");
     }
-    size_t buf_size = (size_t)needed + 1;
-    char *results = (char *)malloc(buf_size);
-    if (!results) {
-        return NULL;
+
+    // Call the Python function: search_web_with_sam(query, save_to_drive=False, max_results=5)
+    PyObject *pArgs = PyTuple_Pack(1, pQuery); // Only pass 'query'
+    if (pArgs == NULL) {
+        Py_XDECREF(pQuery);
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return strdup("Error: Failed to create Python arguments tuple.");
     }
-    snprintf(results, buf_size, template_str,
-             display_query,
-             15 + rand() % 20,
-             agent->credibility_score,
-             agent->credibility_score * 100,
-             3 + rand() % 5);
+
+    PyObject *pKeywords = PyDict_New();
+    if (pKeywords == NULL) {
+        Py_XDECREF(pQuery);
+        Py_XDECREF(pArgs);
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return strdup("Error: Failed to create Python keywords dict.");
+    }
+    PyDict_SetItemString(pKeywords, "save_to_drive", Py_False);
+    PyDict_SetItemString(pKeywords, "max_results", PyLong_FromLong(5)); // Set max_results to 5
+
+    PyObject *pResultDict = PyObject_Call(pSearchWebWithSamFunc, pArgs, pKeywords);
+
+    Py_XDECREF(pQuery);
+    Py_XDECREF(pArgs);
+    Py_XDECREF(pKeywords);
+
+    if (pResultDict == NULL) {
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return strdup("Error: Python web search function call failed.");
+    }
+
+    // Parse the result dictionary
+    PyObject *pResultsList = PyDict_GetItemString(pResultDict, "results");
+    if (pResultsList == NULL || !PyList_Check(pResultsList)) {
+        Py_XDECREF(pResultDict);
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return strdup("Error: 'results' not found or not a list in Python response.");
+    }
+
+    // Build the C string result
+    char *c_result_buffer = NULL;
+    size_t current_len = 0;
+    const char *header_format = "Research Results for '%s':\n\n";
+    size_t header_len = snprintf(NULL, 0, header_format, display_query);
+    c_result_buffer = (char *)malloc(header_len + 1);
+    if (c_result_buffer) {
+        snprintf(c_result_buffer, header_len + 1, header_format, display_query);
+        current_len = header_len;
+    } else {
+        Py_XDECREF(pResultDict);
+        PyGILState_Release(gstate);
+        return strdup("Error: Memory allocation failed for C result buffer.");
+    }
+
+    Py_ssize_t num_results = PyList_Size(pResultsList);
+    for (Py_ssize_t i = 0; i < num_results; ++i) {
+        PyObject *pItem = PyList_GetItem(pResultsList, i); // Borrowed reference
+        if (pItem == NULL || !PyDict_Check(pItem)) {
+            continue; // Skip if not a dict
+        }
+
+        PyObject *pTitle = PyDict_GetItemString(pItem, "title");
+        PyObject *pUrl = PyDict_GetItemString(pItem, "url");
+        PyObject *pSnippet = PyDict_GetItemString(pItem, "snippet");
+
+        const char *title = (pTitle && PyUnicode_Check(pTitle)) ? PyUnicode_AsUTF8(pTitle) : "N/A";
+        const char *url = (pUrl && PyUnicode_Check(pUrl)) ? PyUnicode_AsUTF8(pUrl) : "N/A";
+        const char *snippet = (pSnippet && PyUnicode_Check(pSnippet)) ? PyUnicode_AsUTF8(pSnippet) : "N/A";
+
+        const char *item_format = "• Title: %s\n  URL: %s\n  Snippet: %s\n\n";
+        size_t item_len = snprintf(NULL, 0, item_format, title, url, snippet);
+
+        char *new_buffer = (char *)realloc(c_result_buffer, current_len + item_len + 1);
+        if (new_buffer) {
+            c_result_buffer = new_buffer;
+            snprintf(c_result_buffer + current_len, item_len + 1, item_format, title, url, snippet);
+            current_len += item_len;
+        } else {
+            fprintf(stderr, "Warning: Failed to reallocate memory for search result item.\n");
+            break; // Stop adding more results if realloc fails
+        }
+    }
+
+    if (num_results == 0) {
+         const char *no_results_msg = "• No relevant results found.\n";
+         size_t no_results_len = strlen(no_results_msg);
+         char *new_buffer = (char *)realloc(c_result_buffer, current_len + no_results_len + 1);
+         if (new_buffer) {
+             c_result_buffer = new_buffer;
+             strcpy(c_result_buffer + current_len, no_results_msg);
+             current_len += no_results_len;
+         }
+    }
+
+
+    Py_XDECREF(pResultDict);
+    PyGILState_Release(gstate); // Release GIL
 
     agent->base.performance_score += 0.05;
     agent->credibility_score += 0.01;
 
-    return results;
+    return c_result_buffer;
 }
 
 char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) {
@@ -993,6 +1118,12 @@ static PyObject *py_create_agents(PyObject *self, PyObject *args) {
     if (!global_bug_fixing_model) {
         global_bug_fixing_model = bug_fixing_model_create();
     }
+    
+    // Initialize Python web search
+    if (!init_python_web_search()) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to initialize Python web search");
+        return NULL;
+    }
 
     printf("✅ Created all specialized agents using existing framework\n");
     printf("✅ Initialized all prebuilt models (Coherency, Teacher, Bug-Fixing)\n");
@@ -1175,10 +1306,20 @@ int main() {
     printf("🤖 Pure C Specialized Agents - Using Existing SAM Framework\n");
     printf("Complete agent implementations with real functionality\n\n");
 
+    Py_Initialize(); // Initialize the Python interpreter
+
+    // Initialize Python web search before creating agents for standalone test
+    if (!init_python_web_search()) {
+        fprintf(stderr, "❌ Failed to initialize Python web search in main\n");
+        Py_Finalize();
+        return 1;
+    }
+
     // Create agent registry
     AgentRegistry *registry = agent_registry_create();
     if (!registry) {
         fprintf(stderr, "❌ Failed to create agent registry\n");
+        Py_Finalize();
         return 1;
     }
 
@@ -1232,6 +1373,8 @@ int main() {
 
     printf("\n✅ All specialized agents tested successfully\n");
     printf("🎯 Ready for integration into multi-agent orchestrator\n");
+
+    Py_Finalize(); // Shut down the Python interpreter
 
     return 0;
 }
