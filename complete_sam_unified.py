@@ -5403,8 +5403,13 @@ class UnifiedSAMSystem:
         elif env_override in ("0", "false", "no", "off"):
             self.sam_available = False
         else:
-            self.sam_available = any(p.exists() for p in sam_candidates)
-        print(f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}", flush=True)
+            # More permissive SAM availability check - check if we can import the module
+            try:
+                import sam_sav_dual_system
+                self.sam_available = hasattr(sam_sav_dual_system, 'SAM_Core')
+            except Exception:
+                self.sam_available = False
+            print(f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}", flush=True)
         
         # Check external API availability
         self.claude_available = self._check_claude_api()
