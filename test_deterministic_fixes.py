@@ -250,7 +250,7 @@ def test_function():
             stack_trace=f'''File "{test_file}", line 3
     timestamp = _utc_now()  # Missing function
     ^
-NameError: name '_utc_now' is not defined''',
+NameError: name '_utc_now' is not defined ''',
             timestamp=datetime.now().isoformat(),
             severity="medium",
             context="test"
