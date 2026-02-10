@@ -6996,6 +6996,14 @@ class UnifiedSAMSystem:
                 status["env_meta_only_boot"] = os.getenv("SAM_META_ONLY_BOOT")
                 status["env_require_meta_agent"] = os.getenv("SAM_REQUIRE_META_AGENT")
                 status["severity_threshold"] = getattr(self, "meta_agent_min_severity", "medium")
+                status["growth"] = {
+                    "last_growth_ts": self.system_metrics.get("last_growth_ts"),
+                    "last_growth_primitive": self.system_metrics.get("last_growth_primitive"),
+                    "last_attempt_ts": self.system_metrics.get("last_growth_attempt_ts"),
+                    "last_attempt_primitive": self.system_metrics.get("last_growth_attempt_primitive"),
+                    "last_attempt_result": self.system_metrics.get("last_growth_attempt_result"),
+                    "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
+                }
                 if getattr(self, "meta_agent", None):
                     status["local_meta_agent"] = {
                         "active": bool(getattr(self, "meta_agent_active", False)),
