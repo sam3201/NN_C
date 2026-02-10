@@ -11278,6 +11278,30 @@ sam@terminal:~$
                             </div>
                             <div class="log-summary" id="dashboard-log-summary"></div>
                         </div>
+                        <div class="card">
+                            <h3>🧠 Learning Memory</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Enabled</span>
+                                <span id="learning-enabled">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Memory</span>
+                                <span id="learning-count">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Distill Count</span>
+                                <span id="learning-distill-count">—</span>
+                            </div>
+                            <div class="log-panel" id="learning-memory-panel">
+                                <div class="log-entry level-info">
+                                    <div class="meta">Awaiting data…</div>
+                                    <div class="text">Set admin token to view learning memory.</div>
+                                </div>
+                            </div>
+                            <div class="log-actions">
+                                <button id="learning-refresh">Refresh</button>
+                            </div>
+                        </div>
                     </section>
 
                     <section class="revenue-grid">
