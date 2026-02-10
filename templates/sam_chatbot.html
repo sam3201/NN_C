@@ -1255,7 +1255,7 @@
                 }
 
                 const messageContent = document.createElement('div');
-                const evaluationText = evaluation ? `📊 Evaluation: ${evaluation}` : '📊 Evaluation: N/A';
+                const evaluationText = evaluation ? `📊 Evaluation: ${evaluation}` : '📊 Evaluation: N/A (awaiting score)';
                 messageContent.innerHTML = `
                     <div class="message-content">${cleaned}</div>
                     ${agentName ? `<div class="evaluation">Agent: ${agentName}</div>` : ''}
