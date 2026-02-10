@@ -45,16 +45,19 @@ class GoalManager:
             # Base conversationalist goals
             base_goals = [
                 {
+                    'id': 'goal_1',
                     'description': 'Improve conversation diversity and engagement',
                     'priority': 'high',
                     'type': 'conversation_improvement'
                 },
                 {
+                    'id': 'goal_2',
                     'description': 'Enhance response quality and relevance', 
                     'priority': 'high',
                     'type': 'response_quality'
                 },
                 {
+                    'id': 'goal_3',
                     'description': 'Purchase a domain and enable Cloudflare Tunnel + Access for public deployment',
                     'priority': 'high',
                     'type': 'domain_acquisition'
@@ -71,25 +74,28 @@ class GoalManager:
                 
                 # Add goal if it doesn't exist
                 if not existing:
-                    self.add_goal(goal_spec['description'], priority=goal_spec['priority'])
+                    goal_id = goal_spec.get('id', f"goal_{self._goal_counter}")
+                    self.add_goal(goal_spec['description'], priority=goal_spec['priority'], goal_id=goal_id)
                     print(f"✅ Base goal ensured: {goal_spec['description']}")
                     
         except Exception as e:
             print(f"⚠️ Error ensuring base goals: {e}")
 
-    def add_goal(self, goal, priority='normal'):
+    def add_goal(self, goal, priority='normal', goal_id=None):
         """Add a new goal to the system"""
         self._goal_counter += 1
+        if not goal_id:
+            goal_id = f"goal_{self._goal_counter}"
         goal_entry = {
-            'id': f"goal_{self._goal_counter}",
+            'id': goal_id,
             'description': goal,
             'priority': priority,
             'status': 'active',
-            'created': time.time(),
+            'created_at': time.time(),
             'progress': 0.0
         }
         self.active_goals.append(goal_entry)
-        return goal_entry['id']
+        return goal_id
 
     def update_goal_progress(self, goal_id, progress):
         """Update progress on a goal"""
@@ -106,7 +112,9 @@ class GoalManager:
 
     def get_active_goals(self):
         """Get list of active goals"""
-        return sorted(self.active_goals, key=lambda x: x.get('priority_score', 0), reverse=True)
+        # Convert priority string to numeric for sorting
+        priority_map = {'high': 10, 'normal': 5, 'low': 1}
+        return sorted(self.active_goals, key=lambda x: priority_map.get(x.get('priority', 'normal'), 0), reverse=True)
 
     def add_subtask(self, task: TaskNode, goal_id=None):
         """Add a structured subtask node"""
