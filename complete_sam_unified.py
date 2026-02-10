@@ -12614,7 +12614,6 @@ sam@terminal:~$
     def _execute_autonomous_tasks(self):
         """Execute autonomous tasks through the SAM agent system"""
         try:
-            import time
             if not hasattr(self, 'goal_manager'):
                 return
                 
