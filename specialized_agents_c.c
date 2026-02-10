@@ -13,6 +13,23 @@
 // Include available headers
 #include "specialized_agents_c.h"
 
+// Safety helpers
+#define MAX_QUERY_LEN 512
+#define MAX_SPEC_LEN 512
+#define MAX_COMPONENT_LEN 256
+
+static void safe_copy(char *dest, size_t dest_size, const char *src) {
+    if (!dest || dest_size == 0) {
+        return;
+    }
+    if (!src) {
+        dest[0] = '\0';
+        return;
+    }
+    // snprintf guarantees null-termination
+    snprintf(dest, dest_size, "%s", src);
+}
+
 // ================================
 // COHERENCY/TEACHER PREBUILT MODEL
 // ================================
@@ -325,21 +342,29 @@ void research_agent_free(ResearcherAgent *agent) {
 }
 
 char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
-    printf("🔍 Research Agent: Performing web search for '%s'\n", query);
+    char safe_query[MAX_QUERY_LEN + 1];
+    safe_copy(safe_query, sizeof(safe_query), query);
+    printf("🔍 Research Agent: Performing web search for '%s'\n", safe_query);
 
     // Store in history
     if (agent->history_count < agent->history_capacity) {
-        agent->search_history[agent->history_count++] = strdup(query);
+        agent->search_history[agent->history_count++] = strdup(safe_query);
     }
 
-    agent->current_search_query = strdup(query);
+    if (agent->current_search_query) {
+        free(agent->current_search_query);
+    }
+    agent->current_search_query = strdup(safe_query);
 
     // Implement actual web search using framework utilities
     // This would integrate with existing web scraping components
 
     // For now, simulate research results
     char *results = malloc(1024);
-    sprintf(results,
+    if (!results) {
+        return NULL;
+    }
+    snprintf(results, 1024,
         "Research Results for '%s':\n"
         "• Found %d relevant sources from trusted domains\n"
         "• Credibility score: %.2f\n"
@@ -349,7 +374,7 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
         "• Cross-referenced: %d independent confirmations\n"
         "• Bias assessment: Minimal detected\n"
         "• Timeliness: Current data (last 30 days)",
-        query,
+        safe_query,
         15 + rand() % 20,
         agent->credibility_score,
         agent->credibility_score * 100,
@@ -366,7 +391,10 @@ char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) {
 
     // Use existing analysis framework
     char *analysis = malloc(512);
-    sprintf(analysis,
+    if (!analysis) {
+        return NULL;
+    }
+    snprintf(analysis, 512,
         "Data Analysis Results:\n"
         "• Statistical significance: p < 0.05\n"
         "• Effect size: Moderate to large\n"
@@ -434,15 +462,23 @@ void code_writer_agent_free(CodeWriterAgent *agent) {
 }
 
 char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specification) {
-    printf("💻 Code Writer Agent: Generating code for '%s'\n", specification);
+    char safe_spec[MAX_SPEC_LEN + 1];
+    safe_copy(safe_spec, sizeof(safe_spec), specification);
+    printf("💻 Code Writer Agent: Generating code for '%s'\n", safe_spec);
 
-    agent->current_task = strdup(specification);
+    if (agent->current_task) {
+        free(agent->current_task);
+    }
+    agent->current_task = strdup(safe_spec);
 
     // Use transformer for code generation
     // This would integrate with existing transformer framework
 
     char *generated_code = malloc(2048);
-    sprintf(generated_code,
+    if (!generated_code) {
+        return NULL;
+    }
+    snprintf(generated_code, 2048,
         "/* Generated Code for: %s */\n"
         "#include <stdio.h>\n"
         "#include <stdlib.h>\n"
@@ -474,7 +510,7 @@ char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specif
         " * - Error handling: %.1f/10\n"
         " * - Documentation: %.1f/10\n"
         " */",
-        specification,
+        safe_spec,
         agent->code_quality_score * 10,
         8.5, 7.2, 9.1, 6.8);
 
@@ -493,7 +529,10 @@ char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) {
     printf("🔍 Code Writer Agent: Analyzing code quality\n");
 
     char *analysis = malloc(1024);
-    sprintf(analysis,
+    if (!analysis) {
+        return NULL;
+    }
+    snprintf(analysis, 1024,
         "Code Analysis Results:\n"
         "• Complexity: O(n) - Linear time complexity\n"
         "• Memory usage: %d bytes peak allocation\n"
@@ -568,7 +607,10 @@ char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_d
     printf("💰 Financial Agent: Analyzing market conditions\n");
 
     char *analysis = malloc(2048);
-    sprintf(analysis,
+    if (!analysis) {
+        return NULL;
+    }
+    snprintf(analysis, 2048,
         "Market Analysis Report:\n"
         "• Current Portfolio Value: $%.2f\n"
         "• Daily Return: %.2f%%\n"
@@ -677,6 +719,9 @@ char *survival_agent_assess_threats(SurvivalAgent *agent) {
     printf("🛡️ Survival Agent: Assessing existential threats\n");
 
     char *assessment = malloc(2048);
+    if (!assessment) {
+        return NULL;
+    }
 
     // Update threat assessments
     for (size_t i = 0; i < agent->threat_count; i++) {
@@ -692,7 +737,7 @@ char *survival_agent_assess_threats(SurvivalAgent *agent) {
     avg_threat /= agent->threat_count;
     agent->survival_score = 1.0 - avg_threat;
 
-    sprintf(assessment,
+    snprintf(assessment, 2048,
         "Existential Threat Assessment:\n"
         "• Overall Survival Score: %.3f (%.1f%%)\n"
         "• Threat Categories:\n"
@@ -789,12 +834,20 @@ void meta_agent_free(MetaAgent *agent) {
 }
 
 char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) {
-    printf("🔧 Meta Agent: Analyzing system component '%s'\n", system_component);
+    char safe_component[MAX_COMPONENT_LEN + 1];
+    safe_copy(safe_component, sizeof(safe_component), system_component);
+    printf("🔧 Meta Agent: Analyzing system component '%s'\n", safe_component);
 
-    agent->current_analysis_target = strdup(system_component);
+    if (agent->current_analysis_target) {
+        free(agent->current_analysis_target);
+    }
+    agent->current_analysis_target = strdup(safe_component);
 
     char *analysis = malloc(2048);
-    sprintf(analysis,
+    if (!analysis) {
+        return NULL;
+    }
+    snprintf(analysis, 2048,
         "System Analysis Report for '%s':\n"
         "• Overall Health Score: %.1f%%\n"
         "• Performance Metrics:\n"
@@ -823,7 +876,7 @@ char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) 
         "• Estimated Impact: %s\n"
         "• Implementation Effort: %s\n"
         "• Priority Level: %s",
-        system_component,
+        safe_component,
         agent->system_health_score * 100,
         25.0 + (rand() % 50),
         45.0 + (rand() % 40),
