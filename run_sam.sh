@@ -119,6 +119,7 @@ fi
 
 # Default hot reload on (can be disabled via SAM_HOT_RELOAD=0)
 : ${SAM_HOT_RELOAD:=1}
+: ${SAM_STRICT_LOCAL_ONLY:=1}
 
 # Resolved profile banner
 print_header "BOOT PROFILE"
@@ -126,6 +127,7 @@ print_status "Profile: ${PROFILE_NAME}"
 print_status "Invariants disabled: ${SAM_INVARIANTS_DISABLED:-0}"
 print_status "Kill switch enabled: ${SAM_KILL_SWITCH_ENABLED:-1}"
 print_status "Hot reload enabled: ${SAM_HOT_RELOAD}"
+print_status "Strict local-only: ${SAM_STRICT_LOCAL_ONLY}"
 print_status "State path: ${SAM_STATE_PATH:-sam_data/${PROFILE_NAME}/state.json}"
 print_status "Data dir: ${SAM_PROFILE_DATA_DIR:-sam_data/${PROFILE_NAME}}"
 print_status "Training dir: ${SAM_PROFILE_TRAINING_DIR:-training}"
@@ -156,12 +158,16 @@ print_header "INSTALLING SYSTEM DEPENDENCIES"
 print_status "Ensuring system dependencies are available..."
 
 # Check for Ollama
-if ! command -v ollama &> /dev/null; then
-    print_warning "Ollama not found. Install from: https://ollama.ai/download"
-    print_status "Continuing without Ollama - system will use available models"
+if [ "${SAM_STRICT_LOCAL_ONLY}" = "1" ]; then
+    print_status "Strict local-only enabled - skipping external model checks"
 else
-    print_status "Ollama found - checking available models..."
-    ollama list || print_warning "Ollama models not accessible"
+    if ! command -v ollama &> /dev/null; then
+        print_warning "Ollama not found. Install from: https://ollama.ai/download"
+        print_status "Continuing without Ollama - system will use available models"
+    else
+        print_status "Ollama found - checking available models..."
+        ollama list || print_warning "Ollama models not accessible"
+    fi
 fi
 
 # Build C extensions
