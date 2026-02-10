@@ -1235,6 +1235,10 @@ class VerifierJudgeAgent:
     def __init__(self, system_instance):
         self.system = system_instance
         self.verification_cache = {}
+        self.import_test_mode = os.getenv("SAM_META_IMPORT_TEST_MODE", "import").lower()
+        skip = os.getenv("SAM_META_IMPORT_SKIP", "")
+        self.import_skip_files = {item.strip() for item in skip.split(",") if item.strip()}
+        self.import_skip_files.add("complete_sam_unified.py")
 
     def verify_patch(self, patch):
         """Verify a patch through multiple stages with confidence threshold requirements"""
