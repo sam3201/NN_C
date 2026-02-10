@@ -2051,6 +2051,26 @@ class MetaAgent:
                 line_no = int(file_match.group(2))
             except Exception:
                 line_no = None
+        if not file_path:
+            hint_text = " ".join(filter(None, [
+                self._get_failure_attr(failure, "research_notes", ""),
+                self._get_failure_attr(failure, "message", ""),
+                stack_trace,
+            ]))
+            tokens = re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text)
+            if tokens:
+                file_path = tokens[0]
+
+        file_abs = None
+        file_rel = None
+        if file_path:
+            file_abs = Path(file_path)
+            if not file_abs.is_absolute():
+                file_abs = Path(self.system.project_root) / file_path
+            try:
+                file_rel = str(file_abs.relative_to(self.system.project_root))
+            except Exception:
+                file_rel = str(file_abs)
 
         # Fix missing attributes on UnifiedSAMSystem by adding safe defaults in __init__
         attr_match = re.search(
