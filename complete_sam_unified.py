@@ -2062,6 +2062,7 @@ class MetaAgent:
                     lines = file_abs.read_text(encoding="utf-8", errors="ignore").splitlines(True)
                     if 0 < line_no <= len(lines):
                         line = lines[line_no - 1]
+                        indent = line[:len(line) - len(line.lstrip())]
                         # Repair accidental escaped quotes in f-strings
                         if "f\\\"" in line or "\\\"" in line:
                             fixed = line.replace("f\\\"", "f\"").replace("\\\"", "\"")
