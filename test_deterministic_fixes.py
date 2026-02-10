@@ -184,7 +184,7 @@ def indented_function():
             stack_trace=f'''File "{test_file}", line 3
 \tif True:  # Tab instead of spaces
 \t^
-IndentationError: expected an indented block''',
+IndentationError: expected an indented block ''',
             timestamp=datetime.now().isoformat(),
             severity="medium",
             context="test"
