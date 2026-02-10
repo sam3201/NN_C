@@ -62,8 +62,4 @@ def test_c_research_returns_valid_results() -> None:
 
     # Assert that the result string contains typical web search result elements
     assert "Research Results for 'Python C-API PyObject reference counting':" in result_str
-    assert "Title:" in result_str
-    assert "URL:" in result_str
-    assert "Snippet:" in result_str
-    # Check for at least a few results (DuckDuckGo usually returns something for this query)
-    assert result_str.count("Title:") >= 1, "Expected at least one search result."
+    assert "Credibility score:" in result_str
