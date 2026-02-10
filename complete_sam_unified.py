@@ -4989,7 +4989,8 @@ class UnifiedSAMSystem:
             
         except Exception:
             return True  # Assume relevant if we can't check
-        """Start continuous self-healing system that runs forever"""
+
+    def _start_continuous_self_healing(self):
         print("🛡️ Starting continuous self-healing system...")
         
         # Start self-healing monitor in background
