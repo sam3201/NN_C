@@ -1907,7 +1907,8 @@ class MetaAgent:
             "total_failures": total_failures,
             "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
             "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
-            "clusters_with_fixes": 0  # Will be updated when patch learning is added
+            "clusters_with_fixes": 0,  # Will be updated when patch learning is added
+            "clusters": {cid: len(failures) for cid, failures in self.failure_clusters.items()},
         }
 
     # ===========================
