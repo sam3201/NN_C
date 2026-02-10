@@ -15,7 +15,14 @@ _history_path: Path | None = None
 def initialize_sam_code_modifier(project_root: str) -> None:
     global _project_root, _backup_dir, _history_path
     _project_root = Path(project_root).resolve()
-    _backup_dir = _project_root / "SAM_Code_Backups"
+    
+    # Allow backup directory to be overridden by environment variable
+    backup_dir_env = os.getenv("SAM_BACKUP_DIR")
+    if backup_dir_env:
+        _backup_dir = Path(backup_dir_env).resolve()
+    else:
+        _backup_dir = _project_root / "sam_data" / "backups" # New default location
+
     _backup_dir.mkdir(parents=True, exist_ok=True)
     _history_path = _backup_dir / "modification_history.json"
     if not _history_path.exists():

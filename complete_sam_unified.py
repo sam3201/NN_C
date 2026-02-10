@@ -8958,6 +8958,20 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
+        @self.app.route("/api/meta/trigger_growth", methods=["POST"])
+        def trigger_growth():
+            """Admin-only endpoint to trigger the growth system for debugging."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            
+            try:
+                self._trigger_growth_system()
+                return jsonify({"status": "ok", "message": "Growth system triggered."})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
         @self.app.route("/api/meta/stop", methods=["POST"])
         def emergency_stop():
             """Emergency stop meta-agent operations"""
@@ -12210,6 +12224,11 @@ sam@terminal:~$
                             restartBtn.disabled = !dashIsAdmin;
                             restartBtn.title = dashIsAdmin ? '' : 'Admin only';
                         }
+                        const triggerGrowthBtn = document.getElementById('trigger-growth-button'); // Added
+                        if (triggerGrowthBtn) { // Added
+                            triggerGrowthBtn.disabled = !dashIsAdmin;
+                            triggerGrowthBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
                         if (pauseBtn) { // Added
                             pauseBtn.disabled = !dashIsAdmin;
                             pauseBtn.title = dashIsAdmin ? '' : 'Admin only';
@@ -12417,6 +12436,34 @@ sam@terminal:~$
                     }
                 }
 
+                async function triggerGrowth() {
+                    const button = document.getElementById('trigger-growth-button');
+                    const messageEl = document.getElementById('meta-test-result'); // Reuse meta-test-result for now
+                    if (!button || !messageEl) return;
+                    button.disabled = true;
+                    messageEl.textContent = 'Triggering growth...';
+                    try {
+                        const resp = await fetch('/api/meta/trigger_growth', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.error || `Growth trigger failed (${resp.status})`);
+                        }
+                        messageEl.textContent = data.message || `Growth triggered: ${data.status}`;
+                        messageEl.style.color = 'green';
+                        showUiAlert('Growth system triggered. Check logs for details.');
+                        updateMetaAgentStatus(); // Refresh status after trigger
+                    } catch (error) {
+                        messageEl.textContent = `Growth Trigger Error: ${error.message}`;
+                        messageEl.style.color = 'red';
+                        showUiAlert(`Growth system trigger failed: ${error.message}`);
+                    } finally {
+                        button.disabled = false;
+                    }
+                }
+                
                 function addDashboardLogEntry(raw) {
                     const panel = document.getElementById('dashboard-log-panel');
                     if (!panel) return;
@@ -13257,6 +13304,10 @@ sam@terminal:~$
                 if (restartButton) {
                     restartButton.addEventListener('click', restartSystem);
                 }
+                const triggerGrowthButton = document.getElementById('trigger-growth-button'); // Added
+                if (triggerGrowthButton) { // Added
+                    triggerGrowthButton.addEventListener('click', triggerGrowth); // Added
+                }
         """
 
         html = f"""
@@ -13901,7 +13952,19 @@ sam@terminal:~$
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Growth Freeze</span>
-                                <span>{"ON" if self.meta_growth_freeze else "OFF"}</span>
+                                <span id="meta-growth-freeze">{"ON" if self.meta_growth_freeze else "OFF"}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Trigger Growth</span>
+                                <span><button id="trigger-growth-button" style="padding: 6px 10px; border-radius: 8px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600;" disabled>Trigger</button></span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Last Growth Reason</span>
+                                <span id="meta-last-growth-reason">—</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Last Attempt Result</span>
+                                <span id="meta-last-growth-attempt-result">—</span>
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Backup Loop</span>
@@ -14989,6 +15052,13 @@ sam@terminal:~$
 
     def _trigger_growth_system(self):
         """Trigger the meta-growth system"""
+        log_event(
+            "info",
+            "growth_evaluation",
+            "Triggering growth system evaluation",
+            growth_freeze=getattr(self, "meta_growth_freeze", False),
+            signals=self._compute_pressure_signals() # Log initial signals
+        )
         try:
             if not hasattr(self, "meta_controller") or not self.meta_controller:
                 return

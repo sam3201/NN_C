@@ -1,0 +1,289 @@
+{
+  "rev_ce1f3e993f08": {
+    "action_id": "rev_ce1f3e993f08",
+    "action_type": "create_lead",
+    "payload": {
+      "name": "Smoke Lead",
+      "email": "smoke@example.com",
+      "company": "SmokeCo"
+    },
+    "requested_by": "smoke_test",
+    "created_at": "2026-02-09T05:22:32Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "smoke_test",
+    "approved_at": "2026-02-09T05:22:32Z",
+    "executed_at": "2026-02-09T05:22:32Z",
+    "error": null,
+    "result": {
+      "lead_id": "lead_3656b33fef",
+      "record": {
+        "name": "Smoke Lead",
+        "email": "smoke@example.com",
+        "company": "SmokeCo",
+        "lead_id": "lead_3656b33fef",
+        "created_at": "2026-02-09T05:22:32Z"
+      }
+    }
+  },
+  "rev_757d171253e8": {
+    "action_id": "rev_757d171253e8",
+    "action_type": "create_email_sequence",
+    "payload": {
+      "name": "Outbound Revenue Sequence",
+      "steps": [
+        {
+          "subject": "Intro + value proposition",
+          "body": "Quick intro and value proposition.",
+          "delay_days": 0
+        },
+        {
+          "subject": "Case study + proof",
+          "body": "Share proof and results.",
+          "delay_days": 2
+        },
+        {
+          "subject": "Last touch + CTA",
+          "body": "Invite next step.",
+          "delay_days": 4
+        }
+      ]
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T05:23:53Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "audit",
+    "approved_at": "2026-02-09T07:09:42Z",
+    "executed_at": "2026-02-09T07:09:42Z",
+    "error": null,
+    "result": {
+      "sequence_id": "seq_a6cac00991",
+      "record": {
+        "name": "Outbound Revenue Sequence",
+        "steps": [
+          {
+            "subject": "Intro + value proposition",
+            "body": "Quick intro and value proposition.",
+            "delay_days": 0
+          },
+          {
+            "subject": "Case study + proof",
+            "body": "Share proof and results.",
+            "delay_days": 2
+          },
+          {
+            "subject": "Last touch + CTA",
+            "body": "Invite next step.",
+            "delay_days": 4
+          }
+        ],
+        "sequence_id": "seq_a6cac00991",
+        "created_at": "2026-02-09T07:09:42Z"
+      }
+    }
+  },
+  "rev_cac4c98256a9": {
+    "action_id": "rev_cac4c98256a9",
+    "action_type": "create_lead",
+    "payload": {
+      "name": "Smoke Lead",
+      "email": "smoke@example.com",
+      "company": "SmokeCo"
+    },
+    "requested_by": "smoke_test",
+    "created_at": "2026-02-09T05:23:54Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "smoke_test",
+    "approved_at": "2026-02-09T05:23:54Z",
+    "executed_at": "2026-02-09T05:23:54Z",
+    "error": null,
+    "result": {
+      "lead_id": "lead_8bff44eeed",
+      "record": {
+        "name": "Smoke Lead",
+        "email": "smoke@example.com",
+        "company": "SmokeCo",
+        "lead_id": "lead_8bff44eeed",
+        "created_at": "2026-02-09T05:23:54Z"
+      }
+    }
+  },
+  "rev_cd9e594c974d": {
+    "action_id": "rev_cd9e594c974d",
+    "action_type": "create_lead",
+    "payload": {
+      "name": "Smoke Lead",
+      "email": "smoke@example.com",
+      "company": "SmokeCo"
+    },
+    "requested_by": "smoke_test",
+    "created_at": "2026-02-09T05:26:04Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "smoke_test",
+    "approved_at": "2026-02-09T05:26:04Z",
+    "executed_at": "2026-02-09T05:26:04Z",
+    "error": null,
+    "result": {
+      "lead_id": "lead_fae6b613b6",
+      "record": {
+        "name": "Smoke Lead",
+        "email": "smoke@example.com",
+        "company": "SmokeCo",
+        "lead_id": "lead_fae6b613b6",
+        "created_at": "2026-02-09T05:26:04Z"
+      }
+    }
+  },
+  "rev_018ac1ed55f9": {
+    "action_id": "rev_018ac1ed55f9",
+    "action_type": "create_lead",
+    "payload": {
+      "name": "Smoke Lead",
+      "email": "smoke@example.com",
+      "company": "SmokeCo"
+    },
+    "requested_by": "smoke_test",
+    "created_at": "2026-02-09T06:46:35Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "smoke_test",
+    "approved_at": "2026-02-09T06:46:35Z",
+    "executed_at": "2026-02-09T06:46:35Z",
+    "error": null,
+    "result": {
+      "lead_id": "lead_d40a6d4965",
+      "record": {
+        "name": "Smoke Lead",
+        "email": "smoke@example.com",
+        "company": "SmokeCo",
+        "lead_id": "lead_d40a6d4965",
+        "created_at": "2026-02-09T06:46:35Z"
+      }
+    }
+  },
+  "rev_1a824672e7c0": {
+    "action_id": "rev_1a824672e7c0",
+    "action_type": "schedule_sequence",
+    "payload": {
+      "lead_id": "lead_3656b33fef",
+      "sequence_id": "seq_a6cac00991",
+      "to_email": "smoke@example.com",
+      "schedule_at": "2026-02-09T07:13:43Z"
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T07:13:43Z",
+    "status": "PENDING",
+    "requires_approval": true,
+    "approved_by": null,
+    "approved_at": null,
+    "executed_at": null,
+    "error": null,
+    "result": null
+  },
+  "rev_5f6a4bc73b4b": {
+    "action_id": "rev_5f6a4bc73b4b",
+    "action_type": "schedule_sequence",
+    "payload": {
+      "lead_id": "lead_8bff44eeed",
+      "sequence_id": "seq_a6cac00991",
+      "to_email": "smoke@example.com",
+      "schedule_at": "2026-02-09T07:13:43Z"
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T07:13:43Z",
+    "status": "PENDING",
+    "requires_approval": true,
+    "approved_by": null,
+    "approved_at": null,
+    "executed_at": null,
+    "error": null,
+    "result": null
+  },
+  "rev_0c3ad40291aa": {
+    "action_id": "rev_0c3ad40291aa",
+    "action_type": "schedule_sequence",
+    "payload": {
+      "lead_id": "lead_fae6b613b6",
+      "sequence_id": "seq_a6cac00991",
+      "to_email": "smoke@example.com",
+      "schedule_at": "2026-02-09T07:13:43Z"
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T07:13:43Z",
+    "status": "PENDING",
+    "requires_approval": true,
+    "approved_by": null,
+    "approved_at": null,
+    "executed_at": null,
+    "error": null,
+    "result": null
+  },
+  "rev_4a1516133708": {
+    "action_id": "rev_4a1516133708",
+    "action_type": "schedule_sequence",
+    "payload": {
+      "lead_id": "lead_d40a6d4965",
+      "sequence_id": "seq_a6cac00991",
+      "to_email": "smoke@example.com",
+      "schedule_at": "2026-02-09T07:13:43Z"
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T07:13:43Z",
+    "status": "PENDING",
+    "requires_approval": true,
+    "approved_by": null,
+    "approved_at": null,
+    "executed_at": null,
+    "error": null,
+    "result": null
+  },
+  "rev_ee1c89ec387c": {
+    "action_id": "rev_ee1c89ec387c",
+    "action_type": "create_lead",
+    "payload": {
+      "name": "Smoke Lead",
+      "email": "smoke@example.com",
+      "company": "SmokeCo"
+    },
+    "requested_by": "smoke_test",
+    "created_at": "2026-02-09T17:28:09Z",
+    "status": "EXECUTED",
+    "requires_approval": true,
+    "approved_by": "smoke_test",
+    "approved_at": "2026-02-09T17:28:09Z",
+    "executed_at": "2026-02-09T17:28:09Z",
+    "error": null,
+    "result": {
+      "lead_id": "lead_ca3a07d2e0",
+      "record": {
+        "name": "Smoke Lead",
+        "email": "smoke@example.com",
+        "company": "SmokeCo",
+        "lead_id": "lead_ca3a07d2e0",
+        "created_at": "2026-02-09T17:28:09Z"
+      }
+    }
+  },
+  "rev_0126b0891159": {
+    "action_id": "rev_0126b0891159",
+    "action_type": "schedule_sequence",
+    "payload": {
+      "lead_id": "lead_ca3a07d2e0",
+      "sequence_id": "seq_a6cac00991",
+      "to_email": "smoke@example.com",
+      "schedule_at": "2026-02-09T17:29:24Z"
+    },
+    "requested_by": "revenue_autoplanner",
+    "created_at": "2026-02-09T17:29:24Z",
+    "status": "PENDING",
+    "requires_approval": true,
+    "approved_by": null,
+    "approved_at": null,
+    "executed_at": null,
+    "error": null,
+    "result": null
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "accounts": {
+    "acct_a59ef1b30c": {
+      "account_id": "acct_a59ef1b30c",
+      "name": "Sandbox Ops",
+      "balance": 875.0,
+      "currency": "USD",
+      "created_at": "2026-02-09T06:46:40Z"
+    },
+    "acct_b795c381ba": {
+      "account_id": "acct_b795c381ba",
+      "name": "Sandbox Ops",
+      "balance": 875.0,
+      "currency": "USD",
+      "created_at": "2026-02-09T17:27:48Z"
+    }
+  },
+  "transactions": [
+    {
+      "transaction_id": "txn_009771e9d0",
+      "account_id": "acct_a59ef1b30c",
+      "amount": -125.0,
+      "currency": "USD",
+      "memo": "Sandbox purchase test",
+      "created_at": "2026-02-09T06:46:40Z",
+      "request_id": "req_1c1b471eb7"
+    },
+    {
+      "transaction_id": "txn_8fdbdac986",
+      "account_id": "acct_b795c381ba",
+      "amount": -125.0,
+      "currency": "USD",
+      "memo": "Sandbox purchase test",
+      "created_at": "2026-02-09T17:27:48Z",
+      "request_id": "req_bc82d77cf8"
+    }
+  ]
+}

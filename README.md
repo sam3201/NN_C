@@ -91,6 +91,41 @@ Recommended: **Tailscale** for private, secure access with no public exposure.
 3. Access the app via the host’s Tailscale IP and port 5004.
 4. Use the app login (email + password) for access control.
 
+### Cloudflare Tunnel + Access
+For a permanent public URL and enhanced security, Cloudflare Tunnel is recommended.
+
+1.  **Set up a Cloudflare Tunnel:**
+    *   Install `cloudflared` on your SAM host: `brew install cloudflare/cloudflare/cloudflared` (macOS).
+    *   Authenticate `cloudflared` with your Cloudflare account.
+    *   Create a new Tunnel: `cloudflared tunnel create sam-tunnel`.
+    *   Configure `~/.cloudflared/config.yml` to point to your SAM instance (e.g., `url: http://localhost:5004`).
+    *   Route a DNS record (e.g., `sam.yourdomain.com`) to your Tunnel.
+    *   Run the Tunnel: `cloudflared tunnel run sam-tunnel`.
+
+2.  **Configure Cloudflare Access:**
+    *   In your Cloudflare Dashboard, navigate to `Access -> Applications`.
+    *   Add a new application for your SAM domain (e.g., `sam.yourdomain.com`).
+    *   **Session Duration:** `24 hours` (recommended).
+    *   **Identity Providers:** Configure Google or GitHub (matching your SAM OAuth setup).
+    *   **Rules:**
+        *   **Owner Access:** `Include: Emails -> your@owner.email`. Action: `Allow`.
+        *   **Admin Access:** `Include: Emails -> Emails in SAM_ADMIN_EMAILS`. Action: `Allow`.
+        *   **Allowed Users:** `Include: Emails -> Emails in SAM_ALLOWED_EMAILS`. Action: `Allow`.
+        *   **IP Allowlist:** `Include: IPs -> IPs in SAM_ALLOWED_IPS / SAM_IP_ALLOWLIST`. Action: `Allow`.
+        *   **Fallback:** `Block all others`.
+    *   **CORS (Optional, if using API from different origins):** Enable CORS for your API routes.
+
+3.  **SAM Environment Variables for Cloudflare Integration:**
+    *   `SAM_TRUST_PROXY=1`: Essential for Flask to correctly interpret `X-Forwarded-For` headers from Cloudflare.
+    *   `SAM_OAUTH_REDIRECT_BASE=https://sam.yourdomain.com`: **Crucial** for OAuth redirects to work correctly with your public domain. Ensure this matches your configured OAuth redirect URIs in Google/GitHub.
+
+4.  **Health Check Snippet:**
+    You can verify your SAM instance through the tunnel:
+    ```bash
+    curl -s https://sam.yourdomain.com/api/health
+    # Expected output: {"c_core": "active", "kill_switch_enabled": true, "python_orchestration": "active", "sam_available": true, "status": "ok", "timestamp": ..., "web_interface": "active"}
+    ```
+
 When you purchase a domain, switch to Cloudflare Tunnel + Access for a permanent public URL.
 
 ## Login + OAuth + IP Allowlist

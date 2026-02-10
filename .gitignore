@@ -5,7 +5,7 @@ __pycache__/
 build/
 training/distilled/
 logs/
-sam_data/
+sam_data/backups/
 training/output_*/
 training/tasks/*.jsonl
 CHAT_LOGS/
