@@ -4600,7 +4600,13 @@ class UnifiedSAMSystem:
                     signals['temporal_incoherence']
                 )
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
-                if primitive is not None and primitive != 0:
+                if primitive is None or primitive == 0:
+                    self.system_metrics["last_growth_attempt_ts"] = time.time()
+                    self.system_metrics["last_growth_attempt_primitive"] = 0
+                    self.system_metrics["last_growth_attempt_result"] = "no_primitive"
+                elif primitive is not None and primitive != 0:
+                    self.system_metrics["last_growth_attempt_ts"] = time.time()
+                    self.system_metrics["last_growth_attempt_primitive"] = primitive
                     applied = False
                     if not self.meta_growth_freeze:
                         applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
@@ -4610,6 +4616,7 @@ class UnifiedSAMSystem:
                             if gate_ok:
                                 self.system_metrics["last_growth_ts"] = time.time()
                                 self.system_metrics["last_growth_primitive"] = primitive
+                                self.system_metrics["last_growth_attempt_result"] = "applied"
                                 log_event(
                                     "info",
                                     "meta_growth_applied",
@@ -4618,6 +4625,11 @@ class UnifiedSAMSystem:
                                 )
                             if not gate_ok:
                                 applied = False
+                                self.system_metrics["last_growth_attempt_result"] = "regression_blocked"
+                        else:
+                            self.system_metrics["last_growth_attempt_result"] = "apply_failed"
+                    else:
+                        self.system_metrics["last_growth_attempt_result"] = "frozen"
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 time.sleep(5)
         self.meta_thread = threading.Thread(target=loop, daemon=True)
