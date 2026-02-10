@@ -7027,7 +7027,15 @@ class UnifiedSAMSystem:
                     return jsonify(search_result)
                 else:
                     # Fallback to C library research agent
-                    result = specialized_agents_c.research(f"Web search: {query}")
+                    result = self._call_c_agent("research", f"Web search: {query}")
+                    if not result:
+                        return jsonify({
+                            'query': query,
+                            'results': [{'content': 'C research disabled or unavailable.', 'source': 'fallback'}],
+                            'source': 'sam_fallback_research',
+                            'timestamp': datetime.now().isoformat(),
+                            'warning': 'Fallback research unavailable'
+                        })
 
                     return jsonify({
                         'query': query,
