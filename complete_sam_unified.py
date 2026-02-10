@@ -8840,25 +8840,52 @@ sam@terminal:~$
         return ordered[:max_agents]
 
     def _synthesize_sources_locally(self, query: str, sources: list[dict]) -> str:
-        """Lightweight local synthesis when no provider is available."""
+        """Local synthesis when no provider is available (structured, ChatGPT-like)."""
         if not sources:
             return f"No sources found for {query}."
-        snippets = []
-        for item in sources[:5]:
+
+        cleaned = []
+        for item in sources[:8]:
+            title = (item.get("title") or item.get("source") or "source").strip()
+            url = (item.get("url") or item.get("link") or item.get("source_url") or "").strip()
             snippet = (item.get("snippet") or item.get("content") or "").strip()
-            title = item.get("title") or item.get("source") or "source"
             if snippet:
-                if len(snippet) > 240:
-                    snippet = snippet[:240].rstrip() + "…"
-                snippets.append(f"- {title}: {snippet}")
-        if not snippets:
-            snippets.append("- Sources returned without usable snippets.")
+                snippet = re.sub(r"\\s+", " ", snippet)
+                if len(snippet) > 300:
+                    snippet = snippet[:300].rstrip() + "…"
+                cleaned.append((title, snippet, url))
+
+        if not cleaned:
+            return f"No usable snippets found for {query}."
+
+        key_points = []
+        for title, snippet, _ in cleaned[:5]:
+            first_sentence = re.split(r"(?<=[.!?])\\s+", snippet)[0]
+            key_points.append(f"- {title}: {first_sentence}")
+
+        synthesis_bits = [re.split(r"(?<=[.!?])\\s+", s)[0] for _, s, _ in cleaned[:3]]
+        synthesis = " ".join(bit for bit in synthesis_bits if bit).strip()
+        if not synthesis:
+            synthesis = "Sources mention activity in this area, but details vary by source."
+
+        source_lines = []
+        for title, _, url in cleaned[:5]:
+            if url:
+                source_lines.append(f"- [{title}]({url})")
+            else:
+                source_lines.append(f"- {title}")
+
         summary_lines = [
-            "Key points:",
-            *snippets,
+            f"Summary for: {query}",
+            synthesis,
             "",
-            "Implications: Signals active development; validate with primary sources before action.",
-            "Open questions: What is production readiness, real-world adoption, and independent verification?",
+            "Key points:",
+            *key_points,
+            "",
+            "Sources:",
+            *source_lines,
+            "",
+            "Open questions: Production readiness, independent verification, and real-world adoption timelines.",
         ]
         return "\n".join(summary_lines)
 
