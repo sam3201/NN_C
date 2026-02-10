@@ -2585,51 +2585,34 @@ class MetaAgent:
                         })
 
                 if "configuration" in failure_type:
+                    config_changes = []
                     for line in lines:
                         if re.match(r"^\s*API_KEY\s*=", line):
                             new_line = "API_KEY = os.getenv(\"API_KEY\", \"MISSING\")\n"
-                            patches.append({
-                                "id": "deterministic_config_api_key",
-                                "target_file": rel,
-                                "changes": [{"type": "replace", "old_code": line, "new_code": new_line}],
-                                "intent": "Default API key from environment",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": ["Environment variable can provide API key"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry"
-                            })
+                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
                             break
                     for line in lines:
                         if re.match(r"^\s*DATABASE_URL\s*=", line):
                             new_line = "DATABASE_URL = os.getenv(\"DATABASE_URL\", \"http://localhost\")\n"
-                            patches.append({
-                                "id": "deterministic_config_db_url",
-                                "target_file": rel,
-                                "changes": [{"type": "replace", "old_code": line, "new_code": new_line}],
-                                "intent": "Default database URL to valid scheme",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": ["Local default is acceptable"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry"
-                            })
+                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
                             break
                     for line in lines:
                         if re.match(r"^\s*TIMEOUT\s*=", line):
                             new_line = "TIMEOUT = max(0, int(os.getenv(\"TIMEOUT\", \"30\")))\n"
-                            patches.append({
-                                "id": "deterministic_config_timeout",
-                                "target_file": rel,
-                                "changes": [{"type": "replace", "old_code": line, "new_code": new_line}],
-                                "intent": "Ensure timeout is non-negative",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": ["Positive timeout is safe default"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry"
-                            })
+                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
                             break
+                    if config_changes:
+                        patches.append({
+                            "id": "deterministic_config_defaults",
+                            "target_file": rel,
+                            "changes": config_changes,
+                            "intent": "Normalize configuration defaults to valid values",
+                            "risk_level": "low",
+                            "confidence": 0.87,
+                            "assumptions": ["Defaults are safe for validation"],
+                            "unknowns": [],
+                            "generated_by": "deterministic_patch_registry"
+                        })
 
         # NameError for missing helper function
         name_match = re.search(r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace)
