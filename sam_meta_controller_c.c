@@ -694,7 +694,17 @@ static PyObject *py_sam_meta_set_policy_params(PyObject *self, PyObject *args) {
             return NULL;
         }
         for (Py_ssize_t i = 0; i < n; i++) {
-            thresholds[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+            PyObject *item = PySequence_Fast_GET_ITEM(fast, i);
+            double value = PyFloat_AsDouble(item);
+            if (PyErr_Occurred()) {
+                Py_DECREF(fast);
+                if (PyErr_ExceptionMatches(PyExc_TypeError)) {
+                    PyErr_Clear();
+                    PyErr_Format(PyExc_TypeError, "thresholds[%zd] must be a number", i);
+                }
+                return NULL;
+            }
+            thresholds[i] = value;
         }
         threshold_ptr = thresholds;
         Py_DECREF(fast);

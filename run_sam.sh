@@ -119,6 +119,7 @@ fi
 
 # Default hot reload on (can be disabled via SAM_HOT_RELOAD=0)
 : ${SAM_HOT_RELOAD:=1}
+export SAM_HOT_RELOAD_EXTERNAL=1
 : ${SAM_STRICT_LOCAL_ONLY:=1}
 
 # Resolved profile banner

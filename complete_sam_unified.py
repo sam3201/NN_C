@@ -305,13 +305,23 @@ print('✅ All C modules available')
 
 # Web Interface Modules - Direct Imports
 from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context, session, redirect
-from flask_socketio import SocketIO
 from flask_compress import Compress
+
+# Optional imports for enhanced functionality
+try:
+    from flask_socketio import SocketIO
+    flask_socketio_available = True
+    from flask_compress import Compress
+    flask_compress_available = True
+except ImportError:
+    flask_socketio_available = False
+    flask_compress_available = False
 flask_available = True
 print('✅ Flask and SocketIO available')
 
 # SAM Components - Direct Imports
 from survival_agent import SURVIVAL_PROMPT
+from goal_management import GoalManager, create_conversationalist_tasks, ensure_domain_goal
 from goal_management import GoalManager, create_conversationalist_tasks
 from sam_config import config
 
@@ -4100,7 +4110,7 @@ class UnifiedSAMSystem:
         self.chat_timeout_s = int(os.getenv("SAM_CHAT_TIMEOUT_S", "60"))
         self.chat_max_tokens = int(os.getenv("SAM_CHAT_MAX_TOKENS", "512"))
         self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
-        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "4"))
+        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.distill_dashboard_enabled = os.getenv("SAM_DISTILL_DASHBOARD", "1") == "1"
         self.learning_memory_enabled = os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
@@ -6581,7 +6591,9 @@ class UnifiedSAMSystem:
 
         def _ip_allowed():
             allowed_raw = os.getenv("SAM_ALLOWED_IPS", "")
-            allowed = [a.strip() for a in allowed_raw.split(",") if a.strip()]
+            alias_raw = os.getenv("SAM_IP_ALLOWLIST", "")
+            combined_raw = ",".join([v for v in (allowed_raw, alias_raw) if v])
+            allowed = [a.strip() for a in combined_raw.split(",") if a.strip()]
             if not allowed:
                 return True
             ip = _get_client_ip()
@@ -6603,21 +6615,38 @@ class UnifiedSAMSystem:
             return False
 
         def _authorized_email(email: str):
-            """Check if email is authorized for admin access."""
-            # Hardcoded admin emails for system access
-            admin_emails = [
-                "2023samd@gmail.com",  # Owner
-                "sam_admin@localhost.local",  # Local admin account
-                "meta_agent@sam.system"   # MetaAgent testing account
-            ]
-            
-            owner = "2023samd@gmail.com"
-            admins = admin_emails
-            
-            allowed = email in admins
-            is_admin = email == owner or email in admins
-            
-            return allowed, is_admin
+            """Email allowlist + admin list (env-driven).
+
+            Env vars:
+            - SAM_ALLOWED_EMAILS: comma-separated allowlist (empty => allow admins only, unless no owner/admin configured)
+            - SAM_ADMIN_EMAILS: comma-separated admin list
+            - SAM_OWNER_EMAIL: always-admin address (recommended)
+            """
+
+            def _parse_list(raw: str) -> set[str]:
+                items = re.split(r"[\\s,]+", raw or "")
+                return {item.strip().lower() for item in items if item.strip()}
+
+            email = (email or "").strip().lower()
+            owner = (os.getenv("SAM_OWNER_EMAIL") or "").strip().lower()
+            admins = _parse_list(os.getenv("SAM_ADMIN_EMAILS", ""))
+            allowed = _parse_list(os.getenv("SAM_ALLOWED_EMAILS", ""))
+
+            if owner:
+                admins.add(owner)
+
+            allow_all = False
+            if not allowed:
+                # If nothing is configured, default to allow-all for local dev.
+                if not owner and not admins:
+                    allow_all = True
+                else:
+                    # If only admins/owner are configured, default to "admins-only".
+                    allowed = set(admins)
+
+            allowed_ok = allow_all or (email in allowed)
+            is_admin = (owner and email == owner) or (email in admins)
+            return allowed_ok, is_admin
 
         def _get_login_password():
             """Resolve admin login password from env, file, or macOS Keychain."""
@@ -6884,7 +6913,7 @@ class UnifiedSAMSystem:
                 'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
                 'strict_local_only': bool(getattr(self, "strict_local_only", False)),
                 'chat_multi_agent': bool(getattr(self, "chat_multi_agent", False)),
-                'chat_agents_max': int(getattr(self, "chat_agents_max", 4)),
+                'chat_agents_max': int(getattr(self, "chat_agents_max", 3)),
                 'learning_memory_enabled': bool(getattr(self, "learning_memory_enabled", False)),
                 'distill_enabled': bool(getattr(self, "distill_dashboard_enabled", False)),
                 'distill_count': int(self.system_metrics.get('distill_count', 0)),
@@ -7476,8 +7505,8 @@ class UnifiedSAMSystem:
             """Get or update chat settings (admin-only for updates)."""
             if request.method == 'GET':
                 return jsonify({
-                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
-                    "chat_agents_max": int(getattr(self, "chat_agents_max", 4)),
+                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", True)),
+                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
                     "learning_memory_enabled": bool(getattr(self, "learning_memory_enabled", False)),
                     "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
                 })
@@ -10134,9 +10163,14 @@ sam@terminal:~$
                         const auth = await fetch('/api/auth/status').then((r) => r.json());
                         dashIsAdmin = !!auth.is_admin;
                         const downloadBtn = document.getElementById('dash-log-download');
+                        const snapshotBtn = document.getElementById('dash-log-snapshot');
                         if (downloadBtn) {
                             downloadBtn.disabled = !dashIsAdmin;
                             downloadBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
+                        if (snapshotBtn) {
+                            snapshotBtn.disabled = !dashIsAdmin;
+                            snapshotBtn.title = dashIsAdmin ? '' : 'Admin only';
                         }
                     } catch (err) {
                         dashIsAdmin = false;
@@ -10816,12 +10850,16 @@ sam@terminal:~$
                     }
                 }
 
-                function appendMessage(role, name, text) {
+                function appendMessage(role, name, text, provenance) {
                     const messages = document.getElementById('chat-messages');
                     const wrapper = document.createElement('div');
                     wrapper.className = `chat-message ${role}`;
+                    const prov = (provenance || '').toString().trim();
                     wrapper.innerHTML = `
-                        <div class="chat-meta">${escapeHtml(name)}</div>
+                        <div class="chat-meta">
+                            <span class="chat-name">${escapeHtml(name)}</span>
+                            ${prov ? `<span class="chat-prov">${escapeHtml(prov)}</span>` : ''}
+                        </div>
                         <div class="chat-text">${escapeHtml(text)}</div>
                     `;
                     messages.appendChild(wrapper);
@@ -10870,15 +10908,28 @@ sam@terminal:~$
                         if (data.error) {
                             appendMessage('system', 'System', data.error);
                         } else {
+                            const serverMessages = Array.isArray(data.messages) ? data.messages : [];
+                            if (serverMessages.length) {
+                                serverMessages.forEach((m) => {
+                                    appendMessage(
+                                        'sam',
+                                        (m.agent || m.name || 'SAM'),
+                                        (m.content || m.text || ''),
+                                        (m.provenance || data.provenance || '')
+                                    );
+                                });
+                                return;
+                            }
+                            // Back-compat fallback (older servers)
                             const responses = splitMultiAgent(data.response || '');
                             if (responses.length > 1) {
                                 responses.forEach((segment) => {
                                     const parsed = parseAgentSegment(segment);
-                                    appendMessage('sam', parsed.name || 'SAM', parsed.text || '');
+                                    appendMessage('sam', parsed.name || 'SAM', parsed.text || '', data.provenance || '');
                                 });
                             } else {
                                 const parsed = parseAgentSegment(data.response || 'No response');
-                                appendMessage('sam', parsed.name || 'SAM', parsed.text || '');
+                                appendMessage('sam', parsed.name || 'SAM', parsed.text || '', data.provenance || '');
                             }
                         }
                     })
@@ -11282,11 +11333,25 @@ sam@terminal:~$
                 .chat-message.sam {{ border-color: rgba(46, 229, 157, 0.4); }}
                 .chat-message.system {{ border-color: rgba(245, 185, 75, 0.4); }}
                 .chat-meta {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
                     font-size: 0.7rem;
                     text-transform: uppercase;
                     letter-spacing: 0.12em;
                     color: var(--muted);
                     margin-bottom: 6px;
+                }}
+                .chat-prov {{
+                    font-size: 0.62rem;
+                    letter-spacing: 0.08em;
+                    padding: 2px 10px;
+                    border-radius: 999px;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    background: rgba(255, 255, 255, 0.06);
+                    color: var(--muted);
+                    white-space: nowrap;
                 }}
                 .chat-input {{
                     display: flex;
