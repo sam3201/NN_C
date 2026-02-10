@@ -1623,8 +1623,113 @@ class MetaAgent:
                 "user": user or "user",
                 "ts": time.time(),
             })
+            self._learning_event_counter += 1
+            self._maybe_distill_learning()
         except Exception:
             pass
+
+    def _distill_recent_learning(self):
+        items = list(self.learning_log)[-self.distill_every:]
+        if not items:
+            return None
+        rules = []
+        topics = Counter()
+        stopwords = {
+            "this", "that", "with", "from", "have", "your", "what", "when",
+            "then", "than", "here", "there", "would", "could", "should",
+            "about", "into", "just", "like", "also", "been", "were", "will",
+            "them", "they", "their", "that", "these", "those", "your", "you",
+            "does", "doing", "done", "over", "under", "only", "some", "more",
+            "most", "such", "very", "need", "want", "make", "please", "thanks",
+            "sam", "meta", "agent", "system"
+        }
+        for item in items:
+            text = f"{item.get('prompt', '')} {item.get('response', '')}"
+            for sentence in re.split(r"[\\n.!?]", text):
+                sentence = sentence.strip()
+                if not sentence:
+                    continue
+                if re.search(r"\\b(must|should|ensure|never|do not|dont|no)\\b", sentence, re.IGNORECASE):
+                    rules.append(sentence[:200])
+            for word in re.findall(r"[A-Za-z]{4,}", text.lower()):
+                if word in stopwords:
+                    continue
+                topics[word] += 1
+        top_topics = [word for word, _ in topics.most_common(6)]
+        summary_parts = []
+        if rules:
+            summary_parts.append("Rules: " + "; ".join(rules[:5]))
+        if top_topics:
+            summary_parts.append("Topics: " + ", ".join(top_topics))
+        if not summary_parts:
+            summary_parts.append("Recent conversation distilled.")
+        summary = " | ".join(summary_parts)
+        return {
+            "ts": time.time(),
+            "summary": summary,
+            "rules": rules[:5],
+            "topics": top_topics,
+            "items": len(items),
+        }
+
+    def _maybe_distill_learning(self):
+        if self._learning_event_counter % self.distill_every != 0:
+            return
+        record = self._distill_recent_learning()
+        if not record:
+            return
+        self.distilled_memory.append(record)
+        self.last_distill_ts = record.get("ts", time.time())
+        self.last_distilled = record.get("summary", "")
+        self.learning_cycles += 1
+        try:
+            if getattr(self.system, "system_metrics", None) is not None:
+                self.system.system_metrics["meta_distill_count"] = (
+                    self.system.system_metrics.get("meta_distill_count", 0) + 1
+                )
+                self.system.system_metrics["meta_last_distill_ts"] = self.last_distill_ts
+                self.system.system_metrics["meta_last_distill_summary"] = self.last_distilled[:200]
+        except Exception:
+            pass
+        self._adjust_confidence_threshold()
+
+    def _adjust_confidence_threshold(self):
+        total = len(self.patch_history)
+        if total < 5:
+            return
+        successes = sum(1 for item in self.patch_history if item.get("result") == "success")
+        success_rate = successes / max(1, total)
+        previous = self.confidence_threshold
+        if success_rate < 0.3:
+            self.confidence_threshold = max(self.confidence_min, self.confidence_threshold - 0.05)
+        elif success_rate > 0.7:
+            self.confidence_threshold = min(self.confidence_max, self.confidence_threshold + 0.02)
+        if self.confidence_threshold != previous:
+            log_event(
+                "info",
+                "meta_confidence_adjust",
+                "Adjusted meta-agent confidence threshold",
+                previous=previous,
+                current=self.confidence_threshold,
+                success_rate=success_rate,
+            )
+
+    def get_distilled_summary(self) -> str:
+        if self.last_distilled:
+            return self.last_distilled
+        if self.distilled_memory:
+            return self.distilled_memory[-1].get("summary", "")
+        return ""
+
+    def get_learning_state(self) -> Dict[str, Any]:
+        return {
+            "learning_events": len(self.learning_log),
+            "distill_every": self.distill_every,
+            "distilled_count": len(self.distilled_memory),
+            "last_distill_ts": self.last_distill_ts,
+            "last_distilled": self.get_distilled_summary(),
+            "confidence_threshold": self.confidence_threshold,
+        }
 
     def _local_research(self, failure, localized_files):
         parts = []
