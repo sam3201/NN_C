@@ -4841,6 +4841,10 @@ class UnifiedSAMSystem:
                         continue
                 if subtasks:
                     self.goal_manager.subtasks = subtasks
+                try:
+                    self.goal_manager.dedupe_goals()
+                except Exception:
+                    pass
         except Exception as exc:
             print(f"⚠️ Failed to apply loaded state: {exc}", flush=True)
 
