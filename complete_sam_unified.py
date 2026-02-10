@@ -7148,6 +7148,7 @@ class UnifiedSAMSystem:
                     "last_growth_signals": self.system_metrics.get("last_growth_signals"),
                     "last_growth_dominant": self.system_metrics.get("last_growth_dominant"),
                     "last_growth_signal_ts": self.system_metrics.get("last_growth_signal_ts"),
+                    "last_growth_reason": self.system_metrics.get("last_growth_reason"),
                     "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
                 }
                 if getattr(self, "meta_agent", None):
