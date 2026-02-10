@@ -1449,7 +1449,7 @@ class VerifierJudgeAgent:
     def _invariant_verification(self, patch):
         """Check that system invariants are preserved"""
         result = {'passed': True, 'issues': []}
-        if getattr(self, "invariants_disabled", False):
+        if getattr(self.system, "invariants_disabled", False):
             return result
 
         try:
