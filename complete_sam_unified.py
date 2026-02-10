@@ -1713,6 +1713,12 @@ class MetaAgent:
                 "ts": time.time(),
             })
             self._learning_event_counter += 1
+            self.improvements_applied.append({
+                "type": "chat_learning",
+                "user": user or "user",
+                "timestamp": datetime.now().isoformat(),
+            })
+            self.learning_cycles += 1
             self._maybe_distill_learning()
         except Exception:
             pass
