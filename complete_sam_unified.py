@@ -4852,7 +4852,143 @@ class UnifiedSAMSystem:
         threshold = getattr(self, "meta_agent_min_severity", "medium")
         return order.get(severity, 1) >= order.get(threshold, 1)
 
-    def _start_continuous_self_healing(self):
+    def _skipped_issues_processor_loop(self):
+        """Background thread that processes skipped issues when there are no active problems"""
+        print("🔄 Skipped issues processor started - monitoring for idle periods")
+        
+        while not is_shutting_down():
+            try:
+                # Check if there are any active issues being processed
+                has_active_issues = self._has_active_issues()
+                
+                # Process skipped issues only when system is idle (no active issues)
+                if not has_active_issues:
+                    with self.skipped_issues_lock:
+                        if self.skipped_issues and not self.skipped_issues_processor_active:
+                            self.skipped_issues_processor_active = True
+                            print(f"🔄 System idle - processing {len(self.skipped_issues)} skipped issues")
+                            
+                            # Process a batch of skipped issues
+                            processed_count = 0
+                            max_batch_size = 3  # Process up to 3 issues per idle period
+                            
+                            while self.skipped_issues and processed_count < max_batch_size:
+                                skipped_issue = self.skipped_issues.pop(0)
+                                self._process_skipped_issue(skipped_issue)
+                                processed_count += 1
+                                
+                            if processed_count > 0:
+                                print(f"✅ Processed {processed_count} skipped issues during idle period")
+                            
+                            self.skipped_issues_processor_active = False
+                
+                # Sleep before next check
+                time.sleep(60)  # Check every minute
+                
+            except Exception as e:
+                print(f"⚠️ Skipped issues processor error: {e}")
+                self.skipped_issues_processor_active = False
+                time.sleep(30)
+    
+    def _has_active_issues(self):
+        """Check if there are any active issues being processed"""
+        try:
+            # Check current issues from issue resolver
+            if hasattr(self, 'issue_resolver'):
+                current_issues = self.issue_resolver.detect_initialization_issues()
+                if current_issues:
+                    return True
+            
+            # Check component connectivity
+            connectivity_issues = self._check_component_connectivity()
+            if connectivity_issues:
+                return True
+            
+            # Check if meta-agent is busy with repairs
+            if hasattr(self, '_meta_repair_in_progress') and self._meta_repair_in_progress:
+                return True
+            
+            return False
+            
+        except Exception:
+            return True  # Assume busy if we can't check
+    
+    def _process_skipped_issue(self, skipped_issue):
+        """Process a single skipped issue"""
+        try:
+            print(f"🔄 Processing skipped issue: {skipped_issue['message']}")
+            
+            # Re-evaluate the issue with current system state
+            original_issue = skipped_issue['original_issue']
+            
+            # Check if issue is still relevant
+            if self._is_issue_still_relevant(original_issue):
+                # Try to resolve with current capabilities
+                if original_issue.get('auto_fix_possible', False):
+                    if self.issue_resolver.attempt_auto_resolution(original_issue):
+                        print(f"✅ Skipped issue resolved: {skipped_issue['message']}")
+                        log_event(
+                            "info",
+                            "skipped_issue_resolved",
+                            "Previously skipped issue resolved during idle processing",
+                            issue=skipped_issue['message'],
+                            context="skipped_processor"
+                        )
+                        return
+                
+                # Try meta-agent repair if severity is high enough
+                severity = skipped_issue.get('severity', 'low')
+                if self._severity_allows_repair(severity):
+                    print(f"🤖 Escalating skipped issue to meta-agent: {skipped_issue['message']}")
+                    self._invoke_meta_agent_repair(
+                        Exception(skipped_issue['message']),
+                        context="skipped_issue_processor"
+                    )
+                    log_event(
+                        "info",
+                        "skipped_issue_escalated",
+                        "Previously skipped issue escalated to meta-agent during idle processing",
+                        issue=skipped_issue['message'],
+                        severity=severity,
+                        context="skipped_processor"
+                    )
+                else:
+                    print(f"⏸️ Skipped issue still below threshold: {skipped_issue['message']}")
+                    # Re-queue if still below threshold
+                    with self.skipped_issues_lock:
+                        self.skipped_issues.append(skipped_issue)
+            else:
+                print(f"✅ Skipped issue no longer relevant: {skipped_issue['message']}")
+                
+        except Exception as e:
+            print(f"⚠️ Error processing skipped issue {skipped_issue['message']}: {e}")
+            # Re-queue on error
+            with self.skipped_issues_lock:
+                self.skipped_issues.append(skipped_issue)
+    
+    def _is_issue_still_relevant(self, issue):
+        """Check if an issue is still relevant"""
+        try:
+            # For now, assume most issues are still relevant unless they're clearly resolved
+            # This could be enhanced with specific relevance checks per issue type
+            message = issue.get('message', '').lower()
+            
+            # Check for temporary conditions that might have resolved
+            if any(keyword in message for keyword in ['temporary', 'transient', 'momentary']):
+                return False
+            
+            # Check for initialization issues that might be resolved
+            if any(keyword in message for keyword in ['initializing', 'starting up']):
+                # Check if system is now fully initialized
+                if (hasattr(self, 'c_core_initialized') and self.c_core_initialized and
+                    hasattr(self, 'python_orchestration_initialized') and self.python_orchestration_initialized and
+                    hasattr(self, 'web_interface_initialized') and self.web_interface_initialized):
+                    return False
+            
+            return True  # Assume relevant by default
+            
+        except Exception:
+            return True  # Assume relevant if we can't check
         """Start continuous self-healing system that runs forever"""
         print("🛡️ Starting continuous self-healing system...")
         
