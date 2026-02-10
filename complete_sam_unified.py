@@ -2769,8 +2769,22 @@ class MetaAgent:
         # Step 1: Localize (skip observe since failure is already detected)
         localization = self.localizer.localize_fault(failure)
         if not localization:
-            print(" Production Meta-Agent: No localization results")
-            return False
+            if self.meta_test_mode:
+                stack_trace = self._get_failure_attr(failure, "stack_trace", "") or ""
+                file_path, _ = self._extract_failure_location(failure, stack_trace)
+                if file_path:
+                    loc_path = file_path
+                    if not os.path.isabs(loc_path):
+                        loc_path = os.path.join(self.system.project_root, loc_path)
+                    localization = [{
+                        "file": loc_path,
+                        "spectrum_score": 0.1,
+                        "recently_modified": False,
+                        "in_stack_trace": True,
+                    }]
+            if not localization:
+                print(" Production Meta-Agent: No localization results")
+                return False
 
         # Optional research step (local + web)
         if self.research_enabled:
@@ -2794,18 +2808,14 @@ class MetaAgent:
         patches.extend(self.generator.generate_patches(failure, localization))
         if not patches:
             if self.meta_test_mode:
-                patches = [{
-                    "id": "meta_test_noop",
-                    "target_file": "N/A",
-                    "changes": [],
-                    "intent": "Meta test noop patch",
-                    "risk_level": "low",
-                    "confidence": 0.9,
-                    "assumptions": ["Test mode allows noop patch"],
-                    "unknowns": [],
-                    "generated_by": "meta_test"
-                }]
-            else:
+                stack_trace = self._get_failure_attr(failure, "stack_trace", "") or ""
+                file_path, _ = self._extract_failure_location(failure, stack_trace)
+                noop = self._build_noop_patch(file_path or "")
+                if noop:
+                    patches = [noop]
+                else:
+                    patches = []
+            if not patches:
                 print(" Production Meta-Agent: No patch proposals generated")
                 return False
 
