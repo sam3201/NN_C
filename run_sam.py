@@ -41,21 +41,30 @@ def main() -> int:
     os.environ.setdefault("SAM_REQUIRE_META_AGENT", "1")
     os.environ.setdefault("SAM_AUTONOMOUS_ENABLED", "1")
     os.environ.setdefault("SAM_REQUIRE_SELF_MOD", "1")
+    os.environ.setdefault("SAM_STRICT_LOCAL_ONLY", "1")
 
     os.environ.setdefault("SAM_PROVIDER_AUTO_SWITCH", "1")
-    default_hf_dir = os.environ.get(
-        "SAM_HF_MODEL_DIR",
-        str(root / "training" / "output_lora_qwen2.5_1.5b_fp16_v2"),
-    )
-    os.environ.setdefault("SAM_POLICY_PROVIDER_PRIMARY", f"hf:Qwen/Qwen2.5-1.5B@{default_hf_dir}")
-    os.environ.setdefault("SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b")
-    os.environ.setdefault("SAM_TEACHER_POOL_PRIMARY", f"hf:Qwen/Qwen2.5-1.5B@{default_hf_dir}")
-    os.environ.setdefault("SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest")
-    os.environ.setdefault("SAM_CHAT_PROVIDER", "ollama:qwen2.5-coder:7b")
-
-    os.environ.setdefault("SAM_HF_DEVICE_MAP", "cpu")
-    os.environ.setdefault("SAM_HF_DTYPE", "float16")
-    os.environ.setdefault("SAM_HF_FORCE_GREEDY", "1")
+    strict_local_only = os.environ.get("SAM_STRICT_LOCAL_ONLY", "0") == "1"
+    if strict_local_only:
+        local_spec = "local:rules"
+        os.environ["SAM_POLICY_PROVIDER_PRIMARY"] = local_spec
+        os.environ["SAM_POLICY_PROVIDER_FALLBACK"] = local_spec
+        os.environ["SAM_TEACHER_POOL_PRIMARY"] = local_spec
+        os.environ["SAM_TEACHER_POOL_FALLBACK"] = local_spec
+        os.environ["SAM_CHAT_PROVIDER"] = ""
+    else:
+        default_hf_dir = os.environ.get(
+            "SAM_HF_MODEL_DIR",
+            str(root / "training" / "output_lora_qwen2.5_1.5b_fp16_v2"),
+        )
+        os.environ.setdefault("SAM_POLICY_PROVIDER_PRIMARY", f"hf:Qwen/Qwen2.5-1.5B@{default_hf_dir}")
+        os.environ.setdefault("SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b")
+        os.environ.setdefault("SAM_TEACHER_POOL_PRIMARY", f"hf:Qwen/Qwen2.5-1.5B@{default_hf_dir}")
+        os.environ.setdefault("SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest")
+        os.environ.setdefault("SAM_CHAT_PROVIDER", "ollama:qwen2.5-coder:7b")
+        os.environ.setdefault("SAM_HF_DEVICE_MAP", "cpu")
+        os.environ.setdefault("SAM_HF_DTYPE", "float16")
+        os.environ.setdefault("SAM_HF_FORCE_GREEDY", "1")
 
     cmd = [sys.executable, str(root / "complete_sam_unified.py")]
     return subprocess.call(cmd, env=os.environ.copy())
