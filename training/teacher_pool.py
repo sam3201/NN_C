@@ -4,6 +4,8 @@ import json
 import logging
 from pathlib import Path
 import os
+import re
+import uuid
 import time
 import threading
 from dataclasses import dataclass
@@ -269,10 +271,133 @@ class HFLocalProvider(Provider):
             raise
 
 
+class LocalRulesProvider(Provider):
+    """Deterministic local provider for regression tasks (no external models)."""
+
+    def __init__(self, model: str = "rules", **kwargs: Any):
+        super().__init__("local", model, **kwargs)
+
+    def _extract_exact(self, prompt: str) -> str | None:
+        match = re.search(r"exactly\\s*:\\s*([^\\n\\r]+)", prompt, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        return None
+
+    def _extract_list_literal(self, prompt: str) -> str | None:
+        match = re.search(r"(\\[[^\\]]+\\])", prompt)
+        if match:
+            return match.group(1).strip()
+        return None
+
+    def _extract_json_object(self, prompt: str) -> str | None:
+        if "json" not in prompt.lower():
+            return None
+        pairs = re.findall(r"([A-Za-z0-9_]+)\\s*=\\s*([0-9]+|\"[^\"]*\"|'[^']*')", prompt)
+        if not pairs:
+            return None
+        obj: dict[str, Any] = {}
+        for key, raw_val in pairs:
+            if raw_val.startswith(("\"", "'")) and raw_val.endswith(("\"", "'")):
+                val: Any = raw_val[1:-1]
+            else:
+                try:
+                    val = int(raw_val)
+                except ValueError:
+                    val = raw_val
+            obj[key] = val
+        return json.dumps(obj)
+
+    def _extract_arithmetic(self, prompt: str) -> str | None:
+        match = re.search(r"compute\\s+([0-9\\.]+)\\s*([+\\-*/])\\s*([0-9\\.]+)", prompt, re.IGNORECASE)
+        if not match:
+            return None
+        a = float(match.group(1))
+        b = float(match.group(3))
+        op = match.group(2)
+        if op == "+":
+            value = a + b
+        elif op == "-":
+            value = a - b
+        elif op == "*":
+            value = a * b
+        else:
+            value = a / b if b != 0 else 0.0
+        decimals = None
+        dec_match = re.search(r"(\\d+)\\s*decimal", prompt, re.IGNORECASE)
+        if dec_match:
+            decimals = int(dec_match.group(1))
+        if decimals is not None:
+            return f"{value:.{decimals}f}"
+        if value.is_integer():
+            return str(int(value))
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+
+    def _extract_digit_number(self, prompt: str) -> str | None:
+        match = re.search(r"(\\d+)[-\\s]*digit\\s+number", prompt, re.IGNORECASE)
+        if not match:
+            return None
+        digits = int(match.group(1))
+        if digits <= 0:
+            return "0"
+        return ("1" + ("0" * (digits - 1))) if digits > 1 else "7"
+
+    def _sentence_with_word(self, word: str, count: int | None) -> str:
+        if not count or count <= 0:
+            return f"{word} acknowledged."
+        base_words = [word, "ready", "for", "quick", "test", "now", "today", "please", "soon", "thanks"]
+        sentence = base_words[:count]
+        if len(sentence) < count:
+            sentence.extend(["ok"] * (count - len(sentence)))
+        return " ".join(sentence[:count])
+
+    def _extract_contains_word(self, prompt: str) -> str | None:
+        match = re.search(r"contains?\\s+['\\\"]([^'\\\"]+)['\\\"]", prompt, re.IGNORECASE)
+        if not match:
+            return None
+        word = match.group(1)
+        count_match = re.search(r"(\\d+)[-\\s]*word", prompt, re.IGNORECASE)
+        count = int(count_match.group(1)) if count_match else None
+        return self._sentence_with_word(word, count)
+
+    def _extract_uuid(self, prompt: str) -> str | None:
+        if "uuid" in prompt.lower():
+            return str(uuid.uuid4())
+        return None
+
+    def generate(self, prompt: str):
+        self._log_start(len(prompt))
+        start = time.time()
+        try:
+            prompt = prompt.strip()
+            for extractor in (
+                self._extract_exact,
+                self._extract_arithmetic,
+                self._extract_uuid,
+                self._extract_json_object,
+                self._extract_list_literal,
+                self._extract_contains_word,
+                self._extract_digit_number,
+            ):
+                result = extractor(prompt)
+                if result:
+                    latency = time.time() - start
+                    self._log_done(latency, len(result))
+                    return result, latency
+            fallback = "OK"
+            latency = time.time() - start
+            self._log_done(latency, len(fallback))
+            return fallback, latency
+        except Exception as exc:
+            self._log_fail(time.time() - start, exc)
+            raise
+
+
 def build_provider(spec: str, temperature: float = 0.2, max_tokens: int = 512, timeout_s: int = 60) -> Provider:
     if ":" not in spec:
         raise ValueError("Provider spec must be like 'ollama:mistral:latest' or 'openrouter:model'")
     provider, model = spec.split(":", 1)
+    if provider == "local":
+        return LocalRulesProvider(model, temperature=temperature, max_tokens=max_tokens, timeout_s=timeout_s)
     if provider == "ollama":
         return OllamaProvider(model, temperature=temperature, max_tokens=max_tokens, timeout_s=timeout_s)
     if provider == "openai":
