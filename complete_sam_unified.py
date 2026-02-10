@@ -8895,28 +8895,55 @@ sam@terminal:~$
     def _select_chat_agents(self, max_agents: int = 3):
         """Select a diverse set of agents for multi-agent chat responses."""
         candidates = []
-        # Prefer connected agents (non-user)
         for agent_id, conn in (self.connected_agents or {}).items():
             cfg = conn.get("config", {}) if isinstance(conn, dict) else {}
-            if not cfg:
-                continue
-            candidates.append((agent_id, cfg))
+            if cfg:
+                candidates.append((agent_id, cfg))
         if not candidates:
-            # Fallback to configured agents
             for agent_id, cfg in (self.agent_configs or {}).items():
                 candidates.append((agent_id, cfg))
-        # Prioritize core roles
-        priority = ["researcher", "code_writer", "financial_analyst", "money_maker", "survival_agent", "meta_agent"]
-        ordered = []
-        for pid in priority:
-            for agent_id, cfg in candidates:
-                if agent_id == pid and (agent_id, cfg) not in ordered:
-                    ordered.append((agent_id, cfg))
-        for item in candidates:
-            if item not in ordered:
-                ordered.append(item)
-        if len(ordered) < max_agents:
-            existing_ids = {agent_id for agent_id, _ in ordered}
+
+        by_id = {agent_id: cfg for agent_id, cfg in candidates}
+        selected = []
+        selected_ids = set()
+
+        # Always include MetaAgent when available for coordination.
+        if "meta_agent" in by_id:
+            selected.append(("meta_agent", by_id["meta_agent"]))
+            selected_ids.add("meta_agent")
+
+        priority = [
+            "researcher",
+            "code_writer",
+            "financial_analyst",
+            "money_maker",
+            "survival_agent",
+            "creative_writer",
+            "data_analyst",
+            "ethics_advisor",
+            "project_manager",
+        ]
+        if priority:
+            offset = int(time.time()) % len(priority)
+            rotated = priority[offset:] + priority[:offset]
+        else:
+            rotated = []
+
+        for agent_id in rotated:
+            if len(selected) >= max_agents:
+                break
+            if agent_id in by_id and agent_id not in selected_ids:
+                selected.append((agent_id, by_id[agent_id]))
+                selected_ids.add(agent_id)
+
+        for agent_id, cfg in candidates:
+            if len(selected) >= max_agents:
+                break
+            if agent_id not in selected_ids:
+                selected.append((agent_id, cfg))
+                selected_ids.add(agent_id)
+
+        if len(selected) < max_agents:
             fallback_agents = [
                 {
                     "id": "researcher_local",
@@ -8955,12 +8982,13 @@ sam@terminal:~$
                 },
             ]
             for cfg in fallback_agents:
-                if cfg["id"] in existing_ids:
-                    continue
-                ordered.append((cfg["id"], cfg))
-                if len(ordered) >= max_agents:
+                if len(selected) >= max_agents:
                     break
-        return ordered[:max_agents]
+                if cfg["id"] not in selected_ids:
+                    selected.append((cfg["id"], cfg))
+                    selected_ids.add(cfg["id"])
+
+        return selected[:max_agents]
 
     def _synthesize_sources_locally(self, query: str, sources: list[dict]) -> str:
         """Local synthesis when no provider is available (structured, ChatGPT-like)."""
