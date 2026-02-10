@@ -1894,6 +1894,7 @@ class MetaAgent:
         if not record:
             return
         self.distilled_memory.append(record)
+        self._persist_distilled_record(record)
         self.last_distill_ts = record.get("ts", time.time())
         self.last_distilled = record.get("summary", "")
         self.learning_cycles += 1

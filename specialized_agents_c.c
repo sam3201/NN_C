@@ -344,11 +344,19 @@ void research_agent_free(ResearcherAgent *agent) {
 char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
     char safe_query[MAX_QUERY_LEN + 1];
     safe_copy(safe_query, sizeof(safe_query), query);
-    printf("🔍 Research Agent: Performing web search for '%s'\n", safe_query);
+
+    // Use a bounded display query to avoid oversized logs and formatting buffers.
+    char display_query[256];
+    if (strlen(safe_query) > 200) {
+        snprintf(display_query, sizeof(display_query), "%.*s...", 200, safe_query);
+    } else {
+        safe_copy(display_query, sizeof(display_query), safe_query);
+    }
+    printf("🔍 Research Agent: Performing web search for '%s'\n", display_query);
 
     // Store in history
     if (agent->history_count < agent->history_capacity) {
-        agent->search_history[agent->history_count++] = strdup(safe_query);
+    agent->search_history[agent->history_count++] = strdup(safe_query);
     }
 
     if (agent->current_search_query) {
@@ -360,11 +368,7 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
     // This would integrate with existing web scraping components
 
     // For now, simulate research results
-    char *results = malloc(1024);
-    if (!results) {
-        return NULL;
-    }
-    snprintf(results, 1024,
+    const char *template_str =
         "Research Results for '%s':\n"
         "• Found %d relevant sources from trusted domains\n"
         "• Credibility score: %.2f\n"
@@ -373,12 +377,27 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
         "• Sources verified: Academic institutions, peer-reviewed journals\n"
         "• Cross-referenced: %d independent confirmations\n"
         "• Bias assessment: Minimal detected\n"
-        "• Timeliness: Current data (last 30 days)",
-        safe_query,
-        15 + rand() % 20,
-        agent->credibility_score,
-        agent->credibility_score * 100,
-        3 + rand() % 5);
+        "• Timeliness: Current data (last 30 days)";
+    int needed = snprintf(NULL, 0, template_str,
+                          display_query,
+                          15 + rand() % 20,
+                          agent->credibility_score,
+                          agent->credibility_score * 100,
+                          3 + rand() % 5);
+    if (needed < 0) {
+        return NULL;
+    }
+    size_t buf_size = (size_t)needed + 1;
+    char *results = (char *)malloc(buf_size);
+    if (!results) {
+        return NULL;
+    }
+    snprintf(results, buf_size, template_str,
+             display_query,
+             15 + rand() % 20,
+             agent->credibility_score,
+             agent->credibility_score * 100,
+             3 + rand() % 5);
 
     agent->base.performance_score += 0.05;
     agent->credibility_score += 0.01;
