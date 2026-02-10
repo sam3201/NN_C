@@ -6165,7 +6165,7 @@ class UnifiedSAMSystem:
 
             # Initialize goal management system
             print("  - Creating goal management system...")
-            self.goal_manager = GoalManager()
+            self.goal_manager = GoalManager(self)
             try:
                 task_fn = create_conversationalist_tasks
                 try:
@@ -6193,7 +6193,7 @@ class UnifiedSAMSystem:
             except Exception as exc:
                 print(f"  ⚠️ Domain goal init failed: {exc}")
             self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager)
-            self.task_manager = TaskManager(self.goal_manager)
+            self.task_manager = TaskManager(self.goal_manager, self)
             print("  ✅ Goal management system initialized")
 
             # Apply persisted state after goal manager initialization
