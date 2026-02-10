@@ -4016,20 +4016,33 @@ class UnifiedSAMSystem:
         self.teacher_pool_lock = threading.Lock()
 
         if self.strict_local_only:
-            # Disable external providers in strict local-only mode.
+            # Enforce local-only providers in strict mode (no Ollama/HF/etc).
+            local_spec = "local:rules"
             if self.chat_provider_spec and _is_external_provider_spec(self.chat_provider_spec):
                 self.chat_provider_spec = ""
-            if self.teacher_pool_enabled and any(_is_external_provider_spec(s) for s in self.teacher_specs):
-                self.teacher_pool_enabled = False
-                self.teacher_specs = []
+            if _is_external_provider_spec(self.policy_provider_primary):
+                self.policy_provider_primary = local_spec
+            if _is_external_provider_spec(self.policy_provider_fallback):
+                self.policy_provider_fallback = local_spec
             if _is_external_provider_spec(self.regression_provider):
-                # Keep regression gate enabled for local providers even in strict local-only mode
-                provider = self.regression_provider.split(":", 1)[0].strip().lower()
-                if provider in ["ollama", "hf", "huggingface"]:
-                    log_event("info", "regression_gate_enabled", f"Regression gate kept enabled for local provider: {provider}", provider=self.regression_provider)
-                else:
-                    self.regression_on_growth = False
-                    log_event("warn", "regression_gate_disabled", "Regression gate disabled for external provider", provider=self.regression_provider)
+                self.regression_provider = self.policy_provider_primary or local_spec
+            self.provider_mode = "primary"
+            self.regression_provider = self.policy_provider_primary or local_spec
+            if not self.teacher_pool_enabled:
+                self.teacher_pool_enabled = True
+            if not self.teacher_specs or any(_is_external_provider_spec(s) for s in self.teacher_specs):
+                self.teacher_specs = [local_spec]
+            # Keep primary/fallback in sync with local specs.
+            self.teacher_pool_primary = ",".join(self.teacher_specs)
+            if _is_external_provider_spec(self.teacher_pool_fallback):
+                self.teacher_pool_fallback = local_spec
+            if self.regression_on_growth:
+                log_event(
+                    "info",
+                    "regression_gate_enabled",
+                    "Regression gate enabled for strict local-only provider",
+                    provider=self.regression_provider,
+                )
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
