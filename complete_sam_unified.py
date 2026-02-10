@@ -1817,6 +1817,125 @@ class MetaAgent:
                     matches.append(record)
         return matches
 
+    def analyze_system_health(self) -> Dict[str, Any]:
+        """Summarize system health for dashboards and diagnostics."""
+        system = self.system
+        metrics = getattr(system, "system_metrics", {}) or {}
+        components = {
+            "c_core": metrics.get("c_core_status", "unknown"),
+            "python_orchestration": metrics.get("python_orchestration_status", "unknown"),
+            "web_interface": metrics.get("web_interface_status", "unknown"),
+            "meta_loop": "active" if getattr(system, "meta_loop_active", False) else "inactive",
+        }
+        cpu_usage = metrics.get("cpu_usage", None)
+        mem_usage = metrics.get("memory_usage", None)
+        overall_score = 1.0
+        for _, status in components.items():
+            if status and isinstance(status, str) and status not in ("active", "ok", "healthy"):
+                overall_score -= 0.15
+        if cpu_usage is not None and cpu_usage > 85:
+            overall_score -= 0.1
+        if mem_usage is not None and mem_usage > 85:
+            overall_score -= 0.1
+        survival_score = metrics.get("survival_score", None)
+        if survival_score is not None:
+            try:
+                overall_score = min(overall_score, float(survival_score))
+            except Exception:
+                pass
+        overall_score = max(0.0, min(1.0, overall_score))
+        return {
+            "overall_score": overall_score,
+            "components_status": components,
+            "performance_metrics": {
+                "cpu_usage": cpu_usage,
+                "memory_usage": mem_usage,
+                "active_agents": metrics.get("active_agents"),
+            },
+            "resource_usage": {
+                "cpu_usage": cpu_usage,
+                "memory_usage": mem_usage,
+            },
+            "recent_improvements": len(self.improvements_applied[-10:]),
+            "timestamp": time.time(),
+        }
+
+    def generate_system_improvements(self) -> Dict[str, Any]:
+        """Generate improvement suggestions based on current health."""
+        health = self.analyze_system_health()
+        improvements = []
+        components = health.get("components_status", {})
+        cpu_usage = health.get("performance_metrics", {}).get("cpu_usage")
+        mem_usage = health.get("performance_metrics", {}).get("memory_usage")
+
+        if components.get("web_interface") not in ("active", "ok", "healthy"):
+            improvements.append({
+                "component": "web_interface",
+                "improvement_type": "fix",
+                "description": "Restore web interface availability and restart web threads if needed.",
+                "priority": 1,
+                "estimated_impact": 0.9,
+                "implementation_complexity": 3,
+            })
+
+        if components.get("python_orchestration") not in ("active", "ok", "healthy"):
+            improvements.append({
+                "component": "python_orchestration",
+                "improvement_type": "stability",
+                "description": "Review Python orchestration errors and reinitialize missing subsystems.",
+                "priority": 1,
+                "estimated_impact": 0.8,
+                "implementation_complexity": 4,
+            })
+
+        if cpu_usage is not None and cpu_usage > 85:
+            improvements.append({
+                "component": "performance",
+                "improvement_type": "optimization",
+                "description": "Throttle background agents or reduce concurrency to lower CPU usage.",
+                "priority": 2,
+                "estimated_impact": 0.5,
+                "implementation_complexity": 2,
+            })
+
+        if mem_usage is not None and mem_usage > 85:
+            improvements.append({
+                "component": "memory",
+                "improvement_type": "optimization",
+                "description": "Reduce memory footprint by trimming caches and switching to lighter models.",
+                "priority": 2,
+                "estimated_impact": 0.5,
+                "implementation_complexity": 2,
+            })
+
+        if getattr(self.system, "goal_manager", None) and not getattr(self.system.goal_manager, "active_goals", []):
+            improvements.append({
+                "component": "goal_system",
+                "improvement_type": "bootstrap",
+                "description": "Seed base goals and subtasks to keep the task manager populated.",
+                "priority": 2,
+                "estimated_impact": 0.4,
+                "implementation_complexity": 1,
+            })
+
+        if not getattr(self.system, "chat_multi_agent", True):
+            improvements.append({
+                "component": "conversation",
+                "improvement_type": "engagement",
+                "description": "Enable multi-agent chat mode for more diverse responses.",
+                "priority": 3,
+                "estimated_impact": 0.3,
+                "implementation_complexity": 1,
+            })
+
+        return {
+            "status": "ok",
+            "summary": "Generated improvement suggestions from live system health.",
+            "improvement_phases": improvements,
+            "health": health,
+            "timestamp": time.time(),
+        }
+
     def ingest_learning_event(self, prompt: str, response: str, user: Optional[str] = None):
         """Accept learning events so meta-agent can adapt."""
         try:
