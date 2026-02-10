@@ -2302,6 +2302,9 @@ class MetaAgent:
 
     def _apply_patch(self, patch, failure):
         """Apply a patch using the safe code modifier."""
+        if getattr(self, "meta_test_mode", False):
+            print(" Production Meta-Agent: Test mode - simulating patch apply")
+            return True
         if not getattr(self.system, "allow_self_modification", False):
             print(" Production Meta-Agent: Self-modification disabled - patch not applied")
             return False
