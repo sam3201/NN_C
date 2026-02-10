@@ -11,7 +11,8 @@ import shutil
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from complete_sam_unified import MetaAgent, ObserverAgent, FaultLocalizerAgent, PatchGeneratorAgent, VerifierJudgeAgent, FailureEvent
 from datetime import datetime
@@ -260,7 +261,7 @@ NameError: name '_utc_now' is not defined ''',
         result = meta_agent.handle_failure(failure)
         
         # Check if _utc_now function was added to complete_sam_unified.py
-        sam_file = Path(__file__).parent / "complete_sam_unified.py"
+        sam_file = ROOT / "complete_sam_unified.py"
         if sam_file.exists():
             with open(sam_file, 'r') as f:
                 sam_content = f.read()
