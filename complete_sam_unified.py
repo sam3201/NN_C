@@ -886,10 +886,11 @@ class PatchGeneratorAgent:
             return None
 
         target_file = localized_files[0]['file']
+        file_path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
 
         # Read the target file
         try:
-            with open(os.path.join(self.system.project_root, target_file), 'r', encoding='utf-8') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 file_content = f.read()
         except:
             return None
