@@ -519,6 +519,21 @@ class TaskManager:
             'running_tasks': len([t for t in self.task_queue if t['status'] == 'running'])
         }
 
+    def sync_with_goal_manager(self):
+        """Sync pending subtasks from the goal manager into the task queue."""
+        if not self.goal_manager:
+            return 0
+        queued = {entry['task'].name for entry in self.task_queue}
+        completed = {entry['task_id'] for entry in self.execution_history}
+        added = 0
+        for task in self.goal_manager.get_pending_tasks():
+            if task.name in queued or task.name in completed:
+                continue
+            priority = 'high' if task.critical else 'medium'
+            self.schedule_task(task, priority=priority)
+            added += 1
+        return added
+
 
 class SubgoalExecutionAlgorithm:
     """Algorithm for executing subgoals and coordinating task execution"""
