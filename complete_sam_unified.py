@@ -1824,12 +1824,14 @@ class MetaAgent:
         try:
             if not prompt or not response:
                 return
-            self.learning_log.append({
+            record = {
                 "prompt": prompt,
                 "response": response,
                 "user": user or "user",
                 "ts": time.time(),
-            })
+            }
+            self.learning_log.append(record)
+            self._persist_learning_event(record)
             self._learning_event_counter += 1
             self.improvements_applied.append({
                 "type": "chat_learning",
