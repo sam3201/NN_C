@@ -1802,6 +1802,9 @@ class MetaAgent:
             web = self._web_research(failure)
             if web:
                 notes.append("WEB RESEARCH\n" + web)
+        meta_summary = self.get_distilled_summary()
+        if meta_summary:
+            notes.append("META LEARNING\n" + meta_summary)
         if not notes:
             return ""
         combined = "\n\n".join(notes)
