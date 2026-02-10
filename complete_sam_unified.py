@@ -11984,7 +11984,7 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})", flush=True)
-        if score == "N/A":
+        if float(score) < 0.5:
             log_event(
                 "warn",
                 "score_unusable",
@@ -12018,7 +12018,7 @@ sam@terminal:~$
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})", flush=True)
-        if score == "N/A":
+        if float(score) < 0.5:
             log_event(
                 "warn",
                 "score_unusable",
