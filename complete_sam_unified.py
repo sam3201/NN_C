@@ -10479,17 +10479,34 @@ sam@terminal:~$
                     messages.scrollTop = messages.scrollHeight;
                 }
 
+                function splitMultiAgent(message) {
+                    if (!message) return [];
+                    const trimmed = message.trim();
+                    if (!trimmed.startsWith('[')) return [message];
+                    const parts = trimmed.split(/\\n\\n(?=\\[)/g);
+                    return parts.length ? parts : [message];
+                }
+
+                function parseAgentSegment(segment) {
+                    const match = (segment || '').trim().match(/^\\[([^\\]]+)\\]\\s*([\\s\\S]*)$/);
+                    if (match) {
+                        return { name: match[1], text: match[2] || '' };
+                    }
+                    return { name: 'SAM', text: segment || '' };
+                }
+
                 function sendMessage() {
                     const input = document.getElementById('chat-input');
                     if (!input.value.trim()) return;
+                    const message = input.value;
 
-                    appendMessage('user', 'You', input.value);
+                    appendMessage('user', 'You', message);
 
                     fetch('/api/chatbot', {
                         method: 'POST',
                         headers: adminHeaders(),
                         body: JSON.stringify({
-                            message: input.value,
+                            message,
                             context: {user_name: 'Dashboard', history: []}
                         })
                     })
@@ -10504,7 +10521,16 @@ sam@terminal:~$
                         if (data.error) {
                             appendMessage('system', 'System', data.error);
                         } else {
-                            appendMessage('sam', 'SAM', data.response || 'No response');
+                            const responses = splitMultiAgent(data.response || '');
+                            if (responses.length > 1) {
+                                responses.forEach((segment) => {
+                                    const parsed = parseAgentSegment(segment);
+                                    appendMessage('sam', parsed.name || 'SAM', parsed.text || '');
+                                });
+                            } else {
+                                const parsed = parseAgentSegment(data.response || 'No response');
+                                appendMessage('sam', parsed.name || 'SAM', parsed.text || '');
+                            }
                         }
                     })
                     .catch(error => {
@@ -10514,9 +10540,52 @@ sam@terminal:~$
                     input.value = '';
                 }
 
-                document.getElementById('chat-input').addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') sendMessage();
+                document.getElementById('chat-input').addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
                 });
+
+                async function loadChatConfig() {
+                    try {
+                        const resp = await fetch('/api/chat/config');
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        const toggle = document.getElementById('chat-multi-toggle');
+                        const maxInput = document.getElementById('chat-agents-max');
+                        if (toggle) toggle.checked = !!data.chat_multi_agent;
+                        if (maxInput) maxInput.value = data.chat_agents_max || 3;
+                    } catch (err) {
+                        console.warn('Failed to load chat config', err);
+                    }
+                }
+
+                async function updateChatConfig() {
+                    const toggle = document.getElementById('chat-multi-toggle');
+                    const maxInput = document.getElementById('chat-agents-max');
+                    if (!toggle || !maxInput) return;
+                    const maxAgents = Math.max(1, Math.min(8, parseInt(maxInput.value || '3', 10)));
+                    try {
+                        const resp = await fetch('/api/chat/config', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({
+                                chat_multi_agent: !!toggle.checked,
+                                chat_agents_max: maxAgents
+                            })
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            showUiAlert(data.error || 'Chat config update failed.');
+                            return;
+                        }
+                        if (data.chat_agents_max) maxInput.value = data.chat_agents_max;
+                        showUiAlert('Chat config updated.');
+                    } catch (err) {
+                        showUiAlert('Chat config update failed.');
+                    }
+                }
 
                 const adminInput = document.getElementById('admin-token-input');
                 if (adminInput && samAdminToken) {
