@@ -10702,6 +10702,10 @@ sam@terminal:~$
                 if (dashLogLevel) dashLogLevel.addEventListener('change', refreshDashboardLogVisibility);
                 if (dashLogEvent) dashLogEvent.addEventListener('input', refreshDashboardLogVisibility);
                 if (dashLogScope) dashLogScope.addEventListener('change', refreshDashboardLogVisibility);
+                const learningRefresh = document.getElementById('learning-refresh');
+                if (learningRefresh) {
+                    learningRefresh.addEventListener('click', () => updateLearningMemory());
+                }
 
                 setInterval(updateAgents, 5000);
                 updateAgents();
@@ -10711,8 +10715,11 @@ sam@terminal:~$
                 updateBanking();
                 setInterval(updateFinanceSummary, 15000);
                 updateFinanceSummary();
+                setInterval(updateLearningMemory, 20000);
+                updateLearningMemory();
                 updateAuthStatus();
                 loadFinanceConfig();
+                loadChatConfig();
                 initDashboardLogStream();
                 fetchDashboardLogSnapshot();
         '''
