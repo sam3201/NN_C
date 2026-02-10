@@ -2195,24 +2195,7 @@ class MetaAgent:
         pattern_matches = self._match_error_patterns(failure)
         failure_type = (self._get_failure_attr(failure, "error_type", "") or "").lower()
 
-        file_match = re.search(r'File "([^"]+)", line (\d+)', stack_trace)
-        file_path = None
-        line_no = None
-        if file_match:
-            file_path = file_match.group(1)
-            try:
-                line_no = int(file_match.group(2))
-            except Exception:
-                line_no = None
-        if not file_path:
-            hint_text = " ".join(filter(None, [
-                self._get_failure_attr(failure, "research_notes", ""),
-                self._get_failure_attr(failure, "message", ""),
-                stack_trace,
-            ]))
-            tokens = re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text)
-            if tokens:
-                file_path = tokens[0]
+        file_path, line_no = self._extract_failure_location(failure, stack_trace)
 
         file_abs = None
         file_rel = None
