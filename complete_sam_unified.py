@@ -11880,7 +11880,45 @@ sam@terminal:~$
                     task_type=task_type,
                     estimated_time=600  # 10 minutes
                 )
-                self.goal_manager.add_subtask(goal)
+                goal_id = self.goal_manager.add_subtask(goal)
+                
+                # Create specific subtasks for this goal
+                if task_type == "research":
+                    subtasks = [
+                        TaskNode(name="Gather data sources", task_type="research", priority=4, goal_id=goal_id),
+                        TaskNode(name="Analyze findings", task_type="research", priority=3, goal_id=goal_id),
+                        TaskNode(name="Generate report", task_type="research", priority=2, goal_id=goal_id)
+                    ]
+                elif task_type == "code":
+                    subtasks = [
+                        TaskNode(name="Design solution", task_type="code", priority=4, goal_id=goal_id),
+                        TaskNode(name="Implement code", task_type="code", priority=3, goal_id=goal_id),
+                        TaskNode(name="Test implementation", task_type="code", priority=2, goal_id=goal_id)
+                    ]
+                elif task_type == "finance":
+                    subtasks = [
+                        TaskNode(name="Market research", task_type="finance", priority=4, goal_id=goal_id),
+                        TaskNode(name="Data analysis", task_type="finance", priority=3, goal_id=goal_id),
+                        TaskNode(name="Generate insights", task_type="finance", priority=2, goal_id=goal_id)
+                    ]
+                elif task_type == "survival":
+                    subtasks = [
+                        TaskNode(name="System assessment", task_type="survival", priority=4, goal_id=goal_id),
+                        TaskNode(name="Identify threats", task_type="survival", priority=3, goal_id=goal_id),
+                        TaskNode(name="Implement safeguards", task_type="survival", priority=2, goal_id=goal_id)
+                    ]
+                else:
+                    subtasks = [
+                        TaskNode(name="Plan approach", task_type="improvement", priority=4, goal_id=goal_id),
+                        TaskNode(name="Execute plan", task_type="improvement", priority=3, goal_id=goal_id),
+                        TaskNode(name="Verify results", task_type="improvement", priority=2, goal_id=goal_id)
+                    ]
+                
+                # Add all subtasks to the goal manager
+                for subtask in subtasks:
+                    self.goal_manager.add_subtask(subtask, goal_id)
+                
+                print(f"🎯 Added autonomous goal '{name}' with {len(subtasks)} subtasks")
         except Exception as e:
             print(f"⚠️ Error adding autonomous goal: {e}", flush=True)
 
