@@ -8639,11 +8639,14 @@ sam@terminal:~$
         try:
             if getattr(self, "specialized_agents", False):
                 if "research" in agent_type or "research" in specialty:
-                    return specialized_agents_c.research(f"Research: {prompt}") or f"{base_prefix}: Research completed."
+                    response = self._call_c_agent("research", f"Research: {prompt}")
+                    return response or f"{base_prefix}: Research completed."
                 if "code" in agent_type or "code" in specialty:
-                    return specialized_agents_c.generate_code(f"Code task: {prompt}") or f"{base_prefix}: Code draft ready."
+                    response = self._call_c_agent("generate_code", f"Code task: {prompt}")
+                    return response or f"{base_prefix}: Code draft ready."
                 if "finance" in agent_type or "money" in agent_type or "finance" in specialty or "money" in specialty:
-                    return specialized_agents_c.analyze_market(f"Finance task: {prompt}") or f"{base_prefix}: Finance analysis ready."
+                    response = self._call_c_agent("analyze_market", f"Finance task: {prompt}")
+                    return response or f"{base_prefix}: Finance analysis ready."
             # Deterministic fallback if specialized agents unavailable
             if "meta" in agent_type:
                 return f"{base_prefix}: Logging issue context and preparing diagnostics for: {message}"
