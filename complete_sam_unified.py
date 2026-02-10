@@ -4101,7 +4101,7 @@ class UnifiedSAMSystem:
         self.chat_timeout_s = int(os.getenv("SAM_CHAT_TIMEOUT_S", "60"))
         self.chat_max_tokens = int(os.getenv("SAM_CHAT_MAX_TOKENS", "512"))
         self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
-        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
+        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "4"))
         self.distill_dashboard_enabled = os.getenv("SAM_DISTILL_DASHBOARD", "1") == "1"
         self.learning_memory_enabled = os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
