@@ -12868,6 +12868,16 @@ sam@terminal:~$
             cycle_result = self.goal_executor.execute_cycle()
             if cycle_result["tasks_executed"] > 0:
                 print(f"🎯 Goal cycle completed: {cycle_result['tasks_executed']} tasks executed")
+        if getattr(self, "task_manager", None):
+            try:
+                queued = self.task_manager.sync_with_goal_manager()
+                if queued:
+                    print(f"  ✅ TaskManager queued {queued} pending subtask(s)")
+                result = self.task_manager.execute_next_task()
+                if result:
+                    print(f"🔧 TaskManager executed: {result}")
+            except Exception as exc:
+                print(f"⚠️ TaskManager sync error: {exc}", flush=True)
 
     def _shutdown_system(self):
         """Shutdown the unified system gracefully"""
