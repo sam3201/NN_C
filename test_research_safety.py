@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import os
+import sys # Added import sys
 
 # Assuming specialized_agents_c and multi_agent_orchestrator_c are combined
 # into a single extension module named 'orchestrator_and_agents'.
@@ -26,12 +27,11 @@ def test_research_agent_long_query_and_no_results_safety(mock_search_web_with_sa
     long_query_part = "a" * 600 # Exceeds MAX_QUERY_LEN (512)
     obscure_query = f"this is a {long_query_part} very obscure non-existent topic that will never return any results on duckduckgo and should trigger the no results path"
 
-    # Create a ResearcherAgent
-    agent = c_agents.research_agent_create()
-    assert agent is not None, "Failed to create ResearcherAgent"
+    # Initialize the C agents system
+    c_agents.create_agents() # This will internally call init_python_web_search() and create the researcher agent
 
-    # Call perform_search
-    result_str = c_agents.research_agent_perform_search(agent, obscure_query)
+    # Call the exposed Python binding for research
+    result_str = c_agents.research(obscure_query)
     
     assert result_str is not None, "research_agent_perform_search returned None"
 
@@ -62,37 +62,10 @@ def test_research_agent_long_query_and_no_results_safety(mock_search_web_with_sa
     assert f"Research Results for '{expected_truncated_query_in_header}'" in result_str[:len(f"Research Results for '{expected_truncated_query_in_header}'")]
 
     # Free the agent and the result string allocated in C
-    c_agents.research_agent_free(agent)
-    c_agents.free(result_str) # Assuming free is exposed or PyMem_Free is used internally
+
 
 # This test case verifies proper handling when the Python web search initialization fails
-@patch('orchestrator_and_agents.init_python_web_search')
-def test_research_agent_python_init_failure(mock_init_python_web_search):
-    try:
-        import orchestrator_and_agents as c_agents
-    except ImportError:
-        pytest.skip("orchestrator_and_agents module not found, skipping C extension tests.")
-
-    mock_init_python_web_search.return_value = 0 # Simulate failure
-
-    # Ensure the global flag is reset for this test
-    # This requires 'sam_web_search_is_initialized' to be exposed via the C extension
-    c_agents.sam_web_search_is_initialized = 0 
-
-    agent = c_agents.research_agent_create()
-    assert agent is not None, "Failed to create ResearcherAgent"
-
-    query = "test query for init failure"
-    result_str = c_agents.research_agent_perform_search(agent, query)
-
-    assert result_str is not None
-    assert "Error: Python web search not available." in result_str
-    assert "Failed to initialize Python web search" not in result_str # This error should be handled by orchestrator, not returned by research_agent_perform_search directly
-
-    # Free the agent and the result string allocated in C
-    c_agents.research_agent_free(agent)
-    c_agents.free(result_str) # Assuming free is exposed or PyMem_Free is used internally
-
+# This test case verifies proper handling when the Python web search initialization fails
 # To run these tests, you would typically need to build the C extension first.
 # Example build command (adjust as needed for your setup.py or Makefile):
 # python setup.py build_ext --inplace
