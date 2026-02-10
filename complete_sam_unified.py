@@ -14,21 +14,26 @@ import sys
 import os
 import json
 import inspect
-import time
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 import requests
+# Optional system monitoring
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("⚠️ psutil not available - RAM monitoring disabled")
+
 import re  # Add missing import
 import ast
-import shutil
 import subprocess
 import traceback
 import logging
 import random
 import string
 import platform
-import psutil
 import ipaddress
 from contextlib import contextmanager
 from collections import deque, Counter
@@ -4867,8 +4872,12 @@ class UnifiedSAMSystem:
         }
 
         # 🔄 RAM-AWARE INTELLIGENCE - Memory monitoring and model switching
-        self.ram_monitor = RAMAwareModelSwitcher(self)
-        self.ram_monitor.start_monitoring()
+        if PSUTIL_AVAILABLE:
+            self.ram_monitor = RAMAwareModelSwitcher(self)
+            self.ram_monitor.start_monitoring()
+        else:
+            self.ram_monitor = None
+            print("⚠️ RAM monitoring disabled - psutil not available")
 
         # 🎭 CONVERSATION DIVERSITY MANAGER - Prevent repetitive responses
         self.diversity_manager = ConversationDiversityManager(self)
@@ -5297,6 +5306,91 @@ class UnifiedSAMSystem:
         if self.meta_agent and self.meta_agent.is_fully_initialized():
             self.meta_agent_active = True
             print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
+
+        # Initialize internal hot-reload watchdog if enabled
+        self._init_internal_watchdog()
+
+    def _init_internal_watchdog(self):
+        """Initialize internal file watcher for hot reload when external watcher is not active"""
+        hot_reload_enabled = os.getenv("SAM_HOT_RELOAD", "0") == "1"
+        external_watcher_active = os.getenv("SAM_HOT_RELOAD_EXTERNAL", "0") == "1"
+        
+        if hot_reload_enabled and not external_watcher_active:
+            print("🔥 Starting internal hot-reload watchdog...")
+            self.watchdog_active = True
+            self.watchdog_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
+            self.watchdog_thread.start()
+        else:
+            self.watchdog_active = False
+            if hot_reload_enabled and external_watcher_active:
+                print("🔥 External hot-reload detected - internal watchdog disabled")
+            else:
+                print("🔥 Hot-reload disabled")
+
+    def _watchdog_loop(self):
+        """Internal file watching loop for hot reload"""
+        if not hasattr(self, 'project_root'):
+            return
+            
+        watch_patterns = ['*.py', '*.json', '*.yaml', '*.yml']
+        last_modified = {}
+        
+        # Initialize last modified times
+        for pattern in watch_patterns:
+            for filepath in self.project_root.rglob(pattern):
+                if filepath.is_file():
+                    try:
+                        last_modified[str(filepath)] = filepath.stat().st_mtime
+                    except OSError:
+                        pass
+        
+        print(f"🔥 Watchdog monitoring {len(last_modified)} files for changes...")
+        
+        while getattr(self, 'watchdog_active', False):
+            try:
+                time.sleep(5)  # Check every 5 seconds
+                
+                current_time = time.time()
+                restart_needed = False
+                
+                for pattern in watch_patterns:
+                    for filepath in self.project_root.rglob(pattern):
+                        if filepath.is_file():
+                            try:
+                                current_mtime = filepath.stat().st_mtime
+                                filepath_str = str(filepath)
+                                
+                                if filepath_str in last_modified:
+                                    if current_mtime > last_modified[filepath_str]:
+                                        # Check if change is recent (within last 10 seconds)
+                                        if current_time - current_mtime < 10:
+                                            file_age = current_time - current_mtime
+                                            print(f"🔥 File changed: {filepath.relative_to(self.project_root)} ({file_age:.1f}s ago)")
+                                            restart_needed = True
+                                            break
+                                
+                                last_modified[filepath_str] = current_mtime
+                            except OSError:
+                                pass
+                    
+                    if restart_needed:
+                        break
+                
+                if restart_needed:
+                    print("🔥 Hot-reload triggered by file changes!")
+                    log_event("info", "hot_reload_triggered", "Internal watchdog detected file changes", 
+                              source="internal_watchdog",
+                              timestamp=datetime.now().isoformat())
+                    
+                    # Give a brief moment for file writes to complete
+                    time.sleep(2)
+                    
+                    # Exit to trigger restart by external watcher
+                    os._exit(0)
+                    
+            except Exception as e:
+                print(f"⚠️ Watchdog error: {e}")
+                time.sleep(10)  # Wait longer on error
             print("   ✅ Production-grade debugging and repair capabilities online")
             print("   📚 Continuous learning and self-improvement active")
         else:
@@ -5598,7 +5692,7 @@ class UnifiedSAMSystem:
             prompt, message_data, room, user, context, candidates, consensus
         )
         chosen = self._pick_consensus_candidate(consensus)
-        return chosen.response
+        return chosen.response, chosen.provenance
 
     def _compute_pressure_signals(self):
         """Compute pressure signals from current system metrics"""
@@ -9060,7 +9154,7 @@ class UnifiedSAMSystem:
                     return jsonify(search_result)
                 else:
                     # Fallback to C library research agent
-                    result = self._call_c_agent("research", f"Web search: {query}")
+                    result, provenance = self._call_c_agent("research", f"Web search: {query}")
                     if not result:
                         return jsonify(
                             {
@@ -9697,9 +9791,54 @@ class UnifiedSAMSystem:
         def banking_status():
             """Sandbox banking snapshot."""
             try:
-                if not self.banking_ledger:
-                    return jsonify({"error": "Banking sandbox not available"}), 503
-                return jsonify(self.banking_ledger.get_snapshot())
+                if not self.banking_enabled:
+                    return jsonify({"error": "Banking not available"}), 503
+
+                if not hasattr(self, 'banking_ledger') or not self.banking_ledger:
+                    return jsonify({"error": "Banking ledger not initialized"}), 503
+
+                snapshot = self.banking_ledger.get_snapshot()
+                return jsonify(snapshot)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/restart", methods=["POST"])
+        def restart_system():
+            """Restart the SAM system (admin only)"""
+            try:
+                ok, error = _require_admin_token()
+                if not ok:
+                    message, status = error
+                    return jsonify({"error": message}), status
+
+                # Check if restart is enabled
+                restart_enabled = os.getenv("SAM_RESTART_ENABLED", "1") == "1"
+                if not restart_enabled:
+                    return jsonify({"error": "System restart is disabled"}), 403
+
+                # Log the restart request
+                log_event("info", "restart_requested", "System restart requested via API", 
+                          source="admin_api", 
+                          timestamp=datetime.now().isoformat())
+
+                # Trigger graceful shutdown and restart
+                def delayed_restart():
+                    import time
+                    time.sleep(2)  # Give time for response to be sent
+                    print("🔄 Initiating system restart...")
+                    os._exit(0)  # This will cause watchmedo to restart the process
+
+                # Start restart in background thread
+                import threading
+                restart_thread = threading.Thread(target=delayed_restart, daemon=True)
+                restart_thread.start()
+
+                return jsonify({
+                    "status": "restart_initiated",
+                    "message": "System restart initiated. The system will be back online shortly.",
+                    "timestamp": datetime.now().isoformat()
+                })
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10856,7 +10995,7 @@ sam@terminal:~$
             return False
         return bool(getattr(self, "specialized_agents", False))
 
-    def _call_c_agent(self, func_name: str, prompt: str) -> Optional[str]:
+    def _call_c_agent(self, func_name: str, prompt: str) -> Optional[Tuple[str, str]]:
         if not self._c_agents_available():
             return None
         if func_name == "research" and not getattr(self, "c_research_enabled", True):
@@ -10866,7 +11005,7 @@ sam@terminal:~$
             func = getattr(specialized_agents_c, func_name, None)
             if not func:
                 return None
-            return func(safe_prompt)
+            return func(safe_prompt), "local-c-agent"
         except Exception as exc:
             log_event(
                 "warn",
@@ -11023,7 +11162,7 @@ sam@terminal:~$
         return "\n".join(lines)
 
     def _record_chat_learning(
-        self, prompt: str, response: str, context: Dict[str, Any]
+        self, prompt: str, response: str, provenance: str, context: Dict[str, Any]
     ):
         if not response or str(response).strip().startswith("❌"):
             return
@@ -11062,6 +11201,7 @@ sam@terminal:~$
             "Recorded chat learning event",
             user=user.get("name"),
             prompt=prompt[:120],
+            provenance=provenance,
         )
 
     def _process_chatbot_message(self, message, context):
@@ -11099,8 +11239,8 @@ sam@terminal:~$
                     prompt_lines.append(f"User: {message}")
                     prompt_lines.append("Assistant:")
                     prompt = "\n".join(prompt_lines)
-                    response, _ = provider.generate(prompt)
-                    return response.strip()
+                    response, _, provenance = provider.generate(prompt)
+                    return response.strip(), provenance
                 if self.teacher_pool_enabled and self.teacher_pool:
                     room = {
                         "id": "chatbot",
@@ -11131,9 +11271,9 @@ sam@terminal:~$
             return "❌ Chat capability not available."
 
         if not message.startswith("/"):
-            response = _chat_fallback()
+            response, provenance = _chat_fallback()
             try:
-                self._record_chat_learning(message, response, context or {})
+                self._record_chat_learning(message, response, provenance, context or {})
             except Exception:
                 pass
             return response
@@ -15619,6 +15759,9 @@ class RAMAwareModelSwitcher:
 
     def _check_ram_usage(self):
         """Check current RAM usage and switch models if needed"""
+        if not PSUTIL_AVAILABLE:
+            return
+            
         try:
             # Get memory info
             memory = psutil.virtual_memory()

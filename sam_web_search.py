@@ -18,20 +18,31 @@ def initialize_sam_web_search(google_drive: Optional[Any] = None) -> None:
 
 def _parse_duckduckgo_html(text: str, max_results: int) -> List[Dict[str, str]]:
     results: List[Dict[str, str]] = []
-    pattern = re.compile(r"<a rel=\"nofollow\" class=\"result__a\" href=\"(.*?)\".*?>(.*?)</a>", re.S)
+    # Pattern to capture URL, Title, and Snippet for regular results
+    pattern = re.compile(
+        r'<div class="result__body">.*?<a rel="nofollow" class="result__a" href="(.*?)".*?>(.*?)</a>.*?'
+        r'<div class="result__snippet">(.*?)</div>',
+        re.S
+    )
     for match in pattern.finditer(text):
         url = html.unescape(match.group(1))
-        title = re.sub("<.*?>", "", match.group(2))
-        results.append({"title": title, "url": url, "snippet": ""})
+        title = re.sub("<.*?>", "", match.group(2)).strip()
+        snippet = re.sub("<.*?>", "", match.group(3)).strip()
+        results.append({"title": title, "url": url, "snippet": snippet})
         if len(results) >= max_results:
             return results
 
-    # Lite HTML fallback
-    lite_pattern = re.compile(r"<a rel=\"nofollow\" class=\"result-link\" href=\"(.*?)\".*?>(.*?)</a>", re.S)
+    # Fallback/Lite HTML pattern for different result structures or when snippet is not directly next to title
+    lite_pattern = re.compile(
+        r'<a rel="nofollow" class="result-link" href="(.*?)".*?>(.*?)</a>.*?'
+        r'<div class="result-snippet">(.*?)</div>',
+        re.S
+    )
     for match in lite_pattern.finditer(text):
         url = html.unescape(match.group(1))
-        title = re.sub("<.*?>", "", match.group(2))
-        results.append({"title": title, "url": url, "snippet": ""})
+        title = re.sub("<.*?>", "", match.group(2)).strip()
+        snippet = re.sub("<.*?>", "", match.group(3)).strip()
+        results.append({"title": title, "url": url, "snippet": snippet})
         if len(results) >= max_results:
             break
     return results

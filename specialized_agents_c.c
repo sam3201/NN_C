@@ -234,7 +234,7 @@ char *bug_fixing_model_analyze_code(const char *code_snippet, const char *error_
     // Prebuilt bug analysis using pattern recognition
     // This would use the actual prebuilt model for bug detection
     char analysis_buffer[4096];
-    int analysis_len = snprintf(analysis_buffer, sizeof(analysis_buffer),
+    snprintf(analysis_buffer, sizeof(analysis_buffer),
         "Bug Analysis Report:\n"
         "Code Snippet: %s\n"
         "Error Message: %s\n"
@@ -265,7 +265,7 @@ char *bug_fixing_model_generate_fix(const char *code_snippet, const char *bug_de
 
     // Prebuilt fix generation using repair patterns
     char fix_buffer[4096];
-    int fix_len = snprintf(fix_buffer, sizeof(fix_buffer),
+    snprintf(fix_buffer, sizeof(fix_buffer),
         "// AUTO-GENERATED FIX by BugFixer-v2.1\n"
         "// Original Issue: %s\n"
         "// Confidence: %.2f\n\n"
@@ -386,7 +386,7 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) _
         char *error_result = malloc(MAX_QUERY_LEN + 100);
         if (error_result) {
             snprintf(error_result, MAX_QUERY_LEN + 100,
-                     "Research Results for '%s':\n• Error: Python web search not available. (Simulated fallback)\n", display_query);
+                     "Research Results for '%s':\n• Error: Python web search not available.\n", display_query);
         }
         return error_result;
     }
@@ -517,7 +517,7 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) _
              char *new_buffer = (char *)realloc(c_result_buffer, current_len + no_results_len + 1);
              if (new_buffer) {
                  c_result_buffer = new_buffer;
-                 strcpy(c_result_buffer + current_len, no_results_msg);
+                 snprintf(c_result_buffer + current_len, MAX_RESULT_BUFFER_LEN - current_len, "%s", no_results_msg);
                  current_len += no_results_len;
              }
          }

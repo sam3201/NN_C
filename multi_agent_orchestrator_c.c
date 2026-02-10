@@ -422,7 +422,6 @@ void *orchestration_thread(void *arg) {
                 free(fused_knowledge);
             } else {
                 for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                    SubmodelAgent_t *agent_wrapper = orchestrator->submodels[i];
                     // Future: call a specialized_agents_c function for distillation if needed
                 }
             }
