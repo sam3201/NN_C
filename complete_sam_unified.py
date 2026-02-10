@@ -1387,14 +1387,44 @@ class VerifierJudgeAgent:
         result = {'passed': True, 'issues': []}
 
         try:
-            # Run basic import tests
+            target_file = patch.get('target_file') or ""
+            mode = self.import_test_mode
+            if target_file in self.import_skip_files and mode == "import":
+                mode = "compile"
+
+            if mode in ("skip", "none"):
+                return result
+
+            if mode in ("compile", "py_compile"):
+                simulated_content, sim_issues = self._simulate_patch_content(patch)
+                if sim_issues:
+                    result['issues'].extend(sim_issues)
+                    result['passed'] = False
+                    return result
+                if simulated_content is None and target_file:
+                    path = os.path.join(self.system.project_root, target_file)
+                    simulated_content = Path(path).read_text(encoding="utf-8", errors="ignore")
+                if simulated_content:
+                    try:
+                        compile(simulated_content, target_file or "<patch>", "exec")
+                        result['passed'] = True
+                    except SyntaxError as e:
+                        result['issues'].append(f"Compile test failed: {e}")
+                        result['passed'] = False
+                    except Exception as e:
+                        result['issues'].append(f"Compile test error: {e}")
+                        result['passed'] = False
+                return result
+
+            # Run basic import tests (default)
             import sys
             original_modules = set(sys.modules.keys())
 
             # Try importing the target module
-            target_module = patch['target_file'].replace('.py', '').replace('/', '.')
+            target_module = target_file.replace('.py', '').replace('/', '.') if target_file else ""
             try:
-                __import__(target_module)
+                if target_module:
+                    __import__(target_module)
                 result['passed'] = True
             except ImportError as e:
                 result['issues'].append(f"Import test failed: {e}")
