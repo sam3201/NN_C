@@ -14,7 +14,7 @@
 // Use available headers
 #include "multi_agent_orchestrator_c.h"
 #include "specialized_agents_c.h" // Include specialized agents header
-#include "specialized_agents_c.c" // Include specialized agents C file for its static Python methods
+
 
 // ================================
 // MESSAGE/AGENT TYPES
@@ -479,6 +479,8 @@ void multi_agent_orchestrator_free(MultiAgentOrchestrator *orchestrator) {
         if (orchestrator->agent_registry) {
             agent_registry_free(orchestrator->agent_registry);
         }
+
+
         
         // Free the SubmodelAgent_t wrappers
         for (size_t i = 0; i < orchestrator->submodel_count; i++) {
@@ -615,6 +617,7 @@ MultiAgentOrchestrator *create_multi_agent_system() {
 
 static MultiAgentOrchestrator *global_orchestrator = NULL;
 
+// Python-callable functions for multi_agent_orchestrator_c
 static PyObject *py_create_multi_agent_system(PyObject *self, PyObject *args) {
     if (global_orchestrator) {
         multi_agent_orchestrator_free(global_orchestrator);
@@ -707,31 +710,203 @@ static PyObject *py_get_orchestrator_status(PyObject *self, PyObject *args) {
     return status_dict;
 }
 
-static PyMethodDef MultiAgentMethods[] = {
+// Python-callable functions from specialized_agents_c.c
+// (These were previously in specialized_agents_c.c and are now moved here)
+
+static PyObject *py_create_agents(PyObject *self, PyObject *args) {
+    if (global_agents) {
+        agent_registry_free(global_agents);
+    }
+
+    global_agents = agent_registry_create();
+    if (!global_agents) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to create agent registry");
+        return NULL;
+    }
+
+    // Initialize prebuilt models
+    if (!global_coherency_model) {
+        global_coherency_model = coherency_model_create();
+    }
+    if (!global_teacher_model) {
+        global_teacher_model = teacher_model_create();
+    }
+    if (!global_bug_fixing_model) {
+        global_bug_fixing_model = bug_fixing_model_create();
+    }
+    
+    // Initialize Python web search
+    if (!init_python_web_search()) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to initialize Python web search");
+        return NULL;
+    }
+
+    printf("✅ Created all specialized agents using existing framework\n");
+    printf("✅ Initialized all prebuilt models (Coherency, Teacher, Bug-Fixing)\n");
+    Py_RETURN_NONE;
+}
+
+static PyObject *py_research_task(PyObject *self, PyObject *args) {
+    const char *query;
+    if (!PyArg_ParseTuple(args, "s", &query)) {
+        return NULL;
+    }
+
+    if (!global_agents || !global_agents->researcher) {
+        PyErr_SetString(PyExc_RuntimeError, "Research agent not initialized");
+        return NULL;
+    }
+
+    char *result = research_agent_perform_search(global_agents->researcher, query);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Research agent returned no result");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(result);
+    free(result); // Free the C string after creating Python object
+    return py_result;
+}
+
+static PyObject *py_code_generation(PyObject *self, PyObject *args) {
+    const char *spec;
+    if (!PyArg_ParseTuple(args, "s", &spec)) {
+        return NULL;
+    }
+
+    if (!global_agents || !global_agents->coder) {
+        PyErr_SetString(PyExc_RuntimeError, "Code writer agent not initialized");
+        return NULL;
+    }
+
+    char *result = code_writer_agent_generate_code(global_agents->coder, spec);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Code writer agent returned no result");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(result);
+    free(result);
+    return py_result;
+}
+
+static PyObject *py_financial_analysis(PyObject *self, PyObject *args) {
+    const char *market;
+    if (!PyArg_ParseTuple(args, "s", &market)) {
+        return NULL;
+    }
+
+    if (!global_agents || !global_agents->financer) {
+        PyErr_SetString(PyExc_RuntimeError, "Financial agent not initialized");
+        return NULL;
+    }
+
+    char *result = financial_agent_analyze_market(global_agents->financer, market);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Financial agent returned no result");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(result);
+    free(result);
+    return py_result;
+}
+
+static PyObject *py_survival_assessment(PyObject *self, PyObject *args) {
+    if (!global_agents || !global_agents->survivor) {
+        PyErr_SetString(PyExc_RuntimeError, "Survival agent not initialized");
+        return NULL;
+    }
+
+    char *result = survival_agent_assess_threats(global_agents->survivor);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Survival agent returned no result");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(result);
+    free(result);
+    return py_result;
+}
+
+static PyObject *py_evaluate_coherence(PyObject *self, PyObject *args) {
+    const char *conversation_history, *new_message;
+    if (!PyArg_ParseTuple(args, "ss", &conversation_history, &new_message)) {
+        return NULL;
+    }
+
+    double coherence_score = coherency_model_evaluate(conversation_history, new_message);
+    return PyFloat_FromDouble(coherence_score);
+}
+
+static PyObject *py_analyze_code(PyObject *self, PyObject *args) {
+    const char *code_snippet, *error_message;
+    if (!PyArg_ParseTuple(args, "ss", &code_snippet, &error_message)) {
+        return NULL;
+    }
+
+    char *analysis = bug_fixing_model_analyze_code(code_snippet, error_message);
+    if (!analysis) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to analyze code");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(analysis);
+    free(analysis);
+    return py_result;
+}
+
+static PyObject *py_generate_fix(PyObject *self, PyObject *args) {
+    const char *code_snippet, *bug_description;
+    if (!PyArg_ParseTuple(args, "ss", &code_snippet, &bug_description)) {
+        return NULL;
+    }
+
+    char *fix = bug_fixing_model_generate_fix(code_snippet, bug_description);
+    if (!fix) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to generate fix");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(fix);
+    free(fix);
+    return py_result;
+}
+
+static PyObject *py_meta_analysis(PyObject *self, PyObject *args) {
+    const char *component;
+    if (!PyArg_ParseTuple(args, "s", &component)) {
+        return NULL;
+    }
+
+    if (!global_agents || !global_agents->meta) {
+        PyErr_SetString(PyExc_RuntimeError, "Meta agent not initialized");
+        return NULL;
+    }
+
+    char *result = meta_agent_analyze_system(global_agents->meta, component);
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Meta agent returned no result");
+        return NULL;
+    }
+    PyObject *py_result = PyUnicode_FromString(result);
+    free(result);
+    return py_result;
+}
+
+// Combined Method Definition Table
+static PyMethodDef CombinedMethods[] = {
+    // Multi-Agent Orchestrator methods
     {"create_system", py_create_multi_agent_system, METH_NOARGS, "Create multi-agent system"},
     {"start", py_start_orchestrator, METH_NOARGS, "Start orchestrator"},
     {"get_status", py_get_orchestrator_status, METH_NOARGS, "Get orchestrator status"},
+    
+    // Specialized Agents methods
+    {"create_agents", py_create_agents, METH_NOARGS, "Create all specialized agents"},
+    {"research", py_research_task, METH_VARARGS, "Perform research task"},
+    {"generate_code", py_code_generation, METH_VARARGS, "Generate code"},
+    {"analyze_market", py_financial_analysis, METH_VARARGS, "Analyze market"},
+    {"assess_survival", py_survival_assessment, METH_NOARGS, "Assess survival threats"},
+    {"analyze_system", py_meta_analysis, METH_VARARGS, "Analyze system component"},
+    {"evaluate_coherence", py_evaluate_coherence, METH_VARARGS, "Evaluate conversation coherence"},
+    {"analyze_code", py_analyze_code, METH_VARARGS, "Analyze code for bugs"},
+    {"generate_fix", py_generate_fix, METH_VARARGS, "Generate bug fix"},
     {NULL, NULL, 0, NULL}
 };
-
-// Assuming AgentMethods is defined in specialized_agents_c.c and included.
-// This calculates the number of methods in each array, excluding the NULL terminator.
-#define NUM_MULTI_AGENT_METHODS (sizeof(MultiAgentMethods) / sizeof(MultiAgentMethods[0]) - 1)
-#define NUM_AGENT_METHODS (sizeof(AgentMethods) / sizeof(AgentMethods[0]) - 1)
-
-static PyMethodDef CombinedMethods[NUM_MULTI_AGENT_METHODS + NUM_AGENT_METHODS + 1];
-
-// Function to copy method definitions
-static void populate_combined_methods() {
-    int i = 0;
-    for (size_t j = 0; j < NUM_MULTI_AGENT_METHODS; j++) {
-        CombinedMethods[i++] = MultiAgentMethods[j];
-    }
-    for (size_t j = 0; j < NUM_AGENT_METHODS; j++) {
-        CombinedMethods[i++] = AgentMethods[j];
-    }
-    CombinedMethods[i] = (PyMethodDef){NULL, NULL, 0, NULL}; // Null terminate the array
-}
 
 static struct PyModuleDef orchestrator_and_agents_module = {
     PyModuleDef_HEAD_INIT,
@@ -743,25 +918,7 @@ static struct PyModuleDef orchestrator_and_agents_module = {
 };
 
 PyMODINIT_FUNC PyInit_orchestrator_and_agents(void) { // New initialization function name
-    populate_combined_methods(); // Populate the combined methods array
     return PyModule_Create(&orchestrator_and_agents_module);
 }
 
-// ================================
-// MAIN FUNCTION - Test Orchestrator
-// ================================
 
-int main() {
-    printf("🤖 Pure C Multi-Agent Orchestrator - Using Existing SAM Framework\n");
-    printf("Complete multi-agent system with knowledge distillation\n\n");
-
-    Py_Initialize(); // Initialize the Python interpreter
-
-    printf("✅ Python interpreter initialized.\n");
-    printf("⚠️ Note: Standalone C main function for multi_agent_orchestrator_c is for basic compilation check.\n");
-    printf("         Full functionality requires Python context via orchestrator_and_agents module.\n");
-
-    Py_Finalize(); // Shut down the Python interpreter
-
-    return 0;
-}

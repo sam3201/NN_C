@@ -1285,4 +1285,17 @@ static PyMethodDef AgentMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+static struct PyModuleDef agent_module = {
+    PyModuleDef_HEAD_INIT,
+    "specialized_agents_c",
+    "Pure C specialized agents using existing framework",
+    -1,
+    AgentMethods,
+    NULL, NULL, NULL, NULL
+};
+
+PyMODINIT_FUNC PyInit_specialized_agents_c(void) {
+    return PyModule_Create(&agent_module);
+}
+
 

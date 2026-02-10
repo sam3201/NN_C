@@ -125,4 +125,20 @@ void agent_registry_free(AgentRegistry *registry);
 // Create all agents
 int create_agents();
 
+// Declare prebuilt model creation functions
+CoherencyModel *coherency_model_create();
+TeacherModel *teacher_model_create();
+BugFixingModel *bug_fixing_model_create();
+
+// Declare global instances of prebuilt models
+extern CoherencyModel *global_coherency_model;
+extern TeacherModel *global_teacher_model;
+extern BugFixingModel *global_bug_fixing_model;
+
+// Declare Python web search integration components
+extern PyObject *pSamWebSearchModule;
+extern PyObject *pSearchWebWithSamFunc;
+extern int sam_web_search_is_initialized;
+extern int init_python_web_search();
+
 #endif // SPECIALIZED_AGENTS_C_H

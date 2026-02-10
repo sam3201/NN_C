@@ -4,22 +4,22 @@ import time
 print("Testing multi_agent_orchestrator_c module...")
 
 try:
-    print("Calling create_agents()...")
+    print("Calling multi_agent_orchestrator_c.create_agents()...")
     multi_agent_orchestrator_c.create_agents()
     print("Specialized agents created.")
 
-    print("Calling create_system()...")
+    print("Calling multi_agent_orchestrator_c.create_system()...")
     multi_agent_orchestrator_c.create_system()
     print("System created.")
 
-    print("Calling start()...")
+    print("Calling multi_agent_orchestrator_c.start()...")
     multi_agent_orchestrator_c.start()
     print("Orchestrator started (background thread).")
 
     # Give the orchestrator a moment to process the message in its thread
     time.sleep(1) 
 
-    print("Calling get_status()...")
+    print("Calling multi_agent_orchestrator_c.get_status()...")
     status = multi_agent_orchestrator_c.get_status()
     print(f"Orchestrator Status: {status}")
 

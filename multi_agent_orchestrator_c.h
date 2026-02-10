@@ -10,7 +10,8 @@
 #include <pthread.h>
 #include <Python.h> // Required for PyObject
 #include "specialized_agents_c.h" // Include specialized agents header for agent structs
-extern AgentRegistry *global_agents; // Declare global_agents from specialized_agents_c.c
+extern AgentRegistry *global_agents;
+
 
 // Forward declarations (these are now defined in specialized_agents_c.h)
 // typedef struct NEAT_t NEAT_t;
