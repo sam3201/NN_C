@@ -1,8 +1,7 @@
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
-#!/usr/bin/env bash
+#!/bin/bash
 set -e
-cd "$ROOT"
+cd /Users/samueldasari/Personal/NN_C
+
 if [ -d ".venv" ]; then
   source .venv/bin/activate
 elif [ -d "venv" ]; then

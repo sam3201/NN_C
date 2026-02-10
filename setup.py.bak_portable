@@ -1,22 +1,4 @@
-from __future__ import annotations
-
-import os
-import sys
 from setuptools import setup, Extension
-
-def _is_msvc() -> bool:
-    return sys.platform.startswith('win')
-
-def _common_compile_args() -> list[str]:
-    if _is_msvc():
-        return ['/O2']
-    args = ['-O3']
-    if os.environ.get('SAM_NATIVE') == '1':
-        args.append('-march=native')
-    return args
-
-COMMON_ARGS = _common_compile_args()
-
 
 # Define the C extensions (only include ones with fixed includes)
 extensions = [
@@ -26,7 +8,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     ),
     Extension(
@@ -35,7 +17,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     ),
     Extension(
@@ -44,7 +26,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     ),
     Extension(
@@ -53,7 +35,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     ),
     Extension(
@@ -62,7 +44,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     ),
     Extension(
@@ -71,7 +53,7 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
+        extra_compile_args=['-O3', '-march=native'],
         extra_link_args=[]
     )
 ]

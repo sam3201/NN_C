@@ -1,4 +1,5 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 export SAM_PROFILE=full
-exec /Users/samueldasari/Personal/NN_C/run_sam_simple.sh
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$ROOT/run_sam_simple.sh"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Ensure bash even if invoked as `sh run_sam.sh`
 if [ -z "$BASH_VERSION" ]; then
@@ -8,11 +8,7 @@ fi
 # SAM 2.0 Unified Complete System - Production Launch Script
 # Ensures proper virtual environment, dependencies, and system startup
 
-set -euo pipefail
-
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT"
-
+set -e  # Exit on any error
 
 # Colors for output
 RED='\033[0;31m'
@@ -268,10 +264,10 @@ export PYTHONPATH="$PWD:$PYTHONPATH"
 if [ "${SAM_HOT_RELOAD:-0}" = "1" ]; then
     if command -v watchmedo >/dev/null 2>&1; then
         print_status "Hot reload enabled (watchmedo auto-restart)"
-        exec watchmedo auto-restart --pattern="*.py;*.html;*.css;*.js" --recursive -- "$ROOT/tools/run_sam_two_phase.sh"
+        exec watchmedo auto-restart --pattern="*.py;*.html;*.css;*.js" --recursive -- /Users/samueldasari/Personal/NN_C/tools/run_sam_two_phase.sh
     else
         print_warning "Hot reload requested but watchmedo not found. Install watchdog or disable SAM_HOT_RELOAD."
     fi
 fi
 
-exec "$ROOT/tools/run_sam_two_phase.sh"
+exec /Users/samueldasari/Personal/NN_C/tools/run_sam_two_phase.sh
