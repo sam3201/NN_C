@@ -1283,6 +1283,43 @@ class VerifierJudgeAgent:
 
         return verification_result
 
+    def _simulate_patch_content(self, patch):
+        issues = []
+        target_file = patch.get('target_file') or ""
+        if not target_file:
+            return None, issues
+        try:
+            path = os.path.join(self.system.project_root, target_file)
+            if not os.path.exists(path):
+                return None, [f"Target file not found: {target_file}"]
+            content = Path(path).read_text(encoding="utf-8", errors="ignore")
+        except Exception as exc:
+            return None, [f"Failed to read target file: {exc}"]
+
+        for change in patch.get('changes', []):
+            change_type = change.get('type')
+            if change_type == 'replace':
+                old_code = change.get('old_code', '')
+                new_code = change.get('new_code', '')
+                if not old_code:
+                    issues.append("Patch replace missing old_code")
+                    continue
+                if old_code not in content:
+                    issues.append("Old code not found in target file during simulation")
+                    continue
+                content = content.replace(old_code, new_code, 1)
+            elif change_type == 'insert_after':
+                anchor = change.get('anchor') or change.get('old_code') or ''
+                new_code = change.get('new_code') or change.get('content') or ''
+                if anchor and anchor in content:
+                    content = content.replace(anchor, anchor + new_code, 1)
+                else:
+                    issues.append("Insert_after anchor not found in target file during simulation")
+            elif change_type == 'code_block':
+                # Skip simulation; no anchor to apply.
+                continue
+        return content, issues
+
     def _static_verification(self, patch):
         """Fast static analysis checks with dangerous pattern detection"""
         result = {'passed': True, 'issues': []}
@@ -1290,13 +1327,13 @@ class VerifierJudgeAgent:
         try:
             # Check syntax validity of the patch
             for change in patch.get('changes', []):
-                if change.get('type') in ('code_block', 'replace', 'insert_after'):
-                    code_payload = change.get('content') or change.get('new_code')
+                if change.get('type') == 'code_block':
+                    code_payload = change.get('content')
                     if code_payload:
                         try:
                             ast.parse(code_payload)
                         except SyntaxError as e:
-                            result['issues'].append(f"Syntax error in patch: {e}")
+                            result['issues'].append(f"Syntax error in patch code block: {e}")
                             result['passed'] = False
 
             # Check for dangerous patterns that could compromise security
@@ -1326,6 +1363,18 @@ class VerifierJudgeAgent:
                 result['issues'].append(f"Large patch ({total_lines} lines) - high risk")
                 if patch.get('risk_level') != 'high':
                     patch['risk_level'] = 'high'  # Upgrade risk
+
+            # Validate full patched file syntax (simulated apply)
+            simulated_content, sim_issues = self._simulate_patch_content(patch)
+            if sim_issues:
+                result['issues'].extend(sim_issues)
+                result['passed'] = False
+            elif simulated_content:
+                try:
+                    ast.parse(simulated_content)
+                except SyntaxError as e:
+                    result['issues'].append(f"Syntax error after patch simulation: {e}")
+                    result['passed'] = False
 
         except Exception as e:
             result['issues'].append(f"Static verification failed: {e}")
@@ -1578,7 +1627,7 @@ class MetaAgent:
         """Merged enhanced error patterns for deterministic fixes."""
         return {
             "syntax_errors": [
-                {"pattern": r"SyntaxError.*missing.*colon", "type": "missing_colon", "severity": "high", "auto_fixable": True},
+                {"pattern": r"SyntaxError.*(missing.*colon|expected.*:)", "type": "missing_colon", "severity": "high", "auto_fixable": True},
                 {"pattern": r"SyntaxError.*invalid.*syntax", "type": "invalid_syntax", "severity": "high", "auto_fixable": True},
                 {"pattern": r"IndentationError", "type": "indentation_error", "severity": "medium", "auto_fixable": True},
                 {"pattern": r"NameError.*not defined", "type": "name_error", "severity": "medium", "auto_fixable": True},
