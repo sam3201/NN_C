@@ -12460,7 +12460,6 @@ sam@terminal:~$
     def _generate_autonomous_conversations(self):
         """Generate autonomous conversations to populate chat interface"""
         try:
-            import time
             if not hasattr(self, 'conversation_rooms') or not self.socketio_available:
                 return
             
