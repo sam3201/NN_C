@@ -4564,13 +4564,22 @@ class UnifiedSAMSystem:
                     signals['temporal_incoherence']
                 )
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
-                if primitive:
+                if primitive is not None and primitive != 0:
                     applied = False
                     if not self.meta_growth_freeze:
                         applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
                         if applied:
                             gate_ok = self._run_regression_gate()
                             sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, bool(gate_ok))
+                            if gate_ok:
+                                self.system_metrics["last_growth_ts"] = time.time()
+                                self.system_metrics["last_growth_primitive"] = primitive
+                                log_event(
+                                    "info",
+                                    "meta_growth_applied",
+                                    "Meta growth primitive applied",
+                                    primitive=primitive,
+                                )
                             if not gate_ok:
                                 applied = False
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
