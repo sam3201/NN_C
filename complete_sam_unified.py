@@ -9131,7 +9131,7 @@ sam@terminal:~$
 
                 def run_code_generation():
                     try:
-                        result[0] = specialized_agents_c.generate_code(f"Code task: {task}")
+                        result[0] = self._call_c_agent("generate_code", f"Code task: {task}")
                     except Exception as e:
                         error[0] = str(e)
 
@@ -9160,7 +9160,7 @@ sam@terminal:~$
 
                 def run_market_analysis():
                     try:
-                        result[0] = specialized_agents_c.analyze_market(f"Financial analysis: {query}")
+                        result[0] = self._call_c_agent("analyze_market", f"Financial analysis: {query}")
                     except Exception as e:
                         error[0] = str(e)
 
