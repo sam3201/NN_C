@@ -117,7 +117,7 @@ def broken_function():
             stack_trace=f'''File "{test_file}", line 4
     message = f\\"Hello {name}\\"  # Bad escaped quotes
     ^
-SyntaxError: unexpected character after line continuation character''',
+SyntaxError: unexpected character after line continuation character ''',
             timestamp=datetime.now().isoformat(),
             severity="medium",
             context="test"
