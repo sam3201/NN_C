@@ -4179,10 +4179,8 @@ class UnifiedSAMSystem:
         self.two_phase_delay_s = int(os.getenv("SAM_TWO_PHASE_DELAY_S", "5"))
         self.two_phase_timeout_s = int(os.getenv("SAM_TWO_PHASE_TIMEOUT_S", "180"))
         self.two_phase_promoted = False
-        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "1")
+        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "0")
         self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
-        if self.require_meta_agent:
-            self.meta_only_boot = True
         if self.two_phase_boot:
             self.meta_only_boot = True
             self.require_meta_agent = True
