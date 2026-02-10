@@ -387,7 +387,6 @@ from survival_agent import create_survival_agent, integrate_survival_loop
 from goal_management import GoalManager, SubgoalExecutionAlgorithm, create_conversationalist_tasks, ensure_domain_goal, TaskManager
 from concurrent_executor import task_executor
 from circuit_breaker import resilience_manager
-from autonomous_meta_agent import meta_agent, auto_patch, get_meta_agent_status, emergency_stop_meta_agent
 meta_agent_available = True
 
 print("✅ All Python orchestration components available")
