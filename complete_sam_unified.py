@@ -8815,11 +8815,17 @@ class UnifiedSAMSystem:
                     "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
                 }
                 if getattr(self, "meta_agent", None):
+                    last_patch_outcome = None
+                    last_repair_time = None
+                    patch_history = getattr(self.meta_agent, "patch_history", []) or []
+                    if patch_history:
+                        last_patch = patch_history[-1]
+                        last_patch_outcome = last_patch.get("result")
+                        last_repair_time = last_patch.get("timestamp")
+
                     status["local_meta_agent"] = {
                         "active": bool(getattr(self, "meta_agent_active", False)),
-                        "patch_history": len(
-                            getattr(self.meta_agent, "patch_history", []) or []
-                        ),
+                        "patch_history": len(patch_history),
                         "successful_fixes": len(
                             getattr(self.meta_agent, "successful_fixes", []) or []
                         ),
@@ -8848,37 +8854,7 @@ class UnifiedSAMSystem:
             try:
                 if not getattr(self, "meta_agent", None):
                     return jsonify({"status": "uninitialized"}), 503
-                meta_agent_instance = self.meta_agent
-                patch_history = getattr(meta_agent_instance, "patch_history", []) or []
-                
-                last_patch_outcome = None
-                last_repair_time = None
-                if patch_history:
-                    last_patch = patch_history[-1]
-                    last_patch_outcome = last_patch.get("result") # Using 'result' field for outcome
-                    last_repair_time = last_patch.get("timestamp") # Using 'timestamp' field
-                    
-                status["local_meta_agent"] = {
-                    "active": bool(getattr(self, "meta_agent_active", False)),
-                    "patch_history": len(patch_history),
-                    "successful_fixes": len(
-                        getattr(meta_agent_instance, "successful_fixes", []) or []
-                    ),
-                    "failed_attempts": len(
-                        getattr(meta_agent_instance, "failed_attempts", []) or []
-                    ),
-                    "learning_events": len(
-                        getattr(meta_agent_instance, "learning_log", []) or []
-                    ),
-                    "distilled_count": len(
-                        getattr(meta_agent_instance, "distilled_memory", []) or []
-                    ),
-                    "confidence_threshold": getattr(
-                        meta_agent_instance, "confidence_threshold", None
-                    ),
-                    "last_patch_outcome": last_patch_outcome,
-                    "last_repair_time": last_repair_time,
-                }
+                # Removed redundant last_patch_outcome/last_repair_time logic as it's handled in /api/meta/status
                 if hasattr(self.meta_agent, "get_learning_state"):
                     return jsonify(self.meta_agent.get_learning_state())
                 return jsonify({"status": "unsupported"}), 501
@@ -12218,6 +12194,10 @@ sam@terminal:~$
                         dashIsAdmin = !!auth.is_admin;
                         const downloadBtn = document.getElementById('dash-log-download');
                         const snapshotBtn = document.getElementById('dash-log-snapshot');
+                        const restartBtn = document.getElementById('restart-system-button');
+                        const pauseBtn = document.getElementById('dash-log-pause'); // Added
+                        const clearBtn = document.getElementById('dash-log-clear'); // Added
+
                         if (downloadBtn) {
                             downloadBtn.disabled = !dashIsAdmin;
                             downloadBtn.title = dashIsAdmin ? '' : 'Admin only';
@@ -12226,6 +12206,35 @@ sam@terminal:~$
                             snapshotBtn.disabled = !dashIsAdmin;
                             snapshotBtn.title = dashIsAdmin ? '' : 'Admin only';
                         }
+                        if (restartBtn) {
+                            restartBtn.disabled = !dashIsAdmin;
+                            restartBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
+                        if (pauseBtn) { // Added
+                            pauseBtn.disabled = !dashIsAdmin;
+                            pauseBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
+                        if (clearBtn) { // Added
+                            clearBtn.disabled = !dashIsAdmin;
+                            clearBtn.title = dashIsAdmin ? '' : 'Admin only';
+                        }
+                        // Refresh log stream/snapshot visibility based on new admin status
+                        if (!dashIsAdmin) {
+                            if (dashLogEventSource) {
+                                dashLogEventSource.close();
+                            }
+                            const panel = document.getElementById('dashboard-log-panel');
+                            if (panel) panel.innerHTML = ''; // Clear logs if not admin
+                            const summaryEl = document.getElementById('dashboard-log-summary');
+                            if (summaryEl) summaryEl.textContent = 'Admin token required for logs.';
+                        } else {
+                            // If just became admin, re-init stream
+                            if (!dashLogEventSource && !dashLogPaused) {
+                                initDashboardLogStream();
+                                fetchDashboardLogSnapshot();
+                            }
+                        }
+
                     } catch (err) {
                         dashIsAdmin = false;
                     }
@@ -12380,6 +12389,33 @@ sam@terminal:~$
                     }
                 }
 
+                async function restartSystem() {
+                    const button = document.getElementById('restart-system-button');
+                    const messageEl = document.getElementById('restart-system-message');
+                    if (!button || !messageEl) return;
+                    button.disabled = true;
+                    messageEl.textContent = 'Initiating restart...';
+                    try {
+                        const resp = await fetch('/api/restart', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.error || `Restart failed (${resp.status})`);
+                        }
+                        messageEl.textContent = data.message || 'System restart initiated.';
+                        messageEl.style.color = 'green';
+                        showUiAlert('System restart initiated. Page will refresh.');
+                        // Optionally reload page after a short delay
+                        setTimeout(() => location.reload(), 3000);
+                    } catch (error) {
+                        messageEl.textContent = `Restart Error: ${error.message}`;
+                        messageEl.style.color = 'red';
+                        showUiAlert(`System restart failed: ${error.message}`);
+                        button.disabled = false;
+                    }
+                }
 
                 function addDashboardLogEntry(raw) {
                     const panel = document.getElementById('dashboard-log-panel');
@@ -12435,19 +12471,18 @@ sam@terminal:~$
                 }
 
                 function initDashboardLogStream() {
+                    if (!dashIsAdmin) { // UI gating
+                        const panel = document.getElementById('dashboard-log-panel');
+                        if (panel) panel.innerHTML = '';
+                        const summaryEl = document.getElementById('dashboard-log-summary');
+                        if (summaryEl) summaryEl.textContent = 'Admin token required for logs.';
+                        return;
+                    }
                     const source = (document.getElementById('dash-log-source') || {}).value || 'runtime';
                     if (dashLogEventSource) {
                         dashLogEventSource.close();
                     }
                     if (dashLogPaused) return;
-                    if (!dashIsAdmin) {
-                        addDashboardLogEntry(JSON.stringify({
-                            level: 'warn',
-                            event: 'log_stream_blocked',
-                            message: 'Admin only: log streaming is restricted.'
-                        }));
-                        return;
-                    }
                     if (!!window.EventSource) {
                         const token = adminTokenQuery();
                         dashLogEventSource = new EventSource(`/api/logs/stream?kind=${source}${token}`);
@@ -12471,6 +12506,11 @@ sam@terminal:~$
                 }
 
                 async function fetchDashboardLogSnapshot() {
+                    if (!dashIsAdmin) { // UI gating
+                        const summaryEl = document.getElementById('dashboard-log-summary');
+                        if (summaryEl) summaryEl.textContent = 'Admin token required for logs.';
+                        return;
+                    }
                     const source = (document.getElementById('dash-log-source') || {}).value || 'runtime';
                     const summaryEl = document.getElementById('dashboard-log-summary');
                     try {
@@ -13212,6 +13252,11 @@ sam@terminal:~$
                 // New MetaAgent Status and Test Initialization
                 setInterval(updateMetaAgentStatus, 15000); // Update every 15 seconds
                 updateMetaAgentStatus(); // Initial call
+
+                const restartButton = document.getElementById('restart-system-button');
+                if (restartButton) {
+                    restartButton.addEventListener('click', restartSystem);
+                }
         """
 
         html = f"""
@@ -13817,7 +13862,7 @@ sam@terminal:~$
                         <div class="card">
                             <h3>💰 Finance Summary</h3>
                             <div class="metric-row">
-                                <span class="metric-label">Revenue Paid</span>
+                                <span class="metric-label">Money Made (Revenue Paid)</span>
                                 <span id="finance-revenue-paid">—</span>
                             </div>
                             <div class="metric-row">
@@ -13825,7 +13870,7 @@ sam@terminal:~$
                                 <span id="finance-revenue-outstanding">—</span>
                             </div>
                             <div class="metric-row">
-                                <span class="metric-label">Saved (Banking)</span>
+                                <span class="metric-label">Money Saved (Banking Balance)</span>
                                 <span id="finance-banking-saved">—</span>
                             </div>
                             <div class="metric-row">
@@ -13889,6 +13934,14 @@ sam@terminal:~$
                                 <button onclick="triggerMetaAgentTest()" style="width:100%; padding:8px 12px; border-radius:10px; border:none; background:var(--accent); color:#041018; font-weight:600;">Trigger Meta Test</button>
                                 <div id="meta-test-result" style="margin-top:8px; font-size:0.85rem; color:var(--muted);"></div>
                             </div>
+                        </div>
+                        <div class="card">
+                            <h3>System Actions</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Restart System</span>
+                                <span><button id="restart-system-button" style="padding: 6px 10px; border-radius: 8px; border: none; background: var(--danger); color: white; cursor: pointer; font-weight: 600;" disabled>Restart</button></span>
+                            </div>
+                            <div id="restart-system-message" style="margin-top:8px; font-size:0.85rem; color:var(--muted);"></div>
                         </div>
                     </section>
 
@@ -14369,9 +14422,11 @@ sam@terminal:~$
             revenue_paid=revenue.get("total_paid"),
             revenue_outstanding=revenue.get("total_outstanding"),
             revenue_invoiced=revenue.get("total_invoiced"),
+            revenue_total_incoming=revenue.get("total_incoming"), # Added
             banking_saved=banking.get("total_balance"),
             banking_spent=banking.get("total_spent"),
             banking_accounts=banking.get("account_count"),
+            banking_total_balance=banking.get("total_balance"), # Added
         )
 
     def _start_monitoring_system(self):
