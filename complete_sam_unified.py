@@ -11875,15 +11875,17 @@ sam@terminal:~$
         try:
             if hasattr(self, 'goal_manager'):
                 from goal_management import TaskNode
-                goal = TaskNode(
+                task = goal_management.TaskNode(
                     name=f"[AUTO] {name}",
                     description=description,
                     critical=(priority >= 4),
                     priority=priority,
                     task_type=task_type,
-                    estimated_time=600  # 10 minutes
+                    estimated_time=600,  # 10 minutes
+                    goal_id=None  # Will be set after goal creation
                 )
-                goal_id = self.goal_manager.add_subtask(goal)
+                goal_id = self.goal_manager.add_subtask(task)
+                task.goal_id = goal_id
                 
                 # Create specific subtasks for this goal
                 if task_type == "research":
