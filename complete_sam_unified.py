@@ -10867,7 +10867,7 @@ sam@terminal:~$
                     display: flex;
                     gap: 10px;
                 }}
-                .chat-input input {{
+                .chat-input textarea {{
                     flex: 1;
                     background: #0c111c;
                     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -10875,6 +10875,8 @@ sam@terminal:~$
                     padding: 12px 14px;
                     color: var(--text);
                     font-size: 0.95rem;
+                    min-height: 54px;
+                    resize: vertical;
                 }}
                 .chat-input button {{
                     background: linear-gradient(135deg, #29d3c0, #1f7bf2);
@@ -10888,6 +10890,29 @@ sam@terminal:~$
                 }}
                 .chat-input button:hover {{
                     transform: translateY(-1px);
+                }}
+                .chat-controls {{
+                    display: flex;
+                    gap: 14px;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    font-size: 0.8rem;
+                    color: var(--muted);
+                }}
+                .chat-controls label {{
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }}
+                .chat-controls input[type="number"],
+                .chat-controls select {{
+                    background: #0c111c;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 10px;
+                    padding: 6px 10px;
+                    color: var(--text);
+                    font-size: 0.85rem;
+                    width: 80px;
                 }}
                 .log-panel {{
                     background: rgba(12, 17, 28, 0.7);
