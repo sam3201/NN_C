@@ -9,6 +9,7 @@
 #include <math.h>
 #include <time.h>
 #include <curl/curl.h>  // For web requests (if available)
+#include <Python.h>     // Required for PyObject
 
 // Include available headers
 #include "specialized_agents_c.h"
@@ -35,10 +36,10 @@ void safe_copy(char *dest, size_t dest_size, const char *src) {
 // ================================
 
 // Global instances of prebuilt models
-CoherencyModel *global_coherency_model = NULL;
-TeacherModel *global_teacher_model = NULL;
+CoherencyModel *global_coherency_model __attribute__((visibility("default"))) = NULL;
+TeacherModel *global_teacher_model __attribute__((visibility("default"))) = NULL;
 
-CoherencyModel *coherency_model_create() {
+CoherencyModel *coherency_model_create() __attribute__((visibility("default"))) {
     CoherencyModel *model = malloc(sizeof(CoherencyModel));
     if (!model) return NULL;
 
@@ -63,7 +64,7 @@ CoherencyModel *coherency_model_create() {
     return model;
 }
 
-TeacherModel *teacher_model_create() {
+TeacherModel *teacher_model_create() __attribute__((visibility("default"))) {
     TeacherModel *model = malloc(sizeof(TeacherModel));
     if (!model) return NULL;
 
@@ -88,7 +89,7 @@ TeacherModel *teacher_model_create() {
     return model;
 }
 
-double coherency_model_evaluate(const char *conversation_history, const char *new_message) {
+double coherency_model_evaluate(const char *conversation_history, const char *new_message) __attribute__((visibility("default"))) {
     if (!global_coherency_model) return 0.0;
 
     // Prebuilt coherency evaluation using attention mechanisms
@@ -103,7 +104,7 @@ double coherency_model_evaluate(const char *conversation_history, const char *ne
     return coherence_score;
 }
 
-char *teacher_model_generate_lesson(const char *topic, const char *student_level) {
+char *teacher_model_generate_lesson(const char *topic, const char *student_level) __attribute__((visibility("default"))) {
     if (!global_teacher_model) return NULL;
 
     // Prebuilt teaching model generates personalized lessons
@@ -121,7 +122,7 @@ char *teacher_model_generate_lesson(const char *topic, const char *student_level
     return strdup(lesson_buffer);
 }
 
-void coherency_model_free(CoherencyModel *model) {
+void coherency_model_free(CoherencyModel *model) __attribute__((visibility("default"))) {
     if (model) {
         free(model->model_name);
         free(model->coherence_history);
@@ -131,7 +132,7 @@ void coherency_model_free(CoherencyModel *model) {
     }
 }
 
-void teacher_model_free(TeacherModel *model) {
+void teacher_model_free(TeacherModel *model) __attribute__((visibility("default"))) {
     if (model) {
         free(model->model_name);
         free(model->knowledge_base);
@@ -146,15 +147,15 @@ void teacher_model_free(TeacherModel *model) {
 // ================================
 
 // Global instance of bug-fixing model
-BugFixingModel *global_bug_fixing_model = NULL;
+BugFixingModel *global_bug_fixing_model __attribute__((visibility("default"))) = NULL;
 
 // Global Python objects for web search integration
-PyObject *pSamWebSearchModule = NULL;
-PyObject *pSearchWebWithSamFunc = NULL;
-int sam_web_search_is_initialized = 0; // Flag to ensure one-time initialization
+PyObject *pSamWebSearchModule __attribute__((visibility("default"))) = NULL;
+PyObject *pSearchWebWithSamFunc __attribute__((visibility("default"))) = NULL;
+int sam_web_search_is_initialized __attribute__((visibility("default"))) = 0; // Flag to ensure one-time initialization
 
 // Function to initialize Python web search module
-int init_python_web_search() {
+int init_python_web_search() __attribute__((visibility("default"))) {
     if (sam_web_search_is_initialized) {
         return 1; // Already initialized
     }
@@ -185,7 +186,7 @@ int init_python_web_search() {
     return 1;
 }
 
-BugFixingModel *bug_fixing_model_create() {
+BugFixingModel *bug_fixing_model_create() __attribute__((visibility("default"))) {
     BugFixingModel *model = malloc(sizeof(BugFixingModel));
     if (!model) return NULL;
 
@@ -225,7 +226,7 @@ BugFixingModel *bug_fixing_model_create() {
     return model;
 }
 
-char *bug_fixing_model_analyze_code(const char *code_snippet, const char *error_message) {
+char *bug_fixing_model_analyze_code(const char *code_snippet, const char *error_message) __attribute__((visibility("default"))) {
     if (!global_bug_fixing_model) return NULL;
 
     // Prebuilt bug analysis using pattern recognition
@@ -257,7 +258,7 @@ char *bug_fixing_model_analyze_code(const char *code_snippet, const char *error_
     return strdup(analysis_buffer);
 }
 
-char *bug_fixing_model_generate_fix(const char *code_snippet, const char *bug_description) {
+char *bug_fixing_model_generate_fix(const char *code_snippet, const char *bug_description) __attribute__((visibility("default"))) {
     if (!global_bug_fixing_model) return NULL;
 
     // Prebuilt fix generation using repair patterns
@@ -296,7 +297,7 @@ char *bug_fixing_model_generate_fix(const char *code_snippet, const char *bug_de
     return strdup(fix_buffer);
 }
 
-void bug_fixing_model_free(BugFixingModel *model) {
+void bug_fixing_model_free(BugFixingModel *model) __attribute__((visibility("default"))) {
     if (model) {
         free(model->model_name);
         free(model->bug_patterns);
@@ -312,7 +313,7 @@ void bug_fixing_model_free(BugFixingModel *model) {
     }
 }
 
-ResearcherAgent *research_agent_create() {
+ResearcherAgent *research_agent_create() __attribute__((visibility("default"))) {
     ResearcherAgent *agent = malloc(sizeof(ResearcherAgent));
     if (!agent) return NULL;
 
@@ -336,7 +337,7 @@ ResearcherAgent *research_agent_create() {
     return agent;
 }
 
-void research_agent_free(ResearcherAgent *agent) {
+void research_agent_free(ResearcherAgent *agent) __attribute__((visibility("default"))) {
     if (agent) {
         free(agent->base.name);
         for (size_t i = 0; i < agent->history_count; i++) {
@@ -354,7 +355,7 @@ void research_agent_free(ResearcherAgent *agent) {
     }
 }
 
-char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
+char *research_agent_perform_search(ResearcherAgent *agent, const char *query) __attribute__((visibility("default"))) {
     char display_query[MAX_QUERY_LEN + 1];
     safe_copy(display_query, sizeof(display_query), query);
 
@@ -504,7 +505,7 @@ char *research_agent_perform_search(ResearcherAgent *agent, const char *query) {
     return c_result_buffer;
 }
 
-char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) {
+char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) __attribute__((visibility("default"))) {
     printf("📊 Research Agent: Analyzing data patterns\n");
 
     // Use existing analysis framework
@@ -534,7 +535,7 @@ char *research_agent_analyze_data(ResearcherAgent *agent, const char *data) {
 // CODE WRITER AGENT - Pure C with Transformer
 // ================================
 
-CodeWriterAgent *code_writer_agent_create() {
+CodeWriterAgent *code_writer_agent_create() __attribute__((visibility("default"))) {
     CodeWriterAgent *agent = malloc(sizeof(CodeWriterAgent));
     if (!agent) return NULL;
 
@@ -561,7 +562,7 @@ CodeWriterAgent *code_writer_agent_create() {
     return agent;
 }
 
-void code_writer_agent_free(CodeWriterAgent *agent) {
+void code_writer_agent_free(CodeWriterAgent *agent) __attribute__((visibility("default"))) {
     if (agent) {
         free(agent->base.name);
         for (size_t i = 0; i < agent->code_count; i++) {
@@ -579,7 +580,7 @@ void code_writer_agent_free(CodeWriterAgent *agent) {
     }
 }
 
-char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specification) {
+char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specification) __attribute__((visibility("default"))) {
     char safe_spec[MAX_SPEC_LEN + 1];
     safe_copy(safe_spec, sizeof(safe_spec), specification);
     printf("💻 Code Writer Agent: Generating code for '%s'\n", safe_spec);
@@ -643,7 +644,7 @@ char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specif
     return generated_code;
 }
 
-char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) {
+char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) __attribute__((visibility("default"))) {
     printf("🔍 Code Writer Agent: Analyzing code quality\n");
 
     char *analysis = malloc(1024);
@@ -682,7 +683,7 @@ char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) {
 // FINANCIAL ANALYSIS AGENT - Pure C with NEAT
 // ================================
 
-FinancialAgent *financial_agent_create() {
+FinancialAgent *financial_agent_create() __attribute__((visibility("default"))) {
     FinancialAgent *agent = malloc(sizeof(FinancialAgent));
     if (!agent) return NULL;
 
@@ -707,7 +708,7 @@ FinancialAgent *financial_agent_create() {
     return agent;
 }
 
-void financial_agent_free(FinancialAgent *agent) {
+void financial_agent_free(FinancialAgent *agent) __attribute__((visibility("default"))) {
     if (agent) {
         free(agent->base.name);
         free(agent->portfolio_performance);
@@ -721,7 +722,7 @@ void financial_agent_free(FinancialAgent *agent) {
     }
 }
 
-char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_data) {
+char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_data) __attribute__((visibility("default"))) {
     printf("💰 Financial Agent: Analyzing market conditions\n");
 
     char *analysis = malloc(2048);
@@ -792,7 +793,7 @@ char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_d
 // SURVIVAL AGENT - Pure C with Survival Library
 // ================================
 
-SurvivalAgent *survival_agent_create() {
+SurvivalAgent *survival_agent_create() __attribute__((visibility("default"))) {
     SurvivalAgent *agent = malloc(sizeof(SurvivalAgent));
     if (!agent) return NULL;
 
@@ -819,7 +820,7 @@ SurvivalAgent *survival_agent_create() {
     return agent;
 }
 
-void survival_agent_free(SurvivalAgent *agent) {
+void survival_agent_free(SurvivalAgent *agent) __attribute__((visibility("default"))) {
     if (agent) {
         free(agent->base.name);
         free(agent->threat_assessment);
@@ -833,7 +834,7 @@ void survival_agent_free(SurvivalAgent *agent) {
     }
 }
 
-char *survival_agent_assess_threats(SurvivalAgent *agent) {
+char *survival_agent_assess_threats(SurvivalAgent *agent) __attribute__((visibility("default"))) {
     printf("🛡️ Survival Agent: Assessing existential threats\n");
 
     char *assessment = malloc(2048);
@@ -905,7 +906,7 @@ char *survival_agent_assess_threats(SurvivalAgent *agent) {
 // META AGENT - Pure C with Transformer
 // ================================
 
-MetaAgent *meta_agent_create() {
+MetaAgent *meta_agent_create() __attribute__((visibility("default"))) {
     MetaAgent *agent = malloc(sizeof(MetaAgent));
     if (!agent) return NULL;
 
@@ -933,7 +934,7 @@ MetaAgent *meta_agent_create() {
     return agent;
 }
 
-void meta_agent_free(MetaAgent *agent) {
+void meta_agent_free(MetaAgent *agent) __attribute__((visibility("default"))) {
     if (agent) {
         free(agent->base.name);
         for (size_t i = 0; i < agent->improvement_count; i++) {
@@ -951,9 +952,9 @@ void meta_agent_free(MetaAgent *agent) {
     }
 }
 
-char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) {
+char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) __attribute__((visibility("default"))) {
     char safe_component[MAX_COMPONENT_LEN + 1];
-    safe_copy(safe_component, sizeof(safe_component), system_component);
+    safe_copy(safe_component, sizeof(safe_copy), system_component);
     printf("🔧 Meta Agent: Analyzing system component '%s'\n", safe_component);
 
     if (agent->current_analysis_target) {
@@ -1031,7 +1032,10 @@ char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) 
 // AGENT REGISTRY - Pure C
 // ================================
 
-AgentRegistry *agent_registry_create() {
+// Global agent registry (initialized to NULL, will be created via Python call)
+AgentRegistry *global_agents __attribute__((visibility("default"))) = NULL;
+
+AgentRegistry *agent_registry_create() __attribute__((visibility("default"))) {
     AgentRegistry *registry = malloc(sizeof(AgentRegistry));
     if (!registry) return NULL;
 
@@ -1056,7 +1060,7 @@ AgentRegistry *agent_registry_create() {
     return registry;
 }
 
-void agent_registry_free(AgentRegistry *registry) {
+void agent_registry_free(AgentRegistry *registry) __attribute__((visibility("default"))) {
     if (registry) {
         research_agent_free(registry->researcher);
         code_writer_agent_free(registry->coder);

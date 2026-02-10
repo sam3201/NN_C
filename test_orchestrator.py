@@ -8,19 +8,19 @@ try:
     multi_agent_orchestrator_c.create_agents()
     print("Specialized agents created.")
 
-    print("Calling multi_agent_orchestrator_c.create_system()...")
-    multi_agent_orchestrator_c.create_system()
+    print("Calling multi_agent_orchestrator_c.create_multi_agent_system()...")
+    multi_agent_orchestrator_c.create_multi_agent_system()
     print("System created.")
 
-    print("Calling multi_agent_orchestrator_c.start()...")
-    multi_agent_orchestrator_c.start()
+    print("Calling multi_agent_orchestrator_c.start_orchestrator()...")
+    multi_agent_orchestrator_c.start_orchestrator()
     print("Orchestrator started (background thread).")
 
     # Give the orchestrator a moment to process the message in its thread
     time.sleep(1) 
 
-    print("Calling multi_agent_orchestrator_c.get_status()...")
-    status = multi_agent_orchestrator_c.get_status()
+    print("Calling multi_agent_orchestrator_c.get_orchestrator_status()...")
+    status = multi_agent_orchestrator_c.get_orchestrator_status()
     print(f"Orchestrator Status: {status}")
 
     # Verify key status elements

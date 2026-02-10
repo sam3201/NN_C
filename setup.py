@@ -35,8 +35,8 @@ extensions = [
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],
-        extra_compile_args=COMMON_ARGS,
-        extra_link_args=[]
+        extra_compile_args=COMMON_ARGS + ["-fvisibility=default"],
+        extra_link_args=["-Wl,-export_dynamic"] # Add this line
     ),
     Extension(
         'sam_meta_controller_c',

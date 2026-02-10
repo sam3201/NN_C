@@ -252,7 +252,7 @@ from sam_config import config
 
 # C Core Modules - Direct Imports (No Fallbacks)
 import consciousness_algorithmic
-import multi_agent_orchestrator_c
+import orchestrator_and_agents as multi_agent_orchestrator_c
 import specialized_agents_c
 import sam_meta_controller_c
 import sam_sav_dual_system
