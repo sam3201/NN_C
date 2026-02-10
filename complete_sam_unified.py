@@ -4274,9 +4274,18 @@ class UnifiedSAMSystem:
         print("🤖 Initializing Intelligent Issue Resolution System...")
         self.issue_resolver = IntelligentIssueResolver(self)
         
+        # Initialize skipped issues tracking system
+        self.skipped_issues = []  # Queue for issues that were skipped during self-healing
+        self.skipped_issues_lock = threading.Lock()
+        self.skipped_issues_processor_active = False
+        
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
         issue_thread.start()
+        
+        # Start skipped issues processor thread
+        skipped_thread = threading.Thread(target=self._skipped_issues_processor_loop, daemon=True)
+        skipped_thread.start()
         if self.two_phase_boot:
             self._start_two_phase_promotion_thread()
 
