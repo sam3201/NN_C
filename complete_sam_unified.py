@@ -3216,8 +3216,13 @@ class UnifiedSAMSystem:
                 self.teacher_pool_enabled = False
                 self.teacher_specs = []
             if _is_external_provider_spec(self.regression_provider):
-                self.regression_on_growth = False
-                log_event("warn", "regression_gate_disabled", "Regression gate disabled in strict local-only mode", provider=self.regression_provider)
+                # Keep regression gate enabled for local providers even in strict local-only mode
+                provider = self.regression_provider.split(":", 1)[0].strip().lower()
+                if provider in ["ollama", "hf", "huggingface"]:
+                    log_event("info", "regression_gate_enabled", f"Regression gate kept enabled for local provider: {provider}", provider=self.regression_provider)
+                else:
+                    self.regression_on_growth = False
+                    log_event("warn", "regression_gate_disabled", "Regression gate disabled for external provider", provider=self.regression_provider)
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
