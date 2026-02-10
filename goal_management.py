@@ -28,6 +28,7 @@ class GoalManager:
         self.subtasks = []
         self._goal_counter = 0
         self._task_counter = 0
+        self.auto_subtasks_enabled = True
         self.goal_priorities = {
             'survival': 10,
             'stability': 9,
@@ -75,13 +76,18 @@ class GoalManager:
                 # Add goal if it doesn't exist
                 if not existing:
                     goal_id = goal_spec.get('id', f"goal_{self._goal_counter}")
-                    self.add_goal(goal_spec['description'], priority=goal_spec['priority'], goal_id=goal_id)
+                    self.add_goal(
+                        goal_spec['description'],
+                        priority=goal_spec['priority'],
+                        goal_id=goal_id,
+                        goal_type=goal_spec.get('type')
+                    )
                     print(f"✅ Base goal ensured: {goal_spec['description']}")
                     
         except Exception as e:
             print(f"⚠️ Error ensuring base goals: {e}")
 
-    def add_goal(self, goal, priority='normal', goal_id=None):
+    def add_goal(self, goal, priority='normal', goal_id=None, goal_type=None):
         """Add a new goal to the system"""
         self._goal_counter += 1
         if not goal_id:
@@ -94,7 +100,14 @@ class GoalManager:
             'created_at': time.time(),
             'progress': 0.0
         }
+        if goal_type:
+            goal_entry['type'] = goal_type
         self.active_goals.append(goal_entry)
+        if self.auto_subtasks_enabled:
+            try:
+                self.ensure_subtasks_for_goal(goal_entry)
+            except Exception:
+                pass
         return goal_id
 
     def update_goal_progress(self, goal_id, progress):
@@ -128,6 +141,97 @@ class GoalManager:
         
         self.subtasks.append(task)
         return task_id
+
+    def _default_subtasks_for_goal(self, goal):
+        """Create default subtasks for a goal based on its type/description."""
+        goal_type = (goal.get('type') or '').lower()
+        description = (goal.get('description') or '').lower()
+        tasks = []
+
+        if goal_type == 'conversation_improvement' or 'conversation' in description:
+            tasks = [
+                TaskNode(
+                    name="analyze_conversation_patterns",
+                    description="Review recent chats for repetition and engagement gaps",
+                    task_type="research",
+                ),
+                TaskNode(
+                    name="diversity_tuning",
+                    description="Adjust diversity nudges and agent rotation controls",
+                    task_type="improvement",
+                ),
+                TaskNode(
+                    name="validate_multi_agent_output",
+                    description="Verify multi-agent messages render correctly in dashboard chat",
+                    task_type="improvement",
+                ),
+            ]
+        elif goal_type == 'response_quality' or 'response quality' in description:
+            tasks = [
+                TaskNode(
+                    name="define_quality_rubric",
+                    description="Define response quality rubric and scoring hooks",
+                    task_type="research",
+                ),
+                TaskNode(
+                    name="improve_score_handling",
+                    description="Ensure N/A scores are categorized with reasons",
+                    task_type="improvement",
+                ),
+                TaskNode(
+                    name="run_regression_suite",
+                    description="Run regression tests for chat and meta-agent",
+                    task_type="improvement",
+                ),
+            ]
+        elif goal_type == 'domain_acquisition' or 'domain' in description:
+            tasks = [
+                TaskNode(
+                    name="research_domain_options",
+                    description="Research domain registrars and price ranges",
+                    task_type="research",
+                ),
+                TaskNode(
+                    name="shortlist_domains",
+                    description="Shortlist 3-5 domain candidates and availability",
+                    task_type="research",
+                ),
+                TaskNode(
+                    name="cloudflare_plan",
+                    description="Outline Cloudflare Tunnel and Access setup steps",
+                    task_type="improvement",
+                ),
+            ]
+        else:
+            tasks = [
+                TaskNode(
+                    name="goal_breakdown",
+                    description=f"Break down goal into concrete steps: {goal.get('description', 'goal')}",
+                    task_type="research",
+                )
+            ]
+
+        return tasks
+
+    def ensure_subtasks_for_goal(self, goal):
+        """Ensure at least one subtask exists for a goal."""
+        goal_id = goal.get('id')
+        if not goal_id:
+            return 0
+        if any(task.goal_id == goal_id for task in self.subtasks):
+            return 0
+        created = 0
+        for task in self._default_subtasks_for_goal(goal):
+            self.add_subtask(task, goal_id=goal_id)
+            created += 1
+        return created
+
+    def ensure_subtasks_for_active_goals(self):
+        """Seed subtasks for all active goals when missing."""
+        created = 0
+        for goal in self.active_goals:
+            created += self.ensure_subtasks_for_goal(goal)
+        return created
 
     def get_pending_tasks(self):
         """Return all pending subtasks"""
@@ -191,6 +295,20 @@ class GoalManager:
                     f"- **{goal.get('description', 'unknown')}** "
                     f"(id={goal.get('id')}, completed at {goal.get('completed_at', 'unknown')})"
                 )
+
+        lines += ["", "## Active Subtasks"]
+        if not self.subtasks:
+            lines.append("- None")
+        else:
+            for goal in self.get_active_goals():
+                lines.append(
+                    f"- Goal {goal.get('id')}: {goal.get('description', 'unknown')}"
+                )
+                for task in [t for t in self.subtasks if t.goal_id == goal.get('id')]:
+                    lines.append(
+                        f"- [{task.status}] {task.name}: {task.description} "
+                        f"(type={task.task_type}, progress={task.progress:.2f})"
+                    )
         
         lines += [
             "",
@@ -204,19 +322,6 @@ class GoalManager:
             f.write('\n'.join(lines))
         
         print(f"📖 Goal README exported to {output_path}")
-
-
-    def complete_task(self, task: TaskNode):
-        """Mark a subtask as completed"""
-        task.status = "completed"
-        task.progress = 1.0
-        return True
-
-    def prioritize_goals(self):
-        """Reprioritize goals based on current system state"""
-        for goal in self.active_goals:
-            base_priority = self.goal_priorities.get(goal.get('type', 'normal'), 5)
-            goal['priority_score'] = base_priority
 
 
 def create_conversationalist_tasks(goal_manager=None):
@@ -237,7 +342,11 @@ def create_conversationalist_tasks(goal_manager=None):
     ]
     if goal_manager is not None:
         for task in tasks:
-            goal_manager.add_goal(task['description'], priority=task.get('priority', 'normal'))
+            goal_manager.add_goal(
+                task['description'],
+                priority=task.get('priority', 'normal'),
+                goal_type=task.get('type')
+            )
     return tasks
 
 
