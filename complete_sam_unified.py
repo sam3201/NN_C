@@ -1682,6 +1682,10 @@ class MetaAgent:
         self.last_distilled = ""
         self.confidence_min = float(os.getenv("SAM_META_CONFIDENCE_MIN", "0.5"))
         self.confidence_max = float(os.getenv("SAM_META_CONFIDENCE_MAX", "0.95"))
+        self.persistence_dir = None
+        self.learning_log_path = None
+        self.distilled_log_path = None
+        self._init_persistence()
 
         print(" Production Meta-Agent initialized with learning state")
         print("   Observer Agent: Active")
