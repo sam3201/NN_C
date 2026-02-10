@@ -12633,19 +12633,28 @@ sam@terminal:~$
             task_type = getattr(task, 'task_type', 'general')
             
             if task_type == 'research':
-                # Execute research task
-                result = specialized_agents_c.research(task.description)
-                print(f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True)
+                # Execute research task (safe local agent)
+                result = self._call_c_agent("research", task.description)
+                if result:
+                    print(f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True)
+                else:
+                    print(f"🔍 [AUTO] Research skipped (C agent unavailable): {task.name[:50]}...", flush=True)
                 
             elif task_type == 'code':
                 # Execute code task
-                result = specialized_agents_c.generate_code(task.description)
-                print(f"💻 [AUTO] Code generated: {task.name[:50]}...", flush=True)
+                result = self._call_c_agent("generate_code", task.description)
+                if result:
+                    print(f"💻 [AUTO] Code generated: {task.name[:50]}...", flush=True)
+                else:
+                    print(f"💻 [AUTO] Code generation skipped (C agent unavailable): {task.name[:50]}...", flush=True)
                 
             elif task_type == 'finance':
                 # Execute financial analysis task
-                result = specialized_agents_c.analyze_market(task.description)
-                print(f"💰 [AUTO] Market analysis: {task.name[:50]}...", flush=True)
+                result = self._call_c_agent("analyze_market", task.description)
+                if result:
+                    print(f"💰 [AUTO] Market analysis: {task.name[:50]}...", flush=True)
+                else:
+                    print(f"💰 [AUTO] Market analysis skipped (C agent unavailable): {task.name[:50]}...", flush=True)
                 
             elif task_type == 'survival':
                 # Execute survival assessment
