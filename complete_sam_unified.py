@@ -7956,6 +7956,14 @@ sam@terminal:~$
             prompt = item.get("prompt", "")
             response = item.get("response", "")
             lines.append(f"- {user}: {prompt}\n  SAM: {response}")
+        meta_summary = ""
+        if getattr(self, "meta_agent", None) and hasattr(self.meta_agent, "get_distilled_summary"):
+            try:
+                meta_summary = self.meta_agent.get_distilled_summary()
+            except Exception:
+                meta_summary = ""
+        if meta_summary:
+            lines.append(f"- MetaAgent distilled: {meta_summary}")
         return "\n".join(lines)
 
     def _record_chat_learning(self, prompt: str, response: str, context: Dict[str, Any]):
