@@ -9792,6 +9792,11 @@ sam@terminal:~$
                     return headers;
                 }
 
+                function adminTokenQuery() {
+                    if (!samAdminToken) return '';
+                    return `&token=${encodeURIComponent(samAdminToken)}`;
+                }
+
                 function escapeHtml(text) {
                     const div = document.createElement('div');
                     div.textContent = text;
