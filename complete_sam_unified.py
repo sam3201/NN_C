@@ -7478,7 +7478,7 @@ class UnifiedSAMSystem:
             if request.method == 'GET':
                 return jsonify({
                     "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
-                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                    "chat_agents_max": int(getattr(self, "chat_agents_max", 4)),
                     "learning_memory_enabled": bool(getattr(self, "learning_memory_enabled", False)),
                     "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
                 })
