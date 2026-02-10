@@ -4792,17 +4792,15 @@ class UnifiedSAMSystem:
             self._invoke_meta_agent_repair(e, context="system_recovery")
             return False
 
-    def _invoke_meta_agent_repair(self, error, context="runtime"):
-        """Invoke meta-agent self-repair pipeline if available."""
+    def _invoke_meta_agent_repair(self, error: Exception, context: str = "general"):
+        """Invoke meta-agent for self-repair using C consciousness framework"""
         try:
-            if not getattr(self, "meta_agent", None):
-                log_event(
-                    "warn",
-                    "meta_repair_skipped",
-                    "Meta-agent not available",
-                    reason="meta_agent_missing",
-                    context=context,
-                )
+            # Mark meta-agent as busy
+            self._meta_repair_in_progress = True
+            
+            # Check if meta-agent is available and self-modification is allowed
+            if not self.meta_agent or not self.allow_self_modification:
+                print(f"🛡️ Meta-agent repair skipped (unavailable or disabled)")
                 return False
             if not getattr(self, "allow_self_modification", False):
                 log_event(
