@@ -1405,6 +1405,8 @@ class VerifierJudgeAgent:
             mode = self.import_test_mode
             if target_file in self.import_skip_files and mode == "import":
                 mode = "compile"
+            if target_file and os.path.isabs(target_file) and mode == "import":
+                mode = "compile"
 
             if mode in ("skip", "none"):
                 return result
@@ -1416,7 +1418,7 @@ class VerifierJudgeAgent:
                     result['passed'] = False
                     return result
                 if simulated_content is None and target_file:
-                    path = os.path.join(self.system.project_root, target_file)
+                    path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
                     simulated_content = Path(path).read_text(encoding="utf-8", errors="ignore")
                 if simulated_content:
                     try:
@@ -1435,6 +1437,8 @@ class VerifierJudgeAgent:
             original_modules = set(sys.modules.keys())
 
             # Try importing the target module
+            if target_file and os.path.isabs(target_file):
+                return result
             target_module = target_file.replace('.py', '').replace('/', '.') if target_file else ""
             try:
                 if target_module:
