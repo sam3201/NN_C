@@ -539,6 +539,15 @@ class ObserverAgent:
         """Classify severity for routing meta-agent deployment."""
         context = (context or "").lower()
         message = str(exception).lower() if exception else ""
+        if any(keyword in message for keyword in (
+            "integration not available",
+            "credentials file not found",
+            "not configured",
+            "api key",
+            "token not configured",
+            "missing credentials",
+        )):
+            return "low"
         if any(keyword in message for keyword in ("critical", "fatal", "segfault", "corrupt", "out of memory", "oom")):
             return "critical"
         if context in ("system_recovery", "self_healing", "connectivity"):
