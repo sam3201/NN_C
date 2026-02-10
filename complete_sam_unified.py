@@ -6085,7 +6085,29 @@ class UnifiedSAMSystem:
                 status["env_meta_only_boot"] = os.getenv("SAM_META_ONLY_BOOT")
                 status["env_require_meta_agent"] = os.getenv("SAM_REQUIRE_META_AGENT")
                 status["severity_threshold"] = getattr(self, "meta_agent_min_severity", "medium")
+                if getattr(self, "meta_agent", None):
+                    status["local_meta_agent"] = {
+                        "active": bool(getattr(self, "meta_agent_active", False)),
+                        "patch_history": len(getattr(self.meta_agent, "patch_history", []) or []),
+                        "successful_fixes": len(getattr(self.meta_agent, "successful_fixes", []) or []),
+                        "failed_attempts": len(getattr(self.meta_agent, "failed_attempts", []) or []),
+                        "learning_events": len(getattr(self.meta_agent, "learning_log", []) or []),
+                        "distilled_count": len(getattr(self.meta_agent, "distilled_memory", []) or []),
+                        "confidence_threshold": getattr(self.meta_agent, "confidence_threshold", None),
+                    }
                 return jsonify(status)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/meta/learning')
+        def meta_learning_state():
+            """Get meta-agent learning/distillation state."""
+            try:
+                if not getattr(self, "meta_agent", None):
+                    return jsonify({"status": "uninitialized"}), 503
+                if hasattr(self.meta_agent, "get_learning_state"):
+                    return jsonify(self.meta_agent.get_learning_state())
+                return jsonify({"status": "unsupported"}), 501
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
