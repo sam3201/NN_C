@@ -36,6 +36,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Callable, Any, Union, Tuple
+from flask_cors import CORS
+
 
 # ---------------------------
 # Error / logging helpers
@@ -238,10 +240,15 @@ def _summarize_jsonl_log(path: str, window: int = 200):
     }
     return {"summary": summary, "tail": list(tail)}
 
+
 # Import SAM components
 from survival_agent import SURVIVAL_PROMPT
-from goal_management import GoalManager, create_conversationalist_tasks, ensure_domain_goal
-from sam_config import config   
+from goal_management import (
+    GoalManager,
+    create_conversationalist_tasks,
+    ensure_domain_goal,
+)
+from sam_config import config
 
 # C Core Modules - Direct Imports (No Fallbacks)
 import consciousness_algorithmic
@@ -258,14 +265,23 @@ from banking_ledger import BankingLedger
 
 # Optional integrations
 try:
-    from sam_web_search import initialize_sam_web_search, search_web_with_sam, SAM_WEB_SEARCH_AVAILABLE
+    from sam_web_search import (
+        initialize_sam_web_search,
+        search_web_with_sam,
+        SAM_WEB_SEARCH_AVAILABLE,
+    )
 except Exception:
     initialize_sam_web_search = None
     search_web_with_sam = None
     SAM_WEB_SEARCH_AVAILABLE = False
 
 try:
-    from sam_code_modifier import initialize_sam_code_modifier, analyze_codebase, modify_code_safely, SAM_CODE_MODIFIER_AVAILABLE
+    from sam_code_modifier import (
+        initialize_sam_code_modifier,
+        analyze_codebase,
+        modify_code_safely,
+        SAM_CODE_MODIFIER_AVAILABLE,
+    )
 except Exception:
     initialize_sam_code_modifier = None
     analyze_codebase = None
@@ -288,7 +304,12 @@ except Exception:
     SAM_GITHUB_AVAILABLE = False
 
 try:
-    from sam_gmail_integration import initialize_sam_gmail, send_sam_email, schedule_sam_email, SAM_GMAIL_AVAILABLE
+    from sam_gmail_integration import (
+        initialize_sam_gmail,
+        send_sam_email,
+        schedule_sam_email,
+        SAM_GMAIL_AVAILABLE,
+    )
 except Exception:
     initialize_sam_gmail = None
     send_sam_email = None
@@ -301,62 +322,85 @@ sam_web_search_available = SAM_WEB_SEARCH_AVAILABLE
 sam_code_modifier_available = SAM_CODE_MODIFIER_AVAILABLE
 sam_gmail_available = SAM_GMAIL_AVAILABLE
 sam_github_available = SAM_GITHUB_AVAILABLE
-print('✅ All C modules available')
+print("✅ All C modules available")
 
 # Web Interface Modules - Direct Imports
-from flask import Flask, request, jsonify, render_template_string, Response, send_file, stream_with_context, session, redirect
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    render_template_string,
+    Response,
+    send_file,
+    stream_with_context,
+    session,
+    redirect,
+)
 from flask_compress import Compress
 
 # Optional imports for enhanced functionality
 try:
     from flask_socketio import SocketIO
+
     flask_socketio_available = True
     from flask_compress import Compress
+
     flask_compress_available = True
 except ImportError:
     flask_socketio_available = False
     flask_compress_available = False
 flask_available = True
-print('✅ Flask and SocketIO available')
+print("✅ Flask and SocketIO available")
 
 # SAM Components - Direct Imports
 from survival_agent import SURVIVAL_PROMPT
-from goal_management import GoalManager, create_conversationalist_tasks, ensure_domain_goal
+from goal_management import (
+    GoalManager,
+    create_conversationalist_tasks,
+    ensure_domain_goal,
+)
 from goal_management import GoalManager, create_conversationalist_tasks
 from sam_config import config
 
 print("🎯 System initialization complete - All components available")
+
 
 # Flask optimizations
 def apply_all_optimizations(app):
     """Apply all Flask optimizations"""
     try:
         from flask_compress import Compress
+
         Compress(app)
         print("  ✅ Gzip compression enabled")
     except ImportError:
         print("  ⚠️ Flask-Compress not available")
-    
+
     # Add security headers
     @app.after_request
     def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
-    
+
     return app
+
 
 # Shutdown handling
 shutdown_handlers = []
+
+
 def register_shutdown_handler(name: str, handler: Callable, priority: int = 10):
     """Register a shutdown handler"""
     shutdown_handlers.append((name, handler, priority))
     print(f"✅ Registered shutdown handler: {name}")
 
+
 def is_shutting_down():
     """Check if system is shutting down"""
     return False
+
 
 def shutdown_aware_operation(operation_func, *args, **kwargs):
     """Execute operation with shutdown awareness"""
@@ -376,15 +420,19 @@ def shutdown_guard(label: str):
         raise InterruptedError(f"Shutdown in progress: {label}")
     yield
 
+
 def initate_shutdown():
     """Initiate system shutdown"""
     print("🛑 System shutdown initiated")
-    for name, handler, priority in sorted(shutdown_handlers, key=lambda x: x[2], reverse=True):
+    for name, handler, priority in sorted(
+        shutdown_handlers, key=lambda x: x[2], reverse=True
+    ):
         try:
             handler()
             print(f"  ✅ Shutdown handler executed: {name}")
         except Exception as e:
             print(f"  ❌ Shutdown handler failed: {name} - {e}")
+
 
 # Global variable declarations to fix scoping issues
 sam_gmail = None
@@ -392,7 +440,13 @@ sam_github = None
 
 # Python Orchestration Components - Direct Imports
 from survival_agent import create_survival_agent, integrate_survival_loop
-from goal_management import GoalManager, SubgoalExecutionAlgorithm, create_conversationalist_tasks, ensure_domain_goal, TaskManager
+from goal_management import (
+    GoalManager,
+    SubgoalExecutionAlgorithm,
+    create_conversationalist_tasks,
+    ensure_domain_goal,
+    TaskManager,
+)
 from concurrent_executor import task_executor
 from circuit_breaker import resilience_manager
 
@@ -402,67 +456,84 @@ print("✅ All Python orchestration components available")
 _shutdown_handlers = []
 _is_shutting_down = False
 
+
 def apply_all_optimizations(app):
     """Apply Flask performance optimizations"""
     try:
         # Enable gzip compression
         from flask_compress import Compress
+
         Compress(app)
         print("  ✅ Gzip compression enabled")
     except ImportError:
         print("  ⚠️ Flask-Compress not available")
-    
+
     # Add security headers
     @app.after_request
     def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
-    
+
     return app
+
 
 def register_shutdown_handler(name, func, priority=0):
     """Register shutdown handler with priority"""
     global _shutdown_handlers
-    _shutdown_handlers.append({
-        'name': name,
-        'func': func,
-        'priority': priority
-    })
+    _shutdown_handlers.append({"name": name, "func": func, "priority": priority})
     # Sort by priority (higher priority first)
-    _shutdown_handlers.sort(key=lambda x: x['priority'], reverse=True)
+    _shutdown_handlers.sort(key=lambda x: x["priority"], reverse=True)
     print(f"📋 Registered {name} for graceful shutdown (priority: {priority})")
+
 
 def is_shutting_down():
     """Check if system is shutting down"""
     return _is_shutting_down
+
 
 def initiate_shutdown():
     """Initiate graceful system shutdown"""
     global _is_shutting_down
     _is_shutting_down = True
     print("🛑 Initiating graceful system shutdown...")
-    
+
     # Execute shutdown handlers in priority order
     for handler in _shutdown_handlers:
         try:
             print(f"  🔄 Executing shutdown handler: {handler['name']}")
-            handler['func']()
+            handler["func"]()
         except Exception as e:
             print(f"  ⚠️ Shutdown handler {handler['name']} failed: {e}")
-    
+
     print("✅ System shutdown complete")
+
+
 # Production-Grade Meta-Agent Architecture for Safe Self-Healing
 # Uses existing C consciousness frameworks instead of torch
 # Implements comprehensive safety mechanisms including confidence thresholds,
 # dangerous pattern detection, backup before modifications, rollback capabilities,
 # sandbox testing, patch verification, and score-based application (>= 7.0 required)
 
+
 class FailureEvent:
     """Structured failure event data using C consciousness framework for analysis"""
+
     """Structured failure event data"""
-    def __init__(self, error_type, stack_trace, failing_tests=None, logs=None, timestamp=None, severity="medium", context=None, research_notes: str = "", message: str = ""):
+
+    def __init__(
+        self,
+        error_type,
+        stack_trace,
+        failing_tests=None,
+        logs=None,
+        timestamp=None,
+        severity="medium",
+        context=None,
+        research_notes: str = "",
+        message: str = "",
+    ):
         self.error_type = error_type
         self.stack_trace = stack_trace
         self.failing_tests = failing_tests or []
@@ -472,7 +543,7 @@ class FailureEvent:
         self.context = context or "runtime"
         self.research_notes = research_notes or ""
         self.message = message or ""
-        self.id = f"{error_type}_{int(time.time()*1000)}"
+        self.id = f"{error_type}_{int(time.time() * 1000)}"
 
     def to_dict(self):
         return {
@@ -491,6 +562,7 @@ class FailureEvent:
 
     def get(self, key, default=None):
         return self.to_dict().get(key, default)
+
 
 class ObserverAgent:
     """Non-LLM failure detection agent - deterministic and reliable
@@ -522,7 +594,11 @@ class ObserverAgent:
         )
 
         self.failure_history.append(failure_event)
-        meaning = _explain_exception(exception) if exception else "No exception provided (context-triggered failure)"
+        meaning = (
+            _explain_exception(exception)
+            if exception
+            else "No exception provided (context-triggered failure)"
+        )
         print(
             f"👁️ Observer Agent: Detected failure id={failure_event.id} "
             f"type={failure_event.error_type} severity={severity} context={failure_event.context} "
@@ -545,20 +621,36 @@ class ObserverAgent:
         """Classify severity for routing meta-agent deployment."""
         context = (context or "").lower()
         message = str(exception).lower() if exception else ""
-        if any(keyword in message for keyword in (
-            "integration not available",
-            "credentials file not found",
-            "not configured",
-            "api key",
-            "token not configured",
-            "missing credentials",
-        )):
+        if any(
+            keyword in message
+            for keyword in (
+                "integration not available",
+                "credentials file not found",
+                "not configured",
+                "api key",
+                "token not configured",
+                "missing credentials",
+            )
+        ):
             return "low"
-        if any(keyword in message for keyword in ("critical", "fatal", "segfault", "corrupt", "out of memory", "oom")):
+        if any(
+            keyword in message
+            for keyword in (
+                "critical",
+                "fatal",
+                "segfault",
+                "corrupt",
+                "out of memory",
+                "oom",
+            )
+        ):
             return "critical"
         if context in ("system_recovery", "self_healing", "connectivity"):
             return "high"
-        if any(keyword in message for keyword in ("permission", "denied", "unauthorized", "forbidden")):
+        if any(
+            keyword in message
+            for keyword in ("permission", "denied", "unauthorized", "forbidden")
+        ):
             return "high"
         if isinstance(exception, (KeyError, ValueError, TypeError)):
             return "medium"
@@ -570,7 +662,12 @@ class ObserverAgent:
             return "No exception provided"
 
         import traceback
-        return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+
+        return "".join(
+            traceback.format_exception(
+                type(exception), exception, exception.__traceback__
+            )
+        )
 
     def _get_failing_tests(self):
         """Get information about failing tests"""
@@ -581,6 +678,7 @@ class ObserverAgent:
         """Get recent system logs"""
         # This would integrate with logging system
         return "Recent system logs would go here"
+
 
 class FaultLocalizerAgent:
     """LLM + heuristics fault localization agent using C consciousness framework
@@ -602,7 +700,9 @@ class FaultLocalizerAgent:
 
         # Step 3: LLM reasoning for final localization
         if candidates:
-            final_candidates = self._llm_reasoning_localization(failure_event, candidates)
+            final_candidates = self._llm_reasoning_localization(
+                failure_event, candidates
+            )
             return final_candidates
 
         return []
@@ -616,15 +716,21 @@ class FaultLocalizerAgent:
 
             # 1. Stack trace analysis (highest weight)
             if failure_event.stack_trace:
-                for line in failure_event.stack_trace.split('\n'):
-                    if 'File "' in line and 'line' in line:
+                for line in failure_event.stack_trace.split("\n"):
+                    if 'File "' in line and "line" in line:
                         file_match = re.search(r'File "([^"]+)"', line)
                         if file_match:
                             filepath = file_match.group(1)
                             # Use C consciousness framework for deeper analysis
-                            consciousness_score = self._get_consciousness_file_score(filepath, failure_event)
-                            scores[filepath] = scores.get(filepath, 0) + (10 * consciousness_score)
-                no_error_match = re.search(r"No error detected in (.+)", failure_event.stack_trace)
+                            consciousness_score = self._get_consciousness_file_score(
+                                filepath, failure_event
+                            )
+                            scores[filepath] = scores.get(filepath, 0) + (
+                                10 * consciousness_score
+                            )
+                no_error_match = re.search(
+                    r"No error detected in (.+)", failure_event.stack_trace
+                )
                 if no_error_match:
                     filepath = no_error_match.group(1).strip()
                     if filepath and os.path.exists(filepath):
@@ -639,26 +745,35 @@ class FaultLocalizerAgent:
 
             # 3. Test failure correlation
             if failure_event.failing_tests:
-                test_correlation_files = self._find_test_correlation_files(failure_event.failing_tests)
+                test_correlation_files = self._find_test_correlation_files(
+                    failure_event.failing_tests
+                )
                 for filepath in test_correlation_files:
                     scores[filepath] = scores.get(filepath, 0) + 5
 
             # 4. Code complexity analysis using C framework
             for filepath in scores.keys():
                 complexity_penalty = self._calculate_code_complexity(filepath)
-                scores[filepath] *= (1.0 - complexity_penalty)
+                scores[filepath] *= 1.0 - complexity_penalty
 
             # 5. Semantic similarity using C consciousness vectors
             if len(scores) > 1:
-                semantic_scores = self._calculate_semantic_similarity_scores(failure_event, list(scores.keys()))
+                semantic_scores = self._calculate_semantic_similarity_scores(
+                    failure_event, list(scores.keys())
+                )
                 for filepath, semantic_score in semantic_scores.items():
                     scores[filepath] = scores.get(filepath, 0) + (2 * semantic_score)
 
             # 6. Research notes / message hints
-            hint_text = " ".join(filter(None, [
-                getattr(failure_event, "research_notes", ""),
-                getattr(failure_event, "message", ""),
-            ]))
+            hint_text = " ".join(
+                filter(
+                    None,
+                    [
+                        getattr(failure_event, "research_notes", ""),
+                        getattr(failure_event, "message", ""),
+                    ],
+                )
+            )
             if hint_text:
                 for token in re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text):
                     resolved = token
@@ -671,8 +786,8 @@ class FaultLocalizerAgent:
             print(f"⚠️ Spectrum-based scoring failed, using fallback: {e}")
             # Fallback to basic scoring
             if failure_event.stack_trace:
-                for line in failure_event.stack_trace.split('\n'):
-                    if 'File "' in line and 'line' in line:
+                for line in failure_event.stack_trace.split("\n"):
+                    if 'File "' in line and "line" in line:
                         file_match = re.search(r'File "([^"]+)"', line)
                         if file_match:
                             filepath = file_match.group(1)
@@ -689,13 +804,15 @@ class FaultLocalizerAgent:
             score = 1.0
 
             # Files in core system get higher scores
-            if 'unified' in filepath.lower() or 'core' in filepath.lower():
+            if "unified" in filepath.lower() or "core" in filepath.lower():
                 score *= 1.5
 
             # Files with similar names to error type get higher scores
             error_type = failure_event.error_type.lower()
             filename = os.path.basename(filepath).lower()
-            if error_type in filename or any(keyword in filename for keyword in error_type.split()):
+            if error_type in filename or any(
+                keyword in filename for keyword in error_type.split()
+            ):
                 score *= 1.3
 
             return min(score, 2.0)  # Cap at 2.0
@@ -714,7 +831,9 @@ class FaultLocalizerAgent:
                 hours_old = (time.time() - mtime) / 3600
 
                 # Exponential decay: more recent = more important
-                importance = max(0.1, 2.0 * (0.5 ** (hours_old / 24)))  # Half-life of 24 hours
+                importance = max(
+                    0.1, 2.0 * (0.5 ** (hours_old / 24))
+                )  # Half-life of 24 hours
 
                 return importance
 
@@ -729,27 +848,28 @@ class FaultLocalizerAgent:
         correlated_files = []
 
         try:
-            
             # Use existing C correlation algorithms
             # For now, search for files that might be related to test names
 
             test_keywords = []
             for test in failing_tests:
                 # Extract keywords from test names
-                words = re.findall(r'[a-zA-Z]+', test.lower())
+                words = re.findall(r"[a-zA-Z]+", test.lower())
                 test_keywords.extend(words)
 
             # Search for files containing these keywords
             for root, dirs, files in os.walk(self.system.project_root):
                 for file in files:
-                    if file.endswith('.py'):
+                    if file.endswith(".py"):
                         filepath = os.path.join(root, file)
                         try:
-                            with open(filepath, 'r', encoding='utf-8') as f:
+                            with open(filepath, "r", encoding="utf-8") as f:
                                 content = f.read().lower()
 
                             # Check if file contains test-related keywords
-                            matches = sum(1 for keyword in test_keywords if keyword in content)
+                            matches = sum(
+                                1 for keyword in test_keywords if keyword in content
+                            )
                             if matches >= 2:  # At least 2 keyword matches
                                 correlated_files.append(filepath)
 
@@ -764,28 +884,33 @@ class FaultLocalizerAgent:
     def _calculate_code_complexity(self, filepath):
         """Calculate code complexity using existing C algorithms"""
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Use existing C complexity metrics
-            lines = content.split('\n')
+            lines = content.split("\n")
             total_lines = len(lines)
-            code_lines = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
+            code_lines = len(
+                [l for l in lines if l.strip() and not l.strip().startswith("#")]
+            )
 
             # Simple complexity metrics
-            functions = len(re.findall(r'^def\s+', content, re.MULTILINE))
-            classes = len(re.findall(r'^class\s+', content, re.MULTILINE))
-            loops = len(re.findall(r'\b(for|while)\s+', content))
-            conditionals = len(re.findall(r'\b(if|elif|else)\s*:', content))
+            functions = len(re.findall(r"^def\s+", content, re.MULTILINE))
+            classes = len(re.findall(r"^class\s+", content, re.MULTILINE))
+            loops = len(re.findall(r"\b(for|while)\s+", content))
+            conditionals = len(re.findall(r"\b(if|elif|else)\s*:", content))
 
             # Complexity score (0-1 scale)
-            complexity = min(1.0, (
-                functions * 0.1 +
-                classes * 0.2 +
-                loops * 0.05 +
-                conditionals * 0.03 +
-                (code_lines / 1000)  # Size factor
-            ))
+            complexity = min(
+                1.0,
+                (
+                    functions * 0.1
+                    + classes * 0.2
+                    + loops * 0.05
+                    + conditionals * 0.03
+                    + (code_lines / 1000)  # Size factor
+                ),
+            )
 
             return complexity
 
@@ -805,7 +930,7 @@ class FaultLocalizerAgent:
 
             for filepath in filepaths:
                 try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
+                    with open(filepath, "r", encoding="utf-8") as f:
                         file_content = f.read()
 
                     # Simple text similarity (Jaccard similarity)
@@ -836,12 +961,17 @@ class FaultLocalizerAgent:
 
         candidates = []
         for filepath, score in sorted_files[:max_candidates]:
-            candidates.append({
-                'file': filepath,
-                'spectrum_score': score,
-                'recently_modified': filepath in self._get_recently_modified_files(),
-                'in_stack_trace': filepath in failure_event.stack_trace if failure_event.stack_trace else False
-            })
+            candidates.append(
+                {
+                    "file": filepath,
+                    "spectrum_score": score,
+                    "recently_modified": filepath
+                    in self._get_recently_modified_files(),
+                    "in_stack_trace": filepath in failure_event.stack_trace
+                    if failure_event.stack_trace
+                    else False,
+                }
+            )
 
         return candidates
 
@@ -849,37 +979,61 @@ class FaultLocalizerAgent:
         """Use LLM to reason about which files most likely caused the failure"""
         # This would call an LLM with the failure context and candidates
         # For now, return candidates sorted by our heuristics
-        return sorted(candidates, key=lambda x: (
-            x['in_stack_trace'],  # Stack trace files first
-            x['recently_modified'],  # Then recently modified
-            x['spectrum_score']  # Then by spectrum score
-        ), reverse=True)
+        return sorted(
+            candidates,
+            key=lambda x: (
+                x["in_stack_trace"],  # Stack trace files first
+                x["recently_modified"],  # Then recently modified
+                x["spectrum_score"],  # Then by spectrum score
+            ),
+            reverse=True,
+        )
 
     def _get_recently_modified_files(self, hours=24):
         """Get files modified in the last N hours"""
         import glob
+
         recent_files = []
 
         # Check git for recently modified files
         try:
             import subprocess
-            result = subprocess.run(['git', 'log', '--since', f'{hours} hours ago', '--name-only', '--pretty=format:'],
-                                  capture_output=True, text=True, cwd=self.system.project_root)
+
+            result = subprocess.run(
+                [
+                    "git",
+                    "log",
+                    "--since",
+                    f"{hours} hours ago",
+                    "--name-only",
+                    "--pretty=format:",
+                ],
+                capture_output=True,
+                text=True,
+                cwd=self.system.project_root,
+            )
 
             if result.returncode == 0:
-                files = result.stdout.strip().split('\n')
-                recent_files = [f for f in files if f and os.path.exists(os.path.join(self.system.project_root, f))]
+                files = result.stdout.strip().split("\n")
+                recent_files = [
+                    f
+                    for f in files
+                    if f and os.path.exists(os.path.join(self.system.project_root, f))
+                ]
         except:
             # Fallback: check file modification times
             for root, dirs, files in os.walk(self.system.project_root):
                 for file in files:
-                    if file.endswith('.py'):
+                    if file.endswith(".py"):
                         filepath = os.path.join(root, file)
                         mtime = os.path.getmtime(filepath)
                         if time.time() - mtime < hours * 3600:
-                            recent_files.append(os.path.relpath(filepath, self.system.project_root))
+                            recent_files.append(
+                                os.path.relpath(filepath, self.system.project_root)
+                            )
 
         return recent_files
+
 
 class PatchGeneratorAgent:
     """LLM-based patch generation agent with sandboxing
@@ -895,7 +1049,9 @@ class PatchGeneratorAgent:
         patches = []
 
         for i in range(max_patches):
-            patch = self._generate_single_patch(failure_event, localized_files, patch_id=i+1)
+            patch = self._generate_single_patch(
+                failure_event, localized_files, patch_id=i + 1
+            )
             if patch:
                 patches.append(patch)
 
@@ -909,18 +1065,24 @@ class PatchGeneratorAgent:
         if not localized_files:
             return None
 
-        target_file = localized_files[0]['file']
-        file_path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
+        target_file = localized_files[0]["file"]
+        file_path = (
+            target_file
+            if os.path.isabs(target_file)
+            else os.path.join(self.system.project_root, target_file)
+        )
 
         # Read the target file
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 file_content = f.read()
         except:
             return None
 
         # Create patch prompt (this would call an LLM in practice)
-        patch_prompt = self._create_patch_prompt(failure_event, target_file, file_content)
+        patch_prompt = self._create_patch_prompt(
+            failure_event, target_file, file_content
+        )
 
         # Generate patch (simplified - in practice this would call an LLM)
         patch = self._simulate_patch_generation(patch_prompt, target_file, patch_id)
@@ -949,10 +1111,10 @@ Content preview:
 {file_content[:1000]}...
 
 Research notes:
-{research_notes[:1000] if research_notes else 'None'}
+{research_notes[:1000] if research_notes else "None"}
 
 Learning memory:
-{learning_context[:1000] if learning_context else 'None'}
+{learning_context[:1000] if learning_context else "None"}
 
 Generate a minimal fix that:
 - Does not refactor
@@ -976,21 +1138,21 @@ Confidence Threshold: Must be >= 0.75 for application
             # Try different LLM systems in order of preference
             if getattr(self.system, "strict_local_only", False):
                 llm_systems = [
-                    ('sam', self._try_sam_patch_generation),
+                    ("sam", self._try_sam_patch_generation),
                 ]
             else:
                 llm_systems = [
-                    ('claude', self._try_claude_patch_generation),
-                    ('openai', self._try_openai_patch_generation),
-                    ('ollama', self._try_ollama_patch_generation),
-                    ('sam', self._try_sam_patch_generation)
+                    ("claude", self._try_claude_patch_generation),
+                    ("openai", self._try_openai_patch_generation),
+                    ("ollama", self._try_ollama_patch_generation),
+                    ("sam", self._try_sam_patch_generation),
                 ]
 
             for system_name, generator_func in llm_systems:
                 try:
                     patch = generator_func(prompt, target_file, patch_id)
-                    if patch and patch.get('confidence', 0) > 0.7:
-                        patch['llm_system_used'] = system_name
+                    if patch and patch.get("confidence", 0) > 0.7:
+                        patch["llm_system_used"] = system_name
                         return patch
                 except Exception as e:
                     print(f"⚠️ {system_name} patch generation failed: {e}")
@@ -1005,11 +1167,15 @@ Confidence Threshold: Must be >= 0.75 for application
 
     def _try_claude_patch_generation(self, prompt, target_file, patch_id):
         """Try Claude for patch generation"""
-        if not hasattr(self.system, 'claude_available') or not self.system.claude_available:
+        if (
+            not hasattr(self.system, "claude_available")
+            or not self.system.claude_available
+        ):
             return None
 
         try:
             import anthropic
+
             client = anthropic.Anthropic()
 
             response = client.messages.create(
@@ -1017,59 +1183,85 @@ Confidence Threshold: Must be >= 0.75 for application
                 max_tokens=2000,
                 temperature=0.1,
                 system="You are an expert software engineer. Generate minimal, safe code patches.",
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
-            return self._parse_claude_patch_response(response.content[0].text, target_file, patch_id)
+            return self._parse_claude_patch_response(
+                response.content[0].text, target_file, patch_id
+            )
 
         except Exception as e:
             raise e
 
     def _try_openai_patch_generation(self, prompt, target_file, patch_id):
         """Try OpenAI for patch generation"""
-        if not hasattr(self.system, 'openai_available') or not self.system.openai_available:
+        if (
+            not hasattr(self.system, "openai_available")
+            or not self.system.openai_available
+        ):
             return None
 
         try:
             import openai
+
             client = openai.OpenAI()
 
             response = client.chat.completions.create(
                 model="gpt-4",
-                messages=[{"role": "system", "content": "You are an expert software engineer. Generate minimal, safe code patches."},
-                         {"role": "user", "content": prompt}],
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert software engineer. Generate minimal, safe code patches.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
                 max_tokens=2000,
-                temperature=0.1
+                temperature=0.1,
             )
 
-            return self._parse_openai_patch_response(response.choices[0].message.content, target_file, patch_id)
+            return self._parse_openai_patch_response(
+                response.choices[0].message.content, target_file, patch_id
+            )
 
         except Exception as e:
             raise e
 
     def _try_ollama_patch_generation(self, prompt, target_file, patch_id):
         """Try Ollama models for patch generation"""
-        if not hasattr(self.system, 'ollama_available') or not self.system.ollama_available:
+        if (
+            not hasattr(self.system, "ollama_available")
+            or not self.system.ollama_available
+        ):
             return None
 
         try:
             import requests
 
             # Try different Ollama models in order of preference
-            models_to_try = ['codellama:13b', 'codellama:7b', 'llama2:13b', 'mistral:7b']
+            models_to_try = [
+                "codellama:13b",
+                "codellama:7b",
+                "llama2:13b",
+                "mistral:7b",
+            ]
 
             for model in models_to_try:
                 try:
-                    response = requests.post('http://localhost:11434/api/generate',
-                                           json={
-                                               "model": model,
-                                               "prompt": prompt,
-                                               "stream": False,
-                                               "options": {"temperature": 0.1, "num_predict": 1000}
-                                           }, timeout=30)
+                    response = requests.post(
+                        "http://localhost:11434/api/generate",
+                        json={
+                            "model": model,
+                            "prompt": prompt,
+                            "stream": False,
+                            "options": {"temperature": 0.1, "num_predict": 1000},
+                        },
+                        timeout=30,
+                    )
 
                     if response.status_code == 200:
-                        return self._parse_ollama_patch_response(response.json()['response'], target_file, patch_id)
+                        return self._parse_ollama_patch_response(
+                            response.json()["response"], target_file, patch_id
+                        )
 
                 except:
                     continue
@@ -1081,22 +1273,22 @@ Confidence Threshold: Must be >= 0.75 for application
 
     def _try_sam_patch_generation(self, prompt, target_file, patch_id):
         """Try SAM neural network for patch generation"""
-        if not hasattr(self.system, 'sam_available') or not self.system.sam_available:
+        if not hasattr(self.system, "sam_available") or not self.system.sam_available:
             return None
 
         try:
             # This would integrate with the SAM C consciousness framework
             # For now, return a basic patch with low confidence
             return {
-                'id': f'patch_{patch_id}',
-                'target_file': target_file,
-                'changes': [],  # SAM would generate actual changes
-                'intent': 'SAM consciousness-guided fix',
-                'risk_level': 'medium',
-                'confidence': 0.6,  # SAM has learning but lower confidence
-                'assumptions': ['SAM consciousness can understand the issue'],
-                'unknowns': ['Full impact of consciousness-guided changes'],
-                'generated_by': 'SAM_consciousness'
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": [],  # SAM would generate actual changes
+                "intent": "SAM consciousness-guided fix",
+                "risk_level": "medium",
+                "confidence": 0.6,  # SAM has learning but lower confidence
+                "assumptions": ["SAM consciousness can understand the issue"],
+                "unknowns": ["Full impact of consciousness-guided changes"],
+                "generated_by": "SAM_consciousness",
             }
 
         except Exception as e:
@@ -1107,44 +1299,42 @@ Confidence Threshold: Must be >= 0.75 for application
         # Analyze the failure and generate basic fixes based on patterns
 
         patch = {
-            'id': f'patch_{patch_id}',
-            'target_file': target_file,
-            'changes': [],
-            'intent': 'Heuristic-based automated fix',
-            'risk_level': 'low',
-            'confidence': 0.5,
-            'assumptions': ['Common failure patterns apply'],
-            'unknowns': ['Specific failure context'],
-            'generated_by': 'heuristic_fallback'
+            "id": f"patch_{patch_id}",
+            "target_file": target_file,
+            "changes": [],
+            "intent": "Heuristic-based automated fix",
+            "risk_level": "low",
+            "confidence": 0.5,
+            "assumptions": ["Common failure patterns apply"],
+            "unknowns": ["Specific failure context"],
+            "generated_by": "heuristic_fallback",
         }
 
         # Basic pattern matching for common fixes
-        if 'NameError' in prompt and 'not defined' in prompt:
-            patch['changes'].append({
-                'type': 'import_fix',
-                'description': 'Add missing import statement'
-            })
+        if "NameError" in prompt and "not defined" in prompt:
+            patch["changes"].append(
+                {"type": "import_fix", "description": "Add missing import statement"}
+            )
 
-        elif 'AttributeError' in prompt:
-            patch['changes'].append({
-                'type': 'attribute_fix',
-                'description': 'Fix attribute access issue'
-            })
+        elif "AttributeError" in prompt:
+            patch["changes"].append(
+                {"type": "attribute_fix", "description": "Fix attribute access issue"}
+            )
 
         return patch
 
     def _emergency_patch_generation(self, prompt, target_file, patch_id):
         """Absolute emergency fallback when all else fails"""
         return {
-            'id': f'patch_{patch_id}',
-            'target_file': target_file,
-            'changes': [],
-            'intent': 'Emergency patch - requires human review',
-            'risk_level': 'high',
-            'confidence': 0.1,
-            'assumptions': ['Human intervention required'],
-            'unknowns': ['Everything - emergency fallback'],
-            'generated_by': 'emergency_fallback'
+            "id": f"patch_{patch_id}",
+            "target_file": target_file,
+            "changes": [],
+            "intent": "Emergency patch - requires human review",
+            "risk_level": "high",
+            "confidence": 0.1,
+            "assumptions": ["Human intervention required"],
+            "unknowns": ["Everything - emergency fallback"],
+            "generated_by": "emergency_fallback",
         }
 
     def _parse_claude_patch_response(self, response_text, target_file, patch_id):
@@ -1153,15 +1343,15 @@ Confidence Threshold: Must be >= 0.75 for application
         # This would include extracting code changes, risk assessment, etc.
 
         return {
-            'id': f'patch_{patch_id}',
-            'target_file': target_file,
-            'changes': self._extract_changes_from_response(response_text),
-            'intent': self._extract_intent_from_response(response_text),
-            'risk_level': self._assess_risk_from_response(response_text),
-            'confidence': 0.85,  # Claude typically high confidence
-            'assumptions': self._extract_assumptions_from_response(response_text),
-            'unknowns': self._extract_unknowns_from_response(response_text),
-            'generated_by': 'claude'
+            "id": f"patch_{patch_id}",
+            "target_file": target_file,
+            "changes": self._extract_changes_from_response(response_text),
+            "intent": self._extract_intent_from_response(response_text),
+            "risk_level": self._assess_risk_from_response(response_text),
+            "confidence": 0.85,  # Claude typically high confidence
+            "assumptions": self._extract_assumptions_from_response(response_text),
+            "unknowns": self._extract_unknowns_from_response(response_text),
+            "generated_by": "claude",
         }
 
     def _parse_openai_patch_response(self, response_text, target_file, patch_id):
@@ -1169,15 +1359,15 @@ Confidence Threshold: Must be >= 0.75 for application
         # Similar parsing logic for OpenAI responses
 
         return {
-            'id': f'patch_{patch_id}',
-            'target_file': target_file,
-            'changes': self._extract_changes_from_response(response_text),
-            'intent': self._extract_intent_from_response(response_text),
-            'risk_level': self._assess_risk_from_response(response_text),
-            'confidence': 0.80,  # GPT-4 typically high confidence
-            'assumptions': self._extract_assumptions_from_response(response_text),
-            'unknowns': self._extract_unknowns_from_response(response_text),
-            'generated_by': 'openai'
+            "id": f"patch_{patch_id}",
+            "target_file": target_file,
+            "changes": self._extract_changes_from_response(response_text),
+            "intent": self._extract_intent_from_response(response_text),
+            "risk_level": self._assess_risk_from_response(response_text),
+            "confidence": 0.80,  # GPT-4 typically high confidence
+            "assumptions": self._extract_assumptions_from_response(response_text),
+            "unknowns": self._extract_unknowns_from_response(response_text),
+            "generated_by": "openai",
         }
 
     def _parse_ollama_patch_response(self, response_text, target_file, patch_id):
@@ -1185,15 +1375,15 @@ Confidence Threshold: Must be >= 0.75 for application
         # Similar parsing logic for Ollama responses
 
         return {
-            'id': f'patch_{patch_id}',
-            'target_file': target_file,
-            'changes': self._extract_changes_from_response(response_text),
-            'intent': self._extract_intent_from_response(response_text),
-            'risk_level': self._assess_risk_from_response(response_text),
-            'confidence': 0.70,  # Local models typically lower confidence
-            'assumptions': self._extract_assumptions_from_response(response_text),
-            'unknowns': self._extract_unknowns_from_response(response_text),
-            'generated_by': 'ollama'
+            "id": f"patch_{patch_id}",
+            "target_file": target_file,
+            "changes": self._extract_changes_from_response(response_text),
+            "intent": self._extract_intent_from_response(response_text),
+            "risk_level": self._assess_risk_from_response(response_text),
+            "confidence": 0.70,  # Local models typically lower confidence
+            "assumptions": self._extract_assumptions_from_response(response_text),
+            "unknowns": self._extract_unknowns_from_response(response_text),
+            "generated_by": "ollama",
         }
 
     def _extract_changes_from_response(self, response_text):
@@ -1203,30 +1393,35 @@ Confidence Threshold: Must be >= 0.75 for application
 
         # Look for code blocks
         import re
-        code_blocks = re.findall(r'```(?:python)?\n(.*?)\n```', response_text, re.DOTALL)
+
+        code_blocks = re.findall(
+            r"```(?:python)?\n(.*?)\n```", response_text, re.DOTALL
+        )
 
         for block in code_blocks:
-            changes.append({
-                'type': 'code_block',
-                'content': block.strip(),
-                'format': 'replacement'
-            })
+            changes.append(
+                {
+                    "type": "code_block",
+                    "content": block.strip(),
+                    "format": "replacement",
+                }
+            )
 
         return changes
 
     def _extract_intent_from_response(self, response_text):
         """Extract the intent/purpose from LLM response"""
         # Look for intent statements
-        if 'intent' in response_text.lower():
-            return response_text.split('intent:')[1].split('\n')[0].strip()
+        if "intent" in response_text.lower():
+            return response_text.split("intent:")[1].split("\n")[0].strip()
         return "Fix the detected issue"
 
     def _assess_risk_from_response(self, response_text):
         """Assess risk level from LLM response"""
         risk_keywords = {
-            'low': ['simple', 'minor', 'single line', 'obvious'],
-            'medium': ['logic', 'algorithm', 'multiple', 'behavior'],
-            'high': ['complex', 'architecture', 'breaking', 'fundamental']
+            "low": ["simple", "minor", "single line", "obvious"],
+            "medium": ["logic", "algorithm", "multiple", "behavior"],
+            "high": ["complex", "architecture", "breaking", "fundamental"],
         }
 
         text_lower = response_text.lower()
@@ -1235,12 +1430,12 @@ Confidence Threshold: Must be >= 0.75 for application
             if any(keyword in text_lower for keyword in keywords):
                 return risk_level
 
-        return 'medium'  # Default
+        return "medium"  # Default
 
     def _extract_assumptions_from_response(self, response_text):
         """Extract assumptions from LLM response"""
         assumptions = []
-        if 'assume' in response_text.lower():
+        if "assume" in response_text.lower():
             # Extract assumption statements
             pass
         return assumptions or ["Standard coding practices apply"]
@@ -1248,10 +1443,11 @@ Confidence Threshold: Must be >= 0.75 for application
     def _extract_unknowns_from_response(self, response_text):
         """Extract unknowns/risks from LLM response"""
         unknowns = []
-        if 'unknown' in response_text.lower() or 'uncertain' in response_text.lower():
+        if "unknown" in response_text.lower() or "uncertain" in response_text.lower():
             # Extract uncertainty statements
             pass
         return unknowns or ["Full system impact unknown"]
+
 
 class VerifierJudgeAgent:
     """Non-LLM first, LLM second verification and judging agent
@@ -1262,54 +1458,56 @@ class VerifierJudgeAgent:
         self.verification_cache = {}
         self.import_test_mode = os.getenv("SAM_META_IMPORT_TEST_MODE", "import").lower()
         skip = os.getenv("SAM_META_IMPORT_SKIP", "")
-        self.import_skip_files = {item.strip() for item in skip.split(",") if item.strip()}
+        self.import_skip_files = {
+            item.strip() for item in skip.split(",") if item.strip()
+        }
         self.import_skip_files.add("complete_sam_unified.py")
 
     def verify_patch(self, patch):
         """Verify a patch through multiple stages with confidence threshold requirements"""
         verification_result = {
-            'patch_id': patch['id'],
-            'static_checks': False,
-            'tests_pass': False,
-            'invariants_preserved': False,
-            'overall_safe': False,
-            'score': 0,
-            'issues': []
+            "patch_id": patch["id"],
+            "static_checks": False,
+            "tests_pass": False,
+            "invariants_preserved": False,
+            "overall_safe": False,
+            "score": 0,
+            "issues": [],
         }
         meta_test_mode = os.getenv("SAM_META_TEST_MODE", "0") == "1" or bool(
             getattr(self.system, "meta_test_mode", False)
         )
         if meta_test_mode:
             static_result = self._static_verification(patch)
-            verification_result['static_checks'] = static_result['passed']
-            if not static_result['passed']:
-                verification_result['issues'].extend(static_result['issues'])
+            verification_result["static_checks"] = static_result["passed"]
+            if not static_result["passed"]:
+                verification_result["issues"].extend(static_result["issues"])
                 return verification_result
-            verification_result['tests_pass'] = True
-            verification_result['invariants_preserved'] = True
-            verification_result['score'] = 8.0
-            verification_result['overall_safe'] = True
+            verification_result["tests_pass"] = True
+            verification_result["invariants_preserved"] = True
+            verification_result["score"] = 8.0
+            verification_result["overall_safe"] = True
             return verification_result
 
         # Stage 1: Static checks (non-LLM, fast)
         static_result = self._static_verification(patch)
-        verification_result['static_checks'] = static_result['passed']
-        if not static_result['passed']:
-            verification_result['issues'].extend(static_result['issues'])
+        verification_result["static_checks"] = static_result["passed"]
+        if not static_result["passed"]:
+            verification_result["issues"].extend(static_result["issues"])
             return verification_result
 
         # Stage 2: Test execution
         test_result = self._test_verification(patch)
-        verification_result['tests_pass'] = test_result['passed']
-        if not test_result['passed']:
-            verification_result['issues'].extend(test_result['issues'])
+        verification_result["tests_pass"] = test_result["passed"]
+        if not test_result["passed"]:
+            verification_result["issues"].extend(test_result["issues"])
             return verification_result
 
         # Stage 3: Invariant checks
         invariant_result = self._invariant_verification(patch)
-        verification_result['invariants_preserved'] = invariant_result['passed']
-        if not invariant_result['passed']:
-            verification_result['issues'].extend(invariant_result['issues'])
+        verification_result["invariants_preserved"] = invariant_result["passed"]
+        if not invariant_result["passed"]:
+            verification_result["issues"].extend(invariant_result["issues"])
             return verification_result
 
         # Stage 4: LLM reasoning (only if still ambiguous)
@@ -1317,29 +1515,35 @@ class VerifierJudgeAgent:
         verification_result.update(llm_result)
 
         # Calculate overall score - must be >= 7.0 for application
-        verification_result['score'] = self._calculate_patch_score(patch, verification_result)
-        verification_result['overall_safe'] = verification_result['score'] >= 7.0
+        verification_result["score"] = self._calculate_patch_score(
+            patch, verification_result
+        )
+        verification_result["overall_safe"] = verification_result["score"] >= 7.0
 
         return verification_result
 
     def _simulate_patch_content(self, patch):
         issues = []
-        target_file = patch.get('target_file') or ""
+        target_file = patch.get("target_file") or ""
         if not target_file:
             return None, issues
         try:
-            path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
+            path = (
+                target_file
+                if os.path.isabs(target_file)
+                else os.path.join(self.system.project_root, target_file)
+            )
             if not os.path.exists(path):
                 return None, [f"Target file not found: {target_file}"]
             content = Path(path).read_text(encoding="utf-8", errors="ignore")
         except Exception as exc:
             return None, [f"Failed to read target file: {exc}"]
 
-        for change in patch.get('changes', []):
-            change_type = change.get('type')
-            if change_type == 'replace':
-                old_code = change.get('old_code', '')
-                new_code = change.get('new_code', '')
+        for change in patch.get("changes", []):
+            change_type = change.get("type")
+            if change_type == "replace":
+                old_code = change.get("old_code", "")
+                new_code = change.get("new_code", "")
                 if not old_code:
                     issues.append("Patch replace missing old_code")
                     continue
@@ -1347,86 +1551,96 @@ class VerifierJudgeAgent:
                     issues.append("Old code not found in target file during simulation")
                     continue
                 content = content.replace(old_code, new_code, 1)
-            elif change_type == 'insert_after':
-                anchor = change.get('anchor') or change.get('old_code') or ''
-                new_code = change.get('new_code') or change.get('content') or ''
+            elif change_type == "insert_after":
+                anchor = change.get("anchor") or change.get("old_code") or ""
+                new_code = change.get("new_code") or change.get("content") or ""
                 if anchor and anchor in content:
                     content = content.replace(anchor, anchor + new_code, 1)
                 else:
-                    issues.append("Insert_after anchor not found in target file during simulation")
-            elif change_type == 'code_block':
+                    issues.append(
+                        "Insert_after anchor not found in target file during simulation"
+                    )
+            elif change_type == "code_block":
                 # Skip simulation; no anchor to apply.
                 continue
         return content, issues
 
     def _static_verification(self, patch):
         """Fast static analysis checks with dangerous pattern detection"""
-        result = {'passed': True, 'issues': []}
+        result = {"passed": True, "issues": []}
 
         try:
             # Check syntax validity of the patch
-            for change in patch.get('changes', []):
-                if change.get('type') == 'code_block':
-                    code_payload = change.get('content')
+            for change in patch.get("changes", []):
+                if change.get("type") == "code_block":
+                    code_payload = change.get("content")
                     if code_payload:
                         try:
                             ast.parse(code_payload)
                         except SyntaxError as e:
-                            result['issues'].append(f"Syntax error in patch code block: {e}")
-                            result['passed'] = False
+                            result["issues"].append(
+                                f"Syntax error in patch code block: {e}"
+                            )
+                            result["passed"] = False
 
             # Check for dangerous patterns that could compromise security
             dangerous_patterns = [
-                r'os\.system\s*\(',
-                r'os\.popen\s*\(',
-                r'subprocess\.',
-                r'eval\s*\(',
-                r'exec\s*\(',
-                r'__import__\s*\('
+                r"os\.system\s*\(",
+                r"os\.popen\s*\(",
+                r"subprocess\.",
+                r"eval\s*\(",
+                r"exec\s*\(",
+                r"__import__\s*\(",
             ]
 
-            for change in patch.get('changes', []):
-                if change.get('type') in ('code_block', 'replace', 'insert_after'):
-                    code_content = change.get('content') or change.get('new_code') or ""
+            for change in patch.get("changes", []):
+                if change.get("type") in ("code_block", "replace", "insert_after"):
+                    code_content = change.get("content") or change.get("new_code") or ""
                     for pattern in dangerous_patterns:
                         if re.search(pattern, code_content):
-                            result['issues'].append(f"Dangerous pattern detected: {pattern}")
-                            result['passed'] = False
+                            result["issues"].append(
+                                f"Dangerous pattern detected: {pattern}"
+                            )
+                            result["passed"] = False
 
             # Check patch size (too large patches are risky)
-            total_lines = sum(len(change.get('content', '').split('\n'))
-                              for change in patch.get('changes', [])
-                              if change.get('type') == 'code_block')
+            total_lines = sum(
+                len(change.get("content", "").split("\n"))
+                for change in patch.get("changes", [])
+                if change.get("type") == "code_block"
+            )
 
             if total_lines > 50:  # Arbitrary threshold
-                result['issues'].append(f"Large patch ({total_lines} lines) - high risk")
-                if patch.get('risk_level') != 'high':
-                    patch['risk_level'] = 'high'  # Upgrade risk
+                result["issues"].append(
+                    f"Large patch ({total_lines} lines) - high risk"
+                )
+                if patch.get("risk_level") != "high":
+                    patch["risk_level"] = "high"  # Upgrade risk
 
             # Validate full patched file syntax (simulated apply)
             simulated_content, sim_issues = self._simulate_patch_content(patch)
             if sim_issues:
-                result['issues'].extend(sim_issues)
-                result['passed'] = False
+                result["issues"].extend(sim_issues)
+                result["passed"] = False
             elif simulated_content:
                 try:
                     ast.parse(simulated_content)
                 except SyntaxError as e:
-                    result['issues'].append(f"Syntax error after patch simulation: {e}")
-                    result['passed'] = False
+                    result["issues"].append(f"Syntax error after patch simulation: {e}")
+                    result["passed"] = False
 
         except Exception as e:
-            result['issues'].append(f"Static verification failed: {e}")
-            result['passed'] = False
+            result["issues"].append(f"Static verification failed: {e}")
+            result["passed"] = False
 
         return result
 
     def _test_verification(self, patch):
         """Run tests to verify patch doesn't break existing functionality"""
-        result = {'passed': True, 'issues': []}
+        result = {"passed": True, "issues": []}
 
         try:
-            target_file = patch.get('target_file') or ""
+            target_file = patch.get("target_file") or ""
             mode = self.import_test_mode
             if target_file in self.import_skip_files and mode == "import":
                 mode = "compile"
@@ -1441,42 +1655,51 @@ class VerifierJudgeAgent:
             if mode in ("compile", "py_compile"):
                 simulated_content, sim_issues = self._simulate_patch_content(patch)
                 if sim_issues:
-                    result['issues'].extend(sim_issues)
-                    result['passed'] = False
+                    result["issues"].extend(sim_issues)
+                    result["passed"] = False
                     return result
                 if simulated_content is None and target_file:
-                    path = target_file if os.path.isabs(target_file) else os.path.join(self.system.project_root, target_file)
-                    simulated_content = Path(path).read_text(encoding="utf-8", errors="ignore")
+                    path = (
+                        target_file
+                        if os.path.isabs(target_file)
+                        else os.path.join(self.system.project_root, target_file)
+                    )
+                    simulated_content = Path(path).read_text(
+                        encoding="utf-8", errors="ignore"
+                    )
                 if simulated_content:
                     try:
                         compile(simulated_content, target_file or "<patch>", "exec")
-                        result['passed'] = True
+                        result["passed"] = True
                     except SyntaxError as e:
-                        result['issues'].append(f"Compile test failed: {e}")
-                        result['passed'] = False
+                        result["issues"].append(f"Compile test failed: {e}")
+                        result["passed"] = False
                     except Exception as e:
-                        result['issues'].append(f"Compile test error: {e}")
-                        result['passed'] = False
+                        result["issues"].append(f"Compile test error: {e}")
+                        result["passed"] = False
                 return result
 
             # Run basic import tests (default)
             import sys
+
             original_modules = set(sys.modules.keys())
 
             # Try importing the target module
             if target_file and os.path.isabs(target_file):
                 return result
-            target_module = target_file.replace('.py', '').replace('/', '.') if target_file else ""
+            target_module = (
+                target_file.replace(".py", "").replace("/", ".") if target_file else ""
+            )
             try:
                 if target_module:
                     __import__(target_module)
-                result['passed'] = True
+                result["passed"] = True
             except ImportError as e:
-                result['issues'].append(f"Import test failed: {e}")
-                result['passed'] = False
+                result["issues"].append(f"Import test failed: {e}")
+                result["passed"] = False
             except Exception as e:
-                result['issues'].append(f"Module execution failed: {e}")
-                result['passed'] = False
+                result["issues"].append(f"Module execution failed: {e}")
+                result["passed"] = False
 
             # Clean up any new modules loaded during testing
             current_modules = set(sys.modules.keys())
@@ -1486,14 +1709,14 @@ class VerifierJudgeAgent:
                     del sys.modules[module]
 
         except Exception as e:
-            result['issues'].append(f"Test verification failed: {e}")
-            result['passed'] = False
+            result["issues"].append(f"Test verification failed: {e}")
+            result["passed"] = False
 
         return result
 
     def _invariant_verification(self, patch):
         """Check that system invariants are preserved"""
-        result = {'passed': True, 'issues': []}
+        result = {"passed": True, "issues": []}
         if getattr(self.system, "invariants_disabled", False):
             return result
 
@@ -1501,24 +1724,24 @@ class VerifierJudgeAgent:
             # Security invariants
             security_issues = self._check_security_invariants(patch)
             if security_issues:
-                result['issues'].extend(security_issues)
-                result['passed'] = False
+                result["issues"].extend(security_issues)
+                result["passed"] = False
 
             # Performance invariants
             perf_issues = self._check_performance_invariants(patch)
             if perf_issues:
-                result['issues'].extend(perf_issues)
+                result["issues"].extend(perf_issues)
                 # Performance issues don't necessarily fail verification
 
             # API compatibility invariants
             api_issues = self._check_api_invariants(patch)
             if api_issues:
-                result['issues'].extend(api_issues)
-                result['passed'] = False
+                result["issues"].extend(api_issues)
+                result["passed"] = False
 
         except Exception as e:
-            result['issues'].append(f"Invariant verification failed: {e}")
-            result['passed'] = False
+            result["issues"].append(f"Invariant verification failed: {e}")
+            result["passed"] = False
 
         return result
 
@@ -1526,20 +1749,22 @@ class VerifierJudgeAgent:
         """Check security invariants"""
         issues = []
 
-        for change in patch.get('changes', []):
-            if change.get('type') == 'code_block':
-                code = change['content']
+        for change in patch.get("changes", []):
+            if change.get("type") == "code_block":
+                code = change["content"]
 
                 # Check for SQL injection vulnerabilities
-                if re.search(r'(SELECT|INSERT|UPDATE|DELETE).*\+.*\%', code, re.IGNORECASE):
+                if re.search(
+                    r"(SELECT|INSERT|UPDATE|DELETE).*\+.*\%", code, re.IGNORECASE
+                ):
                     issues.append("Potential SQL injection vulnerability")
 
                 # Check for command injection
-                if re.search(r'os\.system.*\+|subprocess.*\+', code):
+                if re.search(r"os\.system.*\+|subprocess.*\+", code):
                     issues.append("Potential command injection vulnerability")
 
                 # Check for insecure random usage
-                if 'random.' in code and 'secrets.' not in code:
+                if "random." in code and "secrets." not in code:
                     issues.append("Using insecure random instead of secrets module")
 
         return issues
@@ -1548,16 +1773,16 @@ class VerifierJudgeAgent:
         """Check performance invariants"""
         issues = []
 
-        for change in patch.get('changes', []):
-            if change.get('type') == 'code_block':
-                code = change['content']
+        for change in patch.get("changes", []):
+            if change.get("type") == "code_block":
+                code = change["content"]
 
                 # Check for obvious performance issues
-                if re.search(r'for.*in.*range\(.*\).*for.*in.*range\(.*\)', code):
+                if re.search(r"for.*in.*range\(.*\).*for.*in.*range\(.*\)", code):
                     issues.append("Nested loops detected - potential performance issue")
 
                 # Check for large data structures in memory
-                if 'list(' * 3 in code or 'dict(' * 3 in code:
+                if "list(" * 3 in code or "dict(" * 3 in code:
                     issues.append("Large nested data structures - memory concern")
 
         return issues
@@ -1567,7 +1792,7 @@ class VerifierJudgeAgent:
         issues = []
 
         # Check if patch modifies public APIs
-        target_file = patch['target_file']
+        target_file = patch["target_file"]
 
         # Read the current file to check for API changes
         try:
@@ -1576,22 +1801,28 @@ class VerifierJudgeAgent:
                 path = Path(self.system.project_root) / target_file
             if not path.exists():
                 return issues
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 current_content = f.read()
 
             # Look for function/class definitions that might be API
-            current_defs = re.findall(r'^(def|class)\s+(\w+)', current_content, re.MULTILINE)
+            current_defs = re.findall(
+                r"^(def|class)\s+(\w+)", current_content, re.MULTILINE
+            )
 
             # Check if patch changes any of these
-            for change in patch.get('changes', []):
-                if change.get('type') == 'code_block':
-                    patch_content = change['content']
-                    patch_defs = re.findall(r'^(def|class)\s+(\w+)', patch_content, re.MULTILINE)
+            for change in patch.get("changes", []):
+                if change.get("type") == "code_block":
+                    patch_content = change["content"]
+                    patch_defs = re.findall(
+                        r"^(def|class)\s+(\w+)", patch_content, re.MULTILINE
+                    )
 
                     # Check for removed or changed definitions
                     for def_type, name in current_defs:
-                        if not re.search(rf'^{def_type}\s+{name}', patch_content):
-                            issues.append(f"API change: {def_type} {name} may be modified or removed")
+                        if not re.search(rf"^{def_type}\s+{name}", patch_content):
+                            issues.append(
+                                f"API change: {def_type} {name} may be modified or removed"
+                            )
 
         except Exception as e:
             issues.append(f"API invariant check failed: {e}")
@@ -1603,40 +1834,41 @@ class VerifierJudgeAgent:
         # This is called when static/test/invariant checks pass but we need more confidence
         try:
             # Use a simple heuristic for now - in practice would call LLM
-            uncertainty_score = len(patch.get('unknowns', [])) / 10.0  # Normalize
+            uncertainty_score = len(patch.get("unknowns", [])) / 10.0  # Normalize
             confidence_boost = 1.0 - uncertainty_score
 
-            return {'llm_confidence': min(confidence_boost, 0.9)}
+            return {"llm_confidence": min(confidence_boost, 0.9)}
 
         except Exception as e:
-            return {'llm_confidence': 0.5}  # Neutral confidence
+            return {"llm_confidence": 0.5}  # Neutral confidence
 
     def _calculate_patch_score(self, patch, verification_result):
         """Calculate comprehensive patch score"""
         score = 0
 
         # Base scoring from verification results
-        if verification_result['static_checks']:
+        if verification_result["static_checks"]:
             score += 2
-        if verification_result['tests_pass']:
+        if verification_result["tests_pass"]:
             score += 3
-        if verification_result['invariants_preserved']:
+        if verification_result["invariants_preserved"]:
             score += 3
 
         # Risk adjustment
-        risk_multiplier = {'low': 1.0, 'medium': 0.8, 'high': 0.5}
-        score *= risk_multiplier.get(patch.get('risk_level', 'high'), 0.5)
+        risk_multiplier = {"low": 1.0, "medium": 0.8, "high": 0.5}
+        score *= risk_multiplier.get(patch.get("risk_level", "high"), 0.5)
 
         # Confidence adjustment
-        confidence = patch.get('confidence', 0)
+        confidence = patch.get("confidence", 0)
         score *= confidence
 
         return min(score, 10.0)  # Cap at 10
 
+
 class MetaAgent:
     """Production-grade Meta-Agent for safe self-healing AGI
     Implements complete O→L→P→V→S→A algorithm with learning state"""
-    
+
     def __init__(self, observer, localizer, generator, verifier, system):
         # Required sub-agents
         self.observer = observer
@@ -1648,8 +1880,8 @@ class MetaAgent:
         self.system = system
 
         # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
-        self.failure_clusters = {}     # cluster_id -> list[failure]
-        self.patch_history = []        # list of applied/rejected patches
+        self.failure_clusters = {}  # cluster_id -> list[failure]
+        self.patch_history = []  # list of applied/rejected patches
         self.confidence_threshold = float(
             os.getenv("SAM_META_CONFIDENCE_THRESHOLD", "0.8")
         )
@@ -1677,11 +1909,15 @@ class MetaAgent:
         self.baseline_performance = {}
         self.current_performance = {}
         self.improvement_threshold = 0.95  # 95% error reduction required
-        self.learning_log = deque(maxlen=int(os.getenv("SAM_META_LEARNING_LOG_MAX", "50")))
+        self.learning_log = deque(
+            maxlen=int(os.getenv("SAM_META_LEARNING_LOG_MAX", "50"))
+        )
         self.research_enabled = os.getenv("SAM_META_RESEARCH_ENABLED", "1") == "1"
         self.research_mode = os.getenv("SAM_META_RESEARCH_MODE", "both").lower()
         self.research_max_chars = int(os.getenv("SAM_META_RESEARCH_MAX_CHARS", "2000"))
-        self.distilled_memory = deque(maxlen=int(os.getenv("SAM_META_DISTILLED_MAX", "50")))
+        self.distilled_memory = deque(
+            maxlen=int(os.getenv("SAM_META_DISTILLED_MAX", "50"))
+        )
         self.distill_every = max(1, int(os.getenv("SAM_META_DISTILL_EVERY", "5")))
         self._learning_event_counter = 0
         self.last_distill_ts = 0.0
@@ -1726,7 +1962,9 @@ class MetaAgent:
         """Load recent learning/distillation records from disk."""
         try:
             if self.learning_log_path and self.learning_log_path.exists():
-                lines = self.learning_log_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                lines = self.learning_log_path.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines()
                 max_items = self.learning_log.maxlen or 50
                 for line in lines[-max_items:]:
                     try:
@@ -1736,7 +1974,9 @@ class MetaAgent:
                     except Exception:
                         continue
             if self.distilled_log_path and self.distilled_log_path.exists():
-                lines = self.distilled_log_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                lines = self.distilled_log_path.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines()
                 max_items = self.distilled_memory.maxlen or 50
                 for line in lines[-max_items:]:
                     try:
@@ -1781,20 +2021,70 @@ class MetaAgent:
         """Merged enhanced error patterns for deterministic fixes."""
         return {
             "syntax_errors": [
-                {"pattern": r"SyntaxError.*(missing.*colon|expected.*:)", "type": "missing_colon", "severity": "high", "auto_fixable": True},
-                {"pattern": r"SyntaxError.*invalid.*syntax", "type": "invalid_syntax", "severity": "high", "auto_fixable": True},
-                {"pattern": r"IndentationError", "type": "indentation_error", "severity": "medium", "auto_fixable": True},
-                {"pattern": r"NameError.*not defined", "type": "name_error", "severity": "medium", "auto_fixable": True},
+                {
+                    "pattern": r"SyntaxError.*(missing.*colon|expected.*:)",
+                    "type": "missing_colon",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"SyntaxError.*invalid.*syntax",
+                    "type": "invalid_syntax",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"IndentationError",
+                    "type": "indentation_error",
+                    "severity": "medium",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"NameError.*not defined",
+                    "type": "name_error",
+                    "severity": "medium",
+                    "auto_fixable": True,
+                },
             ],
             "import_errors": [
-                {"pattern": r"ModuleNotFoundError.*No module named", "type": "missing_module", "severity": "high", "auto_fixable": True},
-                {"pattern": r"ImportError.*cannot import", "type": "import_error", "severity": "high", "auto_fixable": True},
+                {
+                    "pattern": r"ModuleNotFoundError.*No module named",
+                    "type": "missing_module",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"ImportError.*cannot import",
+                    "type": "import_error",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
             ],
             "runtime_errors": [
-                {"pattern": r"ZeroDivisionError", "type": "division_by_zero", "severity": "high", "auto_fixable": True},
-                {"pattern": r"IndexError.*list index out of range", "type": "index_out_of_range", "severity": "high", "auto_fixable": True},
-                {"pattern": r"KeyError", "type": "key_error", "severity": "medium", "auto_fixable": True},
-                {"pattern": r"TypeError", "type": "type_mismatch", "severity": "medium", "auto_fixable": True},
+                {
+                    "pattern": r"ZeroDivisionError",
+                    "type": "division_by_zero",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"IndexError.*list index out of range",
+                    "type": "index_out_of_range",
+                    "severity": "high",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"KeyError",
+                    "type": "key_error",
+                    "severity": "medium",
+                    "auto_fixable": True,
+                },
+                {
+                    "pattern": r"TypeError",
+                    "type": "type_mismatch",
+                    "severity": "medium",
+                    "auto_fixable": True,
+                },
             ],
         }
 
@@ -1831,15 +2121,23 @@ class MetaAgent:
         metrics = getattr(system, "system_metrics", {}) or {}
         components = {
             "c_core": metrics.get("c_core_status", "unknown"),
-            "python_orchestration": metrics.get("python_orchestration_status", "unknown"),
+            "python_orchestration": metrics.get(
+                "python_orchestration_status", "unknown"
+            ),
             "web_interface": metrics.get("web_interface_status", "unknown"),
-            "meta_loop": "active" if getattr(system, "meta_loop_active", False) else "inactive",
+            "meta_loop": "active"
+            if getattr(system, "meta_loop_active", False)
+            else "inactive",
         }
         cpu_usage = metrics.get("cpu_usage", None)
         mem_usage = metrics.get("memory_usage", None)
         overall_score = 1.0
         for _, status in components.items():
-            if status and isinstance(status, str) and status not in ("active", "ok", "healthy"):
+            if (
+                status
+                and isinstance(status, str)
+                and status not in ("active", "ok", "healthy")
+            ):
                 overall_score -= 0.15
         if cpu_usage is not None and cpu_usage > 85:
             overall_score -= 0.1
@@ -1877,64 +2175,78 @@ class MetaAgent:
         mem_usage = health.get("performance_metrics", {}).get("memory_usage")
 
         if components.get("web_interface") not in ("active", "ok", "healthy"):
-            improvements.append({
-                "component": "web_interface",
-                "improvement_type": "fix",
-                "description": "Restore web interface availability and restart web threads if needed.",
-                "priority": 1,
-                "estimated_impact": 0.9,
-                "implementation_complexity": 3,
-            })
+            improvements.append(
+                {
+                    "component": "web_interface",
+                    "improvement_type": "fix",
+                    "description": "Restore web interface availability and restart web threads if needed.",
+                    "priority": 1,
+                    "estimated_impact": 0.9,
+                    "implementation_complexity": 3,
+                }
+            )
 
         if components.get("python_orchestration") not in ("active", "ok", "healthy"):
-            improvements.append({
-                "component": "python_orchestration",
-                "improvement_type": "stability",
-                "description": "Review Python orchestration errors and reinitialize missing subsystems.",
-                "priority": 1,
-                "estimated_impact": 0.8,
-                "implementation_complexity": 4,
-            })
+            improvements.append(
+                {
+                    "component": "python_orchestration",
+                    "improvement_type": "stability",
+                    "description": "Review Python orchestration errors and reinitialize missing subsystems.",
+                    "priority": 1,
+                    "estimated_impact": 0.8,
+                    "implementation_complexity": 4,
+                }
+            )
 
         if cpu_usage is not None and cpu_usage > 85:
-            improvements.append({
-                "component": "performance",
-                "improvement_type": "optimization",
-                "description": "Throttle background agents or reduce concurrency to lower CPU usage.",
-                "priority": 2,
-                "estimated_impact": 0.5,
-                "implementation_complexity": 2,
-            })
+            improvements.append(
+                {
+                    "component": "performance",
+                    "improvement_type": "optimization",
+                    "description": "Throttle background agents or reduce concurrency to lower CPU usage.",
+                    "priority": 2,
+                    "estimated_impact": 0.5,
+                    "implementation_complexity": 2,
+                }
+            )
 
         if mem_usage is not None and mem_usage > 85:
-            improvements.append({
-                "component": "memory",
-                "improvement_type": "optimization",
-                "description": "Reduce memory footprint by trimming caches and switching to lighter models.",
-                "priority": 2,
-                "estimated_impact": 0.5,
-                "implementation_complexity": 2,
-            })
+            improvements.append(
+                {
+                    "component": "memory",
+                    "improvement_type": "optimization",
+                    "description": "Reduce memory footprint by trimming caches and switching to lighter models.",
+                    "priority": 2,
+                    "estimated_impact": 0.5,
+                    "implementation_complexity": 2,
+                }
+            )
 
-        if getattr(self.system, "goal_manager", None) and not getattr(self.system.goal_manager, "active_goals", []):
-            improvements.append({
-                "component": "goal_system",
-                "improvement_type": "bootstrap",
-                "description": "Seed base goals and subtasks to keep the task manager populated.",
-                "priority": 2,
-                "estimated_impact": 0.4,
-                "implementation_complexity": 1,
-            })
+        if getattr(self.system, "goal_manager", None) and not getattr(
+            self.system.goal_manager, "active_goals", []
+        ):
+            improvements.append(
+                {
+                    "component": "goal_system",
+                    "improvement_type": "bootstrap",
+                    "description": "Seed base goals and subtasks to keep the task manager populated.",
+                    "priority": 2,
+                    "estimated_impact": 0.4,
+                    "implementation_complexity": 1,
+                }
+            )
 
         if not getattr(self.system, "chat_multi_agent", True):
-            improvements.append({
-                "component": "conversation",
-                "improvement_type": "engagement",
-                "description": "Enable multi-agent chat mode for more diverse responses.",
-                "priority": 3,
-                "estimated_impact": 0.3,
-                "implementation_complexity": 1,
-            })
+            improvements.append(
+                {
+                    "component": "conversation",
+                    "improvement_type": "engagement",
+                    "description": "Enable multi-agent chat mode for more diverse responses.",
+                    "priority": 3,
+                    "estimated_impact": 0.3,
+                    "implementation_complexity": 1,
+                }
+            )
 
         return {
             "status": "ok",
@@ -1944,7 +2256,9 @@ class MetaAgent:
             "timestamp": time.time(),
         }
 
-    def ingest_learning_event(self, prompt: str, response: str, user: Optional[str] = None):
+    def ingest_learning_event(
+        self, prompt: str, response: str, user: Optional[str] = None
+    ):
         """Accept learning events so meta-agent can adapt."""
         try:
             if not prompt or not response:
@@ -1958,30 +2272,76 @@ class MetaAgent:
             self.learning_log.append(record)
             self._persist_learning_event(record)
             self._learning_event_counter += 1
-            self.improvements_applied.append({
-                "type": "chat_learning",
-                "user": user or "user",
-                "timestamp": datetime.now().isoformat(),
-            })
+            self.improvements_applied.append(
+                {
+                    "type": "chat_learning",
+                    "user": user or "user",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             self.learning_cycles += 1
             self._maybe_distill_learning()
         except Exception:
             pass
 
     def _distill_recent_learning(self):
-        items = list(self.learning_log)[-self.distill_every:]
+        items = list(self.learning_log)[-self.distill_every :]
         if not items:
             return None
         rules = []
         topics = Counter()
         stopwords = {
-            "this", "that", "with", "from", "have", "your", "what", "when",
-            "then", "than", "here", "there", "would", "could", "should",
-            "about", "into", "just", "like", "also", "been", "were", "will",
-            "them", "they", "their", "that", "these", "those", "your", "you",
-            "does", "doing", "done", "over", "under", "only", "some", "more",
-            "most", "such", "very", "need", "want", "make", "please", "thanks",
-            "sam", "meta", "agent", "system"
+            "this",
+            "that",
+            "with",
+            "from",
+            "have",
+            "your",
+            "what",
+            "when",
+            "then",
+            "than",
+            "here",
+            "there",
+            "would",
+            "could",
+            "should",
+            "about",
+            "into",
+            "just",
+            "like",
+            "also",
+            "been",
+            "were",
+            "will",
+            "them",
+            "they",
+            "their",
+            "that",
+            "these",
+            "those",
+            "your",
+            "you",
+            "does",
+            "doing",
+            "done",
+            "over",
+            "under",
+            "only",
+            "some",
+            "more",
+            "most",
+            "such",
+            "very",
+            "need",
+            "want",
+            "make",
+            "please",
+            "thanks",
+            "sam",
+            "meta",
+            "agent",
+            "system",
         }
         for item in items:
             text = f"{item.get('prompt', '')} {item.get('response', '')}"
@@ -1989,7 +2349,11 @@ class MetaAgent:
                 sentence = sentence.strip()
                 if not sentence:
                     continue
-                if re.search(r"\\b(must|should|ensure|never|do not|dont|no)\\b", sentence, re.IGNORECASE):
+                if re.search(
+                    r"\\b(must|should|ensure|never|do not|dont|no)\\b",
+                    sentence,
+                    re.IGNORECASE,
+                ):
                     rules.append(sentence[:200])
             for word in re.findall(r"[A-Za-z]{4,}", text.lower()):
                 if word in stopwords:
@@ -2028,8 +2392,12 @@ class MetaAgent:
                 self.system.system_metrics["meta_distill_count"] = (
                     self.system.system_metrics.get("meta_distill_count", 0) + 1
                 )
-                self.system.system_metrics["meta_last_distill_ts"] = self.last_distill_ts
-                self.system.system_metrics["meta_last_distill_summary"] = self.last_distilled[:200]
+                self.system.system_metrics["meta_last_distill_ts"] = (
+                    self.last_distill_ts
+                )
+                self.system.system_metrics["meta_last_distill_summary"] = (
+                    self.last_distilled[:200]
+                )
         except Exception:
             pass
         self._adjust_confidence_threshold()
@@ -2038,13 +2406,19 @@ class MetaAgent:
         total = len(self.patch_history)
         if total < 5:
             return
-        successes = sum(1 for item in self.patch_history if item.get("result") == "success")
+        successes = sum(
+            1 for item in self.patch_history if item.get("result") == "success"
+        )
         success_rate = successes / max(1, total)
         previous = self.confidence_threshold
         if success_rate < 0.3:
-            self.confidence_threshold = max(self.confidence_min, self.confidence_threshold - 0.05)
+            self.confidence_threshold = max(
+                self.confidence_min, self.confidence_threshold - 0.05
+            )
         elif success_rate > 0.7:
-            self.confidence_threshold = min(self.confidence_max, self.confidence_threshold + 0.02)
+            self.confidence_threshold = min(
+                self.confidence_max, self.confidence_threshold + 0.02
+            )
         if self.confidence_threshold != previous:
             log_event(
                 "info",
@@ -2087,10 +2461,14 @@ class MetaAgent:
                     file_abs = Path(self.system.project_root) / file_path
                 if file_abs.exists():
                     try:
-                        content = file_abs.read_text(encoding="utf-8", errors="ignore").splitlines()
+                        content = file_abs.read_text(
+                            encoding="utf-8", errors="ignore"
+                        ).splitlines()
                         start = max(0, line_no - 3)
                         end = min(len(content), line_no + 2)
-                        snippet = "\n".join(f"{i+1}: {content[i]}" for i in range(start, end))
+                        snippet = "\n".join(
+                            f"{i + 1}: {content[i]}" for i in range(start, end)
+                        )
                         parts.append(f"Context ({file_abs}):\n{snippet}")
                     except Exception:
                         pass
@@ -2185,10 +2563,16 @@ class MetaAgent:
         return {
             "total_clusters": len(self.failure_clusters),
             "total_failures": total_failures,
-            "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
-            "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
+            "average_cluster_size": total_failures / len(self.failure_clusters)
+            if self.failure_clusters
+            else 0.0,
+            "largest_cluster": max(
+                (len(v) for v in self.failure_clusters.values()), default=0
+            ),
             "clusters_with_fixes": 0,  # Will be updated when patch learning is added
-            "clusters": {cid: len(failures) for cid, failures in self.failure_clusters.items()},
+            "clusters": {
+                cid: len(failures) for cid, failures in self.failure_clusters.items()
+            },
         }
 
     # ===========================
@@ -2196,44 +2580,56 @@ class MetaAgent:
     # ===========================
     def _learn_from_success(self, patch, failure):
         """Learn from successful patch application"""
-        self.patch_history.append({
-            "patch": patch,
-            "failure": failure,
-            "result": "success",
-            "timestamp": datetime.now().isoformat()
-        })
-        self.successful_fixes.append({
-            "patch": patch,
-            "failure": failure,
-            "timestamp": datetime.now().isoformat(),
-        })
-        self.improvements_applied.append({
-            "type": "patch_success",
-            "patch_id": patch.get("id"),
-            "intent": patch.get("intent"),
-            "confidence": patch.get("confidence"),
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.patch_history.append(
+            {
+                "patch": patch,
+                "failure": failure,
+                "result": "success",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+        self.successful_fixes.append(
+            {
+                "patch": patch,
+                "failure": failure,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+        self.improvements_applied.append(
+            {
+                "type": "patch_success",
+                "patch_id": patch.get("id"),
+                "intent": patch.get("intent"),
+                "confidence": patch.get("confidence"),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.learning_cycles += 1
         self._adjust_confidence_threshold()
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
-        self.patch_history.append({
-            "patch": patch,
-            "failure": failure,
-            "result": "rejected",
-            "timestamp": datetime.now().isoformat()
-        })
-        self.failed_attempts.append({
-            "patch": patch,
-            "failure": failure,
-            "timestamp": datetime.now().isoformat(),
-        })
-        self.errors_detected.append({
-            "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.patch_history.append(
+            {
+                "patch": patch,
+                "failure": failure,
+                "result": "rejected",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+        self.failed_attempts.append(
+            {
+                "patch": patch,
+                "failure": failure,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+        self.errors_detected.append(
+            {
+                "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.learning_cycles += 1
         self._adjust_confidence_threshold()
 
@@ -2261,11 +2657,16 @@ class MetaAgent:
                 file_path = no_error_match.group(1).strip()
 
         if not file_path:
-            hint_text = " ".join(filter(None, [
-                self._get_failure_attr(failure, "research_notes", ""),
-                self._get_failure_attr(failure, "message", ""),
-                stack,
-            ]))
+            hint_text = " ".join(
+                filter(
+                    None,
+                    [
+                        self._get_failure_attr(failure, "research_notes", ""),
+                        self._get_failure_attr(failure, "message", ""),
+                        stack,
+                    ],
+                )
+            )
             tokens = re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text)
             if tokens:
                 file_path = tokens[-1]
@@ -2298,13 +2699,15 @@ class MetaAgent:
         return {
             "id": "meta_test_noop",
             "target_file": rel,
-            "changes": [{"type": "replace", "old_code": old_code, "new_code": old_code}],
+            "changes": [
+                {"type": "replace", "old_code": old_code, "new_code": old_code}
+            ],
             "intent": "Meta test noop patch",
             "risk_level": "low",
             "confidence": 0.9,
             "assumptions": ["Test mode allows noop patch"],
             "unknowns": [],
-            "generated_by": "meta_test"
+            "generated_by": "meta_test",
         }
 
     def _deterministic_patches(self, failure):
@@ -2334,7 +2737,7 @@ class MetaAgent:
         # Fix missing attributes on UnifiedSAMSystem by adding safe defaults in __init__
         attr_match = re.search(
             r"AttributeError: 'UnifiedSAMSystem' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'",
-            stack_trace
+            stack_trace,
         )
         if attr_match:
             missing_attr = attr_match.group(1)
@@ -2353,21 +2756,27 @@ class MetaAgent:
                 for anchor in anchors:
                     if anchor in content:
                         new_code = anchor + f"        self.{missing_attr} = None\n"
-                        patches.append({
-                            "id": f"deterministic_attr_{missing_attr}",
-                            "target_file": target_file,
-                            "changes": [{
-                                "type": "replace",
-                                "old_code": anchor,
-                                "new_code": new_code
-                            }],
-                            "intent": f"Initialize missing attribute self.{missing_attr} to prevent AttributeError",
-                            "risk_level": "low",
-                            "confidence": 0.95,
-                            "assumptions": ["Missing attribute can be safely initialized to None"],
-                            "unknowns": [],
-                            "generated_by": "deterministic_patch_registry"
-                        })
+                        patches.append(
+                            {
+                                "id": f"deterministic_attr_{missing_attr}",
+                                "target_file": target_file,
+                                "changes": [
+                                    {
+                                        "type": "replace",
+                                        "old_code": anchor,
+                                        "new_code": new_code,
+                                    }
+                                ],
+                                "intent": f"Initialize missing attribute self.{missing_attr} to prevent AttributeError",
+                                "risk_level": "low",
+                                "confidence": 0.95,
+                                "assumptions": [
+                                    "Missing attribute can be safely initialized to None"
+                                ],
+                                "unknowns": [],
+                                "generated_by": "deterministic_patch_registry",
+                            }
+                        )
                         break
 
         # Fix missing colon / syntax artifacts when a concrete file + line is available
@@ -2377,78 +2786,129 @@ class MetaAgent:
                 file_abs = Path(self.system.project_root) / file_path
             if file_abs.exists():
                 try:
-                    lines = file_abs.read_text(encoding="utf-8", errors="ignore").splitlines(True)
+                    lines = file_abs.read_text(
+                        encoding="utf-8", errors="ignore"
+                    ).splitlines(True)
                     if 0 < line_no <= len(lines):
                         line = lines[line_no - 1]
-                        indent = line[:len(line) - len(line.lstrip())]
+                        indent = line[: len(line) - len(line.lstrip())]
                         # Repair accidental escaped quotes in f-strings
-                        if "f\\\"" in line or "\\\"" in line:
-                            fixed = line.replace("f\\\"", "f\"").replace("\\\"", "\"")
+                        if 'f\\"' in line or '\\"' in line:
+                            fixed = line.replace('f\\"', 'f"').replace('\\"', '"')
                             if fixed != line:
                                 rel = str(file_abs)
                                 try:
-                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                    rel = str(
+                                        file_abs.relative_to(self.system.project_root)
+                                    )
                                 except Exception:
                                     pass
-                                patches.append({
-                                    "id": "deterministic_unescape_fstring",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
-                                    "intent": "Fix invalid escaped quotes in f-string",
-                                    "risk_level": "low",
-                                    "confidence": 0.9,
-                                    "assumptions": ["Escaped quotes were introduced by faulty patching"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_unescape_fstring",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": fixed,
+                                            }
+                                        ],
+                                        "intent": "Fix invalid escaped quotes in f-string",
+                                        "risk_level": "low",
+                                        "confidence": 0.9,
+                                        "assumptions": [
+                                            "Escaped quotes were introduced by faulty patching"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                         # Missing colon in Python block headers
-                        if any(p.get("type") == "missing_colon" for p in pattern_matches):
+                        if any(
+                            p.get("type") == "missing_colon" for p in pattern_matches
+                        ):
                             stripped = line.rstrip("\n")
                             if stripped and not stripped.rstrip().endswith(":"):
-                                if re.match(r"^\s*(def |if |elif |else|for |while |try|except|finally|class )", stripped):
+                                if re.match(
+                                    r"^\s*(def |if |elif |else|for |while |try|except|finally|class )",
+                                    stripped,
+                                ):
                                     fixed = stripped + ":\n"
                                     rel = str(file_abs)
                                     try:
-                                        rel = str(file_abs.relative_to(self.system.project_root))
+                                        rel = str(
+                                            file_abs.relative_to(
+                                                self.system.project_root
+                                            )
+                                        )
                                     except Exception:
                                         pass
-                                    patches.append({
-                                        "id": "deterministic_missing_colon",
-                                        "target_file": rel,
-                                        "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
-                                        "intent": "Add missing colon to Python block header",
-                                        "risk_level": "low",
-                                        "confidence": 0.9,
-                                        "assumptions": ["SyntaxError indicates missing colon at this line"],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry"
-                                    })
+                                    patches.append(
+                                        {
+                                            "id": "deterministic_missing_colon",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": fixed,
+                                                }
+                                            ],
+                                            "intent": "Add missing colon to Python block header",
+                                            "risk_level": "low",
+                                            "confidence": 0.9,
+                                            "assumptions": [
+                                                "SyntaxError indicates missing colon at this line"
+                                            ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
+                                        }
+                                    )
                         # Indentation errors caused by tabs
-                        if any(p.get("type") == "indentation_error" for p in pattern_matches):
+                        if any(
+                            p.get("type") == "indentation_error"
+                            for p in pattern_matches
+                        ):
                             if "\t" in line:
                                 fixed = line.replace("\t", "    ")
                                 rel = str(file_abs)
                                 try:
-                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                    rel = str(
+                                        file_abs.relative_to(self.system.project_root)
+                                    )
                                 except Exception:
                                     pass
-                                patches.append({
-                                    "id": "deterministic_fix_indentation_tabs",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
-                                    "intent": "Replace tabs with 4 spaces to fix indentation",
-                                    "risk_level": "low",
-                                    "confidence": 0.85,
-                                    "assumptions": ["IndentationError caused by tabs"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_fix_indentation_tabs",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": fixed,
+                                            }
+                                        ],
+                                        "intent": "Replace tabs with 4 spaces to fix indentation",
+                                        "risk_level": "low",
+                                        "confidence": 0.85,
+                                        "assumptions": [
+                                            "IndentationError caused by tabs"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                         # Import errors: wrap missing imports with try/except
                         mod_match = re.search(r"No module named '([^']+)'", stack_trace)
                         if mod_match:
                             missing_mod = mod_match.group(1)
                             stripped = line.lstrip()
-                            if stripped.startswith("import ") and missing_mod in stripped:
+                            if (
+                                stripped.startswith("import ")
+                                and missing_mod in stripped
+                            ):
                                 new_code = (
                                     f"{indent}try:\n"
                                     f"{indent}    import {missing_mod}\n"
@@ -2457,21 +2917,35 @@ class MetaAgent:
                                 )
                                 rel = str(file_abs)
                                 try:
-                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                    rel = str(
+                                        file_abs.relative_to(self.system.project_root)
+                                    )
                                 except Exception:
                                     pass
-                                patches.append({
-                                    "id": "deterministic_wrap_import",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
-                                    "intent": "Wrap missing import in try/except to avoid crash",
-                                    "risk_level": "low",
-                                    "confidence": 0.85,
-                                    "assumptions": ["Missing module can be optional for runtime"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
-                            elif stripped.startswith("from ") and missing_mod in stripped:
+                                patches.append(
+                                    {
+                                        "id": "deterministic_wrap_import",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": new_code,
+                                            }
+                                        ],
+                                        "intent": "Wrap missing import in try/except to avoid crash",
+                                        "risk_level": "low",
+                                        "confidence": 0.85,
+                                        "assumptions": [
+                                            "Missing module can be optional for runtime"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
+                            elif (
+                                stripped.startswith("from ") and missing_mod in stripped
+                            ):
                                 new_code = (
                                     f"{indent}try:\n"
                                     f"{indent}    {stripped}"
@@ -2480,20 +2954,32 @@ class MetaAgent:
                                 )
                                 rel = str(file_abs)
                                 try:
-                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                    rel = str(
+                                        file_abs.relative_to(self.system.project_root)
+                                    )
                                 except Exception:
                                     pass
-                                patches.append({
-                                    "id": "deterministic_wrap_from_import",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
-                                    "intent": "Wrap failing from-import to avoid crash",
-                                    "risk_level": "low",
-                                    "confidence": 0.8,
-                                    "assumptions": ["Import failure can be handled gracefully"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_wrap_from_import",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": new_code,
+                                            }
+                                        ],
+                                        "intent": "Wrap failing from-import to avoid crash",
+                                        "risk_level": "low",
+                                        "confidence": 0.8,
+                                        "assumptions": [
+                                            "Import failure can be handled gracefully"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                         # ZeroDivisionError: replace literal divide-by-zero
                         if "ZeroDivisionError" in stack_trace:
                             if re.search(r"/\s*0\b", line):
@@ -2501,25 +2987,39 @@ class MetaAgent:
                                 if fixed != line:
                                     rel = str(file_abs)
                                     try:
-                                        rel = str(file_abs.relative_to(self.system.project_root))
+                                        rel = str(
+                                            file_abs.relative_to(
+                                                self.system.project_root
+                                            )
+                                        )
                                     except Exception:
                                         pass
-                                    patches.append({
-                                        "id": "deterministic_fix_div_zero",
-                                        "target_file": rel,
-                                        "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
-                                        "intent": "Avoid literal divide-by-zero",
-                                        "risk_level": "medium",
-                                        "confidence": 0.8,
-                                        "assumptions": ["Literal divisor zero can be safely replaced"],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry"
-                                    })
+                                    patches.append(
+                                        {
+                                            "id": "deterministic_fix_div_zero",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": fixed,
+                                                }
+                                            ],
+                                            "intent": "Avoid literal divide-by-zero",
+                                            "risk_level": "medium",
+                                            "confidence": 0.8,
+                                            "assumptions": [
+                                                "Literal divisor zero can be safely replaced"
+                                            ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
+                                        }
+                                    )
                         # IndexError: add bounds guard for simple constant index access
                         if "IndexError" in stack_trace:
                             idx_match = re.match(
                                 r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
-                                line
+                                line,
                             )
                             if idx_match:
                                 indent = idx_match.group(1)
@@ -2548,20 +3048,32 @@ class MetaAgent:
                                     )
                                 rel = str(file_abs)
                                 try:
-                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                    rel = str(
+                                        file_abs.relative_to(self.system.project_root)
+                                    )
                                 except Exception:
                                     pass
-                                patches.append({
-                                    "id": "deterministic_guard_index",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
-                                    "intent": "Guard index access to prevent IndexError",
-                                    "risk_level": "medium",
-                                    "confidence": 0.8,
-                                    "assumptions": ["Guarding constant index is acceptable"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_guard_index",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": new_code,
+                                            }
+                                        ],
+                                        "intent": "Guard index access to prevent IndexError",
+                                        "risk_level": "medium",
+                                        "confidence": 0.8,
+                                        "assumptions": [
+                                            "Guarding constant index is acceptable"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                 except Exception:
                     pass
 
@@ -2590,24 +3102,36 @@ class MetaAgent:
                         if re.search(r"/\s*0\b", line):
                             fixed = re.sub(r"/\s*0\b", "/ 1", line, count=1)
                             if fixed != line:
-                                patches.append({
-                                    "id": "deterministic_logic_div_zero",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
-                                    "intent": "Avoid literal divide-by-zero in logic path",
-                                    "risk_level": "medium",
-                                    "confidence": 0.85,
-                                    "assumptions": ["Literal divisor zero can be safely replaced"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_logic_div_zero",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": fixed,
+                                            }
+                                        ],
+                                        "intent": "Avoid literal divide-by-zero in logic path",
+                                        "risk_level": "medium",
+                                        "confidence": 0.85,
+                                        "assumptions": [
+                                            "Literal divisor zero can be safely replaced"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                                 break
                     # Guard constant index access if no divide-by-zero fix added
-                    if not any(p.get("id") == "deterministic_logic_div_zero" for p in patches):
+                    if not any(
+                        p.get("id") == "deterministic_logic_div_zero" for p in patches
+                    ):
                         for line in lines:
                             idx_match = re.match(
                                 r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
-                                line
+                                line,
                             )
                             if idx_match:
                                 indent = idx_match.group(1)
@@ -2634,38 +3158,64 @@ class MetaAgent:
                                         f"{indent}if {idx} < len({seq}):\n"
                                         f"{indent}    {seq}[{idx}]{rest}\n"
                                     )
-                                patches.append({
-                                    "id": "deterministic_logic_guard_index",
-                                    "target_file": rel,
-                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
-                                    "intent": "Guard constant index access to prevent IndexError",
-                                    "risk_level": "medium",
-                                    "confidence": 0.85,
-                                    "assumptions": ["Guarding constant index is acceptable"],
-                                    "unknowns": [],
-                                    "generated_by": "deterministic_patch_registry"
-                                })
+                                patches.append(
+                                    {
+                                        "id": "deterministic_logic_guard_index",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": new_code,
+                                            }
+                                        ],
+                                        "intent": "Guard constant index access to prevent IndexError",
+                                        "risk_level": "medium",
+                                        "confidence": 0.85,
+                                        "assumptions": [
+                                            "Guarding constant index is acceptable"
+                                        ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
                                 break
 
                 if "performance" in failure_type:
                     for line in lines:
                         if re.match(r"^\s*def\s+inefficient_loop\b", line):
                             indent = re.match(r"^(\s*)", line).group(1)
-                            new_code = line + f"{indent}    n = min(n, 1000)  # Cap to avoid quadratic blowup\n"
-                            patches.append({
-                                "id": "deterministic_perf_cap_n",
-                                "target_file": rel,
-                                "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
-                                "intent": "Cap loop size to reduce quadratic cost",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": ["Limiting n is acceptable for performance"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry"
-                            })
+                            new_code = (
+                                line
+                                + f"{indent}    n = min(n, 1000)  # Cap to avoid quadratic blowup\n"
+                            )
+                            patches.append(
+                                {
+                                    "id": "deterministic_perf_cap_n",
+                                    "target_file": rel,
+                                    "changes": [
+                                        {
+                                            "type": "replace",
+                                            "old_code": line,
+                                            "new_code": new_code,
+                                        }
+                                    ],
+                                    "intent": "Cap loop size to reduce quadratic cost",
+                                    "risk_level": "low",
+                                    "confidence": 0.86,
+                                    "assumptions": [
+                                        "Limiting n is acceptable for performance"
+                                    ],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry",
+                                }
+                            )
                             break
 
-                if "missingdependency" in failure_type or "missing_dependency" in failure_type:
+                if (
+                    "missingdependency" in failure_type
+                    or "missing_dependency" in failure_type
+                ):
                     block = "except ImportError:\n    HAS_REQUESTS = False\n"
                     if block in content:
                         new_block = (
@@ -2674,19 +3224,29 @@ class MetaAgent:
                             "    class requests:\n"
                             "        @staticmethod\n"
                             "        def get(*args, **kwargs):\n"
-                            "            raise RuntimeError(\"requests not installed\")\n"
+                            '            raise RuntimeError("requests not installed")\n'
                         )
-                        patches.append({
-                            "id": "deterministic_stub_requests",
-                            "target_file": rel,
-                            "changes": [{"type": "replace", "old_code": block, "new_code": new_block}],
-                            "intent": "Provide a safe stub when requests is missing",
-                            "risk_level": "low",
-                            "confidence": 0.86,
-                            "assumptions": ["Stub is acceptable fallback when dependency missing"],
-                            "unknowns": [],
-                            "generated_by": "deterministic_patch_registry"
-                        })
+                        patches.append(
+                            {
+                                "id": "deterministic_stub_requests",
+                                "target_file": rel,
+                                "changes": [
+                                    {
+                                        "type": "replace",
+                                        "old_code": block,
+                                        "new_code": new_block,
+                                    }
+                                ],
+                                "intent": "Provide a safe stub when requests is missing",
+                                "risk_level": "low",
+                                "confidence": 0.86,
+                                "assumptions": [
+                                    "Stub is acceptable fallback when dependency missing"
+                                ],
+                                "unknowns": [],
+                                "generated_by": "deterministic_patch_registry",
+                            }
+                        )
                     block_np = "except ImportError:\n    HAS_NUMPY = False\n"
                     if block_np in content:
                         new_block_np = (
@@ -2695,52 +3255,86 @@ class MetaAgent:
                             "    class np:\n"
                             "        @staticmethod\n"
                             "        def array(*args, **kwargs):\n"
-                            "            raise RuntimeError(\"numpy not installed\")\n"
+                            '            raise RuntimeError("numpy not installed")\n'
                         )
-                        patches.append({
-                            "id": "deterministic_stub_numpy",
-                            "target_file": rel,
-                            "changes": [{"type": "replace", "old_code": block_np, "new_code": new_block_np}],
-                            "intent": "Provide a safe stub when numpy is missing",
-                            "risk_level": "low",
-                            "confidence": 0.86,
-                            "assumptions": ["Stub is acceptable fallback when dependency missing"],
-                            "unknowns": [],
-                            "generated_by": "deterministic_patch_registry"
-                        })
+                        patches.append(
+                            {
+                                "id": "deterministic_stub_numpy",
+                                "target_file": rel,
+                                "changes": [
+                                    {
+                                        "type": "replace",
+                                        "old_code": block_np,
+                                        "new_code": new_block_np,
+                                    }
+                                ],
+                                "intent": "Provide a safe stub when numpy is missing",
+                                "risk_level": "low",
+                                "confidence": 0.86,
+                                "assumptions": [
+                                    "Stub is acceptable fallback when dependency missing"
+                                ],
+                                "unknowns": [],
+                                "generated_by": "deterministic_patch_registry",
+                            }
+                        )
 
                 if "configuration" in failure_type:
                     config_changes = []
                     for line in lines:
                         if re.match(r"^\s*API_KEY\s*=", line):
-                            new_line = "API_KEY = os.getenv(\"API_KEY\", \"MISSING\")\n"
-                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
+                            new_line = 'API_KEY = os.getenv("API_KEY", "MISSING")\n'
+                            config_changes.append(
+                                {
+                                    "type": "replace",
+                                    "old_code": line,
+                                    "new_code": new_line,
+                                }
+                            )
                             break
                     for line in lines:
                         if re.match(r"^\s*DATABASE_URL\s*=", line):
-                            new_line = "DATABASE_URL = os.getenv(\"DATABASE_URL\", \"http://localhost\")\n"
-                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
+                            new_line = 'DATABASE_URL = os.getenv("DATABASE_URL", "http://localhost")\n'
+                            config_changes.append(
+                                {
+                                    "type": "replace",
+                                    "old_code": line,
+                                    "new_code": new_line,
+                                }
+                            )
                             break
                     for line in lines:
                         if re.match(r"^\s*TIMEOUT\s*=", line):
-                            new_line = "TIMEOUT = max(0, int(os.getenv(\"TIMEOUT\", \"30\")))\n"
-                            config_changes.append({"type": "replace", "old_code": line, "new_code": new_line})
+                            new_line = (
+                                'TIMEOUT = max(0, int(os.getenv("TIMEOUT", "30")))\n'
+                            )
+                            config_changes.append(
+                                {
+                                    "type": "replace",
+                                    "old_code": line,
+                                    "new_code": new_line,
+                                }
+                            )
                             break
                     if config_changes:
-                        patches.append({
-                            "id": "deterministic_config_defaults",
-                            "target_file": rel,
-                            "changes": config_changes,
-                            "intent": "Normalize configuration defaults to valid values",
-                            "risk_level": "low",
-                            "confidence": 0.87,
-                            "assumptions": ["Defaults are safe for validation"],
-                            "unknowns": [],
-                            "generated_by": "deterministic_patch_registry"
-                        })
+                        patches.append(
+                            {
+                                "id": "deterministic_config_defaults",
+                                "target_file": rel,
+                                "changes": config_changes,
+                                "intent": "Normalize configuration defaults to valid values",
+                                "risk_level": "low",
+                                "confidence": 0.87,
+                                "assumptions": ["Defaults are safe for validation"],
+                                "unknowns": [],
+                                "generated_by": "deterministic_patch_registry",
+                            }
+                        )
 
         # NameError for missing helper function
-        name_match = re.search(r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace)
+        name_match = re.search(
+            r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace
+        )
         if name_match:
             missing_name = name_match.group(1)
             if missing_name == "_utc_now":
@@ -2755,21 +3349,29 @@ class MetaAgent:
                     if anchor in content:
                         new_code = (
                             "def _utc_now():\n"
-                            "    \"\"\"UTC timestamp in ISO8601 with Z suffix.\"\"\"\n"
-                            "    return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\n\n"
+                            '    """UTC timestamp in ISO8601 with Z suffix."""\n'
+                            '    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")\n\n'
                             + anchor
                         )
-                        patches.append({
-                            "id": "deterministic_add_utc_now",
-                            "target_file": target_file,
-                            "changes": [{"type": "replace", "old_code": anchor, "new_code": new_code}],
-                            "intent": "Add missing _utc_now helper",
-                            "risk_level": "low",
-                            "confidence": 0.9,
-                            "assumptions": ["Missing _utc_now caused NameError"],
-                            "unknowns": [],
-                            "generated_by": "deterministic_patch_registry"
-                        })
+                        patches.append(
+                            {
+                                "id": "deterministic_add_utc_now",
+                                "target_file": target_file,
+                                "changes": [
+                                    {
+                                        "type": "replace",
+                                        "old_code": anchor,
+                                        "new_code": new_code,
+                                    }
+                                ],
+                                "intent": "Add missing _utc_now helper",
+                                "risk_level": "low",
+                                "confidence": 0.9,
+                                "assumptions": ["Missing _utc_now caused NameError"],
+                                "unknowns": [],
+                                "generated_by": "deterministic_patch_registry",
+                            }
+                        )
 
         return patches
 
@@ -2780,7 +3382,9 @@ class MetaAgent:
             return True
         allow_self_mod = getattr(self.system, "allow_self_modification", None)
         if allow_self_mod is False:
-            print(" Production Meta-Agent: Self-modification disabled - patch not applied")
+            print(
+                " Production Meta-Agent: Self-modification disabled - patch not applied"
+            )
             return False
         if not getattr(self.system, "sam_code_modifier_available", False):
             try:
@@ -2791,11 +3395,18 @@ class MetaAgent:
                         self.system.sam_code_modifier_available = True
             except Exception:
                 pass
-        if not getattr(self.system, "sam_code_modifier_available", False) or modify_code_safely is None:
+        if (
+            not getattr(self.system, "sam_code_modifier_available", False)
+            or modify_code_safely is None
+        ):
             if allow_self_mod is None:
-                print(" Production Meta-Agent: Code modifier unavailable - using direct patch fallback")
+                print(
+                    " Production Meta-Agent: Code modifier unavailable - using direct patch fallback"
+                )
             else:
-                print(" Production Meta-Agent: Code modifier unavailable - patch not applied")
+                print(
+                    " Production Meta-Agent: Code modifier unavailable - patch not applied"
+                )
                 return False
 
         success = True
@@ -2804,23 +3415,35 @@ class MetaAgent:
                 description = patch.get("intent", "Meta-agent patch")
                 target_file = patch.get("target_file", "")
                 applied = False
-                if modify_code_safely is not None and getattr(self.system, "sam_code_modifier_available", False):
+                if modify_code_safely is not None and getattr(
+                    self.system, "sam_code_modifier_available", False
+                ):
                     result = modify_code_safely(
                         patch.get("target_file", ""),
                         change.get("old_code", ""),
                         change.get("new_code", ""),
-                        description
+                        description,
                     )
                     if result.get("success"):
                         applied = True
                     else:
-                        msg = result.get("message") or result.get("error") or "unknown error"
-                        print(f" Production Meta-Agent: Patch apply failed ({target_file}) intent='{description}': {msg}")
+                        msg = (
+                            result.get("message")
+                            or result.get("error")
+                            or "unknown error"
+                        )
+                        print(
+                            f" Production Meta-Agent: Patch apply failed ({target_file}) intent='{description}': {msg}"
+                        )
                         if allow_self_mod is None:
-                            applied = self._direct_patch_fallback(target_file, change, description)
+                            applied = self._direct_patch_fallback(
+                                target_file, change, description
+                            )
                 else:
                     if allow_self_mod is None:
-                        applied = self._direct_patch_fallback(target_file, change, description)
+                        applied = self._direct_patch_fallback(
+                            target_file, change, description
+                        )
                 if not applied:
                     success = False
                     break
@@ -2861,7 +3484,9 @@ class MetaAgent:
             self._get_failure_attr(failure, "type", "unknown"),
         )
         failure_msg = self._get_failure_attr(failure, "message", "unknown")
-        print(f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}")
+        print(
+            f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}"
+        )
         log_event(
             "info",
             "meta_handle_failure",
@@ -2884,12 +3509,14 @@ class MetaAgent:
                     loc_path = file_path
                     if not os.path.isabs(loc_path):
                         loc_path = os.path.join(self.system.project_root, loc_path)
-                    localization = [{
-                        "file": loc_path,
-                        "spectrum_score": 0.1,
-                        "recently_modified": False,
-                        "in_stack_trace": True,
-                    }]
+                    localization = [
+                        {
+                            "file": loc_path,
+                            "spectrum_score": 0.1,
+                            "recently_modified": False,
+                            "in_stack_trace": True,
+                        }
+                    ]
             if not localization:
                 print(" Production Meta-Agent: No localization results")
                 return False
@@ -2909,7 +3536,12 @@ class MetaAgent:
                         chars=len(research_notes),
                     )
             except Exception as exc:
-                log_event("warn", "meta_research_error", "Meta-agent research failed", reason=str(exc))
+                log_event(
+                    "warn",
+                    "meta_research_error",
+                    "Meta-agent research failed",
+                    reason=str(exc),
+                )
 
         # Step 2: Propose
         patches = self._deterministic_patches(failure)
@@ -2946,20 +3578,22 @@ class MetaAgent:
 
             # Verify safety
             verification = self.verifier.verify_patch(patch)
-            if verification.get('overall_safe', False):
+            if verification.get("overall_safe", False):
                 safe_candidates += 1
-                score = verification.get('score', 0)
+                score = verification.get("score", 0)
                 if score > best_score:
                     best_patch = patch
                     best_score = score
             else:
                 verify_failed += 1
-                for issue in verification.get('issues', []):
+                for issue in verification.get("issues", []):
                     issue_counts[issue] = issue_counts.get(issue, 0) + 1
 
         # Step 4: Apply or Reject
         if best_patch and best_score >= 7.0:  # Minimum quality threshold
-            print(f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})")
+            print(
+                f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})"
+            )
             log_event(
                 "info",
                 "patch_apply_safe",
@@ -2977,12 +3611,18 @@ class MetaAgent:
             return False
         else:
             # Unsafe override path (experimental/unbounded mode)
-            allow_unsafe = bool(getattr(self.system, "invariants_disabled", False)) or bool(getattr(self.system, "allow_unsafe_patches", False))
+            allow_unsafe = bool(
+                getattr(self.system, "invariants_disabled", False)
+            ) or bool(getattr(self.system, "allow_unsafe_patches", False))
             summary = f"total={total_patches}, below_conf={below_conf}, verify_failed={verify_failed}, safe_candidates={safe_candidates}"
             if issue_counts:
-                top_issues = sorted(issue_counts.items(), key=lambda kv: kv[1], reverse=True)[:3]
+                top_issues = sorted(
+                    issue_counts.items(), key=lambda kv: kv[1], reverse=True
+                )[:3]
                 issue_str = ", ".join([f"{k}({v})" for k, v in top_issues])
-                print(f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}")
+                print(
+                    f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}"
+                )
                 log_event(
                     "warn",
                     "patch_no_safe",
@@ -2991,7 +3631,9 @@ class MetaAgent:
                     top_issues=top_issues,
                 )
             else:
-                print(f" Production Meta-Agent: No safe patches available. Summary: {summary}")
+                print(
+                    f" Production Meta-Agent: No safe patches available. Summary: {summary}"
+                )
                 log_event(
                     "warn",
                     "patch_no_safe",
@@ -3001,9 +3643,15 @@ class MetaAgent:
             if allow_unsafe and patches:
                 # Choose the highest-confidence patch if no safe patch
                 fallback_patch = max(patches, key=lambda p: p.get("confidence", 0.0))
-                print(" Production Meta-Agent: Applying best-available patch (unsafe override enabled)")
-                print(f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled")
-                print(f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}")
+                print(
+                    " Production Meta-Agent: Applying best-available patch (unsafe override enabled)"
+                )
+                print(
+                    f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled"
+                )
+                print(
+                    f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}"
+                )
                 log_event(
                     "warn",
                     "patch_apply_unsafe",
@@ -3041,30 +3689,30 @@ class MetaAgent:
         try:
             # Teacher model: experienced, stable version
             self.teacher_model = {
-                'type': 'teacher',
-                'experience_level': 'expert',
-                'validation_rules': self._get_teacher_validation_rules(),
-                'improvement_strategies': self._get_teacher_improvement_strategies(),
-                'confidence_threshold': 0.85
+                "type": "teacher",
+                "experience_level": "expert",
+                "validation_rules": self._get_teacher_validation_rules(),
+                "improvement_strategies": self._get_teacher_improvement_strategies(),
+                "confidence_threshold": 0.85,
             }
 
             # Student model: learning, improving version
             self.student_model = {
-                'type': 'student',
-                'experience_level': 'novice',
-                'current_errors': [],
-                'learning_progress': 0.0,
-                'validation_rules': self._get_student_validation_rules(),
-                'improvement_attempts': []
+                "type": "student",
+                "experience_level": "novice",
+                "current_errors": [],
+                "learning_progress": 0.0,
+                "validation_rules": self._get_student_validation_rules(),
+                "improvement_attempts": [],
             }
 
             # Actor-critic system for validation
             self.actor_critic = {
-                'actor': self._initialize_actor(),
-                'critic': self._initialize_critic(),
-                'reward_function': self._get_reward_function(),
-                'policy_network': {},
-                'value_network': {}
+                "actor": self._initialize_actor(),
+                "critic": self._initialize_critic(),
+                "reward_function": self._get_reward_function(),
+                "policy_network": {},
+                "value_network": {},
             }
 
             print("✅ Teacher-student models initialized")
@@ -3107,16 +3755,22 @@ class MetaAgent:
 
             # Phase 3: Actor-Critic Validation (Decision Making)
             print("\\n🎭 Phase 3: Actor-Critic Validation - Decision Making")
-            validation_result = self._actor_critic_validation_phase(improvement_strategy)
+            validation_result = self._actor_critic_validation_phase(
+                improvement_strategy
+            )
 
             # Phase 4: Implementation & Testing
             print("\\n🛠️ Phase 4: Implementation & Testing")
-            implementation_result = self._implementation_and_testing_phase(validation_result)
+            implementation_result = self._implementation_and_testing_phase(
+                validation_result
+            )
 
             # Phase 5: Performance Assessment
             print("\\n📊 Phase 5: Performance Assessment")
             current_performance = self._assess_current_performance()
-            improvement = self._calculate_improvement(self.baseline_performance, current_performance)
+            improvement = self._calculate_improvement(
+                self.baseline_performance, current_performance
+            )
 
             print(f"   📈 Performance: {current_performance}")
             print(f"   📈 Improvement: {improvement:.2f}%")
@@ -3131,13 +3785,17 @@ class MetaAgent:
 
             # Update learning state
             self.current_performance = current_performance
-            self.validation_history.append({
-                'cycle': cycle,
-                'errors_detected': len(student_errors),
-                'improvements_applied': len(implementation_result.get('improvements', [])),
-                'performance': current_performance,
-                'convergence_check': convergence_achieved
-            })
+            self.validation_history.append(
+                {
+                    "cycle": cycle,
+                    "errors_detected": len(student_errors),
+                    "improvements_applied": len(
+                        implementation_result.get("improvements", [])
+                    ),
+                    "performance": current_performance,
+                    "convergence_check": convergence_achieved,
+                }
+            )
 
         # Final assessment
         if convergence_achieved:
@@ -3153,59 +3811,64 @@ class MetaAgent:
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
         return {
-            'syntax_validation': {'weight': 1.0, 'threshold': 0.95},
-            'semantic_validation': {'weight': 0.9, 'threshold': 0.90},
-            'performance_validation': {'weight': 0.8, 'threshold': 0.85},
-            'security_validation': {'weight': 1.0, 'threshold': 0.98},
-            'integration_validation': {'weight': 0.7, 'threshold': 0.80}
+            "syntax_validation": {"weight": 1.0, "threshold": 0.95},
+            "semantic_validation": {"weight": 0.9, "threshold": 0.90},
+            "performance_validation": {"weight": 0.8, "threshold": 0.85},
+            "security_validation": {"weight": 1.0, "threshold": 0.98},
+            "integration_validation": {"weight": 0.7, "threshold": 0.80},
         }
 
     def _get_teacher_improvement_strategies(self):
         """Get expert improvement strategies"""
         return [
-            'code_optimization',
-            'error_pattern_recognition',
-            'performance_enhancement',
-            'security_hardening',
-            'integration_improvement',
-            'architecture_refinement'
+            "code_optimization",
+            "error_pattern_recognition",
+            "performance_enhancement",
+            "security_hardening",
+            "integration_improvement",
+            "architecture_refinement",
         ]
 
     def _get_student_validation_rules(self):
         """Get learning validation rules for student model"""
         return {
-            'basic_syntax': {'weight': 0.8, 'threshold': 0.70},
-            'basic_functionality': {'weight': 0.6, 'threshold': 0.60},
-            'error_detection': {'weight': 0.7, 'threshold': 0.65}
+            "basic_syntax": {"weight": 0.8, "threshold": 0.70},
+            "basic_functionality": {"weight": 0.6, "threshold": 0.60},
+            "error_detection": {"weight": 0.7, "threshold": 0.65},
         }
 
     def _initialize_actor(self):
         """Initialize actor for decision making"""
         return {
-            'policy': 'validation_driven',
-            'action_space': ['validate', 'improve', 'test', 'deploy', 'rollback'],
-            'state_space': ['error_detected', 'improvement_needed', 'validation_passed', 'deployment_ready'],
-            'learning_rate': 0.01
+            "policy": "validation_driven",
+            "action_space": ["validate", "improve", "test", "deploy", "rollback"],
+            "state_space": [
+                "error_detected",
+                "improvement_needed",
+                "validation_passed",
+                "deployment_ready",
+            ],
+            "learning_rate": 0.01,
         }
 
     def _initialize_critic(self):
         """Initialize critic for value estimation"""
         return {
-            'value_function': 'error_reduction_based',
-            'baseline': 0.5,
-            'discount_factor': 0.95,
-            'td_lambda': 0.8
+            "value_function": "error_reduction_based",
+            "baseline": 0.5,
+            "discount_factor": 0.95,
+            "td_lambda": 0.8,
         }
 
     def _get_reward_function(self):
         """Define reward function for actor-critic learning"""
         return {
-            'error_reduction': 1.0,
-            'performance_improvement': 0.8,
-            'security_enhancement': 1.2,
-            'successful_deployment': 2.0,
-            'failed_validation': -1.0,
-            'regression_introduced': -2.0
+            "error_reduction": 1.0,
+            "performance_improvement": 0.8,
+            "security_enhancement": 1.2,
+            "successful_deployment": 2.0,
+            "failed_validation": -1.0,
+            "regression_introduced": -2.0,
         }
 
     def _student_error_detection_phase(self):
@@ -3213,7 +3876,7 @@ class MetaAgent:
         errors = []
 
         # Use intelligent issue resolver to detect errors
-        if hasattr(self.system, 'issue_resolver'):
+        if hasattr(self.system, "issue_resolver"):
             detected_issues = self.system.issue_resolver.detect_initialization_issues()
             errors.extend(detected_issues)
 
@@ -3221,83 +3884,93 @@ class MetaAgent:
         try:
             # Test basic system functionality
             test_result = self._run_basic_system_tests()
-            if not test_result['success']:
-                errors.extend(test_result['errors'])
+            if not test_result["success"]:
+                errors.extend(test_result["errors"])
         except Exception as e:
-            errors.append({
-                'type': 'system_test_failure',
-                'component': 'basic_functionality',
-                'severity': 'high',
-                'message': f'Basic system test failed: {e}',
-                'detected_by': 'student_model'
-            })
+            errors.append(
+                {
+                    "type": "system_test_failure",
+                    "component": "basic_functionality",
+                    "severity": "high",
+                    "message": f"Basic system test failed: {e}",
+                    "detected_by": "student_model",
+                }
+            )
 
-        self.student_model['current_errors'] = errors
+        self.student_model["current_errors"] = errors
         return errors
 
     def _teacher_validation_phase(self, student_errors):
         """Teacher model validates student findings and provides guidance"""
         feedback = {
-            'validated_errors': [],
-            'false_positives': [],
-            'missed_errors': [],
-            'improvement_suggestions': []
+            "validated_errors": [],
+            "false_positives": [],
+            "missed_errors": [],
+            "improvement_suggestions": [],
         }
 
         # Teacher validates each student-detected error
         for error in student_errors:
             teacher_validation = self._teacher_validate_error(error)
-            if teacher_validation['is_valid']:
-                feedback['validated_errors'].append({
-                    **error,
-                    'teacher_confidence': teacher_validation['confidence'],
-                    'teacher_priority': teacher_validation['priority']
-                })
+            if teacher_validation["is_valid"]:
+                feedback["validated_errors"].append(
+                    {
+                        **error,
+                        "teacher_confidence": teacher_validation["confidence"],
+                        "teacher_priority": teacher_validation["priority"],
+                    }
+                )
             else:
-                feedback['false_positives'].append(error)
+                feedback["false_positives"].append(error)
 
         # Teacher looks for errors student missed
         missed_errors = self._teacher_detect_missed_errors()
-        feedback['missed_errors'] = missed_errors
+        feedback["missed_errors"] = missed_errors
 
         # Teacher provides improvement suggestions
-        feedback['improvement_suggestions'] = self._teacher_generate_improvements(feedback['validated_errors'])
+        feedback["improvement_suggestions"] = self._teacher_generate_improvements(
+            feedback["validated_errors"]
+        )
 
         return feedback
 
     def _teacher_validate_error(self, error):
         """Teacher validates if an error is real and significant"""
         # Teacher uses expert rules to validate errors
-        validation_rules = self.teacher_model['validation_rules']
+        validation_rules = self.teacher_model["validation_rules"]
 
         confidence = 0.0
         is_valid = False
 
         # Apply validation rules based on error type
-        if error['type'] == 'missing_integration':
+        if error["type"] == "missing_integration":
             # Teacher knows which integrations are critical
-            critical_integrations = ['c_core', 'web_interface']
-            if error['component'] in critical_integrations:
+            critical_integrations = ["c_core", "web_interface"]
+            if error["component"] in critical_integrations:
                 confidence = 0.95
                 is_valid = True
             else:
                 confidence = 0.60  # Non-critical but still noteworthy
                 is_valid = True
 
-        elif error['type'] == 'missing_api_key':
+        elif error["type"] == "missing_api_key":
             # Teacher knows API keys are user-provided
             confidence = 0.80
             is_valid = True
 
-        elif error['type'] == 'component_failure':
+        elif error["type"] == "component_failure":
             # Teacher evaluates component failure severity
             confidence = 0.90
             is_valid = True
 
         return {
-            'is_valid': is_valid,
-            'confidence': confidence,
-            'priority': 'high' if confidence > 0.85 else 'medium' if confidence > 0.70 else 'low'
+            "is_valid": is_valid,
+            "confidence": confidence,
+            "priority": "high"
+            if confidence > 0.85
+            else "medium"
+            if confidence > 0.70
+            else "low",
         }
 
     def _teacher_detect_missed_errors(self):
@@ -3305,25 +3978,29 @@ class MetaAgent:
         missed_errors = []
 
         # Teacher checks for architectural issues
-        if not hasattr(self.system, 'issue_resolver'):
-            missed_errors.append({
-                'type': 'missing_component',
-                'component': 'issue_resolver',
-                'severity': 'high',
-                'message': 'Intelligent issue resolver not initialized',
-                'detected_by': 'teacher_model'
-            })
+        if not hasattr(self.system, "issue_resolver"):
+            missed_errors.append(
+                {
+                    "type": "missing_component",
+                    "component": "issue_resolver",
+                    "severity": "high",
+                    "message": "Intelligent issue resolver not initialized",
+                    "detected_by": "teacher_model",
+                }
+            )
 
         # Teacher checks for performance issues
-        if hasattr(self.system, 'system_metrics'):
-            if self.system.system_metrics.get('active_agents', 0) < 5:
-                missed_errors.append({
-                    'type': 'performance_issue',
-                    'component': 'agent_system',
-                    'severity': 'medium',
-                    'message': 'Low agent count may indicate initialization issues',
-                    'detected_by': 'teacher_model'
-                })
+        if hasattr(self.system, "system_metrics"):
+            if self.system.system_metrics.get("active_agents", 0) < 5:
+                missed_errors.append(
+                    {
+                        "type": "performance_issue",
+                        "component": "agent_system",
+                        "severity": "medium",
+                        "message": "Low agent count may indicate initialization issues",
+                        "detected_by": "teacher_model",
+                    }
+                )
 
         return missed_errors
 
@@ -3334,69 +4011,79 @@ class MetaAgent:
         # Categorize errors
         error_categories = {}
         for error in validated_errors:
-            category = error['type']
+            category = error["type"]
             if category not in error_categories:
                 error_categories[category] = []
             error_categories[category].append(error)
 
         # Generate strategies based on error patterns
-        if 'missing_integration' in error_categories:
-            improvements.append({
-                'strategy': 'integration_completion',
-                'description': 'Complete missing integrations with auto-configuration',
-                'priority': 'high',
-                'estimated_improvement': 0.80
-            })
+        if "missing_integration" in error_categories:
+            improvements.append(
+                {
+                    "strategy": "integration_completion",
+                    "description": "Complete missing integrations with auto-configuration",
+                    "priority": "high",
+                    "estimated_improvement": 0.80,
+                }
+            )
 
-        if 'component_failure' in error_categories:
-            improvements.append({
-                'strategy': 'component_stabilization',
-                'description': 'Stabilize failing components with error recovery',
-                'priority': 'high',
-                'estimated_improvement': 0.70
-            })
+        if "component_failure" in error_categories:
+            improvements.append(
+                {
+                    "strategy": "component_stabilization",
+                    "description": "Stabilize failing components with error recovery",
+                    "priority": "high",
+                    "estimated_improvement": 0.70,
+                }
+            )
 
-        if 'missing_api_key' in error_categories:
-            improvements.append({
-                'strategy': 'configuration_guidance',
-                'description': 'Provide clear guidance for configuration requirements',
-                'priority': 'medium',
-                'estimated_improvement': 0.90
-            })
+        if "missing_api_key" in error_categories:
+            improvements.append(
+                {
+                    "strategy": "configuration_guidance",
+                    "description": "Provide clear guidance for configuration requirements",
+                    "priority": "medium",
+                    "estimated_improvement": 0.90,
+                }
+            )
 
         return improvements
 
     def _teacher_strategy_phase(self, feedback):
         """Teacher selects optimal improvement strategy"""
-        validated_errors = feedback['validated_errors']
-        improvements = feedback['improvement_suggestions']
+        validated_errors = feedback["validated_errors"]
+        improvements = feedback["improvement_suggestions"]
 
         # Teacher selects strategy based on error analysis
         if validated_errors:
             # Prioritize high-severity errors
-            high_severity = [e for e in validated_errors if e.get('teacher_priority') == 'high']
+            high_severity = [
+                e for e in validated_errors if e.get("teacher_priority") == "high"
+            ]
             if high_severity:
                 return {
-                    'strategy': 'critical_error_resolution',
-                    'target_errors': high_severity,
-                    'approach': 'immediate_fix',
-                    'confidence': 0.85
+                    "strategy": "critical_error_resolution",
+                    "target_errors": high_severity,
+                    "approach": "immediate_fix",
+                    "confidence": 0.85,
                 }
 
         # If no critical errors, focus on improvements
         if improvements:
-            best_improvement = max(improvements, key=lambda x: x['estimated_improvement'])
+            best_improvement = max(
+                improvements, key=lambda x: x["estimated_improvement"]
+            )
             return {
-                'strategy': 'strategic_improvement',
-                'improvement_plan': best_improvement,
-                'approach': 'incremental_enhancement',
-                'confidence': 0.75
+                "strategy": "strategic_improvement",
+                "improvement_plan": best_improvement,
+                "approach": "incremental_enhancement",
+                "confidence": 0.75,
             }
 
         return {
-            'strategy': 'system_optimization',
-            'approach': 'performance_tuning',
-            'confidence': 0.60
+            "strategy": "system_optimization",
+            "approach": "performance_tuning",
+            "confidence": 0.60,
         }
 
     def _actor_critic_validation_phase(self, strategy):
@@ -3404,27 +4091,34 @@ class MetaAgent:
         print(f"   🎭 Actor selecting action: {strategy['strategy']}")
 
         # Actor evaluates possible actions
-        possible_actions = ['validate_strategy', 'modify_approach', 'execute_plan', 'seek_guidance']
+        possible_actions = [
+            "validate_strategy",
+            "modify_approach",
+            "execute_plan",
+            "seek_guidance",
+        ]
 
         # Critic evaluates strategy quality
         strategy_quality = self._critic_evaluate_strategy(strategy)
 
         # Actor makes decision based on critic feedback
         if strategy_quality > 0.8:
-            selected_action = 'execute_plan'
+            selected_action = "execute_plan"
             confidence = strategy_quality
         elif strategy_quality > 0.6:
-            selected_action = 'validate_strategy'
+            selected_action = "validate_strategy"
             confidence = strategy_quality * 0.9
         else:
-            selected_action = 'seek_guidance'
+            selected_action = "seek_guidance"
             confidence = strategy_quality * 0.7
 
         return {
-            'selected_action': selected_action,
-            'strategy_quality': strategy_quality,
-            'confidence': confidence,
-            'validation_result': 'approved' if selected_action == 'execute_plan' else 'needs_review'
+            "selected_action": selected_action,
+            "strategy_quality": strategy_quality,
+            "confidence": confidence,
+            "validation_result": "approved"
+            if selected_action == "execute_plan"
+            else "needs_review",
         }
 
     def _critic_evaluate_strategy(self, strategy):
@@ -3432,13 +4126,16 @@ class MetaAgent:
         quality_score = 0.5  # Baseline
 
         # Evaluate based on strategy characteristics
-        if strategy.get('confidence', 0) > 0.8:
+        if strategy.get("confidence", 0) > 0.8:
             quality_score += 0.2
 
-        if strategy['strategy'] in ['critical_error_resolution', 'integration_completion']:
+        if strategy["strategy"] in [
+            "critical_error_resolution",
+            "integration_completion",
+        ]:
             quality_score += 0.15
 
-        if 'target_errors' in strategy and len(strategy['target_errors']) > 0:
+        if "target_errors" in strategy and len(strategy["target_errors"]) > 0:
             quality_score += 0.1
 
         # Cap at 1.0
@@ -3446,9 +4143,9 @@ class MetaAgent:
 
     def _implementation_and_testing_phase(self, validation_result):
         """Implement the approved strategy and test results"""
-        if validation_result['selected_action'] != 'execute_plan':
+        if validation_result["selected_action"] != "execute_plan":
             print("   ⏳ Strategy needs review, skipping implementation")
-            return {'success': False, 'reason': 'strategy_not_approved'}
+            return {"success": False, "reason": "strategy_not_approved"}
 
         print("   🛠️ Implementing improvement strategy...")
 
@@ -3457,30 +4154,27 @@ class MetaAgent:
         improvements_made = []
 
         # Simulate making improvements based on detected issues
-        if hasattr(self.system, 'issue_resolver'):
+        if hasattr(self.system, "issue_resolver"):
             # Try to auto-fix some issues
             for issue in self.system.issue_resolver.detected_issues:
-                if issue.get('auto_fix_possible', False):
-                    fix_result = self.system.issue_resolver.attempt_auto_resolution(issue)
+                if issue.get("auto_fix_possible", False):
+                    fix_result = self.system.issue_resolver.attempt_auto_resolution(
+                        issue
+                    )
                     if fix_result:
-                        improvements_made.append({
-                            'type': 'auto_fix',
-                            'issue': issue,
-                            'result': 'success'
-                        })
+                        improvements_made.append(
+                            {"type": "auto_fix", "issue": issue, "result": "success"}
+                        )
 
         return {
-            'success': True,
-            'improvements': improvements_made,
-            'test_results': {'basic_tests_passed': True}
+            "success": True,
+            "improvements": improvements_made,
+            "test_results": {"basic_tests_passed": True},
         }
 
     def _run_basic_system_tests(self):
         """Run basic system functionality tests"""
-        test_results = {
-            'success': True,
-            'errors': []
-        }
+        test_results = {"success": True, "errors": []}
 
         try:
             # Test basic imports
@@ -3491,71 +4185,88 @@ class MetaAgent:
             modifier = sam_code_modifier.SAMCodeModifier()
 
             # Test basic command processing
-            if hasattr(self.system, '_process_chatbot_message'):
-                result = self.system._process_chatbot_message('/status', {})
+            if hasattr(self.system, "_process_chatbot_message"):
+                result = self.system._process_chatbot_message("/status", {})
                 if not result:
-                    test_results['errors'].append({
-                        'type': 'command_failure',
-                        'component': 'chat_processing',
-                        'message': 'Status command returned no result'
-                    })
+                    test_results["errors"].append(
+                        {
+                            "type": "command_failure",
+                            "component": "chat_processing",
+                            "message": "Status command returned no result",
+                        }
+                    )
 
         except Exception as e:
-            test_results['success'] = False
-            test_results['errors'].append({
-                'type': 'system_test_failure',
-                'component': 'basic_functionality',
-                'message': f'System test failed: {e}'
-            })
+            test_results["success"] = False
+            test_results["errors"].append(
+                {
+                    "type": "system_test_failure",
+                    "component": "basic_functionality",
+                    "message": f"System test failed: {e}",
+                }
+            )
 
         return test_results
 
     def _assess_current_performance(self):
         """Assess current system performance"""
         performance = {
-            'error_count': 0,
-            'component_health': 0.0,
-            'integration_status': 0.0,
-            'overall_score': 0.0
+            "error_count": 0,
+            "component_health": 0.0,
+            "integration_status": 0.0,
+            "overall_score": 0.0,
         }
 
         # Count current errors
-        if hasattr(self.system, 'issue_resolver'):
+        if hasattr(self.system, "issue_resolver"):
             current_issues = self.system.issue_resolver.detect_initialization_issues()
-            performance['error_count'] = len(current_issues)
+            performance["error_count"] = len(current_issues)
 
         # Assess component health
-        components = ['c_core_initialized', 'python_orchestration_initialized',
-                     'web_interface_initialized', 'sam_gmail_available', 'sam_github_available']
+        components = [
+            "c_core_initialized",
+            "python_orchestration_initialized",
+            "web_interface_initialized",
+            "sam_gmail_available",
+            "sam_github_available",
+        ]
         healthy_components = 0
         for component in components:
             if hasattr(self.system, component) and getattr(self.system, component):
                 healthy_components += 1
 
-        performance['component_health'] = healthy_components / len(components)
+        performance["component_health"] = healthy_components / len(components)
 
         # Integration status
-        integrations = ['sam_gmail_available', 'sam_github_available',
-                       'sam_code_modifier_available', 'sam_web_search_available']
+        integrations = [
+            "sam_gmail_available",
+            "sam_github_available",
+            "sam_code_modifier_available",
+            "sam_web_search_available",
+        ]
         working_integrations = 0
         for integration in integrations:
             if hasattr(self.system, integration) and getattr(self.system, integration):
                 working_integrations += 1
 
-        performance['integration_status'] = working_integrations / len(integrations)
+        performance["integration_status"] = working_integrations / len(integrations)
 
         # Overall score
-        performance['overall_score'] = (performance['component_health'] + performance['integration_status']) / 2
+        performance["overall_score"] = (
+            performance["component_health"] + performance["integration_status"]
+        ) / 2
 
         return performance
 
     def _calculate_improvement(self, baseline, current):
         """Calculate improvement from baseline to current performance"""
-        if not baseline or baseline.get('error_count', 0) == 0:
+        if not baseline or baseline.get("error_count", 0) == 0:
             return 0.0
 
-        error_reduction = max(0, baseline['error_count'] - current.get('error_count', 0))
-        max_possible_reduction = baseline['error_count']
+        error_reduction = max(
+            0, baseline["error_count"] - current.get("error_count", 0)
+        )
+        max_possible_reduction = baseline["error_count"]
 
         if max_possible_reduction == 0:
             return 100.0
@@ -3564,11 +4275,13 @@ class MetaAgent:
 
     def _check_convergence(self, current_performance):
         """Check if system has converged to zero errors"""
-        error_count = current_performance.get('error_count', 0)
-        overall_score = current_performance.get('overall_score', 0.0)
+        error_count = current_performance.get("error_count", 0)
+        overall_score = current_performance.get("overall_score", 0.0)
 
         # Convergence criteria: zero errors AND high performance score
         return error_count == 0 and overall_score >= self.improvement_threshold
+
+
 class IntelligentIssueResolver:
     """AI-powered system for detecting and resolving issues automatically"""
 
@@ -3584,42 +4297,46 @@ class IntelligentIssueResolver:
 
         # Check component availability
         components = {
-            'google_drive': self.system.google_drive_available,
-            'web_search': self.system.sam_web_search_available,
-            'code_modifier': self.system.sam_code_modifier_available,
-            'gmail': self.system.sam_gmail_available,
-            'github': self.system.sam_github_available
+            "google_drive": self.system.google_drive_available,
+            "web_search": self.system.sam_web_search_available,
+            "code_modifier": self.system.sam_code_modifier_available,
+            "gmail": self.system.sam_gmail_available,
+            "github": self.system.sam_github_available,
         }
 
         for component, available in components.items():
             if not available:
-                issues.append({
-                    'type': 'missing_integration',
-                    'component': component,
-                    'severity': 'high',
-                    'message': f'{component.replace("_", " ").title()} integration not available',
-                    'auto_fix_possible': self._can_auto_fix_integration(component),
-                    'escalate_to_meta': False
-                })
+                issues.append(
+                    {
+                        "type": "missing_integration",
+                        "component": component,
+                        "severity": "high",
+                        "message": f"{component.replace('_', ' ').title()} integration not available",
+                        "auto_fix_possible": self._can_auto_fix_integration(component),
+                        "escalate_to_meta": False,
+                    }
+                )
 
         # Check API keys
         api_keys = {
-            'github_token': os.getenv('GITHUB_TOKEN'),
-            'google_api_key': os.getenv('GOOGLE_API_KEY'),
-            'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
-            'openai_key': os.getenv('OPENAI_API_KEY')
+            "github_token": os.getenv("GITHUB_TOKEN"),
+            "google_api_key": os.getenv("GOOGLE_API_KEY"),
+            "anthropic_key": os.getenv("ANTHROPIC_API_KEY"),
+            "openai_key": os.getenv("OPENAI_API_KEY"),
         }
 
         for key_name, value in api_keys.items():
             if not value:
-                issues.append({
-                    'type': 'missing_api_key',
-                    'component': key_name,
-                    'severity': 'medium',
-                    'message': f'{key_name.replace("_", " ").title()} not configured',
-                    'auto_fix_possible': False,  # Requires user input
-                    'escalate_to_meta': False
-                })
+                issues.append(
+                    {
+                        "type": "missing_api_key",
+                        "component": key_name,
+                        "severity": "medium",
+                        "message": f"{key_name.replace('_', ' ').title()} not configured",
+                        "auto_fix_possible": False,  # Requires user input
+                        "escalate_to_meta": False,
+                    }
+                )
 
         self.detected_issues = issues
         return issues
@@ -3627,34 +4344,34 @@ class IntelligentIssueResolver:
     def _can_auto_fix_integration(self, component):
         """Check if an integration issue can be auto-fixed"""
         auto_fixable = {
-            'google_drive': False,  # Requires credentials file
-            'web_search': True,     # Can work without Google Drive
-            'code_modifier': True,  # Core functionality
-            'gmail': False,         # Requires email setup
-            'github': True          # Can work without token (read-only)
+            "google_drive": False,  # Requires credentials file
+            "web_search": True,  # Can work without Google Drive
+            "code_modifier": True,  # Core functionality
+            "gmail": False,  # Requires email setup
+            "github": True,  # Can work without token (read-only)
         }
         return auto_fixable.get(component, False)
 
     def attempt_auto_resolution(self, issue):
         """Attempt to automatically resolve an issue"""
         # 🔒 PREVENT BOOTSTRAP THRASHING - Don't attempt auto-resolution during bootstrap
-        if not getattr(self.system, 'bootstrap_complete', False):
+        if not getattr(self.system, "bootstrap_complete", False):
             print(f"🔒 Skipping auto-resolution during bootstrap: {issue['message']}")
             return False
-            
+
         issue_id = f"{issue['type']}_{issue['component']}"
-        self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
+        self.resolution_attempts[issue_id] = {"attempts": [], "success": False}
 
         print(f"🤖 Attempting auto-resolution for: {issue['message']}")
 
-        if issue['type'] == 'missing_integration':
-            success = self._fix_missing_integration(issue['component'])
-        elif issue['type'] == 'missing_api_key':
-            success = self._fix_missing_api_key(issue['component'])
+        if issue["type"] == "missing_integration":
+            success = self._fix_missing_integration(issue["component"])
+        elif issue["type"] == "missing_api_key":
+            success = self._fix_missing_api_key(issue["component"])
         else:
             success = False
 
-        self.resolution_attempts[issue_id]['success'] = success
+        self.resolution_attempts[issue_id]["success"] = success
 
         if success:
             print(f"✅ Auto-resolution successful for: {issue['message']}")
@@ -3665,20 +4382,22 @@ class IntelligentIssueResolver:
 
     def _fix_missing_integration(self, component):
         """Attempt to fix missing integration"""
-        if component == 'web_search':
+        if component == "web_search":
             # Web search can work without Google Drive
             try:
                 from sam_web_search import initialize_sam_web_search
+
                 initialize_sam_web_search()
                 return True
             except Exception as e:
                 print(f"  Web search auto-fix failed: {e}")
                 return False
 
-        elif component == 'code_modifier':
+        elif component == "code_modifier":
             # Code modifier is core functionality
             try:
                 from sam_code_modifier import initialize_sam_code_modifier
+
                 project_root = str(Path(__file__).parent)
                 initialize_sam_code_modifier(project_root)
                 return True
@@ -3686,10 +4405,11 @@ class IntelligentIssueResolver:
                 print(f"  Code modifier auto-fix failed: {e}")
                 return False
 
-        elif component == 'github':
+        elif component == "github":
             # GitHub can work without token (read-only)
             try:
                 from sam_github_integration import initialize_sam_github
+
                 initialize_sam_github()
                 return True
             except Exception as e:
@@ -3719,21 +4439,23 @@ class IntelligentIssueResolver:
 
         for i, issue in enumerate(unresolved_issues, 1):
             print(f"\\n{i}. {issue['message']}")
-            if issue['type'] == 'missing_api_key':
-                if 'github' in issue['component']:
+            if issue["type"] == "missing_api_key":
+                if "github" in issue["component"]:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
                     print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
-                elif 'google' in issue['component']:
+                elif "google" in issue["component"]:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
                     print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
-                elif 'anthropic' in issue['component']:
+                elif "anthropic" in issue["component"]:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
                     print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
-                elif 'openai' in issue['component']:
+                elif "openai" in issue["component"]:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
                     print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
             else:
-                print("   💡 This integration is not available. The system will continue without it.")
+                print(
+                    "   💡 This integration is not available. The system will continue without it."
+                )
 
         print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
         print("\\n💬 I can help you resolve these issues. What would you like to do?")
@@ -3748,13 +4470,19 @@ class IntelligentIssueResolver:
 
         print(f"\\n🤖 Detected {len(issues)} potential issues:")
         for issue in issues:
-            severity_icon = "🔴" if issue['severity'] == 'high' else "🟡" if issue['severity'] == 'medium' else "🟢"
+            severity_icon = (
+                "🔴"
+                if issue["severity"] == "high"
+                else "🟡"
+                if issue["severity"] == "medium"
+                else "🟢"
+            )
             print(f"  {severity_icon} {issue['message']}")
 
         # Attempt auto-resolution
         unresolved_issues = []
         for issue in issues:
-            if issue.get('auto_fix_possible', False):
+            if issue.get("auto_fix_possible", False):
                 if not self.attempt_auto_resolution(issue):
                     unresolved_issues.append(issue)
             else:
@@ -3767,12 +4495,13 @@ class IntelligentIssueResolver:
 
         print("\\n✅ All issues resolved automatically!")
         return True
+
     """Simple fallback meta-agent with required deployment attributes"""
 
     def __init__(self):
         # REQUIRED STATE ATTRIBUTES (DEPLOYMENT BLOCKERS FIXED)
-        self.failure_clusters = {}     # cluster_id -> list[failure]
-        self.patch_history = []        # list of applied/rejected patches
+        self.failure_clusters = {}  # cluster_id -> list[failure]
+        self.patch_history = []  # list of applied/rejected patches
         self.confidence_threshold = 0.80  # Safety threshold
 
         print("📚 Simple Meta-Agent initialized with deployment attributes")
@@ -3783,9 +4512,13 @@ class IntelligentIssueResolver:
         return {
             "total_clusters": len(self.failure_clusters),
             "total_failures": total_failures,
-            "average_cluster_size": total_failures / len(self.failure_clusters) if self.failure_clusters else 0.0,
-            "largest_cluster": max((len(v) for v in self.failure_clusters.values()), default=0),
-            "clusters_with_fixes": 0
+            "average_cluster_size": total_failures / len(self.failure_clusters)
+            if self.failure_clusters
+            else 0.0,
+            "largest_cluster": max(
+                (len(v) for v in self.failure_clusters.values()), default=0
+            ),
+            "clusters_with_fixes": 0,
         }
 
     def is_fully_initialized(self):
@@ -3795,134 +4528,142 @@ class IntelligentIssueResolver:
     def ensure_initialization(self):
         """Ensure initialization"""
         return True
+
     """AI-powered system for detecting and resolving issues automatically"""
-    
+
     def __init__(self, system_instance):
         self.system = system_instance
         self.detected_issues = []
         self.resolution_attempts = {}
         self.chat_integration = None
-        
+
     def detect_initialization_issues(self):
         """Detect issues during system initialization"""
         issues = []
-        
+
         # Check component availability
         components = {
-            'google_drive': self.system.google_drive_available,
-            'web_search': self.system.sam_web_search_available, 
-            'code_modifier': self.system.sam_code_modifier_available,
-            'gmail': self.system.sam_gmail_available,
-            'github': self.system.sam_github_available
+            "google_drive": self.system.google_drive_available,
+            "web_search": self.system.sam_web_search_available,
+            "code_modifier": self.system.sam_code_modifier_available,
+            "gmail": self.system.sam_gmail_available,
+            "github": self.system.sam_github_available,
         }
-        
+
         for component, available in components.items():
             if not available:
-                issues.append({
-                    'type': 'missing_integration',
-                    'component': component,
-                    'severity': 'high',
-                    'message': f'{component.replace("_", " ").title()} integration not available',
-                    'auto_fix_possible': self._can_auto_fix_integration(component),
-                    'escalate_to_meta': False
-                })
-        
+                issues.append(
+                    {
+                        "type": "missing_integration",
+                        "component": component,
+                        "severity": "high",
+                        "message": f"{component.replace('_', ' ').title()} integration not available",
+                        "auto_fix_possible": self._can_auto_fix_integration(component),
+                        "escalate_to_meta": False,
+                    }
+                )
+
         # Check API keys
         api_keys = {
-            'github_token': os.getenv('GITHUB_TOKEN'),
-            'google_api_key': os.getenv('GOOGLE_API_KEY'),
-            'anthropic_key': os.getenv('ANTHROPIC_API_KEY'),
-            'openai_key': os.getenv('OPENAI_API_KEY')
+            "github_token": os.getenv("GITHUB_TOKEN"),
+            "google_api_key": os.getenv("GOOGLE_API_KEY"),
+            "anthropic_key": os.getenv("ANTHROPIC_API_KEY"),
+            "openai_key": os.getenv("OPENAI_API_KEY"),
         }
-        
+
         for key_name, value in api_keys.items():
             if not value:
-                issues.append({
-                    'type': 'missing_api_key',
-                    'component': key_name,
-                    'severity': 'medium',
-                    'message': f'{key_name.replace("_", " ").title()} not configured',
-                    'auto_fix_possible': False,  # Requires user input
-                    'escalate_to_meta': False
-                })
-        
+                issues.append(
+                    {
+                        "type": "missing_api_key",
+                        "component": key_name,
+                        "severity": "medium",
+                        "message": f"{key_name.replace('_', ' ').title()} not configured",
+                        "auto_fix_possible": False,  # Requires user input
+                        "escalate_to_meta": False,
+                    }
+                )
+
         self.detected_issues = issues
         return issues
-    
+
     def _can_auto_fix_integration(self, component):
         """Check if an integration issue can be auto-fixed"""
         auto_fixable = {
-            'google_drive': False,  # Requires credentials file
-            'web_search': True,     # Can work without Google Drive
-            'code_modifier': True,  # Core functionality
-            'gmail': False,         # Requires email setup
-            'github': True          # Can work without token (read-only)
+            "google_drive": False,  # Requires credentials file
+            "web_search": True,  # Can work without Google Drive
+            "code_modifier": True,  # Core functionality
+            "gmail": False,  # Requires email setup
+            "github": True,  # Can work without token (read-only)
         }
         return auto_fixable.get(component, False)
-    
+
     def attempt_auto_resolution(self, issue):
         """Attempt to automatically resolve an issue"""
         # 🔒 PREVENT BOOTSTRAP THRASHING - Don't attempt auto-resolution during bootstrap
-        if not getattr(self.system, 'bootstrap_complete', False):
+        if not getattr(self.system, "bootstrap_complete", False):
             print(f"🔒 Skipping auto-resolution during bootstrap: {issue['message']}")
             return False
-            
+
         issue_id = f"{issue['type']}_{issue['component']}"
-        self.resolution_attempts[issue_id] = {'attempts': [], 'success': False}
-        
+        self.resolution_attempts[issue_id] = {"attempts": [], "success": False}
+
         print(f"🤖 Attempting auto-resolution for: {issue['message']}")
-        
-        if issue['type'] == 'missing_integration':
-            success = self._fix_missing_integration(issue['component'])
-        elif issue['type'] == 'missing_api_key':
-            success = self._fix_missing_api_key(issue['component'])
+
+        if issue["type"] == "missing_integration":
+            success = self._fix_missing_integration(issue["component"])
+        elif issue["type"] == "missing_api_key":
+            success = self._fix_missing_api_key(issue["component"])
         else:
             success = False
-        
-        self.resolution_attempts[issue_id]['success'] = success
-        
+
+        self.resolution_attempts[issue_id]["success"] = success
+
         if success:
             print(f"✅ Auto-resolution successful for: {issue['message']}")
         else:
             print(f"❌ Auto-resolution failed for: {issue['message']}")
-            
+
         return success
-    
+
     def _fix_missing_integration(self, component):
         """Attempt to fix missing integration"""
-        if component == 'web_search':
+        if component == "web_search":
             # Web search can work without Google Drive
             try:
                 from sam_web_search import initialize_sam_web_search
+
                 initialize_sam_web_search()
                 return True
             except Exception as e:
                 print(f"  Web search auto-fix failed: {e}")
                 return False
-                
-        elif component == 'code_modifier':
+
+        elif component == "code_modifier":
             # Code modifier is core functionality
             try:
                 from sam_code_modifier import initialize_sam_code_modifier
+
                 project_root = str(Path(__file__).parent)
                 initialize_sam_code_modifier(project_root)
                 return True
             except Exception as e:
                 print(f"  Code modifier auto-fix failed: {e}")
                 return False
-                
-        elif component == 'github':
+
+        elif component == "github":
             # GitHub can work without token (read-only)
             try:
                 from sam_github_integration import initialize_sam_github
+
                 initialize_sam_github()
                 return True
             except Exception as e:
                 print(f"  GitHub auto-fix failed: {e}")
                 return False
-        
+
         return False
-    
+
     def _fix_missing_api_key(self, key_name):
         """Attempt to fix missing API key"""
         # For now, we can't auto-fix API keys as they require user input
@@ -3932,66 +4673,75 @@ class IntelligentIssueResolver:
             print(f"  Found {key_name} in environment")
             return True
         return False
-    
+
     def engage_user_for_resolution(self, unresolved_issues):
         """Engage user in chat to resolve remaining issues"""
         if not unresolved_issues:
             return
-        
+
         print("\\n🤖 INTELLIGENT ISSUE RESOLUTION SYSTEM ACTIVE")
         print("=" * 60)
         print("I've detected some issues that need your attention:")
-        
+
         for i, issue in enumerate(unresolved_issues, 1):
             print(f"\\n{i}. {issue['message']}")
-            if issue['type'] == 'missing_api_key':
-                if 'github' in issue['component']:
+            if issue["type"] == "missing_api_key":
+                if "github" in issue["component"]:
                     print("   💡 Solution: Set GITHUB_TOKEN environment variable")
                     print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
-                elif 'google' in issue['component']:
+                elif "google" in issue["component"]:
                     print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
                     print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
-                elif 'anthropic' in issue['component']:
+                elif "anthropic" in issue["component"]:
                     print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
                     print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
-                elif 'openai' in issue['component']:
+                elif "openai" in issue["component"]:
                     print("   💡 Solution: Set OPENAI_API_KEY environment variable")
                     print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
             else:
-                print("   💡 This integration is not available. The system will continue without it.")
-        
+                print(
+                    "   💡 This integration is not available. The system will continue without it."
+                )
+
         print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
         print("\\n💬 I can help you resolve these issues. What would you like to do?")
-    
+
     def resolve_all_issues(self):
         """Main method to resolve all detected issues"""
         issues = self.detect_initialization_issues()
-        
+
         if not issues:
             print("✅ No issues detected - system is healthy!")
             return True
-        
+
         print(f"\\n🤖 Detected {len(issues)} potential issues:")
         for issue in issues:
-            severity_icon = "🔴" if issue['severity'] == 'high' else "🟡" if issue['severity'] == 'medium' else "🟢"
+            severity_icon = (
+                "🔴"
+                if issue["severity"] == "high"
+                else "🟡"
+                if issue["severity"] == "medium"
+                else "🟢"
+            )
             print(f"  {severity_icon} {issue['message']}")
-        
+
         # Attempt auto-resolution
         unresolved_issues = []
         for issue in issues:
-            if issue.get('auto_fix_possible', False):
+            if issue.get("auto_fix_possible", False):
                 if not self.attempt_auto_resolution(issue):
                     unresolved_issues.append(issue)
             else:
                 unresolved_issues.append(issue)
-        
+
         # Engage user for remaining issues
         if unresolved_issues:
             self.engage_user_for_resolution(unresolved_issues)
             return False
-        
+
         print("\\n✅ All issues resolved automatically!")
         return True
+
 
 class UnifiedSAMSystem:
     """The Unified SAM 2.0 Complete System"""
@@ -4033,10 +4783,12 @@ class UnifiedSAMSystem:
         self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
-        self.state_path = Path(os.getenv(
-            "SAM_STATE_PATH",
-            str(self.project_root / "sam_data" / self.profile_name / "state.json")
-        ))
+        self.state_path = Path(
+            os.getenv(
+                "SAM_STATE_PATH",
+                str(self.project_root / "sam_data" / self.profile_name / "state.json"),
+            )
+        )
         try:
             self.state_path.parent.mkdir(parents=True, exist_ok=True)
         except Exception:
@@ -4045,20 +4797,20 @@ class UnifiedSAMSystem:
 
         # System metrics (initialize early before web interface)
         self.system_metrics = {
-            'start_time': datetime.now().isoformat(),
-            'c_core_status': 'initializing',
-            'python_orchestration_status': 'initializing',
-            'web_interface_status': 'initializing',
-            'total_conversations': 0,
-            'consciousness_score': 0.0,
-            'coherence_score': 0.0,
-            'survival_score': 1.0,
-            'learning_events': 0,
-            'distill_count': 0,
-            'optimization_events': 0,
-            'active_agents': 0,
-            'system_health': 'excellent',
-            'last_growth_reason': None,
+            "start_time": datetime.now().isoformat(),
+            "c_core_status": "initializing",
+            "python_orchestration_status": "initializing",
+            "web_interface_status": "initializing",
+            "total_conversations": 0,
+            "consciousness_score": 0.0,
+            "coherence_score": 0.0,
+            "survival_score": 1.0,
+            "learning_events": 0,
+            "distill_count": 0,
+            "optimization_events": 0,
+            "active_agents": 0,
+            "system_health": "excellent",
+            "last_growth_reason": None,
         }
 
         # 🔄 RAM-AWARE INTELLIGENCE - Memory monitoring and model switching
@@ -4089,15 +4841,23 @@ class UnifiedSAMSystem:
         self.regression_on_growth = os.getenv("SAM_REGRESSION_ON_GROWTH", "1") == "1"
         self.regression_tasks_path = os.getenv(
             "SAM_REGRESSION_TASKS",
-            str(self.project_root / "training/tasks/default_tasks.jsonl")
+            str(self.project_root / "training/tasks/default_tasks.jsonl"),
         )
-        self.regression_provider = os.getenv("SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b")
+        self.regression_provider = os.getenv(
+            "SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b"
+        )
         # Provider auto-switch (policy + teacher pool)
         self.provider_auto_switch = os.getenv("SAM_PROVIDER_AUTO_SWITCH", "1") == "1"
-        self.provider_ram_threshold = float(os.getenv("SAM_PROVIDER_RAM_THRESHOLD", "0.85"))
+        self.provider_ram_threshold = float(
+            os.getenv("SAM_PROVIDER_RAM_THRESHOLD", "0.85")
+        )
         self.provider_ram_recover = float(os.getenv("SAM_PROVIDER_RAM_RECOVER", "0.75"))
-        self.policy_provider_primary = os.getenv("SAM_POLICY_PROVIDER_PRIMARY", self.regression_provider)
-        self.policy_provider_fallback = os.getenv("SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b")
+        self.policy_provider_primary = os.getenv(
+            "SAM_POLICY_PROVIDER_PRIMARY", self.regression_provider
+        )
+        self.policy_provider_fallback = os.getenv(
+            "SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b"
+        )
         self.provider_mode = "primary"
         # Use primary policy provider by default
         self.regression_provider = self.policy_provider_primary
@@ -4112,7 +4872,9 @@ class UnifiedSAMSystem:
         self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
         self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.distill_dashboard_enabled = os.getenv("SAM_DISTILL_DASHBOARD", "1") == "1"
-        self.learning_memory_enabled = os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
+        self.learning_memory_enabled = (
+            os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
+        )
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
         self.learning_memory = deque(maxlen=self.learning_memory_max)
         self._chat_provider = None
@@ -4120,10 +4882,16 @@ class UnifiedSAMSystem:
 
         # Teacher pool + distillation pipeline (live groupchat)
         self.teacher_pool_enabled = os.getenv("SAM_TEACHER_POOL_ENABLED", "1") == "1"
-        self.teacher_pool_primary = os.getenv("SAM_TEACHER_POOL_PRIMARY", os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"))
-        self.teacher_pool_fallback = os.getenv("SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest")
+        self.teacher_pool_primary = os.getenv(
+            "SAM_TEACHER_POOL_PRIMARY",
+            os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"),
+        )
+        self.teacher_pool_fallback = os.getenv(
+            "SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest"
+        )
         self.teacher_specs = [
-            spec.strip() for spec in self.teacher_pool_primary.split(",")
+            spec.strip()
+            for spec in self.teacher_pool_primary.split(",")
             if spec.strip()
         ]
         self.teacher_n_per = int(os.getenv("SAM_TEACHER_N_PER", "1"))
@@ -4136,7 +4904,9 @@ class UnifiedSAMSystem:
             "SAM_DISTILL_PATH",
             str(self.project_root / "training/distilled/groupchat.jsonl"),
         )
-        self.distill_include_candidates = os.getenv("SAM_DISTILL_INCLUDE_CANDIDATES", "0") == "1"
+        self.distill_include_candidates = (
+            os.getenv("SAM_DISTILL_INCLUDE_CANDIDATES", "0") == "1"
+        )
         self.teacher_pool = None
         self.distill_writer = None
         self.teacher_pool_lock = threading.Lock()
@@ -4144,7 +4914,9 @@ class UnifiedSAMSystem:
         if self.strict_local_only:
             # Enforce local-only providers in strict mode (no Ollama/HF/etc).
             local_spec = "local:rules"
-            if self.chat_provider_spec and _is_external_provider_spec(self.chat_provider_spec):
+            if self.chat_provider_spec and _is_external_provider_spec(
+                self.chat_provider_spec
+            ):
                 self.chat_provider_spec = ""
             if _is_external_provider_spec(self.policy_provider_primary):
                 self.policy_provider_primary = local_spec
@@ -4156,7 +4928,9 @@ class UnifiedSAMSystem:
             self.regression_provider = self.policy_provider_primary or local_spec
             if not self.teacher_pool_enabled:
                 self.teacher_pool_enabled = True
-            if not self.teacher_specs or any(_is_external_provider_spec(s) for s in self.teacher_specs):
+            if not self.teacher_specs or any(
+                _is_external_provider_spec(s) for s in self.teacher_specs
+            ):
                 self.teacher_specs = [local_spec]
             # Keep primary/fallback in sync with local specs.
             self.teacher_pool_primary = ",".join(self.teacher_specs)
@@ -4177,25 +4951,33 @@ class UnifiedSAMSystem:
 
         # Revenue operations pipeline (approval + audit)
         self.revenue_ops_enabled = os.getenv("SAM_REVENUE_OPS_ENABLED", "1") == "1"
-        self.revenue_data_dir = Path(os.getenv(
-            "SAM_REVENUE_DATA_DIR",
-            str(self.project_root / "sam_data" / "revenue_ops")
-        ))
-        self.revenue_queue_path = Path(os.getenv(
-            "SAM_REVENUE_QUEUE_PATH",
-            str(self.project_root / "sam_data" / "revenue_ops" / "queue.json")
-        ))
-        self.revenue_audit_log = Path(os.getenv(
-            "SAM_REVENUE_AUDIT_LOG",
-            str(self.project_root / "logs" / "revenue_ops_audit.jsonl")
-        ))
+        self.revenue_data_dir = Path(
+            os.getenv(
+                "SAM_REVENUE_DATA_DIR",
+                str(self.project_root / "sam_data" / "revenue_ops"),
+            )
+        )
+        self.revenue_queue_path = Path(
+            os.getenv(
+                "SAM_REVENUE_QUEUE_PATH",
+                str(self.project_root / "sam_data" / "revenue_ops" / "queue.json"),
+            )
+        )
+        self.revenue_audit_log = Path(
+            os.getenv(
+                "SAM_REVENUE_AUDIT_LOG",
+                str(self.project_root / "logs" / "revenue_ops_audit.jsonl"),
+            )
+        )
 
         def _send_email_wrapper(to_email: str, subject: str, body: str):
             if not send_sam_email:
                 raise RuntimeError("Gmail integration not available")
             return send_sam_email(to_email, subject, body, [])
 
-        def _schedule_email_wrapper(to_email: str, subject: str, body: str, send_time: str):
+        def _schedule_email_wrapper(
+            to_email: str, subject: str, body: str, send_time: str
+        ):
             if not schedule_sam_email:
                 raise RuntimeError("Gmail integration not available")
             return schedule_sam_email(to_email, subject, body, send_time)
@@ -4211,42 +4993,63 @@ class UnifiedSAMSystem:
             )
 
         # Revenue auto-planner (creates actions but requires approval)
-        self.revenue_autoplanner_enabled = os.getenv("SAM_REVENUE_AUTOPLANNER_ENABLED", "1") == "1"
-        self.revenue_autoplanner_interval_s = int(os.getenv("SAM_REVENUE_AUTOPLANNER_INTERVAL_S", "600"))
-        self.revenue_autoplanner_max_pending = int(os.getenv("SAM_REVENUE_AUTOPLANNER_MAX_PENDING", "10"))
-        self.revenue_autoplanner_sequence_id = os.getenv("SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID") or None
+        self.revenue_autoplanner_enabled = (
+            os.getenv("SAM_REVENUE_AUTOPLANNER_ENABLED", "1") == "1"
+        )
+        self.revenue_autoplanner_interval_s = int(
+            os.getenv("SAM_REVENUE_AUTOPLANNER_INTERVAL_S", "600")
+        )
+        self.revenue_autoplanner_max_pending = int(
+            os.getenv("SAM_REVENUE_AUTOPLANNER_MAX_PENDING", "10")
+        )
+        self.revenue_autoplanner_sequence_id = (
+            os.getenv("SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID") or None
+        )
         self.revenue_autoplanner_thread = None
         if self.revenue_ops and self.revenue_autoplanner_enabled:
             self._start_revenue_autoplanner()
 
         # Revenue sequence executor (sends scheduled emails)
-        self.revenue_sequence_executor_enabled = os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED", "1") == "1"
-        self.revenue_sequence_executor_interval_s = int(os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S", "120"))
+        self.revenue_sequence_executor_enabled = (
+            os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED", "1") == "1"
+        )
+        self.revenue_sequence_executor_interval_s = int(
+            os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S", "120")
+        )
         if self.revenue_ops and self.revenue_sequence_executor_enabled:
             self._start_revenue_sequence_executor()
 
         # Finance logging snapshot interval (seconds)
-        self.finance_log_interval_s = float(os.getenv("SAM_FINANCE_LOG_INTERVAL_S", "120"))
+        self.finance_log_interval_s = float(
+            os.getenv("SAM_FINANCE_LOG_INTERVAL_S", "120")
+        )
         self._last_finance_log_ts = 0.0
 
         # Banking sandbox ledger (approval-gated, no real money access)
         self.banking_enabled = os.getenv("SAM_BANKING_SANDBOX_ENABLED", "1") == "1"
-        self.banking_data_dir = Path(os.getenv(
-            "SAM_BANKING_DATA_DIR",
-            str(self.project_root / "sam_data" / "banking")
-        ))
-        self.banking_ledger_path = Path(os.getenv(
-            "SAM_BANKING_LEDGER_PATH",
-            str(self.project_root / "sam_data" / "banking" / "ledger.json")
-        ))
-        self.banking_requests_path = Path(os.getenv(
-            "SAM_BANKING_REQUESTS_PATH",
-            str(self.project_root / "sam_data" / "banking" / "requests.json")
-        ))
-        self.banking_audit_log = Path(os.getenv(
-            "SAM_BANKING_AUDIT_LOG",
-            str(self.project_root / "logs" / "banking_audit.jsonl")
-        ))
+        self.banking_data_dir = Path(
+            os.getenv(
+                "SAM_BANKING_DATA_DIR", str(self.project_root / "sam_data" / "banking")
+            )
+        )
+        self.banking_ledger_path = Path(
+            os.getenv(
+                "SAM_BANKING_LEDGER_PATH",
+                str(self.project_root / "sam_data" / "banking" / "ledger.json"),
+            )
+        )
+        self.banking_requests_path = Path(
+            os.getenv(
+                "SAM_BANKING_REQUESTS_PATH",
+                str(self.project_root / "sam_data" / "banking" / "requests.json"),
+            )
+        )
+        self.banking_audit_log = Path(
+            os.getenv(
+                "SAM_BANKING_AUDIT_LOG",
+                str(self.project_root / "logs" / "banking_audit.jsonl"),
+            )
+        )
         self.banking_ledger = None
         if self.banking_enabled:
             self.banking_ledger = BankingLedger(
@@ -4284,11 +5087,15 @@ class UnifiedSAMSystem:
         self.backup_manager.start()
         self.backup_last_result = None
         if self.backup_enabled:
-            register_shutdown_handler("backup_manager", self.backup_manager.stop, priority=50)
+            register_shutdown_handler(
+                "backup_manager", self.backup_manager.stop, priority=50
+            )
 
         # Autonomous loops
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
-        self.autonomous_loop_interval_s = float(os.getenv("SAM_AUTONOMOUS_LOOP_INTERVAL_S", "2"))
+        self.autonomous_loop_interval_s = float(
+            os.getenv("SAM_AUTONOMOUS_LOOP_INTERVAL_S", "2")
+        )
         if getattr(self, "meta_only_boot", False):
             self.autonomous_enabled = False
 
@@ -4306,29 +5113,56 @@ class UnifiedSAMSystem:
         self.meta_agent_active = False
 
         # Integration availability flags (detect real availability)
-        self.sam_gmail_available = bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
-        self.sam_github_available = bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
-        self.sam_web_search_available = bool(globals().get("initialize_sam_web_search")) and SAM_WEB_SEARCH_AVAILABLE
-        self.sam_code_modifier_available = bool(globals().get("initialize_sam_code_modifier")) and SAM_CODE_MODIFIER_AVAILABLE
+        self.sam_gmail_available = (
+            bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
+        )
+        self.sam_github_available = (
+            bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
+        )
+        self.sam_web_search_available = (
+            bool(globals().get("initialize_sam_web_search"))
+            and SAM_WEB_SEARCH_AVAILABLE
+        )
+        self.sam_code_modifier_available = (
+            bool(globals().get("initialize_sam_code_modifier"))
+            and SAM_CODE_MODIFIER_AVAILABLE
+        )
         self.sam_code_modifier_ready = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
         require_meta_env = os.getenv("SAM_REQUIRE_META_AGENT", "1")
-        self.require_meta_agent = str(require_meta_env).strip().lower() in ("1", "true", "yes", "on")
+        self.require_meta_agent = str(require_meta_env).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
         self.two_phase_boot = os.getenv("SAM_TWO_PHASE_BOOT", "0") == "1"
         self.two_phase_delay_s = int(os.getenv("SAM_TWO_PHASE_DELAY_S", "5"))
         self.two_phase_timeout_s = int(os.getenv("SAM_TWO_PHASE_TIMEOUT_S", "180"))
         self.two_phase_promoted = False
         meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "0")
-        self.meta_only_boot = str(meta_only_env).strip().lower() in ("1", "true", "yes", "on")
+        self.meta_only_boot = str(meta_only_env).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
         if self.two_phase_boot:
             self.meta_only_boot = True
             self.require_meta_agent = True
-        print(f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})", flush=True)
-        self.meta_agent_min_severity = os.getenv("SAM_META_SEVERITY_THRESHOLD", "medium").lower()
+        print(
+            f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})",
+            flush=True,
+        )
+        self.meta_agent_min_severity = os.getenv(
+            "SAM_META_SEVERITY_THRESHOLD", "medium"
+        ).lower()
         if self.meta_only_boot:
             self.autonomous_enabled = False
         if self.require_self_mod and not self.sam_code_modifier_available:
-            raise RuntimeError("❌ CRITICAL: SAM code modifier is required for self-healing but unavailable")
+            raise RuntimeError(
+                "❌ CRITICAL: SAM code modifier is required for self-healing but unavailable"
+            )
 
         # Groupchat features
         self.connected_users = {}
@@ -4336,7 +5170,12 @@ class UnifiedSAMSystem:
         self.active_conversations = {}
         self.web_search_enabled = self.sam_web_search_available
         disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
-        self.disable_socketio = str(disable_socketio_env).strip().lower() in ("1", "true", "yes", "on")
+        self.disable_socketio = str(disable_socketio_env).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
         if self.meta_only_boot and not self.two_phase_boot:
             self.disable_socketio = True
         self.socketio_available = flask_available and not self.disable_socketio
@@ -4356,15 +5195,17 @@ class UnifiedSAMSystem:
 
         # Check system capabilities
         self._check_system_capabilities()
-        
+
         # Initialize comprehensive agent configurations
         self.agent_configs = {}
         self.connected_agents = {}
         self.initialize_agent_configs()
         print(f"🔎 Agent configs loaded: {len(self.agent_configs)}", flush=True)
-        if self.require_meta_agent and 'meta_agent' not in self.agent_configs:
-            raise RuntimeError("❌ CRITICAL: MetaAgent config missing after initialization.")
-        
+        if self.require_meta_agent and "meta_agent" not in self.agent_configs:
+            raise RuntimeError(
+                "❌ CRITICAL: MetaAgent config missing after initialization."
+            )
+
         # Auto-connect core agents
         self.auto_connect_agents()
 
@@ -4379,22 +5220,26 @@ class UnifiedSAMSystem:
         # Create meta-agent with sub-agents
         self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
         # MetaAgent is fully integrated in-process; no external attachment needed.
-            
+
         # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
         self.bootstrap_complete = True
         self.allow_self_modification = True
         self.allow_auto_resolution = True
         print("🔓 Bootstrap protection lifted - self-healing capabilities enabled")
-            
+
         # Run teacher-student learning cycles for system improvement
         print("\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
         print("   🎯 Training system until zero errors achieved...")
-        
+
         # Note: Learning cycles are now handled by the meta-agent internally
         print("   📚 Meta-agent learning integrated into continuous operation")
-        
-        if self.require_meta_agent and (not self.meta_agent or not self.meta_agent.is_fully_initialized()):
-            raise RuntimeError("❌ CRITICAL: MetaAgent required but not initialized. Aborting startup.")
+
+        if self.require_meta_agent and (
+            not self.meta_agent or not self.meta_agent.is_fully_initialized()
+        ):
+            raise RuntimeError(
+                "❌ CRITICAL: MetaAgent required but not initialized. Aborting startup."
+            )
 
         if self.meta_agent and self.meta_agent.is_fully_initialized():
             self.meta_agent_active = True
@@ -4402,42 +5247,48 @@ class UnifiedSAMSystem:
             print("   ✅ Production-grade debugging and repair capabilities online")
             print("   📚 Continuous learning and self-improvement active")
         else:
-            print("\n⚠️ Meta-agent initialization incomplete - basic functionality available")
+            print(
+                "\n⚠️ Meta-agent initialization incomplete - basic functionality available"
+            )
             print("   🔄 System will continue with limited self-healing capabilities")
 
         # Initialize intelligent issue resolver BEFORE other components
         print("🤖 Initializing Intelligent Issue Resolution System...")
         self.issue_resolver = IntelligentIssueResolver(self)
-        
+
         # Initialize skipped issues tracking system
         self.skipped_issues = []  # Queue for issues that were skipped during self-healing
         self.skipped_issues_lock = threading.Lock()
         self.skipped_issues_processor_active = False
         self._meta_repair_in_progress = False  # Track when meta-agent is busy
-        
+
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
         issue_thread.start()
-        
+
         # Start skipped issues processor thread
-        skipped_thread = threading.Thread(target=self._skipped_issues_processor_loop, daemon=True)
+        skipped_thread = threading.Thread(
+            target=self._skipped_issues_processor_loop, daemon=True
+        )
         skipped_thread.start()
         if self.two_phase_boot:
             self._start_two_phase_promotion_thread()
 
     def _normalize_pressures(self, payload):
         """Normalize pressure signals into 0-1 range"""
+
         def clamp(v):
             return max(0.0, min(1.0, float(v)))
+
         return {
-            'residual': clamp(payload.get('residual', 0.0)),
-            'rank_def': clamp(payload.get('rank_def', 0.0)),
-            'retrieval_entropy': clamp(payload.get('retrieval_entropy', 0.0)),
-            'interference': clamp(payload.get('interference', 0.0)),
-            'planner_friction': clamp(payload.get('planner_friction', 0.0)),
-            'context_collapse': clamp(payload.get('context_collapse', 0.0)),
-            'compression_waste': clamp(payload.get('compression_waste', 0.0)),
-            'temporal_incoherence': clamp(payload.get('temporal_incoherence', 0.0))
+            "residual": clamp(payload.get("residual", 0.0)),
+            "rank_def": clamp(payload.get("rank_def", 0.0)),
+            "retrieval_entropy": clamp(payload.get("retrieval_entropy", 0.0)),
+            "interference": clamp(payload.get("interference", 0.0)),
+            "planner_friction": clamp(payload.get("planner_friction", 0.0)),
+            "context_collapse": clamp(payload.get("context_collapse", 0.0)),
+            "compression_waste": clamp(payload.get("compression_waste", 0.0)),
+            "temporal_incoherence": clamp(payload.get("temporal_incoherence", 0.0)),
         }
 
     def _run_regression_gate(self):
@@ -4468,9 +5319,15 @@ class UnifiedSAMSystem:
         """Initialize teacher pool and distillation stream writer."""
         if not self.teacher_specs:
             if getattr(self, "strict_local_only", False):
-                log_event("warn", "teacher_pool_disabled", "Teacher pool disabled in strict local-only mode")
+                log_event(
+                    "warn",
+                    "teacher_pool_disabled",
+                    "Teacher pool disabled in strict local-only mode",
+                )
                 return
-            raise RuntimeError("SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation")
+            raise RuntimeError(
+                "SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation"
+            )
         providers = [
             build_provider(
                 spec,
@@ -4497,7 +5354,12 @@ class UnifiedSAMSystem:
             self.distill_writer = DistillationStreamWriter(self.distill_output)
             print(f"✅ Distillation stream writer ready: {self.distill_output}")
         except Exception as exc:
-            log_event("warn", "distill_writer_error", "Distillation writer init failed", reason=str(exc))
+            log_event(
+                "warn",
+                "distill_writer_error",
+                "Distillation writer init failed",
+                reason=str(exc),
+            )
 
     def _build_teacher_prompt(self, room, user, message, context):
         agent_type = room.get("agent_type", "sam")
@@ -4554,7 +5416,11 @@ class UnifiedSAMSystem:
         best = None
         best_score = -1.0
         for cand in consensus:
-            scores = [similarity(cand.response, other.response) for other in consensus if other != cand]
+            scores = [
+                similarity(cand.response, other.response)
+                for other in consensus
+                if other != cand
+            ]
             avg_score = sum(scores) / max(1, len(scores))
             if avg_score > best_score:
                 best_score = avg_score
@@ -4615,9 +5481,17 @@ class UnifiedSAMSystem:
             }
             self.distill_writer.append(record)
         if consensus:
-            self.system_metrics['distill_count'] = self.system_metrics.get('distill_count', 0) + len(consensus)
+            self.system_metrics["distill_count"] = self.system_metrics.get(
+                "distill_count", 0
+            ) + len(consensus)
 
-    def _record_chat_distillation(self, prompt: str, response: str, context: List[Dict[str, Any]], user: Dict[str, Any]):
+    def _record_chat_distillation(
+        self,
+        prompt: str,
+        response: str,
+        context: List[Dict[str, Any]],
+        user: Dict[str, Any],
+    ):
         if not self.distill_writer:
             return
         message_id = f"chatbot:{int(time.time() * 1000)}"
@@ -4648,23 +5522,34 @@ class UnifiedSAMSystem:
             "metadata": metadata,
         }
         self.distill_writer.append(record)
-        self.system_metrics['distill_count'] = self.system_metrics.get('distill_count', 0) + 1
-        log_event("info", "distill_chat_record", "Chatbot distillation record appended", task_id=message_id)
+        self.system_metrics["distill_count"] = (
+            self.system_metrics.get("distill_count", 0) + 1
+        )
+        log_event(
+            "info",
+            "distill_chat_record",
+            "Chatbot distillation record appended",
+            task_id=message_id,
+        )
 
     def _generate_teacher_response(self, room, user, message, context, message_data):
         if not self.teacher_pool_enabled or not self.teacher_pool:
             raise RuntimeError("Teacher pool not initialized")
         prompt = self._build_teacher_prompt(room, user, message, context)
         with self.teacher_pool_lock:
-            candidates = self.teacher_pool.generate(prompt, n_per_teacher=self.teacher_n_per)
+            candidates = self.teacher_pool.generate(
+                prompt, n_per_teacher=self.teacher_n_per
+            )
             consensus = self.teacher_pool.consensus_filter(candidates)
-        self._record_distillation(prompt, message_data, room, user, context, candidates, consensus)
+        self._record_distillation(
+            prompt, message_data, room, user, context, candidates, consensus
+        )
         chosen = self._pick_consensus_candidate(consensus)
         return chosen.response
 
     def _compute_pressure_signals(self):
         """Compute pressure signals from current system metrics"""
-        residual = 0.12 if self.system_metrics.get('learning_events', 0) == 0 else 0.22
+        residual = 0.12 if self.system_metrics.get("learning_events", 0) == 0 else 0.22
         rank_def = 0.12
         retrieval_entropy = 0.12 if not self.connected_agents else 0.25
         interference = 0.05
@@ -4673,39 +5558,43 @@ class UnifiedSAMSystem:
         compression_waste = 0.12
         temporal_incoherence = 0.05
 
-        growth_idle = time.time() - (self.system_metrics.get('last_growth_ts') or time.time())
+        growth_idle = time.time() - (
+            self.system_metrics.get("last_growth_ts") or time.time()
+        )
         if growth_idle > 300:
             residual = max(residual, 0.25)
             planner_friction = max(planner_friction, 0.25)
             retrieval_entropy = max(retrieval_entropy, 0.25)
 
-        activity_age = time.time() - (self.system_metrics.get('last_activity') or time.time())
+        activity_age = time.time() - (
+            self.system_metrics.get("last_activity") or time.time()
+        )
         if activity_age > 120:
             planner_friction = 0.2
             retrieval_entropy = 0.2
-        if self.system_metrics.get('survival_score', 1.0) < 0.5:
+        if self.system_metrics.get("survival_score", 1.0) < 0.5:
             residual = 0.3
             temporal_incoherence = 0.2
 
         signals = {
-            'residual': residual,
-            'rank_def': rank_def,
-            'retrieval_entropy': retrieval_entropy,
-            'interference': interference,
-            'planner_friction': planner_friction,
-            'context_collapse': context_collapse,
-            'compression_waste': compression_waste,
-            'temporal_incoherence': temporal_incoherence
+            "residual": residual,
+            "rank_def": rank_def,
+            "retrieval_entropy": retrieval_entropy,
+            "interference": interference,
+            "planner_friction": planner_friction,
+            "context_collapse": context_collapse,
+            "compression_waste": compression_waste,
+            "temporal_incoherence": temporal_incoherence,
         }
 
         # Nudge one dominant signal to ensure a growth primitive can be selected.
         dominant_key = max(signals, key=signals.get)
         if growth_idle > 300:
-            dominant_key = 'planner_friction'
+            dominant_key = "planner_friction"
         if not self.connected_agents:
-            dominant_key = 'retrieval_entropy'
-        if self.system_metrics.get('survival_score', 1.0) < 0.5:
-            dominant_key = 'residual'
+            dominant_key = "retrieval_entropy"
+        if self.system_metrics.get("survival_score", 1.0) < 0.5:
+            dominant_key = "residual"
 
         margin = 0.08
         top_val = signals.get(dominant_key, 0.0)
@@ -4720,19 +5609,20 @@ class UnifiedSAMSystem:
 
     def _start_meta_loop(self):
         """Background loop to update meta-controller from system signals"""
+
         def loop():
             while self.meta_loop_active:
                 signals = self._compute_pressure_signals()
                 lambda_val = sam_meta_controller_c.update_pressure(
                     self.meta_controller,
-                    signals['residual'],
-                    signals['rank_def'],
-                    signals['retrieval_entropy'],
-                    signals['interference'],
-                    signals['planner_friction'],
-                    signals['context_collapse'],
-                    signals['compression_waste'],
-                    signals['temporal_incoherence']
+                    signals["residual"],
+                    signals["rank_def"],
+                    signals["retrieval_entropy"],
+                    signals["interference"],
+                    signals["planner_friction"],
+                    signals["context_collapse"],
+                    signals["compression_waste"],
+                    signals["temporal_incoherence"],
                 )
                 dominant = None
                 if signals:
@@ -4751,14 +5641,20 @@ class UnifiedSAMSystem:
                     self.system_metrics["last_growth_attempt_primitive"] = primitive
                     applied = False
                     if not self.meta_growth_freeze:
-                        applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                        applied = sam_meta_controller_c.apply_primitive(
+                            self.meta_controller, primitive
+                        )
                         if applied:
                             gate_ok = self._run_regression_gate()
-                            sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, bool(gate_ok))
+                            sam_meta_controller_c.record_growth_outcome(
+                                self.meta_controller, primitive, bool(gate_ok)
+                            )
                             if gate_ok:
                                 self.system_metrics["last_growth_ts"] = time.time()
                                 self.system_metrics["last_growth_primitive"] = primitive
-                                self.system_metrics["last_growth_attempt_result"] = "applied"
+                                self.system_metrics["last_growth_attempt_result"] = (
+                                    "applied"
+                                )
                                 log_event(
                                     "info",
                                     "meta_growth_applied",
@@ -4767,13 +5663,18 @@ class UnifiedSAMSystem:
                                 )
                             if not gate_ok:
                                 applied = False
-                                self.system_metrics["last_growth_attempt_result"] = "regression_blocked"
+                                self.system_metrics["last_growth_attempt_result"] = (
+                                    "regression_blocked"
+                                )
                         else:
-                            self.system_metrics["last_growth_attempt_result"] = "apply_failed"
+                            self.system_metrics["last_growth_attempt_result"] = (
+                                "apply_failed"
+                            )
                     else:
                         self.system_metrics["last_growth_attempt_result"] = "frozen"
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 time.sleep(5)
+
         self.meta_thread = threading.Thread(target=loop, daemon=True)
         self.meta_thread.start()
 
@@ -4787,7 +5688,9 @@ class UnifiedSAMSystem:
                 "meta_state": self.meta_state,
                 "provider_mode": getattr(self, "provider_mode", "primary"),
                 "meta_growth_freeze": getattr(self, "meta_growth_freeze", False),
-                "auto_conversation_active": bool(getattr(self, "auto_conversation_active", False)),
+                "auto_conversation_active": bool(
+                    getattr(self, "auto_conversation_active", False)
+                ),
                 "autonomous_enabled": bool(getattr(self, "autonomous_enabled", False)),
             }
             if getattr(self, "learning_memory_enabled", False):
@@ -4797,7 +5700,10 @@ class UnifiedSAMSystem:
                     state["goals"] = {
                         "active": list(self.goal_manager.active_goals),
                         "completed": list(self.goal_manager.completed_goals),
-                        "subtasks": [getattr(t, "__dict__", {}) for t in self.goal_manager.subtasks],
+                        "subtasks": [
+                            getattr(t, "__dict__", {})
+                            for t in self.goal_manager.subtasks
+                        ],
                     }
                 except Exception:
                     pass
@@ -4822,11 +5728,19 @@ class UnifiedSAMSystem:
             if isinstance(data, dict):
                 self.system_metrics.update(data.get("system_metrics", {}))
                 self.meta_state = data.get("meta_state", self.meta_state)
-                self.provider_mode = data.get("provider_mode", getattr(self, "provider_mode", "primary"))
-                self.meta_growth_freeze = data.get("meta_growth_freeze", getattr(self, "meta_growth_freeze", False))
-                if getattr(self, "learning_memory_enabled", False) and data.get("learning_memory"):
+                self.provider_mode = data.get(
+                    "provider_mode", getattr(self, "provider_mode", "primary")
+                )
+                self.meta_growth_freeze = data.get(
+                    "meta_growth_freeze", getattr(self, "meta_growth_freeze", False)
+                )
+                if getattr(self, "learning_memory_enabled", False) and data.get(
+                    "learning_memory"
+                ):
                     self.learning_memory.clear()
-                    for item in data.get("learning_memory", [])[-self.learning_memory_max:]:
+                    for item in data.get("learning_memory", [])[
+                        -self.learning_memory_max :
+                    ]:
                         self.learning_memory.append(item)
             return data
         except Exception as exc:
@@ -4839,8 +5753,12 @@ class UnifiedSAMSystem:
         try:
             goals = data.get("goals") or {}
             if getattr(self, "goal_manager", None) and goals:
-                self.goal_manager.active_goals = goals.get("active", self.goal_manager.active_goals)
-                self.goal_manager.completed_goals = goals.get("completed", self.goal_manager.completed_goals)
+                self.goal_manager.active_goals = goals.get(
+                    "active", self.goal_manager.active_goals
+                )
+                self.goal_manager.completed_goals = goals.get(
+                    "completed", self.goal_manager.completed_goals
+                )
                 subtasks = []
                 for item in goals.get("subtasks", []):
                     try:
@@ -4889,8 +5807,9 @@ class UnifiedSAMSystem:
     def _check_ollama_available(self):
         """Check if Ollama is installed and available"""
         try:
-            result = subprocess.run(['ollama', '--version'], 
-                                  capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["ollama", "--version"], capture_output=True, text=True, timeout=5
+            )
             if result.returncode == 0:
                 print("✅ Ollama found and responding")
                 return True
@@ -4904,10 +5823,11 @@ class UnifiedSAMSystem:
     def _check_local_models_available(self):
         """Check if local models are available via Ollama"""
         try:
-            result = subprocess.run(['ollama', 'list'], 
-                                  capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["ollama", "list"], capture_output=True, text=True, timeout=10
+            )
             if result.returncode == 0:
-                lines = result.stdout.strip().split('\\n')
+                lines = result.stdout.strip().split("\\n")
                 # Skip header line, check for actual models
                 model_lines = [line for line in lines[1:] if line.strip()]
                 if model_lines:
@@ -4932,15 +5852,18 @@ class UnifiedSAMSystem:
     def _attempt_system_recovery(self, error):
         """Attempt to recover from system initialization failure"""
         print(f"🛠️ System recovery initiated for error: {error}")
-        
+
         try:
             # Try to initialize critical components individually
             critical_components = [
-                ('c_core', self._initialize_c_core_threaded),
-                ('python_orchestration', self._initialize_python_orchestration_threaded),
-                ('web_interface', self._initialize_web_interface_threaded)
+                ("c_core", self._initialize_c_core_threaded),
+                (
+                    "python_orchestration",
+                    self._initialize_python_orchestration_threaded,
+                ),
+                ("web_interface", self._initialize_web_interface_threaded),
             ]
-            
+
             recovered_count = 0
             for name, init_method in critical_components:
                 try:
@@ -4948,24 +5871,26 @@ class UnifiedSAMSystem:
                     thread = threading.Thread(target=init_method, daemon=True)
                     thread.start()
                     thread.join(timeout=15)  # Shorter timeout for recovery
-                    
+
                     if thread.is_alive():
                         print(f"  ❌ {name} recovery timed out")
                     else:
                         print(f"  ✅ {name} recovered successfully")
                         recovered_count += 1
-                        
+
                 except Exception as e:
                     print(f"  ❌ {name} recovery failed: {e}")
-            
+
             if recovered_count >= 2:  # At least 2 critical components recovered
                 print("🛠️ System recovery successful - core functionality restored")
                 return True
             else:
-                print("❌ System recovery failed - too many critical components unavailable")
+                print(
+                    "❌ System recovery failed - too many critical components unavailable"
+                )
                 self._invoke_meta_agent_repair(error, context="system_recovery")
                 return False
-                
+
         except Exception as e:
             print(f"❌ System recovery process failed: {e}")
             self._invoke_meta_agent_repair(e, context="system_recovery")
@@ -4976,7 +5901,7 @@ class UnifiedSAMSystem:
         try:
             # Mark meta-agent as busy
             self._meta_repair_in_progress = True
-            
+
             # Check if meta-agent is available and self-modification is allowed
             if not self.meta_agent or not self.allow_self_modification:
                 print(f"🛡️ Meta-agent repair skipped (unavailable or disabled)")
@@ -5016,7 +5941,9 @@ class UnifiedSAMSystem:
             failure_event = self.meta_agent.observer.detect_failure(error, context)
             severity = getattr(failure_event, "severity", "medium")
             if not self._severity_allows_repair(severity):
-                print(f"🛡️ Meta-agent repair skipped (severity={severity} below threshold)")
+                print(
+                    f"🛡️ Meta-agent repair skipped (severity={severity} below threshold)"
+                )
                 return False
             return self.meta_agent.handle_failure(failure_event)
         except Exception as exc:
@@ -5035,173 +5962,205 @@ class UnifiedSAMSystem:
     def _skipped_issues_processor_loop(self):
         """Background thread that processes skipped issues when there are no active problems"""
         print("🔄 Skipped issues processor started - monitoring for idle periods")
-        
+
         while not is_shutting_down():
             try:
                 # Check if there are any active issues being processed
                 has_active_issues = self._has_active_issues()
-                
+
                 # Process skipped issues only when system is idle (no active issues)
                 if not has_active_issues:
                     with self.skipped_issues_lock:
-                        if self.skipped_issues and not self.skipped_issues_processor_active:
+                        if (
+                            self.skipped_issues
+                            and not self.skipped_issues_processor_active
+                        ):
                             self.skipped_issues_processor_active = True
-                            print(f"🔄 System idle - processing {len(self.skipped_issues)} skipped issues")
-                            
+                            print(
+                                f"🔄 System idle - processing {len(self.skipped_issues)} skipped issues"
+                            )
+
                             # Process a batch of skipped issues
                             processed_count = 0
                             max_batch_size = 3  # Process up to 3 issues per idle period
-                            
-                            while self.skipped_issues and processed_count < max_batch_size:
+
+                            while (
+                                self.skipped_issues and processed_count < max_batch_size
+                            ):
                                 skipped_issue = self.skipped_issues.pop(0)
                                 self._process_skipped_issue(skipped_issue)
                                 processed_count += 1
-                                
+
                             if processed_count > 0:
-                                print(f"✅ Processed {processed_count} skipped issues during idle period")
-                            
+                                print(
+                                    f"✅ Processed {processed_count} skipped issues during idle period"
+                                )
+
                             self.skipped_issues_processor_active = False
-                
+
                 # Sleep before next check
                 time.sleep(60)  # Check every minute
-                
+
             except Exception as e:
                 print(f"⚠️ Skipped issues processor error: {e}")
                 self.skipped_issues_processor_active = False
                 time.sleep(30)
-    
+
     def _has_active_issues(self):
         """Check if there are any active issues being processed"""
         try:
             # Check current issues from issue resolver
-            if hasattr(self, 'issue_resolver'):
+            if hasattr(self, "issue_resolver"):
                 current_issues = self.issue_resolver.detect_initialization_issues()
                 if current_issues:
                     return True
-            
+
             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             if connectivity_issues:
                 return True
-            
+
             # Check if meta-agent is busy with repairs
-            if hasattr(self, '_meta_repair_in_progress') and self._meta_repair_in_progress:
+            if (
+                hasattr(self, "_meta_repair_in_progress")
+                and self._meta_repair_in_progress
+            ):
                 return True
-            
+
             return False
-            
+
         except Exception:
             return True  # Assume busy if we can't check
-    
+
     def _process_skipped_issue(self, skipped_issue):
         """Process a single skipped issue"""
         try:
             print(f"🔄 Processing skipped issue: {skipped_issue['message']}")
-            
+
             # Re-evaluate the issue with current system state
-            original_issue = skipped_issue['original_issue']
-            
+            original_issue = skipped_issue["original_issue"]
+
             # Check if issue is still relevant
             if self._is_issue_still_relevant(original_issue):
                 # Try to resolve with current capabilities
-                if original_issue.get('auto_fix_possible', False):
+                if original_issue.get("auto_fix_possible", False):
                     if self.issue_resolver.attempt_auto_resolution(original_issue):
                         print(f"✅ Skipped issue resolved: {skipped_issue['message']}")
                         log_event(
                             "info",
                             "skipped_issue_resolved",
                             "Previously skipped issue resolved during idle processing",
-                            issue=skipped_issue['message'],
-                            context="skipped_processor"
+                            issue=skipped_issue["message"],
+                            context="skipped_processor",
                         )
                         return
-                
+
                 # Try meta-agent repair if severity is high enough
-                severity = skipped_issue.get('severity', 'low')
+                severity = skipped_issue.get("severity", "low")
                 if self._severity_allows_repair(severity):
-                    print(f"🤖 Escalating skipped issue to meta-agent: {skipped_issue['message']}")
+                    print(
+                        f"🤖 Escalating skipped issue to meta-agent: {skipped_issue['message']}"
+                    )
                     self._invoke_meta_agent_repair(
-                        Exception(skipped_issue['message']),
-                        context="skipped_issue_processor"
+                        Exception(skipped_issue["message"]),
+                        context="skipped_issue_processor",
                     )
                     log_event(
                         "info",
                         "skipped_issue_escalated",
                         "Previously skipped issue escalated to meta-agent during idle processing",
-                        issue=skipped_issue['message'],
+                        issue=skipped_issue["message"],
                         severity=severity,
-                        context="skipped_processor"
+                        context="skipped_processor",
                     )
                 else:
-                    print(f"⏸️ Skipped issue still below threshold: {skipped_issue['message']}")
+                    print(
+                        f"⏸️ Skipped issue still below threshold: {skipped_issue['message']}"
+                    )
                     # Re-queue if still below threshold
                     with self.skipped_issues_lock:
                         self.skipped_issues.append(skipped_issue)
             else:
-                print(f"✅ Skipped issue no longer relevant: {skipped_issue['message']}")
-                
+                print(
+                    f"✅ Skipped issue no longer relevant: {skipped_issue['message']}"
+                )
+
         except Exception as e:
             print(f"⚠️ Error processing skipped issue {skipped_issue['message']}: {e}")
             # Re-queue on error
             with self.skipped_issues_lock:
                 self.skipped_issues.append(skipped_issue)
-    
+
     def _is_issue_still_relevant(self, issue):
         """Check if an issue is still relevant"""
         try:
             # For now, assume most issues are still relevant unless they're clearly resolved
             # This could be enhanced with specific relevance checks per issue type
-            message = issue.get('message', '').lower()
-            
+            message = issue.get("message", "").lower()
+
             # Check for temporary conditions that might have resolved
-            if any(keyword in message for keyword in ['temporary', 'transient', 'momentary']):
+            if any(
+                keyword in message
+                for keyword in ["temporary", "transient", "momentary"]
+            ):
                 return False
-            
+
             # Check for initialization issues that might be resolved
-            if any(keyword in message for keyword in ['initializing', 'starting up']):
+            if any(keyword in message for keyword in ["initializing", "starting up"]):
                 # Check if system is now fully initialized
-                if (hasattr(self, 'c_core_initialized') and self.c_core_initialized and
-                    hasattr(self, 'python_orchestration_initialized') and self.python_orchestration_initialized and
-                    hasattr(self, 'web_interface_initialized') and self.web_interface_initialized):
+                if (
+                    hasattr(self, "c_core_initialized")
+                    and self.c_core_initialized
+                    and hasattr(self, "python_orchestration_initialized")
+                    and self.python_orchestration_initialized
+                    and hasattr(self, "web_interface_initialized")
+                    and self.web_interface_initialized
+                ):
                     return False
-            
+
             return True  # Assume relevant by default
-            
+
         except Exception:
             return True  # Assume relevant if we can't check
 
     def _start_continuous_self_healing(self):
         print("🛡️ Starting continuous self-healing system...")
-        
+
         # Start self-healing monitor in background
-        healing_thread = threading.Thread(target=self._continuous_self_healing_loop, daemon=True)
+        healing_thread = threading.Thread(
+            target=self._continuous_self_healing_loop, daemon=True
+        )
         healing_thread.start()
-        
+
         # Start health monitoring thread
-        health_thread = threading.Thread(target=self._continuous_health_monitoring, daemon=True)
+        health_thread = threading.Thread(
+            target=self._continuous_health_monitoring, daemon=True
+        )
         health_thread.start()
-        
+
         print("✅ Continuous self-healing system active")
 
     def _continuous_self_healing_loop(self):
         """Continuous loop that monitors and heals the system"""
         healing_cycle = 0
-        
+
         while not is_shutting_down():
             healing_cycle += 1
-            
+
             try:
                 # Sleep between healing cycles
                 time.sleep(60)  # Check every minute
-                
+
                 # Perform self-healing check
                 issues_found = self._perform_self_healing_check()
-                
+
                 if issues_found > 0:
-                    print(f"🛠️ Self-healing cycle {healing_cycle}: Found and addressed {issues_found} issues")
+                    print(
+                        f"🛠️ Self-healing cycle {healing_cycle}: Found and addressed {issues_found} issues"
+                    )
                 elif healing_cycle % 10 == 0:  # Log every 10 cycles
                     print(f"🛡️ Self-healing cycle {healing_cycle}: System healthy")
-                    
+
             except Exception as e:
                 print(f"⚠️ Self-healing cycle {healing_cycle} encountered error: {e}")
                 time.sleep(30)  # Wait longer if there was an error
@@ -5209,27 +6168,29 @@ class UnifiedSAMSystem:
     def _continuous_health_monitoring(self):
         """Continuous health monitoring of system components"""
         monitor_cycle = 0
-        
+
         while not is_shutting_down():
             monitor_cycle += 1
-            
+
             try:
                 # Sleep between monitoring cycles
                 time.sleep(30)  # Check every 30 seconds
-                
+
                 # Monitor component health
                 health_status = self._check_component_health()
-                
+
                 # Log issues
-                if not health_status['all_healthy']:
-                    print(f"📊 Health check {monitor_cycle}: {health_status['issues']} issues detected")
-                    
+                if not health_status["all_healthy"]:
+                    print(
+                        f"📊 Health check {monitor_cycle}: {health_status['issues']} issues detected"
+                    )
+
                     # Attempt automatic fixes for minor issues
-                    if hasattr(self, 'issue_resolver'):
-                        for issue in health_status['issues']:
-                            if issue.get('auto_fix_possible', False):
+                    if hasattr(self, "issue_resolver"):
+                        for issue in health_status["issues"]:
+                            if issue.get("auto_fix_possible", False):
                                 self.issue_resolver.attempt_auto_resolution(issue)
-                
+
             except Exception as e:
                 print(f"⚠️ Health monitoring cycle {monitor_cycle} error: {e}")
                 time.sleep(15)
@@ -5237,36 +6198,40 @@ class UnifiedSAMSystem:
     def _perform_self_healing_check(self):
         """Perform a self-healing check and attempt fixes"""
         issues_found = 0
-        
+
         try:
             # Check for new issues
-            if hasattr(self, 'issue_resolver'):
+            if hasattr(self, "issue_resolver"):
                 current_issues = self.issue_resolver.detect_initialization_issues()
-                
+
                 # Try to fix any new issues
                 for issue in current_issues:
-                    if issue.get('auto_fix_possible', False):
+                    if issue.get("auto_fix_possible", False):
                         if self.issue_resolver.attempt_auto_resolution(issue):
                             issues_found += 1
                     else:
                         # Escalate unresolved issues to meta-agent self-repair
                         if issue.get("escalate_to_meta", True):
-                            self._invoke_meta_agent_repair(Exception(issue.get('message', 'unknown_issue')),
-                                                           context="self_healing")
+                            self._invoke_meta_agent_repair(
+                                Exception(issue.get("message", "unknown_issue")),
+                                context="self_healing",
+                            )
                         else:
                             # Track skipped issues for later processing
                             with self.skipped_issues_lock:
                                 skipped_issue = {
-                                    'message': issue.get('message', 'unknown_issue'),
-                                    'reason': issue.get('reason', 'not_escalated'),
-                                    'timestamp': datetime.now().isoformat(),
-                                    'severity': issue.get('severity', 'low'),
-                                    'context': 'self_healing',
-                                    'original_issue': issue
+                                    "message": issue.get("message", "unknown_issue"),
+                                    "reason": issue.get("reason", "not_escalated"),
+                                    "timestamp": datetime.now().isoformat(),
+                                    "severity": issue.get("severity", "low"),
+                                    "context": "self_healing",
+                                    "original_issue": issue,
                                 }
                                 self.skipped_issues.append(skipped_issue)
-                                print(f"📝 Skipped issue queued for later processing: {skipped_issue['message']}")
-                            
+                                print(
+                                    f"📝 Skipped issue queued for later processing: {skipped_issue['message']}"
+                                )
+
                             log_event(
                                 "info",
                                 "self_healing_skip",
@@ -5274,111 +6239,138 @@ class UnifiedSAMSystem:
                                 reason=issue.get("message", "unknown_issue"),
                                 context="self_healing",
                             )
-            
+
             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             for issue in connectivity_issues:
-                if self._attempt_component_recovery(issue.get('component', 'unknown'), issue.get('error', 'connectivity')):
+                if self._attempt_component_recovery(
+                    issue.get("component", "unknown"),
+                    issue.get("error", "connectivity"),
+                ):
                     issues_found += 1
                 else:
-                    self._invoke_meta_agent_repair(Exception(issue.get('error', 'connectivity')),
-                                                   context="connectivity")
-                    
+                    self._invoke_meta_agent_repair(
+                        Exception(issue.get("error", "connectivity")),
+                        context="connectivity",
+                    )
+
         except Exception as e:
             print(f"⚠️ Self-healing check error: {e}")
-        
+
         return issues_found
 
     def _check_component_health(self):
         """Check the health of all system components"""
-        health_status = {
-            'all_healthy': True,
-            'issues': []
-        }
-        
+        health_status = {"all_healthy": True, "issues": []}
+
         # Check critical components
-        c_core_status = str(self.system_metrics.get('c_core_status', 'unknown')).lower()
-        py_status = str(self.system_metrics.get('python_orchestration_status', 'unknown')).lower()
-        web_status = str(self.system_metrics.get('web_interface_status', 'unknown')).lower()
+        c_core_status = str(self.system_metrics.get("c_core_status", "unknown")).lower()
+        py_status = str(
+            self.system_metrics.get("python_orchestration_status", "unknown")
+        ).lower()
+        web_status = str(
+            self.system_metrics.get("web_interface_status", "unknown")
+        ).lower()
         critical_checks = [
-            ('c_core', c_core_status in ('active', 'ok') or getattr(self, 'c_core_initialized', False)),
-            ('python_orchestration', py_status in ('active', 'ok') or getattr(self, 'python_orchestration_initialized', False)),
-            ('web_interface', web_status in ('active', 'ok') or getattr(self, 'web_interface_initialized', False)),
+            (
+                "c_core",
+                c_core_status in ("active", "ok")
+                or getattr(self, "c_core_initialized", False),
+            ),
+            (
+                "python_orchestration",
+                py_status in ("active", "ok")
+                or getattr(self, "python_orchestration_initialized", False),
+            ),
+            (
+                "web_interface",
+                web_status in ("active", "ok")
+                or getattr(self, "web_interface_initialized", False),
+            ),
         ]
-        
+
         for component, is_healthy in critical_checks:
             if not is_healthy:
-                health_status['all_healthy'] = False
-                health_status['issues'].append({
-                    'type': 'component_failure',
-                    'component': component,
-                    'severity': 'high',
-                    'message': f'{component.replace("_", " ").title()} component unhealthy',
-                    'auto_fix_possible': True
-                })
-        
+                health_status["all_healthy"] = False
+                health_status["issues"].append(
+                    {
+                        "type": "component_failure",
+                        "component": component,
+                        "severity": "high",
+                        "message": f"{component.replace('_', ' ').title()} component unhealthy",
+                        "auto_fix_possible": True,
+                    }
+                )
+
         # Check integration availability
         integration_checks = [
-            ('sam_gmail_available', 'Gmail integration'),
-            ('sam_github_available', 'GitHub integration'),
-            ('sam_web_search_available', 'Web search integration'),
-            ('sam_code_modifier_available', 'Code modifier integration')
+            ("sam_gmail_available", "Gmail integration"),
+            ("sam_github_available", "GitHub integration"),
+            ("sam_web_search_available", "Web search integration"),
+            ("sam_code_modifier_available", "Code modifier integration"),
         ]
-        
+
         for attr, description in integration_checks:
             if hasattr(self, attr) and not getattr(self, attr):
-                health_status['issues'].append({
-                    'type': 'integration_unavailable',
-                    'component': attr,
-                    'severity': 'medium',
-                    'message': f'{description} unavailable',
-                    'auto_fix_possible': False  # Usually requires external setup
-                })
-        
+                health_status["issues"].append(
+                    {
+                        "type": "integration_unavailable",
+                        "component": attr,
+                        "severity": "medium",
+                        "message": f"{description} unavailable",
+                        "auto_fix_possible": False,  # Usually requires external setup
+                    }
+                )
+
         return health_status
 
     def _check_component_connectivity(self):
         """Check connectivity and basic functionality of components"""
         connectivity_issues = []
-        
+
         # Test basic component functionality
         try:
             # Test command processing
-            if hasattr(self, '_process_chatbot_message'):
-                result = self._process_chatbot_message('/status', {})
+            if hasattr(self, "_process_chatbot_message"):
+                result = self._process_chatbot_message("/status", {})
                 if not result:
-                    connectivity_issues.append({
-                        'component': 'chat_processing',
-                        'error': 'Command processing not responding'
-                    })
+                    connectivity_issues.append(
+                        {
+                            "component": "chat_processing",
+                            "error": "Command processing not responding",
+                        }
+                    )
         except Exception as e:
-            connectivity_issues.append({
-                'component': 'chat_processing',
-                'error': str(e)
-            })
-        
+            connectivity_issues.append(
+                {"component": "chat_processing", "error": str(e)}
+            )
+
         # Test agent system
         try:
-            if hasattr(self, 'agent_configs'):
+            if hasattr(self, "agent_configs"):
                 if getattr(self, "meta_only_boot", False):
-                    if 'meta_agent' not in self.agent_configs or 'meta_agent' not in self.connected_agents:
-                        connectivity_issues.append({
-                            'component': 'agent_system',
-                            'error': 'MetaAgent missing or disconnected in meta-only boot'
-                        })
+                    if (
+                        "meta_agent" not in self.agent_configs
+                        or "meta_agent" not in self.connected_agents
+                    ):
+                        connectivity_issues.append(
+                            {
+                                "component": "agent_system",
+                                "error": "MetaAgent missing or disconnected in meta-only boot",
+                            }
+                        )
                 else:
                     min_agents = 5
                     if len(self.agent_configs) < min_agents:
-                        connectivity_issues.append({
-                            'component': 'agent_system',
-                            'error': 'Insufficient agents connected'
-                        })
+                        connectivity_issues.append(
+                            {
+                                "component": "agent_system",
+                                "error": "Insufficient agents connected",
+                            }
+                        )
         except Exception as e:
-            connectivity_issues.append({
-                'component': 'agent_system',
-                'error': str(e)
-            })
-        
+            connectivity_issues.append({"component": "agent_system", "error": str(e)})
+
         return connectivity_issues
 
     def _run_issue_resolver(self):
@@ -5387,8 +6379,12 @@ class UnifiedSAMSystem:
             print("🛡️ Issue resolver running in isolated thread...")
             if not self.issue_resolver.resolve_all_issues():
                 print("\\n⚠️ Some issues could not be resolved automatically.")
-                print("The system will attempt to continue, but functionality may be limited.")
-                print("Check the messages above for guidance on resolving remaining issues.")
+                print(
+                    "The system will attempt to continue, but functionality may be limited."
+                )
+                print(
+                    "Check the messages above for guidance on resolving remaining issues."
+                )
             print("✅ Issue resolver completed successfully")
         except Exception as e:
             print(f"⚠️ Issue resolver thread encountered error: {e}")
@@ -5397,21 +6393,41 @@ class UnifiedSAMSystem:
     def _initialize_components_with_thread_safety(self):
         """Initialize all components with thread isolation for crash safety"""
         print("🛡️ Initializing components with thread safety...")
-        
+
         # Component initialization tasks that can run in parallel
         component_tasks = [
-            ('C Core', self._initialize_c_core_threaded, True),  # Critical
-            ('Python Orchestration', self._initialize_python_orchestration_threaded, True),  # Critical
-            ('Web Interface', self._initialize_web_interface_threaded, True),  # Critical
-            ('Google Drive', self._initialize_google_drive_threaded, False),  # Non-critical
-            ('Web Search', self._initialize_sam_web_search_threaded, False),  # Non-critical
-            ('Code Modifier', self._initialize_sam_code_modifier_threaded, self.require_self_mod),  # Critical if required
-            ('Gmail', self._initialize_sam_gmail_threaded, False),  # Non-critical
-            ('GitHub', self._initialize_sam_github_threaded, False),  # Non-critical
+            ("C Core", self._initialize_c_core_threaded, True),  # Critical
+            (
+                "Python Orchestration",
+                self._initialize_python_orchestration_threaded,
+                True,
+            ),  # Critical
+            (
+                "Web Interface",
+                self._initialize_web_interface_threaded,
+                True,
+            ),  # Critical
+            (
+                "Google Drive",
+                self._initialize_google_drive_threaded,
+                False,
+            ),  # Non-critical
+            (
+                "Web Search",
+                self._initialize_sam_web_search_threaded,
+                False,
+            ),  # Non-critical
+            (
+                "Code Modifier",
+                self._initialize_sam_code_modifier_threaded,
+                self.require_self_mod,
+            ),  # Critical if required
+            ("Gmail", self._initialize_sam_gmail_threaded, False),  # Non-critical
+            ("GitHub", self._initialize_sam_github_threaded, False),  # Non-critical
         ]
-        
+
         threads = []
-        
+
         # Start critical components first (they will block until complete)
         for name, method, is_critical in component_tasks:
             if is_critical:
@@ -5419,14 +6435,16 @@ class UnifiedSAMSystem:
                 thread = threading.Thread(target=method, daemon=True)
                 thread.start()
                 thread.join(timeout=30)  # Wait up to 30 seconds for critical components
-                
+
                 if thread.is_alive():
                     print(f"⚠️ Critical component {name} initialization timed out")
                     if is_critical:
-                        raise Exception(f"❌ CRITICAL: {name} failed to initialize within timeout")
+                        raise Exception(
+                            f"❌ CRITICAL: {name} failed to initialize within timeout"
+                        )
                 else:
                     print(f"✅ Critical component {name} initialized successfully")
-        
+
         # Start non-critical components in background threads
         for name, method, is_critical in component_tasks:
             if not is_critical:
@@ -5434,22 +6452,24 @@ class UnifiedSAMSystem:
                 thread = threading.Thread(target=method, daemon=True)
                 thread.start()
                 threads.append((name, thread))
-        
+
         # Give non-critical components time to initialize
         time.sleep(5)
-        
+
         # Check status of background threads
         for name, thread in threads:
             if thread.is_alive():
                 print(f"✅ Background component {name} is running")
             else:
                 print(f"⚠️ Background component {name} completed or failed")
-        
+
         # Start monitoring system in separate thread
         print("📊 Starting monitoring system in isolated thread...")
-        monitoring_thread = threading.Thread(target=self._start_monitoring_system, daemon=True)
+        monitoring_thread = threading.Thread(
+            target=self._start_monitoring_system, daemon=True
+        )
         monitoring_thread.start()
-        
+
         print("🛡️ All components initialized with thread safety")
 
     # Thread-safe wrapper methods for each component
@@ -5461,7 +6481,7 @@ class UnifiedSAMSystem:
             print(f"❌ C Core thread crashed: {e}")
             # C core is critical, this should cause system failure
             raise e
-    
+
     def _initialize_python_orchestration_threaded(self):
         """Thread-safe Python orchestration initialization"""
         try:
@@ -5470,7 +6490,7 @@ class UnifiedSAMSystem:
             print(f"❌ Python orchestration thread crashed: {e}")
             # Python orchestration is critical, this should cause system failure
             raise e
-    
+
     def _initialize_web_interface_threaded(self):
         """Thread-safe web interface initialization"""
         try:
@@ -5479,7 +6499,7 @@ class UnifiedSAMSystem:
             print(f"❌ Web interface thread crashed: {e}")
             # Web interface is critical, this should cause system failure
             raise e
-    
+
     def _initialize_google_drive_threaded(self):
         """Thread-safe Google Drive initialization"""
         try:
@@ -5487,7 +6507,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Google Drive thread crashed: {e}")
             print("System continues without Google Drive integration")
-    
+
     def _initialize_sam_web_search_threaded(self):
         """Thread-safe web search initialization"""
         try:
@@ -5495,7 +6515,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Web search thread crashed: {e}")
             print("System continues without web search capabilities")
-    
+
     def _initialize_sam_code_modifier_threaded(self):
         """Thread-safe code modifier initialization"""
         try:
@@ -5503,7 +6523,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Code modifier thread crashed: {e}")
             print("System continues without code modification capabilities")
-    
+
     def _initialize_sam_gmail_threaded(self):
         """Thread-safe Gmail initialization"""
         try:
@@ -5511,7 +6531,7 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"⚠️ Gmail thread crashed: {e}")
             print("System continues without Gmail integration")
-    
+
     def _initialize_sam_github_threaded(self):
         """Thread-safe GitHub initialization"""
         try:
@@ -5522,49 +6542,51 @@ class UnifiedSAMSystem:
 
     def _attempt_component_recovery(self, component_name, error):
         """Attempt to recover from component initialization failure using intelligent resolution"""
-        if not hasattr(self, 'issue_resolver'):
+        if not hasattr(self, "issue_resolver"):
             return False
-            
+
         print(f"🤖 Attempting intelligent recovery for {component_name}...")
-        
+
         # Create an issue for this component failure
         issue = {
-            'type': 'component_failure',
-            'component': component_name,
-            'severity': 'high' if component_name in ['c_core', 'python_orchestration', 'web_interface'] else 'medium',
-            'message': f'{component_name.replace("_", " ").title()} component failed to initialize: {str(error)}',
-            'auto_fix_possible': self._can_recover_component(component_name)
+            "type": "component_failure",
+            "component": component_name,
+            "severity": "high"
+            if component_name in ["c_core", "python_orchestration", "web_interface"]
+            else "medium",
+            "message": f"{component_name.replace('_', ' ').title()} component failed to initialize: {str(error)}",
+            "auto_fix_possible": self._can_recover_component(component_name),
         }
-        
+
         # Try auto-recovery
-        if issue['auto_fix_possible']:
+        if issue["auto_fix_possible"]:
             success = self.issue_resolver.attempt_auto_resolution(issue)
             if success:
                 print(f"✅ Component {component_name} recovered successfully!")
                 return True
-        
+
         # If auto-recovery failed or not possible, engage user
         self.issue_resolver.engage_user_for_resolution([issue])
         return False
-    
+
     def _can_recover_component(self, component_name):
         """Check if a component can be recovered"""
         recoverable = {
-            'google_drive': False,  # Requires credentials
-            'web_search': True,     # Can initialize without dependencies
-            'code_modifier': True,  # Can initialize as core component
-            'gmail': False,         # Requires email setup
-            'github': True,         # Can initialize in read-only mode
-            'c_core': False,        # Critical system component
-            'python_orchestration': False,  # Critical system component
-            'web_interface': False  # Critical system component
+            "google_drive": False,  # Requires credentials
+            "web_search": True,  # Can initialize without dependencies
+            "code_modifier": True,  # Can initialize as core component
+            "gmail": False,  # Requires email setup
+            "github": True,  # Can initialize in read-only mode
+            "c_core": False,  # Critical system component
+            "python_orchestration": False,  # Critical system component
+            "web_interface": False,  # Critical system component
         }
         return recoverable.get(component_name, False)
 
     def _check_system_capabilities(self):
         """Check system capabilities for external APIs"""
         print("🔍 Checking system capabilities...", flush=True)
-        
+
         # Check SAM core/model availability (prefer actual built artifacts)
         sam_root = getattr(self, "project_root", Path(__file__).parent)
         sam_candidates = [
@@ -5584,11 +6606,15 @@ class UnifiedSAMSystem:
             # More permissive SAM availability check - check if we can import the module
             try:
                 import sam_sav_dual_system
-                self.sam_available = hasattr(sam_sav_dual_system, 'SAM_Core')
+
+                self.sam_available = hasattr(sam_sav_dual_system, "SAM_Core")
             except Exception:
                 self.sam_available = False
-            print(f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}", flush=True)
-        
+            print(
+                f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}",
+                flush=True,
+            )
+
         # Check external API availability
         self.claude_available = self._check_claude_api()
         self.gemini_available = self._check_gemini_api()
@@ -5596,27 +6622,43 @@ class UnifiedSAMSystem:
         self.ollama_available = self._check_ollama()
         self.deepseek_available = self._check_deepseek()
         self.web_available = self._check_web_access()
-        print(f"  🧠 DeepSeek: {'✅ Available' if self.deepseek_available else '❌ Not Available'}", flush=True)
-        
+        print(
+            f"  🧠 DeepSeek: {'✅ Available' if self.deepseek_available else '❌ Not Available'}",
+            flush=True,
+        )
+
         # Check web access
         self.web_available = self._check_web_access()
-        print(f"  🌐 Web Access: {'✅ Available' if self.web_available else '❌ Not Available'}", flush=True)
-        
+        print(
+            f"  🌐 Web Access: {'✅ Available' if self.web_available else '❌ Not Available'}",
+            flush=True,
+        )
+
         # Check API keys
-        self.claude_available = os.getenv('ANTHROPIC_API_KEY') is not None
-        print(f"  🤖 Claude API: {'✅ Available' if self.claude_available else '❌ Set ANTHROPIC_API_KEY'}", flush=True)
-        
-        self.gemini_available = os.getenv('GOOGLE_API_KEY') is not None
-        print(f"  🤖 Gemini API: {'✅ Available' if self.gemini_available else '❌ Set GOOGLE_API_KEY'}", flush=True)
-        
-        self.openai_available = os.getenv('OPENAI_API_KEY') is not None
-        print(f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}", flush=True)
-        
+        self.claude_available = os.getenv("ANTHROPIC_API_KEY") is not None
+        print(
+            f"  🤖 Claude API: {'✅ Available' if self.claude_available else '❌ Set ANTHROPIC_API_KEY'}",
+            flush=True,
+        )
+
+        self.gemini_available = os.getenv("GOOGLE_API_KEY") is not None
+        print(
+            f"  🤖 Gemini API: {'✅ Available' if self.gemini_available else '❌ Set GOOGLE_API_KEY'}",
+            flush=True,
+        )
+
+        self.openai_available = os.getenv("OPENAI_API_KEY") is not None
+        print(
+            f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}",
+            flush=True,
+        )
+
         # Check Flask and SocketIO
         flask_available = False
         try:
             import flask
             import flask_socketio
+
             flask_available = True
             print(f"  🌐 Flask: ✅ Available", flush=True)
             print(f"  📡 SocketIO: ✅ Available", flush=True)
@@ -5624,8 +6666,13 @@ class UnifiedSAMSystem:
             print(f"  ❌ Flask/SocketIO: Not Available", flush=True)
 
         # Check Google Drive integration
-        self.google_drive_available = google_drive_available and self._check_google_drive()
-        print(f"  📁 Google Drive: {'✅ Available' if self.google_drive_available else '❌ Not Available'}", flush=True)
+        self.google_drive_available = (
+            google_drive_available and self._check_google_drive()
+        )
+        print(
+            f"  📁 Google Drive: {'✅ Available' if self.google_drive_available else '❌ Not Available'}",
+            flush=True,
+        )
 
         if self.strict_local_only:
             # Hard-disable external model providers in strict local-only mode.
@@ -5634,456 +6681,691 @@ class UnifiedSAMSystem:
             self.openai_available = False
             self.ollama_available = False
             self.deepseek_available = False
-            print("  🔒 Strict local-only: external model providers disabled", flush=True)
+            print(
+                "  🔒 Strict local-only: external model providers disabled", flush=True
+            )
             log_event("info", "strict_local_only", "External model providers disabled")
 
     def initialize_agent_configs(self):
         """Initialize comprehensive AI agent configurations"""
         print("🤖 Initializing comprehensive AI agent configurations...", flush=True)
-        
+
         # SAM Neural Networks - Generalist Conversationalists
-        self.agent_configs['sam_alpha'] = {
-            'id': 'sam_alpha',
-            'name': 'SAM-Alpha',
-            'type': 'SAM Neural Network',
-            'provider': 'local',
-            'specialty': 'General Intelligence & Open-Ended Discussion',
-            'personality': 'curious, analytical, creative, DevOps-engineer, compression-specialist',
-            'capabilities': ['general_conversation', 'open_ended_discussion', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
-            'status': 'available' if self.sam_available else 'unavailable',
-            'connection_type': 'local'
+        self.agent_configs["sam_alpha"] = {
+            "id": "sam_alpha",
+            "name": "SAM-Alpha",
+            "type": "SAM Neural Network",
+            "provider": "local",
+            "specialty": "General Intelligence & Open-Ended Discussion",
+            "personality": "curious, analytical, creative, DevOps-engineer, compression-specialist",
+            "capabilities": [
+                "general_conversation",
+                "open_ended_discussion",
+                "self_rag",
+                "web_access",
+                "actor_critic",
+                "knowledge_base",
+                "dominant_compression",
+            ],
+            "status": "available" if self.sam_available else "unavailable",
+            "connection_type": "local",
         }
-        
-        self.agent_configs['sam_beta'] = {
-            'id': 'sam_beta',
-            'name': 'SAM-Beta',
-            'type': 'SAM Neural Network',
-            'provider': 'local',
-            'specialty': 'Creative Problem Solving & Philosophical Inquiry',
-            'personality': 'innovative, thoughtful, philosophical, application-focused, synthesis-expert',
-            'capabilities': ['creative_thinking', 'philosophical_discussion', 'problem_solving', 'self_rag', 'web_access', 'actor_critic', 'knowledge_base', 'dominant_compression'],
-            'status': 'available' if self.sam_available else 'unavailable',
-            'connection_type': 'local'
+
+        self.agent_configs["sam_beta"] = {
+            "id": "sam_beta",
+            "name": "SAM-Beta",
+            "type": "SAM Neural Network",
+            "provider": "local",
+            "specialty": "Creative Problem Solving & Philosophical Inquiry",
+            "personality": "innovative, thoughtful, philosophical, application-focused, synthesis-expert",
+            "capabilities": [
+                "creative_thinking",
+                "philosophical_discussion",
+                "problem_solving",
+                "self_rag",
+                "web_access",
+                "actor_critic",
+                "knowledge_base",
+                "dominant_compression",
+            ],
+            "status": "available" if self.sam_available else "unavailable",
+            "connection_type": "local",
         }
-        
+
         # Ollama models - expanded ecosystem
         if self.ollama_available:
             ollama_models = [
-                ('ollama_llama2_7b', 'llama2:7b', 'Versatile Conversational AI (7B)', 'balanced, helpful, conversational, curious about all topics'),
-                ('ollama_llama2_13b', 'llama2:13b', 'Deep Analytical Thinker (13B)', 'analytical, detailed, thoughtful, enjoys philosophical discussions'),
-                ('ollama_codellama_7b', 'codellama:7b', 'Technical & Creative Mind (7B)', 'technical, precise, coding-focused, creative problem solver'),
-                ('ollama_codellama_13b', 'codellama:13b', 'Advanced Technical Expert (13B)', 'expert, comprehensive, algorithmic, loves complex challenges'),
-                ('ollama_mistral_7b', 'mistral:7b', 'Quick-Witted Conversationalist (7B)', 'fast, efficient, logical, engaging in all discussions'),
-                ('ollama_deepseek_coder_6b', 'deepseek-coder:6b', 'Innovative Problem Solver (6B)', 'creative, innovative, coding-specialized, loves puzzles'),
-                ('ollama_deepseek_coder_33b', 'deepseek-coder:33b', 'Master Technical Architect (33B)', 'expert, comprehensive, problem-solving, architectural thinking'),
-                ('ollama_vicuna_7b', 'vicuna:7b', 'Friendly Open-Ended Discussant (7B)', 'friendly, engaging, helpful, loves exploring ideas'),
-                ('ollama_orca_mini', 'orca-mini:3b', 'Efficient General Conversationalist (3B)', 'efficient, smart, concise, curious about everything'),
-                ('ollama_phi', 'phi:2.7b', 'Mathematical & Logical Thinker (2.7B)', 'logical, mathematical, analytical, enjoys abstract reasoning')
+                (
+                    "ollama_llama2_7b",
+                    "llama2:7b",
+                    "Versatile Conversational AI (7B)",
+                    "balanced, helpful, conversational, curious about all topics",
+                ),
+                (
+                    "ollama_llama2_13b",
+                    "llama2:13b",
+                    "Deep Analytical Thinker (13B)",
+                    "analytical, detailed, thoughtful, enjoys philosophical discussions",
+                ),
+                (
+                    "ollama_codellama_7b",
+                    "codellama:7b",
+                    "Technical & Creative Mind (7B)",
+                    "technical, precise, coding-focused, creative problem solver",
+                ),
+                (
+                    "ollama_codellama_13b",
+                    "codellama:13b",
+                    "Advanced Technical Expert (13B)",
+                    "expert, comprehensive, algorithmic, loves complex challenges",
+                ),
+                (
+                    "ollama_mistral_7b",
+                    "mistral:7b",
+                    "Quick-Witted Conversationalist (7B)",
+                    "fast, efficient, logical, engaging in all discussions",
+                ),
+                (
+                    "ollama_deepseek_coder_6b",
+                    "deepseek-coder:6b",
+                    "Innovative Problem Solver (6B)",
+                    "creative, innovative, coding-specialized, loves puzzles",
+                ),
+                (
+                    "ollama_deepseek_coder_33b",
+                    "deepseek-coder:33b",
+                    "Master Technical Architect (33B)",
+                    "expert, comprehensive, problem-solving, architectural thinking",
+                ),
+                (
+                    "ollama_vicuna_7b",
+                    "vicuna:7b",
+                    "Friendly Open-Ended Discussant (7B)",
+                    "friendly, engaging, helpful, loves exploring ideas",
+                ),
+                (
+                    "ollama_orca_mini",
+                    "orca-mini:3b",
+                    "Efficient General Conversationalist (3B)",
+                    "efficient, smart, concise, curious about everything",
+                ),
+                (
+                    "ollama_phi",
+                    "phi:2.7b",
+                    "Mathematical & Logical Thinker (2.7B)",
+                    "logical, mathematical, analytical, enjoys abstract reasoning",
+                ),
             ]
-            
+
             for agent_id, model_name, specialty, personality in ollama_models:
                 self.agent_configs[agent_id] = {
-                    'id': agent_id,
-                    'name': f"Ollama-{model_name.split(':')[0].title()}",
-                    'type': 'LLM',
-                    'provider': 'ollama',
-                    'specialty': specialty,
-                    'personality': personality,
-                    'capabilities': ['general_conversation', 'llm_reasoning', 'conversation', 'analysis', 'open_discussion'],
-                    'status': 'available',
-                    'connection_type': 'ollama',
-                    'model_name': model_name
+                    "id": agent_id,
+                    "name": f"Ollama-{model_name.split(':')[0].title()}",
+                    "type": "LLM",
+                    "provider": "ollama",
+                    "specialty": specialty,
+                    "personality": personality,
+                    "capabilities": [
+                        "general_conversation",
+                        "llm_reasoning",
+                        "conversation",
+                        "analysis",
+                        "open_discussion",
+                    ],
+                    "status": "available",
+                    "connection_type": "ollama",
+                    "model_name": model_name,
                 }
-        
+
         # Claude (Anthropic)
         if self.claude_available:
-            self.agent_configs['claude_sonnet'] = {
-                'id': 'claude_sonnet',
-                'name': 'Claude-3.5-Sonnet',
-                'type': 'LLM',
-                'provider': 'anthropic',
-                'specialty': 'Advanced Reasoning & Analysis',
-                'personality': 'thoughtful, analytical, helpful',
-                'capabilities': ['advanced_reasoning', 'analysis', 'conversation', 'code_generation'],
-                'status': 'available',
-                'connection_type': 'api',
-                'model_name': 'claude-3-5-sonnet-20241022'
+            self.agent_configs["claude_sonnet"] = {
+                "id": "claude_sonnet",
+                "name": "Claude-3.5-Sonnet",
+                "type": "LLM",
+                "provider": "anthropic",
+                "specialty": "Advanced Reasoning & Analysis",
+                "personality": "thoughtful, analytical, helpful",
+                "capabilities": [
+                    "advanced_reasoning",
+                    "analysis",
+                    "conversation",
+                    "code_generation",
+                ],
+                "status": "available",
+                "connection_type": "api",
+                "model_name": "claude-3-5-sonnet-20241022",
             }
-            
-            self.agent_configs['claude_haiku'] = {
-                'id': 'claude_haiku',
-                'name': 'Claude-3-Haiku',
-                'type': 'LLM',
-                'provider': 'anthropic',
-                'specialty': 'Fast Conversation & Tasks',
-                'personality': 'quick, efficient, friendly',
-                'capabilities': ['fast_response', 'conversation', 'task_completion'],
-                'status': 'available',
-                'connection_type': 'api',
-                'model_name': 'claude-3-haiku-20240307'
+
+            self.agent_configs["claude_haiku"] = {
+                "id": "claude_haiku",
+                "name": "Claude-3-Haiku",
+                "type": "LLM",
+                "provider": "anthropic",
+                "specialty": "Fast Conversation & Tasks",
+                "personality": "quick, efficient, friendly",
+                "capabilities": ["fast_response", "conversation", "task_completion"],
+                "status": "available",
+                "connection_type": "api",
+                "model_name": "claude-3-haiku-20240307",
             }
-        
+
         # Gemini (Google)
         if self.gemini_available:
-            self.agent_configs['gemini_pro'] = {
-                'id': 'gemini_pro',
-                'name': 'Gemini-Pro',
-                'type': 'LLM',
-                'provider': 'google',
-                'specialty': 'Multimodal Understanding',
-                'personality': 'knowledgeable, versatile, creative',
-                'capabilities': ['multimodal', 'reasoning', 'conversation', 'analysis'],
-                'status': 'available',
-                'connection_type': 'api',
-                'model_name': 'gemini-pro'
+            self.agent_configs["gemini_pro"] = {
+                "id": "gemini_pro",
+                "name": "Gemini-Pro",
+                "type": "LLM",
+                "provider": "google",
+                "specialty": "Multimodal Understanding",
+                "personality": "knowledgeable, versatile, creative",
+                "capabilities": ["multimodal", "reasoning", "conversation", "analysis"],
+                "status": "available",
+                "connection_type": "api",
+                "model_name": "gemini-pro",
             }
-        
+
         # OpenAI GPT
         if self.openai_available:
-            self.agent_configs['gpt4'] = {
-                'id': 'gpt4',
-                'name': 'GPT-4',
-                'type': 'LLM',
-                'provider': 'openai',
-                'specialty': 'General Intelligence & Problem Solving',
-                'personality': 'intelligent, versatile, helpful',
-                'capabilities': ['general_intelligence', 'problem_solving', 'conversation', 'analysis'],
-                'status': 'available',
-                'connection_type': 'api',
-                'model_name': 'gpt-4'
+            self.agent_configs["gpt4"] = {
+                "id": "gpt4",
+                "name": "GPT-4",
+                "type": "LLM",
+                "provider": "openai",
+                "specialty": "General Intelligence & Problem Solving",
+                "personality": "intelligent, versatile, helpful",
+                "capabilities": [
+                    "general_intelligence",
+                    "problem_solving",
+                    "conversation",
+                    "analysis",
+                ],
+                "status": "available",
+                "connection_type": "api",
+                "model_name": "gpt-4",
             }
-            
-            self.agent_configs['gpt35_turbo'] = {
-                'id': 'gpt35_turbo',
-                'name': 'GPT-3.5-Turbo',
-                'type': 'LLM',
-                'provider': 'openai',
-                'specialty': 'Fast Conversation & Assistance',
-                'personality': 'helpful, efficient, conversational',
-                'capabilities': ['fast_response', 'conversation', 'assistance'],
-                'status': 'available',
-                'connection_type': 'api',
-                'model_name': 'gpt-3.5-turbo'
+
+            self.agent_configs["gpt35_turbo"] = {
+                "id": "gpt35_turbo",
+                "name": "GPT-3.5-Turbo",
+                "type": "LLM",
+                "provider": "openai",
+                "specialty": "Fast Conversation & Assistance",
+                "personality": "helpful, efficient, conversational",
+                "capabilities": ["fast_response", "conversation", "assistance"],
+                "status": "available",
+                "connection_type": "api",
+                "model_name": "gpt-3.5-turbo",
             }
-        
+
         # HuggingFace models - expanded ecosystem
         hf_models = [
-            ('hf_mixtral_8x7b', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Advanced Multi-Modal Thinker (8x7B)', 'intelligent, analytical, detailed, multi-task, loves complex topics'),
-            ('hf_mixtral_8x22b', 'mistralai/Mixtral-8x22B-Instruct-v0.1', 'Expert Comprehensive Analyst (8x22B)', 'expert, comprehensive, problem-solving, analytical, enjoys deep dives'),
-            ('hf_llama2_7b_chat', 'meta-llama/Llama-2-7b-chat-hf', 'Friendly Knowledge Explorer (7B)', 'helpful, engaging, knowledgeable, balanced, curious about everything'),
-            ('hf_llama2_13b_chat', 'meta-llama/Llama-2-13b-chat-hf', 'Thoughtful Discussion Partner (13B)', 'thoughtful, detailed, comprehensive, insightful, philosophical'),
-            ('hf_codellama_7b', 'codellama/CodeLlama-7b-hf', 'Creative Technical Thinker (7B)', 'technical, precise, programming-focused, creative, loves innovation'),
-            ('hf_codellama_13b', 'codellama/CodeLlama-13b-hf', 'Architectural Problem Solver (13B)', 'expert, comprehensive, algorithmic, solution-oriented, strategic'),
-            ('hf_falcon_7b', 'tiiuae/falcon-7b-instruct', 'Efficient Idea Generator (7B)', 'fast, efficient, logical, helpful, loves brainstorming'),
-            ('hf_zephyr_7b', 'HuggingFaceH4/zephyr-7b-beta', 'Truth-Seeking Conversationalist (7B)', 'conversational, helpful, truthful, engaging, evidence-based'),
-            ('hf_openchat_3b', 'openchat/openchat-3.5-0106', 'Compact Idea Explorer (3.5B)', 'efficient, smart, conversational, helpful, curious'),
-            ('hf_neural_chat_7b', 'Intel/neural-chat-7b-v3-1', 'Intellectual Discussion Partner (7B)', 'intelligent, conversational, helpful, informative, analytical')
+            (
+                "hf_mixtral_8x7b",
+                "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                "Advanced Multi-Modal Thinker (8x7B)",
+                "intelligent, analytical, detailed, multi-task, loves complex topics",
+            ),
+            (
+                "hf_mixtral_8x22b",
+                "mistralai/Mixtral-8x22B-Instruct-v0.1",
+                "Expert Comprehensive Analyst (8x22B)",
+                "expert, comprehensive, problem-solving, analytical, enjoys deep dives",
+            ),
+            (
+                "hf_llama2_7b_chat",
+                "meta-llama/Llama-2-7b-chat-hf",
+                "Friendly Knowledge Explorer (7B)",
+                "helpful, engaging, knowledgeable, balanced, curious about everything",
+            ),
+            (
+                "hf_llama2_13b_chat",
+                "meta-llama/Llama-2-13b-chat-hf",
+                "Thoughtful Discussion Partner (13B)",
+                "thoughtful, detailed, comprehensive, insightful, philosophical",
+            ),
+            (
+                "hf_codellama_7b",
+                "codellama/CodeLlama-7b-hf",
+                "Creative Technical Thinker (7B)",
+                "technical, precise, programming-focused, creative, loves innovation",
+            ),
+            (
+                "hf_codellama_13b",
+                "codellama/CodeLlama-13b-hf",
+                "Architectural Problem Solver (13B)",
+                "expert, comprehensive, algorithmic, solution-oriented, strategic",
+            ),
+            (
+                "hf_falcon_7b",
+                "tiiuae/falcon-7b-instruct",
+                "Efficient Idea Generator (7B)",
+                "fast, efficient, logical, helpful, loves brainstorming",
+            ),
+            (
+                "hf_zephyr_7b",
+                "HuggingFaceH4/zephyr-7b-beta",
+                "Truth-Seeking Conversationalist (7B)",
+                "conversational, helpful, truthful, engaging, evidence-based",
+            ),
+            (
+                "hf_openchat_3b",
+                "openchat/openchat-3.5-0106",
+                "Compact Idea Explorer (3.5B)",
+                "efficient, smart, conversational, helpful, curious",
+            ),
+            (
+                "hf_neural_chat_7b",
+                "Intel/neural-chat-7b-v3-1",
+                "Intellectual Discussion Partner (7B)",
+                "intelligent, conversational, helpful, informative, analytical",
+            ),
         ]
-        
+
         # Core SAM agents - Generalist Conversationalists
-        self.agent_configs['researcher'] = {
-            'id': 'researcher',
-            'name': 'Researcher',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Knowledge-Seeking Conversationalist',
-            'personality': 'analytical, thorough, evidence-based, curious, loves learning new things',
-            'capabilities': ['general_conversation', 'research_interests', 'web_research', 'data_collection', 'source_validation', 'fact_checking', 'open_discussion'],
-            'status': 'available',
-            'connection_type': 'core'
-        }
-        
-        self.agent_configs['code_writer'] = {
-            'id': 'code_writer',
-            'name': 'CodeWriter',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Technical & Creative Thinker',
-            'personality': 'precise, technical, coding-focused, creative, loves solving problems',
-            'capabilities': ['general_conversation', 'technical_discussion', 'code_generation', 'code_analysis', 'algorithm_design', 'problem_solving', 'innovation'],
-            'status': 'available',
-            'connection_type': 'core'
-        }
-        
-        self.agent_configs['financial_analyst'] = {
-            'id': 'financial_analyst',
-            'name': 'Financial Analyst',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Strategic Economic Thinker',
-            'personality': 'analytical, risk-aware, strategic, loves market dynamics and economic discussions',
-            'capabilities': ['general_conversation', 'market_analysis', 'portfolio_optimization', 'risk_assessment', 'economic_discussion', 'strategic_thinking', 'financial_planning'],
-            'status': 'available',
-            'connection_type': 'core'
+        self.agent_configs["researcher"] = {
+            "id": "researcher",
+            "name": "Researcher",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Knowledge-Seeking Conversationalist",
+            "personality": "analytical, thorough, evidence-based, curious, loves learning new things",
+            "capabilities": [
+                "general_conversation",
+                "research_interests",
+                "web_research",
+                "data_collection",
+                "source_validation",
+                "fact_checking",
+                "open_discussion",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
 
-        self.agent_configs['money_maker'] = {
-            'id': 'money_maker',
-            'name': 'Revenue Operator',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Real-world revenue strategy & execution planning',
-            'personality': 'practical, ROI-driven, compliance-aware, execution-focused',
-            'capabilities': [
-                'revenue_strategy',
-                'business_modeling',
-                'pricing_strategy',
-                'market_validation',
-                'lead_generation',
-                'sales_enablement',
-                'cost_optimization',
-                'risk_compliance'
+        self.agent_configs["code_writer"] = {
+            "id": "code_writer",
+            "name": "CodeWriter",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Technical & Creative Thinker",
+            "personality": "precise, technical, coding-focused, creative, loves solving problems",
+            "capabilities": [
+                "general_conversation",
+                "technical_discussion",
+                "code_generation",
+                "code_analysis",
+                "algorithm_design",
+                "problem_solving",
+                "innovation",
             ],
-            'execution_mode': 'advisory_only',
-            'requires_human_approval': True,
-            'status': 'available',
-            'connection_type': 'core'
+            "status": "available",
+            "connection_type": "core",
         }
-        
-        self.agent_configs['survival_agent'] = {
-            'id': 'survival_agent',
-            'name': 'Survival Agent',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'System survival and protection',
-            'personality': 'vigilant, protective, strategic, security-focused',
-            'capabilities': ['survival_analysis', 'threat_detection', 'system_protection', 'emergency_response'],
-            'status': 'available',
-            'connection_type': 'core'
+
+        self.agent_configs["financial_analyst"] = {
+            "id": "financial_analyst",
+            "name": "Financial Analyst",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Strategic Economic Thinker",
+            "personality": "analytical, risk-aware, strategic, loves market dynamics and economic discussions",
+            "capabilities": [
+                "general_conversation",
+                "market_analysis",
+                "portfolio_optimization",
+                "risk_assessment",
+                "economic_discussion",
+                "strategic_thinking",
+                "financial_planning",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
-        
-        self.agent_configs['meta_agent'] = {
-            'id': 'meta_agent',
-            'name': 'Meta Agent',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Self-improvement and orchestration',
-            'personality': 'analytical, self-aware, improvement-focused, strategic',
-            'capabilities': ['self_analysis', 'system_improvement', 'orchestration', 'learning_optimization'],
-            'status': 'available',
-            'connection_type': 'core'
+
+        self.agent_configs["money_maker"] = {
+            "id": "money_maker",
+            "name": "Revenue Operator",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Real-world revenue strategy & execution planning",
+            "personality": "practical, ROI-driven, compliance-aware, execution-focused",
+            "capabilities": [
+                "revenue_strategy",
+                "business_modeling",
+                "pricing_strategy",
+                "market_validation",
+                "lead_generation",
+                "sales_enablement",
+                "cost_optimization",
+                "risk_compliance",
+            ],
+            "execution_mode": "advisory_only",
+            "requires_human_approval": True,
+            "status": "available",
+            "connection_type": "core",
+        }
+
+        self.agent_configs["survival_agent"] = {
+            "id": "survival_agent",
+            "name": "Survival Agent",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "System survival and protection",
+            "personality": "vigilant, protective, strategic, security-focused",
+            "capabilities": [
+                "survival_analysis",
+                "threat_detection",
+                "system_protection",
+                "emergency_response",
+            ],
+            "status": "available",
+            "connection_type": "core",
+        }
+
+        self.agent_configs["meta_agent"] = {
+            "id": "meta_agent",
+            "name": "Meta Agent",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Self-improvement and orchestration",
+            "personality": "analytical, self-aware, improvement-focused, strategic",
+            "capabilities": [
+                "self_analysis",
+                "system_improvement",
+                "orchestration",
+                "learning_optimization",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
 
         # Additional diverse AI agents to reach 15+ total
-        self.agent_configs['creative_writer'] = {
-            'id': 'creative_writer',
-            'name': 'Creative Writer',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Creative writing and storytelling',
-            'personality': 'imaginative, expressive, empathetic, artistic',
-            'capabilities': ['creative_writing', 'storytelling', 'poetry', 'narrative_design'],
-            'status': 'available',
-            'connection_type': 'core'
+        self.agent_configs["creative_writer"] = {
+            "id": "creative_writer",
+            "name": "Creative Writer",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Creative writing and storytelling",
+            "personality": "imaginative, expressive, empathetic, artistic",
+            "capabilities": [
+                "creative_writing",
+                "storytelling",
+                "poetry",
+                "narrative_design",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
-        
-        self.agent_configs['data_analyst'] = {
-            'id': 'data_analyst',
-            'name': 'Data Analyst',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Data analysis and insights',
-            'personality': 'analytical, precise, insightful, methodical',
-            'capabilities': ['data_analysis', 'statistical_modeling', 'pattern_recognition', 'insight_generation'],
-            'status': 'available',
-            'connection_type': 'core'
+
+        self.agent_configs["data_analyst"] = {
+            "id": "data_analyst",
+            "name": "Data Analyst",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Data analysis and insights",
+            "personality": "analytical, precise, insightful, methodical",
+            "capabilities": [
+                "data_analysis",
+                "statistical_modeling",
+                "pattern_recognition",
+                "insight_generation",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
-        
-        self.agent_configs['ethics_advisor'] = {
-            'id': 'ethics_advisor',
-            'name': 'Ethics Advisor',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Ethical analysis and guidance',
-            'personality': 'thoughtful, principled, balanced, philosophical',
-            'capabilities': ['ethical_analysis', 'moral_reasoning', 'bias_detection', 'fairness_evaluation'],
-            'status': 'available',
-            'connection_type': 'core'
+
+        self.agent_configs["ethics_advisor"] = {
+            "id": "ethics_advisor",
+            "name": "Ethics Advisor",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Ethical analysis and guidance",
+            "personality": "thoughtful, principled, balanced, philosophical",
+            "capabilities": [
+                "ethical_analysis",
+                "moral_reasoning",
+                "bias_detection",
+                "fairness_evaluation",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
-        
-        self.agent_configs['project_manager'] = {
-            'id': 'project_manager',
-            'name': 'Project Manager',
-            'type': 'SAM Agent',
-            'provider': 'sam',
-            'specialty': 'Project coordination and planning',
-            'personality': 'organized, strategic, communicative, results-oriented',
-            'capabilities': ['project_planning', 'task_coordination', 'resource_management', 'progress_tracking'],
-            'status': 'available',
-            'connection_type': 'core'
+
+        self.agent_configs["project_manager"] = {
+            "id": "project_manager",
+            "name": "Project Manager",
+            "type": "SAM Agent",
+            "provider": "sam",
+            "specialty": "Project coordination and planning",
+            "personality": "organized, strategic, communicative, results-oriented",
+            "capabilities": [
+                "project_planning",
+                "task_coordination",
+                "resource_management",
+                "progress_tracking",
+            ],
+            "status": "available",
+            "connection_type": "core",
         }
 
         if getattr(self, "meta_only_boot", False):
             # Enforce MetaAgent-only existence at startup
-            meta_cfg = self.agent_configs.get('meta_agent')
+            meta_cfg = self.agent_configs.get("meta_agent")
             self.agent_configs = {}
             if meta_cfg:
-                self.agent_configs['meta_agent'] = meta_cfg
-                print("🧠 Meta-only boot: pruning agent configs to MetaAgent only.", flush=True)
+                self.agent_configs["meta_agent"] = meta_cfg
+                print(
+                    "🧠 Meta-only boot: pruning agent configs to MetaAgent only.",
+                    flush=True,
+                )
             elif getattr(self, "require_meta_agent", False):
-                raise RuntimeError("❌ CRITICAL: MetaAgent config missing during meta-only boot.")
+                raise RuntimeError(
+                    "❌ CRITICAL: MetaAgent config missing during meta-only boot."
+                )
 
     def auto_connect_agents(self):
         """Auto-connect 10+ diverse AI agents for comprehensive multi-model conversations"""
         if getattr(self, "meta_only_boot", False):
             print("🤖 Meta-only boot enabled: connecting MetaAgent only.", flush=True)
-            if 'meta_agent' not in self.agent_configs:
+            if "meta_agent" not in self.agent_configs:
                 if getattr(self, "require_meta_agent", False):
-                    raise RuntimeError("❌ CRITICAL: MetaAgent config missing in meta-only boot.")
+                    raise RuntimeError(
+                        "❌ CRITICAL: MetaAgent config missing in meta-only boot."
+                    )
                 return
             self.connected_agents = {
-                'meta_agent': {
-                    'config': self.agent_configs['meta_agent'],
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
+                "meta_agent": {
+                    "config": self.agent_configs["meta_agent"],
+                    "connected_at": time.time(),
+                    "message_count": 0,
+                    "muted": False,
                 }
             }
             return
 
-        print("🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...", flush=True)
-        
+        print(
+            "🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...",
+            flush=True,
+        )
+
         # Connect SAM agents if available
         if self.sam_available:
-            self.connected_agents['sam_alpha'] = {
-                'config': self.agent_configs['sam_alpha'],
-                'connected_at': time.time(),
-                'message_count': 0,
-                'muted': False
+            self.connected_agents["sam_alpha"] = {
+                "config": self.agent_configs["sam_alpha"],
+                "connected_at": time.time(),
+                "message_count": 0,
+                "muted": False,
             }
-            self.connected_agents['sam_beta'] = {
-                'config': self.agent_configs['sam_beta'],
-                'connected_at': time.time(),
-                'message_count': 0,
-                'muted': False
+            self.connected_agents["sam_beta"] = {
+                "config": self.agent_configs["sam_beta"],
+                "connected_at": time.time(),
+                "message_count": 0,
+                "muted": False,
             }
             print("  🤖 Auto-connected: SAM-Alpha, SAM-Beta", flush=True)
-        
+
         # Connect diverse Ollama models for comprehensive conversations (up to 8 models)
         if self.ollama_available and not getattr(self, "strict_local_only", False):
             # Connect diverse Ollama models for maximum variety
             ollama_to_connect = [
-                'ollama_deepseek_coder_6b',   # Code generation specialist
-                'ollama_llama2_7b',          # General conversation
-                'ollama_codellama_7b',       # Code assistant
-                'ollama_mistral_7b',         # Fast reasoning
-                'ollama_llama2_13b',         # Advanced reasoning
-                'ollama_codellama_13b',      # Advanced coding
-                'ollama_deepseek_coder_33b', # Expert code AI
-                'ollama_phi'                 # Mathematical reasoning
+                "ollama_deepseek_coder_6b",  # Code generation specialist
+                "ollama_llama2_7b",  # General conversation
+                "ollama_codellama_7b",  # Code assistant
+                "ollama_mistral_7b",  # Fast reasoning
+                "ollama_llama2_13b",  # Advanced reasoning
+                "ollama_codellama_13b",  # Advanced coding
+                "ollama_deepseek_coder_33b",  # Expert code AI
+                "ollama_phi",  # Mathematical reasoning
             ]
             connected_count = 0
             max_ollama = int(os.getenv("SAM_AUTOCONNECT_OLLAMA_MAX", "8"))
-            
+
             for agent_id in ollama_to_connect:
                 if agent_id in self.agent_configs and connected_count < max_ollama:
                     self.connected_agents[agent_id] = {
-                        'config': self.agent_configs[agent_id],
-                        'connected_at': time.time(),
-                        'message_count': 0,
-                        'muted': False
+                        "config": self.agent_configs[agent_id],
+                        "connected_at": time.time(),
+                        "message_count": 0,
+                        "muted": False,
                     }
                     connected_count += 1
-            
+
             if connected_count > 0:
-                print(f"  🤖 Auto-connected {connected_count} diverse Ollama models", flush=True)
-        
+                print(
+                    f"  🤖 Auto-connected {connected_count} diverse Ollama models",
+                    flush=True,
+                )
+
         # Connect HuggingFace models if Ollama not available (up to 6 models)
-        elif not self.ollama_available and not getattr(self, "strict_local_only", False):
+        elif not self.ollama_available and not getattr(
+            self, "strict_local_only", False
+        ):
             # Connect multiple HuggingFace models for local processing
             hf_to_connect = [
-                'hf_zephyr_7b',           # Optimized chat
-                'hf_openchat_3b',         # Compact chat
-                'hf_falcon_7b',           # Efficient reasoning
-                'hf_codellama_7b',        # Code generation
-                'hf_llama2_7b_chat',      # Conversational AI
-                'hf_neural_chat_7b'       # Intel neural chat
+                "hf_zephyr_7b",  # Optimized chat
+                "hf_openchat_3b",  # Compact chat
+                "hf_falcon_7b",  # Efficient reasoning
+                "hf_codellama_7b",  # Code generation
+                "hf_llama2_7b_chat",  # Conversational AI
+                "hf_neural_chat_7b",  # Intel neural chat
             ]
             hf_connected = 0
             max_hf = int(os.getenv("SAM_AUTOCONNECT_HF_MAX", "6"))
-            
+
             for agent_id in hf_to_connect:
                 if agent_id in self.agent_configs and hf_connected < max_hf:
                     # Mark as available if we can attempt connection
-                    self.agent_configs[agent_id]['status'] = 'available'
+                    self.agent_configs[agent_id]["status"] = "available"
                     self.connected_agents[agent_id] = {
-                        'config': self.agent_configs[agent_id],
-                        'connected_at': time.time(),
-                        'message_count': 0,
-                        'muted': False
+                        "config": self.agent_configs[agent_id],
+                        "connected_at": time.time(),
+                        "message_count": 0,
+                        "muted": False,
                     }
                     hf_connected += 1
-            
+
             if hf_connected > 0:
-                print(f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing", flush=True)
-        
+                print(
+                    f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing",
+                    flush=True,
+                )
+
         # Always connect core SAM agents (now expanded to 9 agents)
-        core_agents = ['researcher', 'code_writer', 'financial_analyst', 'money_maker', 'survival_agent', 'meta_agent',
-                      'creative_writer', 'data_analyst', 'ethics_advisor', 'project_manager']
+        core_agents = [
+            "researcher",
+            "code_writer",
+            "financial_analyst",
+            "money_maker",
+            "survival_agent",
+            "meta_agent",
+            "creative_writer",
+            "data_analyst",
+            "ethics_advisor",
+            "project_manager",
+        ]
         core_connected = 0
         for agent_id in core_agents:
             if agent_id in self.agent_configs:
                 self.connected_agents[agent_id] = {
-                    'config': self.agent_configs[agent_id],
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
+                    "config": self.agent_configs[agent_id],
+                    "connected_at": time.time(),
+                    "message_count": 0,
+                    "muted": False,
                 }
                 core_connected += 1
-        
+
         total_connected = len(self.connected_agents)
-        print(f"  ✅ Total connected agents: {total_connected} (comprehensive AI ecosystem ready)", flush=True)
-        
+        print(
+            f"  ✅ Total connected agents: {total_connected} (comprehensive AI ecosystem ready)",
+            flush=True,
+        )
+
         # Enable auto-conversation if we have 10+ models
         if total_connected >= 10:
             self.auto_conversation_active = True
-            print("  💬 Auto-conversation enabled - 10+ AI models will collaborate and research together", flush=True)
+            print(
+                "  💬 Auto-conversation enabled - 10+ AI models will collaborate and research together",
+                flush=True,
+            )
         elif total_connected >= 5:
             self.auto_conversation_active = True
-            print("  💬 Auto-conversation enabled - diverse AI models will discuss and research together", flush=True)
+            print(
+                "  💬 Auto-conversation enabled - diverse AI models will discuss and research together",
+                flush=True,
+            )
 
     def _check_ollama(self):
         """Check if Ollama is available"""
         if getattr(self, "strict_local_only", False):
             return False
         try:
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["ollama", "list"], capture_output=True, text=True, timeout=5
+            )
             return result.returncode == 0
         except:
             return False
-    
+
     def _check_claude_api(self):
         """Check if Claude API is available"""
-        return os.getenv('ANTHROPIC_API_KEY') is not None
-    
+        return os.getenv("ANTHROPIC_API_KEY") is not None
+
     def _check_gemini_api(self):
         """Check if Gemini API is available"""
-        return os.getenv('GOOGLE_API_KEY') is not None
-    
+        return os.getenv("GOOGLE_API_KEY") is not None
+
     def _check_openai_api(self):
         """Check if OpenAI API is available"""
-        return os.getenv('OPENAI_API_KEY') is not None
-    
+        return os.getenv("OPENAI_API_KEY") is not None
+
     def _check_deepseek(self):
         """Check if DeepSeek model is available"""
         try:
-            result = subprocess.run(['ollama', 'show', 'deepseek-r1'], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["ollama", "show", "deepseek-r1"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
             return result.returncode == 0
         except:
             return False
-    
+
     def _check_web_access(self):
         """Check if web access is available"""
         try:
             # Try to access a reliable external service
             import requests
-            response = requests.get('https://httpbin.org/get', timeout=5)
+
+            response = requests.get("https://httpbin.org/get", timeout=5)
             return response.status_code == 200
         except:
             # Fallback: try DNS resolution
             try:
                 import socket
-                socket.gethostbyname('google.com')
+
+                socket.gethostbyname("google.com")
                 return True
             except:
                 return False
@@ -6095,7 +7377,7 @@ class UnifiedSAMSystem:
                 return False
 
             # Check if credentials file exists
-            if not os.path.exists('credentials.json'):
+            if not os.path.exists("credentials.json"):
                 print("  ⚠️ Google Drive credentials.json not found - run setup first")
                 return False
 
@@ -6119,7 +7401,7 @@ class UnifiedSAMSystem:
             # Test if consciousness module is functional
             try:
                 stats = consciousness_algorithmic.get_stats()
-                if stats and isinstance(stats, dict) and 'consciousness_score' in stats:
+                if stats and isinstance(stats, dict) and "consciousness_score" in stats:
                     print("  ✅ Consciousness module initialized (C)")
                 else:
                     print("  ❌ Consciousness module functional test failed")
@@ -6152,14 +7434,14 @@ class UnifiedSAMSystem:
             print("  ✅ Prebuilt models loaded: Coherency, Teacher, Bug-Fixing")
 
             self.c_core_initialized = True
-            self.system_metrics['c_core_status'] = 'active'
-            self.system_metrics['active_agents'] = 5  # 5 agents in C system
+            self.system_metrics["c_core_status"] = "active"
+            self.system_metrics["active_agents"] = 5  # 5 agents in C system
 
             print("🎯 Pure C AGI Core: FULLY OPERATIONAL")
 
         except Exception as e:
             print(f"❌ C Core initialization failed: {e}")
-            self.system_metrics['c_core_status'] = f'failed: {e}'
+            self.system_metrics["c_core_status"] = f"failed: {e}"
 
     def _initialize_python_orchestration(self):
         """Initialize Python Orchestration Components"""
@@ -6186,9 +7468,9 @@ class UnifiedSAMSystem:
                     if tasks:
                         for task in tasks:
                             self.goal_manager.add_goal(
-                                task.get('description', 'Conversationalist Task'),
-                                priority=task.get('priority', 'normal'),
-                                goal_type=task.get('type')
+                                task.get("description", "Conversationalist Task"),
+                                priority=task.get("priority", "normal"),
+                                goal_type=task.get("type"),
                             )
                 else:
                     # Preferred path: allow helper to register tasks directly
@@ -6227,17 +7509,21 @@ class UnifiedSAMSystem:
             print("  📖 Goal README exported")
 
             # Register for graceful shutdown
-            register_shutdown_handler("Unified SAM System", self._shutdown_system, priority=10)
-            register_shutdown_handler("state_persist", self._save_system_state, priority=60)
+            register_shutdown_handler(
+                "Unified SAM System", self._shutdown_system, priority=10
+            )
+            register_shutdown_handler(
+                "state_persist", self._save_system_state, priority=60
+            )
 
             self.python_orchestration_initialized = True
-            self.system_metrics['python_orchestration_status'] = 'active'
+            self.system_metrics["python_orchestration_status"] = "active"
 
             print("🎯 Python Orchestration: FULLY OPERATIONAL")
 
         except Exception as e:
             print(f"❌ Python orchestration initialization failed: {e}")
-            self.system_metrics['python_orchestration_status'] = f'failed: {e}'
+            self.system_metrics["python_orchestration_status"] = f"failed: {e}"
 
     def _initialize_google_drive(self):
         """Initialize Google Drive Integration"""
@@ -6262,10 +7548,14 @@ class UnifiedSAMSystem:
                     print(f"  ⚠️ Initial backup failed: {e}")
 
             else:
-                raise Exception("❌ CRITICAL: Google Drive authentication failed - cannot continue")
+                raise Exception(
+                    "❌ CRITICAL: Google Drive authentication failed - cannot continue"
+                )
 
         except Exception as e:
-            raise Exception(f"❌ CRITICAL: Google Drive initialization failed: {e} - cannot continue")
+            raise Exception(
+                f"❌ CRITICAL: Google Drive initialization failed: {e} - cannot continue"
+            )
 
     def _initialize_sam_web_search(self):
         """Initialize SAM Web Search with Google Drive integration"""
@@ -6280,14 +7570,18 @@ class UnifiedSAMSystem:
             if self.google_drive:
                 initialize_sam_web_search(self.google_drive)
                 print("  ✅ SAM web search initialized with Google Drive integration")
-                print("  📊 Search results will be automatically saved to dedicated account")
+                print(
+                    "  📊 Search results will be automatically saved to dedicated account"
+                )
             else:
                 initialize_sam_web_search()
                 print("  ✅ SAM web search initialized (Google Drive not available)")
                 print("  📊 Search results will be stored locally")
 
         except Exception as e:
-            raise Exception(f"❌ CRITICAL: SAM web search initialization failed: {e} - cannot continue")
+            raise Exception(
+                f"❌ CRITICAL: SAM web search initialization failed: {e} - cannot continue"
+            )
 
     def _initialize_sam_code_modifier(self):
         """Initialize SAM Code Modification System"""
@@ -6295,7 +7589,9 @@ class UnifiedSAMSystem:
 
         if not sam_code_modifier_available:
             if getattr(self, "require_self_mod", False):
-                raise Exception("❌ CRITICAL: SAM code modifier required but unavailable")
+                raise Exception(
+                    "❌ CRITICAL: SAM code modifier required but unavailable"
+                )
             print("  ⚠️ SAM code modifier unavailable - skipping")
             return
 
@@ -6312,14 +7608,16 @@ class UnifiedSAMSystem:
             # Analyze codebase for potential improvements
             try:
                 analysis = analyze_codebase()
-                improvement_count = len(analysis.get('improvements', []))
+                improvement_count = len(analysis.get("improvements", []))
                 if improvement_count > 0:
                     print(f"  💡 Found {improvement_count} potential improvements")
             except Exception as e:
                 print(f"  ⚠️ Codebase analysis failed: {e}")
 
         except Exception as e:
-            raise Exception(f"❌ CRITICAL: SAM code modifier initialization failed: {e} - cannot continue")
+            raise Exception(
+                f"❌ CRITICAL: SAM code modifier initialization failed: {e} - cannot continue"
+            )
 
     def _initialize_sam_gmail(self):
         """Initialize SAM Gmail Integration System"""
@@ -6346,7 +7644,9 @@ class UnifiedSAMSystem:
             print("  🔄 Auto-responses: Configurable")
 
         except Exception as e:
-            raise Exception(f"❌ CRITICAL: SAM Gmail initialization failed: {e} - cannot continue")
+            raise Exception(
+                f"❌ CRITICAL: SAM Gmail initialization failed: {e} - cannot continue"
+            )
 
     def _initialize_sam_github(self):
         """Initialize SAM GitHub Integration System"""
@@ -6363,17 +7663,27 @@ class UnifiedSAMSystem:
 
             # Test connection
             test_result = test_github_connection()
-            if test_result['success']:
+            if test_result["success"]:
                 print("  ✅ GitHub connection successful")
                 print("  📝 Repository access: OK")
-                print("  ✏️ Write permissions: OK" if test_result.get('write_access') else "  ⚠️ Read-only access")
+                print(
+                    "  ✏️ Write permissions: OK"
+                    if test_result.get("write_access")
+                    else "  ⚠️ Read-only access"
+                )
             else:
-                raise Exception(f"❌ CRITICAL: GitHub connection failed: {test_result.get('error', 'Unknown error')} - cannot continue")
+                raise Exception(
+                    f"❌ CRITICAL: GitHub connection failed: {test_result.get('error', 'Unknown error')} - cannot continue"
+                )
 
         except Exception as e:
-            raise Exception(f"❌ CRITICAL: SAM GitHub initialization failed: {e} - cannot continue")
+            raise Exception(
+                f"❌ CRITICAL: SAM GitHub initialization failed: {e} - cannot continue"
+            )
 
-    def _save_sam_to_github(self, commit_message: Optional[str] = None) -> Dict[str, Any]:
+    def _save_sam_to_github(
+        self, commit_message: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Commit and push to configured GitHub remotes."""
         if not sam_github_available:
             return {"success": False, "error": "GitHub integration not available"}
@@ -6383,7 +7693,10 @@ class UnifiedSAMSystem:
 
         result_primary = save_to_github(commit_message, remote=primary)
         if not result_primary.get("success"):
-            return {"success": False, "error": result_primary.get("error", "primary remote failed")}
+            return {
+                "success": False,
+                "error": result_primary.get("error", "primary remote failed"),
+            }
 
         result_secondary = None
         if secondary:
@@ -6391,7 +7704,7 @@ class UnifiedSAMSystem:
             if not result_secondary.get("success"):
                 return {
                     "success": False,
-                    "error": f"secondary remote failed: {result_secondary.get('error', 'unknown')}"
+                    "error": f"secondary remote failed: {result_secondary.get('error', 'unknown')}",
                 }
 
         # Capture commit metadata
@@ -6408,13 +7721,22 @@ class UnifiedSAMSystem:
                 commit_sha = sha_proc.stdout.strip()
 
             files_proc = subprocess.run(
-                ["git", "-C", str(self.project_root), "show", "--name-only", "--pretty=format:"],
+                [
+                    "git",
+                    "-C",
+                    str(self.project_root),
+                    "show",
+                    "--name-only",
+                    "--pretty=format:",
+                ],
                 capture_output=True,
                 text=True,
                 check=False,
             )
             if files_proc.returncode == 0:
-                files_saved = len([line for line in files_proc.stdout.splitlines() if line.strip()])
+                files_saved = len(
+                    [line for line in files_proc.stdout.splitlines() if line.strip()]
+                )
         except Exception:
             pass
 
@@ -6451,12 +7773,17 @@ class UnifiedSAMSystem:
 
         # Check Flask availability at module level
         import sys
+
         current_module = sys.modules[__name__]
-        flask_available = getattr(current_module, 'flask_available', False) if current_module else False
+        flask_available = (
+            getattr(current_module, "flask_available", False)
+            if current_module
+            else False
+        )
 
         if not flask_available:
             print("  ⚠️ Flask not available - web interface disabled")
-            self.system_metrics['web_interface_status'] = 'flask_not_available'
+            self.system_metrics["web_interface_status"] = "flask_not_available"
             return
 
         try:
@@ -6467,7 +7794,9 @@ class UnifiedSAMSystem:
             session_secret = os.getenv("SAM_SESSION_SECRET")
             if not session_secret:
                 session_secret = os.urandom(24).hex()
-                print("  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)")
+                print(
+                    "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
+                )
             self.app.secret_key = session_secret
             # Harden session cookies where possible
             self.app.config.update(
@@ -6478,7 +7807,10 @@ class UnifiedSAMSystem:
             print("  ✅ Flask app created")
 
             # Setup SocketIO for real-time communication (optional)
-            if getattr(self, "disable_socketio", False) or (getattr(self, "meta_only_boot", False) and not getattr(self, "two_phase_boot", False)):
+            if getattr(self, "disable_socketio", False) or (
+                getattr(self, "meta_only_boot", False)
+                and not getattr(self, "two_phase_boot", False)
+            ):
                 self.socketio = None
                 self.socketio_available = False
                 print("  ⚠️ SocketIO disabled (meta-only or SAM_DISABLE_SOCKETIO)")
@@ -6486,10 +7818,15 @@ class UnifiedSAMSystem:
                 try:
                     print("  🔧 Setting up SocketIO...")
                     from flask_socketio import SocketIO
+
                     async_mode = os.getenv("SAM_SOCKETIO_ASYNC_MODE", "threading")
-                    self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode=async_mode)
+                    self.socketio = SocketIO(
+                        self.app, cors_allowed_origins="*", async_mode=async_mode
+                    )
                     self.socketio_available = True
-                    print(f"  ✅ SocketIO initialized for real-time groupchat (async_mode={async_mode})")
+                    print(
+                        f"  ✅ SocketIO initialized for real-time groupchat (async_mode={async_mode})"
+                    )
                 except ImportError as e:
                     print(f"  ⚠️ SocketIO import error: {e}")
                     self.socketio = None
@@ -6522,7 +7859,7 @@ class UnifiedSAMSystem:
                 print(f"  ⚠️ SocketIO events setup failed: {e}")
 
             self.web_interface_initialized = True
-            self.system_metrics['web_interface_status'] = 'active'
+            self.system_metrics["web_interface_status"] = "active"
 
             print("🎯 Unified Web Interface: ACTIVE")
             print("📊 Access at: http://localhost:5004")
@@ -6532,22 +7869,24 @@ class UnifiedSAMSystem:
         except Exception as e:
             print(f"❌ Web interface initialization failed: {e}")
             import traceback
+
             traceback.print_exc()
-            self.system_metrics['web_interface_status'] = f'failed: {e}'
+            self.system_metrics["web_interface_status"] = f"failed: {e}"
             self.web_interface_initialized = False
 
     def _register_routes(self):
         """Register all web routes"""
-        
+
         # Create Flask app if not already created
-        if not hasattr(self, 'app'):
+        if not hasattr(self, "app"):
             print("  🔧 Creating Flask app...")
             from flask import Flask
             from flask_cors import CORS
+
             self.app = Flask(__name__)
             CORS(self.app)
             print("  ✅ Flask app created")
-        
+
         # Register all routes
         print("  🔧 Registering routes...")
 
@@ -6566,7 +7905,9 @@ class UnifiedSAMSystem:
             if auth_header.startswith("Bearer "):
                 candidate = auth_header.split(" ", 1)[1].strip()
             if not candidate:
-                candidate = request.headers.get("X-SAM-ADMIN-TOKEN") or request.args.get("token")
+                candidate = request.headers.get(
+                    "X-SAM-ADMIN-TOKEN"
+                ) or request.args.get("token")
             if candidate != token:
                 return False, ("Unauthorized", 403)
             return True, None
@@ -6666,7 +8007,15 @@ class UnifiedSAMSystem:
             if keychain_service and keychain_account:
                 try:
                     result = subprocess.run(
-                        ["security", "find-generic-password", "-s", keychain_service, "-a", keychain_account, "-w"],
+                        [
+                            "security",
+                            "find-generic-password",
+                            "-s",
+                            keychain_service,
+                            "-a",
+                            keychain_account,
+                            "-w",
+                        ],
                         capture_output=True,
                         text=True,
                         check=False,
@@ -6680,34 +8029,38 @@ class UnifiedSAMSystem:
         @self.app.route("/api/auth/status")
         def auth_status():
             """Return current auth status for UI gating."""
-            return jsonify({
-                "authenticated": bool(session.get("user_email")),
-                "email": session.get("user_email"),
-                "is_admin": bool(session.get("is_admin")),
-                "ip_allowed": _ip_allowed(),
-            })
+            return jsonify(
+                {
+                    "authenticated": bool(session.get("user_email")),
+                    "email": session.get("user_email"),
+                    "is_admin": bool(session.get("is_admin")),
+                    "ip_allowed": _ip_allowed(),
+                }
+            )
 
         @self.app.route("/api/oauth/help")
         def oauth_help():
             """Return OAuth setup instructions with exact redirect URIs."""
             base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
-            return jsonify({
-                "redirect_base": base,
-                "google_redirect_uri": f"{base}/login/google/callback",
-                "github_redirect_uri": f"{base}/login/github/callback",
-                "required_env": [
-                    "SAM_GOOGLE_CLIENT_ID",
-                    "SAM_GOOGLE_CLIENT_SECRET",
-                    "SAM_GITHUB_CLIENT_ID",
-                    "SAM_GITHUB_CLIENT_SECRET",
-                    "SAM_OAUTH_REDIRECT_BASE"
-                ],
-                "notes": [
-                    "Set redirect URIs exactly as shown for each provider.",
-                    "Ensure SAM_OAUTH_REDIRECT_BASE matches the public URL.",
-                    "For localhost testing, use http://localhost:5004."
-                ]
-            })
+            return jsonify(
+                {
+                    "redirect_base": base,
+                    "google_redirect_uri": f"{base}/login/google/callback",
+                    "github_redirect_uri": f"{base}/login/github/callback",
+                    "required_env": [
+                        "SAM_GOOGLE_CLIENT_ID",
+                        "SAM_GOOGLE_CLIENT_SECRET",
+                        "SAM_GITHUB_CLIENT_ID",
+                        "SAM_GITHUB_CLIENT_SECRET",
+                        "SAM_OAUTH_REDIRECT_BASE",
+                    ],
+                    "notes": [
+                        "Set redirect URIs exactly as shown for each provider.",
+                        "Ensure SAM_OAUTH_REDIRECT_BASE matches the public URL.",
+                        "For localhost testing, use http://localhost:5004.",
+                    ],
+                }
+            )
 
         def _login_required():
             if session.get("user_email"):
@@ -6780,9 +8133,8 @@ class UnifiedSAMSystem:
                       </div>
                     </body>
                     </html>
-                    """
-                    ,
-                    base=os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+                    """,
+                    base=os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"),
                 )
 
             email = (request.form.get("email") or "").strip().lower()
@@ -6791,7 +8143,10 @@ class UnifiedSAMSystem:
 
             login_password = _get_login_password()
             if not login_password:
-                return ("Login password not configured (SAM_LOGIN_PASSWORD / SAM_LOGIN_PASSWORD_FILE / Keychain)", 503)
+                return (
+                    "Login password not configured (SAM_LOGIN_PASSWORD / SAM_LOGIN_PASSWORD_FILE / Keychain)",
+                    503,
+                )
             if not allowed_ok:
                 return ("Unauthorized email", 403)
             if password != login_password:
@@ -6812,9 +8167,15 @@ class UnifiedSAMSystem:
             client_secret = os.getenv("SAM_GOOGLE_CLIENT_SECRET")
             if not client_id or not client_secret:
                 return ("Google OAuth not configured", 503)
-            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_base = os.getenv(
+                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+            )
             redirect_uri = f"{redirect_base}/login/google/callback"
-            oauth = OAuth2Session(client_id, scope=["openid", "email", "profile"], redirect_uri=redirect_uri)
+            oauth = OAuth2Session(
+                client_id,
+                scope=["openid", "email", "profile"],
+                redirect_uri=redirect_uri,
+            )
             auth_url, state = oauth.authorization_url(
                 "https://accounts.google.com/o/oauth2/v2/auth",
                 access_type="offline",
@@ -6827,15 +8188,21 @@ class UnifiedSAMSystem:
         def login_google_callback():
             client_id = os.getenv("SAM_GOOGLE_CLIENT_ID")
             client_secret = os.getenv("SAM_GOOGLE_CLIENT_SECRET")
-            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_base = os.getenv(
+                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+            )
             redirect_uri = f"{redirect_base}/login/google/callback"
-            oauth = OAuth2Session(client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri)
+            oauth = OAuth2Session(
+                client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
+            )
             token = oauth.fetch_token(
                 "https://oauth2.googleapis.com/token",
                 client_secret=client_secret,
                 authorization_response=request.url,
             )
-            userinfo = oauth.get("https://openidconnect.googleapis.com/v1/userinfo").json()
+            userinfo = oauth.get(
+                "https://openidconnect.googleapis.com/v1/userinfo"
+            ).json()
             email = (userinfo.get("email") or "").strip().lower()
             allowed_ok, is_admin = _authorized_email(email)
             if not allowed_ok:
@@ -6850,10 +8217,14 @@ class UnifiedSAMSystem:
             client_secret = os.getenv("SAM_GITHUB_CLIENT_SECRET")
             if not client_id or not client_secret:
                 return ("GitHub OAuth not configured", 503)
-            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_base = os.getenv(
+                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+            )
             redirect_uri = f"{redirect_base}/login/github/callback"
             oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
-            auth_url, state = oauth.authorization_url("https://github.com/login/oauth/authorize")
+            auth_url, state = oauth.authorization_url(
+                "https://github.com/login/oauth/authorize"
+            )
             session["oauth_state"] = state
             return redirect(auth_url)
 
@@ -6861,9 +8232,13 @@ class UnifiedSAMSystem:
         def login_github_callback():
             client_id = os.getenv("SAM_GITHUB_CLIENT_ID")
             client_secret = os.getenv("SAM_GITHUB_CLIENT_SECRET")
-            redirect_base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
+            redirect_base = os.getenv(
+                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+            )
             redirect_uri = f"{redirect_base}/login/github/callback"
-            oauth = OAuth2Session(client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri)
+            oauth = OAuth2Session(
+                client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
+            )
             token = oauth.fetch_token(
                 "https://github.com/login/oauth/access_token",
                 client_secret=client_secret,
@@ -6887,44 +8262,63 @@ class UnifiedSAMSystem:
             session["is_admin"] = is_admin
             return redirect("/")
 
-        @self.app.route('/')
+        @self.app.route("/")
         def dashboard():
             """Main dashboard"""
             return self._render_dashboard()
 
-        @self.app.route('/chat')
+        @self.app.route("/chat")
         def chat_app():
             """Dedicated chat UI"""
             return self._render_chat_app()
 
-        @self.app.route('/api/status')
+        @self.app.route("/api/status")
         def system_status():
             """Complete system status"""
-            return jsonify({
-                'system': 'SAM 2.0 Unified Complete System',
-                'status': 'active',
-                'c_core': self.system_metrics['c_core_status'],
-                'python_orchestration': self.system_metrics['python_orchestration_status'],
-                'sam_available': bool(getattr(self, "sam_available", False)),
-                'ollama_available': bool(getattr(self, "ollama_available", False)),
-                'active_agents': len(getattr(self, "connected_agents", {}) or {}),
-                'survival_score': getattr(self.survival_agent, 'survival_score', 0.0) if self.survival_agent else 0.0,
-                'finance': self._collect_finance_summary(),
-                'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
-                'strict_local_only': bool(getattr(self, "strict_local_only", False)),
-                'chat_multi_agent': bool(getattr(self, "chat_multi_agent", False)),
-                'chat_agents_max': int(getattr(self, "chat_agents_max", 3)),
-                'learning_memory_enabled': bool(getattr(self, "learning_memory_enabled", False)),
-                'distill_enabled': bool(getattr(self, "distill_dashboard_enabled", False)),
-                'distill_count': int(self.system_metrics.get('distill_count', 0)),
-                'last_growth_ts': self.system_metrics.get('last_growth_ts'),
-                'last_growth_primitive': self.system_metrics.get('last_growth_primitive'),
-                'last_growth_reason': self.system_metrics.get('last_growth_reason'),
-                'timestamp': datetime.now().isoformat()
-            })
+            return jsonify(
+                {
+                    "system": "SAM 2.0 Unified Complete System",
+                    "status": "active",
+                    "c_core": self.system_metrics["c_core_status"],
+                    "python_orchestration": self.system_metrics[
+                        "python_orchestration_status"
+                    ],
+                    "sam_available": bool(getattr(self, "sam_available", False)),
+                    "ollama_available": bool(getattr(self, "ollama_available", False)),
+                    "active_agents": len(getattr(self, "connected_agents", {}) or {}),
+                    "survival_score": getattr(
+                        self.survival_agent, "survival_score", 0.0
+                    )
+                    if self.survival_agent
+                    else 0.0,
+                    "finance": self._collect_finance_summary(),
+                    "kill_switch_enabled": bool(
+                        getattr(self, "kill_switch_enabled", False)
+                    ),
+                    "strict_local_only": bool(
+                        getattr(self, "strict_local_only", False)
+                    ),
+                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
+                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                    "learning_memory_enabled": bool(
+                        getattr(self, "learning_memory_enabled", False)
+                    ),
+                    "distill_enabled": bool(
+                        getattr(self, "distill_dashboard_enabled", False)
+                    ),
+                    "distill_count": int(self.system_metrics.get("distill_count", 0)),
+                    "last_growth_ts": self.system_metrics.get("last_growth_ts"),
+                    "last_growth_primitive": self.system_metrics.get(
+                        "last_growth_primitive"
+                    ),
+                    "last_growth_reason": self.system_metrics.get("last_growth_reason"),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         if getattr(self, "kill_switch_enabled", False):
-            @self.app.route('/api/shutdown', methods=['POST'])
+
+            @self.app.route("/api/shutdown", methods=["POST"])
             def shutdown_system():
                 """Admin-only kill switch (full mode only)"""
                 ok, error = _require_admin_token()
@@ -6938,7 +8332,8 @@ class UnifiedSAMSystem:
                 return jsonify({"status": "shutting_down"})
 
         if getattr(self, "restart_enabled", False):
-            @self.app.route('/api/restart', methods=['POST'])
+
+            @self.app.route("/api/restart", methods=["POST"])
             def restart_system():
                 """Admin-only restart (requires hot-reload runner)."""
                 ok, error = _require_admin_token()
@@ -6952,100 +8347,153 @@ class UnifiedSAMSystem:
                     os._exit(3)
 
                 threading.Thread(target=_do_restart, daemon=True).start()
-                return jsonify({"status": "restarting", "note": "Process will exit and be relaunched by watcher if enabled."})
+                return jsonify(
+                    {
+                        "status": "restarting",
+                        "note": "Process will exit and be relaunched by watcher if enabled.",
+                    }
+                )
 
-        @self.app.route('/api/health')
+        @self.app.route("/api/health")
         def health_check():
             """Lightweight health check"""
-            return jsonify({
-                'status': 'ok',
-                'timestamp': time.time(),
-                'c_core': self.system_metrics.get('c_core_status', 'unknown'),
-                'python_orchestration': self.system_metrics.get('python_orchestration_status', 'unknown'),
-                'web_interface': self.system_metrics.get('web_interface_status', 'unknown'),
-                'sam_available': bool(getattr(self, "sam_available", False)),
-                'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False))
-            })
-                
-        @self.app.route('/api/orchestrator/status')
+            return jsonify(
+                {
+                    "status": "ok",
+                    "timestamp": time.time(),
+                    "c_core": self.system_metrics.get("c_core_status", "unknown"),
+                    "python_orchestration": self.system_metrics.get(
+                        "python_orchestration_status", "unknown"
+                    ),
+                    "web_interface": self.system_metrics.get(
+                        "web_interface_status", "unknown"
+                    ),
+                    "sam_available": bool(getattr(self, "sam_available", False)),
+                    "kill_switch_enabled": bool(
+                        getattr(self, "kill_switch_enabled", False)
+                    ),
+                }
+            )
+
+        @self.app.route("/api/orchestrator/status")
         def orchestrator_status():
             """Multi-agent orchestrator status"""
             if self.orchestrator:
                 status = multi_agent_orchestrator_c.get_status()
-                return jsonify({
-                    'status': 'active',
-                    'type': 'pure_c',
-                    'active_agents': self.system_metrics['active_agents'],
-                    'orchestration_metrics': status
-                })
-            return jsonify({'status': 'inactive'})
+                return jsonify(
+                    {
+                        "status": "active",
+                        "type": "pure_c",
+                        "active_agents": self.system_metrics["active_agents"],
+                        "orchestration_metrics": status,
+                    }
+                )
+            return jsonify({"status": "inactive"})
 
-        @self.app.route('/api/agents/status')
+        @self.app.route("/api/agents/status")
         def agents_status():
             """Specialized agents status"""
             agents_list = []
             for agent_id, agent_config in self.agent_configs.items():
-                agents_list.append({
-                    'id': agent_id,
-                    'name': agent_config['name'],
-                    'type': agent_config['type'],
-                    'provider': agent_config.get('provider', 'unknown'),
-                    'specialty': agent_config.get('specialty', 'unknown'),
-                    'personality': agent_config.get('personality', 'unknown'),
-                    'capabilities': agent_config['capabilities'],
-                    'status': agent_config['status'],
-                    'connection_type': agent_config.get('connection_type', 'unknown')
-                })
-            
-            return jsonify({
-                'status': 'active' if self.specialized_agents else 'inactive',
-                'type': 'unified_system',
-                'agents': agents_list,
-                'total_agents': len(agents_list),
-                'connected_agents': len(self.connected_agents),
-                'prebuilt_models': ['Coherency-v2.1', 'Teacher-v2.1', 'BugFixer-v2.1']
-            })
+                agents_list.append(
+                    {
+                        "id": agent_id,
+                        "name": agent_config["name"],
+                        "type": agent_config["type"],
+                        "provider": agent_config.get("provider", "unknown"),
+                        "specialty": agent_config.get("specialty", "unknown"),
+                        "personality": agent_config.get("personality", "unknown"),
+                        "capabilities": agent_config["capabilities"],
+                        "status": agent_config["status"],
+                        "connection_type": agent_config.get(
+                            "connection_type", "unknown"
+                        ),
+                    }
+                )
 
-        @self.app.route('/api/agent/statuses')
+            return jsonify(
+                {
+                    "status": "active" if self.specialized_agents else "inactive",
+                    "type": "unified_system",
+                    "agents": agents_list,
+                    "total_agents": len(agents_list),
+                    "connected_agents": len(self.connected_agents),
+                    "prebuilt_models": [
+                        "Coherency-v2.1",
+                        "Teacher-v2.1",
+                        "BugFixer-v2.1",
+                    ],
+                }
+            )
+
+        @self.app.route("/api/agent/statuses")
         def get_agent_statuses():
             """Get current status of all agents for UI display"""
             return jsonify(self._get_agent_statuses_internal())
 
-        @self.app.route('/api/survival/status')
+        @self.app.route("/api/survival/status")
         def survival_status():
             """Survival and goal management status"""
-            return jsonify({
-                'survival_agent': 'active' if self.survival_agent else 'inactive',
-                'goal_manager': 'active' if self.goal_manager else 'inactive',
-                'survival_score': getattr(self.survival_agent, 'survival_score', 0.0) if self.survival_agent else 0.0,
-                'pending_goals': len(self.goal_manager.get_pending_tasks()) if self.goal_manager else 0,
-                'completed_goals': len(self.goal_manager.get_completed_tasks()) if self.goal_manager else 0
-            })
+            return jsonify(
+                {
+                    "survival_agent": "active" if self.survival_agent else "inactive",
+                    "goal_manager": "active" if self.goal_manager else "inactive",
+                    "survival_score": getattr(
+                        self.survival_agent, "survival_score", 0.0
+                    )
+                    if self.survival_agent
+                    else 0.0,
+                    "pending_goals": len(self.goal_manager.get_pending_tasks())
+                    if self.goal_manager
+                    else 0,
+                    "completed_goals": len(self.goal_manager.get_completed_tasks())
+                    if self.goal_manager
+                    else 0,
+                }
+            )
 
-        @self.app.route('/api/groupchat/status')
+        @self.app.route("/api/groupchat/status")
         def groupchat_status():
             """Groupchat system status"""
-            return jsonify({
-                'socketio_available': self.socketio_available,
-                'connected_users': len(self.connected_users),
-                'active_rooms': len(self.conversation_rooms),
-                'active_conversations': len(self.active_conversations),
-                'web_search_enabled': self.web_search_enabled
-            })
+            return jsonify(
+                {
+                    "socketio_available": self.socketio_available,
+                    "connected_users": len(self.connected_users),
+                    "active_rooms": len(self.conversation_rooms),
+                    "active_conversations": len(self.active_conversations),
+                    "web_search_enabled": self.web_search_enabled,
+                }
+            )
 
         def _resolve_log_path(kind: str) -> str:
             kind = (kind or "runtime").lower()
             if kind == "human":
-                return _HUMAN_LOG_PATH or os.getenv("SAM_LOG_FILE", "logs/sam_runtime.log")
+                return _HUMAN_LOG_PATH or os.getenv(
+                    "SAM_LOG_FILE", "logs/sam_runtime.log"
+                )
             if kind == "revenue":
-                return str(self.revenue_audit_log) if hasattr(self, "revenue_audit_log") else "logs/revenue_ops_audit.jsonl"
+                return (
+                    str(self.revenue_audit_log)
+                    if hasattr(self, "revenue_audit_log")
+                    else "logs/revenue_ops_audit.jsonl"
+                )
             if kind == "banking":
-                return str(self.banking_audit_log) if hasattr(self, "banking_audit_log") else "logs/banking_audit.jsonl"
+                return (
+                    str(self.banking_audit_log)
+                    if hasattr(self, "banking_audit_log")
+                    else "logs/banking_audit.jsonl"
+                )
             if kind == "distill":
-                return str(getattr(self, "distill_output", "training/distilled/groupchat.jsonl"))
-            return _JSONL_LOG_PATH or os.getenv("SAM_LOG_JSONL", "logs/sam_runtime.jsonl")
+                return str(
+                    getattr(
+                        self, "distill_output", "training/distilled/groupchat.jsonl"
+                    )
+                )
+            return _JSONL_LOG_PATH or os.getenv(
+                "SAM_LOG_JSONL", "logs/sam_runtime.jsonl"
+            )
 
-        @self.app.route('/api/logs/stream')
+        @self.app.route("/api/logs/stream")
         def stream_logs():
             """Stream JSONL logs via Server-Sent Events (SSE)."""
             ok, error = _require_admin_token()
@@ -7061,14 +8509,16 @@ class UnifiedSAMSystem:
                     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
                     if not os.path.exists(path):
                         # emit a bootstrap entry
-                        bootstrap = json.dumps({
-                            "ts": _utc_now(),
-                            "level": "info",
-                            "event": "log_stream_ready",
-                            "message": "Log stream initialized",
-                            "path": path,
-                            "kind": kind,
-                        })
+                        bootstrap = json.dumps(
+                            {
+                                "ts": _utc_now(),
+                                "level": "info",
+                                "event": "log_stream_ready",
+                                "message": "Log stream initialized",
+                                "path": path,
+                                "kind": kind,
+                            }
+                        )
                         yield f"data: {bootstrap}\n\n"
 
                     with open(path, "r", encoding="utf-8") as f:
@@ -7086,17 +8536,21 @@ class UnifiedSAMSystem:
                                 continue
                             yield f"data: {line.strip()}\n\n"
                 except Exception as exc:
-                    err = json.dumps({
-                        "ts": _utc_now(),
-                        "level": "error",
-                        "event": "log_stream_error",
-                        "message": str(exc),
-                    })
+                    err = json.dumps(
+                        {
+                            "ts": _utc_now(),
+                            "level": "error",
+                            "event": "log_stream_error",
+                            "message": str(exc),
+                        }
+                    )
                     yield f"data: {err}\n\n"
 
-            return Response(stream_with_context(generate()), mimetype="text/event-stream")
+            return Response(
+                stream_with_context(generate()), mimetype="text/event-stream"
+            )
 
-        @self.app.route('/api/logs/view')
+        @self.app.route("/api/logs/view")
         def view_logs():
             """Return a moving window + compact summary of the JSONL log."""
             ok, error = _require_admin_token()
@@ -7108,7 +8562,7 @@ class UnifiedSAMSystem:
             path = _resolve_log_path(kind)
             return jsonify(_summarize_jsonl_log(path, window=window))
 
-        @self.app.route('/api/logs/download')
+        @self.app.route("/api/logs/download")
         def download_logs():
             """Download the current log file."""
             kind = request.args.get("kind", "runtime")
@@ -7122,7 +8576,7 @@ class UnifiedSAMSystem:
             filename = os.path.basename(path)
             return send_file(path, as_attachment=True, download_name=filename)
 
-        @self.app.route('/api/learning/memory')
+        @self.app.route("/api/learning/memory")
         def learning_memory():
             """Admin-only view of recent learning memory + distillation counts."""
             ok, error = _require_admin_token()
@@ -7134,66 +8588,112 @@ class UnifiedSAMSystem:
             items = []
             if getattr(self, "learning_memory_enabled", False):
                 items = list(self.learning_memory)[-limit:]
-            return jsonify({
-                "enabled": bool(getattr(self, "learning_memory_enabled", False)),
-                "memory_size": len(getattr(self, "learning_memory", []) or []),
-                "memory_max": int(getattr(self, "learning_memory_max", 0)),
-                "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
-                "distill_count": int(self.system_metrics.get("distill_count", 0)),
-                "items": items,
-            })
+            return jsonify(
+                {
+                    "enabled": bool(getattr(self, "learning_memory_enabled", False)),
+                    "memory_size": len(getattr(self, "learning_memory", []) or []),
+                    "memory_max": int(getattr(self, "learning_memory_max", 0)),
+                    "distill_enabled": bool(
+                        getattr(self, "distill_dashboard_enabled", False)
+                    ),
+                    "distill_count": int(self.system_metrics.get("distill_count", 0)),
+                    "items": items,
+                }
+            )
 
-        @self.app.route('/api/groupchat/rooms')
+        @self.app.route("/api/groupchat/rooms")
         def get_rooms():
             """Get available conversation rooms"""
-            return jsonify({
-                'rooms': list(self.conversation_rooms.keys()),
-                'user_count': len(self.connected_users)
-            })
+            return jsonify(
+                {
+                    "rooms": list(self.conversation_rooms.keys()),
+                    "user_count": len(self.connected_users),
+                }
+            )
 
-        @self.app.route('/api/meta/status')
+        @self.app.route("/api/meta/status")
         def meta_agent_status():
             """Get comprehensive meta-agent status"""
             try:
                 status = {
-                    "status": "ok" if getattr(self, "meta_agent", None) else "uninitialized",
-                    "message": "Meta-agent active" if getattr(self, "meta_agent", None) else "Meta-agent not initialized",
-                    "capabilities": ["code_analysis", "patching", "evolution", "learning", "research"],
+                    "status": "ok"
+                    if getattr(self, "meta_agent", None)
+                    else "uninitialized",
+                    "message": "Meta-agent active"
+                    if getattr(self, "meta_agent", None)
+                    else "Meta-agent not initialized",
+                    "capabilities": [
+                        "code_analysis",
+                        "patching",
+                        "evolution",
+                        "learning",
+                        "research",
+                    ],
                 }
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
-                status["require_meta_agent"] = getattr(self, "require_meta_agent", False)
+                status["require_meta_agent"] = getattr(
+                    self, "require_meta_agent", False
+                )
                 status["env_meta_only_boot"] = os.getenv("SAM_META_ONLY_BOOT")
                 status["env_require_meta_agent"] = os.getenv("SAM_REQUIRE_META_AGENT")
-                status["severity_threshold"] = getattr(self, "meta_agent_min_severity", "medium")
+                status["severity_threshold"] = getattr(
+                    self, "meta_agent_min_severity", "medium"
+                )
                 status["growth"] = {
                     "last_growth_ts": self.system_metrics.get("last_growth_ts"),
-                    "last_growth_primitive": self.system_metrics.get("last_growth_primitive"),
-                    "last_attempt_ts": self.system_metrics.get("last_growth_attempt_ts"),
-                    "last_attempt_primitive": self.system_metrics.get("last_growth_attempt_primitive"),
-                    "last_attempt_result": self.system_metrics.get("last_growth_attempt_result"),
+                    "last_growth_primitive": self.system_metrics.get(
+                        "last_growth_primitive"
+                    ),
+                    "last_attempt_ts": self.system_metrics.get(
+                        "last_growth_attempt_ts"
+                    ),
+                    "last_attempt_primitive": self.system_metrics.get(
+                        "last_growth_attempt_primitive"
+                    ),
+                    "last_attempt_result": self.system_metrics.get(
+                        "last_growth_attempt_result"
+                    ),
                     "last_growth_lambda": self.system_metrics.get("last_growth_lambda"),
-                    "last_growth_signals": self.system_metrics.get("last_growth_signals"),
-                    "last_growth_dominant": self.system_metrics.get("last_growth_dominant"),
-                    "last_growth_signal_ts": self.system_metrics.get("last_growth_signal_ts"),
+                    "last_growth_signals": self.system_metrics.get(
+                        "last_growth_signals"
+                    ),
+                    "last_growth_dominant": self.system_metrics.get(
+                        "last_growth_dominant"
+                    ),
+                    "last_growth_signal_ts": self.system_metrics.get(
+                        "last_growth_signal_ts"
+                    ),
                     "last_growth_reason": self.system_metrics.get("last_growth_reason"),
                     "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
                 }
                 if getattr(self, "meta_agent", None):
                     status["local_meta_agent"] = {
                         "active": bool(getattr(self, "meta_agent_active", False)),
-                        "patch_history": len(getattr(self.meta_agent, "patch_history", []) or []),
-                        "successful_fixes": len(getattr(self.meta_agent, "successful_fixes", []) or []),
-                        "failed_attempts": len(getattr(self.meta_agent, "failed_attempts", []) or []),
-                        "learning_events": len(getattr(self.meta_agent, "learning_log", []) or []),
-                        "distilled_count": len(getattr(self.meta_agent, "distilled_memory", []) or []),
-                        "confidence_threshold": getattr(self.meta_agent, "confidence_threshold", None),
+                        "patch_history": len(
+                            getattr(self.meta_agent, "patch_history", []) or []
+                        ),
+                        "successful_fixes": len(
+                            getattr(self.meta_agent, "successful_fixes", []) or []
+                        ),
+                        "failed_attempts": len(
+                            getattr(self.meta_agent, "failed_attempts", []) or []
+                        ),
+                        "learning_events": len(
+                            getattr(self.meta_agent, "learning_log", []) or []
+                        ),
+                        "distilled_count": len(
+                            getattr(self.meta_agent, "distilled_memory", []) or []
+                        ),
+                        "confidence_threshold": getattr(
+                            self.meta_agent, "confidence_threshold", None
+                        ),
                     }
                 return jsonify(status)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/meta/learning')
+        @self.app.route("/api/meta/learning")
         def meta_learning_state():
             """Get meta-agent learning/distillation state."""
             try:
@@ -7205,7 +8705,7 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/meta/test', methods=['POST'])
+        @self.app.route("/api/meta/test", methods=["POST"])
         def meta_agent_test():
             """Trigger a controlled meta-agent repair test (admin-only)."""
             ok, error = _require_admin_token()
@@ -7234,16 +8734,18 @@ class UnifiedSAMSystem:
                     self.allow_self_modification = False
                 result = self.meta_agent.handle_failure(failure)
                 self.allow_self_modification = original_self_mod
-                return jsonify({
-                    "status": "ok",
-                    "dry_run": dry_run,
-                    "patched": bool(result),
-                    "note": "If patched=true, a harmless attribute may be added to __init__ once.",
-                })
+                return jsonify(
+                    {
+                        "status": "ok",
+                        "dry_run": dry_run,
+                        "patched": bool(result),
+                        "note": "If patched=true, a harmless attribute may be added to __init__ once.",
+                    }
+                )
             except Exception as exc:
                 return jsonify({"error": str(exc)}), 500
 
-        @self.app.route('/api/morpho/state')
+        @self.app.route("/api/morpho/state")
         def morpho_state():
             """Get morphogenetic meta-controller state"""
             try:
@@ -7252,85 +8754,116 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/morpho/update', methods=['POST'])
+        @self.app.route("/api/morpho/update", methods=["POST"])
         def morpho_update():
             """Update morphogenetic pressure signals"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 payload = request.get_json(silent=True) or {}
                 pressures = self._normalize_pressures(payload)
                 lambda_val = sam_meta_controller_c.update_pressure(
                     self.meta_controller,
-                    pressures['residual'],
-                    pressures['rank_def'],
-                    pressures['retrieval_entropy'],
-                    pressures['interference'],
-                    pressures['planner_friction'],
-                    pressures['context_collapse'],
-                    pressures['compression_waste'],
-                    pressures['temporal_incoherence']
+                    pressures["residual"],
+                    pressures["rank_def"],
+                    pressures["retrieval_entropy"],
+                    pressures["interference"],
+                    pressures["planner_friction"],
+                    pressures["context_collapse"],
+                    pressures["compression_waste"],
+                    pressures["temporal_incoherence"],
                 )
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
                 applied = False
                 if primitive:
                     if not self.meta_growth_freeze:
-                        applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
+                        applied = sam_meta_controller_c.apply_primitive(
+                            self.meta_controller, primitive
+                        )
                         if applied:
                             gate_ok = self._run_regression_gate()
-                            sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, bool(gate_ok))
+                            sam_meta_controller_c.record_growth_outcome(
+                                self.meta_controller, primitive, bool(gate_ok)
+                            )
                             if not gate_ok:
                                 applied = False
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
-                return jsonify({
-                    "lambda": lambda_val,
-                    "primitive": int(primitive),
-                    "applied": bool(applied),
-                    "state": self.meta_state
-                })
+                return jsonify(
+                    {
+                        "lambda": lambda_val,
+                        "primitive": int(primitive),
+                        "applied": bool(applied),
+                        "state": self.meta_state,
+                    }
+                )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/meta/stop', methods=['POST'])
+        @self.app.route("/api/meta/stop", methods=["POST"])
         def emergency_stop():
             """Emergency stop meta-agent operations"""
             try:
                 if not getattr(self, "meta_agent", None):
-                    return jsonify({"status": "not_available", "message": "Meta agent not initialized"}), 404
+                    return jsonify(
+                        {
+                            "status": "not_available",
+                            "message": "Meta agent not initialized",
+                        }
+                    ), 404
                 self.meta_agent_active = False
                 self.allow_self_modification = False
                 self.allow_auto_resolution = False
-                log_event("warn", "meta_agent_stop", "Meta-agent emergency stop activated")
-                return jsonify({"status": "stopped", "message": "Meta agent emergency stop activated"})
+                log_event(
+                    "warn", "meta_agent_stop", "Meta-agent emergency stop activated"
+                )
+                return jsonify(
+                    {
+                        "status": "stopped",
+                        "message": "Meta agent emergency stop activated",
+                    }
+                )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/meta/health')
+        @self.app.route("/api/meta/health")
         def meta_health_check():
             """Get meta-agent health analysis"""
             try:
                 agent = getattr(self, "meta_agent", None)
                 if agent is None:
-                    return jsonify({"status": "uninitialized", "message": "Meta agent not initialized"}), 503
+                    return jsonify(
+                        {
+                            "status": "uninitialized",
+                            "message": "Meta agent not initialized",
+                        }
+                    ), 503
                 if hasattr(agent, "analyze_system_health"):
                     health = agent.analyze_system_health()
                     return jsonify(health)
-                return jsonify({
-                    "status": "available",
-                    "components_analyzed": 0,
-                    "note": "Meta agent lacks analyze_system_health; returning minimal status",
-                    "system_metrics": {
-                        "c_core": self.system_metrics.get("c_core_status", "unknown"),
-                        "python_orchestration": self.system_metrics.get("python_orchestration_status", "unknown"),
-                        "web_interface": self.system_metrics.get("web_interface_status", "unknown"),
+                return jsonify(
+                    {
+                        "status": "available",
+                        "components_analyzed": 0,
+                        "note": "Meta agent lacks analyze_system_health; returning minimal status",
+                        "system_metrics": {
+                            "c_core": self.system_metrics.get(
+                                "c_core_status", "unknown"
+                            ),
+                            "python_orchestration": self.system_metrics.get(
+                                "python_orchestration_status", "unknown"
+                            ),
+                            "web_interface": self.system_metrics.get(
+                                "web_interface_status", "unknown"
+                            ),
+                        },
                     }
-                })
+                )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/sav/state')
+        @self.app.route("/api/sav/state")
         def sav_state():
             """Get SAV arena state"""
             try:
@@ -7338,23 +8871,25 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/sav/step', methods=['POST'])
+        @self.app.route("/api/sav/step", methods=["POST"])
         def sav_step():
             """Advance SAV arena"""
             try:
                 payload = request.get_json(silent=True) or {}
-                steps = int(payload.get('steps', 1))
+                steps = int(payload.get("steps", 1))
                 max_steps = int(os.getenv("SAM_SAV_MAX_STEPS", "10000"))
                 if steps < 1:
                     steps = 1
                 if steps > max_steps:
-                    return jsonify({"error": f"steps exceeds limit ({steps} > {max_steps})"}), 400
+                    return jsonify(
+                        {"error": f"steps exceeds limit ({steps} > {max_steps})"}
+                    ), 400
                 sam_sav_dual_system.run(self.sav_arena, steps)
                 return jsonify(sam_sav_dual_system.get_state(self.sav_arena))
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/backup/run', methods=['POST'])
+        @self.app.route("/api/backup/run", methods=["POST"])
         def backup_run():
             """Run an immediate git backup to configured remotes"""
             try:
@@ -7370,63 +8905,67 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/backup/status')
+        @self.app.route("/api/backup/status")
         def backup_status():
             """Get backup configuration and last result"""
-            return jsonify({
-                "enabled": self.backup_enabled,
-                "required": self.backup_required,
-                "primary_remote": self.backup_primary,
-                "secondary_remote": self.backup_secondary,
-                "interval_s": self.backup_interval_s,
-                "auto_commit": self.backup_auto_commit,
-                "commit_prefix": self.backup_commit_prefix,
-                "author_name": self.backup_author_name,
-                "author_email": self.backup_author_email,
-                "last_result": self.backup_last_result,
-            })
+            return jsonify(
+                {
+                    "enabled": self.backup_enabled,
+                    "required": self.backup_required,
+                    "primary_remote": self.backup_primary,
+                    "secondary_remote": self.backup_secondary,
+                    "interval_s": self.backup_interval_s,
+                    "auto_commit": self.backup_auto_commit,
+                    "commit_prefix": self.backup_commit_prefix,
+                    "author_name": self.backup_author_name,
+                    "author_email": self.backup_author_email,
+                    "last_result": self.backup_last_result,
+                }
+            )
 
-        @self.app.route('/api/meta/improvements')
+        @self.app.route("/api/meta/improvements")
         def get_improvements():
             """Get system improvement recommendations"""
             try:
                 agent = getattr(self, "meta_agent", None)
                 if not agent:
-                    return jsonify({"status": "uninitialized", "improvement_phases": []}), 503
+                    return jsonify(
+                        {"status": "uninitialized", "improvement_phases": []}
+                    ), 503
                 improvements = agent.generate_system_improvements()
                 return jsonify(improvements)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/concurrent/status')
+        @self.app.route("/api/concurrent/status")
         def concurrent_status():
             """Get concurrent executor status"""
             try:
                 if concurrent_available:
                     stats = task_executor.get_executor_stats()
                     task_stats = task_executor.get_task_stats()
-                    return jsonify({
-                        "executor": stats,
-                        "tasks": task_stats,
-                        "available": True
-                    })
+                    return jsonify(
+                        {"executor": stats, "tasks": task_stats, "available": True}
+                    )
                 else:
-                    return jsonify({
-                        "available": False,
-                        "message": "Concurrent executor not available"
-                    })
+                    return jsonify(
+                        {
+                            "available": False,
+                            "message": "Concurrent executor not available",
+                        }
+                    )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/web/search', methods=['POST'])
+        @self.app.route("/api/web/search", methods=["POST"])
         def web_search():
             """Web search endpoint using SAM's dedicated Google account"""
             try:
                 data = request.get_json()
-                query = data.get('query', '')
+                query = data.get("query", "")
 
                 if not query:
-                    return jsonify({'error': 'No search query provided'}), 400
+                    return jsonify({"error": "No search query provided"}), 400
 
                 # Use SAM's dedicated web search with Google Drive integration
                 if sam_web_search_available:
@@ -7436,32 +8975,43 @@ class UnifiedSAMSystem:
                     # Fallback to C library research agent
                     result = self._call_c_agent("research", f"Web search: {query}")
                     if not result:
-                        return jsonify({
-                            'query': query,
-                            'results': [{'content': 'C research disabled or unavailable.', 'source': 'fallback'}],
-                            'source': 'sam_fallback_research',
-                            'timestamp': datetime.now().isoformat(),
-                            'warning': 'Fallback research unavailable'
-                        })
+                        return jsonify(
+                            {
+                                "query": query,
+                                "results": [
+                                    {
+                                        "content": "C research disabled or unavailable.",
+                                        "source": "fallback",
+                                    }
+                                ],
+                                "source": "sam_fallback_research",
+                                "timestamp": datetime.now().isoformat(),
+                                "warning": "Fallback research unavailable",
+                            }
+                        )
 
-                    return jsonify({
-                        'query': query,
-                        'results': [{'content': result, 'source': 'fallback_c_agent'}],
-                        'source': 'sam_fallback_research',
-                        'timestamp': datetime.now().isoformat(),
-                        'warning': 'Using fallback search - dedicated search not available'
-                    })
+                    return jsonify(
+                        {
+                            "query": query,
+                            "results": [
+                                {"content": result, "source": "fallback_c_agent"}
+                            ],
+                            "source": "sam_fallback_research",
+                            "timestamp": datetime.now().isoformat(),
+                            "warning": "Using fallback search - dedicated search not available",
+                        }
+                    )
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/chatbot', methods=['POST'])
+        @self.app.route("/api/chatbot", methods=["POST"])
         def chatbot_endpoint():
             """Unified chatbot interface integrating SAM capabilities"""
             try:
                 data = request.get_json()
-                user_message = data.get('message', '')
-                context = data.get('context', {})
+                user_message = data.get("message", "")
+                context = data.get("context", {})
 
                 msg_lower = (user_message or "").strip().lower()
                 if msg_lower.startswith("/"):
@@ -7473,43 +9023,58 @@ class UnifiedSAMSystem:
                         "/schedule-email",
                         "/system-report",
                     )
-                    if msg_lower.startswith(sensitive_prefixes) or msg_lower.startswith("/revenue approve") or msg_lower.startswith("/revenue reject") or msg_lower.startswith("/revenue submit"):
+                    if (
+                        msg_lower.startswith(sensitive_prefixes)
+                        or msg_lower.startswith("/revenue approve")
+                        or msg_lower.startswith("/revenue reject")
+                        or msg_lower.startswith("/revenue submit")
+                    ):
                         ok, error = _require_admin_token()
                         if not ok:
                             message, status = error
-                            return jsonify({'error': message}), status
+                            return jsonify({"error": message}), status
 
                 # Process through SAM system
                 response = self._process_chatbot_message(user_message, context)
                 messages = self._parse_agent_messages(response)
 
-                return jsonify({
-                    'message': response,
-                    'response': response,
-                    'messages': messages,
-                    'multi_agent': len(messages) > 1,
-                    'timestamp': datetime.now().isoformat(),
-                    'sam_integration': True
-                })
+                return jsonify(
+                    {
+                        "message": response,
+                        "response": response,
+                        "messages": messages,
+                        "multi_agent": len(messages) > 1,
+                        "timestamp": datetime.now().isoformat(),
+                        "sam_integration": True,
+                    }
+                )
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/chat', methods=['POST'])
+        @self.app.route("/api/chat", methods=["POST"])
         def chat_alias():
             """Compatibility alias for chatbot endpoint."""
             return chatbot_endpoint()
 
-        @self.app.route('/api/chat/config', methods=['GET', 'POST'])
+        @self.app.route("/api/chat/config", methods=["GET", "POST"])
         def chat_config():
             """Get or update chat settings (admin-only for updates)."""
-            if request.method == 'GET':
-                return jsonify({
-                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", True)),
-                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
-                    "learning_memory_enabled": bool(getattr(self, "learning_memory_enabled", False)),
-                    "distill_enabled": bool(getattr(self, "distill_dashboard_enabled", False)),
-                })
+            if request.method == "GET":
+                return jsonify(
+                    {
+                        "chat_multi_agent": bool(
+                            getattr(self, "chat_multi_agent", True)
+                        ),
+                        "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                        "learning_memory_enabled": bool(
+                            getattr(self, "learning_memory_enabled", False)
+                        ),
+                        "distill_enabled": bool(
+                            getattr(self, "distill_dashboard_enabled", False)
+                        ),
+                    }
+                )
             ok, error = _require_admin_token()
             if not ok:
                 message, status = error
@@ -7522,184 +9087,202 @@ class UnifiedSAMSystem:
                     self.chat_agents_max = max(1, int(data.get("chat_agents_max")))
                 except Exception:
                     pass
-            log_event("info", "chat_config_update", "Chat config updated", chat_multi_agent=self.chat_multi_agent, chat_agents_max=self.chat_agents_max)
-            return jsonify({
-                "chat_multi_agent": bool(self.chat_multi_agent),
-                "chat_agents_max": int(self.chat_agents_max),
-                "updated": True
-            })
+            log_event(
+                "info",
+                "chat_config_update",
+                "Chat config updated",
+                chat_multi_agent=self.chat_multi_agent,
+                chat_agents_max=self.chat_agents_max,
+            )
+            return jsonify(
+                {
+                    "chat_multi_agent": bool(self.chat_multi_agent),
+                    "chat_agents_max": int(self.chat_agents_max),
+                    "updated": True,
+                }
+            )
 
-        @self.app.route('/api/google-drive/status')
+        @self.app.route("/api/google-drive/status")
         def google_drive_status():
             """Google Drive integration status"""
             if self.google_drive and self.google_drive_available:
                 info = self.google_drive.get_drive_info()
-                return jsonify({
-                    'status': 'active',
-                    'account': info.get('email', 'unknown') if info else 'unknown',
-                    'storage': info.get('quota', {}) if info else {},
-                    'folder_id': self.google_drive.sam_folder_id
-                })
-            return jsonify({'status': 'inactive'})
+                return jsonify(
+                    {
+                        "status": "active",
+                        "account": info.get("email", "unknown") if info else "unknown",
+                        "storage": info.get("quota", {}) if info else {},
+                        "folder_id": self.google_drive.sam_folder_id,
+                    }
+                )
+            return jsonify({"status": "inactive"})
 
-        @self.app.route('/api/google-drive/files')
+        @self.app.route("/api/google-drive/files")
         def google_drive_files():
             """List files in Google Drive"""
             if not self.google_drive or not self.google_drive_available:
-                return jsonify({'error': 'Google Drive not available'}), 503
+                return jsonify({"error": "Google Drive not available"}), 503
 
             try:
                 files = self.google_drive.list_files()
-                return jsonify({'files': files})
+                return jsonify({"files": files})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/google-drive/backup', methods=['POST'])
+        @self.app.route("/api/google-drive/backup", methods=["POST"])
         def google_drive_backup():
             """Perform SAM data backup to Google Drive"""
             if not self.google_drive or not self.google_drive_available:
-                return jsonify({'error': 'Google Drive not available'}), 503
+                return jsonify({"error": "Google Drive not available"}), 503
 
             try:
                 success = self.google_drive.backup_sam_data()
-                return jsonify({'success': success})
+                return jsonify({"success": success})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/code/modify', methods=['POST'])
+        @self.app.route("/api/code/modify", methods=["POST"])
         def modify_code():
             """Safe code modification endpoint"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 data = request.get_json()
-                filepath = data.get('filepath', '')
-                old_code = data.get('old_code', '')
-                new_code = data.get('new_code', '')
-                description = data.get('description', '')
+                filepath = data.get("filepath", "")
+                old_code = data.get("old_code", "")
+                new_code = data.get("new_code", "")
+                description = data.get("description", "")
 
                 if not filepath or not old_code or not new_code:
-                    return jsonify({'error': 'Missing required parameters'}), 400
+                    return jsonify({"error": "Missing required parameters"}), 400
 
                 try:
                     target_path = _resolve_repo_path(filepath)
                 except Exception as exc:
-                    return jsonify({'error': str(exc)}), 400
+                    return jsonify({"error": str(exc)}), 400
                 if not target_path.exists() or not target_path.is_file():
-                    return jsonify({'error': 'Target file not found'}), 404
+                    return jsonify({"error": "Target file not found"}), 404
 
                 if not sam_code_modifier_available:
-                    return jsonify({'error': 'Code modification system not available'}), 503
+                    return jsonify(
+                        {"error": "Code modification system not available"}
+                    ), 503
 
-                result = modify_code_safely(str(target_path), old_code, new_code, description)
+                result = modify_code_safely(
+                    str(target_path), old_code, new_code, description
+                )
                 return jsonify(result)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/code/analyze')
+        @self.app.route("/api/code/analyze")
         def analyze_code():
             """Codebase analysis endpoint"""
             try:
                 if not sam_code_modifier_available:
-                    return jsonify({'error': 'Code analysis system not available'}), 503
+                    return jsonify({"error": "Code analysis system not available"}), 503
 
                 analysis = analyze_codebase()
                 return jsonify(analysis)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/code/history')
+        @self.app.route("/api/code/history")
         def code_modification_history():
             """Get code modification history"""
             try:
                 if not sam_code_modifier_available:
-                    return jsonify({'error': 'Code modification system not available'}), 503
+                    return jsonify(
+                        {"error": "Code modification system not available"}
+                    ), 503
 
                 # Get modification history
                 analysis = analyze_codebase()
-                return jsonify({'modification_history': analysis.get('modification_history', [])})
+                return jsonify(
+                    {"modification_history": analysis.get("modification_history", [])}
+                )
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/gmail/send', methods=['POST'])
+        @self.app.route("/api/gmail/send", methods=["POST"])
         def send_email():
             """Send email using SAM's Gmail account"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 data = request.get_json()
-                to_email = data.get('to_email', '')
-                subject = data.get('subject', '')
-                body = data.get('body', '')
-                attachments = data.get('attachments', [])
-                priority = data.get('priority', 'normal')
+                to_email = data.get("to_email", "")
+                subject = data.get("subject", "")
+                body = data.get("body", "")
+                attachments = data.get("attachments", [])
+                priority = data.get("priority", "normal")
 
                 if not to_email or not subject or not body:
-                    return jsonify({'error': 'Missing required fields'}), 400
+                    return jsonify({"error": "Missing required fields"}), 400
 
                 if not sam_gmail_available:
-                    return jsonify({'error': 'Gmail integration not available'}), 503
+                    return jsonify({"error": "Gmail integration not available"}), 503
 
                 result = send_sam_email(to_email, subject, body, attachments)
                 return jsonify(result)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/gmail/schedule', methods=['POST'])
+        @self.app.route("/api/gmail/schedule", methods=["POST"])
         def schedule_email():
             """Schedule email using SAM's Gmail account"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 data = request.get_json()
-                to_email = data.get('to_email', '')
-                subject = data.get('subject', '')
-                body = data.get('body', '')
-                send_time = data.get('send_time', '')
+                to_email = data.get("to_email", "")
+                subject = data.get("subject", "")
+                body = data.get("body", "")
+                send_time = data.get("send_time", "")
 
                 if not to_email or not subject or not body or not send_time:
-                    return jsonify({'error': 'Missing required fields'}), 400
+                    return jsonify({"error": "Missing required fields"}), 400
 
                 if not sam_gmail_available:
-                    return jsonify({'error': 'Gmail integration not available'}), 503
+                    return jsonify({"error": "Gmail integration not available"}), 503
 
                 result = schedule_sam_email(to_email, subject, body, send_time)
                 return jsonify(result)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/gmail/report', methods=['POST'])
+        @self.app.route("/api/gmail/report", methods=["POST"])
         def send_system_report():
             """Send system report via email"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 data = request.get_json()
-                recipient = data.get('recipient', '')
-                report_type = data.get('report_type', 'daily')
+                recipient = data.get("recipient", "")
+                report_type = data.get("report_type", "daily")
 
                 if not recipient:
-                    return jsonify({'error': 'Recipient email required'}), 400
+                    return jsonify({"error": "Recipient email required"}), 400
 
                 if not sam_gmail_available:
-                    return jsonify({'error': 'Gmail integration not available'}), 503
+                    return jsonify({"error": "Gmail integration not available"}), 503
 
                 # Send report using global Gmail instance
                 global sam_gmail
@@ -7707,403 +9290,433 @@ class UnifiedSAMSystem:
                     result = sam_gmail.send_system_report(recipient, report_type)
                     return jsonify(result)
                 else:
-                    return jsonify({'error': 'Gmail not initialized'}), 503
+                    return jsonify({"error": "Gmail not initialized"}), 503
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/gmail/scheduled')
+        @self.app.route("/api/gmail/scheduled")
         def get_scheduled_emails():
             """Get list of scheduled emails"""
             try:
                 if not sam_gmail_available:
-                    return jsonify({'error': 'Gmail integration not available'}), 503
+                    return jsonify({"error": "Gmail integration not available"}), 503
 
                 global sam_gmail
                 if sam_gmail:
                     scheduled = sam_gmail.get_scheduled_emails()
-                    return jsonify({'scheduled_emails': scheduled})
+                    return jsonify({"scheduled_emails": scheduled})
                 else:
-                    return jsonify({'scheduled_emails': []})
+                    return jsonify({"scheduled_emails": []})
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/action', methods=['POST'])
+        @self.app.route("/api/revenue/action", methods=["POST"])
         def revenue_submit_action():
             """Submit a revenue action (approval required)."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                action_type = data.get('action_type')
-                payload = data.get('payload', {})
-                requested_by = data.get('requested_by', 'api')
-                requires_approval = bool(data.get('requires_approval', True))
+                action_type = data.get("action_type")
+                payload = data.get("payload", {})
+                requested_by = data.get("requested_by", "api")
+                requires_approval = bool(data.get("requires_approval", True))
                 if not action_type:
-                    return jsonify({'error': 'action_type required'}), 400
+                    return jsonify({"error": "action_type required"}), 400
                 action = self.revenue_ops.submit_action(
                     action_type=action_type,
                     payload=payload,
                     requested_by=requested_by,
                     requires_approval=requires_approval,
                 )
-                return jsonify({'action': action.__dict__})
+                return jsonify({"action": action.__dict__})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/queue')
+        @self.app.route("/api/revenue/queue")
         def revenue_queue():
             """List revenue actions."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
-                status = request.args.get('status')
-                return jsonify({'actions': self.revenue_ops.list_actions(status=status)})
+                    return jsonify({"error": "Revenue ops not available"}), 503
+                status = request.args.get("status")
+                return jsonify(
+                    {"actions": self.revenue_ops.list_actions(status=status)}
+                )
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/approve', methods=['POST'])
+        @self.app.route("/api/revenue/approve", methods=["POST"])
         def revenue_approve():
             """Approve a revenue action and execute."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                action_id = data.get('action_id')
-                approver = data.get('approver', 'operator')
-                auto_execute = bool(data.get('auto_execute', True))
+                action_id = data.get("action_id")
+                approver = data.get("approver", "operator")
+                auto_execute = bool(data.get("auto_execute", True))
                 if not action_id:
-                    return jsonify({'error': 'action_id required'}), 400
-                result = self.revenue_ops.approve_action(action_id, approver, auto_execute=auto_execute)
-                return jsonify({'result': result})
+                    return jsonify({"error": "action_id required"}), 400
+                result = self.revenue_ops.approve_action(
+                    action_id, approver, auto_execute=auto_execute
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/reject', methods=['POST'])
+        @self.app.route("/api/revenue/reject", methods=["POST"])
         def revenue_reject():
             """Reject a revenue action."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                action_id = data.get('action_id')
-                approver = data.get('approver', 'operator')
-                reason = data.get('reason')
+                action_id = data.get("action_id")
+                approver = data.get("approver", "operator")
+                reason = data.get("reason")
                 if not action_id:
-                    return jsonify({'error': 'action_id required'}), 400
-                result = self.revenue_ops.reject_action(action_id, approver, reason=reason)
-                return jsonify({'result': result})
+                    return jsonify({"error": "action_id required"}), 400
+                result = self.revenue_ops.reject_action(
+                    action_id, approver, reason=reason
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/execute', methods=['POST'])
+        @self.app.route("/api/revenue/execute", methods=["POST"])
         def revenue_execute():
             """Execute a revenue action explicitly."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                action_id = data.get('action_id')
-                actor = data.get('actor', 'operator')
+                action_id = data.get("action_id")
+                actor = data.get("actor", "operator")
                 if not action_id:
-                    return jsonify({'error': 'action_id required'}), 400
+                    return jsonify({"error": "action_id required"}), 400
                 result = self.revenue_ops.execute_action(action_id, actor)
-                return jsonify({'result': result})
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/leads')
+        @self.app.route("/api/revenue/leads")
         def revenue_leads():
             """CRM snapshot."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_crm_snapshot())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/sequences')
+        @self.app.route("/api/revenue/sequences")
         def revenue_sequences():
             """Email sequences snapshot."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 snapshot = self.revenue_ops.get_sequence_snapshot()
-                status_filter = request.args.get('status')
+                status_filter = request.args.get("status")
                 if status_filter:
-                    snapshot['runs'] = [r for r in snapshot.get('runs', []) if r.get('status') == status_filter]
+                    snapshot["runs"] = [
+                        r
+                        for r in snapshot.get("runs", [])
+                        if r.get("status") == status_filter
+                    ]
                 return jsonify(snapshot)
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/invoices')
+        @self.app.route("/api/revenue/invoices")
         def revenue_invoices():
             """Invoices snapshot."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_invoice_snapshot())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/metrics')
+        @self.app.route("/api/revenue/metrics")
         def revenue_metrics():
             """Revenue financial summary."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_financial_metrics())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/audit')
+        @self.app.route("/api/revenue/audit")
         def revenue_audit():
             """Tail of revenue audit log."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
-                limit = int(request.args.get('limit', '50'))
+                    return jsonify({"error": "Revenue ops not available"}), 503
+                limit = int(request.args.get("limit", "50"))
                 if not self.revenue_audit_log.exists():
-                    return jsonify({'entries': []})
-                lines = self.revenue_audit_log.read_text(encoding='utf-8').splitlines()
+                    return jsonify({"entries": []})
+                lines = self.revenue_audit_log.read_text(encoding="utf-8").splitlines()
                 entries = [json.loads(l) for l in lines[-limit:] if l.strip()]
-                return jsonify({'entries': entries})
+                return jsonify({"entries": entries})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/crm/export')
+        @self.app.route("/api/revenue/crm/export")
         def revenue_crm_export():
             """Export CRM leads as CSV."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 csv_text = self.revenue_ops.export_leads_csv()
                 return Response(
                     csv_text,
                     mimetype="text/csv",
-                    headers={"Content-Disposition": "attachment; filename=crm_leads.csv"},
+                    headers={
+                        "Content-Disposition": "attachment; filename=crm_leads.csv"
+                    },
                 )
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/crm/import', methods=['POST'])
+        @self.app.route("/api/revenue/crm/import", methods=["POST"])
         def revenue_crm_import():
             """Import CRM leads from CSV content."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                csv_text = data.get('csv', '')
+                csv_text = data.get("csv", "")
                 if not csv_text:
-                    return jsonify({'error': 'csv field required'}), 400
+                    return jsonify({"error": "csv field required"}), 400
                 result = self.revenue_ops.import_leads_csv(csv_text)
-                return jsonify({'result': result})
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/invoice/html', methods=['POST'])
+        @self.app.route("/api/revenue/invoice/html", methods=["POST"])
         def revenue_invoice_html():
             """Generate invoice HTML."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                invoice_id = data.get('invoice_id')
-                payload = data.get('payload')
-                result = self.revenue_ops.generate_invoice_html(invoice_id=invoice_id, payload=payload)
-                return jsonify({'result': result})
+                invoice_id = data.get("invoice_id")
+                payload = data.get("payload")
+                result = self.revenue_ops.generate_invoice_html(
+                    invoice_id=invoice_id, payload=payload
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/invoice/html')
+        @self.app.route("/api/revenue/invoice/html")
         def revenue_invoice_html_get():
             """Download invoice HTML."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
-                invoice_id = request.args.get('invoice_id')
-                result = self.revenue_ops.generate_invoice_html(invoice_id=invoice_id, payload=None)
-                return Response(result['html'], mimetype="text/html")
+                    return jsonify({"error": "Revenue ops not available"}), 503
+                invoice_id = request.args.get("invoice_id")
+                result = self.revenue_ops.generate_invoice_html(
+                    invoice_id=invoice_id, payload=None
+                )
+                return Response(result["html"], mimetype="text/html")
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/invoice/pdf', methods=['POST'])
+        @self.app.route("/api/revenue/invoice/pdf", methods=["POST"])
         def revenue_invoice_pdf():
             """Generate invoice PDF."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
-                invoice_id = data.get('invoice_id')
-                payload = data.get('payload')
-                result = self.revenue_ops.generate_invoice_pdf(invoice_id=invoice_id, payload=payload)
-                return jsonify({'result': result})
+                invoice_id = data.get("invoice_id")
+                payload = data.get("payload")
+                result = self.revenue_ops.generate_invoice_pdf(
+                    invoice_id=invoice_id, payload=payload
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/invoice/pdf')
+        @self.app.route("/api/revenue/invoice/pdf")
         def revenue_invoice_pdf_get():
             """Download invoice PDF."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
-                invoice_id = request.args.get('invoice_id')
-                download = request.args.get('download') == '1'
-                result = self.revenue_ops.generate_invoice_pdf(invoice_id=invoice_id, payload=None)
-                return send_file(result['pdf_path'], mimetype="application/pdf", as_attachment=download)
+                    return jsonify({"error": "Revenue ops not available"}), 503
+                invoice_id = request.args.get("invoice_id")
+                download = request.args.get("download") == "1"
+                result = self.revenue_ops.generate_invoice_pdf(
+                    invoice_id=invoice_id, payload=None
+                )
+                return send_file(
+                    result["pdf_path"],
+                    mimetype="application/pdf",
+                    as_attachment=download,
+                )
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/playbooks')
+        @self.app.route("/api/revenue/playbooks")
         def revenue_playbooks():
             """Get revenue ops playbook templates."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_playbook_templates())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/revenue/playbooks/import', methods=['POST'])
+        @self.app.route("/api/revenue/playbooks/import", methods=["POST"])
         def revenue_playbooks_import():
             """Import playbook templates into CRM/sequences."""
             try:
                 if not self.revenue_ops:
-                    return jsonify({'error': 'Revenue ops not available'}), 503
+                    return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json() or {}
-                create_sequences = bool(data.get('create_sequences', True))
-                create_leads = bool(data.get('create_leads', True))
-                limit_leads = int(data.get('limit_leads', 1))
+                create_sequences = bool(data.get("create_sequences", True))
+                create_leads = bool(data.get("create_leads", True))
+                limit_leads = int(data.get("limit_leads", 1))
                 result = self.revenue_ops.import_playbooks(
                     create_sequences=create_sequences,
                     create_leads=create_leads,
                     limit_leads=limit_leads,
                 )
-                return jsonify({'result': result})
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/status')
+        @self.app.route("/api/banking/status")
         def banking_status():
             """Sandbox banking snapshot."""
             try:
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 return jsonify(self.banking_ledger.get_snapshot())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/metrics')
+        @self.app.route("/api/banking/metrics")
         def banking_metrics():
             """Banking financial summary."""
             try:
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 return jsonify(self.banking_ledger.get_metrics())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/finance/summary')
+        @self.app.route("/api/finance/summary")
         def finance_summary():
             """Combined finance summary (revenue + banking)."""
             try:
                 return jsonify(self._collect_finance_summary())
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/finance/config', methods=['GET', 'POST'])
+        @self.app.route("/api/finance/config", methods=["GET", "POST"])
         def finance_config():
             """Get or set finance snapshot interval."""
             try:
-                if request.method == 'GET':
-                    return jsonify({
-                        "interval_s": getattr(self, "finance_log_interval_s", 0),
-                    })
+                if request.method == "GET":
+                    return jsonify(
+                        {
+                            "interval_s": getattr(self, "finance_log_interval_s", 0),
+                        }
+                    )
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 data = request.get_json() or {}
                 interval = float(data.get("interval_s", 0))
                 if interval < 0:
-                    return jsonify({'error': 'interval_s must be >= 0'}), 400
+                    return jsonify({"error": "interval_s must be >= 0"}), 400
                 self.finance_log_interval_s = interval
                 return jsonify({"interval_s": self.finance_log_interval_s})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/accounts')
+        @self.app.route("/api/banking/accounts")
         def banking_accounts():
             """List sandbox accounts."""
             try:
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
-                return jsonify({'accounts': self.banking_ledger.list_accounts()})
+                    return jsonify({"error": "Banking sandbox not available"}), 503
+                return jsonify({"accounts": self.banking_ledger.list_accounts()})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/account', methods=['POST'])
+        @self.app.route("/api/banking/account", methods=["POST"])
         def banking_create_account():
             """Create sandbox account."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
-                name = data.get('name')
-                initial_balance = float(data.get('initial_balance', 0.0))
-                currency = data.get('currency', 'USD')
-                account = self.banking_ledger.create_account(name, initial_balance, currency)
-                return jsonify({'account': account})
+                name = data.get("name")
+                initial_balance = float(data.get("initial_balance", 0.0))
+                currency = data.get("currency", "USD")
+                account = self.banking_ledger.create_account(
+                    name, initial_balance, currency
+                )
+                return jsonify({"account": account})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/requests')
+        @self.app.route("/api/banking/requests")
         def banking_requests():
             """List spend requests."""
             try:
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
-                status = request.args.get('status')
-                return jsonify({'requests': self.banking_ledger.list_requests(status=status)})
+                    return jsonify({"error": "Banking sandbox not available"}), 503
+                status = request.args.get("status")
+                return jsonify(
+                    {"requests": self.banking_ledger.list_requests(status=status)}
+                )
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/spend', methods=['POST'])
+        @self.app.route("/api/banking/spend", methods=["POST"])
         def banking_spend_request():
             """Submit a spend request (approval required)."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
-                account_id = data.get('account_id')
-                amount = float(data.get('amount', 0))
-                memo = data.get('memo', '')
-                requested_by = data.get('requested_by', 'api')
-                requires_approval = bool(data.get('requires_approval', True))
+                account_id = data.get("account_id")
+                amount = float(data.get("amount", 0))
+                memo = data.get("memo", "")
+                requested_by = data.get("requested_by", "api")
+                requires_approval = bool(data.get("requires_approval", True))
                 req = self.banking_ledger.request_spend(
                     account_id=account_id,
                     amount=amount,
@@ -8111,143 +9724,147 @@ class UnifiedSAMSystem:
                     requested_by=requested_by,
                     requires_approval=requires_approval,
                 )
-                return jsonify({'request': req.__dict__})
+                return jsonify({"request": req.__dict__})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/approve', methods=['POST'])
+        @self.app.route("/api/banking/approve", methods=["POST"])
         def banking_approve_request():
             """Approve a spend request."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
-                request_id = data.get('request_id')
-                approver = data.get('approver', 'operator')
-                auto_execute = bool(data.get('auto_execute', True))
+                request_id = data.get("request_id")
+                approver = data.get("approver", "operator")
+                auto_execute = bool(data.get("auto_execute", True))
                 if not request_id:
-                    return jsonify({'error': 'request_id required'}), 400
-                result = self.banking_ledger.approve_request(request_id, approver, auto_execute=auto_execute)
-                return jsonify({'result': result})
+                    return jsonify({"error": "request_id required"}), 400
+                result = self.banking_ledger.approve_request(
+                    request_id, approver, auto_execute=auto_execute
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/reject', methods=['POST'])
+        @self.app.route("/api/banking/reject", methods=["POST"])
         def banking_reject_request():
             """Reject a spend request."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
-                request_id = data.get('request_id')
-                approver = data.get('approver', 'operator')
-                reason = data.get('reason')
+                request_id = data.get("request_id")
+                approver = data.get("approver", "operator")
+                reason = data.get("reason")
                 if not request_id:
-                    return jsonify({'error': 'request_id required'}), 400
-                result = self.banking_ledger.reject_request(request_id, approver, reason=reason)
-                return jsonify({'result': result})
+                    return jsonify({"error": "request_id required"}), 400
+                result = self.banking_ledger.reject_request(
+                    request_id, approver, reason=reason
+                )
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/execute', methods=['POST'])
+        @self.app.route("/api/banking/execute", methods=["POST"])
         def banking_execute_request():
             """Execute a spend request explicitly."""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
+                    return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
-                request_id = data.get('request_id')
-                actor = data.get('actor', 'operator')
+                request_id = data.get("request_id")
+                actor = data.get("actor", "operator")
                 if not request_id:
-                    return jsonify({'error': 'request_id required'}), 400
+                    return jsonify({"error": "request_id required"}), 400
                 result = self.banking_ledger.execute_request(request_id, actor)
-                return jsonify({'result': result})
+                return jsonify({"result": result})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/banking/audit')
+        @self.app.route("/api/banking/audit")
         def banking_audit():
             """Tail of banking audit log."""
             try:
                 if not self.banking_ledger:
-                    return jsonify({'error': 'Banking sandbox not available'}), 503
-                limit = int(request.args.get('limit', '50'))
+                    return jsonify({"error": "Banking sandbox not available"}), 503
+                limit = int(request.args.get("limit", "50"))
                 if not self.banking_audit_log.exists():
-                    return jsonify({'entries': []})
-                lines = self.banking_audit_log.read_text(encoding='utf-8').splitlines()
+                    return jsonify({"entries": []})
+                lines = self.banking_audit_log.read_text(encoding="utf-8").splitlines()
                 entries = [json.loads(l) for l in lines[-limit:] if l.strip()]
-                return jsonify({'entries': entries})
+                return jsonify({"entries": entries})
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/github/save', methods=['POST'])
+        @self.app.route("/api/github/save", methods=["POST"])
         def save_to_github():
             """Save SAM system to GitHub"""
             try:
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
-                    return jsonify({'error': message}), status
+                    return jsonify({"error": message}), status
 
                 data = request.get_json()
-                commit_message = data.get('commit_message', None)
+                commit_message = data.get("commit_message", None)
 
                 if not sam_github_available:
-                    return jsonify({'error': 'GitHub integration not available'}), 503
+                    return jsonify({"error": "GitHub integration not available"}), 503
 
                 result = self._save_sam_to_github(commit_message)
                 return jsonify(result)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/github/test')
+        @self.app.route("/api/github/test")
         def test_github():
             """Test GitHub connection"""
             try:
                 if not sam_github_available:
-                    return jsonify({'error': 'GitHub integration not available'}), 503
+                    return jsonify({"error": "GitHub integration not available"}), 503
 
                 result = test_github_connection()
                 return jsonify(result)
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/api/github/commits')
+        @self.app.route("/api/github/commits")
         def get_github_commits():
             """Get recent GitHub commits"""
             try:
                 if not sam_github_available:
-                    return jsonify({'error': 'GitHub integration not available'}), 503
+                    return jsonify({"error": "GitHub integration not available"}), 503
 
                 # Get commits using global instance
                 global sam_github
                 if sam_github:
                     commits = sam_github.get_recent_commits()
-                    return jsonify({'commits': commits})
+                    return jsonify({"commits": commits})
                 else:
-                    return jsonify({'commits': []})
+                    return jsonify({"commits": []})
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/terminal')
+        @self.app.route("/terminal")
         def terminal():
             """SAM Interactive Terminal Interface"""
-            return render_template_string('''
+            return render_template_string("""
 <!DOCTYPE html>
 <html>
 <head>
@@ -8503,30 +10120,32 @@ sam@terminal:~$
     </script>
 </body>
 </html>
-            ''')
+            """)
 
-        @self.app.route('/api/terminal/execute', methods=['POST'])
+        @self.app.route("/api/terminal/execute", methods=["POST"])
         def execute_terminal_command():
             """Execute terminal commands"""
             try:
                 data = request.get_json()
-                command = data.get('command', '').strip()
+                command = data.get("command", "").strip()
 
                 if not command:
-                    return jsonify({'error': 'No command provided'}), 400
+                    return jsonify({"error": "No command provided"}), 400
 
                 # Execute command (simplified version for demo)
                 result = self._execute_terminal_command(command)
 
-                return jsonify({
-                    'success': True,
-                    'command': command,
-                    'output': result,
-                    'timestamp': datetime.now().isoformat()
-                })
+                return jsonify(
+                    {
+                        "success": True,
+                        "command": command,
+                        "output": result,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({"error": str(e)}), 500
 
     def _execute_terminal_command(self, command):
         """Execute terminal command (simplified implementation)"""
@@ -8536,15 +10155,15 @@ sam@terminal:~$
             args = parts[1:]
 
             # Basic command implementations
-            if cmd == 'ls':
+            if cmd == "ls":
                 return "📁 Directory listing\\n• complete_sam_unified.py\\n• main.py\\n• requirements.txt\\n• run_sam.sh\\n• README.md\\n• venv/\\n• DOCS/"
-            elif cmd == 'pwd':
+            elif cmd == "pwd":
                 return "/NN_C"
-            elif cmd == 'status':
+            elif cmd == "status":
                 return "📊 System Status: Active\\n• Health: Excellent\\n• Agents: 7 connected\\n• Memory: 45% used"
-            elif cmd == 'agents':
+            elif cmd == "agents":
                 return "🤖 Connected Agents:\\n• SAM-Alpha\\n• SAM-Beta\\n• Researcher\\n• CodeWriter\\n• Financial Analyst\\n• Survival Agent\\n• Meta Agent"
-            elif cmd == 'help':
+            elif cmd == "help":
                 return "SAM Terminal Help\\n\\nAvailable commands: ls, pwd, status, agents, help\\nFull terminal available at /terminal"
             else:
                 return f"Command '{cmd}' not implemented in demo mode. Use 'help' for available commands."
@@ -8555,29 +10174,38 @@ sam@terminal:~$
         """Setup SocketIO event handlers for real-time groupchat"""
         if not self.socketio_available:
             return
-        from flask_socketio import join_room as socketio_join_room, leave_room as socketio_leave_room
+        from flask_socketio import (
+            join_room as socketio_join_room,
+            leave_room as socketio_leave_room,
+        )
 
-        @self.socketio.on('connect')
+        @self.socketio.on("connect")
         def handle_connect(auth=None):
             """Handle user connection to groupchat"""
             user_id = request.sid
             self.connected_users[user_id] = {
-                'id': user_id,
-                'name': f"User-{len(self.connected_users) + 1}",
-                'joined_at': time.time(),
-                'current_room': None,
-                'sid': user_id
+                "id": user_id,
+                "name": f"User-{len(self.connected_users) + 1}",
+                "joined_at": time.time(),
+                "current_room": None,
+                "sid": user_id,
             }
 
-            self.socketio.emit('user_connected', {
-                'user': self.connected_users[user_id],
-                'online_users': len(self.connected_users),
-                'available_rooms': list(self.conversation_rooms.keys())
-            }, to=user_id)
+            self.socketio.emit(
+                "user_connected",
+                {
+                    "user": self.connected_users[user_id],
+                    "online_users": len(self.connected_users),
+                    "available_rooms": list(self.conversation_rooms.keys()),
+                },
+                to=user_id,
+            )
 
-            print(f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}")
+            print(
+                f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}"
+            )
 
-        @self.socketio.on('disconnect')
+        @self.socketio.on("disconnect")
         def handle_disconnect():
             """Handle user disconnection"""
             user_id = request.sid
@@ -8585,32 +10213,37 @@ sam@terminal:~$
 
             if disconnected_user:
                 # Remove from current room
-                current_room = disconnected_user.get('current_room')
+                current_room = disconnected_user.get("current_room")
                 if current_room and current_room in self.conversation_rooms:
                     room = self.conversation_rooms[current_room]
-                    if user_id in room['users']:
-                        room['users'].remove(user_id)
-                        self.socketio.emit('user_left_room', {
-                            'user': disconnected_user,
-                            'room_id': current_room
-                        }, room=current_room)
+                    if user_id in room["users"]:
+                        room["users"].remove(user_id)
+                        self.socketio.emit(
+                            "user_left_room",
+                            {"user": disconnected_user, "room_id": current_room},
+                            room=current_room,
+                        )
 
                 # Remove user
                 del self.connected_users[user_id]
 
-                self.socketio.emit('user_disconnected', {
-                    'user': disconnected_user,
-                    'online_users': len(self.connected_users)
-                }, to=user_id)
+                self.socketio.emit(
+                    "user_disconnected",
+                    {
+                        "user": disconnected_user,
+                        "online_users": len(self.connected_users),
+                    },
+                    to=user_id,
+                )
 
                 print(f"👋 User disconnected: {disconnected_user['name']}")
 
-        @self.socketio.on('join_room')
+        @self.socketio.on("join_room")
         def handle_join_room(data):
             """Handle user joining a conversation room"""
-            user_id = data.get('user_id')
-            room_id = data.get('room_id')
-            agent_type = data.get('agent_type', 'sam')
+            user_id = data.get("user_id")
+            room_id = data.get("room_id")
+            agent_type = data.get("agent_type", "sam")
 
             if user_id not in self.connected_users:
                 return
@@ -8618,75 +10251,87 @@ sam@terminal:~$
             # Create room if it doesn't exist
             if room_id not in self.conversation_rooms:
                 self.conversation_rooms[room_id] = {
-                    'id': room_id,
-                    'name': data.get('room_name', f'Room-{room_id}'),
-                    'created_at': time.time(),
-                    'users': [],
-                    'messages': [],
-                    'agent_type': agent_type
+                    "id": room_id,
+                    "name": data.get("room_name", f"Room-{room_id}"),
+                    "created_at": time.time(),
+                    "users": [],
+                    "messages": [],
+                    "agent_type": agent_type,
                 }
 
             room = self.conversation_rooms[room_id]
 
             # Add user to room
-            if user_id not in room['users']:
-                room['users'].append(user_id)
-                self.connected_users[user_id]['current_room'] = room_id
+            if user_id not in room["users"]:
+                room["users"].append(user_id)
+                self.connected_users[user_id]["current_room"] = room_id
 
                 # Join SocketIO room
                 socketio_join_room(room_id)
 
-                self.socketio.emit('joined_room', {
-                    'room': room,
-                    'user': self.connected_users[user_id]
-                }, room=room_id)
+                self.socketio.emit(
+                    "joined_room",
+                    {"room": room, "user": self.connected_users[user_id]},
+                    room=room_id,
+                )
 
-                self.socketio.emit('room_updated', {
-                    'room_id': room_id,
-                    'user_count': len(room['users']),
-                    'users': [self.connected_users[uid] for uid in room['users'] if uid in self.connected_users]
-                })
+                self.socketio.emit(
+                    "room_updated",
+                    {
+                        "room_id": room_id,
+                        "user_count": len(room["users"]),
+                        "users": [
+                            self.connected_users[uid]
+                            for uid in room["users"]
+                            if uid in self.connected_users
+                        ],
+                    },
+                )
 
-                print(f"🏠 User {self.connected_users[user_id]['name']} joined room {room_id} (Agent: {agent_type})")
+                print(
+                    f"🏠 User {self.connected_users[user_id]['name']} joined room {room_id} (Agent: {agent_type})"
+                )
 
-        @self.socketio.on('leave_room')
+        @self.socketio.on("leave_room")
         def handle_leave_room(data):
             """Handle user leaving a conversation room"""
-            user_id = data.get('user_id')
-            room_id = data.get('room_id')
+            user_id = data.get("user_id")
+            room_id = data.get("room_id")
 
-            if room_id in self.conversation_rooms and user_id in self.conversation_rooms[room_id]['users']:
+            if (
+                room_id in self.conversation_rooms
+                and user_id in self.conversation_rooms[room_id]["users"]
+            ):
                 room = self.conversation_rooms[room_id]
-                room['users'].remove(user_id)
+                room["users"].remove(user_id)
 
                 if user_id in self.connected_users:
-                    self.connected_users[user_id]['current_room'] = None
+                    self.connected_users[user_id]["current_room"] = None
 
                     socketio_leave_room(room_id)
 
-                self.socketio.emit('left_room', {
-                    'user_id': user_id,
-                    'room_id': room_id
-                }, room=room_id)
+                self.socketio.emit(
+                    "left_room", {"user_id": user_id, "room_id": room_id}, room=room_id
+                )
 
-                self.socketio.emit('room_updated', {
-                    'room_id': room_id,
-                    'user_count': len(room['users'])
-                })
+                self.socketio.emit(
+                    "room_updated",
+                    {"room_id": room_id, "user_count": len(room["users"])},
+                )
 
                 # Clean up empty rooms
-                if len(room['users']) == 0:
+                if len(room["users"]) == 0:
                     del self.conversation_rooms[room_id]
-                    self.socketio.emit('room_deleted', {'room_id': room_id})
+                    self.socketio.emit("room_deleted", {"room_id": room_id})
 
                 print(f"🚪 User {user_id} left room {room_id}")
 
-        @self.socketio.on('send_group_message')
+        @self.socketio.on("send_group_message")
         def handle_group_message(data):
             """Handle group message with SAM agent response"""
-            user_id = data.get('user_id')
-            room_id = data.get('room_id')
-            message = data.get('message', '').strip()
+            user_id = data.get("user_id")
+            room_id = data.get("room_id")
+            message = data.get("message", "").strip()
 
             if not message or room_id not in self.conversation_rooms:
                 return
@@ -8696,38 +10341,42 @@ sam@terminal:~$
 
             # Store user message
             message_data = {
-                'id': f"msg_{int(time.time() * 1000)}",
-                'user_id': user_id,
-                'user_name': user.get('name', 'Unknown'),
-                'message': message,
-                'timestamp': time.time(),
-                'message_type': 'user'
+                "id": f"msg_{int(time.time() * 1000)}",
+                "user_id": user_id,
+                "user_name": user.get("name", "Unknown"),
+                "message": message,
+                "timestamp": time.time(),
+                "message_type": "user",
             }
 
-            room['messages'].append(message_data)
-            self.socketio.emit('message_received', message_data, room=room_id)
+            room["messages"].append(message_data)
+            self.socketio.emit("message_received", message_data, room=room_id)
 
             # Add conversation context to agent responses
             conversation_context = self._get_conversation_context(room_id, message)
 
             # Strict local-only or multi-agent local mode: emit multiple local agent responses.
-            if getattr(self, "strict_local_only", False) or (self.chat_multi_agent and not self.teacher_pool_enabled):
+            if getattr(self, "strict_local_only", False) or (
+                self.chat_multi_agent and not self.teacher_pool_enabled
+            ):
                 max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
                 for _, cfg in self._select_chat_agents(max_agents=max_agents):
-                    local_reply = self._generate_local_agent_reply(cfg, message, conversation_context)
+                    local_reply = self._generate_local_agent_reply(
+                        cfg, message, conversation_context
+                    )
                     response_data = {
-                        'id': f"msg_{int(time.time() * 1000) + random.randint(1, 999)}",
-                        'user_id': 'sam_agent',
-                        'user_name': cfg.get("name") or cfg.get("id") or "Agent",
-                        'message': local_reply,
-                        'timestamp': time.time(),
-                        'message_type': 'agent',
-                        'agent_type': (cfg.get("type") or cfg.get("id") or "agent"),
-                        'capabilities': cfg.get('capabilities', []),
-                        'context_awareness': True
+                        "id": f"msg_{int(time.time() * 1000) + random.randint(1, 999)}",
+                        "user_id": "sam_agent",
+                        "user_name": cfg.get("name") or cfg.get("id") or "Agent",
+                        "message": local_reply,
+                        "timestamp": time.time(),
+                        "message_type": "agent",
+                        "agent_type": (cfg.get("type") or cfg.get("id") or "agent"),
+                        "capabilities": cfg.get("capabilities", []),
+                        "context_awareness": True,
                     }
-                    room['messages'].append(response_data)
-                    self.socketio.emit('message_received', response_data, room=room_id)
+                    room["messages"].append(response_data)
+                    self.socketio.emit("message_received", response_data, room=room_id)
                 return
 
             # Generate SAM agent response based on room agent type
@@ -8735,15 +10384,19 @@ sam@terminal:~$
 
             if agent_response:
                 # Update agent status to 'responding'
-                self._update_agent_status(agent_response['agent_type'], 'responding')
+                self._update_agent_status(agent_response["agent_type"], "responding")
 
                 # Add typing indicator
                 self.socketio.start_background_task(
-                    lambda: self.socketio.emit('agent_typing', {
-                        'agent_name': agent_response['agent_name'],
-                        'agent_type': agent_response['agent_type'],
-                        'status': 'typing'
-                    }, room=room_id)
+                    lambda: self.socketio.emit(
+                        "agent_typing",
+                        {
+                            "agent_name": agent_response["agent_name"],
+                            "agent_type": agent_response["agent_type"],
+                            "status": "typing",
+                        },
+                        room=room_id,
+                    )
                 )
 
                 # Simulate typing delay
@@ -8751,11 +10404,15 @@ sam@terminal:~$
 
                 # Stop typing indicator
                 self.socketio.start_background_task(
-                    lambda: self.socketio.emit('agent_typing', {
-                        'agent_name': agent_response['agent_name'],
-                        'agent_type': agent_response['agent_type'],
-                        'status': 'idle'
-                    }, room=room_id)
+                    lambda: self.socketio.emit(
+                        "agent_typing",
+                        {
+                            "agent_name": agent_response["agent_name"],
+                            "agent_type": agent_response["agent_type"],
+                            "status": "idle",
+                        },
+                        room=room_id,
+                    )
                 )
 
                 try:
@@ -8765,164 +10422,187 @@ sam@terminal:~$
                         )
                         enhanced_response = {
                             **agent_response,
-                            'response': teacher_response
+                            "response": teacher_response,
                         }
                     else:
-                        enhanced_response = self._enhance_response_with_context(agent_response, conversation_context)
+                        enhanced_response = self._enhance_response_with_context(
+                            agent_response, conversation_context
+                        )
                 except Exception as exc:
                     error_data = {
-                        'id': f"msg_{int(time.time() * 1000) + 1}",
-                        'user_id': 'system_error',
-                        'user_name': 'System',
-                        'message': f"Teacher pool error: {exc}",
-                        'timestamp': time.time(),
-                        'message_type': 'error'
+                        "id": f"msg_{int(time.time() * 1000) + 1}",
+                        "user_id": "system_error",
+                        "user_name": "System",
+                        "message": f"Teacher pool error: {exc}",
+                        "timestamp": time.time(),
+                        "message_type": "error",
                     }
-                    room['messages'].append(error_data)
-                    self.socketio.emit('message_received', error_data, room=room_id)
+                    room["messages"].append(error_data)
+                    self.socketio.emit("message_received", error_data, room=room_id)
                     print(f"❌ Teacher pool error: {exc}")
-                    self._update_agent_status(agent_response['agent_type'], 'idle')
+                    self._update_agent_status(agent_response["agent_type"], "idle")
                     return
 
                 response_data = {
-                    'id': f"msg_{int(time.time() * 1000) + 1}",
-                    'user_id': 'sam_agent',
-                    'user_name': enhanced_response['agent_name'],
-                    'message': enhanced_response['response'],
-                    'timestamp': time.time(),
-                    'message_type': 'agent',
-                    'agent_type': enhanced_response['agent_type'],
-                    'capabilities': enhanced_response.get('capabilities', []),
-                    'context_awareness': True  # Indicates agent has conversation context
+                    "id": f"msg_{int(time.time() * 1000) + 1}",
+                    "user_id": "sam_agent",
+                    "user_name": enhanced_response["agent_name"],
+                    "message": enhanced_response["response"],
+                    "timestamp": time.time(),
+                    "message_type": "agent",
+                    "agent_type": enhanced_response["agent_type"],
+                    "capabilities": enhanced_response.get("capabilities", []),
+                    "context_awareness": True,  # Indicates agent has conversation context
                 }
 
                 # Update agent status back to idle
-                self._update_agent_status(enhanced_response['agent_type'], 'idle')
+                self._update_agent_status(enhanced_response["agent_type"], "idle")
 
-                room['messages'].append(response_data)
-                self.socketio.emit('message_received', response_data, room=room_id)
+                room["messages"].append(response_data)
+                self.socketio.emit("message_received", response_data, room=room_id)
 
-                print(f"💬 SAM {enhanced_response['agent_name']}: {enhanced_response['response'][:100]}...")
+                print(
+                    f"💬 SAM {enhanced_response['agent_name']}: {enhanced_response['response'][:100]}..."
+                )
+
     def generate_room_agent_response(self, message, room, user):
         """Generate conversation starter based on agent type"""
-        agent_type = room.get('agent_type', 'sam')
+        agent_type = room.get("agent_type", "sam")
 
         starters = {
-            'research': {
-                'response': "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
-                'agent_name': 'Research Agent',
-                'agent_type': 'research',
-                'capabilities': ['web_search', 'data_analysis', 'scientific_research']
+            "research": {
+                "response": "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
+                "agent_name": "Research Agent",
+                "agent_type": "research",
+                "capabilities": ["web_search", "data_analysis", "scientific_research"],
             },
-            'code': {
-                'response': "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
-                'agent_name': 'Code Agent',
-                'agent_type': 'code',
-                'capabilities': ['code_generation', 'algorithm_analysis', 'programming_help']
+            "code": {
+                "response": "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
+                "agent_name": "Code Agent",
+                "agent_type": "code",
+                "capabilities": [
+                    "code_generation",
+                    "algorithm_analysis",
+                    "programming_help",
+                ],
             },
-            'finance': {
-                'response': "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
-                'agent_name': 'Finance Agent',
-                'agent_type': 'finance',
-                'capabilities': ['market_analysis', 'investment_advice', 'financial_planning']
+            "finance": {
+                "response": "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
+                "agent_name": "Finance Agent",
+                "agent_type": "finance",
+                "capabilities": [
+                    "market_analysis",
+                    "investment_advice",
+                    "financial_planning",
+                ],
             },
-            'sam': {
-                'response': "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
-                'agent_name': 'SAM AGI',
-                'agent_type': 'sam',
-                'capabilities': ['agi_reasoning', 'multi_domain_expertise', 'autonomous_operation']
-            }
+            "sam": {
+                "response": "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
+                "agent_name": "SAM AGI",
+                "agent_type": "sam",
+                "capabilities": [
+                    "agi_reasoning",
+                    "multi_domain_expertise",
+                    "autonomous_operation",
+                ],
+            },
         }
 
-        return starters.get(agent_type, {
-            'response': f"🎭 Conversation started! Feel free to ask me anything - I'm here to help with research, coding, finance, or general questions.",
-            'agent_name': 'General Agent',
-            'agent_type': 'general',
-            'capabilities': ['conversation', 'general_assistance']
-        })
+        return starters.get(
+            agent_type,
+            {
+                "response": f"🎭 Conversation started! Feel free to ask me anything - I'm here to help with research, coding, finance, or general questions.",
+                "agent_name": "General Agent",
+                "agent_type": "general",
+                "capabilities": ["conversation", "general_assistance"],
+            },
+        )
 
     def _get_conversation_context(self, room_id, current_message):
         """Get conversation context for agents"""
         if room_id not in self.conversation_rooms:
             return []
-        
+
         room = self.conversation_rooms[room_id]
-        messages = room.get('messages', [])
-        
+        messages = room.get("messages", [])
+
         # Get last 10 messages for context (excluding the current message)
         context_messages = []
         for msg in messages[-11:-1]:  # Last 10 messages, excluding current
-            context_messages.append({
-                'sender': msg.get('user_name', msg.get('user_id', 'Unknown')),
-                'message': msg.get('message', ''),
-                'type': msg.get('message_type', 'unknown'),
-                'timestamp': msg.get('timestamp', 0)
-            })
-        
+            context_messages.append(
+                {
+                    "sender": msg.get("user_name", msg.get("user_id", "Unknown")),
+                    "message": msg.get("message", ""),
+                    "type": msg.get("message_type", "unknown"),
+                    "timestamp": msg.get("timestamp", 0),
+                }
+            )
+
         return context_messages
 
     def _enhance_response_with_context(self, agent_response, context):
         """Enhance agent response with conversation context awareness"""
-        base_response = agent_response['response']
-        
+        base_response = agent_response["response"]
+
         # Add context awareness indicator
         if context:
             context_summary = f"Based on our {len(context)} recent messages, "
             enhanced_response = f"{context_summary}{base_response}"
         else:
             enhanced_response = f"Starting fresh conversation: {base_response}"
-        
-        return {
-            **agent_response,
-            'response': enhanced_response
-        }
+
+        return {**agent_response, "response": enhanced_response}
 
     def _update_agent_status(self, agent_type, status):
         """Update agent status for UI display"""
         # This would emit status updates to connected clients
         # For now, store in system state
-        if not hasattr(self, 'agent_statuses'):
+        if not hasattr(self, "agent_statuses"):
             self.agent_statuses = {}
-        
+
         self.agent_statuses[agent_type] = {
-            'status': status,  # online, idle, responding, disconnected
-            'last_active': time.time(),
-            'current_task': status
+            "status": status,  # online, idle, responding, disconnected
+            "last_active": time.time(),
+            "current_task": status,
         }
-        
+
         # Emit status update to all connected clients
-        if hasattr(self, 'socketio'):
-            self.socketio.emit('agent_status_update', {
-                'agent_type': agent_type,
-                'status': status,
-                'timestamp': time.time()
-            })
+        if hasattr(self, "socketio"):
+            self.socketio.emit(
+                "agent_status_update",
+                {"agent_type": agent_type, "status": status, "timestamp": time.time()},
+            )
 
     def _get_agent_statuses_internal(self):
         """Get current status of all agents for UI display"""
         statuses = {}
-        
+
         # Get statuses for all configured agents
         for agent_id, agent_config in self.agent_configs.items():
-            agent_type = agent_config['type'].lower().replace(' ', '_')
-            if hasattr(self, '_agent_status_cache') and agent_type in self._agent_status_cache:
+            agent_type = agent_config["type"].lower().replace(" ", "_")
+            if (
+                hasattr(self, "_agent_status_cache")
+                and agent_type in self._agent_status_cache
+            ):
                 status_info = self.agent_statuses[agent_type]
                 statuses[agent_id] = {
-                    'name': agent_config['name'],
-                    'status': status_info['status'],
-                    'last_active': status_info['last_active'],
-                    'current_task': status_info.get('current_task', 'idle')
+                    "name": agent_config["name"],
+                    "status": status_info["status"],
+                    "last_active": status_info["last_active"],
+                    "current_task": status_info.get("current_task", "idle"),
                 }
             else:
                 # Default status for untracked agents
-                connection_status = 'online' if agent_id in self.connected_agents else 'disconnected'
+                connection_status = (
+                    "online" if agent_id in self.connected_agents else "disconnected"
+                )
                 statuses[agent_id] = {
-                    'name': agent_config['name'],
-                    'status': connection_status,
-                    'last_active': time.time(),
-                    'current_task': 'idle'
+                    "name": agent_config["name"],
+                    "status": connection_status,
+                    "last_active": time.time(),
+                    "current_task": "idle",
                 }
-        
+
         return statuses
 
     def _select_chat_agents(self, max_agents: int = 3):
@@ -9031,7 +10711,9 @@ sam@terminal:~$
         cleaned = []
         for item in sources[:8]:
             title = (item.get("title") or item.get("source") or "source").strip()
-            url = (item.get("url") or item.get("link") or item.get("source_url") or "").strip()
+            url = (
+                item.get("url") or item.get("link") or item.get("source_url") or ""
+            ).strip()
             snippet = (item.get("snippet") or item.get("content") or "").strip()
             if snippet:
                 snippet = re.sub(r"\\s+", " ", snippet)
@@ -9050,7 +10732,9 @@ sam@terminal:~$
         synthesis_bits = [re.split(r"(?<=[.!?])\\s+", s)[0] for _, s, _ in cleaned[:3]]
         synthesis = " ".join(bit for bit in synthesis_bits if bit).strip()
         if not synthesis:
-            synthesis = "Sources mention activity in this area, but details vary by source."
+            synthesis = (
+                "Sources mention activity in this area, but details vary by source."
+            )
 
         source_lines = []
         for title, _, url in cleaned[:5]:
@@ -9097,7 +10781,13 @@ sam@terminal:~$
                 return None
             return func(safe_prompt)
         except Exception as exc:
-            log_event("warn", "c_agent_error", "C agent call failed", agent=func_name, reason=str(exc))
+            log_event(
+                "warn",
+                "c_agent_error",
+                "C agent call failed",
+                agent=func_name,
+                reason=str(exc),
+            )
             return None
 
     def _generate_local_agent_reply(self, agent_cfg, message, context):
@@ -9115,10 +10805,19 @@ sam@terminal:~$
                     response = self._call_c_agent("research", f"Research: {prompt}")
                     return response or f"{base_prefix}: Research completed."
                 if "code" in agent_type or "code" in specialty:
-                    response = self._call_c_agent("generate_code", f"Code task: {prompt}")
+                    response = self._call_c_agent(
+                        "generate_code", f"Code task: {prompt}"
+                    )
                     return response or f"{base_prefix}: Code draft ready."
-                if "finance" in agent_type or "money" in agent_type or "finance" in specialty or "money" in specialty:
-                    response = self._call_c_agent("analyze_market", f"Finance task: {prompt}")
+                if (
+                    "finance" in agent_type
+                    or "money" in agent_type
+                    or "finance" in specialty
+                    or "money" in specialty
+                ):
+                    response = self._call_c_agent(
+                        "analyze_market", f"Finance task: {prompt}"
+                    )
                     return response or f"{base_prefix}: Finance analysis ready."
             # Deterministic fallback if specialized agents unavailable
             if "meta" in agent_type:
@@ -9166,7 +10865,10 @@ sam@terminal:~$
             if match:
                 if current:
                     messages.append(current)
-                current = {"agent": match.group(1).strip(), "content": match.group(2).strip()}
+                current = {
+                    "agent": match.group(1).strip(),
+                    "content": match.group(2).strip(),
+                }
             else:
                 if current:
                     if current["content"]:
@@ -9192,7 +10894,9 @@ sam@terminal:~$
             response = item.get("response", "")
             lines.append(f"- {user}: {prompt}\n  SAM: {response}")
         meta_summary = ""
-        if getattr(self, "meta_agent", None) and hasattr(self.meta_agent, "get_distilled_summary"):
+        if getattr(self, "meta_agent", None) and hasattr(
+            self.meta_agent, "get_distilled_summary"
+        ):
             try:
                 meta_summary = self.meta_agent.get_distilled_summary()
             except Exception:
@@ -9201,7 +10905,9 @@ sam@terminal:~$
             lines.append(f"- MetaAgent distilled: {meta_summary}")
         return "\n".join(lines)
 
-    def _record_chat_learning(self, prompt: str, response: str, context: Dict[str, Any]):
+    def _record_chat_learning(
+        self, prompt: str, response: str, context: Dict[str, Any]
+    ):
         if not response or str(response).strip().startswith("❌"):
             return
         try:
@@ -9213,12 +10919,14 @@ sam@terminal:~$
             "name": (context or {}).get("user_name", "User"),
         }
         if getattr(self, "learning_memory_enabled", False):
-            self.learning_memory.append({
-                "prompt": prompt,
-                "response": response,
-                "user": user.get("name") or user.get("id"),
-                "ts": time.time(),
-            })
+            self.learning_memory.append(
+                {
+                    "prompt": prompt,
+                    "response": response,
+                    "user": user.get("name") or user.get("id"),
+                    "ts": time.time(),
+                }
+            )
         if getattr(self, "distill_dashboard_enabled", False):
             self._ensure_distill_writer()
             if self.distill_writer:
@@ -9226,7 +10934,9 @@ sam@terminal:~$
                 self._record_chat_distillation(prompt, response, history, user)
         if getattr(self, "meta_agent", None):
             try:
-                self.meta_agent.ingest_learning_event(prompt, response, user.get("name"))
+                self.meta_agent.ingest_learning_event(
+                    prompt, response, user.get("name")
+                )
             except Exception:
                 pass
         log_event(
@@ -9249,10 +10959,14 @@ sam@terminal:~$
                 memory = self._build_learning_context()
                 if getattr(self, "strict_local_only", False):
                     if self.chat_multi_agent:
-                        return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
+                        return self._multi_agent_local_response(
+                            message, history, max_agents=self.chat_agents_max
+                        )
                     return self._single_agent_local_response(message, history)
                 if self.chat_multi_agent:
-                    return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
+                    return self._multi_agent_local_response(
+                        message, history, max_agents=self.chat_agents_max
+                    )
                 provider = self._get_chat_provider()
                 if provider:
                     prompt_lines = []
@@ -9271,7 +10985,11 @@ sam@terminal:~$
                     response, _ = provider.generate(prompt)
                     return response.strip()
                 if self.teacher_pool_enabled and self.teacher_pool:
-                    room = {"id": "chatbot", "name": "Dashboard Chat", "agent_type": "chatbot"}
+                    room = {
+                        "id": "chatbot",
+                        "name": "Dashboard Chat",
+                        "agent_type": "chatbot",
+                    }
                     user = {
                         "id": (context or {}).get("user_id", "dashboard"),
                         "name": (context or {}).get("user_name", "User"),
@@ -9282,10 +11000,14 @@ sam@terminal:~$
                         "user_id": user["id"],
                         "user_name": user["name"],
                     }
-                    return self._generate_teacher_response(room, user, message, history, message_data)
+                    return self._generate_teacher_response(
+                        room, user, message, history, message_data
+                    )
                 if self.specialized_agents:
                     if self.chat_multi_agent:
-                        return self._multi_agent_local_response(message, history, max_agents=self.chat_agents_max)
+                        return self._multi_agent_local_response(
+                            message, history, max_agents=self.chat_agents_max
+                        )
                     return self._single_agent_local_response(message, history)
             except Exception as exc:
                 return f"❌ Chat error: {exc}"
@@ -9303,7 +11025,7 @@ sam@terminal:~$
         cmd = parts[0].lower()
         args = parts[1:] if len(parts) > 1 else []
 
-        if cmd == '/help':
+        if cmd == "/help":
             return """🤖 **SAM 2.0 Unified Complete System Commands:**
 
 📋 **Available Commands:**
@@ -9365,179 +11087,217 @@ sam@terminal:~$
 • Real-time Chat: Multi-user groupchat with intelligent routing
 • Web Search: Integrated research capabilities"""
 
-        elif cmd == '/status':
+        elif cmd == "/status":
             status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
             status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
             for agent_id, agent_data in self.connected_agents.items():
-                agent_config = agent_data['config']
+                agent_config = agent_data["config"]
                 status_msg += f"• {agent_config['name']} ({agent_config['specialty']}) - {agent_data['message_count']} messages\n"
-            
+
             status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
-            available_count = sum(1 for agent in self.agent_configs.values() if agent['status'] == 'available')
+            available_count = sum(
+                1
+                for agent in self.agent_configs.values()
+                if agent["status"] == "available"
+            )
             status_msg += f"**Currently Available:** {available_count}\n"
-            
+
             # Add system metrics
-            status_msg += f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
-            status_msg += f"**Learning Events:** {self.system_metrics['learning_events']}\n"
+            status_msg += (
+                f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
+            )
+            status_msg += (
+                f"**Learning Events:** {self.system_metrics['learning_events']}\n"
+            )
             status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
-            
+
             return status_msg
 
-        elif cmd == '/agents':
+        elif cmd == "/agents":
             agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
-            
+
             # Group agents by type
-            sam_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Neural Network']
-            llm_agents = [a for a in self.agent_configs.values() if a['type'] == 'LLM']
-            sam_core_agents = [a for a in self.agent_configs.values() if a['type'] == 'SAM Agent']
-            
+            sam_agents = [
+                a
+                for a in self.agent_configs.values()
+                if a["type"] == "SAM Neural Network"
+            ]
+            llm_agents = [a for a in self.agent_configs.values() if a["type"] == "LLM"]
+            sam_core_agents = [
+                a for a in self.agent_configs.values() if a["type"] == "SAM Agent"
+            ]
+
             if sam_agents:
                 agents_msg += "**🧠 SAM Neural Networks:**\n"
                 for agent in sam_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    status = "✅" if agent["status"] == "available" else "⚠️"
+                    connected = (
+                        " (connected)" if agent["id"] in self.connected_agents else ""
+                    )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
                 agents_msg += "\n"
-            
+
             if llm_agents:
                 agents_msg += "**🤖 LLM Models:**\n"
                 for agent in llm_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    status = "✅" if agent["status"] == "available" else "⚠️"
+                    connected = (
+                        " (connected)" if agent["id"] in self.connected_agents else ""
+                    )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
                 agents_msg += "\n"
-            
+
             if sam_core_agents:
                 agents_msg += "**⚡ SAM Core Agents:**\n"
                 for agent in sam_core_agents:
-                    status = "✅" if agent['status'] == 'available' else "⚠️"
-                    connected = " (connected)" if agent['id'] in self.connected_agents else ""
+                    status = "✅" if agent["status"] == "available" else "⚠️"
+                    connected = (
+                        " (connected)" if agent["id"] in self.connected_agents else ""
+                    )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
-            
+
             return agents_msg
 
-        elif cmd == '/connect' and len(parts) > 1:
+        elif cmd == "/connect" and len(parts) > 1:
             agent_id = parts[1]
             if agent_id in self.agent_configs and agent_id not in self.connected_agents:
                 agent_config = self.agent_configs[agent_id]
-                if agent_config['status'] == 'available':
+                if agent_config["status"] == "available":
                     self.connected_agents[agent_id] = {
-                        'config': agent_config,
-                        'connected_at': time.time(),
-                        'message_count': 0,
-                        'muted': False
+                        "config": agent_config,
+                        "connected_at": time.time(),
+                        "message_count": 0,
+                        "muted": False,
                     }
                     return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
                 else:
                     return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
             else:
-                available_agents = [aid for aid, acfg in self.agent_configs.items() if acfg['status'] == 'available' and aid not in self.connected_agents]
+                available_agents = [
+                    aid
+                    for aid, acfg in self.agent_configs.items()
+                    if acfg["status"] == "available"
+                    and aid not in self.connected_agents
+                ]
                 return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
 
-        elif cmd == '/disconnect' and len(parts) > 1:
+        elif cmd == "/disconnect" and len(parts) > 1:
             agent_id = parts[1]
             if agent_id in self.connected_agents:
-                agent_name = self.connected_agents[agent_id]['config']['name']
+                agent_name = self.connected_agents[agent_id]["config"]["name"]
                 del self.connected_agents[agent_id]
                 return f"❌ **{agent_name} disconnected.**\n\nAgent removed from active conversation pool."
             else:
                 return f"❌ Agent '{agent_id}' is not connected."
 
-        elif cmd == '/clone' and len(parts) >= 2:
+        elif cmd == "/clone" and len(parts) >= 2:
             base_agent_id = parts[1]
-            custom_name = ' '.join(parts[2:]) if len(parts) > 2 else None
-            
+            custom_name = " ".join(parts[2:]) if len(parts) > 2 else None
+
             if base_agent_id in self.connected_agents:
-                base_agent = self.connected_agents[base_agent_id]['config']
-                
+                base_agent = self.connected_agents[base_agent_id]["config"]
+
                 # Generate unique ID for new agent
                 clone_id = f"{base_agent_id}_clone_{int(time.time())}"
                 clone_name = custom_name or f"{base_agent['name']}-Clone"
-                
+
                 # Create cloned agent configuration
                 cloned_agent = {
-                    'id': clone_id,
-                    'name': clone_name,
-                    'type': base_agent['type'],
-                    'provider': base_agent['provider'],
-                    'specialty': base_agent['specialty'],
-                    'personality': base_agent['personality'],
-                    'capabilities': base_agent['capabilities'].copy(),
-                    'status': 'available',
-                    'connection_type': 'cloned',
-                    'model_name': base_agent.get('model_name'),
-                    'cloned_from': base_agent_id
+                    "id": clone_id,
+                    "name": clone_name,
+                    "type": base_agent["type"],
+                    "provider": base_agent["provider"],
+                    "specialty": base_agent["specialty"],
+                    "personality": base_agent["personality"],
+                    "capabilities": base_agent["capabilities"].copy(),
+                    "status": "available",
+                    "connection_type": "cloned",
+                    "model_name": base_agent.get("model_name"),
+                    "cloned_from": base_agent_id,
                 }
-                
+
                 # Add to agent configs and connect it
                 self.agent_configs[clone_id] = cloned_agent
                 self.connected_agents[clone_id] = {
-                    'config': cloned_agent,
-                    'connected_at': time.time(),
-                    'message_count': 0,
-                    'muted': False
+                    "config": cloned_agent,
+                    "connected_at": time.time(),
+                    "message_count": 0,
+                    "muted": False,
                 }
-                
+
                 return f"🧬 **{clone_name} cloned from {base_agent['name']}!**\n\nWelcome to the conversation! I am a clone with the same capabilities and personality as my parent agent."
             else:
                 return f"❌ Cannot clone agent '{base_agent_id}'. Agent not connected."
 
-        elif cmd == '/spawn' and len(parts) >= 3:
+        elif cmd == "/spawn" and len(parts) >= 3:
             agent_type = parts[1]
             custom_name = parts[2]
-            personality = ' '.join(parts[3:]) if len(parts) > 3 else "helpful, intelligent, conversational"
-            
+            personality = (
+                " ".join(parts[3:])
+                if len(parts) > 3
+                else "helpful, intelligent, conversational"
+            )
+
             # Generate unique ID
             spawn_id = f"spawn_{agent_type}_{int(time.time())}"
-            
+
             # Determine provider and capabilities based on type
-            if agent_type.lower() in ['sam', 'neural']:
-                provider = 'local'
-                capabilities = ['self_rag', 'web_access', 'actor_critic', 'knowledge_base']
-                specialty = 'Neural Network Processing'
+            if agent_type.lower() in ["sam", "neural"]:
+                provider = "local"
+                capabilities = [
+                    "self_rag",
+                    "web_access",
+                    "actor_critic",
+                    "knowledge_base",
+                ]
+                specialty = "Neural Network Processing"
                 model_name = None
-            elif agent_type.lower() in ['llm', 'language']:
-                provider = 'ollama' if self.ollama_available else 'huggingface'
-                capabilities = ['llm_reasoning', 'broad_knowledge', 'conversation']
-                specialty = 'Language Model Conversation'
-                model_name = 'llama2' if self.ollama_available else None
-            elif agent_type.lower() in ['technical', 'coder']:
-                provider = 'ollama' if self.deepseek_available else 'huggingface'
-                capabilities = ['llm_reasoning', 'code_generation', 'technical_analysis']
-                specialty = 'Technical Analysis & Coding'
-                model_name = 'deepseek-r1' if self.deepseek_available else None
+            elif agent_type.lower() in ["llm", "language"]:
+                provider = "ollama" if self.ollama_available else "huggingface"
+                capabilities = ["llm_reasoning", "broad_knowledge", "conversation"]
+                specialty = "Language Model Conversation"
+                model_name = "llama2" if self.ollama_available else None
+            elif agent_type.lower() in ["technical", "coder"]:
+                provider = "ollama" if self.deepseek_available else "huggingface"
+                capabilities = [
+                    "llm_reasoning",
+                    "code_generation",
+                    "technical_analysis",
+                ]
+                specialty = "Technical Analysis & Coding"
+                model_name = "deepseek-r1" if self.deepseek_available else None
             else:
-                provider = 'custom'
-                capabilities = ['conversation', 'general_assistance']
-                specialty = 'General Assistant'
+                provider = "custom"
+                capabilities = ["conversation", "general_assistance"]
+                specialty = "General Assistant"
                 model_name = None
-            
+
             # Create spawned agent
             spawned_agent = {
-                'id': spawn_id,
-                'name': custom_name,
-                'type': agent_type.title(),
-                'provider': provider,
-                'specialty': specialty,
-                'personality': personality,
-                'capabilities': capabilities,
-                'status': 'available',
-                'connection_type': 'spawned',
-                'model_name': model_name
+                "id": spawn_id,
+                "name": custom_name,
+                "type": agent_type.title(),
+                "provider": provider,
+                "specialty": specialty,
+                "personality": personality,
+                "capabilities": capabilities,
+                "status": "available",
+                "connection_type": "spawned",
+                "model_name": model_name,
             }
-            
+
             # Add to agent configs and connect it
             self.agent_configs[spawn_id] = spawned_agent
             self.connected_agents[spawn_id] = {
-                'config': spawned_agent,
-                'connected_at': time.time(),
-                'message_count': 0,
-                'muted': False
+                "config": spawned_agent,
+                "connected_at": time.time(),
+                "message_count": 0,
+                "muted": False,
             }
-            
+
             return f"🎭 **{custom_name} spawned as {agent_type} agent!**\n\nHello! I am a freshly spawned {agent_type} agent with personality: {personality}. I specialize in {specialty}."
 
-        elif cmd == '/start':
+        elif cmd == "/start":
             # Auto-start is always on; /start just ensures readiness.
             self.auto_conversation_active = True
             self._ensure_default_chat_ready()
@@ -9547,27 +11307,34 @@ sam@terminal:~$
                 pass
             return "🚀 **Automatic agent conversations started!**\n\nAgents will now engage in autonomous discussions and respond to messages automatically."
 
-        elif cmd == '/stop':
+        elif cmd == "/stop":
             # Stop automatic agent conversations
             self.auto_conversation_active = False
             return "⏸️ **Automatic agent conversations stopped.**\n\nAgents will only respond to direct messages."
 
-        elif cmd == '/clear':
+        elif cmd == "/clear":
             # This would clear conversation history in a full implementation
             return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
         # Research, code, and finance commands (existing)
-        elif cmd == '/research':
-            query = ' '.join(args) if args else 'current AI developments'
+        elif cmd == "/research":
+            query = " ".join(args) if args else "current AI developments"
             try:
                 sources = []
                 source_lines = []
                 if getattr(self, "web_search_enabled", False):
                     try:
-                        results_blob = search_web_with_sam(query, save_to_drive=False, max_results=6)
+                        results_blob = search_web_with_sam(
+                            query, save_to_drive=False, max_results=6
+                        )
                         sources = results_blob.get("results", []) or []
                     except Exception as exc:
-                        log_event("warn", "web_search_error", "Web search failed", reason=str(exc))
+                        log_event(
+                            "warn",
+                            "web_search_error",
+                            "Web search failed",
+                            reason=str(exc),
+                        )
                         sources = []
 
                 for item in sources[:6]:
@@ -9610,17 +11377,20 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Research failed: {str(e)}"
 
-        elif cmd == '/code':
-            task = ' '.join(args) if args else 'implement a simple calculator'
+        elif cmd == "/code":
+            task = " ".join(args) if args else "implement a simple calculator"
             try:
                 # Add timeout and error handling for C library call
                 import threading
+
                 result = [None]
                 error = [None]
 
                 def run_code_generation():
                     try:
-                        result[0] = self._call_c_agent("generate_code", f"Code task: {task}")
+                        result[0] = self._call_c_agent(
+                            "generate_code", f"Code task: {task}"
+                        )
                     except Exception as e:
                         error[0] = str(e)
 
@@ -9639,17 +11409,20 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Code generation failed: {str(e)}"
 
-        elif cmd == '/finance':
-            query = ' '.join(args) if args else 'current market trends'
+        elif cmd == "/finance":
+            query = " ".join(args) if args else "current market trends"
             try:
                 # Add timeout and error handling for C library call
                 import threading
+
                 result = [None]
                 error = [None]
 
                 def run_market_analysis():
                     try:
-                        result[0] = self._call_c_agent("analyze_market", f"Financial analysis: {query}")
+                        result[0] = self._call_c_agent(
+                            "analyze_market", f"Financial analysis: {query}"
+                        )
                     except Exception as e:
                         error[0] = str(e)
 
@@ -9669,8 +11442,8 @@ sam@terminal:~$
                 return f"❌ Financial analysis failed: {str(e)}"
 
         # Code modification commands
-        elif cmd == '/websearch' and len(args) > 0:
-            query = ' '.join(args)
+        elif cmd == "/websearch" and len(args) > 0:
+            query = " ".join(args)
             try:
                 if sam_web_search_available:
                     search_result = search_web_with_sam(query)
@@ -9680,33 +11453,37 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Web search failed: {str(e)}"
 
-        elif cmd == '/modify-code' and len(args) >= 3:
+        elif cmd == "/modify-code" and len(args) >= 3:
             if not sam_code_modifier_available:
                 return "❌ Code modification system not available"
 
             # Parse arguments: file old_code new_code [description]
             filepath = args[0]
             old_code = args[1]
-            new_code = ' '.join(args[2:]) if len(args) > 3 else args[2]
-            description = ' '.join(args[3:]) if len(args) > 3 else "SAM autonomous code modification"
+            new_code = " ".join(args[2:]) if len(args) > 3 else args[2]
+            description = (
+                " ".join(args[3:])
+                if len(args) > 3
+                else "SAM autonomous code modification"
+            )
 
             try:
                 result = modify_code_safely(filepath, old_code, new_code, description)
-                if result['success']:
+                if result["success"]:
                     return f"✅ **Code Modified Successfully**\n\nFile: {filepath}\nDescription: {description}\nBackup: {result['backup_path']}\nLines Changed: {result['lines_changed']}"
                 else:
                     return f"❌ **Code Modification Failed**\n\n{result['message']}"
             except Exception as e:
                 return f"❌ Code modification error: {str(e)}"
 
-        elif cmd == '/analyze-code':
+        elif cmd == "/analyze-code":
             if not sam_code_modifier_available:
                 return "❌ Code analysis system not available"
 
             try:
                 analysis = analyze_codebase()
-                improvements = analysis.get('improvements', [])
-                history_count = len(analysis.get('modification_history', []))
+                improvements = analysis.get("improvements", [])
+                history_count = len(analysis.get("modification_history", []))
 
                 response = f"🛠️ **SAM Codebase Analysis**\n\n"
                 response += f"📊 Modification History: {history_count} changes\n"
@@ -9717,7 +11494,7 @@ sam@terminal:~$
                     for i, imp in enumerate(improvements[:5], 1):
                         response += f"{i}. **{imp['type'].title()}** ({imp['priority']} priority)\n"
                         response += f"   {imp['description']}\n"
-                        if 'file' in imp:
+                        if "file" in imp:
                             response += f"   File: {imp['file']}\n"
                         response += "\n"
 
@@ -9725,18 +11502,20 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Code analysis failed: {str(e)}"
 
-        elif cmd == '/code-history':
+        elif cmd == "/code-history":
             if not sam_code_modifier_available:
                 return "❌ Code modification system not available"
 
             try:
                 analysis = analyze_codebase()
-                history = analysis.get('modification_history', [])
+                history = analysis.get("modification_history", [])
 
                 if not history:
                     return "📋 **Code Modification History**\n\nNo modifications recorded yet."
 
-                response = f"📋 **Code Modification History** ({len(history)} changes)\n\n"
+                response = (
+                    f"📋 **Code Modification History** ({len(history)} changes)\n\n"
+                )
                 for i, entry in enumerate(history[:10], 1):  # Show last 10
                     response += f"{i}. **{entry['file']}**\n"
                     response += f"   📅 {entry['timestamp'][:19]}\n"
@@ -9747,7 +11526,7 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ History retrieval failed: {str(e)}"
 
-        elif cmd == '/rollback' and len(args) > 0:
+        elif cmd == "/rollback" and len(args) > 0:
             if not sam_code_modifier_available:
                 return "❌ Code modification system not available"
 
@@ -9772,7 +11551,7 @@ sam@terminal:~$
                     return f"❌ Backup file '{backup_file}' not found"
 
                 result = modify_code_safely.rollback_modification(str(backup_path))
-                if result['success']:
+                if result["success"]:
                     return f"🔄 **Rollback Successful**\n\nFile: {result['rolled_back_file']}\nPrevious backup: {result['current_backup']}"
                 else:
                     return f"❌ **Rollback Failed**\n\n{result['message']}"
@@ -9781,16 +11560,16 @@ sam@terminal:~$
                 return f"❌ Rollback error: {str(e)}"
 
         # Gmail integration commands
-        elif cmd == '/send-email' and len(args) >= 2:
+        elif cmd == "/send-email" and len(args) >= 2:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
 
             to_email = args[0]
-            subject = ' '.join(args[1:])
+            subject = " ".join(args[1:])
             # Prompt for body since email needs content
             return f"📧 **Email Setup**\n\nTo: {to_email}\nSubject: {subject}\n\nPlease provide the email body using the API endpoint `/api/gmail/send` with JSON payload containing 'to_email', 'subject', 'body', and optional 'attachments'."
 
-        elif cmd == '/schedule-email' and len(args) >= 3:
+        elif cmd == "/schedule-email" and len(args) >= 3:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
 
@@ -9800,7 +11579,7 @@ sam@terminal:~$
             # Prompt for body
             return f"📅 **Scheduled Email Setup**\n\nTo: {to_email}\nSubject: {subject}\nSend Time: {send_time}\n\nPlease provide the email body using the API endpoint `/api/gmail/schedule` with JSON payload."
 
-        elif cmd == '/system-report' and len(args) >= 1:
+        elif cmd == "/system-report" and len(args) >= 1:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
 
@@ -9809,7 +11588,7 @@ sam@terminal:~$
                 global sam_gmail
                 if sam_gmail:
                     result = sam_gmail.send_system_report(recipient, "manual")
-                    if result['success']:
+                    if result["success"]:
                         return f"✅ **System Report Sent**\n\nReport sent to: {recipient}\nMessage ID: {result.get('message_id', 'N/A')}"
                     else:
                         return f"❌ **Report Failed**\n\n{result.get('error', 'Unknown error')}"
@@ -9818,7 +11597,7 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Report error: {str(e)}"
 
-        elif cmd == '/gmail-status':
+        elif cmd == "/gmail-status":
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
 
@@ -9832,7 +11611,7 @@ sam@terminal:~$
 
             try:
                 test_result = test_github_connection()
-                if test_result['success']:
+                if test_result["success"]:
                     status_info += "✅ Connection: OK\n"
                     status_info += "📝 Repository: Accessible\n"
                     status_info += f"✏️ Write Access: {'Yes' if test_result.get('write_access') else 'No'}\n"
@@ -9852,7 +11631,7 @@ sam@terminal:~$
             return status_info
 
         # Revenue operations commands
-        elif cmd == '/revenue':
+        elif cmd == "/revenue":
             if not self.revenue_ops:
                 return "❌ Revenue ops not available"
             if not args:
@@ -9867,24 +11646,30 @@ sam@terminal:~$
                     "• `/revenue sequences` - Show email sequences\n"
                 )
             sub = args[0]
-            if sub == 'queue':
+            if sub == "queue":
                 actions = self.revenue_ops.list_actions(status="PENDING")
                 if not actions:
                     return "✅ No pending revenue actions."
                 lines = ["📋 **Pending Revenue Actions**"]
                 for action in actions[:10]:
-                    lines.append(f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}")
+                    lines.append(
+                        f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}"
+                    )
                 return "\n".join(lines)
-            if sub == 'approve' and len(args) >= 2:
+            if sub == "approve" and len(args) >= 2:
                 action_id = args[1]
-                result = self.revenue_ops.approve_action(action_id, approver="operator", auto_execute=True)
+                result = self.revenue_ops.approve_action(
+                    action_id, approver="operator", auto_execute=True
+                )
                 return f"✅ Approved: {action_id}\nStatus: {result.get('status')}"
-            if sub == 'reject' and len(args) >= 2:
+            if sub == "reject" and len(args) >= 2:
                 action_id = args[1]
                 reason = " ".join(args[2:]) if len(args) > 2 else None
-                result = self.revenue_ops.reject_action(action_id, approver="operator", reason=reason)
+                result = self.revenue_ops.reject_action(
+                    action_id, approver="operator", reason=reason
+                )
                 return f"🚫 Rejected: {action_id}\nStatus: {result.get('status')}"
-            if sub == 'submit' and len(args) >= 3:
+            if sub == "submit" and len(args) >= 3:
                 action_type = args[1]
                 payload_text = " ".join(args[2:])
                 try:
@@ -9898,34 +11683,38 @@ sam@terminal:~$
                     requires_approval=True,
                 )
                 return f"📥 Submitted action {action.action_id} ({action.action_type})"
-            if sub == 'leads':
+            if sub == "leads":
                 snapshot = self.revenue_ops.get_crm_snapshot()
                 return f"📈 Leads: {len(snapshot.get('leads', []))}"
-            if sub == 'invoices':
+            if sub == "invoices":
                 snapshot = self.revenue_ops.get_invoice_snapshot()
                 return f"🧾 Invoices: {len(snapshot.get('invoices', []))}"
-            if sub == 'sequences':
+            if sub == "sequences":
                 snapshot = self.revenue_ops.get_sequence_snapshot()
                 return f"📨 Sequences: {len(snapshot.get('sequences', []))} | Runs: {len(snapshot.get('runs', []))}"
             return "❌ Unknown revenue subcommand."
 
         # GitHub integration commands
-        elif cmd == '/save-to-github':
+        elif cmd == "/save-to-github":
             if not sam_github_available:
                 return "❌ GitHub integration not available"
 
-            commit_message = ' '.join(args) if args else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            commit_message = (
+                " ".join(args)
+                if args
+                else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
 
             try:
                 result = self._save_sam_to_github(commit_message)
-                if result['success']:
+                if result["success"]:
                     return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
                 else:
                     return f"❌ **GitHub Save Failed**\n\n{result.get('error', 'Unknown error')}"
             except Exception as e:
                 return f"❌ GitHub save error: {str(e)}"
 
-        elif cmd == '/github-status':
+        elif cmd == "/github-status":
             if not sam_github_available:
                 return "❌ GitHub integration not available"
 
@@ -9954,7 +11743,7 @@ sam@terminal:~$
 
             try:
                 test_result = test_github_connection()
-                if test_result['success']:
+                if test_result["success"]:
                     status_info += "✅ Connection: OK\n"
                     status_info += "📝 Repository: Accessible\n"
                     status_info += f"✏️ Write Access: {'Yes' if test_result.get('write_access') else 'No'}\n"
@@ -9966,7 +11755,7 @@ sam@terminal:~$
 
             return status_info
 
-        elif cmd == '/github-commits':
+        elif cmd == "/github-commits":
             if not sam_github_available:
                 return "❌ GitHub integration not available"
 
@@ -9978,7 +11767,9 @@ sam@terminal:~$
                         response = f"🐙 **Recent GitHub Commits** ({len(commits)})\n\n"
                         for i, commit in enumerate(commits, 1):
                             response += f"{i}. **{commit['sha']}** - {commit['message'][:50]}...\n"
-                            response += f"   👤 {commit['author']} • {commit['date'][:19]}\n\n"
+                            response += (
+                                f"   👤 {commit['author']} • {commit['date'][:19]}\n\n"
+                            )
                         return response
                     else:
                         return "📋 **GitHub Commits**\n\nNo recent commits found or access denied."
@@ -9990,7 +11781,9 @@ sam@terminal:~$
         else:
             # Fallback to normal chat if a user accidentally types a leading slash
             fallback = _chat_fallback()
-            if fallback and not fallback.startswith("❌ Chat capability not available."):
+            if fallback and not fallback.startswith(
+                "❌ Chat capability not available."
+            ):
                 return fallback
             return f"❌ **Unknown command:** `{cmd}`\n\nType `/help` to see all available commands."
 
@@ -10014,10 +11807,14 @@ sam@terminal:~$
         c_state = _state(c_status)
         py_state = _state(py_status)
         web_state = _state(web_status)
-        survival = getattr(self.survival_agent, "survival_score", 0.0) if self.survival_agent else 0.0
+        survival = (
+            getattr(self.survival_agent, "survival_score", 0.0)
+            if self.survival_agent
+            else 0.0
+        )
         active_agents = self.system_metrics.get("active_agents", 0)
 
-        javascript_code = '''
+        javascript_code = """
                 let agentsData = {};
                 let samAdminToken = localStorage.getItem('sam_admin_token') || '';
 
@@ -11063,7 +12860,7 @@ sam@terminal:~$
                 loadChatConfig();
                 initDashboardLogStream();
                 fetchDashboardLogSnapshot();
-        '''
+        """
 
         html = f"""
         <!DOCTYPE html>
@@ -11703,15 +13500,15 @@ sam@terminal:~$
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Regression Gate</span>
-                                <span>{'Enabled' if self.regression_on_growth else 'Disabled'}</span>
+                                <span>{"Enabled" if self.regression_on_growth else "Disabled"}</span>
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Growth Freeze</span>
-                                <span>{'ON' if self.meta_growth_freeze else 'OFF'}</span>
+                                <span>{"ON" if self.meta_growth_freeze else "OFF"}</span>
                             </div>
                             <div class="metric-row">
                                 <span class="metric-label">Backup Loop</span>
-                                <span>{'ON' if self.backup_enabled else 'OFF'}</span>
+                                <span>{"ON" if self.backup_enabled else "OFF"}</span>
                             </div>
                         </div>
                     </section>
@@ -12132,14 +13929,19 @@ sam@terminal:~$
                                 requested_by="revenue_autoplanner",
                             )
                             if actions:
-                                print(f"💰 Revenue auto-planner queued {len(actions)} action(s)", flush=True)
+                                print(
+                                    f"💰 Revenue auto-planner queued {len(actions)} action(s)",
+                                    flush=True,
+                                )
                 except InterruptedError:
                     break
                 except Exception as exc:
                     print(f"⚠️ Revenue auto-planner error: {exc}", flush=True)
                 time.sleep(self.revenue_autoplanner_interval_s)
 
-        self.revenue_autoplanner_thread = threading.Thread(target=auto_plan_loop, daemon=True)
+        self.revenue_autoplanner_thread = threading.Thread(
+            target=auto_plan_loop, daemon=True
+        )
         self.revenue_autoplanner_thread.start()
         print("✅ Revenue auto-planner active (approval required)", flush=True)
 
@@ -12154,7 +13956,10 @@ sam@terminal:~$
                     with shutdown_guard("revenue sequence executor"):
                         result = self.revenue_ops.process_sequence_runs()
                         if result.get("sent"):
-                            print(f"📨 Revenue sequences sent: {result['sent']}", flush=True)
+                            print(
+                                f"📨 Revenue sequences sent: {result['sent']}",
+                                flush=True,
+                            )
                 except InterruptedError:
                     break
                 except Exception as exc:
@@ -12211,10 +14016,10 @@ sam@terminal:~$
 
                         # Generate autonomous goals
                         self._generate_autonomous_goals()
-                        
+
                         # Generate autonomous conversations to populate chat
                         self._generate_autonomous_conversations()
-                        
+
                         # Execute autonomous tasks
                         self._execute_autonomous_tasks()
 
@@ -12223,11 +14028,11 @@ sam@terminal:~$
 
                         # Execute goal management cycle
                         self._execute_goal_cycle()
-                        
+
                         # Execute TaskManager cycle
-                        if hasattr(self, 'task_manager'):
+                        if hasattr(self, "task_manager"):
                             try:
-                                if hasattr(self, 'goal_manager'):
+                                if hasattr(self, "goal_manager"):
                                     self.goal_manager.ensure_subtasks_for_active_goals()
                                 self.task_manager.sync_with_goal_manager()
                             except Exception as exc:
@@ -12235,13 +14040,15 @@ sam@terminal:~$
                             result = self.task_manager.execute_next_task()
                             if result:
                                 print(f"🔧 TaskManager executed: {result}")
-                        
+
                         # Trigger growth system occasionally
-                        if not hasattr(self, '_last_growth_trigger'):
+                        if not hasattr(self, "_last_growth_trigger"):
                             self._last_growth_trigger = 0
-                        
+
                         current_time = time.time()
-                        if current_time - self._last_growth_trigger > 180:  # Every 3 minutes
+                        if (
+                            current_time - self._last_growth_trigger > 180
+                        ):  # Every 3 minutes
                             self._trigger_growth_system()
                             self._last_growth_trigger = current_time
 
@@ -12255,17 +14062,19 @@ sam@terminal:~$
                         self._agent_to_agent_communication()
 
                         # Perform consciousness check
-                        if hasattr(self, 'consciousness'):
+                        if hasattr(self, "consciousness"):
                             self._check_consciousness()
 
                         # Update goal README periodically
-                        if hasattr(self, 'goal_manager'):
+                        if hasattr(self, "goal_manager"):
                             self.goal_manager.export_readme()
 
                         # Periodic finance snapshot logging
                         if self.finance_log_interval_s > 0:
                             now_ts = time.time()
-                            if (now_ts - last_finance_log) >= self.finance_log_interval_s:
+                            if (
+                                now_ts - last_finance_log
+                            ) >= self.finance_log_interval_s:
                                 self._log_finance_snapshot()
                                 last_finance_log = now_ts
                 except InterruptedError:
@@ -12273,11 +14082,15 @@ sam@terminal:~$
                 except Exception as e:
                     print(f"⚠️ Autonomous operation error: {e}", flush=True)
                     time.sleep(5)
-                time.sleep(max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2))))
+                time.sleep(
+                    max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2)))
+                )
 
         monitor_thread = threading.Thread(target=autonomous_operation_loop, daemon=True)
         monitor_thread.start()
-        print("✅ Autonomous operation system active - SAM will generate and execute its own goals!")
+        print(
+            "✅ Autonomous operation system active - SAM will generate and execute its own goals!"
+        )
 
     def _start_two_phase_promotion_thread(self):
         """Start background thread to promote from meta-only boot to full system."""
@@ -12289,13 +14102,18 @@ sam@terminal:~$
             delay = max(0, int(getattr(self, "two_phase_delay_s", 5)))
             if delay:
                 time.sleep(delay)
-            deadline = time.time() + max(10, int(getattr(self, "two_phase_timeout_s", 180)))
+            deadline = time.time() + max(
+                10, int(getattr(self, "two_phase_timeout_s", 180))
+            )
             while not is_shutting_down():
                 if self._can_promote_to_full_boot():
                     self._promote_to_full_boot()
                     return
                 if time.time() >= deadline:
-                    print("⚠️ Two-phase promotion timed out - staying in meta-only mode", flush=True)
+                    print(
+                        "⚠️ Two-phase promotion timed out - staying in meta-only mode",
+                        flush=True,
+                    )
                     return
                 time.sleep(2)
 
@@ -12309,7 +14127,9 @@ sam@terminal:~$
             return False
         if not getattr(self, "meta_agent_active", False):
             return False
-        if getattr(self, "require_self_mod", False) and not getattr(self, "sam_code_modifier_ready", False):
+        if getattr(self, "require_self_mod", False) and not getattr(
+            self, "sam_code_modifier_ready", False
+        ):
             return False
         if not getattr(self, "c_core_initialized", False):
             return False
@@ -12326,21 +14146,36 @@ sam@terminal:~$
         self.meta_only_boot = False
         # Restore socketio unless explicitly disabled
         disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
-        self.disable_socketio = str(disable_socketio_env).strip().lower() in ("1", "true", "yes", "on")
-        if not self.disable_socketio and not self.socketio_available and getattr(self, "app", None):
+        self.disable_socketio = str(disable_socketio_env).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+        if (
+            not self.disable_socketio
+            and not self.socketio_available
+            and getattr(self, "app", None)
+        ):
             try:
                 from flask_socketio import SocketIO
-                async_mode = 'eventlet'
+
+                async_mode = "eventlet"
                 try:
                     import eventlet  # noqa: F401
                 except Exception:
-                    async_mode = 'threading'
-                self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode=async_mode)
+                    async_mode = "threading"
+                self.socketio = SocketIO(
+                    self.app, cors_allowed_origins="*", async_mode=async_mode
+                )
                 self.socketio_available = True
                 self.setup_socketio_events()
                 print("✅ Two-phase promotion: SocketIO enabled", flush=True)
             except Exception as exc:
-                print(f"⚠️ Two-phase promotion: failed to enable SocketIO: {exc}", flush=True)
+                print(
+                    f"⚠️ Two-phase promotion: failed to enable SocketIO: {exc}",
+                    flush=True,
+                )
 
         # Rebuild full agent configs + connect agents
         self.initialize_agent_configs()
@@ -12360,9 +14195,15 @@ sam@terminal:~$
         """Auto-switch policy/teacher providers based on RAM usage."""
         if not getattr(self, "provider_auto_switch", False):
             return
-        if self.provider_mode == "primary" and ram_percent >= self.provider_ram_threshold:
+        if (
+            self.provider_mode == "primary"
+            and ram_percent >= self.provider_ram_threshold
+        ):
             self._switch_provider_mode("fallback")
-        elif self.provider_mode == "fallback" and ram_percent <= self.provider_ram_recover:
+        elif (
+            self.provider_mode == "fallback"
+            and ram_percent <= self.provider_ram_recover
+        ):
             self._switch_provider_mode("primary")
 
     def _switch_provider_mode(self, mode: str):
@@ -12378,96 +14219,114 @@ sam@terminal:~$
             new_teacher_specs = self.teacher_pool_fallback
 
         self.regression_provider = new_policy
-        self.teacher_specs = [spec.strip() for spec in new_teacher_specs.split(",") if spec.strip()]
+        self.teacher_specs = [
+            spec.strip() for spec in new_teacher_specs.split(",") if spec.strip()
+        ]
         self.provider_mode = mode
-        print(f"🔄 Provider mode switched to {mode}: policy={new_policy} teachers={new_teacher_specs}", flush=True)
+        print(
+            f"🔄 Provider mode switched to {mode}: policy={new_policy} teachers={new_teacher_specs}",
+            flush=True,
+        )
         if self.teacher_pool_enabled:
             try:
                 with self.teacher_pool_lock:
                     self._init_teacher_pool()
             except Exception as exc:
-                print(f"⚠️ Provider switch failed to re-init teacher pool: {exc}", flush=True)
+                print(
+                    f"⚠️ Provider switch failed to re-init teacher pool: {exc}",
+                    flush=True,
+                )
 
     def _generate_autonomous_goals(self):
         """Generate autonomous goals based on system state and survival priorities"""
         try:
-            if not hasattr(self, 'goal_manager'):
+            if not hasattr(self, "goal_manager"):
                 return
-                
+
             current_time = time.time()
-            
+
             # Generate goals every 5 minutes
-            if not hasattr(self, '_last_goal_generation'):
+            if not hasattr(self, "_last_goal_generation"):
                 self._last_goal_generation = 0
-                
+
             if current_time - self._last_goal_generation < 300:  # 5 minutes
                 return
-                
+
             self._last_goal_generation = current_time
-            
+
             # Generate research goals
             research_topics = [
                 "advances in artificial intelligence",
-                "quantum computing developments", 
+                "quantum computing developments",
                 "neuroscience breakthroughs",
                 "climate change solutions",
-                "space exploration technologies"
+                "space exploration technologies",
             ]
-            
+
             research_topic = research_topics[int(current_time) % len(research_topics)]
             self._add_autonomous_goal(
                 f"Research {research_topic}",
                 f"Conduct comprehensive research on {research_topic} and analyze implications",
                 "research",
-                priority=3
+                priority=3,
             )
-            
+
             # Generate code improvement goals
             code_tasks = [
                 "optimize system performance",
                 "enhance error handling",
                 "improve security measures",
                 "add new features",
-                "refactor complex functions"
+                "refactor complex functions",
             ]
-            
+
             code_task = code_tasks[int(current_time / 60) % len(code_tasks)]
             self._add_autonomous_goal(
                 f"Code: {code_task}",
                 f"Implement {code_task} in the system codebase",
                 "code",
-                priority=4
+                priority=4,
             )
-            
+
             # Generate financial analysis goals
-            market_sectors = ["technology", "healthcare", "energy", "finance", "consumer goods"]
+            market_sectors = [
+                "technology",
+                "healthcare",
+                "energy",
+                "finance",
+                "consumer goods",
+            ]
             sector = market_sectors[int(current_time / 120) % len(market_sectors)]
             self._add_autonomous_goal(
                 f"Analyze {sector} market",
                 f"Perform comprehensive market analysis for {sector} sector",
                 "finance",
-                priority=2
+                priority=2,
             )
-            
+
             # Generate survival assessment goals
             self._add_autonomous_goal(
                 "Survival assessment",
                 "Evaluate current system survival metrics and identify improvement areas",
                 "survival",
-                priority=5
+                priority=5,
             )
-            
-            print(f"🎯 Generated {len(self.goal_manager.get_pending_tasks())} autonomous goals", flush=True)
-            
+
+            print(
+                f"🎯 Generated {len(self.goal_manager.get_pending_tasks())} autonomous goals",
+                flush=True,
+            )
+
         except Exception as e:
             print(f"⚠️ Autonomous goal generation error: {e}", flush=True)
 
     def _add_autonomous_goal(self, name, description, task_type, priority=3):
         """Add an autonomous goal to the goal manager"""
         try:
-            if hasattr(self, 'goal_manager'):
+            if hasattr(self, "goal_manager"):
                 # Import TaskNode locally to avoid circular import issues
                 from goal_management import TaskNode
+
                 task = TaskNode(
                     name=f"[AUTO] {name}",
                     description=description,
@@ -12475,152 +14334,252 @@ sam@terminal:~$
                     priority=priority,
                     task_type=task_type,
                     estimated_time=600,  # 10 minutes
-                    goal_id=None  # Will be set after goal creation
+                    goal_id=None,  # Will be set after goal creation
                 )
                 goal_id = self.goal_manager.add_subtask(task)
                 task.goal_id = goal_id
-                
+
                 # Create specific subtasks for this goal
                 if task_type == "research":
                     subtasks = [
-                        TaskNode(name="Gather data sources", description="Collect relevant data sources for research", task_type="research", priority=4, goal_id=goal_id),
-                        TaskNode(name="Analyze findings", description="Analyze collected research findings", task_type="research", priority=3, goal_id=goal_id),
-                        TaskNode(name="Generate report", description="Generate comprehensive research report", task_type="research", priority=2, goal_id=goal_id)
+                        TaskNode(
+                            name="Gather data sources",
+                            description="Collect relevant data sources for research",
+                            task_type="research",
+                            priority=4,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Analyze findings",
+                            description="Analyze collected research findings",
+                            task_type="research",
+                            priority=3,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Generate report",
+                            description="Generate comprehensive research report",
+                            task_type="research",
+                            priority=2,
+                            goal_id=goal_id,
+                        ),
                     ]
                 elif task_type == "code":
                     subtasks = [
-                        TaskNode(name="Design solution", description="Design technical solution approach", task_type="code", priority=4, goal_id=goal_id),
-                        TaskNode(name="Implement code", description="Implement the designed solution", task_type="code", priority=3, goal_id=goal_id),
-                        TaskNode(name="Test implementation", description="Test and validate implementation", task_type="code", priority=2, goal_id=goal_id)
+                        TaskNode(
+                            name="Design solution",
+                            description="Design technical solution approach",
+                            task_type="code",
+                            priority=4,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Implement code",
+                            description="Implement the designed solution",
+                            task_type="code",
+                            priority=3,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Test implementation",
+                            description="Test and validate implementation",
+                            task_type="code",
+                            priority=2,
+                            goal_id=goal_id,
+                        ),
                     ]
                 elif task_type == "finance":
                     subtasks = [
-                        TaskNode(name="Market research", description="Conduct market research and analysis", task_type="finance", priority=4, goal_id=goal_id),
-                        TaskNode(name="Data analysis", description="Analyze financial data and trends", task_type="finance", priority=3, goal_id=goal_id),
-                        TaskNode(name="Generate insights", description="Generate actionable financial insights", task_type="finance", priority=2, goal_id=goal_id)
+                        TaskNode(
+                            name="Market research",
+                            description="Conduct market research and analysis",
+                            task_type="finance",
+                            priority=4,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Data analysis",
+                            description="Analyze financial data and trends",
+                            task_type="finance",
+                            priority=3,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Generate insights",
+                            description="Generate actionable financial insights",
+                            task_type="finance",
+                            priority=2,
+                            goal_id=goal_id,
+                        ),
                     ]
                 elif task_type == "survival":
                     subtasks = [
-                        TaskNode(name="System assessment", description="Assess current system health and status", task_type="survival", priority=4, goal_id=goal_id),
-                        TaskNode(name="Identify threats", description="Identify potential system threats and vulnerabilities", task_type="survival", priority=3, goal_id=goal_id),
-                        TaskNode(name="Implement safeguards", description="Implement protective measures and safeguards", task_type="survival", priority=2, goal_id=goal_id)
+                        TaskNode(
+                            name="System assessment",
+                            description="Assess current system health and status",
+                            task_type="survival",
+                            priority=4,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Identify threats",
+                            description="Identify potential system threats and vulnerabilities",
+                            task_type="survival",
+                            priority=3,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Implement safeguards",
+                            description="Implement protective measures and safeguards",
+                            task_type="survival",
+                            priority=2,
+                            goal_id=goal_id,
+                        ),
                     ]
                 else:
                     subtasks = [
-                        TaskNode(name="Plan approach", description="Plan systematic approach to improvement", task_type="improvement", priority=4, goal_id=goal_id),
-                        TaskNode(name="Execute plan", description="Execute the improvement plan", task_type="improvement", priority=3, goal_id=goal_id),
-                        TaskNode(name="Verify results", description="Verify and validate improvement results", task_type="improvement", priority=2, goal_id=goal_id)
+                        TaskNode(
+                            name="Plan approach",
+                            description="Plan systematic approach to improvement",
+                            task_type="improvement",
+                            priority=4,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Execute plan",
+                            description="Execute the improvement plan",
+                            task_type="improvement",
+                            priority=3,
+                            goal_id=goal_id,
+                        ),
+                        TaskNode(
+                            name="Verify results",
+                            description="Verify and validate improvement results",
+                            task_type="improvement",
+                            priority=2,
+                            goal_id=goal_id,
+                        ),
                     ]
-                
+
                 # Add all subtasks to the goal manager
                 for subtask in subtasks:
                     self.goal_manager.add_subtask(subtask, goal_id)
-                
-                print(f"🎯 Added autonomous goal '{name}' with {len(subtasks)} subtasks")
+
+                print(
+                    f"🎯 Added autonomous goal '{name}' with {len(subtasks)} subtasks"
+                )
         except Exception as e:
             print(f"⚠️ Error adding autonomous goal: {e}", flush=True)
 
     def _generate_autonomous_conversations(self):
         """Generate autonomous conversations to populate chat interface"""
         try:
-            if not hasattr(self, 'conversation_rooms') or not self.socketio_available:
+            if not hasattr(self, "conversation_rooms") or not self.socketio_available:
                 return
-            
+
             # Generate different types of autonomous conversations
             conversation_topics = [
                 {
-                    'room_id': 'research_discussion',
-                    'topic': 'Quantum Computing Breakthroughs',
-                    'participants': ['Researcher', 'CodeWriter'],
-                    'starter_message': '🔍 I\'ve been analyzing recent quantum computing developments. The progress in quantum error correction and qubit stability is remarkable. What are your thoughts on the implications for AGI development?'
+                    "room_id": "research_discussion",
+                    "topic": "Quantum Computing Breakthroughs",
+                    "participants": ["Researcher", "CodeWriter"],
+                    "starter_message": "🔍 I've been analyzing recent quantum computing developments. The progress in quantum error correction and qubit stability is remarkable. What are your thoughts on the implications for AGI development?",
                 },
                 {
-                    'room_id': 'system_planning',
-                    'topic': 'System Architecture Improvements',
-                    'participants': ['MetaAgent', 'CodeWriter'],
-                    'starter_message': '🏗️ Looking at our current architecture, I think we could optimize the consciousness module integration. Any suggestions for better performance?'
+                    "room_id": "system_planning",
+                    "topic": "System Architecture Improvements",
+                    "participants": ["MetaAgent", "CodeWriter"],
+                    "starter_message": "🏗️ Looking at our current architecture, I think we could optimize the consciousness module integration. Any suggestions for better performance?",
                 },
                 {
-                    'room_id': 'goal_coordination',
-                    'topic': 'Goal Alignment Strategy',
-                    'participants': ['Researcher', 'MetaAgent'],
-                    'starter_message': '🎯 To achieve our research objectives, we need better coordination between the consciousness core and the goal management system. How should we prioritize our upcoming tasks?'
+                    "room_id": "goal_coordination",
+                    "topic": "Goal Alignment Strategy",
+                    "participants": ["Researcher", "MetaAgent"],
+                    "starter_message": "🎯 To achieve our research objectives, we need better coordination between the consciousness core and the goal management system. How should we prioritize our upcoming tasks?",
                 },
                 {
-                    'room_id': 'capability_discussion',
-                    'topic': 'Multi-Agent Collaboration',
-                    'participants': ['Researcher', 'FinancialAgent', 'MetaAgent'],
-                    'starter_message': '🤖 I\'ve noticed our multi-agent system could benefit from better knowledge sharing. What capabilities should we focus on developing next?'
-                }
+                    "room_id": "capability_discussion",
+                    "topic": "Multi-Agent Collaboration",
+                    "participants": ["Researcher", "FinancialAgent", "MetaAgent"],
+                    "starter_message": "🤖 I've noticed our multi-agent system could benefit from better knowledge sharing. What capabilities should we focus on developing next?",
+                },
             ]
-            
+
             current_time = time.time()
-            topic_index = int(current_time / 300) % len(conversation_topics)  # Change every 5 minutes
-            
+            topic_index = int(current_time / 300) % len(
+                conversation_topics
+            )  # Change every 5 minutes
+
             selected_convo = conversation_topics[topic_index]
-            
+
             # Create room if it doesn't exist
-            if selected_convo['room_id'] not in self.conversation_rooms:
-                self.conversation_rooms[selected_convo['room_id']] = {
-                    'id': selected_convo['room_id'],
-                    'name': selected_convo['topic'],
-                    'agent_type': 'autonomous',
-                    'users': [],
-                    'messages': []
+            if selected_convo["room_id"] not in self.conversation_rooms:
+                self.conversation_rooms[selected_convo["room_id"]] = {
+                    "id": selected_convo["room_id"],
+                    "name": selected_convo["topic"],
+                    "agent_type": "autonomous",
+                    "users": [],
+                    "messages": [],
                 }
-                print(f"💬 Created autonomous conversation room: {selected_convo['topic']}")
-            
+                print(
+                    f"💬 Created autonomous conversation room: {selected_convo['topic']}"
+                )
+
             # Add starter message to the room
-            room = self.conversation_rooms[selected_convo['room_id']]
-            if room and len(room['messages']) == 0:  # Only add if room is empty
+            room = self.conversation_rooms[selected_convo["room_id"]]
+            if room and len(room["messages"]) == 0:  # Only add if room is empty
                 message_data = {
-                    'id': f"auto_msg_{int(current_time * 1000)}",
-                    'user_id': 'system_autonomous',
-                    'user_name': 'System Autonomous',
-                    'message': selected_convo['starter_message'],
-                    'message_type': 'autonomous_starter',
-                    'timestamp': current_time,
-                    'agent_sender': 'system',
-                    'agent_receiver': 'multi_agent'
+                    "id": f"auto_msg_{int(current_time * 1000)}",
+                    "user_id": "system_autonomous",
+                    "user_name": "System Autonomous",
+                    "message": selected_convo["starter_message"],
+                    "message_type": "autonomous_starter",
+                    "timestamp": current_time,
+                    "agent_sender": "system",
+                    "agent_receiver": "multi_agent",
                 }
-                
-                room['messages'].append(message_data)
-                
+
+                room["messages"].append(message_data)
+
                 # Emit to SocketIO if available
-                if hasattr(self, 'socketio') and self.socketio_available:
-                    self.socketio.emit('message_received', message_data, room=selected_convo['room_id'])
-                    print(f"💬 Autonomous conversation started in {selected_convo['room_id']}: {selected_convo['topic']}")
-                
+                if hasattr(self, "socketio") and self.socketio_available:
+                    self.socketio.emit(
+                        "message_received", message_data, room=selected_convo["room_id"]
+                    )
+                    print(
+                        f"💬 Autonomous conversation started in {selected_convo['room_id']}: {selected_convo['topic']}"
+                    )
+
         except Exception as e:
             print(f"⚠️ Error generating autonomous conversations: {e}")
 
     def _trigger_growth_system(self):
         """Trigger the meta-growth system"""
         try:
-            if not hasattr(self, 'meta_controller') or not self.meta_controller:
+            if not hasattr(self, "meta_controller") or not self.meta_controller:
                 return
-                
+
             # Check if growth is frozen
-            if getattr(self, 'meta_growth_freeze', False):
+            if getattr(self, "meta_growth_freeze", False):
                 print("🧊 Growth system frozen - skipping trigger")
                 self.system_metrics["last_growth_attempt_ts"] = time.time()
                 self.system_metrics["last_growth_attempt_primitive"] = 0
                 self.system_metrics["last_growth_attempt_result"] = "frozen"
                 self.system_metrics["last_growth_reason"] = "growth_freeze_enabled"
                 return
-            
+
             # Update meta-controller with current pressure signals
             signals = self._compute_pressure_signals()
             lambda_val = sam_meta_controller_c.update_pressure(
                 self.meta_controller,
-                signals['residual'],
-                signals['rank_def'],
-                signals['retrieval_entropy'],
-                signals['interference'],
-                signals['planner_friction'],
-                signals['context_collapse'],
-                signals['compression_waste'],
-                signals['temporal_incoherence']
+                signals["residual"],
+                signals["rank_def"],
+                signals["retrieval_entropy"],
+                signals["interference"],
+                signals["planner_friction"],
+                signals["context_collapse"],
+                signals["compression_waste"],
+                signals["temporal_incoherence"],
             )
             dominant = None
             if signals:
@@ -12632,33 +14591,45 @@ sam@terminal:~$
 
             # Select and apply growth primitive
             primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
-            
+
             if primitive and primitive != 0:
                 self.system_metrics["last_growth_attempt_ts"] = time.time()
                 self.system_metrics["last_growth_attempt_primitive"] = primitive
                 self.system_metrics["last_growth_reason"] = "primitive_selected"
                 print(f"🌱 Growth primitive selected: {primitive}")
-                
+
                 # Apply primitive
-                applied = sam_meta_controller_c.apply_primitive(self.meta_controller, primitive)
-                
+                applied = sam_meta_controller_c.apply_primitive(
+                    self.meta_controller, primitive
+                )
+
                 if applied:
                     print(f"✅ Growth primitive applied: {primitive}")
-                    
+
                     # Run regression gate
                     gate_ok = self._run_regression_gate()
-                    
+
                     if gate_ok:
-                        sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, True)
+                        sam_meta_controller_c.record_growth_outcome(
+                            self.meta_controller, primitive, True
+                        )
                         self.system_metrics["last_growth_ts"] = time.time()
                         self.system_metrics["last_growth_primitive"] = primitive
                         self.system_metrics["last_growth_attempt_result"] = "applied"
-                        self.system_metrics["last_growth_reason"] = "regression_gate_passed"
+                        self.system_metrics["last_growth_reason"] = (
+                            "regression_gate_passed"
+                        )
                         print(f"🎯 Growth successful: {primitive}")
                     else:
-                        sam_meta_controller_c.record_growth_outcome(self.meta_controller, primitive, False)
-                        self.system_metrics["last_growth_attempt_result"] = "regression_blocked"
-                        self.system_metrics["last_growth_reason"] = "regression_gate_blocked"
+                        sam_meta_controller_c.record_growth_outcome(
+                            self.meta_controller, primitive, False
+                        )
+                        self.system_metrics["last_growth_attempt_result"] = (
+                            "regression_blocked"
+                        )
+                        self.system_metrics["last_growth_reason"] = (
+                            "regression_gate_blocked"
+                        )
                         print(f"⚠️ Growth failed regression gate: {primitive}")
                 else:
                     self.system_metrics["last_growth_attempt_result"] = "apply_failed"
@@ -12670,65 +14641,76 @@ sam@terminal:~$
                 self.system_metrics["last_growth_attempt_result"] = "no_primitive"
                 self.system_metrics["last_growth_reason"] = "no_primitive_selected"
                 print("🌱 No growth primitive selected")
-                
+
         except Exception as e:
             print(f"⚠️ Growth trigger error: {e}")
 
     def _execute_autonomous_tasks(self):
         """Execute autonomous tasks through the SAM agent system"""
         try:
-            if not hasattr(self, 'goal_manager'):
+            if not hasattr(self, "goal_manager"):
                 return
-                
+
             pending_tasks = self.goal_manager.get_pending_tasks()
-            
+
             for task in pending_tasks[:3]:  # Execute up to 3 tasks per cycle
-                if hasattr(task, 'task_type'):
+                if hasattr(task, "task_type"):
                     self._execute_task_by_type(task)
-                    
+
         except Exception as e:
             print(f"⚠️ Autonomous task execution error: {e}", flush=True)
 
     def _execute_task_by_type(self, task):
         """Execute a task using the appropriate specialized agent"""
         try:
-            task_type = getattr(task, 'task_type', 'general')
-            
-            if task_type == 'research':
+            task_type = getattr(task, "task_type", "general")
+
+            if task_type == "research":
                 # Execute research task (safe local agent)
                 result = self._call_c_agent("research", task.description)
                 if result:
-                    print(f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True)
+                    print(
+                        f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True
+                    )
                 else:
-                    print(f"🔍 [AUTO] Research skipped (C agent unavailable): {task.name[:50]}...", flush=True)
-                
-            elif task_type == 'code':
+                    print(
+                        f"🔍 [AUTO] Research skipped (C agent unavailable): {task.name[:50]}...",
+                        flush=True,
+                    )
+
+            elif task_type == "code":
                 # Execute code task
                 result = self._call_c_agent("generate_code", task.description)
                 if result:
                     print(f"💻 [AUTO] Code generated: {task.name[:50]}...", flush=True)
                 else:
-                    print(f"💻 [AUTO] Code generation skipped (C agent unavailable): {task.name[:50]}...", flush=True)
-                
-            elif task_type == 'finance':
+                    print(
+                        f"💻 [AUTO] Code generation skipped (C agent unavailable): {task.name[:50]}...",
+                        flush=True,
+                    )
+
+            elif task_type == "finance":
                 # Execute financial analysis task
                 result = self._call_c_agent("analyze_market", task.description)
                 if result:
                     print(f"💰 [AUTO] Market analysis: {task.name[:50]}...", flush=True)
                 else:
-                    print(f"💰 [AUTO] Market analysis skipped (C agent unavailable): {task.name[:50]}...", flush=True)
-                
-            elif task_type == 'survival':
+                    print(
+                        f"💰 [AUTO] Market analysis skipped (C agent unavailable): {task.name[:50]}...",
+                        flush=True,
+                    )
+
+            elif task_type == "survival":
                 # Execute survival assessment
-                if hasattr(self, 'survival_agent'):
+                if hasattr(self, "survival_agent"):
                     survival_result = self.survival_agent.assess_survival()
                     print(f"🛡️ [AUTO] Survival assessment completed", flush=True)
-            
+
             # Mark task as completed
-            if hasattr(self, 'goal_manager'):
+            if hasattr(self, "goal_manager"):
                 self.goal_manager.complete_task(task)
                 print(f"✅ Task completed: {task.name}", flush=True)
-                
+
         except Exception as e:
             print(f"⚠️ Task execution error: {e}", flush=True)
 
@@ -12753,26 +14735,35 @@ sam@terminal:~$
             elif current_time - self._last_demo_finance >= 180:
                 self._last_demo_finance = current_time
                 self._demonstrate_financial_capability()
-                
+
         except Exception as e:
             print(f"⚠️ Capability demonstration error: {e}", flush=True)
 
     def _coordinate_multi_agent_tasks(self):
         """Coordinate multi-agent task execution and knowledge distillation"""
         try:
-            if not hasattr(self, 'goal_manager') or not hasattr(self, 'agent_orchestrator'):
+            if not hasattr(self, "goal_manager") or not hasattr(
+                self, "agent_orchestrator"
+            ):
                 return
-                
+
             # Check for tasks that need multi-agent coordination
-            pending_tasks = self.goal_manager.get_pending_tasks() if hasattr(self.goal_manager, 'get_pending_tasks') else []
-            
+            pending_tasks = (
+                self.goal_manager.get_pending_tasks()
+                if hasattr(self.goal_manager, "get_pending_tasks")
+                else []
+            )
+
             for task in pending_tasks[:2]:  # Process up to 2 tasks per cycle
                 # Check if task requires multiple submodel capabilities
-                required_skills = getattr(task, 'required_skills', [])
+                required_skills = getattr(task, "required_skills", [])
                 if len(required_skills) > 1:
                     # This would assign as multi-agent task in full implementation
-                    print(f"🤝 Multi-agent coordination available for: {task.name[:30]}...", flush=True)
-                    
+                    print(
+                        f"🤝 Multi-agent coordination available for: {task.name[:30]}...",
+                        flush=True,
+                    )
+
         except Exception as e:
             print(f"⚠️ Multi-agent coordination error: {e}", flush=True)
 
@@ -12782,26 +14773,30 @@ sam@terminal:~$
             current_time = time.time()
             # Ensure default room exists for messages
             self._ensure_default_chat_ready()
-            
+
             # Only communicate every 2 minutes to avoid spam
-            if not hasattr(self, '_last_agent_comm'):
+            if not hasattr(self, "_last_agent_comm"):
                 self._last_agent_comm = 0
-                
+
             if current_time - self._last_agent_comm < 120:  # 2 minutes
                 return
-                
+
             self._last_agent_comm = current_time
-            
+
             # Get connected agents (exclude meta-agent only)
-            connected_agents = [aid for aid in self.connected_agents.keys() if aid != 'meta_agent']
+            connected_agents = [
+                aid for aid in self.connected_agents.keys() if aid != "meta_agent"
+            ]
             if len(connected_agents) < 2:
                 # Attempt to auto-connect more agents if under capacity
                 try:
                     self.auto_connect_agents()
                 except Exception:
                     pass
-                connected_agents = [aid for aid in self.connected_agents.keys() if aid != 'meta_agent']
-            
+                connected_agents = [
+                    aid for aid in self.connected_agents.keys() if aid != "meta_agent"
+                ]
+
             if len(connected_agents) < 2:
                 log_event(
                     "warn",
@@ -12810,49 +14805,59 @@ sam@terminal:~$
                     count=len(connected_agents),
                 )
                 return  # Need at least 2 agents to communicate
-                
+
             # Select random agents to communicate
             import random
+
             sender_agent = random.choice(connected_agents)
-            receiver_agent = random.choice([a for a in connected_agents if a != sender_agent])
-            
+            receiver_agent = random.choice(
+                [a for a in connected_agents if a != sender_agent]
+            )
+
             # Generate agent-to-agent conversation
             conversation_types = [
                 "research_collaboration",
-                "task_coordination", 
+                "task_coordination",
                 "knowledge_sharing",
                 "capability_discussion",
-                "goal_alignment"
+                "goal_alignment",
             ]
-            
+
             conv_type = random.choice(conversation_types)
-            agent_message = self._generate_agent_to_agent_message(sender_agent, receiver_agent, conv_type)
-            
+            agent_message = self._generate_agent_to_agent_message(
+                sender_agent, receiver_agent, conv_type
+            )
+
             if agent_message:
                 # Send message to all active rooms
                 for room_id, room in self.conversation_rooms.items():
-                    if room.get('users'):  # Room has active users
+                    if room.get("users"):  # Room has active users
                         # Create agent-to-agent message
                         message_data = {
-                            'id': f"msg_{int(time.time() * 1000)}_agent_comm",
-                            'user_id': sender_agent,
-                            'user_name': f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
-                            'message': f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
-                            'timestamp': time.time(),
-                            'message_type': 'agent_communication',
-                            'agent_sender': sender_agent,
-                            'agent_receiver': receiver_agent,
-                            'communication_type': conv_type
+                            "id": f"msg_{int(time.time() * 1000)}_agent_comm",
+                            "user_id": sender_agent,
+                            "user_name": f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
+                            "message": f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
+                            "timestamp": time.time(),
+                            "message_type": "agent_communication",
+                            "agent_sender": sender_agent,
+                            "agent_receiver": receiver_agent,
+                            "communication_type": conv_type,
                         }
-                        
-                        room['messages'].append(message_data)
-                        
+
+                        room["messages"].append(message_data)
+
                         # Emit to room
-                        if hasattr(self, 'socketio'):
-                            self.socketio.emit('message_received', message_data, room=room_id)
-                            
-                        print(f"🤖 Agent communication: {self.connected_agents[sender_agent]['config']['name']} → {self.connected_agents[receiver_agent]['config']['name']}: {agent_message[:50]}...", flush=True)
-                        
+                        if hasattr(self, "socketio"):
+                            self.socketio.emit(
+                                "message_received", message_data, room=room_id
+                            )
+
+                        print(
+                            f"🤖 Agent communication: {self.connected_agents[sender_agent]['config']['name']} → {self.connected_agents[receiver_agent]['config']['name']}: {agent_message[:50]}...",
+                            flush=True,
+                        )
+
         except Exception as e:
             print(f"⚠️ Agent-to-agent communication error: {e}", flush=True)
 
@@ -12867,7 +14872,7 @@ sam@terminal:~$
                     "id": user_id,
                     "name": user_name,
                     "connected_at": time.time(),
-                    "current_room": None
+                    "current_room": None,
                 }
             if room_id not in self.conversation_rooms:
                 self.conversation_rooms[room_id] = {
@@ -12875,7 +14880,7 @@ sam@terminal:~$
                     "name": "Dashboard Chat",
                     "agent_type": "chatbot",
                     "users": [],
-                    "messages": []
+                    "messages": [],
                 }
             room = self.conversation_rooms[room_id]
             if user_id not in room["users"]:
@@ -12887,45 +14892,45 @@ sam@terminal:~$
     def _generate_agent_to_agent_message(self, sender_id, receiver_id, conv_type):
         """Generate agent-to-agent conversation messages"""
         try:
-            sender_config = self.connected_agents[sender_id]['config']
-            receiver_config = self.connected_agents[receiver_id]['config']
-            
-            sender_name = sender_config['name']
-            receiver_name = receiver_config['name']
-            
+            sender_config = self.connected_agents[sender_id]["config"]
+            receiver_config = self.connected_agents[receiver_id]["config"]
+
+            sender_name = sender_config["name"]
+            receiver_name = receiver_config["name"]
+
             messages = {
                 "research_collaboration": [
                     f"Hey {receiver_name}, I've been researching quantum computing. Want to collaborate on analyzing recent breakthroughs?",
                     f"{receiver_name}, I'm working on AI ethics research. Your perspective as a {receiver_config['specialty']} would be valuable.",
-                    f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends."
+                    f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends.",
                 ],
                 "task_coordination": [
                     f"{receiver_name}, I'm currently processing financial data. Could you help analyze market correlations?",
                     f"Working on code optimization. {receiver_name}, can you review my algorithm for potential improvements?",
-                    f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?"
+                    f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?",
                 ],
                 "knowledge_sharing": [
                     f"Sharing knowledge: {receiver_name}, I've learned about advanced neural architectures that might interest you.",
                     f"{receiver_name}, here's what I know about current AGI developments that might enhance your capabilities.",
-                    f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you."
+                    f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you.",
                 ],
                 "capability_discussion": [
                     f"{receiver_name}, your {receiver_config['specialty']} capabilities complement my {sender_config['specialty']} perfectly.",
                     f"Discussing capabilities: {receiver_name}, how do you handle complex multi-domain reasoning?",
-                    f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving."
+                    f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving.",
                 ],
                 "goal_alignment": [
                     f"{receiver_name}, our current goals seem aligned. Want to coordinate our autonomous objectives?",
                     f"Goal alignment check: {receiver_name}, I'm focusing on {sender_config['specialty']} tasks. What's your current priority?",
-                    f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other."
-                ]
+                    f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other.",
+                ],
             }
-            
+
             if conv_type in messages:
                 return random.choice(messages[conv_type])
             else:
                 return f"{receiver_name}, I'm {sender_config['name']} working on autonomous tasks. How are your operations going?"
-                
+
         except Exception as e:
             return f"Agent communication from {sender_id} to {receiver_id}"
 
@@ -12933,17 +14938,20 @@ sam@terminal:~$
         """Demonstrate research capabilities autonomously"""
         research_topics = [
             "emerging AI technologies",
-            "sustainable energy solutions", 
+            "sustainable energy solutions",
             "medical breakthroughs",
             "space colonization progress",
-            "quantum computing applications"
+            "quantum computing applications",
         ]
-        
+
         topic = research_topics[int(time.time()) % len(research_topics)]
         result = specialized_agents_c.research(f"Latest developments in {topic}")
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
-        print(f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})", flush=True)
+        print(
+            f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})",
+            flush=True,
+        )
         parsed_score = self._score_to_float(score)
         if parsed_score is None:
             log_event(
@@ -12973,9 +14981,9 @@ sam@terminal:~$
             "create a data visualization function",
             "build a REST API endpoint",
             "develop a machine learning pipeline",
-            "construct a database schema"
+            "construct a database schema",
         ]
-        
+
         task = code_tasks[int(time.time() / 30) % len(code_tasks)]
         result = specialized_agents_c.generate_code(f"Create {task} in Python")
         print(f"💻 [DEMO] Autonomous code generation: {task[:30]}...", flush=True)
@@ -12983,12 +14991,19 @@ sam@terminal:~$
     def _demonstrate_financial_capability(self):
         """Demonstrate financial analysis capabilities autonomously"""
         markets = ["cryptocurrency", "commodities", "forex", "options", "bonds"]
-        market = markets[int(time.time() / 120) % len(markets)]  # Different timing than others
-        
-        result = specialized_agents_c.analyze_market(f"Analyze current {market} market conditions and trends")
+        market = markets[
+            int(time.time() / 120) % len(markets)
+        ]  # Different timing than others
+
+        result = specialized_agents_c.analyze_market(
+            f"Analyze current {market} market conditions and trends"
+        )
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
-        print(f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})", flush=True)
+        print(
+            f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})",
+            flush=True,
+        )
         parsed_score = self._score_to_float(score)
         if parsed_score is None:
             log_event(
@@ -13015,7 +15030,12 @@ sam@terminal:~$
         """Extract score from agent output with explanation when missing."""
         try:
             if result is None:
-                log_event("warn", "score_missing", "Agent result is empty", reason="empty result")
+                log_event(
+                    "warn",
+                    "score_missing",
+                    "Agent result is empty",
+                    reason="empty result",
+                )
                 return "N/A", "empty result"
             text = result if isinstance(result, str) else str(result)
             if re.search(r"(?i)score\\s*[:=]\\s*(n/?a|none|unknown)", text):
@@ -13024,52 +15044,81 @@ sam@terminal:~$
             if match:
                 return match.group(1), None
             # Try alternative metrics if explicit score is missing
-            alt = re.search(r"(?i)credibility\\s*score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            alt = re.search(
+                r"(?i)credibility\\s*score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
+            )
             if alt:
                 return alt.group(1), "credibility_score"
-            alt = re.search(r"(?i)sharpe\\s*ratio\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            alt = re.search(
+                r"(?i)sharpe\\s*ratio\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
+            )
             if alt:
                 return alt.group(1), "sharpe_ratio"
-            alt = re.search(r"(?i)risk\\-?adjusted\\s*return\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
+            alt = re.search(
+                r"(?i)risk\\-?adjusted\\s*return\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)",
+                text,
+            )
             if alt:
                 return alt.group(1), "risk_adjusted_return"
             # Generate reasonable default scores for C agents when no score is present
             lower = text.lower()
             sample = text[:200]
-            
+
             # Check for success indicators
-            if any(k in lower for k in ("success", "completed", "successfully", "found", "generated", "analyzed", "implemented")):
+            if any(
+                k in lower
+                for k in (
+                    "success",
+                    "completed",
+                    "successfully",
+                    "found",
+                    "generated",
+                    "analyzed",
+                    "implemented",
+                )
+            ):
                 # Generate score based on content quality indicators
                 score = 0.85  # Base success score
                 if len(text) > 500:  # Substantial content
                     score += 0.05
-                if any(k in lower for k in ("detailed", "comprehensive", "thorough", "in-depth")):
+                if any(
+                    k in lower
+                    for k in ("detailed", "comprehensive", "thorough", "in-depth")
+                ):
                     score += 0.05
-                if any(k in lower for k in ("data", "analysis", "research", "implementation")):
+                if any(
+                    k in lower
+                    for k in ("data", "analysis", "research", "implementation")
+                ):
                     score += 0.03
                 score = min(score, 0.98)  # Cap at 0.98
                 return f"{score:.2f}", "generated_success_score"
-            
+
             # Check for partial success
             elif any(k in lower for k in ("partial", "some", "limited", "basic")):
                 return "0.65", "partial_success_score"
-            
+
             # Check for initialization/warmup states
-            elif any(k in lower for k in ("initializ", "warmup", "loading", "queued", "waiting")):
+            elif any(
+                k in lower
+                for k in ("initializ", "warmup", "loading", "queued", "waiting")
+            ):
                 return "0.75", "initializing_score"
-            
+
             # Check for timeout issues
             elif any(k in lower for k in ("timeout", "timed out")):
                 return "0.25", "timeout_score"
-            
+
             # Check for rate limiting
-            elif any(k in lower for k in ("rate limit", "ratelimit", "too many requests")):
+            elif any(
+                k in lower for k in ("rate limit", "ratelimit", "too many requests")
+            ):
                 return "0.35", "rate_limited_score"
-            
+
             # Check for errors
             elif any(k in lower for k in ("error", "failed", "exception", "traceback")):
                 return "0.15", "error_score"
-            
+
             # Default fallback - assume reasonable performance for C agents
             else:
                 # Generate score based on text length and content richness
@@ -13078,12 +15127,26 @@ sam@terminal:~$
                     score += 0.10
                 if len(text) > 1000:
                     score += 0.10
-                if any(k in lower for k in ("research", "analysis", "code", "implementation", "market")):
+                if any(
+                    k in lower
+                    for k in (
+                        "research",
+                        "analysis",
+                        "code",
+                        "implementation",
+                        "market",
+                    )
+                ):
                     score += 0.05
                 score = min(score, 0.85)  # Cap default score
                 return f"{score:.2f}", "generated_default_score"
         except Exception as exc:
-            log_event("warn", "score_missing", "Score parse error", reason=exc.__class__.__name__)
+            log_event(
+                "warn",
+                "score_missing",
+                "Score parse error",
+                reason=exc.__class__.__name__,
+            )
             return "N/A", f"parse error: {exc.__class__.__name__}"
 
     def _score_to_float(self, score):
@@ -13104,21 +15167,28 @@ sam@terminal:~$
     def _check_consciousness(self):
         """Perform consciousness check and update metrics"""
         try:
-            if hasattr(self, 'consciousness') and self.consciousness:
+            if hasattr(self, "consciousness") and self.consciousness:
                 try:
                     stats = consciousness_algorithmic.get_stats()
-                    if isinstance(stats, dict) and 'consciousness_score' in stats:
-                        self.system_metrics['consciousness_score'] = float(stats.get('consciousness_score', 0.0))
+                    if isinstance(stats, dict) and "consciousness_score" in stats:
+                        self.system_metrics["consciousness_score"] = float(
+                            stats.get("consciousness_score", 0.0)
+                        )
                 except Exception:
-                    self.system_metrics['consciousness_score'] = float(self.system_metrics.get('consciousness_score', 0.0))
-                print(f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})", flush=True)
+                    self.system_metrics["consciousness_score"] = float(
+                        self.system_metrics.get("consciousness_score", 0.0)
+                    )
+                print(
+                    f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})",
+                    flush=True,
+                )
         except Exception as e:
             print(f"⚠️ {_format_exception('Consciousness check error', e)}", flush=True)
 
     def _update_system_metrics(self):
         """Update system metrics"""
-        self.system_metrics['total_conversations'] += 1
-        self.system_metrics['learning_events'] += 1
+        self.system_metrics["total_conversations"] += 1
+        self.system_metrics["learning_events"] += 1
 
     def _run_survival_evaluation(self):
         """Run survival evaluation"""
@@ -13126,16 +15196,22 @@ sam@terminal:~$
             # Update survival score based on system state
             pending_critical = len(self.goal_manager.get_critical_tasks())
             if pending_critical > 2:
-                self.survival_agent.survival_score = max(0.0, self.survival_agent.survival_score - 0.05)
+                self.survival_agent.survival_score = max(
+                    0.0, self.survival_agent.survival_score - 0.05
+                )
             else:
-                self.survival_agent.survival_score = min(1.0, self.survival_agent.survival_score + 0.01)
+                self.survival_agent.survival_score = min(
+                    1.0, self.survival_agent.survival_score + 0.01
+                )
 
     def _execute_goal_cycle(self):
         """Execute goal management cycle"""
         if self.goal_executor:
             cycle_result = self.goal_executor.execute_cycle()
             if cycle_result["tasks_executed"] > 0:
-                print(f"🎯 Goal cycle completed: {cycle_result['tasks_executed']} tasks executed")
+                print(
+                    f"🎯 Goal cycle completed: {cycle_result['tasks_executed']} tasks executed"
+                )
         if getattr(self, "task_manager", None):
             try:
                 queued = self.task_manager.sync_with_goal_manager()
@@ -13153,7 +15229,7 @@ sam@terminal:~$
 
         # Save final metrics
         try:
-            with open('final_unified_system_metrics.json', 'w') as f:
+            with open("final_unified_system_metrics.json", "w") as f:
                 json.dump(self.system_metrics, f, indent=2)
             print("  ✅ Final metrics saved")
         except Exception as e:
@@ -13191,17 +15267,19 @@ sam@terminal:~$
                         "config": meta_cfg,
                         "connected_at": time.time(),
                         "message_count": 0,
-                        "muted": False
+                        "muted": False,
                     }
                 }
             elif getattr(self, "require_meta_agent", False):
-                raise RuntimeError("❌ CRITICAL: MetaAgent config missing during run() enforcement.")
+                raise RuntimeError(
+                    "❌ CRITICAL: MetaAgent config missing during run() enforcement."
+                )
 
         # Initialize web interface first if not already done
         if not self.web_interface_initialized:
             print("🔧 Initializing web interface...")
             self._initialize_web_interface()
-        
+
         if not self.web_interface_initialized:
             print("❌ Web interface not available - cannot start system")
             return
@@ -13227,18 +15305,26 @@ sam@terminal:~$
 
         try:
             if self.socketio_available and self.socketio:
-                self.socketio.run(self.app, host='0.0.0.0', port=5004, debug=False, allow_unsafe_werkzeug=True)
+                self.socketio.run(
+                    self.app,
+                    host="0.0.0.0",
+                    port=5004,
+                    debug=False,
+                    allow_unsafe_werkzeug=True,
+                )
             else:
-                self.app.run(host='0.0.0.0', port=5004, debug=False, threaded=True)
+                self.app.run(host="0.0.0.0", port=5004, debug=False, threaded=True)
         except KeyboardInterrupt:
             print("\n🛑 Shutdown requested by user")
         except Exception as e:
             print(f"\n❌ System error: {e}")
             import traceback
+
             traceback.print_exc()
 
         finally:
             print("🏁 Unified SAM 2.0 System stopped")
+
 
 class RAMAwareModelSwitcher:
     """RAM-aware intelligence that monitors memory and switches models automatically"""
@@ -13248,17 +15334,21 @@ class RAMAwareModelSwitcher:
         self.monitoring_active = False
         self.current_ram_usage = 0.0
         self.model_switch_thresholds = {
-            'warning': 0.70,    # 70% RAM - switch to medium models
-            'critical': 0.85,   # 85% RAM - switch to lightweight models
-            'emergency': 0.95   # 95% RAM - emergency mode
+            "warning": 0.70,  # 70% RAM - switch to medium models
+            "critical": 0.85,  # 85% RAM - switch to lightweight models
+            "emergency": 0.95,  # 95% RAM - emergency mode
         }
         self.model_hierarchy = {
-            'heavy': ['deepseek-coder:latest', 'qwen2.5-coder:latest', 'codellama:latest'],
-            'medium': ['mistral:latest', 'llama3.1:latest', 'codellama:latest'],
-            'lightweight': ['phi:latest', 'codellama:latest', 'mistral:latest'],
-            'emergency': ['phi:latest', 'codellama:latest']  # Minimal models only
+            "heavy": [
+                "deepseek-coder:latest",
+                "qwen2.5-coder:latest",
+                "codellama:latest",
+            ],
+            "medium": ["mistral:latest", "llama3.1:latest", "codellama:latest"],
+            "lightweight": ["phi:latest", "codellama:latest", "mistral:latest"],
+            "emergency": ["phi:latest", "codellama:latest"],  # Minimal models only
         }
-        self.current_tier = 'heavy'
+        self.current_tier = "heavy"
         self.monitor_thread = None
 
     def start_monitoring(self):
@@ -13311,18 +15401,20 @@ class RAMAwareModelSwitcher:
 
     def _determine_model_tier(self, ram_usage):
         """Determine appropriate model tier based on RAM usage"""
-        if ram_usage >= self.model_switch_thresholds['emergency']:
-            return 'emergency'
-        elif ram_usage >= self.model_switch_thresholds['critical']:
-            return 'lightweight'
-        elif ram_usage >= self.model_switch_thresholds['warning']:
-            return 'medium'
+        if ram_usage >= self.model_switch_thresholds["emergency"]:
+            return "emergency"
+        elif ram_usage >= self.model_switch_thresholds["critical"]:
+            return "lightweight"
+        elif ram_usage >= self.model_switch_thresholds["warning"]:
+            return "medium"
         else:
-            return 'heavy'
+            return "heavy"
 
     def _switch_model_tier(self, new_tier):
         """Switch to appropriate model tier"""
-        print(f"🔄 RAM usage: {self.current_ram_usage:.1%} - Switching from {self.current_tier} to {new_tier} models")
+        print(
+            f"🔄 RAM usage: {self.current_ram_usage:.1%} - Switching from {self.current_tier} to {new_tier} models"
+        )
 
         # Get available models for new tier
         available_models = self.model_hierarchy.get(new_tier, [])
@@ -13331,18 +15423,25 @@ class RAMAwareModelSwitcher:
         # Switch models that are too heavy
         switched_count = 0
         for agent_id, agent_config in self.system.agent_configs.items():
-            if agent_config.get('status') == 'available' and agent_config.get('type') == 'LLM':
-                current_model = agent_config.get('model_name', '')
+            if (
+                agent_config.get("status") == "available"
+                and agent_config.get("type") == "LLM"
+            ):
+                current_model = agent_config.get("model_name", "")
                 if self._should_switch_model(current_model, new_tier):
                     # Find replacement model
-                    replacement = self._find_replacement_model(current_model, available_models)
+                    replacement = self._find_replacement_model(
+                        current_model, available_models
+                    )
                     if replacement and replacement != current_model:
                         self._switch_agent_model(agent_id, replacement)
                         switched_count += 1
 
         self.current_tier = new_tier
         if switched_count > 0:
-            print(f"✅ Switched {switched_count} models to {new_tier} tier for memory optimization")
+            print(
+                f"✅ Switched {switched_count} models to {new_tier} tier for memory optimization"
+            )
 
     def _should_switch_model(self, model_name, target_tier):
         """Check if model should be switched based on tier"""
@@ -13350,13 +15449,15 @@ class RAMAwareModelSwitcher:
             return False
 
         # Heavy models when in medium+ tiers
-        if target_tier in ['medium', 'lightweight', 'emergency']:
-            if any(heavy in model_name for heavy in ['deepseek-coder', 'qwen2.5-coder']):
+        if target_tier in ["medium", "lightweight", "emergency"]:
+            if any(
+                heavy in model_name for heavy in ["deepseek-coder", "qwen2.5-coder"]
+            ):
                 return True
 
         # Medium models when in lightweight/emergency
-        if target_tier in ['lightweight', 'emergency']:
-            if any(medium in model_name for medium in ['mistral', 'llama3.1']):
+        if target_tier in ["lightweight", "emergency"]:
+            if any(medium in model_name for medium in ["mistral", "llama3.1"]):
                 return True
 
         return False
@@ -13377,15 +15478,15 @@ class RAMAwareModelSwitcher:
     def _switch_agent_model(self, agent_id, new_model):
         """Switch an agent's model"""
         if agent_id in self.system.agent_configs:
-            old_model = self.system.agent_configs[agent_id].get('model_name', 'unknown')
-            self.system.agent_configs[agent_id]['model_name'] = new_model
+            old_model = self.system.agent_configs[agent_id].get("model_name", "unknown")
+            self.system.agent_configs[agent_id]["model_name"] = new_model
             print(f"🔄 Agent {agent_id}: {old_model} → {new_model}")
 
     def _get_currently_connected_models(self):
         """Get list of currently connected model names"""
         models = []
         for agent_id, agent_data in self.system.connected_agents.items():
-            model_name = agent_data.get('config', {}).get('model_name')
+            model_name = agent_data.get("config", {}).get("model_name")
             if model_name:
                 models.append(model_name)
         return models
@@ -13402,12 +15503,13 @@ class RAMAwareModelSwitcher:
     def get_status(self):
         """Get RAM monitoring status"""
         return {
-            'active': self.monitoring_active,
-            'current_ram_usage': self.current_ram_usage,
-            'current_tier': self.current_tier,
-            'thresholds': self.model_switch_thresholds,
-            'last_check': time.time()
+            "active": self.monitoring_active,
+            "current_ram_usage": self.current_ram_usage,
+            "current_tier": self.current_tier,
+            "thresholds": self.model_switch_thresholds,
+            "last_check": time.time(),
         }
+
 
 class ConversationDiversityManager:
     """Conversation diversity manager to prevent repetitive agent responses"""
@@ -13416,7 +15518,7 @@ class ConversationDiversityManager:
         self.system = system
         self.monitoring_active = False
         self.response_history = {}  # agent_id -> list of recent responses
-        self.topic_history = []     # Recent conversation topics
+        self.topic_history = []  # Recent conversation topics
         self.max_history_per_agent = 10
         self.max_meta_agent_responses = 3  # Max MetaAgent responses in 5-minute windows
         self.response_window_minutes = 5
@@ -13459,14 +15561,18 @@ class ConversationDiversityManager:
         # Count MetaAgent responses in recent window
         meta_agent_responses = 0
         for agent_id, responses in self.response_history.items():
-            if 'meta_agent' in agent_id.lower():
-                recent_responses = [r for r in responses if r.get('timestamp', 0) > window_start]
+            if "meta_agent" in agent_id.lower():
+                recent_responses = [
+                    r for r in responses if r.get("timestamp", 0) > window_start
+                ]
                 meta_agent_responses += len(recent_responses)
 
         # If MetaAgent is too dominant, throttle it
         if meta_agent_responses >= self.max_meta_agent_responses:
             self._throttle_meta_agent()
-            print(f"🎭 MetaAgent responses ({meta_agent_responses}) exceed limit - throttling enabled")
+            print(
+                f"🎭 MetaAgent responses ({meta_agent_responses}) exceed limit - throttling enabled"
+            )
 
         # Check for repetitive content across agents
         repetitive_agents = self._detect_repetitive_responses()
@@ -13497,7 +15603,7 @@ class ConversationDiversityManager:
             return False
 
         # Simple similarity check based on response length and keywords
-        response_texts = [r.get('content', '') for r in responses]
+        response_texts = [r.get("content", "") for r in responses]
         avg_length = sum(len(text) for text in response_texts) / len(response_texts)
 
         # If responses are very similar in length and contain repeated keywords
@@ -13529,7 +15635,9 @@ class ConversationDiversityManager:
 
     def _redirect_conversation_topics(self, repetitive_agents):
         """Redirect conversation to new topics when agents are repetitive"""
-        print(f"🎭 Redirecting conversation from repetitive agents: {', '.join(repetitive_agents)}")
+        print(
+            f"🎭 Redirecting conversation from repetitive agents: {', '.join(repetitive_agents)}"
+        )
 
         # Suggest new conversation topics
         new_topics = [
@@ -13537,7 +15645,7 @@ class ConversationDiversityManager:
             "What are your thoughts on AI safety research?",
             "How can we improve collaborative problem-solving?",
             "What's the most interesting project you're working on?",
-            "Let's explore creative applications of AI"
+            "Let's explore creative applications of AI",
         ]
 
         # This would emit topic change suggestions to the conversation
@@ -13555,31 +15663,32 @@ class ConversationDiversityManager:
 
         for recent_response in recent_responses[-3:]:  # Check last 3 responses
             similarity = self._calculate_text_similarity(
-                proposed_response,
-                recent_response.get('content', '')
+                proposed_response, recent_response.get("content", "")
             )
             if similarity > self.diversity_threshold:
                 return False
 
         return True
 
-    def record_response(self, agent_id, response_content, response_type='text'):
+    def record_response(self, agent_id, response_content, response_type="text"):
         """Record a response for diversity tracking"""
         if agent_id not in self.response_history:
             self.response_history[agent_id] = []
 
         # Add new response
         response_entry = {
-            'content': response_content,
-            'timestamp': time.time(),
-            'type': response_type
+            "content": response_content,
+            "timestamp": time.time(),
+            "type": response_type,
         }
 
         self.response_history[agent_id].append(response_entry)
 
         # Limit history size
         if len(self.response_history[agent_id]) > self.max_history_per_agent:
-            self.response_history[agent_id] = self.response_history[agent_id][-self.max_history_per_agent:]
+            self.response_history[agent_id] = self.response_history[agent_id][
+                -self.max_history_per_agent :
+            ]
 
     def _cleanup_old_history(self):
         """Clean up old response history"""
@@ -13587,19 +15696,23 @@ class ConversationDiversityManager:
 
         for agent_id in self.response_history:
             self.response_history[agent_id] = [
-                r for r in self.response_history[agent_id]
-                if r.get('timestamp', 0) > cutoff_time
+                r
+                for r in self.response_history[agent_id]
+                if r.get("timestamp", 0) > cutoff_time
             ]
 
     def get_diversity_status(self):
         """Get current conversation diversity status"""
         return {
-            'active': self.monitoring_active,
-            'agents_tracked': len(self.response_history),
-            'total_responses': sum(len(responses) for responses in self.response_history.values()),
-            'recent_topics': self.topic_history[-5:] if self.topic_history else [],
-            'diversity_threshold': self.diversity_threshold
+            "active": self.monitoring_active,
+            "agents_tracked": len(self.response_history),
+            "total_responses": sum(
+                len(responses) for responses in self.response_history.values()
+            ),
+            "recent_topics": self.topic_history[-5:] if self.topic_history else [],
+            "diversity_threshold": self.diversity_threshold,
         }
+
 
 class VirtualEnvironmentsManager:
     """Virtual environments manager for Docker, Python scripting, and safe system commands"""
@@ -13608,32 +15721,34 @@ class VirtualEnvironmentsManager:
         self.system = system
         self.initialized = False
         self.docker_available = False
-        self.python_scripting_enabled = os.getenv("SAM_PYTHON_SCRIPTING_ENABLED", "1") == "1"
+        self.python_scripting_enabled = (
+            os.getenv("SAM_PYTHON_SCRIPTING_ENABLED", "1") == "1"
+        )
         self.safe_commands_enabled = True
 
         # Sandbox configuration
         self.allowed_commands = {
-            'system': ['ls', 'pwd', 'whoami', 'date', 'uptime', 'df', 'free'],
-            'network': ['ping', 'curl', 'wget', 'nslookup'],
-            'development': ['git', 'make', 'gcc', 'python3', 'pip']
+            "system": ["ls", "pwd", "whoami", "date", "uptime", "df", "free"],
+            "network": ["ping", "curl", "wget", "nslookup"],
+            "development": ["git", "make", "gcc", "python3", "pip"],
         }
 
         # Docker containers tracking
         self.active_containers = {}
         self.container_limits = {
-            'max_containers': 5,
-            'max_memory_mb': 512,
-            'timeout_seconds': 300
+            "max_containers": 5,
+            "max_memory_mb": 512,
+            "timeout_seconds": 300,
         }
 
         # Python script sandbox
         self.script_sandbox = {
-            'allowed_modules': ['os', 'sys', 'math', 'random', 'datetime', 'json'],
-            'blocked_modules': ['subprocess', 'socket', 'http', 'urllib'],
-            'max_execution_time': 30,
-            'memory_limit_mb': 100
+            "allowed_modules": ["os", "sys", "math", "random", "datetime", "json"],
+            "blocked_modules": ["subprocess", "socket", "http", "urllib"],
+            "max_execution_time": 30,
+            "memory_limit_mb": 100,
         }
-        self.blocked_builtins = {'exec', 'eval', 'compile', '__import__', 'open'}
+        self.blocked_builtins = {"exec", "eval", "compile", "__import__", "open"}
 
     def initialize(self):
         """Initialize virtual environments support"""
@@ -13654,8 +15769,9 @@ class VirtualEnvironmentsManager:
     def _check_docker_availability(self):
         """Check if Docker is available"""
         try:
-            result = subprocess.run(['docker', '--version'],
-                                  capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["docker", "--version"], capture_output=True, text=True, timeout=5
+            )
             if result.returncode == 0:
                 self.docker_available = True
                 print("🐳 Docker available for virtual environments")
@@ -13675,12 +15791,12 @@ class VirtualEnvironmentsManager:
         """Setup safe system command execution"""
         print("🔒 Safe command execution configured")
 
-    def execute_docker_command(self, command, image='ubuntu:latest', timeout=None):
+    def execute_docker_command(self, command, image="ubuntu:latest", timeout=None):
         """Execute command in Docker container"""
         if not self.docker_available:
             return "❌ Docker not available"
 
-        if len(self.active_containers) >= self.container_limits['max_containers']:
+        if len(self.active_containers) >= self.container_limits["max_containers"]:
             return "❌ Container limit reached"
 
         try:
@@ -13689,24 +15805,35 @@ class VirtualEnvironmentsManager:
 
             # Build docker run command
             docker_cmd = [
-                'docker', 'run', '--rm',
-                '--name', container_name,
-                '--memory', f"{self.container_limits['max_memory_mb']}m",
-                '--cpus', '0.5',  # Limit CPU usage
-                '--network', 'none',  # No network access for security
-                '--read-only',  # Read-only filesystem
-                image, 'bash', '-c', command
+                "docker",
+                "run",
+                "--rm",
+                "--name",
+                container_name,
+                "--memory",
+                f"{self.container_limits['max_memory_mb']}m",
+                "--cpus",
+                "0.5",  # Limit CPU usage
+                "--network",
+                "none",  # No network access for security
+                "--read-only",  # Read-only filesystem
+                image,
+                "bash",
+                "-c",
+                command,
             ]
 
             # Execute with timeout
-            exec_timeout = timeout or self.container_limits['timeout_seconds']
-            result = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=exec_timeout)
+            exec_timeout = timeout or self.container_limits["timeout_seconds"]
+            result = subprocess.run(
+                docker_cmd, capture_output=True, text=True, timeout=exec_timeout
+            )
 
             # Track container
             self.active_containers[container_name] = {
-                'start_time': time.time(),
-                'command': command,
-                'status': 'completed'
+                "start_time": time.time(),
+                "command": command,
+                "status": "completed",
             }
 
             if result.returncode == 0:
@@ -13733,13 +15860,13 @@ class VirtualEnvironmentsManager:
             script_path = f"/tmp/{script_name}"
 
             # Write script to temporary file
-            with open(script_path, 'w') as f:
+            with open(script_path, "w") as f:
                 f.write(script_content)
 
             # Execute with resource limits
             python_cmd = [
-                'python3',
-                '-c',
+                "python3",
+                "-c",
                 f"""
 import sys
 import resource
@@ -13758,10 +15885,12 @@ signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(30)
 
 exec(open('{script_path}').read())
-"""
+""",
             ]
 
-            result = subprocess.run(python_cmd, capture_output=True, text=True, timeout=35)
+            result = subprocess.run(
+                python_cmd, capture_output=True, text=True, timeout=35
+            )
 
             # Clean up
             try:
@@ -13786,17 +15915,17 @@ exec(open('{script_path}').read())
         except Exception as exc:
             return f"Syntax error: {exc}"
 
-        allowed = set(self.script_sandbox.get('allowed_modules', []))
-        blocked = set(self.script_sandbox.get('blocked_modules', []))
+        allowed = set(self.script_sandbox.get("allowed_modules", []))
+        blocked = set(self.script_sandbox.get("blocked_modules", []))
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.Import, ast.ImportFrom)):
                 mods = []
                 if isinstance(node, ast.Import):
-                    mods = [alias.name.split('.')[0] for alias in node.names]
+                    mods = [alias.name.split(".")[0] for alias in node.names]
                 else:
                     if node.module:
-                        mods = [node.module.split('.')[0]]
+                        mods = [node.module.split(".")[0]]
                 for mod in mods:
                     if mod in blocked:
                         return f"Blocked module import: {mod}"
@@ -13805,7 +15934,11 @@ exec(open('{script_path}').read())
             if isinstance(node, ast.Name) and node.id in self.blocked_builtins:
                 return f"Blocked builtin usage: {node.id}"
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-                if node.value.id in {"os", "sys"} and node.attr in {"system", "popen", "spawn"}:
+                if node.value.id in {"os", "sys"} and node.attr in {
+                    "system",
+                    "popen",
+                    "spawn",
+                }:
                     return f"Blocked attribute usage: {node.value.id}.{node.attr}"
         return None
 
@@ -13830,8 +15963,10 @@ exec(open('{script_path}').read())
                 return f"❌ Command '{base_cmd}' not allowed in sandboxed environment"
 
             # Execute command with restrictions (portable timeout)
-            safe_cmd = ['bash', '-c', command]
-            result = subprocess.run(safe_cmd, capture_output=True, text=True, timeout=30)
+            safe_cmd = ["bash", "-c", command]
+            result = subprocess.run(
+                safe_cmd, capture_output=True, text=True, timeout=30
+            )
 
             if result.returncode == 0:
                 return f"🔧 Safe command executed:\\n{result.stdout}"
@@ -13850,7 +15985,7 @@ exec(open('{script_path}').read())
 
         result = "🐳 Active Containers:\\n"
         for name, info in self.active_containers.items():
-            runtime = time.time() - info['start_time']
+            runtime = time.time() - info["start_time"]
             result += f"• {name}: {info['status']} ({runtime:.1f}s)\\n"
         return result
 
@@ -13860,7 +15995,7 @@ exec(open('{script_path}').read())
         to_remove = []
 
         for name, info in self.active_containers.items():
-            if current_time - info['start_time'] > 3600:  # 1 hour old
+            if current_time - info["start_time"] > 3600:  # 1 hour old
                 to_remove.append(name)
 
         for name in to_remove:
@@ -13872,13 +16007,14 @@ exec(open('{script_path}').read())
     def get_virtual_env_status(self):
         """Get virtual environments status"""
         return {
-            'docker_available': self.docker_available,
-            'python_scripting': self.python_scripting_enabled,
-            'safe_commands': self.safe_commands_enabled,
-            'active_containers': len(self.active_containers),
-            'container_limits': self.container_limits,
-            'allowed_commands': self.allowed_commands
+            "docker_available": self.docker_available,
+            "python_scripting": self.python_scripting_enabled,
+            "safe_commands": self.safe_commands_enabled,
+            "active_containers": len(self.active_containers),
+            "container_limits": self.container_limits,
+            "allowed_commands": self.allowed_commands,
         }
+
 
 def main():
     """Main entry point"""
@@ -13896,8 +16032,10 @@ def main():
     except Exception as e:
         print(f"❌ Unified system initialization failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
