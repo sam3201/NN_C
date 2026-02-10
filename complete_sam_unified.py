@@ -2123,6 +2123,7 @@ class MetaAgent:
         else:
             stack_trace = failure.get("stack_trace", "")
         pattern_matches = self._match_error_patterns(failure)
+        failure_type = (self._get_failure_attr(failure, "error_type", "") or "").lower()
 
         file_match = re.search(r'File "([^"]+)", line (\d+)', stack_trace)
         file_path = None
