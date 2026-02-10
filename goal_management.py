@@ -66,11 +66,16 @@ class GoalManager:
         """Get list of active goals"""
         return sorted(self.active_goals, key=lambda x: x.get('priority_score', 0), reverse=True)
 
-    def add_subtask(self, task: TaskNode):
+    def add_subtask(self, task: TaskNode, goal_id=None):
         """Add a structured subtask node"""
         self._task_counter += 1
         task_id = f"task_{self._task_counter}"
         task.name = task.name or task_id
+        
+        # Associate with goal if provided
+        if goal_id:
+            task.goal_id = goal_id
+        
         self.subtasks.append(task)
         return task_id
 
