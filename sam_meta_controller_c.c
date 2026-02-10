@@ -534,12 +534,16 @@ static PyObject *py_sam_meta_set_identity_anchor(PyObject *self, PyObject *args)
         return PyErr_NoMemory();
     }
     for (Py_ssize_t i = 0; i < n; i++) {
-        buf[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+        PyObject *item = PySequence_Fast_GET_ITEM(fast, i);
+        double value = PyFloat_AsDouble(item);
         if (PyErr_Occurred()) {
+            PyErr_Clear();
             free(buf);
             Py_DECREF(fast);
+            PyErr_Format(PyExc_TypeError, "identity_anchor[%zd] must be a number", i);
             return NULL;
         }
+        buf[i] = value;
     }
     if (!sam_meta_set_identity_anchor(mc, buf, (size_t)n)) {
         free(buf);
@@ -568,12 +572,16 @@ static PyObject *py_sam_meta_update_identity_vector(PyObject *self, PyObject *ar
         return PyErr_NoMemory();
     }
     for (Py_ssize_t i = 0; i < n; i++) {
-        buf[i] = PyFloat_AsDouble(PySequence_Fast_GET_ITEM(fast, i));
+        PyObject *item = PySequence_Fast_GET_ITEM(fast, i);
+        double value = PyFloat_AsDouble(item);
         if (PyErr_Occurred()) {
+            PyErr_Clear();
             free(buf);
             Py_DECREF(fast);
+            PyErr_Format(PyExc_TypeError, "identity_vec[%zd] must be a number", i);
             return NULL;
         }
+        buf[i] = value;
     }
     if (!sam_meta_update_identity_vector(mc, buf, (size_t)n)) {
         free(buf);
