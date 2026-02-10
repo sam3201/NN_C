@@ -6009,7 +6009,8 @@ class UnifiedSAMSystem:
                         for task in tasks:
                             self.goal_manager.add_goal(
                                 task.get('description', 'Conversationalist Task'),
-                                priority=task.get('priority', 'normal')
+                                priority=task.get('priority', 'normal'),
+                                goal_type=task.get('type')
                             )
                 else:
                     # Preferred path: allow helper to register tasks directly
@@ -6025,11 +6026,27 @@ class UnifiedSAMSystem:
             self.task_manager = TaskManager(self.goal_manager)
             print("  ✅ Goal management system initialized")
 
-            # Export initial goal README
-            self.goal_manager.export_readme()
-            print("  📖 Goal README exported")
             # Apply persisted state after goal manager initialization
             self._apply_loaded_state()
+
+            # Ensure subtasks exist for active goals and sync TaskManager queue
+            try:
+                created = self.goal_manager.ensure_subtasks_for_active_goals()
+                if created:
+                    print(f"  ✅ Seeded {created} goal subtask(s)")
+            except Exception as exc:
+                print(f"  ⚠️ Goal subtask seeding failed: {exc}")
+
+            try:
+                queued = self.task_manager.sync_with_goal_manager()
+                if queued:
+                    print(f"  ✅ TaskManager queued {queued} pending subtask(s)")
+            except Exception as exc:
+                print(f"  ⚠️ TaskManager sync failed: {exc}")
+
+            # Export updated goal README
+            self.goal_manager.export_readme()
+            print("  📖 Goal README exported")
 
             # Register for graceful shutdown
             register_shutdown_handler("Unified SAM System", self._shutdown_system, priority=10)
