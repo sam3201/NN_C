@@ -7560,7 +7560,7 @@ class UnifiedSAMSystem:
 
             # Initialize multi-agent orchestrator
             print("  - Creating multi-agent orchestrator...")
-            self.orchestrator = multi_agent_orchestrator_c.create_system()
+            self.orchestrator = multi_agent_orchestrator_c.create_multi_agent_system()
 
             # Test if orchestrator is functional
             try:
