@@ -7564,7 +7564,7 @@ class UnifiedSAMSystem:
 
             # Test if orchestrator is functional
             try:
-                status = multi_agent_orchestrator_c.get_status()
+                status = multi_agent_orchestrator_c.get_orchestrator_status()
                 if status and isinstance(status, dict):
                     print("  ✅ Multi-agent orchestrator initialized (C)")
                 else:
@@ -8527,7 +8527,7 @@ class UnifiedSAMSystem:
         def orchestrator_status():
             """Multi-agent orchestrator status"""
             if self.orchestrator:
-                status = multi_agent_orchestrator_c.get_status()
+                status = multi_agent_orchestrator_c.get_orchestrator_status()
                 return jsonify(
                     {
                         "status": "active",
