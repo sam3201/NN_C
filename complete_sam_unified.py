@@ -1955,10 +1955,8 @@ class MetaAgent:
         if stack:
             stack_lines = stack.strip().splitlines()[-6:]
             parts.append("Stack tail:\n" + "\n".join(stack_lines))
-            match = re.search(r'File "([^"]+)", line (\d+)', stack)
-            if match:
-                file_path = match.group(1)
-                line_no = int(match.group(2))
+            file_path, line_no = self._extract_failure_location(failure, stack)
+            if file_path and line_no:
                 file_abs = Path(file_path)
                 if not file_abs.is_absolute():
                     file_abs = Path(self.system.project_root) / file_path
