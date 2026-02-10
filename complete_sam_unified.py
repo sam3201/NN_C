@@ -4937,6 +4937,19 @@ class UnifiedSAMSystem:
                             self._invoke_meta_agent_repair(Exception(issue.get('message', 'unknown_issue')),
                                                            context="self_healing")
                         else:
+                            # Track skipped issues for later processing
+                            with self.skipped_issues_lock:
+                                skipped_issue = {
+                                    'message': issue.get('message', 'unknown_issue'),
+                                    'reason': issue.get('reason', 'not_escalated'),
+                                    'timestamp': datetime.now().isoformat(),
+                                    'severity': issue.get('severity', 'low'),
+                                    'context': 'self_healing',
+                                    'original_issue': issue
+                                }
+                                self.skipped_issues.append(skipped_issue)
+                                print(f"📝 Skipped issue queued for later processing: {skipped_issue['message']}")
+                            
                             log_event(
                                 "info",
                                 "self_healing_skip",
