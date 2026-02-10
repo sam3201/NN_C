@@ -7451,10 +7451,13 @@ class UnifiedSAMSystem:
 
                 # Process through SAM system
                 response = self._process_chatbot_message(user_message, context)
+                messages = self._parse_agent_messages(response)
 
                 return jsonify({
                     'message': response,
                     'response': response,
+                    'messages': messages,
+                    'multi_agent': len(messages) > 1,
                     'timestamp': datetime.now().isoformat(),
                     'sam_integration': True
                 })
