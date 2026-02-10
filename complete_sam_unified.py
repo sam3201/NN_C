@@ -4278,6 +4278,7 @@ class UnifiedSAMSystem:
         self.skipped_issues = []  # Queue for issues that were skipped during self-healing
         self.skipped_issues_lock = threading.Lock()
         self.skipped_issues_processor_active = False
+        self._meta_repair_in_progress = False  # Track when meta-agent is busy
         
         # Start issue resolver in separate thread for safety
         issue_thread = threading.Thread(target=self._run_issue_resolver, daemon=True)
