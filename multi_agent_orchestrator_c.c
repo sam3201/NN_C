@@ -10,6 +10,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <Python.h> // Include Python.h here
 
 // Use available headers
 #include "multi_agent_orchestrator_c.h"
@@ -613,8 +614,6 @@ MultiAgentOrchestrator *create_multi_agent_system() {
 // PYTHON BINDINGS - Pure C
 // ================================
 
-#include <Python.h>
-
 static MultiAgentOrchestrator *global_orchestrator = NULL;
 
 // Python-callable functions for multi_agent_orchestrator_c
@@ -888,28 +887,33 @@ static PyObject *py_meta_analysis(PyObject *self, PyObject *args) {
     return py_result;
 }
 
-static PyMethodDef AgentMethods[] = {
-    {"create_agents", py_create_agents, METH_NOARGS, "Create all specialized agents"},
-    {"research", py_research_task, METH_VARARGS, "Perform research task"},
-    {"generate_code", py_code_generation, METH_VARARGS, "Generate code"},
-    {"analyze_market", py_financial_analysis, METH_VARARGS, "Analyze market"},
-    {"assess_survival", py_survival_assessment, METH_NOARGS, "Assess survival threats"},
-    {"analyze_system", py_meta_analysis, METH_VARARGS, "Analyze system component"},
-    {"evaluate_coherence", py_evaluate_coherence, METH_VARARGS, "Evaluate conversation coherence"},
-    {"analyze_code", py_analyze_code, METH_VARARGS, "Analyze code for bugs"},
-    {"generate_fix", py_generate_fix, METH_VARARGS, "Generate bug fix"},
+static PyMethodDef CombinedMethods[] = {
+    // Orchestrator functions
+    {"create_multi_agent_system", py_create_multi_agent_system, METH_NOARGS, "Create the multi-agent orchestration system."},
+    {"start_orchestrator", py_start_orchestrator, METH_NOARGS, "Start the multi-agent orchestrator's message processing thread."},
+    {"get_orchestrator_status", py_get_orchestrator_status, METH_NOARGS, "Get the current status of the orchestrator and its agents."},
+
+    // Specialized agent functions (from specialized_agents_c.c)
+    {"create_agents", py_create_agents, METH_NOARGS, "Create all specialized agents and prebuilt models."},
+    {"research", py_research_task, METH_VARARGS, "Perform a research task using the Researcher agent."},
+    {"generate_code", py_code_generation, METH_VARARGS, "Generate code using the CodeWriter agent."},
+    {"analyze_market", py_financial_analysis, METH_VARARGS, "Analyze market conditions using the Financial agent."},
+    {"assess_survival", py_survival_assessment, METH_NOARGS, "Assess survival threats using the Survival agent."},
+    {"analyze_system", py_meta_analysis, METH_VARARGS, "Analyze system components using the Meta agent."},
+    {"evaluate_coherence", py_evaluate_coherence, METH_VARARGS, "Evaluate conversation coherence."},
+    {"analyze_code", py_analyze_code, METH_VARARGS, "Analyze code for bugs using the BugFixing model."},
+    {"generate_fix", py_generate_fix, METH_VARARGS, "Generate a fix for a bug using the BugFixing model."},
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef agent_module = {
+static struct PyModuleDef orchestrator_and_agents_module = {
     PyModuleDef_HEAD_INIT,
-    "specialized_agents_c",
-    "Pure C specialized agents using existing framework",
-    -1,
-    AgentMethods,
-    NULL, NULL, NULL, NULL
+    "orchestrator_and_agents", // name of module
+    "Combined Multi-Agent Orchestrator and Specialized Agents C Extension", // module documentation
+    -1, // size of per-interpreter state of the module, or -1 if the module keeps state in global variables.
+    CombinedMethods // methods table
 };
 
-PyMODINIT_FUNC PyInit_specialized_agents_c(void) {
-    return PyModule_Create(&agent_module);
+PyMODINIT_FUNC PyInit_orchestrator_and_agents(void) {
+    return PyModule_Create(&orchestrator_and_agents_module);
 }

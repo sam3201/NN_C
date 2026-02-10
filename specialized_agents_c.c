@@ -1,5 +1,3 @@
-#include <Python.h>
-
 /*
  * Pure C Individual Agents - Using Existing Framework Components
  * Complete implementations for all specialized agents
@@ -20,7 +18,7 @@
 #define MAX_SPEC_LEN 512
 #define MAX_COMPONENT_LEN 256
 
-static void safe_copy(char *dest, size_t dest_size, const char *src) {
+void safe_copy(char *dest, size_t dest_size, const char *src) {
     if (!dest || dest_size == 0) {
         return;
     }
@@ -33,30 +31,8 @@ static void safe_copy(char *dest, size_t dest_size, const char *src) {
 }
 
 // ================================
-// COHERENCY/TEACHER PREBUILT MODEL
+// COHERENCY/TEACHER PREBUILT MODEL (Definitions moved to specialized_agents_c.h)
 // ================================
-
-// Coherency model for maintaining conversation coherence
-typedef struct {
-    char *model_name;
-    double coherence_threshold;
-    double *coherence_history;
-    size_t history_length;
-    // Prebuilt model weights/parameters would go here
-    double *attention_weights;
-    double *memory_embeddings;
-} CoherencyModel;
-
-// Teacher model for learning and knowledge transfer
-typedef struct {
-    char *model_name;
-    double learning_rate;
-    double *knowledge_base;
-    size_t knowledge_size;
-    // Prebuilt model parameters
-    double *teaching_weights;
-    double *student_adaptation;
-} TeacherModel;
 
 // Global instances of prebuilt models
 CoherencyModel *global_coherency_model = NULL;
@@ -155,32 +131,30 @@ void coherency_model_free(CoherencyModel *model) {
     }
 }
 
-// ================================
-// BUG-FIXING PREBUILT MODEL
-// ================================
+void teacher_model_free(TeacherModel *model) {
+    if (model) {
+        free(model->model_name);
+        free(model->knowledge_base);
+        free(model->teaching_weights);
+        free(model->student_adaptation);
+        free(model);
+    }
+}
 
-// Bug-fixing model for identifying and repairing code issues
-typedef struct {
-    char *model_name;
-    double confidence_threshold;
-    double *bug_patterns;
-    size_t pattern_count;
-    // Prebuilt model parameters for bug detection and fixing
-    double *detection_weights;
-    double *repair_weights;
-    char **known_bug_types;
-} BugFixingModel;
+// ================================
+// BUG-FIXING PREBUILT MODEL (Definitions moved to specialized_agents_c.h)
+// ================================
 
 // Global instance of bug-fixing model
-static BugFixingModel *global_bug_fixing_model = NULL;
+BugFixingModel *global_bug_fixing_model = NULL;
 
 // Global Python objects for web search integration
-static PyObject *pSamWebSearchModule = NULL;
-static PyObject *pSearchWebWithSamFunc = NULL;
-static int sam_web_search_is_initialized = 0; // Flag to ensure one-time initialization
+PyObject *pSamWebSearchModule = NULL;
+PyObject *pSearchWebWithSamFunc = NULL;
+int sam_web_search_is_initialized = 0; // Flag to ensure one-time initialization
 
 // Function to initialize Python web search module
-static int init_python_web_search() {
+int init_python_web_search() {
     if (sam_web_search_is_initialized) {
         return 1; // Already initialized
     }
@@ -1092,7 +1066,3 @@ void agent_registry_free(AgentRegistry *registry) {
         free(registry);
     }
 }
-
-
-
-
