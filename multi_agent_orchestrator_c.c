@@ -888,14 +888,7 @@ static PyObject *py_meta_analysis(PyObject *self, PyObject *args) {
     return py_result;
 }
 
-// Combined Method Definition Table
-static PyMethodDef CombinedMethods[] = {
-    // Multi-Agent Orchestrator methods
-    {"create_system", py_create_multi_agent_system, METH_NOARGS, "Create multi-agent system"},
-    {"start", py_start_orchestrator, METH_NOARGS, "Start orchestrator"},
-    {"get_status", py_get_orchestrator_status, METH_NOARGS, "Get orchestrator status"},
-    
-    // Specialized Agents methods
+static PyMethodDef AgentMethods[] = {
     {"create_agents", py_create_agents, METH_NOARGS, "Create all specialized agents"},
     {"research", py_research_task, METH_VARARGS, "Perform research task"},
     {"generate_code", py_code_generation, METH_VARARGS, "Generate code"},
@@ -908,17 +901,15 @@ static PyMethodDef CombinedMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef orchestrator_and_agents_module = {
+static struct PyModuleDef agent_module = {
     PyModuleDef_HEAD_INIT,
-    "orchestrator_and_agents", // New module name
-    "Combined Pure C multi-agent orchestrator and specialized agents",
+    "specialized_agents_c",
+    "Pure C specialized agents using existing framework",
     -1,
-    CombinedMethods, // Use the combined methods
+    AgentMethods,
     NULL, NULL, NULL, NULL
 };
 
-PyMODINIT_FUNC PyInit_orchestrator_and_agents(void) { // New initialization function name
-    return PyModule_Create(&orchestrator_and_agents_module);
+PyMODINIT_FUNC PyInit_specialized_agents_c(void) {
+    return PyModule_Create(&agent_module);
 }
-
-
