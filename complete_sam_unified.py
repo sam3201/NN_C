@@ -3903,6 +3903,9 @@ class UnifiedSAMSystem:
         self.allow_unsafe_patches = os.getenv("SAM_ALLOW_UNSAFE_PATCHES", "0") == "1"
         self.profile_name = os.getenv("SAM_PROFILE", "full")
         self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "0") == "1"
+        self.disable_c_agents = os.getenv("SAM_DISABLE_C_AGENTS", "0") == "1"
+        self.c_research_enabled = os.getenv("SAM_DISABLE_C_RESEARCH", "0") != "1"
+        self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "0") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
         self.state_path = Path(os.getenv(
