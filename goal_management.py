@@ -445,9 +445,10 @@ def ensure_domain_goal(goal_manager=None):
 
 class TaskManager:
     """Advanced task management system with scheduling and execution capabilities"""
-    
-    def __init__(self, goal_manager=None):
+
+    def __init__(self, goal_manager=None, system=None):
         self.goal_manager = goal_manager
+        self.system = system or getattr(goal_manager, "system", None)
         self.task_queue = []
         self.execution_history = []
         self.task_priorities = {
@@ -550,7 +551,35 @@ class TaskManager:
     def _execute_task_by_type(self, task):
         """Execute task based on its type"""
         task_type = task.task_type.lower()
-        
+
+        # Prefer in-process system execution if available.
+        system = self.system
+        if system and hasattr(system, "_call_c_agent") and getattr(system, "specialized_agents", None):
+            try:
+                if task_type == "research":
+                    return system._call_c_agent("research", f"Research: {task.description}")
+                if task_type == "code":
+                    return system._call_c_agent("generate_code", f"Code task: {task.description}")
+                if task_type == "finance":
+                    return system._call_c_agent("analyze_market", f"Financial analysis: {task.description}")
+            except Exception as exc:
+                return f"{task_type.title()} task fallback: {exc}"
+
+        if system and task_type == "survival" and hasattr(system, "survival_agent"):
+            try:
+                if hasattr(system.survival_agent, "assess_survival"):
+                    return system.survival_agent.assess_survival()
+            except Exception as exc:
+                return f"Survival assessment fallback: {exc}"
+
+        if system and task_type == "improvement" and hasattr(system, "meta_agent"):
+            try:
+                improvements = system.meta_agent.generate_system_improvements()
+                count = len(improvements.get("improvement_phases", []) or [])
+                return f"System improvement scan completed ({count} candidate(s))"
+            except Exception as exc:
+                return f"Improvement scan fallback: {exc}"
+
         if task_type == 'research':
             return f"Research completed: {task.description}"
         elif task_type == 'code':
