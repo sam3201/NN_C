@@ -6720,6 +6720,8 @@ class UnifiedSAMSystem:
                 'learning_memory_enabled': bool(getattr(self, "learning_memory_enabled", False)),
                 'distill_enabled': bool(getattr(self, "distill_dashboard_enabled", False)),
                 'distill_count': int(self.system_metrics.get('distill_count', 0)),
+                'last_growth_ts': self.system_metrics.get('last_growth_ts'),
+                'last_growth_primitive': self.system_metrics.get('last_growth_primitive'),
                 'timestamp': datetime.now().isoformat()
             })
 
