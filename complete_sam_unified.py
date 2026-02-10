@@ -6886,12 +6886,13 @@ class UnifiedSAMSystem:
                 'kill_switch_enabled': bool(getattr(self, "kill_switch_enabled", False)),
                 'strict_local_only': bool(getattr(self, "strict_local_only", False)),
                 'chat_multi_agent': bool(getattr(self, "chat_multi_agent", False)),
-                'chat_agents_max': int(getattr(self, "chat_agents_max", 3)),
+                'chat_agents_max': int(getattr(self, "chat_agents_max", 4)),
                 'learning_memory_enabled': bool(getattr(self, "learning_memory_enabled", False)),
                 'distill_enabled': bool(getattr(self, "distill_dashboard_enabled", False)),
                 'distill_count': int(self.system_metrics.get('distill_count', 0)),
                 'last_growth_ts': self.system_metrics.get('last_growth_ts'),
                 'last_growth_primitive': self.system_metrics.get('last_growth_primitive'),
+                'last_growth_reason': self.system_metrics.get('last_growth_reason'),
                 'timestamp': datetime.now().isoformat()
             })
 
