@@ -1696,6 +1696,76 @@ class MetaAgent:
         if self.research_enabled:
             print(f"   Meta-Research: {self.research_mode}")
 
+    def _init_persistence(self):
+        """Initialize persistence for learning + distillation."""
+        try:
+            state_path = getattr(self.system, "state_path", None)
+            if state_path:
+                base_dir = Path(state_path).parent / "meta_agent"
+            else:
+                project_root = Path(getattr(self.system, "project_root", "."))
+                base_dir = project_root / "sam_data" / "meta_agent"
+            base_dir.mkdir(parents=True, exist_ok=True)
+            self.persistence_dir = base_dir
+            self.learning_log_path = base_dir / "learning.jsonl"
+            self.distilled_log_path = base_dir / "distilled.jsonl"
+            self._load_persisted_learning()
+        except Exception:
+            # Persistence is best-effort; continue without it.
+            self.persistence_dir = None
+            self.learning_log_path = None
+            self.distilled_log_path = None
+
+    def _load_persisted_learning(self):
+        """Load recent learning/distillation records from disk."""
+        try:
+            if self.learning_log_path and self.learning_log_path.exists():
+                lines = self.learning_log_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                max_items = self.learning_log.maxlen or 50
+                for line in lines[-max_items:]:
+                    try:
+                        record = json.loads(line)
+                        if record:
+                            self.learning_log.append(record)
+                    except Exception:
+                        continue
+            if self.distilled_log_path and self.distilled_log_path.exists():
+                lines = self.distilled_log_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                max_items = self.distilled_memory.maxlen or 50
+                for line in lines[-max_items:]:
+                    try:
+                        record = json.loads(line)
+                        if record:
+                            self.distilled_memory.append(record)
+                    except Exception:
+                        continue
+                if self.distilled_memory:
+                    last = self.distilled_memory[-1]
+                    self.last_distill_ts = last.get("ts", self.last_distill_ts)
+                    self.last_distilled = last.get("summary", self.last_distilled)
+        except Exception:
+            pass
+
+    def _persist_learning_event(self, record: Dict[str, Any]):
+        """Append a learning event to disk."""
+        if not self.learning_log_path:
+            return
+        try:
+            with open(self.learning_log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+    def _persist_distilled_record(self, record: Dict[str, Any]):
+        """Append a distillation record to disk."""
+        if not self.distilled_log_path:
+            return
+        try:
+            with open(self.distilled_log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     def _get_failure_attr(self, failure, name, default=None):
         if isinstance(failure, dict):
             return failure.get(name, default)
