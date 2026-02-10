@@ -9869,6 +9869,65 @@ sam@terminal:~$
                     }
                 }
 
+                async function updateLearningMemory() {
+                    const panel = document.getElementById('learning-memory-panel');
+                    if (!panel) return;
+                    try {
+                        const resp = await fetch('/api/learning/memory?limit=12', {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            panel.innerHTML = `
+                                <div class="log-entry level-warn">
+                                    <div class="meta">Access</div>
+                                    <div class="text">${escapeHtml(err.error || 'Admin token required to view learning memory.')}</div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        const data = await resp.json();
+                        const enabledEl = document.getElementById('learning-enabled');
+                        const countEl = document.getElementById('learning-count');
+                        const distillEl = document.getElementById('learning-distill-count');
+                        if (enabledEl) enabledEl.textContent = data.enabled ? 'ON' : 'OFF';
+                        if (countEl) countEl.textContent = `${data.memory_size || 0}/${data.memory_max || 0}`;
+                        if (distillEl) distillEl.textContent = data.distill_count || 0;
+
+                        panel.innerHTML = '';
+                        const items = data.items || [];
+                        if (!items.length) {
+                            panel.innerHTML = `
+                                <div class="log-entry level-info">
+                                    <div class="meta">Empty</div>
+                                    <div class="text">No learning memory captured yet.</div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        items.forEach((item) => {
+                            const entry = document.createElement('div');
+                            entry.className = 'log-entry level-info';
+                            const ts = item.ts ? new Date(item.ts).toLocaleTimeString() : '';
+                            const user = item.user || 'User';
+                            const prompt = (item.prompt || '').slice(0, 160);
+                            const response = (item.response || '').slice(0, 200);
+                            entry.innerHTML = `
+                                <div class="meta">${escapeHtml(ts)} • ${escapeHtml(user)}</div>
+                                <div class="text">${escapeHtml(prompt)}${response ? '<br/><br/>' + escapeHtml(response) : ''}</div>
+                            `;
+                            panel.appendChild(entry);
+                        });
+                    } catch (err) {
+                        panel.innerHTML = `
+                            <div class="log-entry level-error">
+                                <div class="meta">Error</div>
+                                <div class="text">Failed to load learning memory.</div>
+                            </div>
+                        `;
+                    }
+                }
+
                 function addDashboardLogEntry(raw) {
                     const panel = document.getElementById('dashboard-log-panel');
                     if (!panel) return;
