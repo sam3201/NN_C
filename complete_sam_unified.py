@@ -11874,8 +11874,9 @@ sam@terminal:~$
         """Add an autonomous goal to the goal manager"""
         try:
             if hasattr(self, 'goal_manager'):
+                # Import TaskNode locally to avoid circular import issues
                 from goal_management import TaskNode
-                task = goal_management.TaskNode(
+                task = TaskNode(
                     name=f"[AUTO] {name}",
                     description=description,
                     critical=(priority >= 4),
