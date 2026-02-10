@@ -4843,6 +4843,9 @@ class UnifiedSAMSystem:
         except Exception as exc:
             print(f"⚠️ Meta-agent repair failed: {exc}")
             return False
+        finally:
+            # Always reset the busy flag
+            self._meta_repair_in_progress = False
 
     def _severity_allows_repair(self, severity: str) -> bool:
         """Check severity threshold before allowing meta-agent deployment."""
