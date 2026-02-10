@@ -13116,8 +13116,8 @@ sam@terminal:~$
         print("=" * 80)
 
         # Fail-safe enforcement of meta-only boot constraints
-        if getattr(self, "require_meta_agent", False) and not getattr(self, "two_phase_boot", False):
-            self.meta_only_boot = True
+        # NOTE: Requiring MetaAgent should not automatically force meta-only boot.
+        # Meta-only boot is controlled by SAM_META_ONLY_BOOT or two-phase boot settings.
         if getattr(self, "meta_only_boot", False):
             self.autonomous_enabled = False
             if not getattr(self, "two_phase_boot", False):
