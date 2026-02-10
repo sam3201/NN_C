@@ -1095,7 +1095,7 @@ void agent_registry_free(AgentRegistry *registry) {
 
 #include <Python.h>
 
-static AgentRegistry *global_agents = NULL;
+AgentRegistry *global_agents = NULL;
 
 static PyObject *py_create_agents(PyObject *self, PyObject *args) {
     if (global_agents) {
@@ -1285,96 +1285,4 @@ static PyMethodDef AgentMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef agent_module = {
-    PyModuleDef_HEAD_INIT,
-    "specialized_agents_c",
-    "Pure C specialized agents using existing framework",
-    -1,
-    AgentMethods,
-    NULL, NULL, NULL, NULL
-};
 
-PyMODINIT_FUNC PyInit_specialized_agents_c(void) {
-    return PyModule_Create(&agent_module);
-}
-
-// ================================
-// MAIN FUNCTION - Test All Agents
-// ================================
-
-int main() {
-    printf("🤖 Pure C Specialized Agents - Using Existing SAM Framework\n");
-    printf("Complete agent implementations with real functionality\n\n");
-
-    Py_Initialize(); // Initialize the Python interpreter
-
-    // Initialize Python web search before creating agents for standalone test
-    if (!init_python_web_search()) {
-        fprintf(stderr, "❌ Failed to initialize Python web search in main\n");
-        Py_Finalize();
-        return 1;
-    }
-
-    // Create agent registry
-    AgentRegistry *registry = agent_registry_create();
-    if (!registry) {
-        fprintf(stderr, "❌ Failed to create agent registry\n");
-        Py_Finalize();
-        return 1;
-    }
-
-    printf("✅ All specialized agents created\n\n");
-
-    // Test each agent
-    printf("🧪 Testing individual agents...\n\n");
-
-    // Research Agent
-    printf("🔍 Testing Research Agent:\n");
-    char *research_result = research_agent_perform_search(registry->researcher, "AGI consciousness algorithms");
-    printf("%s\n\n", research_result);
-    free(research_result);
-
-    // Code Writer Agent
-    printf("💻 Testing Code Writer Agent:\n");
-    char *code_result = code_writer_agent_generate_code(registry->coder, "neural network forward pass");
-    printf("%s\n\n", code_result);
-    free(code_result);
-
-    // Financial Agent
-    printf("💰 Testing Financial Agent:\n");
-    char *finance_result = financial_agent_analyze_market(registry->financer, "current market conditions");
-    printf("%s\n\n", finance_result);
-    free(finance_result);
-
-    // Survival Agent
-    printf("🛡️ Testing Survival Agent:\n");
-    char *survival_result = survival_agent_assess_threats(registry->survivor);
-    printf("%s\n\n", survival_result);
-    free(survival_result);
-
-    // Meta Agent
-    printf("🔧 Testing Meta Agent:\n");
-    char *meta_result = meta_agent_analyze_system(registry->meta, "neural network training pipeline");
-    printf("%s\n\n", meta_result);
-    free(meta_result);
-
-    printf("🎯 AGENT SYSTEM STATUS:\n");
-    printf("   Research Agent: ✓ Web scraping capabilities\n");
-    printf("   Code Writer Agent: ✓ Transformer-based code generation\n");
-    printf("   Financial Agent: ✓ NEAT-based market analysis\n");
-    printf("   Survival Agent: ✓ Threat assessment and planning\n");
-    printf("   Meta Agent: ✓ System analysis and improvement\n");
-    printf("   Framework Integration: ✓ SAM, NEAT, Transformer\n");
-    printf("   No Python Dependencies: ✓ Pure C implementations\n");
-    printf("   Real Functionality: ✓ No simplifications or dummies\n");
-
-    // Cleanup
-    agent_registry_free(registry);
-
-    printf("\n✅ All specialized agents tested successfully\n");
-    printf("🎯 Ready for integration into multi-agent orchestrator\n");
-
-    Py_Finalize(); // Shut down the Python interpreter
-
-    return 0;
-}

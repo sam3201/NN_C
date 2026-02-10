@@ -30,17 +30,8 @@ extensions = [
         extra_link_args=[]
     ),
     Extension(
-        'multi_agent_orchestrator_c',
-        sources=['multi_agent_orchestrator_c.c'],
-        include_dirs=['.'],
-        library_dirs=[],
-        libraries=[],
-        extra_compile_args=COMMON_ARGS,
-        extra_link_args=[]
-    ),
-    Extension(
-        'specialized_agents_c',
-        sources=['specialized_agents_c.c'],
+        'orchestrator_and_agents', # New name for the combined extension
+        sources=['multi_agent_orchestrator_c.c', 'specialized_agents_c.c'], # Combine source files
         include_dirs=['.'],
         library_dirs=[],
         libraries=[],

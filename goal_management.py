@@ -701,34 +701,64 @@ class SubgoalExecutionAlgorithm:
         try:
             task_type = subtask.task_type.lower()
             
-            if task_type == 'research':
-                print(f"🔍 Executing research task: {subtask.description}")
-                # Simulate research execution
-                return f"Research completed: {subtask.description}"
-                
-            elif task_type == 'code':
-                print(f"💻 Executing code task: {subtask.description}")
-                # Simulate code generation
-                return f"Code implemented: {subtask.description}"
-                
-            elif task_type == 'finance':
-                print(f"💰 Executing finance task: {subtask.description}")
-                # Simulate financial analysis
-                return f"Financial analysis completed: {subtask.description}"
-                
-            elif task_type == 'survival':
-                print(f"🛡️ Executing survival task: {subtask.description}")
-                # Simulate survival assessment
-                return f"Survival assessment completed: {subtask.description}"
-                
-            elif task_type == 'improvement':
-                print(f"🔧 Executing improvement task: {subtask.description}")
-                # Simulate system improvement
-                return f"System improvement completed: {subtask.description}"
-                
-            else:
-                print(f"⚙️ Executing general task: {subtask.description}")
-                return f"Task completed: {subtask.description}"
+            # Prefer in-process system execution if available.
+            system = self.system
+            if system and hasattr(system, "_call_c_agent") and getattr(system, "specialized_agents", None):
+                try:
+                    if task_type == "research":
+                        # Call real research agent
+                        result = system._call_c_agent("research", f"Research: {subtask.description}")
+                        if result:
+                            print(f"🔍 Real Research completed: {subtask.description}")
+                            return result
+                        else:
+                            return f"Research agent unavailable or failed for: {subtask.description}"
+                    if task_type == "code":
+                        # Call real code generation agent
+                        result = system._call_c_agent("generate_code", f"Code task: {subtask.description}")
+                        if result:
+                            print(f"💻 Real Code implemented: {subtask.description}")
+                            return result
+                        else:
+                            return f"Code generation agent unavailable or failed for: {subtask.description}"
+                    if task_type == "finance":
+                        # Call real financial analysis agent
+                        result = system._call_c_agent("analyze_market", f"Financial analysis: {subtask.description}")
+                        if result:
+                            print(f"💰 Real Financial analysis completed: {subtask.description}")
+                            return result
+                        else:
+                            return f"Financial analysis agent unavailable or failed for: {subtask.description}"
+                except Exception as exc:
+                    return f"{task_type.title()} task (C agent) fallback: {exc}"
+
+            if system and task_type == "survival" and hasattr(system, "survival_agent"):
+                try:
+                    # Call real survival agent
+                    if hasattr(system.survival_agent, "assess_threats"):
+                        result = system.survival_agent.assess_threats()
+                        if result:
+                            print(f"🛡️ Real Survival assessment completed: {subtask.description}")
+                            return result
+                        else:
+                            return f"Survival agent unavailable or failed for: {subtask.description}"
+                except Exception as exc:
+                    return f"Survival assessment fallback: {exc}"
+
+            if system and task_type == "improvement" and hasattr(system, "meta_agent"):
+                try:
+                    # Call real meta agent for system improvements
+                    if hasattr(system.meta_agent, "generate_system_improvements"):
+                        improvements = system.meta_agent.generate_system_improvements()
+                        count = len(improvements.get("improvement_phases", []) or [])
+                        print(f"🔧 Real System improvement scan completed ({count} candidate(s)) for: {subtask.description}")
+                        return f"System improvement scan completed ({count} candidate(s))"
+                except Exception as exc:
+                    return f"Improvement scan fallback: {exc}"
+
+            # Fallback for when no real agent is available or integrated
+            print(f"⚙️ General task executed (no specific agent): {subtask.description}")
+            return f"Task completed: {subtask.description} (Simulated fallback)"
                 
         except Exception as e:
             print(f"⚠️ Error executing subtask {subtask.name}: {e}")

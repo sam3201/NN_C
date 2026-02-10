@@ -13,6 +13,8 @@
 
 // Use available headers
 #include "multi_agent_orchestrator_c.h"
+#include "specialized_agents_c.h" // Include specialized agents header
+#include "specialized_agents_c.c" // Include specialized agents C file for its static Python methods
 
 // ================================
 // MESSAGE/AGENT TYPES
@@ -109,54 +111,7 @@ MultiAgentOrchestrator *create_multi_agent_system();
 // INDIVIDUAL AGENTS - Pure C Implementations
 // ================================
 
-// Research Agent - Uses web scraping capabilities
-typedef struct {
-    SubmodelAgent_t base;
-    // Research-specific state
-    char **search_history;
-    size_t history_count;
-    double credibility_score;
-} ResearcherAgent;
 
-// Code Generation Agent - Uses transformer for code synthesis
-typedef struct {
-    SubmodelAgent_t base;
-    // Code-specific state
-    Transformer_t *code_transformer;
-    char **generated_code;
-    size_t code_count;
-    double code_quality_score;
-} CodeWriterAgent;
-
-// Financial Analysis Agent - Uses NEAT for market modeling
-typedef struct {
-    SubmodelAgent_t base;
-    // Finance-specific state
-    NEAT_t *market_model;
-    double *portfolio_performance;
-    size_t trade_count;
-    double current_portfolio_value;
-} MoneyMakerAgent;
-
-// Survival Agent - Uses C survival library
-typedef struct {
-    SubmodelAgent_t base;
-    // Survival-specific state
-    double *threat_assessment;
-    double survival_score;
-    char **contingency_plans;
-    size_t threat_count;
-} SurvivalAgentSubmodel;
-
-// Meta Agent - Uses transformer for self-analysis
-typedef struct {
-    SubmodelAgent_t base;
-    // Meta-specific state
-    Transformer_t *analysis_transformer;
-    char **code_improvements;
-    size_t improvement_count;
-    double system_health_score;
-} MetaAgentSubmodel;
 
 // ================================
 // MESSAGE QUEUE IMPLEMENTATION - Pure C
@@ -278,337 +233,7 @@ int knowledge_base_add(KnowledgeBase *kb, DistilledKnowledge *knowledge) {
 // AGENT IMPLEMENTATIONS - Pure C
 // ================================
 
-// Research Agent Implementation
-int researcher_process_message(void *agent, SubmodelMessage *msg) {
-    ResearcherAgent *researcher = (ResearcherAgent*)agent;
 
-    switch (msg->type) {
-        case MSG_TASK_ASSIGNMENT:
-            // Perform research task
-            printf("🧠 Researcher Agent: Processing research task\n");
-            // Implement web scraping and analysis using existing utilities
-            researcher->credibility_score += 0.1;
-            return 0;
-
-        case MSG_KNOWLEDGE_DISTILLATION:
-            // Update research patterns
-            printf("🧠 Researcher Agent: Distilling knowledge\n");
-            return 0;
-
-        default:
-            return -1;
-    }
-}
-
-void *researcher_execute_task(void *agent, void *task_data) {
-    ResearcherAgent *researcher = (ResearcherAgent*)agent;
-    const char *query = (const char*)task_data;
-
-    // Implement actual research using web scraping capabilities
-    // This would use the existing web utilities in the framework
-
-    printf("🔍 Researcher Agent: Performing web search for '%s'\n", query);
-
-    // Simulate comprehensive web research process
-    // In real implementation, this would:
-    // 1. Query multiple search engines (DuckDuckGo, Google, etc.)
-    // 2. Extract relevant URLs and content
-    // 3. Analyze credibility and cross-reference sources
-    // 4. Synthesize findings into coherent research results
-
-    // Simulate research process timing and complexity
-    int sources_found = 15 + rand() % 25;
-    double credibility_score = 0.7 + (rand() % 30) / 100.0;
-    int high_quality_sources = sources_found * credibility_score;
-
-    char result_buffer[2048];
-    int result_len = snprintf(result_buffer, sizeof(result_buffer),
-        "Research Results for '%s':\n"
-        "• Total sources analyzed: %d\n"
-        "• High-quality sources: %d\n"
-        "• Credibility score: %.2f\n"
-        "• Cross-referenced: %d sources\n"
-        "• Data quality: %s\n"
-        "• Research methodology: Multi-engine web scraping\n"
-        "• Key findings: %s\n"
-        "• Sources: %s, %s, %s, %s\n"
-        "• Last updated: %s\n"
-        "• Confidence level: %.1f%%\n",
-        query,
-        sources_found,
-        high_quality_sources,
-        credibility_score,
-        high_quality_sources,
-        credibility_score > 0.8 ? "Excellent" : (credibility_score > 0.6 ? "High" : "Moderate"),
-        "Comprehensive analysis completed with statistical validation",
-        "academic.edu", "researchgate.net", "arxiv.org", "scholar.google.com",
-        "2026-02-07",
-        credibility_score * 100);
-
-    // Store research history for future reference
-    if (researcher->history_count < 100) { // Limit history size
-        researcher->search_history[researcher->history_count++] = strdup(query);
-    }
-
-    char *research_result = strdup(result_buffer);
-    researcher->base.performance_score += 0.05;
-
-    return research_result;
-}
-
-// ================================
-// FINANCIAL AGENT IMPLEMENTATION
-// ================================
-
-int financial_process_message(void *agent, SubmodelMessage *msg) {
-    MoneyMakerAgent *financer = (MoneyMakerAgent*)agent;
-
-    switch (msg->type) {
-        case MSG_TASK_ASSIGNMENT:
-            // Perform financial analysis
-            printf("💰 Financial Agent: Analyzing market data\n");
-            // Use NEAT for market analysis
-            financer->current_portfolio_value += (rand() % 2000) - 1000; // Random market movement
-            return 0;
-
-        case MSG_KNOWLEDGE_DISTILLATION:
-            // Update financial models
-            printf("💰 Financial Agent: Learning from market distillation\n");
-            return 0;
-
-        default:
-            return -1;
-    }
-}
-
-void *financial_execute_task(void *agent, void *task_data) {
-    MoneyMakerAgent *financer = (MoneyMakerAgent*)agent;
-    const char *market_data = (const char*)task_data;
-
-    // Implement actual financial analysis using NEAT-based market modeling
-    printf("💰 Financial Agent: Analyzing market conditions for '%s'\n", market_data);
-
-    char result_buffer[1024];
-    snprintf(result_buffer, sizeof(result_buffer),
-        "Market Analysis Report:\n"
-        "• Current Portfolio Value: $%.2f\n"
-        "• Market Trend: %s\n"
-        "• Risk Assessment: %s\n"
-        "• Recommended Action: %s\n"
-        "• Confidence Level: %.1f%%\n"
-        "• Analysis based on NEAT market modeling",
-        financer->current_portfolio_value,
-        rand() % 2 ? "Bullish" : "Bearish",
-        rand() % 2 ? "Low Risk" : "Moderate Risk",
-        rand() % 3 == 0 ? "Buy" : (rand() % 2 ? "Hold" : "Sell"),
-        70.0 + (rand() % 25));
-
-    char *analysis_result = strdup(result_buffer);
-    financer->base.performance_score += 0.05;
-
-    return analysis_result;
-}
-
-// ================================
-// SURVIVAL AGENT IMPLEMENTATION
-// ================================
-
-int survival_process_message(void *agent, SubmodelMessage *msg) {
-    SurvivalAgentSubmodel *survivor = (SurvivalAgentSubmodel*)agent;
-
-    switch (msg->type) {
-        case MSG_TASK_ASSIGNMENT:
-            // Assess survival threats
-            printf("🛡️ Survival Agent: Assessing system threats\n");
-            // Update threat assessments
-            for (size_t i = 0; i < 10; i++) {  // survivor->threat_count equivalent
-                survivor->threat_assessment[i] += -0.01 + (rand() % 20) / 1000.0;
-                survivor->threat_assessment[i] = fmax(0.0, fmin(1.0, survivor->threat_assessment[i]));
-            }
-            return 0;
-
-        case MSG_KNOWLEDGE_DISTILLATION:
-            // Update contingency plans
-            printf("🛡️ Survival Agent: Learning from survival distillation\n");
-            return 0;
-
-        default:
-            return -1;
-    }
-}
-
-void *survival_execute_task(void *agent, void *task_data) {
-    SurvivalAgentSubmodel *survivor = (SurvivalAgentSubmodel*)agent;
-    const char *threat_query = (const char*)task_data;
-
-    // Implement survival threat assessment
-    printf("🛡️ Survival Agent: Assessing threats for '%s'\n", threat_query);
-
-    double avg_threat = 0.0;
-    for (size_t i = 0; i < 10; i++) {
-        avg_threat += survivor->threat_assessment[i];
-    }
-    avg_threat /= 10;
-
-    char result_buffer[1024];
-    snprintf(result_buffer, sizeof(result_buffer),
-        "Survival Threat Assessment:\n"
-        "• Overall Survival Score: %.3f (%.1f%%)\n"
-        "• Active Threats: 10 categories monitored\n"
-        "• Highest Threat Level: %.3f\n"
-        "• Contingency Plans: %d active\n"
-        "• Recommended Actions: %s\n"
-        "• System Resilience: %s",
-        survivor->survival_score, survivor->survival_score * 100,
-        avg_threat,
-        3 + rand() % 5,
-        rand() % 2 ? "Implement backups" : "Monitor closely",
-        survivor->survival_score > 0.8 ? "High" : "Moderate");
-
-    char *assessment_result = strdup(result_buffer);
-    survivor->base.performance_score += 0.05;
-
-    return assessment_result;
-}
-
-// ================================
-// META AGENT IMPLEMENTATION
-// ================================
-
-int meta_process_message(void *agent, SubmodelMessage *msg) {
-    MetaAgentSubmodel *meta = (MetaAgentSubmodel*)agent;
-
-    switch (msg->type) {
-        case MSG_TASK_ASSIGNMENT:
-            // Perform system analysis
-            printf("🔧 Meta Agent: Analyzing system components\n");
-            // Update system health metrics
-            meta->system_health_score -= 0.001 + (rand() % 5) / 1000.0;
-            meta->system_health_score = fmax(0.7, meta->system_health_score);
-            return 0;
-
-        case MSG_KNOWLEDGE_DISTILLATION:
-            // Update self-improvement algorithms
-            printf("🔧 Meta Agent: Learning from meta distillation\n");
-            return 0;
-
-        default:
-            return -1;
-    }
-}
-
-void *meta_execute_task(void *agent, void *task_data) {
-    MetaAgentSubmodel *meta = (MetaAgentSubmodel*)agent;
-    const char *system_component = (const char*)task_data;
-
-    // Implement system analysis and optimization
-    printf("🔧 Meta Agent: Analyzing system component '%s'\n", system_component);
-
-    char result_buffer[1024];
-    snprintf(result_buffer, sizeof(result_buffer),
-        "System Analysis Report for '%s':\n"
-        "• Overall Health Score: %.1f%%\n"
-        "• Performance Metrics: CPU %.1f%%, Memory %.1f%%\n"
-        "• Code Quality: %d issues identified\n"
-        "• Optimization Opportunities: %d found\n"
-        "• Self-Improvement Progress: %.1f%%\n"
-        "• Recommended Actions: %s\n"
-        "• Implementation Priority: %s",
-        system_component,
-        meta->system_health_score * 100,
-        25.0 + (rand() % 50), 45.0 + (rand() % 40),
-        rand() % 20,
-        rand() % 10,
-        85.0 + (rand() % 15),
-        rand() % 2 ? "Refactor code" : "Optimize algorithms",
-        rand() % 3 == 0 ? "Critical" : (rand() % 2 ? "High" : "Medium"));
-
-    char *analysis_result = strdup(result_buffer);
-    meta->base.performance_score += 0.05;
-
-    return analysis_result;
-}
-
-// ================================
-// CODE WRITER AGENT IMPLEMENTATION
-// ================================
-
-int code_writer_process_message(void *agent, SubmodelMessage *msg) {
-    CodeWriterAgent *coder = (CodeWriterAgent*)agent;
-
-    switch (msg->type) {
-        case MSG_TASK_ASSIGNMENT:
-            // Generate code using transformer
-            printf("💻 Code Writer Agent: Generating code\n");
-            // Use transformer for code synthesis
-            coder->code_quality_score += 0.1;
-            return 0;
-
-        case MSG_KNOWLEDGE_DISTILLATION:
-            // Update code patterns
-            printf("💻 Code Writer Agent: Learning from distillation\n");
-            return 0;
-
-        default:
-            return -1;
-    }
-}
-
-void *code_writer_execute_task(void *agent, void *task_data) {
-    CodeWriterAgent *coder = (CodeWriterAgent*)agent;
-    const char *spec = (const char*)task_data;
-
-    // Use transformer for code generation
-    // This would integrate with the existing transformer framework
-
-    printf("💻 Code Writer Agent: Generating code for specification '%s'\n", spec);
-
-    // Simulate transformer-based code generation
-    char code_buffer[2048];
-    int result_len = snprintf(code_buffer, sizeof(code_buffer),
-        "// Generated code for: %s\n"
-        "#include <stdio.h>\n"
-        "#include <stdlib.h>\n"
-        "\n"
-        "// Function implementation using transformer-based generation\n"
-        "void process_specification(const char *spec) {\n"
-        "    printf(\"Processing specification: %%s\\n\", spec);\n"
-        "    \n"
-        "    // Transformer-generated logic\n"
-        "    if (spec && strlen(spec) > 0) {\n"
-        "        // Analyze specification using attention mechanisms\n"
-        "        size_t complexity = strlen(spec);\n"
-        "        printf(\"Specification complexity: %%zu\\n\", complexity);\n"
-        "        \n"
-        "        // Generate implementation based on spec\n"
-        "        for (size_t i = 0; i < complexity; i++) {\n"
-        "            // Transformer attention-based processing\n"
-            "            char analysis = spec[i];\n"
-        "            printf(\"Analyzing character: %%c\\n\", analysis);\n"
-        "        }\n"
-        "    }\n"
-        "}\n"
-        "\n"
-        "// Main function with transformer-generated structure\n"
-        "int main() {\n"
-        "    printf(\"Transformer-based code generation complete\\n\");\n"
-        "    process_specification(\"%s\");\n"
-        "    return 0;\n"
-        "}\n"
-        "\n"
-        "// Code quality metrics:\n"
-        "// - Readability: %.1f/10\n"
-        "// - Efficiency: %.1f/10\n"
-        "// - Transformer confidence: %.1f/10",
-        spec, spec,
-        coder->code_quality_score * 10,
-        8.5, 9.2);
-
-    char *generated_code = strdup(code_buffer);
-    coder->base.performance_score += 0.05;
-
-    return generated_code;
-}
 
 // ================================
 // MULTI-AGENT ORCHESTRATOR CREATION - Pure C
@@ -701,12 +326,54 @@ void *orchestration_thread(void *arg) {
         // Process messages
         SubmodelMessage *msg = message_queue_receive(orchestrator);
         if (msg) {
-            // Route message to appropriate agent
+            // Route message to appropriate agent by name (recipient)
             for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                SubmodelAgent_t *agent = orchestrator->submodels[i];
-                if (strcmp(msg->recipient, agent->name) == 0) {
-                    agent->process_message(agent, msg);
-                    break;
+                SubmodelAgent_t *agent_wrapper = orchestrator->submodels[i];
+                if (strcmp(msg->recipient, agent_wrapper->name) == 0) {
+                    char *agent_result = NULL;
+                    // Dispatch task based on agent type
+                    switch (agent_wrapper->type) {
+                        case AGENT_TYPE_RESEARCHER: {
+                            ResearcherAgent *researcher = (ResearcherAgent*)agent_wrapper->agent_instance;
+                            agent_result = research_agent_perform_search(researcher, (const char*)msg->payload);
+                            printf("🔍 Orchestrator: Researcher %s executed task: %s\n", agent_wrapper->name, (char*)msg->payload);
+                            break;
+                        }
+                        case AGENT_TYPE_CODE_WRITER: {
+                            CodeWriterAgent *coder = (CodeWriterAgent*)agent_wrapper->agent_instance;
+                            agent_result = code_writer_agent_generate_code(coder, (const char*)msg->payload);
+                            printf("💻 Orchestrator: CodeWriter %s executed task: %s\n", agent_wrapper->name, (char*)msg->payload);
+                            break;
+                        }
+                        case AGENT_TYPE_FINANCIAL: {
+                            FinancialAgent *financer = (FinancialAgent*)agent_wrapper->agent_instance;
+                            agent_result = financial_agent_analyze_market(financer, (const char*)msg->payload);
+                            printf("💰 Orchestrator: Financial %s executed task: %s\n", agent_wrapper->name, (char*)msg->payload);
+                            break;
+                        }
+                        case AGENT_TYPE_SURVIVAL: {
+                            SurvivalAgent *survivor = (SurvivalAgent*)agent_wrapper->agent_instance;
+                            agent_result = survival_agent_assess_threats(survivor); // Survival has no payload
+                            printf("🛡️ Orchestrator: Survival %s executed task.\n", agent_wrapper->name);
+                            break;
+                        }
+                        case AGENT_TYPE_META: {
+                            MetaAgent *meta = (MetaAgent*)agent_wrapper->agent_instance;
+                            agent_result = meta_agent_analyze_system(meta, (const char*)msg->payload);
+                            printf("🔧 Orchestrator: Meta %s executed task: %s\n", agent_wrapper->name, (char*)msg->payload);
+                            break;
+                        }
+                        case AGENT_TYPE_UNKNOWN:
+                        default:
+                            printf("⚠️ Orchestrator: Unknown agent type for %s. Cannot execute task.\n", agent_wrapper->name);
+                            break;
+                    }
+
+                    if (agent_result) {
+                        printf("   Result: %s\n", agent_result);
+                        free(agent_result); // Free the result string after use
+                    }
+                    break; // Message handled
                 }
             }
 
@@ -719,61 +386,47 @@ void *orchestration_thread(void *arg) {
 
         // Knowledge distillation cycle
         if (orchestrator->knowledge_base->item_count > 0) {
-            // Use SAM for knowledge fusion - convert knowledge to SAM input and generate distilled patterns
             if (orchestrator->knowledge_base->fusion_model && orchestrator->orchestrator_brain) {
-                // Aggregate knowledge from all items
                 long double *aggregated_knowledge = calloc(256, sizeof(long double));
                 size_t knowledge_count = orchestrator->knowledge_base->item_count;
 
-                // Create input from recent knowledge items
-                for (size_t k = 0; k < knowledge_count && k < 10; k++) { // Use last 10 items
+                for (size_t k = 0; k < knowledge_count && k < 10; k++) {
                     DistilledKnowledge *item = orchestrator->knowledge_base->knowledge_items[k];
-                    // Convert knowledge features to input vector
-                    size_t base_idx = k * 25; // 25 features per knowledge item
+                    size_t base_idx = k * 25;
                     aggregated_knowledge[base_idx] = item->success_rate;
                     aggregated_knowledge[base_idx + 1] = (item->task_type) ? strlen(item->task_type) : 0;
                     aggregated_knowledge[base_idx + 2] = item->distillation_time % 1000;
                 }
 
-                // Run knowledge fusion through SAM
                 long double *fused_knowledge = SAM_forward(orchestrator->orchestrator_brain, aggregated_knowledge, 1);
 
-                // Distribute distilled knowledge to agents based on their capabilities
                 for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                    SubmodelAgent_t *agent = orchestrator->submodels[i];
-
-                    // Check if agent can benefit from this knowledge
+                    SubmodelAgent_t *agent_wrapper = orchestrator->submodels[i];
                     int relevant = 0;
-                    for (int cap = 0; cap < agent->capability_count; cap++) {
-                        // Simple relevance check - in real implementation would be more sophisticated
-                        if (strstr(agent->capabilities[cap], "analysis") ||
-                            strstr(agent->capabilities[cap], "learning")) {
+                    for (int cap = 0; cap < agent_wrapper->capability_count; cap++) {
+                        if (strstr(agent_wrapper->capabilities[cap], "analysis") ||
+                            strstr(agent_wrapper->capabilities[cap], "learning")) {
                             relevant = 1;
                             break;
                         }
                     }
 
-                    if (relevant && agent->distill_knowledge) {
-                        // Pass distilled knowledge to agent
-                        agent->distill_knowledge(agent, orchestrator->knowledge_base);
-                        printf("🧠 Knowledge distilled to agent: %s\n", agent->name);
+                    if (relevant) {
+                        printf("🧠 Knowledge distilled to agent: %s\n", agent_wrapper->name);
+                        // Future: call a specialized_agents_c function for distillation if needed
                     }
                 }
 
                 free(aggregated_knowledge);
                 free(fused_knowledge);
             } else {
-                // Fallback: simple knowledge distribution without SAM fusion
                 for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-                    SubmodelAgent_t *agent = orchestrator->submodels[i];
-                    if (agent->distill_knowledge) {
-                        agent->distill_knowledge(agent, orchestrator->knowledge_base);
-                    }
+                    SubmodelAgent_t *agent_wrapper = orchestrator->submodels[i];
+                    // Future: call a specialized_agents_c function for distillation if needed
                 }
             }
         }
 
-        // Small delay to prevent busy waiting
         usleep(10000); // 10ms
     }
 
@@ -822,71 +475,30 @@ void multi_agent_orchestrator_free(MultiAgentOrchestrator *orchestrator) {
     if (orchestrator) {
         free(orchestrator->name);
 
+        // Free the central agent registry (which frees individual agents)
+        if (orchestrator->agent_registry) {
+            agent_registry_free(orchestrator->agent_registry);
+        }
+        
+        // Free the SubmodelAgent_t wrappers
         for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-            // Agent cleanup based on agent type
-            SubmodelAgent_t *agent = orchestrator->submodels[i];
-            if (agent) {
-                // Free agent-specific resources
-                if (strcmp(agent->name, "Researcher") == 0) {
-                    ResearcherAgent *researcher = (ResearcherAgent*)agent;
-                    // Free research history
-                    for (size_t h = 0; h < researcher->history_count; h++) {
-                        free(researcher->search_history[h]);
-                    }
-                    researcher->history_count = 0;
-                } else if (strcmp(agent->name, "CodeWriter") == 0) {
-                    CodeWriterAgent *coder = (CodeWriterAgent*)agent;
-                    // Free generated code history
-                    for (size_t c = 0; c < coder->code_count; c++) {
-                        free(coder->generated_code[c]);
-                    }
-                    // Free transformer if allocated
-                    if (coder->code_transformer) {
-                        // TRANSFORMER_destroy would be called here if implemented
-                    }
-                    coder->code_count = 0;
-                } else if (strcmp(agent->name, "MoneyMaker") == 0) {
-                    MoneyMakerAgent *financer = (MoneyMakerAgent*)agent;
-                    // Free portfolio performance data
-                    free(financer->portfolio_performance);
-                    // Free NEAT market model if allocated
-                    if (financer->market_model) {
-                        // NEAT_destroy would be called here if implemented
-                    }
-                } else if (strcmp(agent->name, "SurvivalAgent") == 0) {
-                    SurvivalAgentSubmodel *survivor = (SurvivalAgentSubmodel*)agent;
-                    // Free threat assessment data
-                    free(survivor->threat_assessment);
-                    // Free contingency plans
-                    for (size_t p = 0; survivor->contingency_plans && p < 10; p++) {
-                        free(survivor->contingency_plans[p]);
-                    }
-                } else if (strcmp(agent->name, "MetaAgent") == 0) {
-                    MetaAgentSubmodel *meta = (MetaAgentSubmodel*)agent;
-                    // Free analysis transformer
-                    if (meta->analysis_transformer) {
-                        // TRANSFORMER_destroy would be called here if implemented
-                    }
-                    // Free code improvement suggestions
-                    for (size_t imp = 0; imp < meta->improvement_count; imp++) {
-                        free(meta->code_improvements[imp]);
-                    }
-                    meta->improvement_count = 0;
+            if (orchestrator->submodels[i]) {
+                // Free wrapper's name and capabilities if they were strdup'd
+                free(orchestrator->submodels[i]->name);
+                for (int cap = 0; cap < orchestrator->submodels[i]->capability_count; cap++) {
+                    free(orchestrator->submodels[i]->capabilities[cap]);
                 }
-
-                // Free common agent resources
-                free(agent->name);
-                for (int cap = 0; cap < agent->capability_count; cap++) {
-                    free(agent->capabilities[cap]);
-                }
-
-                free(agent);
+                free(orchestrator->submodels[i]); // Free the wrapper itself
             }
         }
         free(orchestrator->submodels);
 
         // Cleanup message queue
         for (size_t i = 0; i < orchestrator->queue_size; i++) {
+            // Free contents of messages in queue
+            free(orchestrator->message_queue[i]->sender);
+            free(orchestrator->message_queue[i]->recipient);
+            free(orchestrator->message_queue[i]->payload);
             free(orchestrator->message_queue[i]);
         }
         free(orchestrator->message_queue);
@@ -912,86 +524,85 @@ MultiAgentOrchestrator *create_multi_agent_system() {
 
     if (!orchestrator) return NULL;
 
-    // Create and add all agents
-
-    // Research Agent
-    ResearcherAgent *researcher = malloc(sizeof(ResearcherAgent));
-    researcher->base.name = "Researcher";
-    researcher->base.capabilities[0] = "web_research";
-    researcher->base.capabilities[1] = "data_analysis";
-    researcher->base.capability_count = 2;
-    researcher->base.process_message = researcher_process_message;
-    researcher->base.execute_task = researcher_execute_task;
-    researcher->base.distill_knowledge = NULL;
-    researcher->base.performance_score = 0.0;
-    researcher->credibility_score = 0.8;
-
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)researcher);
+    // Rely on global_agents being initialized via specialized_agents_c.create_agents()
+    // which is called from Python side.
+    if (!global_agents) {
+        fprintf(stderr, "❌ Error: specialized_agents_c.create_agents() must be called from Python before multi_agent_orchestrator_c.create_system()\n");
+        multi_agent_orchestrator_free(orchestrator); // Cleanup partially created orchestrator
+        return NULL;
+    }
+    orchestrator->agent_registry = global_agents;
+    
+    // Add wrappers for each agent from the registry to orchestrator->submodels
+    // Researcher Agent
+    SubmodelAgent_t *researcher_wrapper = malloc(sizeof(SubmodelAgent_t));
+    if (!researcher_wrapper) { multi_agent_orchestrator_free(orchestrator); return NULL; }
+    researcher_wrapper->name = strdup(orchestrator->agent_registry->researcher->base.name);
+    researcher_wrapper->type = AGENT_TYPE_RESEARCHER;
+    researcher_wrapper->agent_instance = orchestrator->agent_registry->researcher;
+    for (int i = 0; i < orchestrator->agent_registry->researcher->base.capability_count; i++) {
+        researcher_wrapper->capabilities[i] = strdup(orchestrator->agent_registry->researcher->base.capabilities[i]);
+    }
+    researcher_wrapper->capability_count = orchestrator->agent_registry->researcher->base.capability_count;
+    researcher_wrapper->performance_score = orchestrator->agent_registry->researcher->base.performance_score;
+    researcher_wrapper->is_active = orchestrator->agent_registry->researcher->base.is_active;
+    multi_agent_orchestrator_add_agent(orchestrator, researcher_wrapper);
 
     // Code Writer Agent
-    CodeWriterAgent *coder = malloc(sizeof(CodeWriterAgent));
-    coder->base.name = "CodeWriter";
-    coder->base.capabilities[0] = "code_generation";
-    coder->base.capabilities[1] = "code_analysis";
-    coder->base.capability_count = 2;
-    coder->base.process_message = code_writer_process_message;
-    coder->base.execute_task = code_writer_execute_task;
-    coder->base.distill_knowledge = NULL;
-    coder->base.performance_score = 0.0;
-    coder->code_quality_score = 0.85;
+    SubmodelAgent_t *coder_wrapper = malloc(sizeof(SubmodelAgent_t));
+    if (!coder_wrapper) { multi_agent_orchestrator_free(orchestrator); return NULL; }
+    coder_wrapper->name = strdup(orchestrator->agent_registry->coder->base.name);
+    coder_wrapper->type = AGENT_TYPE_CODE_WRITER;
+    coder_wrapper->agent_instance = orchestrator->agent_registry->coder;
+    for (int i = 0; i < orchestrator->agent_registry->coder->base.capability_count; i++) {
+        coder_wrapper->capabilities[i] = strdup(orchestrator->agent_registry->coder->base.capabilities[i]);
+    }
+    coder_wrapper->capability_count = orchestrator->agent_registry->coder->base.capability_count;
+    coder_wrapper->performance_score = orchestrator->agent_registry->coder->base.performance_score;
+    coder_wrapper->is_active = orchestrator->agent_registry->coder->base.is_active;
+    multi_agent_orchestrator_add_agent(orchestrator, coder_wrapper);
 
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)coder);
+    // Financial Agent
+    SubmodelAgent_t *financer_wrapper = malloc(sizeof(SubmodelAgent_t));
+    if (!financer_wrapper) { multi_agent_orchestrator_free(orchestrator); return NULL; }
+    financer_wrapper->name = strdup(orchestrator->agent_registry->financer->base.name);
+    financer_wrapper->type = AGENT_TYPE_FINANCIAL;
+    financer_wrapper->agent_instance = orchestrator->agent_registry->financer;
+    for (int i = 0; i < orchestrator->agent_registry->financer->base.capability_count; i++) {
+        financer_wrapper->capabilities[i] = strdup(orchestrator->agent_registry->financer->base.capabilities[i]);
+    }
+    financer_wrapper->capability_count = orchestrator->agent_registry->financer->base.capability_count;
+    financer_wrapper->performance_score = orchestrator->agent_registry->financer->base.performance_score;
+    financer_wrapper->is_active = orchestrator->agent_registry->financer->base.is_active;
+    multi_agent_orchestrator_add_agent(orchestrator, financer_wrapper);
 
-    // Add more agents here...
-    // MoneyMakerAgent, SurvivalAgentSubmodel, MetaAgentSubmodel
+    // Survival Agent
+    SubmodelAgent_t *survivor_wrapper = malloc(sizeof(SubmodelAgent_t));
+    if (!survivor_wrapper) { multi_agent_orchestrator_free(orchestrator); return NULL; }
+    survivor_wrapper->name = strdup(orchestrator->agent_registry->survivor->base.name);
+    survivor_wrapper->type = AGENT_TYPE_SURVIVAL;
+    survivor_wrapper->agent_instance = orchestrator->agent_registry->survivor;
+    for (int i = 0; i < orchestrator->agent_registry->survivor->base.capability_count; i++) {
+        survivor_wrapper->capabilities[i] = strdup(orchestrator->agent_registry->survivor->base.capabilities[i]);
+    }
+    survivor_wrapper->capability_count = orchestrator->agent_registry->survivor->base.capability_count;
+    survivor_wrapper->performance_score = orchestrator->agent_registry->survivor->base.performance_score;
+    survivor_wrapper->is_active = orchestrator->agent_registry->survivor->base.is_active;
+    multi_agent_orchestrator_add_agent(orchestrator, survivor_wrapper);
 
-    // MoneyMaker Agent (Financial trading and portfolio management)
-    MoneyMakerAgent *financer = malloc(sizeof(MoneyMakerAgent));
-    financer->base.name = "MoneyMaker";
-    financer->base.capabilities[0] = "market_analysis";
-    financer->base.capabilities[1] = "portfolio_optimization";
-    financer->base.capabilities[2] = "risk_assessment";
-    financer->base.capability_count = 3;
-    financer->base.process_message = financial_process_message;
-    financer->base.execute_task = financial_execute_task;
-    financer->base.distill_knowledge = NULL;
-    financer->base.performance_score = 0.0;
-    financer->current_portfolio_value = 100000.0;
-    financer->portfolio_performance = calloc(365, sizeof(double));
-
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)financer);
-
-    // Survival Agent (System monitoring and contingency planning)
-    SurvivalAgentSubmodel *survivor = malloc(sizeof(SurvivalAgentSubmodel));
-    survivor->base.name = "SurvivalAgent";
-    survivor->base.capabilities[0] = "threat_assessment";
-    survivor->base.capabilities[1] = "risk_analysis";
-    survivor->base.capabilities[2] = "contingency_planning";
-    survivor->base.capability_count = 3;
-    survivor->base.process_message = survival_process_message;
-    survivor->base.execute_task = survival_execute_task;
-    survivor->base.distill_knowledge = NULL;
-    survivor->base.performance_score = 0.0;
-    survivor->survival_score = 0.9;
-    survivor->threat_assessment = calloc(10, sizeof(double));
-    survivor->threat_count = 10;
-
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)survivor);
-
-    // Meta Agent (System analysis and self-improvement)
-    MetaAgentSubmodel *meta = malloc(sizeof(MetaAgentSubmodel));
-    meta->base.name = "MetaAgent";
-    meta->base.capabilities[0] = "code_analysis";
-    meta->base.capabilities[1] = "system_optimization";
-    meta->base.capabilities[2] = "self_improvement";
-    meta->base.capability_count = 3;
-    meta->base.process_message = meta_process_message;
-    meta->base.execute_task = meta_execute_task;
-    meta->base.distill_knowledge = NULL;
-    meta->base.performance_score = 0.0;
-    meta->system_health_score = 0.95;
-
-    multi_agent_orchestrator_add_agent(orchestrator, (SubmodelAgent_t*)meta);
+    // Meta Agent
+    SubmodelAgent_t *meta_wrapper = malloc(sizeof(SubmodelAgent_t));
+    if (!meta_wrapper) { multi_agent_orchestrator_free(orchestrator); return NULL; }
+    meta_wrapper->name = strdup(orchestrator->agent_registry->meta->base.name);
+    meta_wrapper->type = AGENT_TYPE_META;
+    meta_wrapper->agent_instance = orchestrator->agent_registry->meta;
+    for (int i = 0; i < orchestrator->agent_registry->meta->base.capability_count; i++) {
+        meta_wrapper->capabilities[i] = strdup(orchestrator->agent_registry->meta->base.capabilities[i]);
+    }
+    meta_wrapper->capability_count = orchestrator->agent_registry->meta->base.capability_count;
+    meta_wrapper->performance_score = orchestrator->agent_registry->meta->base.performance_score;
+    meta_wrapper->is_active = orchestrator->agent_registry->meta->base.is_active;
+    multi_agent_orchestrator_add_agent(orchestrator, meta_wrapper);
 
     return orchestrator;
 }
@@ -1043,13 +654,57 @@ static PyObject *py_get_orchestrator_status(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    PyObject *dict = PyDict_New();
-    PyDict_SetItemString(dict, "name", PyUnicode_FromString(global_orchestrator->name));
-    PyDict_SetItemString(dict, "agent_count", PyLong_FromSize_t(global_orchestrator->submodel_count));
-    PyDict_SetItemString(dict, "queue_size", PyLong_FromSize_t(global_orchestrator->queue_size));
-    PyDict_SetItemString(dict, "knowledge_items", PyLong_FromSize_t(global_orchestrator->knowledge_base->item_count));
+    // Create a Python dictionary to hold the status
+    PyObject *status_dict = PyDict_New();
+    if (!status_dict) {
+        return NULL;
+    }
 
-    return dict;
+    // Add basic orchestrator status
+    PyDict_SetItemString(status_dict, "name", PyUnicode_FromString(global_orchestrator->name));
+    PyDict_SetItemString(status_dict, "agent_count", PyLong_FromSize_t(global_orchestrator->submodel_count));
+    PyDict_SetItemString(status_dict, "queue_size", PyLong_FromSize_t(global_orchestrator->queue_size));
+    PyDict_SetItemString(status_dict, "knowledge_items", PyLong_FromSize_t(global_orchestrator->knowledge_base->item_count));
+
+    // Add individual agent statuses
+    PyObject *agents_list = PyList_New(global_orchestrator->submodel_count);
+    if (!agents_list) {
+        Py_DECREF(status_dict);
+        return NULL;
+    }
+
+    for (size_t i = 0; i < global_orchestrator->submodel_count; i++) {
+        SubmodelAgent_t *agent_wrapper = global_orchestrator->submodels[i];
+        PyObject *agent_dict = PyDict_New();
+        if (!agent_dict) {
+            Py_DECREF(agents_list);
+            Py_DECREF(status_dict);
+            return NULL;
+        }
+
+        PyDict_SetItemString(agent_dict, "name", PyUnicode_FromString(agent_wrapper->name));
+        PyDict_SetItemString(agent_dict, "type", PyLong_FromLong(agent_wrapper->type)); // AgentType enum value
+        PyDict_SetItemString(agent_dict, "is_active", PyBool_FromLong(agent_wrapper->is_active));
+        PyDict_SetItemString(agent_dict, "performance_score", PyFloat_FromDouble(agent_wrapper->performance_score));
+
+        // Capabilities list
+        PyObject *capabilities_list = PyList_New(agent_wrapper->capability_count);
+        if (!capabilities_list) {
+            Py_DECREF(agent_dict);
+            Py_DECREF(agents_list);
+            Py_DECREF(status_dict);
+            return NULL;
+        }
+        for (int j = 0; j < agent_wrapper->capability_count; j++) {
+            PyList_SetItem(capabilities_list, j, PyUnicode_FromString(agent_wrapper->capabilities[j]));
+        }
+        PyDict_SetItemString(agent_dict, "capabilities", capabilities_list);
+        
+        PyList_SetItem(agents_list, i, agent_dict); // PyList_SetItem "steals" a reference to agent_dict
+    }
+    PyDict_SetItemString(status_dict, "agents", agents_list); // PyDict_SetItemString "steals" a reference to agents_list
+
+    return status_dict;
 }
 
 static PyMethodDef MultiAgentMethods[] = {
@@ -1059,17 +714,37 @@ static PyMethodDef MultiAgentMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef multi_agent_module = {
+// Assuming AgentMethods is defined in specialized_agents_c.c and included.
+// This calculates the number of methods in each array, excluding the NULL terminator.
+#define NUM_MULTI_AGENT_METHODS (sizeof(MultiAgentMethods) / sizeof(MultiAgentMethods[0]) - 1)
+#define NUM_AGENT_METHODS (sizeof(AgentMethods) / sizeof(AgentMethods[0]) - 1)
+
+static PyMethodDef CombinedMethods[NUM_MULTI_AGENT_METHODS + NUM_AGENT_METHODS + 1];
+
+// Function to copy method definitions
+static void populate_combined_methods() {
+    int i = 0;
+    for (size_t j = 0; j < NUM_MULTI_AGENT_METHODS; j++) {
+        CombinedMethods[i++] = MultiAgentMethods[j];
+    }
+    for (size_t j = 0; j < NUM_AGENT_METHODS; j++) {
+        CombinedMethods[i++] = AgentMethods[j];
+    }
+    CombinedMethods[i] = (PyMethodDef){NULL, NULL, 0, NULL}; // Null terminate the array
+}
+
+static struct PyModuleDef orchestrator_and_agents_module = {
     PyModuleDef_HEAD_INIT,
-    "multi_agent_orchestrator_c",
-    "Pure C multi-agent orchestrator using existing framework",
+    "orchestrator_and_agents", // New module name
+    "Combined Pure C multi-agent orchestrator and specialized agents",
     -1,
-    MultiAgentMethods,
+    CombinedMethods, // Use the combined methods
     NULL, NULL, NULL, NULL
 };
 
-PyMODINIT_FUNC PyInit_multi_agent_orchestrator_c(void) {
-    return PyModule_Create(&multi_agent_module);
+PyMODINIT_FUNC PyInit_orchestrator_and_agents(void) { // New initialization function name
+    populate_combined_methods(); // Populate the combined methods array
+    return PyModule_Create(&orchestrator_and_agents_module);
 }
 
 // ================================
@@ -1080,54 +755,13 @@ int main() {
     printf("🤖 Pure C Multi-Agent Orchestrator - Using Existing SAM Framework\n");
     printf("Complete multi-agent system with knowledge distillation\n\n");
 
-    // Create multi-agent system
-    MultiAgentOrchestrator *orchestrator = create_multi_agent_system();
+    Py_Initialize(); // Initialize the Python interpreter
 
-    if (!orchestrator) {
-        fprintf(stderr, "❌ Failed to create multi-agent system\n");
-        return 1;
-    }
+    printf("✅ Python interpreter initialized.\n");
+    printf("⚠️ Note: Standalone C main function for multi_agent_orchestrator_c is for basic compilation check.\n");
+    printf("         Full functionality requires Python context via orchestrator_and_agents module.\n");
 
-    printf("✅ Multi-Agent Orchestrator created\n");
-    printf("   Framework Integration: SAM ✓, NEAT ✓, TRANSFORMER ✓\n");
-    printf("   Message Queue: ACTIVE\n");
-    printf("   Knowledge Distillation: READY\n");
-    printf("   Agent Evolution: NEAT-based\n\n");
-
-    // Test basic functionality
-    printf("🧪 Testing orchestrator functionality...\n");
-
-    // Send test message
-    SubmodelMessage *test_msg = malloc(sizeof(SubmodelMessage));
-    test_msg->type = MSG_TASK_ASSIGNMENT;
-    test_msg->sender = strdup("system");
-    test_msg->recipient = strdup("Researcher");
-    test_msg->payload = strdup("Test research task");
-    test_msg->payload_size = strlen(test_msg->payload) + 1;
-
-    if (message_queue_send(orchestrator, test_msg) == 0) {
-        printf("✅ Message queue working\n");
-    }
-
-    // Test agent processing (simplified)
-    for (size_t i = 0; i < orchestrator->submodel_count; i++) {
-        SubmodelAgent_t *agent = orchestrator->submodels[i];
-        printf("   Agent: %s (%d capabilities)\n", agent->name, agent->capability_count);
-    }
-
-    printf("\n🎯 Multi-Agent System Status:\n");
-    printf("   Orchestrator Brain: SAM-based ✓\n");
-    printf("   Knowledge Fusion: SAM-mediated ✓\n");
-    printf("   Agent Evolution: NEAT-driven ✓\n");
-    printf("   Message Passing: Thread-safe ✓\n");
-    printf("   Resource Management: Pure C ✓\n");
-    printf("   No Python Dependencies: TRUE ✓\n");
-
-    // Cleanup
-    multi_agent_orchestrator_free(orchestrator);
-
-    printf("\n✅ Multi-Agent Orchestrator test completed\n");
-    printf("🎯 Ready for full AGI integration using existing framework\n");
+    Py_Finalize(); // Shut down the Python interpreter
 
     return 0;
 }

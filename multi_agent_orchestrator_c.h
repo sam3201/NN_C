@@ -8,7 +8,15 @@
 
 #include <stddef.h>
 #include <pthread.h>
+#include <Python.h> // Required for PyObject
+#include "specialized_agents_c.h" // Include specialized agents header for agent structs
+extern AgentRegistry *global_agents; // Declare global_agents from specialized_agents_c.c
 
+// Forward declarations (these are now defined in specialized_agents_c.h)
+// typedef struct NEAT_t NEAT_t;
+// typedef struct Transformer_t Transformer_t;
+
+// SAM core API (from libsam_core) - still needed
 typedef struct SAM_t {
     int input_dim;
     int hidden_dim;
@@ -16,10 +24,6 @@ typedef struct SAM_t {
     long double *weights;
     long double lr;
 } SAM_t;
-typedef struct NEAT_t NEAT_t;
-typedef struct Transformer_t Transformer_t;
-
-// SAM core API (from libsam_core)
 SAM_t *SAM_init(int input_dim, int hidden_dim, int layers, int flags);
 long double *SAM_forward(SAM_t *sam, long double *input, int steps);
 void SAM_train(SAM_t *sam, long double *input, int steps, long double *target);
@@ -46,21 +50,25 @@ typedef struct {
 } SubmodelMessage;
 
 // ================================
-// AGENT INTERFACES
+// AGENT INTERFACES (GENERIC WRAPPER)
 // ================================
+
+// Enum to identify the type of agent being orchestrated
+typedef enum {
+    AGENT_TYPE_UNKNOWN,
+    AGENT_TYPE_RESEARCHER,
+    AGENT_TYPE_CODE_WRITER,
+    AGENT_TYPE_FINANCIAL,
+    AGENT_TYPE_SURVIVAL,
+    AGENT_TYPE_META
+} AgentType;
 
 typedef struct SubmodelAgentStruct {
     char *name;
+    AgentType type; // New field to identify agent type
+    void *agent_instance; // Pointer to the actual agent struct (e.g., ResearcherAgent*)
     char *capabilities[10];
     int capability_count;
-
-    // Function pointers for agent methods
-    int (*process_message)(void *agent, SubmodelMessage *msg);
-    void *(*execute_task)(void *agent, void *task_data);
-    void (*distill_knowledge)(void *agent, void *knowledge);
-
-    // Agent state
-    void *internal_state;
     double performance_score;
     int is_active;
 } SubmodelAgentStruct;
@@ -83,7 +91,7 @@ typedef struct {
     DistilledKnowledge **knowledge_items;
     size_t item_count;
     size_t capacity;
-    void *fusion_model; // SAM_t
+    SAM_t *fusion_model; // Changed void* to SAM_t*
 } KnowledgeBase;
 
 // ================================
@@ -92,7 +100,8 @@ typedef struct {
 
 typedef struct {
     char *name;
-    SubmodelAgent_t **submodels;
+    AgentRegistry *agent_registry; // Pointer to the central registry from specialized_agents_c
+    SubmodelAgent_t **submodels; // Now stores wrappers around agents from agent_registry
     size_t submodel_count;
 
     // Message queues
@@ -105,8 +114,8 @@ typedef struct {
     KnowledgeBase *knowledge_base;
 
     // Orchestration logic
-    void *orchestrator_brain; // SAM_t
-    void **evolution_models;  // NEAT_t array
+    SAM_t *orchestrator_brain; // Changed void* to SAM_t*
+    void **evolution_models;  // NEAT_t array (still generic as NEAT_t is opaque here)
 
     // Performance tracking
     double *performance_history;
@@ -120,7 +129,7 @@ typedef struct {
 // Create multi-agent orchestrator
 MultiAgentOrchestrator *multi_agent_orchestrator_create(const char *name);
 
-// Add agent to orchestrator
+// Add agent to orchestrator (now adds a wrapper)
 int multi_agent_orchestrator_add_agent(MultiAgentOrchestrator *orchestrator, SubmodelAgent_t *agent);
 
 // Start orchestrator
@@ -132,7 +141,7 @@ void multi_agent_orchestrator_free(MultiAgentOrchestrator *orchestrator);
 // Create multi-agent system
 MultiAgentOrchestrator *create_multi_agent_system();
 
-// Get orchestrator status
-void *get_orchestrator_status(MultiAgentOrchestrator *orchestrator);
+// Get orchestrator status (now returns dict of agent statuses)
+PyObject *get_orchestrator_status(MultiAgentOrchestrator *orchestrator);
 
 #endif // MULTI_AGENT_ORCHESTRATOR_C_H
