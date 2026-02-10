@@ -4714,7 +4714,7 @@ class UnifiedSAMSystem:
         def loop():
             while self.meta_loop_active:
                 signals = self._compute_pressure_signals()
-                sam_meta_controller_c.update_pressure(
+                lambda_val = sam_meta_controller_c.update_pressure(
                     self.meta_controller,
                     signals['residual'],
                     signals['rank_def'],
@@ -4725,6 +4725,13 @@ class UnifiedSAMSystem:
                     signals['compression_waste'],
                     signals['temporal_incoherence']
                 )
+                dominant = None
+                if signals:
+                    dominant = max(signals, key=signals.get)
+                self.system_metrics["last_growth_lambda"] = lambda_val
+                self.system_metrics["last_growth_signals"] = dict(signals)
+                self.system_metrics["last_growth_dominant"] = dominant
+                self.system_metrics["last_growth_signal_ts"] = time.time()
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
                 if primitive is None or primitive == 0:
                     self.system_metrics["last_growth_attempt_ts"] = time.time()
