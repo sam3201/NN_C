@@ -4513,14 +4513,20 @@ class UnifiedSAMSystem:
 
     def _compute_pressure_signals(self):
         """Compute pressure signals from current system metrics"""
-        residual = 0.1 if self.system_metrics.get('learning_events', 0) == 0 else 0.2
-        rank_def = 0.1
-        retrieval_entropy = 0.1 if not self.connected_agents else 0.2
+        residual = 0.12 if self.system_metrics.get('learning_events', 0) == 0 else 0.22
+        rank_def = 0.12
+        retrieval_entropy = 0.12 if not self.connected_agents else 0.25
         interference = 0.05
-        planner_friction = 0.1
+        planner_friction = 0.12
         context_collapse = 0.05
-        compression_waste = 0.1
+        compression_waste = 0.12
         temporal_incoherence = 0.05
+
+        growth_idle = time.time() - (self.system_metrics.get('last_growth_ts') or time.time())
+        if growth_idle > 300:
+            residual = max(residual, 0.25)
+            planner_friction = max(planner_friction, 0.25)
+            retrieval_entropy = max(retrieval_entropy, 0.25)
 
         activity_age = time.time() - (self.system_metrics.get('last_activity') or time.time())
         if activity_age > 120:
