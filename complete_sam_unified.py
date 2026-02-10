@@ -4250,11 +4250,7 @@ class UnifiedSAMSystem:
 
         # Create meta-agent with sub-agents
         self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
-        try:
-            from autonomous_meta_agent import attach_meta_agent
-            attach_meta_agent(self.meta_agent)
-        except Exception:
-            pass
+        # MetaAgent is fully integrated in-process; no external attachment needed.
             
         # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
         self.bootstrap_complete = True
