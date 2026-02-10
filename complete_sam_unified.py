@@ -2125,6 +2125,125 @@ class MetaAgent:
                                     "unknowns": [],
                                     "generated_by": "deterministic_patch_registry"
                                 })
+                        # Import errors: wrap missing imports with try/except
+                        mod_match = re.search(r"No module named '([^']+)'", stack_trace)
+                        if mod_match:
+                            missing_mod = mod_match.group(1)
+                            stripped = line.lstrip()
+                            if stripped.startswith("import ") and missing_mod in stripped:
+                                new_code = (
+                                    f"{indent}try:\n"
+                                    f"{indent}    import {missing_mod}\n"
+                                    f"{indent}except ImportError:\n"
+                                    f"{indent}    {missing_mod} = None\n"
+                                )
+                                rel = str(file_abs)
+                                try:
+                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                except Exception:
+                                    pass
+                                patches.append({
+                                    "id": "deterministic_wrap_import",
+                                    "target_file": rel,
+                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
+                                    "intent": "Wrap missing import in try/except to avoid crash",
+                                    "risk_level": "low",
+                                    "confidence": 0.85,
+                                    "assumptions": ["Missing module can be optional for runtime"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry"
+                                })
+                            elif stripped.startswith("from ") and missing_mod in stripped:
+                                new_code = (
+                                    f"{indent}try:\n"
+                                    f"{indent}    {stripped}"
+                                    f"{indent}except ImportError:\n"
+                                    f"{indent}    pass\n"
+                                )
+                                rel = str(file_abs)
+                                try:
+                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                except Exception:
+                                    pass
+                                patches.append({
+                                    "id": "deterministic_wrap_from_import",
+                                    "target_file": rel,
+                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
+                                    "intent": "Wrap failing from-import to avoid crash",
+                                    "risk_level": "low",
+                                    "confidence": 0.8,
+                                    "assumptions": ["Import failure can be handled gracefully"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry"
+                                })
+                        # ZeroDivisionError: replace literal divide-by-zero
+                        if "ZeroDivisionError" in stack_trace:
+                            if re.search(r"/\s*0\b", line):
+                                fixed = re.sub(r"/\s*0\b", "/ 1", line, count=1)
+                                if fixed != line:
+                                    rel = str(file_abs)
+                                    try:
+                                        rel = str(file_abs.relative_to(self.system.project_root))
+                                    except Exception:
+                                        pass
+                                    patches.append({
+                                        "id": "deterministic_fix_div_zero",
+                                        "target_file": rel,
+                                        "changes": [{"type": "replace", "old_code": line, "new_code": fixed}],
+                                        "intent": "Avoid literal divide-by-zero",
+                                        "risk_level": "medium",
+                                        "confidence": 0.8,
+                                        "assumptions": ["Literal divisor zero can be safely replaced"],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry"
+                                    })
+                        # IndexError: add bounds guard for simple constant index access
+                        if "IndexError" in stack_trace:
+                            idx_match = re.match(
+                                r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
+                                line
+                            )
+                            if idx_match:
+                                indent = idx_match.group(1)
+                                ret_kw = idx_match.group(2)
+                                assign_prefix = idx_match.group(3)
+                                seq = idx_match.group(4)
+                                idx = idx_match.group(5)
+                                rest = idx_match.group(6) or ""
+                                if ret_kw:
+                                    new_code = (
+                                        f"{indent}if {idx} < len({seq}):\n"
+                                        f"{indent}    return {seq}[{idx}]{rest}\n"
+                                        f"{indent}return None\n"
+                                    )
+                                elif assign_prefix:
+                                    new_code = (
+                                        f"{indent}if {idx} < len({seq}):\n"
+                                        f"{indent}    {assign_prefix}{seq}[{idx}]{rest}\n"
+                                        f"{indent}else:\n"
+                                        f"{indent}    {assign_prefix}None\n"
+                                    )
+                                else:
+                                    new_code = (
+                                        f"{indent}if {idx} < len({seq}):\n"
+                                        f"{indent}    {seq}[{idx}]{rest}\n"
+                                    )
+                                rel = str(file_abs)
+                                try:
+                                    rel = str(file_abs.relative_to(self.system.project_root))
+                                except Exception:
+                                    pass
+                                patches.append({
+                                    "id": "deterministic_guard_index",
+                                    "target_file": rel,
+                                    "changes": [{"type": "replace", "old_code": line, "new_code": new_code}],
+                                    "intent": "Guard index access to prevent IndexError",
+                                    "risk_level": "medium",
+                                    "confidence": 0.8,
+                                    "assumptions": ["Guarding constant index is acceptable"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry"
+                                })
                 except Exception:
                     pass
 
