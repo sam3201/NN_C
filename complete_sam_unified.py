@@ -4831,6 +4831,8 @@ class UnifiedSAMSystem:
         self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "1") == "1"
         self.disable_c_agents = os.getenv("SAM_DISABLE_C_AGENTS", "0") == "1"
         self.c_research_enabled = os.getenv("SAM_DISABLE_C_RESEARCH", "0") != "1"
+        self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1" # Default to True
+        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3")) # Default to 3
         self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
@@ -10926,7 +10928,19 @@ sam@terminal:~$
         _, cfg = agents[0]
         name = cfg.get("name") or cfg.get("id") or "Agent"
         text = self._generate_local_agent_reply(cfg, message, context)
-        return f"[{name}] {text}"
+        
+        # Determine provenance
+        provenance = "local-python-agent" # Default
+        if cfg.get("type") == "SAM Agent" or cfg.get("provider") == "c-core":
+            provenance = "local-c-agent"
+        elif cfg.get("provider") and _is_external_provider_spec(cfg["provider"]):
+            provenance = "external-provider"
+        elif cfg.get("connection_type") == "cloned":
+            provenance = "cloned-agent"
+        elif cfg.get("type") == "LLM" and cfg.get("provider"):
+            provenance = f"external-{cfg['provider'].lower()}"
+
+        return f"[{name} ({provenance})] {text}"
 
     def _multi_agent_local_response(self, message, context, max_agents=3):
         agents = self._select_chat_agents(max_agents=max_agents)
@@ -10936,7 +10950,18 @@ sam@terminal:~$
         for _, cfg in agents:
             text = self._generate_local_agent_reply(cfg, message, context)
             name = cfg.get("name") or cfg.get("id") or "Agent"
-            responses.append(f"[{name}] {text}")
+            
+            provenance = "local-python-agent" # Default
+            if cfg.get("type") == "SAM Agent" or cfg.get("provider") == "c-core":
+                provenance = "local-c-agent"
+            elif cfg.get("provider") and _is_external_provider_spec(cfg["provider"]):
+                provenance = "external-provider"
+            elif cfg.get("connection_type") == "cloned":
+                provenance = "cloned-agent"
+            elif cfg.get("type") == "LLM" and cfg.get("provider"):
+                provenance = f"external-{cfg['provider'].lower()}"
+
+            responses.append(f"[{name} ({provenance})] {text}")
         return "\n\n".join(responses)
 
     def _parse_agent_messages(self, text: str) -> list[dict]:
@@ -10946,14 +10971,21 @@ sam@terminal:~$
         messages = []
         current = None
         for line in text.splitlines():
-            match = re.match(r"^\\[(.+?)\\]\\s*(.*)$", line.strip())
+            match = re.match(r"^\\[(.+?)(?:\\s*\\((.+?)\\))?\\]\\s*(.*)$", line.strip())
             if match:
                 if current:
                     messages.append(current)
+                
+                agent_name = match.group(1).strip()
+                provenance = (match.group(2) or "").strip() # Capture provenance, default to empty string if not found
+                content = match.group(3).strip()
+
                 current = {
-                    "agent": match.group(1).strip(),
-                    "content": match.group(2).strip(),
+                    "agent": agent_name,
+                    "content": content,
                 }
+                if provenance:
+                    current["provenance"] = provenance # Add provenance only if present
             else:
                 if current:
                     if current["content"]:
@@ -10963,7 +10995,7 @@ sam@terminal:~$
         if current:
             messages.append(current)
         if not messages:
-            messages = [{"agent": "SAM", "content": text.strip()}]
+            messages = [{"agent": "SAM", "content": text.strip(), "provenance": "unknown"}] # Default provenance for generic SAM
         return messages
 
     def _build_learning_context(self, limit: int = 3) -> str:
@@ -12118,6 +12150,97 @@ sam@terminal:~$
                     }
                 }
 
+                async function updateMetaAgentStatus() {
+                    try {
+                        const resp = await fetch('/api/meta/status', {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            console.error('Failed to fetch meta agent status:', err.error || resp.statusText);
+                            return;
+                        }
+                        const data = await resp.json();
+                        const metaAgent = data.local_meta_agent || {};
+
+                        document.getElementById('meta-last-patch-outcome').textContent = metaAgent.last_patch_outcome || 'N/A';
+                        document.getElementById('meta-last-repair-time').textContent = metaAgent.last_repair_time ? new Date(metaAgent.last_repair_time).toLocaleString() : 'N/A';
+                        document.getElementById('meta-distill-count').textContent = metaAgent.distilled_count !== undefined ? metaAgent.distilled_count : 'N/A';
+                        document.getElementById('meta-successful-fixes').textContent = metaAgent.successful_fixes !== undefined ? metaAgent.successful_fixes : 'N/A';
+                        document.getElementById('meta-failed-attempts').textContent = metaAgent.failed_attempts !== undefined ? metaAgent.failed_attempts : 'N/A';
+                    } catch (error) {
+                        console.error('Error updating meta agent status:', error);
+                    }
+                }
+
+                async function triggerMetaAgentTest() {
+                    const resultEl = document.getElementById('meta-test-result');
+                    resultEl.textContent = 'Triggering test...';
+                    try {
+                        const resp = await fetch('/api/meta/test', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({ dry_run: false })
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.error || `Test failed (${resp.status})`);
+                        }
+                        resultEl.textContent = `Test Result: ${data.status.toUpperCase()} - Patched: ${data.patched}`;
+                        showUiAlert('Meta-agent test triggered. Check logs.');
+                        updateMetaAgentStatus(); // Refresh status after test
+                    } catch (error) {
+                        resultEl.textContent = `Test Error: ${error.message}`;
+                        showUiAlert(`Meta-agent test failed: ${error.message}`);
+                    }
+                }
+
+                async function updateMetaAgentStatus() {
+                    try {
+                        const resp = await fetch('/api/meta/status', {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            console.error('Failed to fetch meta agent status:', err.error || resp.statusText);
+                            return;
+                        }
+                        const data = await resp.json();
+                        const metaAgent = data.local_meta_agent || {};
+
+                        document.getElementById('meta-last-patch-outcome').textContent = metaAgent.last_patch_outcome || 'N/A';
+                        document.getElementById('meta-last-repair-time').textContent = metaAgent.last_repair_time ? new Date(metaAgent.last_repair_time).toLocaleString() : 'N/A';
+                        document.getElementById('meta-distill-count').textContent = metaAgent.distilled_count !== undefined ? metaAgent.distilled_count : 'N/A';
+                        document.getElementById('meta-successful-fixes').textContent = metaAgent.successful_fixes !== undefined ? metaAgent.successful_fixes : 'N/A';
+                        document.getElementById('meta-failed-attempts').textContent = metaAgent.failed_attempts !== undefined ? metaAgent.failed_attempts : 'N/A';
+                    } catch (error) {
+                        console.error('Error updating meta agent status:', error);
+                    }
+                }
+
+                async function triggerMetaAgentTest() {
+                    const resultEl = document.getElementById('meta-test-result');
+                    resultEl.textContent = 'Triggering test...';
+                    try {
+                        const resp = await fetch('/api/meta/test', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({ dry_run: false })
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.error || `Test failed (${resp.status})`);
+                        }
+                        resultEl.textContent = `Test Result: ${data.status.toUpperCase()} - Patched: ${data.patched}`;
+                        showUiAlert('Meta-agent test triggered. Check logs.');
+                        updateMetaAgentStatus(); // Refresh status after test
+                    } catch (error) {
+                        resultEl.textContent = `Test Error: ${error.message}`;
+                        showUiAlert(`Meta-agent test failed: ${error.message}`);
+                    }
+                }
+
+
                 function addDashboardLogEntry(raw) {
                     const panel = document.getElementById('dashboard-log-panel');
                     if (!panel) return;
@@ -12945,6 +13068,10 @@ sam@terminal:~$
                 loadChatConfig();
                 initDashboardLogStream();
                 fetchDashboardLogSnapshot();
+
+                // New MetaAgent Status and Test Initialization
+                setInterval(updateMetaAgentStatus, 15000); // Update every 15 seconds
+                updateMetaAgentStatus(); // Initial call
         """
 
         html = f"""

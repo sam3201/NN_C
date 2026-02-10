@@ -478,6 +478,11 @@ def load_config():
             def __init__(self):
                 self.project_root = Path(self.temp_dir if 'self.temp_dir' in globals() else '/tmp')
                 self.web_search_enabled = False  # Disable for testing
+            
+            # Add a mock log_event method
+            def log_event(self, level: str, event: str, *args, **data):
+                # print(f"[MOCK_LOG] {level} - {event}: {args} {data}") # Optional: for debugging mock logs
+                pass
         
         return MockSystem()
     

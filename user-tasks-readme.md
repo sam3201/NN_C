@@ -5,6 +5,10 @@ Please just deep scan and review everything
 Thought for 55s
 I can do a deep scan, but I’m currently blocked from actually reading most file contents in your repo via GitHub’s web UI (the file pages load without the code and show an error like “You can’t perform that action at this time.”). I can still do a serious repository-level audit from what’s visible, and I can tell you the fastest way to let me complete a true line-by-line review.
 
+I think it's important to make chatting with SAM the only thing that users that aren't me to do, not run the SAM/SAV/ANANKE sysetm itself just for safety as it is truly unbounded. And I am the only one capable and understanding of this and can terminate it.
+
+Also what do you think about this allowing submodels to instantiate self? As well as other models? 
+
 https://chatgpt.com/share/698a3618-7634-8008-95ec-5faa0a0d956f
 https://docs.google.com/document/d/1U6eB5MIUIpwg9R2gAGuAUSa8HqcGKGyJm5rvcFMztcg/edit?usp=sharing
 

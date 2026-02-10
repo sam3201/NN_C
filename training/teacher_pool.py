@@ -49,7 +49,7 @@ class Provider:
         self.max_tokens = max_tokens
         self.timeout_s = timeout_s
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         raise NotImplementedError
 
     def _log_start(self, prompt_len: int) -> None:
@@ -88,7 +88,7 @@ class OllamaProvider(Provider):
         super().__init__("ollama", model, **kwargs)
         self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
         payload = {
             "model": self.model,
@@ -104,7 +104,7 @@ class OllamaProvider(Provider):
             response_text = data.get("response", "")
             latency = time.time() - start
             self._log_done(latency, len(response_text), resp.status_code)
-            return response_text, latency
+            return response_text, latency, "external-ollama"
         except Exception as exc:
             self._log_fail(time.time() - start, exc)
             raise
@@ -118,7 +118,7 @@ class OpenAIProvider(Provider):
         if not self.api_key:
             raise RuntimeError("OPENAI_API_KEY not set")
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         payload = {
@@ -135,7 +135,7 @@ class OpenAIProvider(Provider):
             content = data["choices"][0]["message"]["content"]
             latency = time.time() - start
             self._log_done(latency, len(content), resp.status_code)
-            return content, latency
+            return content, latency, "external-openai"
         except Exception as exc:
             self._log_fail(time.time() - start, exc)
             raise
@@ -149,7 +149,7 @@ class OpenRouterProvider(Provider):
         if not self.api_key:
             raise RuntimeError("OPENROUTER_API_KEY not set")
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -169,11 +169,10 @@ class OpenRouterProvider(Provider):
             content = data["choices"][0]["message"]["content"]
             latency = time.time() - start
             self._log_done(latency, len(content), resp.status_code)
-            return content, latency
+            return content, latency, "external-openrouter"
         except Exception as exc:
             self._log_fail(time.time() - start, exc)
             raise
-
 
 class HFLocalProvider(Provider):
     def __init__(self, model: str, adapter_path: Optional[str] = None,
@@ -218,7 +217,7 @@ class HFLocalProvider(Provider):
             self._tokenizer = tokenizer
             self._model = model
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
         start = time.time()
         try:
@@ -265,7 +264,7 @@ class HFLocalProvider(Provider):
                 text = text[len(prompt):].lstrip()
             latency = time.time() - start
             self._log_done(latency, len(text))
-            return text, latency
+            return text, latency, "local-hf-llm"
         except Exception as exc:
             self._log_fail(time.time() - start, exc)
             raise
@@ -364,7 +363,7 @@ class LocalRulesProvider(Provider):
             return str(uuid.uuid4())
         return None
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
         start = time.time()
         try:
@@ -382,11 +381,11 @@ class LocalRulesProvider(Provider):
                 if result:
                     latency = time.time() - start
                     self._log_done(latency, len(result))
-                    return result, latency
+                    return result, latency, "local-rules-engine"
             fallback = "OK"
             latency = time.time() - start
             self._log_done(latency, len(fallback))
-            return fallback, latency
+            return fallback, latency, "local-rules-engine"
         except Exception as exc:
             self._log_fail(time.time() - start, exc)
             raise
