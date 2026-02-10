@@ -8210,8 +8210,8 @@ sam@terminal:~$
                     if provider:
                         summary, _ = provider.generate(synthesis_prompt)
                         summary = (summary or "").strip()
-                    elif self.specialized_agents:
-                        summary = specialized_agents_c.research(synthesis_prompt)
+                    if not summary:
+                        summary = self._synthesize_sources_locally(query, sources)
 
                 if not summary:
                     if self.specialized_agents:

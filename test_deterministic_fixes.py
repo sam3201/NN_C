@@ -50,7 +50,7 @@ def broken_function()
             stack_trace=f'''File "{test_file}", line 2
     def broken_function()
     ^
-SyntaxError: expected ':'''',
+SyntaxError: expected ':' ''',
             timestamp=datetime.now().isoformat(),
             severity="medium",
             context="test"
