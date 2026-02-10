@@ -15,7 +15,8 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from complete_sam_unified import (
     MetaAgent, ObserverAgent, FaultLocalizerAgent, PatchGeneratorAgent, VerifierJudgeAgent,
