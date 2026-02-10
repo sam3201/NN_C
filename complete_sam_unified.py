@@ -7681,7 +7681,75 @@ sam@terminal:~$
         for item in candidates:
             if item not in ordered:
                 ordered.append(item)
+        if len(ordered) < max_agents:
+            existing_ids = {agent_id for agent_id, _ in ordered}
+            fallback_agents = [
+                {
+                    "id": "researcher_local",
+                    "name": "Researcher",
+                    "type": "research",
+                    "specialty": "research",
+                    "capabilities": ["local_research", "synthesis"],
+                },
+                {
+                    "id": "code_writer_local",
+                    "name": "CodeWriter",
+                    "type": "code",
+                    "specialty": "code",
+                    "capabilities": ["local_code", "analysis"],
+                },
+                {
+                    "id": "financial_analyst_local",
+                    "name": "Financial Analyst",
+                    "type": "finance",
+                    "specialty": "finance",
+                    "capabilities": ["local_finance", "risk_assessment"],
+                },
+                {
+                    "id": "survival_agent_local",
+                    "name": "Survival Agent",
+                    "type": "survival",
+                    "specialty": "survival",
+                    "capabilities": ["risk_scan", "contingency"],
+                },
+                {
+                    "id": "meta_agent_local",
+                    "name": "MetaAgent",
+                    "type": "meta",
+                    "specialty": "meta",
+                    "capabilities": ["self_healing", "diagnostics"],
+                },
+            ]
+            for cfg in fallback_agents:
+                if cfg["id"] in existing_ids:
+                    continue
+                ordered.append((cfg["id"], cfg))
+                if len(ordered) >= max_agents:
+                    break
         return ordered[:max_agents]
+
+    def _synthesize_sources_locally(self, query: str, sources: list[dict]) -> str:
+        """Lightweight local synthesis when no provider is available."""
+        if not sources:
+            return f"No sources found for {query}."
+        snippets = []
+        for item in sources[:5]:
+            snippet = (item.get("snippet") or item.get("content") or "").strip()
+            title = item.get("title") or item.get("source") or "source"
+            if snippet:
+                if len(snippet) > 240:
+                    snippet = snippet[:240].rstrip() + "…"
+                snippets.append(f"- {title}: {snippet}")
+        if not snippets:
+            snippets.append("- Sources returned without usable snippets.")
+        summary_lines = [
+            "Key points:",
+            *snippets,
+            "",
+            "Implications: Signals active development; validate with primary sources before action.",
+            "Open questions: What is production readiness, real-world adoption, and independent verification?",
+        ]
+        return "\n".join(summary_lines)
 
     def _generate_local_agent_reply(self, agent_cfg, message, context):
         """Generate a local-only response without external providers."""
