@@ -11682,6 +11682,12 @@ sam@terminal:~$
                         
                         # Execute TaskManager cycle
                         if hasattr(self, 'task_manager'):
+                            try:
+                                if hasattr(self, 'goal_manager'):
+                                    self.goal_manager.ensure_subtasks_for_active_goals()
+                                self.task_manager.sync_with_goal_manager()
+                            except Exception as exc:
+                                print(f"⚠️ TaskManager sync error: {exc}", flush=True)
                             result = self.task_manager.execute_next_task()
                             if result:
                                 print(f"🔧 TaskManager executed: {result}")
