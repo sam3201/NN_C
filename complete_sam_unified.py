@@ -9110,7 +9110,7 @@ sam@terminal:~$
 
                 if not summary:
                     if self.specialized_agents:
-                        summary = specialized_agents_c.research(f"Research: {query}")
+                        summary = self._call_c_agent("research", f"Research: {query}")
                     else:
                         summary = "Research engine unavailable."
 
