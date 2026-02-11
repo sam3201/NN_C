@@ -650,8 +650,9 @@ class TaskManager:
 class SubgoalExecutionAlgorithm:
     """Algorithm for executing subgoals and coordinating task execution"""
     
-    def __init__(self, goal_manager=None):
+    def __init__(self, goal_manager=None, system=None):
         self.goal_manager = goal_manager
+        self.system = system
         self.execution_history = []
         
     def execute_cycle(self):

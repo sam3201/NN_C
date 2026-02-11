@@ -4582,252 +4582,6 @@ class IntelligentIssueResolver:
         print("\\n✅ All issues resolved automatically!")
         return True
 
-    """Simple fallback meta-agent with required deployment attributes"""
-
-    def __init__(self):
-        # REQUIRED STATE ATTRIBUTES (DEPLOYMENT BLOCKERS FIXED)
-        self.failure_clusters = {}  # cluster_id -> list[failure]
-        self.patch_history = []  # list of applied/rejected patches
-        self.confidence_threshold = 0.80  # Safety threshold
-
-        print("📚 Simple Meta-Agent initialized with deployment attributes")
-
-    def get_cluster_statistics(self):
-        """Get statistics about failure clusters for deployment checks"""
-        total_failures = sum(len(v) for v in self.failure_clusters.values())
-        return {
-            "total_clusters": len(self.failure_clusters),
-            "total_failures": total_failures,
-            "average_cluster_size": total_failures / len(self.failure_clusters)
-            if self.failure_clusters
-            else 0.0,
-            "largest_cluster": max(
-                (len(v) for v in self.failure_clusters.values()), default=0
-            ),
-            "clusters_with_fixes": 0,
-        }
-
-    def is_fully_initialized(self):
-        """Check if meta-agent is ready"""
-        return True
-
-    def ensure_initialization(self):
-        """Ensure initialization"""
-        return True
-
-    """AI-powered system for detecting and resolving issues automatically"""
-
-    def __init__(self, system_instance):
-        self.system = system_instance
-        self.detected_issues = []
-        self.resolution_attempts = {}
-        self.chat_integration = None
-
-    def detect_initialization_issues(self):
-        """Detect issues during system initialization"""
-        issues = []
-
-        # Check component availability
-        components = {
-            "google_drive": self.system.google_drive_available,
-            "web_search": self.system.sam_web_search_available,
-            "code_modifier": self.system.sam_code_modifier_available,
-            "gmail": self.system.sam_gmail_available,
-            "github": self.system.sam_github_available,
-        }
-
-        for component, available in components.items():
-            if not available:
-                issues.append(
-                    {
-                        "type": "missing_integration",
-                        "component": component,
-                        "severity": "high",
-                        "message": f"{component.replace('_', ' ').title()} integration not available",
-                        "auto_fix_possible": self._can_auto_fix_integration(component),
-                        "escalate_to_meta": False,
-                    }
-                )
-
-        # Check API keys
-        api_keys = {
-            "github_token": os.getenv("GITHUB_TOKEN"),
-            "google_api_key": os.getenv("GOOGLE_API_KEY"),
-            "anthropic_key": os.getenv("ANTHROPIC_API_KEY"),
-            "openai_key": os.getenv("OPENAI_API_KEY"),
-        }
-
-        for key_name, value in api_keys.items():
-            if not value:
-                issues.append(
-                    {
-                        "type": "missing_api_key",
-                        "component": key_name,
-                        "severity": "medium",
-                        "message": f"{key_name.replace('_', ' ').title()} not configured",
-                        "auto_fix_possible": False,  # Requires user input
-                        "escalate_to_meta": False,
-                    }
-                )
-
-        self.detected_issues = issues
-        return issues
-
-    def _can_auto_fix_integration(self, component):
-        """Check if an integration issue can be auto-fixed"""
-        auto_fixable = {
-            "google_drive": False,  # Requires credentials file
-            "web_search": True,  # Can work without Google Drive
-            "code_modifier": True,  # Core functionality
-            "gmail": False,  # Requires email setup
-            "github": True,  # Can work without token (read-only)
-        }
-        return auto_fixable.get(component, False)
-
-    def attempt_auto_resolution(self, issue):
-        """Attempt to automatically resolve an issue"""
-        # 🔒 PREVENT BOOTSTRAP THRASHING - Don't attempt auto-resolution during bootstrap
-        if not getattr(self.system, "bootstrap_complete", False):
-            print(f"🔒 Skipping auto-resolution during bootstrap: {issue['message']}")
-            return False
-
-        issue_id = f"{issue['type']}_{issue['component']}"
-        self.resolution_attempts[issue_id] = {"attempts": [], "success": False}
-
-        print(f"🤖 Attempting auto-resolution for: {issue['message']}")
-
-        if issue["type"] == "missing_integration":
-            success = self._fix_missing_integration(issue["component"])
-        elif issue["type"] == "missing_api_key":
-            success = self._fix_missing_api_key(issue["component"])
-        else:
-            success = False
-
-        self.resolution_attempts[issue_id]["success"] = success
-
-        if success:
-            print(f"✅ Auto-resolution successful for: {issue['message']}")
-        else:
-            print(f"❌ Auto-resolution failed for: {issue['message']}")
-
-        return success
-
-    def _fix_missing_integration(self, component):
-        """Attempt to fix missing integration"""
-        if component == "web_search":
-            # Web search can work without Google Drive
-            try:
-                from sam_web_search import initialize_sam_web_search
-
-                initialize_sam_web_search()
-                return True
-            except Exception as e:
-                print(f"  Web search auto-fix failed: {e}")
-                return False
-
-        elif component == "code_modifier":
-            # Code modifier is core functionality
-            try:
-                from sam_code_modifier import initialize_sam_code_modifier
-
-                project_root = str(Path(__file__).parent)
-                initialize_sam_code_modifier(project_root)
-                return True
-            except Exception as e:
-                print(f"  Code modifier auto-fix failed: {e}")
-                return False
-
-        elif component == "github":
-            # GitHub can work without token (read-only)
-            try:
-                from sam_github_integration import initialize_sam_github
-
-                initialize_sam_github()
-                return True
-            except Exception as e:
-                print(f"  GitHub auto-fix failed: {e}")
-                return False
-
-        return False
-
-    def _fix_missing_api_key(self, key_name):
-        """Attempt to fix missing API key"""
-        # For now, we can't auto-fix API keys as they require user input
-        # But we could check if they're set in environment
-        env_var = key_name.upper()
-        if os.getenv(env_var):
-            print(f"  Found {key_name} in environment")
-            return True
-        return False
-
-    def engage_user_for_resolution(self, unresolved_issues):
-        """Engage user in chat to resolve remaining issues"""
-        if not unresolved_issues:
-            return
-
-        print("\\n🤖 INTELLIGENT ISSUE RESOLUTION SYSTEM ACTIVE")
-        print("=" * 60)
-        print("I've detected some issues that need your attention:")
-
-        for i, issue in enumerate(unresolved_issues, 1):
-            print(f"\\n{i}. {issue['message']}")
-            if issue["type"] == "missing_api_key":
-                if "github" in issue["component"]:
-                    print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
-                elif "google" in issue["component"]:
-                    print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
-                elif "anthropic" in issue["component"]:
-                    print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
-                elif "openai" in issue["component"]:
-                    print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
-            else:
-                print(
-                    "   💡 This integration is not available. The system will continue without it."
-                )
-
-        print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
-        print("\\n💬 I can help you resolve these issues. What would you like to do?")
-
-    def resolve_all_issues(self):
-        """Main method to resolve all detected issues"""
-        issues = self.detect_initialization_issues()
-
-        if not issues:
-            print("✅ No issues detected - system is healthy!")
-            return True
-
-        print(f"\\n🤖 Detected {len(issues)} potential issues:")
-        for issue in issues:
-            severity_icon = (
-                "🔴"
-                if issue["severity"] == "high"
-                else "🟡"
-                if issue["severity"] == "medium"
-                else "🟢"
-            )
-            print(f"  {severity_icon} {issue['message']}")
-
-        # Attempt auto-resolution
-        unresolved_issues = []
-        for issue in issues:
-            if issue.get("auto_fix_possible", False):
-                if not self.attempt_auto_resolution(issue):
-                    unresolved_issues.append(issue)
-            else:
-                unresolved_issues.append(issue)
-
-        # Engage user for remaining issues
-        if unresolved_issues:
-            self.engage_user_for_resolution(unresolved_issues)
-            return False
-
-        print("\\n✅ All issues resolved automatically!")
-        return True
-
 
 class UnifiedSAMSystem:
     SCOPES = [
@@ -4838,22 +4592,28 @@ class UnifiedSAMSystem:
     """The Unified SAM 2.0 Complete System"""
 
     def __init__(self):
-        print("🚀 INITIALIZING UNIFIED SAM 2.1 COMPLETE SYSTEM")
+        print("🚀 INITIALIZING UNIFIED SAM 3.0 COMPLETE SYSTEM")
         print("=" * 80)
-        print("🎯 Combining Pure C Core + Comprehensive Python Orchestration")
-        print("🎯 Version 2.1.0 (ΨΔ-Core) with PDI-T Submodel Lifecycle")
+        print("🎯 Integrating God Equation (ΨΔ•Ω-Core)")
+        print("🎯 Version 3.0.0 (ΨΔ•Ω-Core) with TBQG Governance")
         print("🎯 Zero Fallbacks - All Components Work Correctly")
         print("=" * 80)
 
-        # Project root for file operations
-        self.project_root = Path(__file__).parent
+        # Project root for file operations (repo root)
+        self.project_root = Path(__file__).resolve().parent.parent.parent
 
         # 🔒 BOOTSTRAP PROTECTION - Disable self-healing during initialization
         self.allow_self_modification = False
         self.allow_auto_resolution = False
         self.bootstrap_complete = False
 
-        # Initialize missing attributes early for tests
+        # Configuration & Identification
+        self.profile_name = os.getenv("SAM_PROFILE", "full")
+        self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "1") == "1"
+        self.sam_available = os.environ.get("SAM_AVAILABLE", "1") == "1"
+        self.ollama_available = os.environ.get("OLLAMA_AVAILABLE", "1") == "1"
+
+        # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
             "love_agent": {
                 "id": "love_agent",
@@ -4865,27 +4625,28 @@ class UnifiedSAMSystem:
             }
         }
         self.connected_agents = {}
-        self._agent_status_cache = {}  # Add agent status cache
+        self._agent_status_cache = {}
         self.connected_users = {}
         self.conversation_rooms = {}
-        self.meta_agent_test_attr = None
         self.active_conversations = []
         self.socketio_available = False
         self.web_search_enabled = False
+        self.google_drive = None
         self.google_drive_available = False
         self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
         self.kill_switch_enabled = os.getenv("SAM_KILL_SWITCH_ENABLED", "1") == "1"
         self.invariants_disabled = os.getenv("SAM_INVARIANTS_DISABLED", "0") == "1"
         self.allow_unsafe_patches = os.getenv("SAM_ALLOW_UNSAFE_PATCHES", "0") == "1"
-        self.profile_name = os.getenv("SAM_PROFILE", "full")
-        self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "1") == "1"
         self.disable_c_agents = os.getenv("SAM_DISABLE_C_AGENTS", "0") == "1"
         self.c_research_enabled = os.getenv("SAM_DISABLE_C_RESEARCH", "0") != "1"
-        self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1" # Default to True
-        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3")) # Default to 3
+        self.chat_multi_agent = os.getenv("SAM_CHAT_MULTI_AGENT", "1") == "1"
+        self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
+        self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+        
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
+        
         self.state_path = Path(
             os.getenv(
                 "SAM_STATE_PATH",
@@ -4898,7 +4659,7 @@ class UnifiedSAMSystem:
             pass
         self._loaded_state = None
 
-        # System metrics (initialize early before web interface)
+        # System metrics (initialize early)
         self.system_metrics = {
             "start_time": datetime.now().isoformat(),
             "c_core_status": "initializing",
@@ -4915,11 +4676,15 @@ class UnifiedSAMSystem:
             "system_health": "excellent",
             "last_growth_reason": None,
         }
-        
-        # Load persisted state (if available) to restore metrics like total_conversations
-        self._load_system_state()
 
-        # 🔄 RAM-AWARE INTELLIGENCE - Memory monitoring and model switching
+        # Epistemic & Governance (SAM 3.0)
+        self.score_history = deque(maxlen=100)
+        self.calibration_history = deque(maxlen=100)
+        self.unsolvability_budget = 1.0
+        self._chat_provider = None
+        self._chat_provider_lock = threading.Lock()
+
+        # 🔄 RAM-AWARE INTELLIGENCE
         if PSUTIL_AVAILABLE:
             self.ram_monitor = RAMAwareModelSwitcher(self)
             self.ram_monitor.start_monitoring()
@@ -4927,11 +4692,11 @@ class UnifiedSAMSystem:
             self.ram_monitor = None
             print("⚠️ RAM monitoring disabled - psutil not available")
 
-        # 🎭 CONVERSATION DIVERSITY MANAGER - Prevent repetitive responses
+        # 🎭 CONVERSATION DIVERSITY MANAGER
         self.diversity_manager = ConversationDiversityManager(self)
         self.diversity_manager.start_monitoring()
 
-        # 🐳 VIRTUAL ENVIRONMENTS MANAGER - Docker, Python, system commands
+        # 🐳 VIRTUAL ENVIRONMENTS MANAGER
         self.virtual_env_manager = VirtualEnvironmentsManager(self)
         self.virtual_env_manager.initialize()
 
@@ -4944,6 +4709,10 @@ class UnifiedSAMSystem:
         self.meta_controller = sam_meta_controller_c.create(64, 16, 4, 42)
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
         self.sav_arena = sam_sav_dual_system.create(16, 4, 42)
+        
+        # Load persisted state (if available)
+        self._load_system_state()
+        
         self.meta_loop_active = True
         self.meta_thread = None
 
@@ -7792,9 +7561,9 @@ class UnifiedSAMSystem:
                 ensure_domain_goal(self.goal_manager)
             except Exception as exc:
                 print(f"  ⚠️ Domain goal init failed: {exc}")
-            self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager)
+            self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager, system=self)
             self.task_manager = TaskManager(self.goal_manager, self)
-            print("  ✅ Goal management system initialized")
+            print("  ✅ Goal management system initialized (SAM 3.0 Integration)")
 
             # Apply persisted state after goal manager initialization
             self._apply_loaded_state()
@@ -9895,6 +9664,7 @@ class UnifiedSAMSystem:
         self.google_creds = creds
         try:
             self.google_drive_service = build('drive', 'v3', credentials=creds)
+            self.google_drive = self.google_drive_service # Alias for existing code
             self.google_docs_service = build('docs', 'v1', credentials=creds)
             print("✅ Google Drive/Docs API services initialized.")
             log_event("info", "google_api_initialized", "Google Drive/Docs API services initialized.")

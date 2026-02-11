@@ -1,0 +1,2 @@
+{"ts": "2026-02-11T22:05:07.135233Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-11T22:44:04.536336Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}

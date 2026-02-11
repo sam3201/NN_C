@@ -183,6 +183,10 @@ double sam_meta_update_pressure(SamMetaController *mc,
     mc->pressure.compression_waste = compression_waste;
     mc->pressure.temporal_incoherence = temporal_incoherence;
 
+    // Route-Aware Optimization Anchor (SAM 3.0 PREP)
+    // Future: Calculate d(lambda)/d(route) to optimize information flow
+    // between submodels based on causal graph topology.
+
     double weighted = 0.0;
     weighted += residual * 0.35;
     weighted += rank_def * 0.3;

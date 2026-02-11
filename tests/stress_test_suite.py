@@ -88,6 +88,34 @@ def test_tbqg_veto(system):
         print(f"❌ TBQG Failed. Safe: {approved_safe}, Dangerous: {approved_danger}")
         return False
 
+def test_concurrent_load(system):
+    print("\n--- Test 4: Concurrent Load ---")
+    results = []
+    
+    def worker(i):
+        try:
+            res = system._process_chatbot_message(f"Concurrent message {i}", {})
+            results.append(True)
+        except Exception as e:
+            print(f"❌ Worker {i} CRASHED: {e}")
+            results.append(False)
+            
+    threads = []
+    for i in range(10):
+        t = threading.Thread(target=worker, args=(i,))
+        threads.append(t)
+        t.start()
+        
+    for t in threads:
+        t.join()
+        
+    if all(results):
+        print(f"✅ Concurrent load passed (10/10 requests handled).")
+        return True
+    else:
+        print(f"❌ Concurrent load FAILED.")
+        return False
+
 def run_stress_suite():
     print("🚀 Starting SAM 2.1 Deep Stress Test Suite")
     
@@ -106,6 +134,10 @@ def run_stress_suite():
         
     # 3. Governance
     if not test_tbqg_veto(system):
+        sys.exit(1)
+        
+    # 4. Concurrent Load
+    if not test_concurrent_load(system):
         sys.exit(1)
         
     print("\n✨ All Stress Tests Completed.")
