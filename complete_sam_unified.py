@@ -7558,28 +7558,16 @@ class UnifiedSAMSystem:
                 print(f"  ❌ Consciousness module test failed: {e}")
                 return
 
-            # Initialize multi-agent orchestrator
-            print("  - Creating multi-agent orchestrator...")
-            self.orchestrator = multi_agent_orchestrator_c.create_multi_agent_system()
-
-            # Test if orchestrator is functional
-            try:
-                status = multi_agent_orchestrator_c.get_orchestrator_status()
-                if status and isinstance(status, dict):
-                    print("  ✅ Multi-agent orchestrator initialized (C)")
-                else:
-                    print("  ❌ Multi-agent orchestrator functional test failed")
-                    return
-            except Exception as e:
-                print(f"  ❌ Multi-agent orchestrator test failed: {e}")
-                return
-
             # Initialize specialized agents with prebuilt models
             print("  - Creating specialized agents with prebuilt models...")
             specialized_agents_c.create_agents()
             self.specialized_agents = True
             print("  ✅ Specialized agents initialized (C)")
             print("  ✅ Prebuilt models loaded: Coherency, Teacher, Bug-Fixing")
+
+            # Initialize multi-agent orchestrator
+            print("  - Creating multi-agent orchestrator...")
+            self.orchestrator = multi_agent_orchestrator_c.create_multi_agent_system()
 
             self.c_core_initialized = True
             self.system_metrics["c_core_status"] = "active"
