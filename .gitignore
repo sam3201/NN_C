@@ -1,37 +1,90 @@
-.aider*
+# .gitignore
+# Operating System files
 .DS_Store
-__pycache__/
+Thumbs.db
+
+# Python
 *.pyc
-build/
-dist/
+*.pyd
 *.so
 *.dylib
-*.o
-*.a
-training/distilled/
-logs/
-sam_data/backups/
-training/output_*/
-training/tasks/*.jsonl
-CHAT_LOGS/
-personal_ai_conversation_*.json
+.Python
+build/
+dist/
+__pycache__/
 venv/
 .venv/
-secrets/
-.env
-.env.*
+env/
+.env/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+._*
+
+# Logs and temporary files
 *.log
-*.pid
 *.tmp
-*.bak
-.pytest_cache/
-.mypy_cache/
-reports/
-output/
 tmp/
-sam_data/*.db
+output/
+reports/
+
+# Specific project files
 cookies.txt
+profiles/*.env
+sam_data/sam_system.db
+sam_data/backups/
+!sam_data/backups/.gitkeep # If you want to keep the directory tracked
+sam_data/*.db
+!sam_data/sam_system.db # If you want to keep the DB tracked
+
+# C/C++ build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.lo
+*.la
+*.pyc
+*.exe
+*.dll
+*.obj
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.pgm
+*.resources
+*.res
+*.rc.o
+*.lo
+*.lai
+*.al
+*.libs
+*.mod
+*.gcno
+*.gcda
+*.gcov
+*.tga
+*.tar.gz
+*.zip
+
+# IDE specific files for C/C++
+.vscode/
+.idea/
+
+# macOS specific (already included, but good to be explicit)
+.DS_Store
+
+# Misc
+*.bak
+*.bak_portable
+*.orig
+*~
+# Additional files from the file listing that should be ignored
+# e.g., SAM_Code_Backups/, if not meant for version control
 SAM_Code_Backups/
-complete_sam_unified_final*.py
-complete_sam_unified_fixed.py
-complete_sam_unified_hot_reload.py
+# files created during runtime/temporary outputs
+*.cpython-*

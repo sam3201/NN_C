@@ -1,0 +1,59 @@
+
+# 2026-02-08 15:47:18.133001
++yes
+
+# 2026-02-08 15:48:32.682848
++hello?
+
+# 2026-02-08 15:49:13.851814
++scan repo
+
+# 2026-02-08 15:49:21.135392
++litellm.NotFoundError: NotFoundError: OpenrouterException - {"error":{"message":"No endpoints found for
++deepseek/deepseek-r1:free.","code":404},"user_id":"user_31FDPd8K1PS0FwyM5KrVkeqQ4bu"}
+
+# 2026-02-08 15:49:28.539621
++exit
+
+# 2026-02-08 15:49:47.633593
++scan
+
+# 2026-02-08 15:56:49.132300
++no
+
+# 2026-02-08 15:58:19.986292
++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
++look at the readme
+
+# 2026-02-08 15:58:42.088570
++no
+
+# 2026-02-08 15:58:46.282244
++look at the readme
+
+# 2026-02-08 16:01:58.795250
++no
+
+# 2026-02-08 16:02:50.493427
++README
+
+# 2026-02-08 23:54:33.696773
++ND
+
+# 2026-02-08 23:54:39.099212
++don't
+
+# 2026-02-08 23:54:50.564030
++please add . and push to git help with a helpful commit
+
+# 2026-02-08 23:54:56.943550
++y
+
+# 2026-02-08 23:56:45.930781
++Please push everything to github and validate
+
+# 2026-02-08 23:58:02.064420
++/byte
+
+# 2026-02-08 23:58:03.530363
++exit

@@ -22,8 +22,8 @@ COMMON_ARGS = _common_compile_args()
 extensions = [
     Extension(
         'consciousness_algorithmic',
-        sources=['consciousness_algorithmic.c'],
-        include_dirs=['.'],
+        sources=['src/c_modules/consciousness_algorithmic.c'],
+        include_dirs=['src/c_modules'],
         library_dirs=[],
         libraries=[],
         extra_compile_args=COMMON_ARGS,
@@ -31,8 +31,8 @@ extensions = [
     ),
     Extension(
         'orchestrator_and_agents', # New name for the combined extension
-        sources=['multi_agent_orchestrator_c.c', 'specialized_agents_c.c'], # Combine source files
-        include_dirs=['.'],
+        sources=['src/c_modules/multi_agent_orchestrator_c.c', 'src/c_modules/specialized_agents_c.c'], # Combine source files
+        include_dirs=['src/c_modules'],
         library_dirs=[],
         libraries=[],
         extra_compile_args=COMMON_ARGS,
@@ -40,8 +40,8 @@ extensions = [
     ),
     Extension(
         'sam_meta_controller_c',
-        sources=['sam_meta_controller_c.c'],
-        include_dirs=['.'],
+        sources=['src/c_modules/sam_meta_controller_c.c'],
+        include_dirs=['src/c_modules'],
         library_dirs=[],
         libraries=[],
         extra_compile_args=COMMON_ARGS,
@@ -49,8 +49,8 @@ extensions = [
     ),
     Extension(
         'sav_core_c',
-        sources=['sav_core_c.c'],
-        include_dirs=['.'],
+        sources=['src/c_modules/sav_core_c.c'],
+        include_dirs=['src/c_modules'],
         library_dirs=[],
         libraries=[],
         extra_compile_args=COMMON_ARGS,
@@ -58,8 +58,8 @@ extensions = [
     ),
     Extension(
         'sam_sav_dual_system',
-        sources=['sam_sav_dual_system.c'],
-        include_dirs=['.'],
+        sources=['src/c_modules/sam_sav_dual_system.c'],
+        include_dirs=['src/c_modules'],
         library_dirs=[],
         libraries=[],
         extra_compile_args=COMMON_ARGS,

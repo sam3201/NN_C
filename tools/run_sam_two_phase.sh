@@ -42,4 +42,4 @@ else
   export SAM_HF_FORCE_GREEDY=1
 fi
 
-PYTHONUNBUFFERED=1 python "$ROOT/complete_sam_unified.py"
+PYTHONUNBUFFERED=1 python "$ROOT/src/python/complete_sam_unified.py"

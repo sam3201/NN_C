@@ -72,8 +72,8 @@ def main() -> int:
     # Sanity checks
     if not (root / "setup.py").exists():
         return die("setup.py not found. Run this from the repo root.")
-    if not (root / "run_sam.py").exists():
-        return die("run_sam.py not found. Did you generate it with make_portable.py?")
+    if not (root / "src/python/run_sam.py").exists():
+        return die("src/python/run_sam.py not found.")
 
     # Create venv if missing
     rc = ensure_venv(root, args.python)
@@ -111,7 +111,7 @@ def main() -> int:
     print(f"🚀 Starting SAM (profile={args.profile}) ...")
     env = os.environ.copy()
     env["SAM_PROFILE"] = args.profile
-    rc = run([str(vpy), "run_sam.py", "--profile", args.profile], cwd=root, env=env)
+    rc = run([str(vpy), "src/python/run_sam.py", "--profile", args.profile], cwd=root, env=env)
     return rc
 
 

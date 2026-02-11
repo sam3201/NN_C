@@ -668,6 +668,19 @@
                     <div class="memory-item">Admin-only. Log in to view memory.</div>
                 </div>
             </div>
+
+            <div class="panel-section" id="financePanel">
+                <h3>Financial Overview</h3>
+                <div class="memory-meta">
+                    <span>Total Balance: <strong id="totalBalance">N/A</strong></span>
+                    <span>Total Spent: <strong id="totalSpent">N/A</strong></span>
+                    <span>Total Incoming: <strong id="totalIncoming">N/A</strong></span>
+                </div>
+                <div class="memory-list" id="financeDetails">
+                    <div class="memory-item">Loading financial data...</div>
+                </div>
+            </div>
+
         </aside>
 
         <section class="chat-panel">
@@ -766,6 +779,10 @@
                 this.distillCountEl = document.getElementById('distillCount');
                 this.memorySizeEl = document.getElementById('memorySize');
                 this.memoryMaxEl = document.getElementById('memoryMax');
+                this.totalBalanceEl = document.getElementById('totalBalance');
+                this.totalSpentEl = document.getElementById('totalSpent');
+                this.totalIncomingEl = document.getElementById('totalIncoming');
+                this.financeDetailsEl = document.getElementById('financeDetails');
                 this.logPaused = false;
                 this.logSource = null;
                 this.isAdmin = false;
@@ -774,6 +791,24 @@
                 this.userEmail = null;
                 this.logReconnectDelay = 2000;
                 this.logReconnectTimer = null;
+
+                // Agent avatar mapping for multi-agent chat
+                this.agentAvatarMap = {
+                    "sam": "🧠",
+                    "ollama": "🦙",
+                    "consciousness-core": "⚛️",
+                    "research-agent": "🔬",
+                    "code-agent": "💻",
+                    "planner-agent": "📝",
+                    "executive-agent": "💼",
+                    "survival-agent": "🌱",
+                    "teacher-agent": "👨‍🏫",
+                    "finance-agent": "💰",
+                    "banking-agent": "🏦",
+                    "revenue-ops-agent": "📈",
+                    "user": "👤", // Default for user
+                    "default": "🤖" // Default for unknown agents
+                };
 
                 this.messageHistory = [];
                 this.isTyping = false;
@@ -785,6 +820,48 @@
                 this.fetchLearningMemory();
                 setInterval(() => this.checkServerStatus(), 5000);
                 setInterval(() => this.fetchLearningMemory(), 8000);
+                setInterval(() => this.fetchFinanceMetrics(), 10000); // Update every 10 seconds
+                setInterval(() => this.fetchFinanceMetrics(), 10000); // Update every 10 seconds
+            }
+
+            async fetchFinanceMetrics() {
+                if (!this.financeDetailsEl) return;
+                try {
+                    const res = await fetch('/api/finance/metrics');
+                    if (res.status === 401) {
+                        this.financeDetailsEl.innerHTML = '<div class="memory-item">Admin-only. Log in to view finance data.</div>';
+                        return;
+                    }
+                    const data = await res.json();
+                    if (data.error) {
+                        this.financeDetailsEl.innerHTML = `<div class="memory-item">Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    if (this.totalBalanceEl) this.totalBalanceEl.textContent = Number(data.total_balance || 0).toFixed(2);
+                    if (this.totalSpentEl) this.totalSpentEl.textContent = Number(data.total_spent || 0).toFixed(2);
+                    if (this.totalIncomingEl) this.totalIncomingEl.textContent = Number(data.total_incoming || 0).toFixed(2);
+
+                    this.financeDetailsEl.innerHTML = '';
+                    const balancesByCurrency = data.balances_by_currency || {};
+                    const spentByCurrency = data.spent_by_currency || {};
+                    const incomingByCurrency = data.incoming_by_currency || {};
+                    
+                    if (Object.keys(balancesByCurrency).length === 0) {
+                         this.financeDetailsEl.innerHTML = '<div class="memory-item">No currency data available.</div>';
+                         return;
+                    }
+
+                    for (const currency in balancesByCurrency) {
+                        const div = document.createElement('div');
+                        div.className = 'memory-item';
+                        div.innerHTML = `<strong>${currency}:</strong> Balance ${Number(balancesByCurrency[currency]).toFixed(2)} / Spent ${Number(spentByCurrency[currency] || 0).toFixed(2)} / Incoming ${Number(incomingByCurrency[currency] || 0).toFixed(2)}`;
+                        this.financeDetailsEl.appendChild(div);
+                    }
+
+                } catch (err) {
+                    this.financeDetailsEl.innerHTML = `<div class="memory-item">Finance fetch error: ${err.message}</div>`;
+                }
             }
 
             initEventListeners() {
@@ -1112,6 +1189,46 @@
                 }
             }
 
+            async fetchFinanceMetrics() {
+                if (!this.financeDetailsEl) return;
+                try {
+                    const res = await fetch('/api/finance/metrics');
+                    if (res.status === 401) {
+                        this.financeDetailsEl.innerHTML = '<div class="memory-item">Admin-only. Log in to view finance data.</div>';
+                        return;
+                    }
+                    const data = await res.json();
+                    if (data.error) {
+                        this.financeDetailsEl.innerHTML = `<div class="memory-item">Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    if (this.totalBalanceEl) this.totalBalanceEl.textContent = Number(data.total_balance || 0).toFixed(2);
+                    if (this.totalSpentEl) this.totalSpentEl.textContent = Number(data.total_spent || 0).toFixed(2);
+                    if (this.totalIncomingEl) this.totalIncomingEl.textContent = Number(data.total_incoming || 0).toFixed(2);
+
+                    this.financeDetailsEl.innerHTML = '';
+                    const balancesByCurrency = data.balances_by_currency || {};
+                    const spentByCurrency = data.spent_by_currency || {};
+                    const incomingByCurrency = data.incoming_by_currency || {};
+                    
+                    if (Object.keys(balancesByCurrency).length === 0) {
+                         this.financeDetailsEl.innerHTML = '<div class="memory-item">No currency data available.</div>';
+                         return;
+                    }
+
+                    for (const currency in balancesByCurrency) {
+                        const div = document.createElement('div');
+                        div.className = 'memory-item';
+                        div.innerHTML = `<strong>${currency}:</strong> Balance ${Number(balancesByCurrency[currency]).toFixed(2)} / Spent ${Number(spentByCurrency[currency] || 0).toFixed(2)} / Incoming ${Number(incomingByCurrency[currency] || 0).toFixed(2)}`;
+                        this.financeDetailsEl.appendChild(div);
+                    }
+
+                } catch (err) {
+                    this.financeDetailsEl.innerHTML = `<div class="memory-item">Finance fetch error: ${err.message}</div>`;
+                }
+            }
+
             updateMultiAgentLabel() {
                 if (!this.logMultiAgentBtn) return;
                 this.logMultiAgentBtn.textContent = this.chatMultiAgentEnabled ? 'Multi-Agent: On' : 'Multi-Agent: Off';
@@ -1186,7 +1303,7 @@
                         if (messages && messages.length) {
                             messages.forEach((msg) => {
                                 const agentLabel = msg.agent ? `[${msg.agent}] ` : '';
-                                this.addMessageWithEvaluation(`${agentLabel}${msg.content || ''}`, data.evaluation, 'bot');
+                                this.addMessageWithEvaluation(`${agentLabel}${msg.content || ''}`, data.evaluation, 'bot', msg.agent_id);
                             });
                         } else {
                             const segments = this.splitMultiAgent(reply);
@@ -1200,23 +1317,49 @@
                         }
                     } else {
                         this.hideTypingIndicator();
-                        this.addMessage(`Error: ${data.error}`, 'bot', true);
+                        this.addMessage(`Error: ${data.error}`, 'bot', true, 'sam');
                     }
 
                 } catch (error) {
                     this.hideTypingIndicator();
-                    this.addMessage(`Connection error: ${error.message}`, 'bot', true);
+                    this.addMessage(`Connection error: ${error.message}`, 'bot', true, 'sam');
                     console.error('Send message error:', error);
                 }
             }
 
-            addMessage(content, sender, isError = false) {
+            addMessage(content, sender, isError = false, agentId = null) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
 
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
-                avatar.textContent = sender === 'user' ? '👤' : '🧠';
+                
+                let avatarContent = '';
+                let bgColor = '';
+
+                if (sender === 'user') {
+                    avatarContent = this.agentAvatarMap.user;
+                    bgColor = 'var(--accent-bright)';
+                } else if (agentId && this.agentAvatarMap[agentId]) {
+                    avatarContent = this.agentAvatarMap[agentId];
+                    // Simple hash-based color generation for consistency
+                    let hash = 0;
+                    for (let i = 0; i < agentId.length; i++) {
+                        hash = agentId.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    let color = '#';
+                    for (let i = 0; i < 3; i++) {
+                        let value = (hash >> (i * 8)) & 0xFF;
+                        color += ('00' + value.toString(16)).substr(-2);
+                    }
+                    bgColor = color;
+                } else {
+                    avatarContent = this.agentAvatarMap.default;
+                    bgColor = '#f2b94f'; // Default bot color
+                }
+                avatar.textContent = avatarContent;
+                avatar.style.backgroundColor = bgColor;
+                avatar.style.color = '#ffffff'; // Ensure text is visible on colored background
 
                 const messageContent = document.createElement('div');
                 messageContent.innerHTML = `
@@ -1234,16 +1377,42 @@
 
                 this.chatMessages.appendChild(messageDiv);
                 this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                this.messageHistory.push({ content, sender, timestamp: Date.now() });
+                this.messageHistory.push({ content, sender, timestamp: Date.now(), agentId });
             }
 
-            addMessageWithEvaluation(content, evaluation, sender) {
+            addMessageWithEvaluation(content, evaluation, sender, agentId = null) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
 
                 const avatar = document.createElement('div');
                 avatar.className = 'message-avatar';
-                avatar.textContent = sender === 'user' ? '👤' : '🤖';
+                
+                let avatarContent = '';
+                let bgColor = '';
+
+                if (sender === 'user') {
+                    avatarContent = this.agentAvatarMap.user;
+                    bgColor = var(--accent-bright);
+                } else if (agentId && this.agentAvatarMap[agentId]) {
+                    avatarContent = this.agentAvatarMap[agentId];
+                    // Simple hash-based color generation for consistency
+                    let hash = 0;
+                    for (let i = 0; i < agentId.length; i++) {
+                        hash = agentId.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    let color = '#';
+                    for (let i = 0; i < 3; i++) {
+                        let value = (hash >> (i * 8)) & 0xFF;
+                        color += ('00' + value.toString(16)).substr(-2);
+                    }
+                    bgColor = color;
+                } else {
+                    avatarContent = this.agentAvatarMap.default;
+                    bgColor = '#f2b94f'; // Default bot color
+                }
+                avatar.textContent = avatarContent;
+                avatar.style.backgroundColor = bgColor;
+                avatar.style.color = '#ffffff'; // Ensure text is visible on colored background
 
                 // Extract agent prefix like [AgentName]
                 let agentName = null;

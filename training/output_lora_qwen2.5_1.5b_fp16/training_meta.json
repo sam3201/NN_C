@@ -1,0 +1,8 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B",
+  "dataset": "training/distilled/merged_distill.jsonl",
+  "output": "training/output_lora_qwen2.5_1.5b_fp16",
+  "lora": true,
+  "epochs": 1,
+  "elapsed_s": 149.7092580795288
+}
