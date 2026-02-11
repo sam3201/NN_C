@@ -3,6 +3,11 @@
 __pycache__/
 *.pyc
 build/
+dist/
+*.so
+*.dylib
+*.o
+*.a
 training/distilled/
 logs/
 sam_data/backups/
@@ -11,6 +16,7 @@ training/tasks/*.jsonl
 CHAT_LOGS/
 personal_ai_conversation_*.json
 venv/
+.venv/
 secrets/
 .env
 .env.*
@@ -20,3 +26,12 @@ secrets/
 *.bak
 .pytest_cache/
 .mypy_cache/
+reports/
+output/
+tmp/
+sam_data/*.db
+cookies.txt
+SAM_Code_Backups/
+complete_sam_unified_final*.py
+complete_sam_unified_fixed.py
+complete_sam_unified_hot_reload.py
