@@ -1,6 +1,6 @@
-# SAM 2.0 AGI
+# SAM 2.1 AGI (ΨΔ-Core)
 
-SAM 2.0 is a hybrid Python/C multi-agent system with a web dashboard, slash-command interface, and C-accelerated cores for meta-control and dual-system simulation.
+SAM 2.1 is a hybrid Python/C multi-agent system with a web dashboard, slash-command interface, and C-accelerated cores for meta-control and dual-system simulation. It features the advanced ΨΔ-Core morphogenesis and PDI-T submodel lifecycle.
 
 ## What's Included
 - Python orchestration, API server, and CLI: `complete_sam_unified.py`

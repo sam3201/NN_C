@@ -157,6 +157,45 @@ PyObject *pSamWebSearchModule __attribute__((visibility("default"))) = NULL;
 PyObject *pSearchWebWithSamFunc __attribute__((visibility("default"))) = NULL;
 int sam_web_search_is_initialized __attribute__((visibility("default"))) = 0; // Flag to ensure one-time initialization
 
+// Global reference to the Python system instance
+PyObject *pSystemInstance __attribute__((visibility("default"))) = NULL;
+
+void set_system_instance(PyObject *system) __attribute__((visibility("default"))) {
+    if (pSystemInstance) {
+        Py_XDECREF(pSystemInstance);
+    }
+    pSystemInstance = system;
+    if (pSystemInstance) {
+        Py_XINCREF(pSystemInstance);
+        printf("✅ C Core: System instance registered for callback.\n");
+    }
+}
+
+// Helper to call a method on the registered Python system instance
+static char* _call_python_method(const char* method_name, const char* arg_string) {
+    if (!pSystemInstance) {
+        return NULL;
+    }
+
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    char* result_str = NULL;
+
+    PyObject* pResult = PyObject_CallMethod(pSystemInstance, (char*)method_name, "s", arg_string);
+    
+    if (pResult && PyUnicode_Check(pResult)) {
+        const char* temp = PyUnicode_AsUTF8(pResult);
+        if (temp) {
+            result_str = strdup(temp);
+        }
+    } else if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+
+    Py_XDECREF(pResult);
+    PyGILState_Release(gstate);
+    return result_str;
+}
+
 // Function to initialize Python web search module
 int init_python_web_search() __attribute__((visibility("default"))) {
     if (sam_web_search_is_initialized) {
@@ -621,66 +660,25 @@ void code_writer_agent_free(CodeWriterAgent *agent) __attribute__((visibility("d
 char *code_writer_agent_generate_code(CodeWriterAgent *agent, const char *specification) __attribute__((visibility("default"))) {
     char safe_spec[MAX_SPEC_LEN + 1];
     safe_copy(safe_spec, sizeof(safe_spec), specification);
-    printf("💻 Code Writer Agent: Generating code for '%s'\n", safe_spec);
+    printf("💻 Code Writer Agent: Generating code for '%s' via Python callback\n", safe_spec);
 
     if (agent->current_task) {
         free(agent->current_task);
     }
     agent->current_task = strdup(safe_spec);
 
-    // Use transformer for code generation
-    // This would integrate with existing transformer framework
-
-    char *generated_code = malloc(2048);
-    if (!generated_code) {
-        return NULL;
-    }
-    snprintf(generated_code, 2048,
-        "/* Generated Code for: %s */\n"
-        "#include <stdio.h>\n"
-        "#include <stdlib.h>\n"
-        "\n"
-        "// Function implementation\n"
-        "int process_data(const char *input) {\n"
-        "    // Input validation\n"
-        "    if (!input) return -1;\n"
-        "    \n"
-        "    // Processing logic\n"
-        "    int result = 0;\n"
-        "    for (int i = 0; input[i] != '\\0'; i++) {\n"
-        "        result += (int)input[i];\n"
-        "    }\n"
-        "    \n"
-        "    return result;\n"
-        "}\n"
-        "\n"
-        "// Main function\n"
-        "int main() {\n"
-        "    printf(\"Code generated using transformer framework\\n\");\n"
-        "    return 0;\n"
-        "}\n"
-        "\n"
-        "/* Code Quality Metrics:\n"
-        " * - Readability: %.1f/10\n"
-        " * - Efficiency: %.1f/10\n"
-        " * - Maintainability: %.1f/10\n"
-        " * - Error handling: %.1f/10\n"
-        " * - Documentation: %.1f/10\n"
-        " */",
-        safe_spec,
-        agent->code_quality_score * 10,
-        8.5, 7.2, 9.1, 6.8);
-
-    // Store generated code
-    if (agent->code_count < agent->code_capacity) {
-        agent->generated_code[agent->code_count++] = strdup(generated_code);
+    char *result = _call_python_method("_process_c_agent_request", "code_generation");
+    
+    if (result) {
+        agent->base.performance_score += 0.05;
+        agent->code_quality_score += 0.01;
+        // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
+        return result;
     }
 
-    agent->base.performance_score += 0.05;
-    agent->code_quality_score += 0.01;
-
-    // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
-    return generated_code;
+    // Fallback if callback fails
+    char *fallback = strdup("/* Error: Code generation callback failed. */");
+    return fallback;
 }
 
 char *code_writer_agent_analyze_code(CodeWriterAgent *agent, const char *code) __attribute__((visibility("default"))) {
@@ -763,71 +761,19 @@ void financial_agent_free(FinancialAgent *agent) __attribute__((visibility("defa
 }
 
 char *financial_agent_analyze_market(FinancialAgent *agent, const char *market_data) __attribute__((visibility("default"))) {
-    printf("💰 Financial Agent: Analyzing market conditions\n");
+    printf("💰 Financial Agent: Analyzing market conditions via Python callback\n");
 
-    char *analysis = malloc(2048);
-    if (!analysis) {
-        return NULL;
-    }
-    snprintf(analysis, 2048,
-        "Market Analysis Report:\n"
-        "• Current Portfolio Value: $%.2f\n"
-        "• Daily Return: %.2f%%\n"
-        "• Sharpe Ratio: %.3f\n"
-        "• Volatility: %.2f%%\n"
-        "• Risk-Adjusted Return: %.3f\n"
-        "• Market Trend: %s\n"
-        "• Key Indicators:\n"
-        "  - RSI: %.1f (%s)\n"
-        "  - MACD: %.3f (%s)\n"
-        "  - Bollinger Bands: %s\n"
-        "  - Volume: %s\n"
-        "• Sector Performance:\n"
-        "  - Technology: %.2f%%\n"
-        "  - Healthcare: %.2f%%\n"
-        "  - Finance: %.2f%%\n"
-        "  - Energy: %.2f%%\n"
-        "• Risk Assessment: %s\n"
-        "• Investment Recommendations:\n"
-        "  1. %s\n"
-        "  2. %s\n"
-        "  3. %s\n"
-        "• Confidence Level: %.1f%%\n"
-        "• Next Review: %d days",
-        agent->current_portfolio_value,
-        -0.5 + (rand() % 100) / 100.0,
-        1.5 + (rand() % 100) / 100.0,
-        15.0 + (rand() % 50) / 10.0,
-        0.8 + (rand() % 50) / 100.0,
-        rand() % 2 ? "Bullish" : "Bearish",
-        30.0 + (rand() % 70),
-        rand() % 2 ? "Neutral" : (rand() % 2 ? "Oversold" : "Overbought"),
-        (rand() % 100) / 1000.0,
-        rand() % 2 ? "Bullish" : "Bearish",
-        rand() % 2 ? "Expanding" : "Contracting",
-        rand() % 2 ? "High" : "Moderate",
-        -5.0 + (rand() % 150) / 10.0,
-        -8.0 + (rand() % 200) / 10.0,
-        -3.0 + (rand() % 100) / 10.0,
-        -10.0 + (rand() % 300) / 10.0,
-        rand() % 2 ? "Low Risk" : "Moderate Risk",
-        "Diversify across sectors",
-        "Implement stop-loss orders",
-        "Monitor macroeconomic indicators",
-        75.0 + (rand() % 20),
-        1 + rand() % 7);
-
-    // Update portfolio performance
-    double daily_return = -0.005 + (rand() % 100) / 10000.0;
-    agent->current_portfolio_value *= (1.0 + daily_return);
-
-    if (agent->performance_count < 365) {
-        agent->portfolio_performance[agent->performance_count++] = agent->current_portfolio_value;
+    char *result = _call_python_method("_process_c_agent_request", "finance");
+    
+    if (result) {
+        agent->base.performance_score += 0.05;
+        // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
+        return result;
     }
 
-    agent->base.performance_score += 0.02;
-    // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
-    return analysis;
+    // Fallback if callback fails (minimal)
+    char *fallback = strdup("Error: Financial analysis callback failed.");
+    return fallback;
 }
 
 // ================================
@@ -996,79 +942,25 @@ void meta_agent_free(MetaAgent *agent) __attribute__((visibility("default"))) {
 
 char *meta_agent_analyze_system(MetaAgent *agent, const char *system_component) __attribute__((visibility("default"))) {
     char safe_component[MAX_COMPONENT_LEN + 1];
-    safe_copy(safe_component, sizeof(safe_copy), system_component);
-    printf("🔧 Meta Agent: Analyzing system component '%s'\n", safe_component);
+    safe_copy(safe_component, sizeof(safe_component), system_component);
+    printf("🔧 Meta Agent: Analyzing system component '%s' via Python callback\n", safe_component);
 
     if (agent->current_analysis_target) {
         free(agent->current_analysis_target);
     }
     agent->current_analysis_target = strdup(safe_component);
 
-    char *analysis = malloc(2048);
-    if (!analysis) {
-        return NULL;
+    char *result = _call_python_method("_process_c_agent_request", "system_analysis");
+    
+    if (result) {
+        agent->base.performance_score += 0.03;
+        // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
+        return result;
     }
-    snprintf(analysis, 2048,
-        "System Analysis Report for '%s':\n"
-        "• Overall Health Score: %.1f%%\n"
-        "• Performance Metrics:\n"
-        "  - CPU Utilization: %.1f%%\n"
-        "  - Memory Usage: %.1f%%\n"
-        "  - Disk I/O: %.2f MB/s\n"
-        "  - Network Latency: %.1f ms\n"
-        "  - Error Rate: %.3f%%\n"
-        "• Code Quality:\n"
-        "  - Cyclomatic Complexity: %.1f\n"
-        "  - Code Coverage: %.1f%%\n"
-        "  - Technical Debt: %d issues\n"
-        "  - Security Vulnerabilities: %d found\n"
-        "• Identified Issues:\n"
-        "  1. %s\n"
-        "  2. %s\n"
-        "  3. %s\n"
-        "  4. %s\n"
-        "  5. %s\n"
-        "• Recommended Improvements:\n"
-        "  1. %s\n"
-        "  2. %s\n"
-        "  3. %s\n"
-        "  4. %s\n"
-        "  5. %s\n"
-        "• Estimated Impact: %s\n"
-        "• Implementation Effort: %s\n"
-        "• Priority Level: %s",
-        safe_component,
-        agent->system_health_score * 100,
-        25.0 + (rand() % 50),
-        45.0 + (rand() % 40),
-        10.0 + (rand() % 50) / 10.0,
-        5.0 + (rand() % 50) / 10.0,
-        0.01 + (rand() % 50) / 10000.0,
-        5.0 + (rand() % 50) / 10.0,
-        80.0 + (rand() % 20),
-        rand() % 20,
-        rand() % 5,
-        "Memory leak in data processing pipeline",
-        "Inefficient algorithm in core loop",
-        "Missing error handling in network layer",
-        "Outdated dependency versions",
-        "Insufficient logging for debugging",
-        "Implement memory pooling system",
-        "Optimize algorithm complexity from O(n²) to O(n log n)",
-        "Add comprehensive error recovery mechanisms",
-        "Update dependencies and security patches",
-        "Implement structured logging with correlation IDs",
-        rand() % 2 ? "High performance improvement" : "Significant reliability enhancement",
-        rand() % 2 ? "Low effort" : "Medium effort",
-        rand() % 3 == 0 ? "Critical" : (rand() % 2 ? "High" : "Medium"));
 
-    // Update system health based on analysis
-    agent->system_health_score -= 0.001 + (rand() % 5) / 1000.0;
-    agent->system_health_score = fmax(0.7, agent->system_health_score);
-
-    agent->base.performance_score += 0.03;
-    // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
-    return analysis;
+    // Fallback if callback fails
+    char *fallback = strdup("Error: System analysis callback failed.");
+    return fallback;
 }
 
 // ================================

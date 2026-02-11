@@ -10,6 +10,12 @@
 #include <string.h>
 #include <Python.h>
 
+typedef struct {
+    SubmodelLifecycle lifecycle;
+    unsigned int step_count;
+    double metrics; // Placeholder for aggregate performance metric
+} SubmodelState;
+
 // Full struct definition (as declared in the header)
 struct SamMetaController {
     size_t latent_dim;
@@ -55,6 +61,9 @@ struct SamMetaController {
     char last_growth_reason[256];
     int last_growth_attempt_successful; // 0 for false, 1 for true
     int growth_frozen; // 0 for false, 1 for true
+
+    // Submodel Lifecycle State
+    SubmodelState *submodel_states;
 };
 
 SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t max_submodels, unsigned int seed) {
@@ -96,6 +105,18 @@ SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t
     mc->last_growth_attempt_successful = 0;
     mc->growth_frozen = 0;
 
+    mc->submodel_states = (SubmodelState *)calloc(mc->submodel_max, sizeof(SubmodelState));
+    if (!mc->submodel_states) {
+        free(mc);
+        return NULL;
+    }
+    // Initialize existing submodels to PLANNING state
+    for (size_t i = 0; i < mc->submodel_count; i++) {
+        mc->submodel_states[i].lifecycle = PDI_T_PLAN;
+        mc->submodel_states[i].step_count = 0;
+        mc->submodel_states[i].metrics = 0.5;
+    }
+
     return mc;
 }
 
@@ -103,6 +124,7 @@ void sam_meta_free(SamMetaController *mc) {
     if (!mc) return;
     free(mc->identity_anchor);
     free(mc->identity_vec);
+    free(mc->submodel_states);
     free(mc);
 }
 
@@ -338,9 +360,16 @@ int sam_meta_apply_primitive(SamMetaController *mc, GrowthPrimitive primitive) {
             break;
         case GP_SUBMODEL_SPAWN:
             if (mc->submodel_count < mc->submodel_max) {
+                // Initialize new submodel state
+                size_t new_idx = mc->submodel_count;
+                if (mc->submodel_states) {
+                    mc->submodel_states[new_idx].lifecycle = PDI_T_PLAN;
+                    mc->submodel_states[new_idx].step_count = 0;
+                    mc->submodel_states[new_idx].metrics = 0.5;
+                }
                 mc->submodel_count += 1;
                 mc->growth_budget += 0.6;
-                strcpy(mc->last_growth_reason, "Applied: Submodel spawned");
+                strcpy(mc->last_growth_reason, "Applied: Submodel spawned (PLAN state)");
             } else {
                 strcpy(mc->last_growth_reason, "Primitive failed: Max submodels reached");
                 return 0; // Failed to apply
@@ -532,6 +561,57 @@ GrowthPrimitive sam_meta_trigger_growth_evaluation(SamMetaController *mc) {
         mc->last_growth_step = mc->step - mc->cooldown_steps;
     }
     return sam_meta_select_primitive(mc);
+}
+
+// Submodel Lifecycle (PDI-T)
+SubmodelLifecycle sam_meta_get_submodel_lifecycle(const SamMetaController *mc, size_t submodel_idx) {
+    if (!mc || !mc->submodel_states || submodel_idx >= mc->submodel_count) return PDI_T_NONE;
+    return mc->submodel_states[submodel_idx].lifecycle;
+}
+
+int sam_meta_advance_submodel_lifecycle(SamMetaController *mc, size_t submodel_idx, int success) {
+    if (!mc || !mc->submodel_states || submodel_idx >= mc->submodel_count) return 0;
+    
+    SubmodelState *state = &mc->submodel_states[submodel_idx];
+    state->step_count++;
+
+    if (!success) {
+        // Failure logic: Retry plan if designing, retry design if implementing, etc.
+        // For simplicity, if implementation/test fails, we go back to design.
+        if (state->lifecycle == PDI_T_IMPLEMENT || state->lifecycle == PDI_T_TEST) {
+            state->lifecycle = PDI_T_DESIGN;
+            state->step_count = 0;
+        }
+        return 0; 
+    }
+
+    // Success transition logic
+    switch (state->lifecycle) {
+        case PDI_T_PLAN:
+            state->lifecycle = PDI_T_DESIGN;
+            break;
+        case PDI_T_DESIGN:
+            state->lifecycle = PDI_T_IMPLEMENT;
+            break;
+        case PDI_T_IMPLEMENT:
+            state->lifecycle = PDI_T_TEST;
+            break;
+        case PDI_T_TEST:
+            state->lifecycle = PDI_T_DEPLOYED;
+            break;
+        case PDI_T_DEPLOYED:
+            // Stay deployed, but maybe update metrics
+            state->metrics = fmin(1.0, state->metrics + 0.05);
+            break;
+        default:
+            break;
+    }
+    
+    // Reset step count on transition (except deployed)
+    if (state->lifecycle != PDI_T_DEPLOYED) {
+        state->step_count = 0;
+    }
+    return 1;
 }
 
 // ================================
@@ -848,6 +928,29 @@ static PyObject *py_sam_meta_trigger_growth_evaluation(PyObject *self, PyObject 
     return PyLong_FromLong((long)gp);
 }
 
+static PyObject *py_sam_meta_get_submodel_lifecycle(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    unsigned long submodel_idx = 0;
+    if (!PyArg_ParseTuple(args, "Ok", &capsule, &submodel_idx)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    SubmodelLifecycle lifecycle = sam_meta_get_submodel_lifecycle(mc, (size_t)submodel_idx);
+    return PyLong_FromLong((long)lifecycle);
+}
+
+static PyObject *py_sam_meta_advance_submodel_lifecycle(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    unsigned long submodel_idx = 0;
+    int success = 0;
+    if (!PyArg_ParseTuple(args, "Okp", &capsule, &submodel_idx, &success)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    int ok = sam_meta_advance_submodel_lifecycle(mc, (size_t)submodel_idx, success);
+    return PyBool_FromLong(ok);
+}
+
 static PyObject *py_sam_meta_get_growth_diagnostics(PyObject *self, PyObject *args) {
     (void)self;
     PyObject *capsule = NULL;
@@ -877,6 +980,8 @@ static PyMethodDef MetaMethods[] = {
     {"get_state", py_sam_meta_get_state, METH_VARARGS, "Get meta-controller state"},
     {"trigger_growth_evaluation", py_sam_meta_trigger_growth_evaluation, METH_VARARGS, "Trigger immediate growth evaluation"},
     {"get_growth_diagnostics", py_sam_meta_get_growth_diagnostics, METH_VARARGS, "Get growth diagnostic state"},
+    {"get_submodel_lifecycle", py_sam_meta_get_submodel_lifecycle, METH_VARARGS, "Get submodel PDI-T lifecycle stage"},
+    {"advance_submodel_lifecycle", py_sam_meta_advance_submodel_lifecycle, METH_VARARGS, "Advance submodel lifecycle"},
     {NULL, NULL, 0, NULL}
 };
 

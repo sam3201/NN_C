@@ -21,6 +21,15 @@ typedef enum {
     GP_REPARAM = 8
 } GrowthPrimitive;
 
+typedef enum {
+    PDI_T_NONE = 0,
+    PDI_T_PLAN = 1,
+    PDI_T_DESIGN = 2,
+    PDI_T_IMPLEMENT = 3,
+    PDI_T_TEST = 4,
+    PDI_T_DEPLOYED = 5
+} SubmodelLifecycle;
+
 typedef struct {
     double residual;
     double rank_def;
@@ -92,6 +101,10 @@ int sam_meta_get_last_growth_attempt_successful(const SamMetaController *mc);
 int sam_meta_get_growth_frozen(const SamMetaController *mc);
 // Function to trigger growth evaluation
 GrowthPrimitive sam_meta_trigger_growth_evaluation(SamMetaController *mc);
+
+// Submodel Lifecycle (PDI-T)
+SubmodelLifecycle sam_meta_get_submodel_lifecycle(const SamMetaController *mc, size_t submodel_idx);
+int sam_meta_advance_submodel_lifecycle(SamMetaController *mc, size_t submodel_idx, int success);
 
 // Query state
 size_t sam_meta_get_latent_dim(const SamMetaController *mc);

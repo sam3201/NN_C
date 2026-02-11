@@ -886,11 +886,21 @@ static PyObject *py_meta_analysis(PyObject *self, PyObject *args) {
     return py_result;
 }
 
+static PyObject *py_register_system_instance(PyObject *self, PyObject *args) {
+    PyObject *system;
+    if (!PyArg_ParseTuple(args, "O", &system)) {
+        return NULL;
+    }
+    set_system_instance(system);
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef CombinedMethods[] = {
     // Orchestrator functions
     {"create_multi_agent_system", py_create_multi_agent_system, METH_NOARGS, "Create the multi-agent orchestration system."},
     {"start_orchestrator", py_start_orchestrator, METH_NOARGS, "Start the multi-agent orchestrator's message processing thread."},
     {"get_orchestrator_status", py_get_orchestrator_status, METH_NOARGS, "Get the current status of the orchestrator and its agents."},
+    {"register_system_instance", py_register_system_instance, METH_VARARGS, "Register the Python system instance for C callbacks."},
 
     // Specialized agent functions (from specialized_agents_c.c)
     {"create_agents", py_create_agents, METH_NOARGS, "Create all specialized agents and prebuilt models."},

@@ -3,9 +3,9 @@
 
 config = {
     # System Identification
-    'system_name': 'SAM 2.0 AGI',
-    'system_version': '2.0.0',
-    'system_description': 'Self-healing AGI system with multi-agent orchestration',
+    'system_name': 'SAM 2.1 AGI',
+    'system_version': '2.1.0 (ΨΔ-Core)',
+    'system_description': 'Self-healing AGI system with multi-agent orchestration and ΨΔ-Core morphogenesis',
 
     # Core Settings
     'max_agents': 20,

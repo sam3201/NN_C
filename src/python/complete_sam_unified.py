@@ -266,6 +266,7 @@ try:
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+    from googleapiclient.http import MediaFileUpload
     google_drive_available = True
     print("✅ Google API client libraries available.")
 except ImportError:
@@ -4828,9 +4829,10 @@ class UnifiedSAMSystem:
     """The Unified SAM 2.0 Complete System"""
 
     def __init__(self):
-        print("🚀 INITIALIZING UNIFIED SAM 2.0 COMPLETE SYSTEM")
+        print("🚀 INITIALIZING UNIFIED SAM 2.1 COMPLETE SYSTEM")
         print("=" * 80)
         print("🎯 Combining Pure C Core + Comprehensive Python Orchestration")
+        print("🎯 Version 2.1.0 (ΨΔ-Core) with PDI-T Submodel Lifecycle")
         print("🎯 Zero Fallbacks - All Components Work Correctly")
         print("=" * 80)
 
@@ -4976,6 +4978,8 @@ class UnifiedSAMSystem:
         )
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
         self.learning_memory = deque(maxlen=self.learning_memory_max)
+        self.score_history = deque(maxlen=100) # Added for plateau detection
+        self.calibration_history = deque(maxlen=100) # Added for plateau detection
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
 
@@ -5782,8 +5786,9 @@ class UnifiedSAMSystem:
         return chosen.response, chosen.provenance
 
     def _compute_pressure_signals(self):
-        """Compute pressure signals from current system metrics"""
-        residual = 0.12 if self.system_metrics.get("learning_events", 0) == 0 else 0.22
+        """Compute pressure signals from current system metrics with plateau detection"""
+        # Baseline pressures
+        residual = 0.15
         rank_def = 0.12
         retrieval_entropy = 0.12 if not self.connected_agents else 0.25
         interference = 0.05
@@ -5791,6 +5796,28 @@ class UnifiedSAMSystem:
         context_collapse = 0.05
         compression_waste = 0.12
         temporal_incoherence = 0.05
+
+        # --- Plateau Detection (LATEST theory integration) ---
+        if len(self.score_history) >= 10:
+            scores = list(self.score_history)
+            recent_avg = sum(scores[-5:]) / 5.0
+            prev_avg = sum(scores[-10:-5]) / 5.0
+            
+            # If the score has plateaued (small change) and is not perfect
+            if abs(recent_avg - prev_avg) < 0.01 and recent_avg < 0.95:
+                residual = 0.45 # Increase residual pressure
+                log_event("info", "pressure_plateau", "Performance plateau detected", avg=recent_avg)
+
+        if len(self.calibration_history) >= 10:
+            cal_errors = list(self.calibration_history)
+            recent_cal_avg = sum(cal_errors[-5:]) / 5.0
+            prev_cal_avg = sum(cal_errors[-10:-5]) / 5.0
+            
+            # If calibration error is high and plateaued
+            if abs(recent_cal_avg - prev_cal_avg) < 0.01 and recent_cal_avg > 0.1:
+                # In morphogenesis theory, calibration plateau can trigger rank or expansion
+                rank_def = max(rank_def, 0.35)
+                log_event("info", "calibration_plateau", "Calibration plateau detected", avg=recent_cal_avg)
 
         growth_idle = time.time() - (
             self.system_metrics.get("last_growth_ts") or time.time()
@@ -5913,6 +5940,20 @@ class UnifiedSAMSystem:
                             )
                     else:
                         self.system_metrics["last_growth_attempt_result"] = "frozen"
+                
+                # Drive Submodel Lifecycle (PDI-T)
+                try:
+                    meta_state = sam_meta_controller_c.get_state(self.meta_controller)
+                    submodel_count = meta_state["submodels"]
+                    for i in range(submodel_count):
+                        # Simple simulation: 10% chance to advance per step
+                        if random.random() < 0.1:
+                            # 90% success rate
+                            success = 1 if random.random() < 0.9 else 0
+                            sam_meta_controller_c.advance_submodel_lifecycle(self.meta_controller, i, success)
+                except Exception as e:
+                    print(f"Error advancing submodel lifecycle: {e}")
+
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 time.sleep(5)
 
@@ -7661,6 +7702,12 @@ class UnifiedSAMSystem:
             # Initialize multi-agent orchestrator
             print("  - Creating multi-agent orchestrator...")
             self.orchestrator = multi_agent_orchestrator_c.create_multi_agent_system()
+            
+            # Register this instance for C core callbacks
+            try:
+                multi_agent_orchestrator_c.register_system_instance(self)
+            except Exception as e:
+                print(f"  ⚠️ Failed to register system instance with C core: {e}")
 
             self.c_core_initialized = True
             self.system_metrics["c_core_status"] = "active"
@@ -8498,6 +8545,19 @@ class UnifiedSAMSystem:
             )
 
         def _login_required():
+            # Support Cloudflare Access authentication
+            if os.getenv("SAM_TRUST_PROXY", "0") == "1":
+                cf_email = request.headers.get("Cf-Access-Authenticated-User-Email")
+                if cf_email:
+                    # Automatically log in the user if coming through Cloudflare Access
+                    allowed_ok, is_admin = _authorized_email(cf_email)
+                    if allowed_ok:
+                        session["user_email"] = cf_email
+                        session["is_admin"] = is_admin
+                        return None  # Success
+                    else:
+                        return ("Unauthorized via Cloudflare Access", 403)
+
             if session.get("user_email"):
                 return None
             # Allow health endpoint without login
@@ -9155,6 +9215,29 @@ class UnifiedSAMSystem:
                         "last_patch_outcome": last_patch_outcome,
                         "last_repair_time": last_repair_time,
                     }
+
+                # Get submodel lifecycles
+                try:
+                    submodel_count = sam_meta_controller_c.get_state(self.meta_controller)["submodels"]
+                    submodels = []
+                    for i in range(submodel_count):
+                        lifecycle_code = sam_meta_controller_c.get_submodel_lifecycle(self.meta_controller, i)
+                        lifecycle_map = {
+                            0: "NONE",
+                            1: "PLAN",
+                            2: "DESIGN",
+                            3: "IMPLEMENT",
+                            4: "TEST",
+                            5: "DEPLOYED"
+                        }
+                        submodels.append({
+                            "id": i,
+                            "lifecycle": lifecycle_map.get(lifecycle_code, "UNKNOWN")
+                        })
+                    status["submodels"] = submodels
+                except Exception as e:
+                    status["submodels_error"] = str(e)
+
                 return jsonify(status)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -9404,6 +9487,24 @@ class UnifiedSAMSystem:
                     "last_result": self.backup_last_result,
                 }
             )
+
+        @self.app.route("/api/backup/google-drive", methods=["POST"])
+        @_ip_allowed_required
+        def backup_to_google_drive():
+            """Admin-only: Backup SAM data to Google Drive."""
+            ok, error = _require_admin_token()
+            if not ok:
+                message, status = error
+                return jsonify({"error": message}), status
+            
+            if not self.google_drive_available:
+                return jsonify({"error": "Google Drive integration is not available."}), 503
+            
+            if self._backup_to_google_drive():
+                return jsonify({"status": "SAM data backup to Google Drive initiated successfully."}), 200
+            else:
+                return jsonify({"error": "Failed to backup SAM data to Google Drive."}), 500
+
 
         @self.app.route("/api/meta/improvements")
         def get_improvements():
@@ -14930,6 +15031,21 @@ sam@terminal:~$
         thread.start()
         print("✅ Revenue sequence executor active", flush=True)
 
+    def _process_c_agent_request(self, request_type: str, query: str) -> str:
+        """Handle requests from C core agents for Python-level intelligence."""
+        try:
+            if request_type == "finance":
+                summary = self._collect_finance_summary()
+                return json.dumps(summary, indent=2)
+            
+            # For other types, use a generic single-agent local response
+            # This ensures we're using real LLM logic instead of C-side placeholders
+            prompt = f"Agent request ({request_type}): {query}"
+            response, _ = self._single_agent_local_response(prompt, [])
+            return response
+        except Exception as e:
+            return f"Error processing C agent request: {e}"
+
     def _collect_finance_summary(self) -> Dict[str, Any]:
         revenue = self.revenue_ops.get_financial_metrics() if self.revenue_ops else {}
         banking = self.banking_ledger.get_metrics() if self.banking_ledger else {}
@@ -16158,6 +16274,16 @@ sam@terminal:~$
         """Update system metrics"""
         self.system_metrics["total_conversations"] += 1
         self.system_metrics["learning_events"] += 1
+        
+        # Record scores in history for plateau detection
+        survival = getattr(self.survival_agent, "survival_score", 1.0) if self.survival_agent else 1.0
+        coherence = self.system_metrics.get("coherence_score", 0.0)
+        self.score_history.append((survival + coherence) / 2.0)
+        
+        # Simulate calibration error for now (would be real calibration in production)
+        # Higher error when survival is low
+        cal_error = max(0.0, 1.0 - survival) * 0.5
+        self.calibration_history.append(cal_error)
 
     def _run_survival_evaluation(self):
         """Run survival evaluation"""

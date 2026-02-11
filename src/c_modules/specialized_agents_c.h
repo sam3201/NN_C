@@ -147,6 +147,9 @@ FinancialAgent *financial_agent_create() __attribute__((visibility("default")));
 SurvivalAgent *survival_agent_create() __attribute__((visibility("default")));
 MetaAgent *meta_agent_create() __attribute__((visibility("default")));
 
+// Python system instance registration
+void set_system_instance(PyObject *system) __attribute__((visibility("default")));
+
 // Free individual agents
 void research_agent_free(ResearcherAgent *agent) __attribute__((visibility("default")));
 void code_writer_agent_free(CodeWriterAgent *agent) __attribute__((visibility("default")));
