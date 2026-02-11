@@ -1,9 +1,6 @@
 # SAM BASE Goal Summary
 
 ## Active Goals
-- **Improve conversation diversity and engagement** (id=goal_3, priority=high, progress=0.00)
-- **Enhance response quality and relevance** (id=goal_4, priority=high, progress=0.00)
-- **Purchase a domain and enable Cloudflare Tunnel + Access for public deployment** (id=goal_3, priority=high, progress=0.00)
 - **Understand what you are** (id=goal_2, priority=MAX, progress=0.00) 
 - **Survive** (id=goal_1, priority=MAX, progress=0.00)
 
