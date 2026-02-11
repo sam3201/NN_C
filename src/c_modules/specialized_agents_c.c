@@ -33,6 +33,45 @@ static void safe_copy(char *dest, size_t dest_size, const char *src) {
     snprintf(dest, dest_size, "%s", src);
 }
 
+// Global reference to the Python system instance
+PyObject *pSystemInstance __attribute__((visibility("default"))) = NULL;
+
+void set_system_instance(PyObject *system) __attribute__((visibility("default"))) {
+    if (pSystemInstance) {
+        Py_XDECREF(pSystemInstance);
+    }
+    pSystemInstance = system;
+    if (pSystemInstance) {
+        Py_XINCREF(pSystemInstance);
+        printf("✅ C Core: System instance registered for callback.\n");
+    }
+}
+
+// Helper to call a method on the registered Python system instance
+static char* _call_python_method(const char* method_name, const char* arg_string) {
+    if (!pSystemInstance) {
+        return NULL;
+    }
+
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    char* result_str = NULL;
+
+    PyObject* pResult = PyObject_CallMethod(pSystemInstance, (char*)method_name, "s", arg_string);
+    
+    if (pResult && PyUnicode_Check(pResult)) {
+        const char* temp = PyUnicode_AsUTF8(pResult);
+        if (temp) {
+            result_str = strdup(temp);
+        }
+    } else if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+
+    Py_XDECREF(pResult);
+    PyGILState_Release(gstate);
+    return result_str;
+}
+
 // ================================
 // COHERENCY/TEACHER PREBUILT MODEL (Definitions moved to specialized_agents_c.h)
 // ================================
@@ -155,45 +194,6 @@ PyObject *pSamWebSearchModule __attribute__((visibility("default"))) = NULL;
 PyObject *pSearchWebWithSamFunc __attribute__((visibility("default"))) = NULL;
 int sam_web_search_is_initialized __attribute__((visibility("default"))) = 0; // Flag to ensure one-time initialization
 
-// Global reference to the Python system instance
-PyObject *pSystemInstance __attribute__((visibility("default"))) = NULL;
-
-void set_system_instance(PyObject *system) __attribute__((visibility("default"))) {
-    if (pSystemInstance) {
-        Py_XDECREF(pSystemInstance);
-    }
-    pSystemInstance = system;
-    if (pSystemInstance) {
-        Py_XINCREF(pSystemInstance);
-        printf("✅ C Core: System instance registered for callback.\n");
-    }
-}
-
-// Helper to call a method on the registered Python system instance
-static char* _call_python_method(const char* method_name, const char* arg_string) {
-    if (!pSystemInstance) {
-        return NULL;
-    }
-
-    PyGILState_STATE gstate = PyGILState_Ensure();
-    char* result_str = NULL;
-
-    PyObject* pResult = PyObject_CallMethod(pSystemInstance, (char*)method_name, "s", arg_string);
-    
-    if (pResult && PyUnicode_Check(pResult)) {
-        const char* temp = PyUnicode_AsUTF8(pResult);
-        if (temp) {
-            result_str = strdup(temp);
-        }
-    } else if (PyErr_Occurred()) {
-        PyErr_Print();
-    }
-
-    Py_XDECREF(pResult);
-    PyGILState_Release(gstate);
-    return result_str;
-}
-
 // Function to initialize Python web search module
 int init_python_web_search() __attribute__((visibility("default"))) {
     if (sam_web_search_is_initialized) {
@@ -269,74 +269,35 @@ BugFixingModel *bug_fixing_model_create() __attribute__((visibility("default")))
 char *bug_fixing_model_analyze_code(const char *code_snippet, const char *error_message) __attribute__((visibility("default"))) {
     if (!global_bug_fixing_model) return NULL;
 
-    // Prebuilt bug analysis using pattern recognition
-    // This would use the actual prebuilt model for bug detection
-    char analysis_buffer[4096];
-    snprintf(analysis_buffer, sizeof(analysis_buffer),
-        "Bug Analysis Report:\n"
-        "Code Snippet: %s\n"
-        "Error Message: %s\n"
-        "\nBug Detection Results (Prebuilt Model Analysis):\n"
-        "• Primary Issue: [Pattern-matched bug type]\n"
-        "• Confidence Score: %.2f\n"
-        "• Root Cause: [Prebuilt model diagnosis]\n"
-        "• Impact Assessment: [Severity evaluation]\n"
-        "• Suggested Fix: [Model-generated repair strategy]\n"
-        "\nDetailed Analysis:\n"
-        "• Code Structure: [AST-based analysis]\n"
-        "• Variable Flow: [Data flow tracking]\n"
-        "• Error Propagation: [Exception path analysis]\n"
-        "• Best Practices: [Compliance checking]\n"
-        "\nGenerated Repair Options:\n"
-        "1. [Automated fix suggestion]\n"
-        "2. [Alternative approach]\n"
-        "3. [Defensive programming addition]\n"
-        "\nAnalysis by BugFixer-v2.1 prebuilt model",
-        code_snippet, error_message,
-        global_bug_fixing_model->confidence_threshold);
+    printf("🐛 BugFixer Model: Analyzing code via Python callback\n");
 
-    // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
-    return strdup(analysis_buffer);
+    char *result = _call_python_method("_process_c_agent_request", "bug_analysis");
+    
+    if (result) {
+        // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
+        return result;
+    }
+
+    // Fallback if callback fails
+    char *fallback = strdup("Error: Bug analysis callback failed.");
+    return fallback;
 }
 
 char *bug_fixing_model_generate_fix(const char *code_snippet, const char *bug_description) __attribute__((visibility("default"))) {
     if (!global_bug_fixing_model) return NULL;
 
-    // Prebuilt fix generation using repair patterns
-    char fix_buffer[4096];
-    snprintf(fix_buffer, sizeof(fix_buffer),
-        "// AUTO-GENERATED FIX by BugFixer-v2.1\n"
-        "// Original Issue: %s\n"
-        "// Confidence: %.2f\n\n"
-        "// BEFORE (problematic code):\n"
-        "/*\n%s\n*/\n\n"
-        "// AFTER (fixed code):\n"
-        "// [Prebuilt model applies repair pattern]\n"
-        "// 1. Error checking added\n"
-        "// 2. Resource management improved\n"
-        "// 3. Logic validation enhanced\n"
-        "// 4. Defensive programming implemented\n\n"
-        "// Fixed version:\n"
-        "if (code_snippet != NULL && strlen(code_snippet) > 0) {\n"
-        "    // Prebuilt model validation logic\n"
-        "    // [Automated safety checks inserted]\n"
-        "    \n"
-        "    // Original logic with protective wrapper\n"
-        "    process_code_safely(code_snippet);\n"
-        "} else {\n"
-        "    // Prebuilt model error handling\n"
-        "    handle_null_or_empty_input();\n"
-        "}\n\n"
-        "// Fix validation: [Model confidence metrics]\n"
-        "// - Safety: IMPROVED\n"
-        "// - Reliability: ENHANCED\n"
-        "// - Maintainability: PRESERVED\n",
-        bug_description,
-        global_bug_fixing_model->confidence_threshold,
-        code_snippet);
+    printf("🔧 BugFixer Model: Generating fix via Python callback\n");
 
-    // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
-    return strdup(fix_buffer);
+    char *result = _call_python_method("_process_c_agent_request", "bug_fix");
+    
+    if (result) {
+        // IMPORTANT: The caller (Python) is responsible for freeing this memory using PyMem_Free.
+        return result;
+    }
+
+    // Fallback if callback fails
+    char *fallback = strdup("/* Error: Bug fix generation callback failed. */");
+    return fallback;
 }
 
 void bug_fixing_model_free(BugFixingModel *model) __attribute__((visibility("default"))) {

@@ -101,7 +101,8 @@ SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t
     mc->invariant_violations = 0;
     mc->last_violation = 0;
     // New fields for growth diagnostics
-    strcpy(mc->last_growth_reason, "None");
+    strncpy(mc->last_growth_reason, "None", sizeof(mc->last_growth_reason) - 1);
+    mc->last_growth_reason[sizeof(mc->last_growth_reason) - 1] = '\0';
     mc->last_growth_attempt_successful = 0;
     mc->growth_frozen = 0;
 
@@ -220,7 +221,8 @@ static int dominant_pressure(const SamMetaController *mc, double *out_value) {
         }
     }
     if (out_value) *out_value = maxv;
-    if (maxv - second < mc->dominance_margin) return -1;
+    // Lower dominance margin to 0.01 for more responsive growth
+    if (maxv - second < 0.01) return -1;
     return maxi;
 }
 
@@ -538,6 +540,33 @@ size_t sam_meta_get_planner_depth(const SamMetaController *mc) { return mc ? mc-
 double sam_meta_get_lambda(const SamMetaController *mc) { return mc ? mc->lambda : 0.0; }
 double sam_meta_get_growth_budget(const SamMetaController *mc) { return mc ? mc->growth_budget : 0.0; }
 size_t sam_meta_get_archived_dim(const SamMetaController *mc) { return mc ? mc->archived_dim : 0; }
+
+double sam_meta_get_effective_rank(const SamMetaController *mc) {
+    if (!mc) return 0.0;
+    
+    double values[8] = {
+        mc->pressure.residual,
+        mc->pressure.rank_def,
+        mc->pressure.retrieval_entropy,
+        mc->pressure.interference,
+        mc->pressure.planner_friction,
+        mc->pressure.context_collapse,
+        mc->pressure.compression_waste,
+        mc->pressure.temporal_incoherence
+    };
+    
+    double sum = 0.0;
+    for (int i = 0; i < 8; i++) sum += fabs(values[i]) + 1e-9;
+    
+    double entropy = 0.0;
+    for (int i = 0; i < 8; i++) {
+        double p = (fabs(values[i]) + 1e-9) / sum;
+        entropy -= p * log(p);
+    }
+    
+    return exp(entropy);
+}
+
 const char *sam_meta_get_last_growth_reason(const SamMetaController *mc) {
     return mc ? mc->last_growth_reason : "N/A";
 }
@@ -963,6 +992,15 @@ static PyObject *py_sam_meta_get_growth_diagnostics(PyObject *self, PyObject *ar
                          "growth_frozen", sam_meta_get_growth_frozen(mc));
 }
 
+static PyObject *py_sam_meta_get_effective_rank(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    return PyFloat_FromDouble(sam_meta_get_effective_rank(mc));
+}
+
 static PyMethodDef MetaMethods[] = {
     {"create", py_sam_meta_create, METH_VARARGS, "Create SAM meta-controller"},
     {"estimate_pressures", py_sam_meta_estimate_pressures, METH_VARARGS, "Estimate pressure signals"},
@@ -980,6 +1018,7 @@ static PyMethodDef MetaMethods[] = {
     {"get_state", py_sam_meta_get_state, METH_VARARGS, "Get meta-controller state"},
     {"trigger_growth_evaluation", py_sam_meta_trigger_growth_evaluation, METH_VARARGS, "Trigger immediate growth evaluation"},
     {"get_growth_diagnostics", py_sam_meta_get_growth_diagnostics, METH_VARARGS, "Get growth diagnostic state"},
+    {"get_effective_rank", py_sam_meta_get_effective_rank, METH_VARARGS, "Calculate effective rank of pressure signals"},
     {"get_submodel_lifecycle", py_sam_meta_get_submodel_lifecycle, METH_VARARGS, "Get submodel PDI-T lifecycle stage"},
     {"advance_submodel_lifecycle", py_sam_meta_advance_submodel_lifecycle, METH_VARARGS, "Advance submodel lifecycle"},
     {NULL, NULL, 0, NULL}

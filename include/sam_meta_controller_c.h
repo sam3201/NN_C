@@ -102,6 +102,9 @@ int sam_meta_get_growth_frozen(const SamMetaController *mc);
 // Function to trigger growth evaluation
 GrowthPrimitive sam_meta_trigger_growth_evaluation(SamMetaController *mc);
 
+// Rank Pressure (LATEST theory)
+double sam_meta_get_effective_rank(const SamMetaController *mc);
+
 // Submodel Lifecycle (PDI-T)
 SubmodelLifecycle sam_meta_get_submodel_lifecycle(const SamMetaController *mc, size_t submodel_idx);
 int sam_meta_advance_submodel_lifecycle(SamMetaController *mc, size_t submodel_idx, int success);

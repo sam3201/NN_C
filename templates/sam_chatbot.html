@@ -415,6 +415,20 @@
             font-family: 'IBM Plex Mono', monospace;
         }
 
+        .provenance-badge {
+            display: inline-block;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--ink-soft);
+            color: #ffffff;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+
         .chat-input {
             padding: 18px 20px;
             background: #ffffff;
@@ -681,6 +695,21 @@
                 </div>
             </div>
 
+            <div class="panel-section" id="growthPanel">
+                <h3>Growth Dynamics</h3>
+                <div class="memory-meta">
+                    <span>Reason: <strong id="growthReason">N/A</strong></span>
+                    <span>Status: <strong id="growthStatus">N/A</strong></span>
+                </div>
+                <div class="memory-meta" style="margin-top: 4px;">
+                    <span>Frozen: <strong id="growthFrozen">N/A</strong></span>
+                </div>
+                <div class="log-actions" style="margin-top: 10px;">
+                    <button id="triggerGrowthBtn" disabled title="Admin only">Trigger Growth</button>
+                </div>
+            </div>
+
+
         </aside>
 
         <section class="chat-panel">
@@ -783,6 +812,10 @@
                 this.totalSpentEl = document.getElementById('totalSpent');
                 this.totalIncomingEl = document.getElementById('totalIncoming');
                 this.financeDetailsEl = document.getElementById('financeDetails');
+                this.growthReasonEl = document.getElementById('growthReason');
+                this.growthStatusEl = document.getElementById('growthStatus');
+                this.growthFrozenEl = document.getElementById('growthFrozen');
+                this.triggerGrowthBtn = document.getElementById('triggerGrowthBtn');
                 this.logPaused = false;
                 this.logSource = null;
                 this.isAdmin = false;
@@ -821,47 +854,7 @@
                 setInterval(() => this.checkServerStatus(), 5000);
                 setInterval(() => this.fetchLearningMemory(), 8000);
                 setInterval(() => this.fetchFinanceMetrics(), 10000); // Update every 10 seconds
-                setInterval(() => this.fetchFinanceMetrics(), 10000); // Update every 10 seconds
-            }
-
-            async fetchFinanceMetrics() {
-                if (!this.financeDetailsEl) return;
-                try {
-                    const res = await fetch('/api/finance/metrics');
-                    if (res.status === 401) {
-                        this.financeDetailsEl.innerHTML = '<div class="memory-item">Admin-only. Log in to view finance data.</div>';
-                        return;
-                    }
-                    const data = await res.json();
-                    if (data.error) {
-                        this.financeDetailsEl.innerHTML = `<div class="memory-item">Error: ${data.error}</div>`;
-                        return;
-                    }
-
-                    if (this.totalBalanceEl) this.totalBalanceEl.textContent = Number(data.total_balance || 0).toFixed(2);
-                    if (this.totalSpentEl) this.totalSpentEl.textContent = Number(data.total_spent || 0).toFixed(2);
-                    if (this.totalIncomingEl) this.totalIncomingEl.textContent = Number(data.total_incoming || 0).toFixed(2);
-
-                    this.financeDetailsEl.innerHTML = '';
-                    const balancesByCurrency = data.balances_by_currency || {};
-                    const spentByCurrency = data.spent_by_currency || {};
-                    const incomingByCurrency = data.incoming_by_currency || {};
-                    
-                    if (Object.keys(balancesByCurrency).length === 0) {
-                         this.financeDetailsEl.innerHTML = '<div class="memory-item">No currency data available.</div>';
-                         return;
-                    }
-
-                    for (const currency in balancesByCurrency) {
-                        const div = document.createElement('div');
-                        div.className = 'memory-item';
-                        div.innerHTML = `<strong>${currency}:</strong> Balance ${Number(balancesByCurrency[currency]).toFixed(2)} / Spent ${Number(spentByCurrency[currency] || 0).toFixed(2)} / Incoming ${Number(incomingByCurrency[currency] || 0).toFixed(2)}`;
-                        this.financeDetailsEl.appendChild(div);
-                    }
-
-                } catch (err) {
-                    this.financeDetailsEl.innerHTML = `<div class="memory-item">Finance fetch error: ${err.message}</div>`;
-                }
+                setInterval(() => this.fetchGrowthDiagnostics(), 10000); // Update every 10 seconds
             }
 
             initEventListeners() {
@@ -903,6 +896,9 @@
                 }
                 if (this.logRestartBtn) {
                     this.logRestartBtn.addEventListener('click', () => this.restartServer());
+                }
+                if (this.triggerGrowthBtn) {
+                    this.triggerGrowthBtn.addEventListener('click', () => this.triggerGrowth());
                 }
                 if (this.logSourceFilter) {
                     this.logSourceFilter.addEventListener('change', () => {
@@ -1117,16 +1113,19 @@
             applyAdminControls() {
                 const isAdmin = this.isAdmin;
                 if (this.logDownloadBtn) {
-                    this.logDownloadBtn.disabled = !isAdmin;
-                    this.logDownloadBtn.title = isAdmin ? '' : 'Admin only';
+                    this.logDownloadBtn.style.display = isAdmin ? 'inline-block' : 'none';
+                }
+                if (this.logSnapshotBtn) {
+                    this.logSnapshotBtn.style.display = isAdmin ? 'inline-block' : 'none';
                 }
                 if (this.logRestartBtn) {
-                    this.logRestartBtn.disabled = !isAdmin;
-                    this.logRestartBtn.title = isAdmin ? '' : 'Admin only';
+                    this.logRestartBtn.style.display = isAdmin ? 'inline-block' : 'none';
                 }
                 if (this.logMultiAgentBtn) {
-                    this.logMultiAgentBtn.disabled = !isAdmin;
-                    this.logMultiAgentBtn.title = isAdmin ? '' : 'Admin only';
+                    this.logMultiAgentBtn.style.display = isAdmin ? 'inline-block' : 'none';
+                }
+                if (this.triggerGrowthBtn) {
+                    this.triggerGrowthBtn.style.display = isAdmin ? 'inline-block' : 'none';
                 }
             }
 
@@ -1229,6 +1228,44 @@
                 }
             }
 
+            async fetchGrowthDiagnostics() {
+                if (!this.growthReasonEl) return;
+                try {
+                    const res = await fetch('/api/meta/status');
+                    const data = await res.json();
+                    if (data.error) return;
+
+                    const growth = data.growth || {};
+                    if (this.growthReasonEl) this.growthReasonEl.textContent = growth.last_growth_reason || 'None';
+                    if (this.growthStatusEl) {
+                        const success = growth.last_growth_attempt_successful;
+                        this.growthStatusEl.textContent = success === 1 ? 'Success' : (success === 0 ? 'No Attempt' : 'Failed');
+                        this.growthStatusEl.style.color = success === 1 ? 'var(--success)' : (success === 0 ? 'var(--ink)' : 'var(--danger)');
+                    }
+                    if (this.growthFrozenEl) {
+                        this.growthFrozenEl.textContent = growth.growth_frozen ? 'YES' : 'No';
+                        this.growthFrozenEl.style.color = growth.growth_frozen ? 'var(--danger)' : 'var(--success)';
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch growth diagnostics:', err);
+                }
+            }
+
+            async triggerGrowth() {
+                try {
+                    const res = await fetch('/api/meta/trigger_growth', { method: 'POST' });
+                    const data = await res.json();
+                    if (res.ok) {
+                        this.addMessage(`Growth system triggered: ${data.message}`, 'bot');
+                        this.fetchGrowthDiagnostics();
+                    } else {
+                        this.addMessage(`Error triggering growth: ${data.error}`, 'bot', true);
+                    }
+                } catch (err) {
+                    this.addMessage(`Network error triggering growth: ${err.message}`, 'bot', true);
+                }
+            }
+
             updateMultiAgentLabel() {
                 if (!this.logMultiAgentBtn) return;
                 this.logMultiAgentBtn.textContent = this.chatMultiAgentEnabled ? 'Multi-Agent: On' : 'Multi-Agent: Off';
@@ -1303,7 +1340,7 @@
                         if (messages && messages.length) {
                             messages.forEach((msg) => {
                                 const agentLabel = msg.agent ? `[${msg.agent}] ` : '';
-                                this.addMessageWithEvaluation(`${agentLabel}${msg.content || ''}`, data.evaluation, 'bot', msg.agent_id);
+                                this.addMessageWithEvaluation(`${agentLabel}${msg.content || ''}`, data.evaluation, 'bot', msg.agent_id, msg.provenance);
                             });
                         } else {
                             const segments = this.splitMultiAgent(reply);
@@ -1380,7 +1417,7 @@
                 this.messageHistory.push({ content, sender, timestamp: Date.now(), agentId });
             }
 
-            addMessageWithEvaluation(content, evaluation, sender, agentId = null) {
+            addMessageWithEvaluation(content, evaluation, sender, agentId = null, provenance = null) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
 
@@ -1392,7 +1429,7 @@
 
                 if (sender === 'user') {
                     avatarContent = this.agentAvatarMap.user;
-                    bgColor = var(--accent-bright);
+                    bgColor = 'var(--accent-bright)';
                 } else if (agentId && this.agentAvatarMap[agentId]) {
                     avatarContent = this.agentAvatarMap[agentId];
                     // Simple hash-based color generation for consistency
@@ -1425,9 +1462,15 @@
 
                 const messageContent = document.createElement('div');
                 const evaluationText = evaluation ? `📊 Evaluation: ${evaluation}` : '📊 Evaluation: N/A (awaiting score)';
+                
+                let agentHtml = '';
+                if (agentName) {
+                    agentHtml = `<div class="evaluation">Agent: ${agentName}${provenance ? `<span class="provenance-badge">${provenance}</span>` : ''}</div>`;
+                }
+
                 messageContent.innerHTML = `
                     <div class="message-content">${cleaned}</div>
-                    ${agentName ? `<div class="evaluation">Agent: ${agentName}</div>` : ''}
+                    ${agentHtml}
                     <div class="evaluation">${evaluationText}</div>
                     <div class="message-time">${this.getCurrentTime()}</div>
                 `;

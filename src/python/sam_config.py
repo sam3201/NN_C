@@ -1,6 +1,8 @@
 # SAM Configuration Module
 # System configuration and settings for SAM 2.0 AGI
 
+import os
+
 config = {
     # System Identification
     'system_name': 'SAM 2.1 AGI',
@@ -121,8 +123,15 @@ def load_env_config():
         config['security']['admin_emails_allowlist'] = [e.strip() for e in admin_emails.split(',')]
 
     ip_allowlist = os.getenv("SAM_IP_ALLOWLIST")
+    allowed_ips = os.getenv("SAM_ALLOWED_IPS")
+    combined_ips = []
     if ip_allowlist:
-        config['security']['ip_allowlist'] = [ip.strip() for ip in ip_allowlist.split(',')]
+        combined_ips.extend([ip.strip() for ip in ip_allowlist.split(',')])
+    if allowed_ips:
+        combined_ips.extend([ip.strip() for ip in allowed_ips.split(',')])
+    
+    if combined_ips:
+        config['security']['ip_allowlist'] = list(set(combined_ips)) # De-duplicate
     
     restrict_admin = os.getenv("SAM_RESTRICT_ADMIN_PANEL")
     if restrict_admin:
