@@ -1,4 +1,4 @@
-# SAM Goal Summary
+# SAM BASE Goal Summary
 
 ## Active Goals
 - **Improve conversation diversity and engagement** (id=goal_3, priority=high, progress=0.00)
