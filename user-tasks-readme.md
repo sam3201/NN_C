@@ -8,7 +8,6 @@ I can do a deep scan, but I’m currently blocked from actually reading most fil
 
 I think it's important to make chatting with SAM the only thing that users that aren't me/admins to do, not run the SAM/SAV/ANANKE sysetm itself just for safety as it is truly unbounded. And I am the only one capable and understanding of this and can terminate it.
 
-
 Final God Equation
 
 Λ–Ψ GOD EQUATION: FINAL SYNTHESIS (SAM-D SYSTEM, VERSION 5.0+)
