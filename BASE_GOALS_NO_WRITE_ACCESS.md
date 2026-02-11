@@ -10,7 +10,7 @@
 ## Active Subtasks
 
 Last updated: 2026-02-09T07:09:42Z 
-Total active goals: 3
+Total active goals: 2 
 Total completed goals: 0
 Total subtasks: 9
 
