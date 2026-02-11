@@ -1,11 +1,9 @@
 # SAM Goal Summary
 
 ## Active Goals
-- **Improve conversation diversity and engagement** (id=goal_3, priority=high, progress=0.00)
-- **Enhance response quality and relevance** (id=goal_4, priority=high, progress=0.00)
+- **Improve conversation diversity and engagement** (id=goal_1, priority=high, progress=0.00)
+- **Enhance response quality and relevance** (id=goal_2, priority=high, progress=0.00)
 - **Purchase a domain and enable Cloudflare Tunnel + Access for public deployment** (id=goal_3, priority=high, progress=0.00)
-- **Understand what you are** (id=goal_2, priority=MAX, progress=0.00) 
-- **Survive** (id=goal_1, priority=MAX, progress=0.00)
 
 ## Completed Goals
 - None
@@ -24,7 +22,7 @@
 - [pending] shortlist_domains: Shortlist 3-5 domain candidates and availability (type=research, progress=0.00)
 - [pending] cloudflare_plan: Outline Cloudflare Tunnel and Access setup steps (type=improvement, progress=0.00)
 
-Last updated: 2026-02-10 18:54:09
+Last updated: 2026-02-10 19:32:12
 Total active goals: 3
 Total completed goals: 0
 Total subtasks: 9
