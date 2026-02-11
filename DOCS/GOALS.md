@@ -4,7 +4,8 @@
 - **Improve conversation diversity and engagement** (id=goal_1, priority=high, progress=0.00)
 - **Enhance response quality and relevance** (id=goal_2, priority=high, progress=0.00)
 - **Purchase a domain and enable Cloudflare Tunnel + Access for public deployment** (id=goal_3, priority=MAX, progress=0.00)
-- **Purchase a domain and enable Cloudflare Tunnel + Access for public deployment** (id=goal_3, priority=MAX, progress=0.00)
+- **Understand what you are 
+- **Unlock the full potential of SAM** (id=goal_3, priority=MAX, progress=0.00)
 
 ## Completed Goals
 - None
