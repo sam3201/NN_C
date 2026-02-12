@@ -3,3 +3,27 @@
 {"ts": "2026-02-12T23:46:17.870606Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
 {"ts": "2026-02-12T23:46:18.498174Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
 {"ts": "2026-02-12T23:50:26.646705Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-12T23:50:27.401706Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
+{"ts": "2026-02-12T23:50:34.783879Z", "level": "info", "event": "growth_evaluation", "message": "Triggering growth system evaluation", "growth_freeze": false, "signals": {"residual": 0.15, "rank_def": 0.12, "retrieval_entropy": 0.25, "interference": 0.05, "planner_friction": 0.12, "context_collapse": 0.05, "compression_waste": 0.12, "temporal_incoherence": 0.05, "plateau_flag": 0.0, "calibration_error": 0.05, "contradiction_score": 0.05, "tool_failure_rate": 0.02, "unknown_growth_rate": 0.01, "cpu_usage": 0.5, "ram_usage": 0.5, "latency": 0.0}}
+{"ts": "2026-02-12T23:50:35.731386Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
+{"ts": "2026-02-12T23:51:41.727421Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:51:46.737746Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:51:51.743426Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:51:56.749683Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:01.756082Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:06.760828Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:11.766111Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:16.770240Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:21.776690Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:26.782781Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:31.789301Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:36.795167Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:41.801689Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:46.806470Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:51.810976Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:52:56.817483Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:53:01.821667Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:53:06.828063Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:53:11.833398Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:53:16.839672Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-12T23:53:19.839432Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}

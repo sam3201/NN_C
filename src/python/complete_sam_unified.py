@@ -8285,7 +8285,7 @@ class UnifiedSAMSystem:
             self.system_metrics["web_interface_status"] = "active"
 
             print("🎯 Unified Web Interface: ACTIVE")
-            print("📊 Access at: http://localhost:5004")
+            print("📊 Access at: http://localhost:5005")
             print("💬 Groupchat: Real-time multi-user conversations")
             print("🌐 Web Search: Integrated through SAM research agent")
 
@@ -16707,7 +16707,7 @@ sam@terminal:~$
             return
 
         print("🌐 Starting unified web interface...")
-        print("📊 Dashboard: http://localhost:5004")
+        print("📊 Dashboard: http://localhost:5005")
         print("💬 SAM Chatbot: Integrated in dashboard")
         print("🛑 Press Ctrl+C for graceful shutdown")
         print("=" * 80)
@@ -16730,12 +16730,12 @@ sam@terminal:~$
                 self.socketio.run(
                     self.app,
                     host="0.0.0.0",
-                    port=5004,
+                    port=5005,
                     debug=False,
                     allow_unsafe_werkzeug=True,
                 )
             else:
-                self.app.run(host="0.0.0.0", port=5004, debug=False, threaded=True)
+                self.app.run(host="0.0.0.0", port=5005, debug=False, threaded=True)
         except KeyboardInterrupt:
             print("\n🛑 Shutdown requested by user")
         except Exception as e:
