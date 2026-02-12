@@ -14990,6 +14990,7 @@ sam@terminal:~$
             return
 
         def autonomous_operation_loop():
+            import time
             last_finance_log = 0.0
             while not is_shutting_down():
                 # Emergency Kill Switch Check (SAM 4.0+)

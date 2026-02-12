@@ -33,3 +33,7 @@
 {"ts": "2026-02-12T00:07:45.809352Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
 {"ts": "2026-02-12T00:07:46.452670Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
 {"ts": "2026-02-12T00:09:44.800099Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-12T00:09:45.233351Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
+{"ts": "2026-02-12T00:09:51.111033Z", "level": "info", "event": "growth_evaluation", "message": "Triggering growth system evaluation", "growth_freeze": false, "signals": {"residual": 0.15, "rank_def": 0.12, "retrieval_entropy": 0.25, "interference": 0.05, "planner_friction": 0.12, "context_collapse": 0.05, "compression_waste": 0.12, "temporal_incoherence": 0.05}}
+{"ts": "2026-02-12T00:09:51.302849Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
+{"ts": "2026-02-12T00:15:26.373877Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
