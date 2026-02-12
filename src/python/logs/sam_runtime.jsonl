@@ -31,3 +31,5 @@
 {"ts": "2026-02-11T23:52:49.853527Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
 {"ts": "2026-02-12T00:05:04.874635Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
 {"ts": "2026-02-12T00:07:45.809352Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-12T00:07:46.452670Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
+{"ts": "2026-02-12T00:09:44.800099Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}

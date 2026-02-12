@@ -4615,6 +4615,7 @@ class UnifiedSAMSystem:
         self.sam_available = os.environ.get("SAM_AVAILABLE", "1") == "1"
         self.ollama_available = os.environ.get("OLLAMA_AVAILABLE", "1") == "1"
         self.unbounded_mode = os.getenv("SAM_UNBOUNDED_MODE", "1") == "1"
+        self.require_meta_agent = os.getenv("SAM_REQUIRE_META_AGENT", "1") == "1"
 
         # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
