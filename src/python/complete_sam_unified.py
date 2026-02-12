@@ -4742,6 +4742,7 @@ class UnifiedSAMSystem:
             "distill_count": 0,
             "optimization_events": 0,
             "active_agents": 0,
+            "total_tokens_used": 0,
             "system_health": "excellent",
             "last_growth_reason": None,
             "unbounded_agency": self.unbounded_mode,
@@ -5610,6 +5611,11 @@ class UnifiedSAMSystem:
             role = item.get("type", "user")
             sender = item.get("sender", "unknown")
             content = item.get("message", "")
+            
+            # Summarize long messages in context to save tokens
+            if len(str(content).split()) > 150:
+                content = self._summarize_text(content, max_words=80)
+                
             context_lines.append(f"{sender} ({role}): {content}")
         context_block = "\n".join(context_lines)
         prompt = (
@@ -5618,6 +5624,12 @@ class UnifiedSAMSystem:
             f"{user_name} (user): {message}\n"
             "Assistant:"
         )
+        
+        # Analyze token usage
+        est_tokens = self._estimate_tokens(prompt)
+        if est_tokens > 2000:
+            print(f"  ⚠️ Warning: Teacher prompt is large ({est_tokens} tokens)")
+            
         return prompt
 
     def _get_chat_provider(self):
@@ -8802,6 +8814,7 @@ class UnifiedSAMSystem:
                     "learning_memory_enabled": bool(
                         getattr(self, "learning_memory_enabled", False)
                     ),
+                    "total_tokens_used": int(self.system_metrics.get("total_tokens_used", 0)),
                     "distill_enabled": bool(
                         getattr(self, "distill_dashboard_enabled", False)
                     ),
@@ -11314,6 +11327,35 @@ sam@terminal:~$
             },
         )
 
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate token count (approx 1.3 tokens per word)"""
+        if not text:
+            return 0
+        return int(len(str(text).split()) * 1.3)
+
+    def _summarize_text(self, text: str, max_words: int = 100) -> str:
+        """Summarize text using the teacher pool if available, otherwise truncate."""
+        if not text:
+            return ""
+        
+        # If text is already short enough, just return it
+        if len(text.split()) <= max_words:
+            return text
+
+        if getattr(self, "teacher_pool", None) and self.teacher_pool.providers:
+            try:
+                prompt = f"Summarize the following text in about {max_words} words:\n\n{text}"
+                # Use the first teacher for speed
+                response, _, _ = self.teacher_pool.providers[0].generate(prompt)
+                if response and not response.startswith("❌"):
+                    return response.strip()
+            except Exception as e:
+                print(f"  ⚠️ Teacher summarization failed: {e}")
+
+        # Fallback: Truncate
+        words = text.split()
+        return " ".join(words[:max_words]) + "... [truncated]"
+
     def _get_conversation_context(self, room_id, current_message):
         """Get conversation context for agents"""
         if room_id not in self.conversation_rooms:
@@ -11760,6 +11802,12 @@ sam@terminal:~$
     ):
         if not response or str(response).strip().startswith("❌"):
             return
+        
+        # Track token usage
+        prompt_tokens = self._estimate_tokens(prompt)
+        response_tokens = self._estimate_tokens(response)
+        self.system_metrics["total_tokens_used"] = self.system_metrics.get("total_tokens_used", 0) + prompt_tokens + response_tokens
+
         try:
             self._update_system_metrics()
         except Exception:
@@ -12213,7 +12261,7 @@ sam@terminal:~$
                     )
                     provider = self._get_chat_provider()
                     if provider:
-                        summary, _ = provider.generate(synthesis_prompt)
+                        summary, _, _ = provider.generate(synthesis_prompt)
                         summary = (summary or "").strip()
                     if not summary:
                         summary = self._synthesize_sources_locally(query, sources)

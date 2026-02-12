@@ -435,7 +435,7 @@ class TeacherPool:
         for provider in self.providers:
             for _ in range(n_per_teacher):
                 try:
-                    response, latency = provider.generate(prompt)
+                    response, latency, provenance = provider.generate(prompt)
                 except Exception as exc:
                     logger.warning(
                         "Teacher provider failed provider=%s model=%s error=%s",
