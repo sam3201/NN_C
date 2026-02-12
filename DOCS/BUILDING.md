@@ -1,6 +1,6 @@
-# Building SAM 2.1 (ΨΔ-Core)
+# Building SAM-D (ΨΔ-Core)
 
-This guide covers how to build the SAM 2.1 system, including its C-accelerated neural network cores.
+This guide covers how to build the SAM-D system, including its C-accelerated neural network cores.
 
 ## Prerequisites
 

@@ -116,7 +116,7 @@ class OpenAIProvider(Provider):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url or "https://api.openai.com/v1"
         if not self.api_key:
-            raise RuntimeError("OPENAI_API_KEY not set")
+            logger.warning("OPENAI_API_KEY not set for OpenAIProvider. Generation will fail.")
 
     def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))
@@ -147,7 +147,7 @@ class OpenRouterProvider(Provider):
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.base_url = base_url or "https://openrouter.ai/api/v1"
         if not self.api_key:
-            raise RuntimeError("OPENROUTER_API_KEY not set")
+            logger.warning("OPENROUTER_API_KEY not set for OpenRouterProvider. Generation will fail.")
 
     def generate(self, prompt: str) -> tuple[str, float, str]:
         self._log_start(len(prompt))

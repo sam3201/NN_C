@@ -70,6 +70,6 @@ extensions = [
 setup(
     name='SAM-C-Extensions',
     version='2.0.0',
-    description='C extensions for SAM 2.0 AGI system',
+    description='C extensions for SAM-D AGI system',
     ext_modules=extensions,
 )

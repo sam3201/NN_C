@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# SAM 2.1 Build Script
+# SAM-D Build Script
 # Enforces clean builds and handles C extensions
 
-echo "🛠️ Starting SAM 2.1 build process..."
+echo "🛠️ Starting SAM-D build process..."
 
 # Use virtualenv python if available, otherwise fallback to system python
 if [ -d ".venv" ]; then

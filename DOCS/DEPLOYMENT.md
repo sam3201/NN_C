@@ -1,6 +1,6 @@
-# SAM 2.0 Deployment Guide
+# SAM-D Deployment Guide
 
-This document provides instructions for deploying SAM 2.0 securely using Cloudflare Tunnel and Cloudflare Access.
+This document provides instructions for deploying SAM-D securely using Cloudflare Tunnel and Cloudflare Access.
 
 ## I. Public Secure Deployment (Cloudflare Tunnel + Access)
 
@@ -70,4 +70,4 @@ In Cloudflare Access, you should ideally have a policy that matches:
   - (Optional) IP Ranges: Your trusted networks.
 
 ---
-*Note: SAM 2.0 automatically detects the `Cf-Access-Authenticated-User-Email` header when `SAM_TRUST_PROXY=1` is set, allowing for seamless login for users already authenticated by Cloudflare.*
+*Note: SAM-D automatically detects the `Cf-Access-Authenticated-User-Email` header when `SAM_TRUST_PROXY=1` is set, allowing for seamless login for users already authenticated by Cloudflare.*

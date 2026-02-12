@@ -1,10 +1,10 @@
-# SAM 2.0 - Consciousness and Self-Modeling Architecture
+# SAM-D - Consciousness and Self-Modeling Architecture
 
-This document details the algorithmic formulation of consciousness and its integration into the SAM 2.0 AGI system, outlining the theoretical framework, integration into the training pipeline, and key equations.
+This document details the algorithmic formulation of consciousness and its integration into the SAM-D AGI system, outlining the theoretical framework, integration into the training pipeline, and key equations.
 
 ## I. Overview
 
-The SAM 2.0 AGI system now includes an algorithmic formulation of consciousness.
+The SAM-D AGI system now includes an algorithmic formulation of consciousness.
 
 ## II. Consciousness Loss Module
 
@@ -56,7 +56,7 @@ The consciousness computation is integrated into the training pipeline (e.g., `c
 3.  **Introspective Agency**: Avoids actions it doesn't understand well enough to predict.
 4.  **Theoretical Grounding**: Provides the first implementable definition of consciousness for AGI.
 
-## VI. Integration with Existing SAM 2.0
+## VI. Integration with Existing SAM-D
 
 The consciousness module works alongside existing components:
 -   **Morphogenesis**: Both use growth controller principles.

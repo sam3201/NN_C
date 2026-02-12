@@ -1,0 +1,33 @@
+{
+  "general": {
+    "previewFeatures": true,
+    "debugKeystrokeLogging": true,
+    "sessionRetention": {
+      "enabled": true
+    },
+    "enablePromptCompletion": true
+  },
+  "ui": {
+    "showStatusInTitle": true,
+    "footer": {
+      "hideContextPercentage": false
+    },
+    "showMemoryUsage": true,
+    "showCitations": true,
+    "showModelInfoInChat": true
+  },
+  "context": {
+    "loadMemoryFromIncludeDirectories": true
+  },
+  "tools": {
+    "approvalMode": "auto_edit",
+    "truncateToolOutputThreshold": -1,
+    "disableLLMCorrection": false
+  },
+  "security": {
+    "enablePermanentToolApproval": true
+  },
+  "experimental": {
+    "plan": true
+  }
+}

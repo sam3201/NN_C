@@ -5,7 +5,7 @@ if [ -z "$BASH_VERSION" ]; then
   exec /bin/bash "$0" "$@"
 fi
 
-# SAM 2.0 Unified Complete System - Production Launch Script
+# SAM-D Unified Complete System - Production Launch Script
 # Ensures proper virtual environment, dependencies, and system startup
 
 set -euo pipefail
@@ -261,7 +261,7 @@ except ImportError:
 print_status "Health checks completed"
 
 # Launch the system
-print_header "LAUNCHING SAM 2.0 UNIFIED COMPLETE SYSTEM"
+print_header "LAUNCHING SAM-D UNIFIED COMPLETE SYSTEM"
 print_status "Starting SAM system on port $PORT..."
 print_status "Dashboard will be available at: http://localhost:$PORT"
 print_status "Press Ctrl+C to stop the system gracefully"

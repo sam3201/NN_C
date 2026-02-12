@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAM 2.0 UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
+SAM-D UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
 Combines Pure C Core + Comprehensive Python Orchestration
 
 This is the unified system that brings together:
@@ -4405,13 +4405,13 @@ class IntelligentIssueResolver:
                 )
 
         # Check API keys
-            api_keys = {
-                "github_token": None, # Removed direct env var lookup
-                "google_api_key": None, # Removed direct env var lookup
-                "anthropic_key": None, # Removed direct env var lookup
-                "openai_key": None, # Removed direct env var lookup
-            }
-                for key_name, value in api_keys.items():
+        api_keys = {
+            "github_token": None, # Removed direct env var lookup
+            "google_api_key": None, # Removed direct env var lookup
+            "anthropic_key": None, # Removed direct env var lookup
+            "openai_key": None, # Removed direct env var lookup
+        }
+        for key_name, value in api_keys.items():
             if not value:
                 issues.append(
                     {
@@ -4579,13 +4579,13 @@ class UnifiedSAMSystem:
         "https://www.googleapis.com/auth/drive.file",
         "https://www.googleapis.com/auth/drive.metadata.readonly",
     ]
-    """The Unified SAM 2.0 Complete System"""
+    """The Unified SAM-D Complete System"""
 
     def __init__(self):
-        print("🚀 INITIALIZING UNIFIED SAM 4.0 COMPLETE SYSTEM")
+        print("🚀 INITIALIZING UNIFIED SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) COMPLETE SYSTEM")
         print("=" * 80)
         print("🎯 UNBOUNDED AGENCY ENABLED")
-        print("🎯 Version 4.0.0 (Unbounded/Meta) - Experimental")
+        print("🎯 Version 5.0.0 (Recursive Meta-Evolution) - SAM-D")
         print("🎯 Manual Kill Switch: ACTIVE")
         print("=" * 80)
 
@@ -4688,14 +4688,14 @@ class UnifiedSAMSystem:
             "unbounded_agency": self.unbounded_mode,
         }
 
-        # Epistemic & Governance (SAM 4.0)
+        # Epistemic & Governance (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive))
         self.score_history = deque(maxlen=100)
         self.calibration_history = deque(maxlen=100)
         self.unsolvability_budget = 1.0
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
 
-        # --- God Equation Integration (SAM 4.0/5.0+) ---
+        # --- God Equation Integration (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
         import sam_regulator_compiler as src
         import numpy as np
         self.reg_compiler_params = src.CompilerParams.bootstrap()
@@ -5096,7 +5096,7 @@ class UnifiedSAMSystem:
         }
 
     def _run_regulator_cycle(self, signals: Dict[str, float]):
-        """Runs the God Equation regulator cycle (SAM 4.0/5.0+)"""
+        """Runs the God Equation regulator cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+)"""
         try:
             import sam_regulator_compiler as src
             import numpy as np
@@ -5149,7 +5149,7 @@ class UnifiedSAMSystem:
             print(f"⚠️ Recursive self-update failed: {e}")
 
     def _check_kill_switch(self):
-        """Hard manual kill switch check (SAM 4.0+)"""
+        """Hard manual kill switch check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)"""
         if getattr(self, "kill_switch_triggered", False):
             print("🚨 KILL SWITCH ACTIVE. TERMINATING SYSTEM PROCESS GROUP.")
             import os
@@ -5631,7 +5631,7 @@ class UnifiedSAMSystem:
         def loop():
             while self.meta_loop_active:
                 self.step += 1
-                # Emergency Kill Switch Check (SAM 4.0+)
+                # Emergency Kill Switch Check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)
                 self._check_kill_switch()
 
                 signals = self._compute_pressure_signals()
@@ -5647,7 +5647,7 @@ class UnifiedSAMSystem:
                     signals["temporal_incoherence"],
                 )
                 
-                # --- God Equation Regulator Cycle (SAM 4.0/5.0+) ---
+                # --- God Equation Regulator Cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
                 self._run_regulator_cycle(signals)
 
                 # Rank pressure calculation integrated into compute_pressure_signals
@@ -7837,9 +7837,9 @@ class UnifiedSAMSystem:
             self.app = Flask(__name__)
             CORS(self.app)
             # Session secret for login/auth
-                session_secret = None
-                if not session_secret:
-                    session_secret = os.urandom(24).hex()
+            session_secret = None
+            if not session_secret:
+                session_secret = os.urandom(24).hex()
             
                 print(
                     "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
@@ -8522,7 +8522,7 @@ class UnifiedSAMSystem:
             """Complete system status"""
             return jsonify(
                 {
-                    "system": "SAM 2.0 Unified Complete System",
+                    "system": "SAM-D Unified Complete System",
                     "status": "active",
                     "c_core": self.system_metrics["c_core_status"],
                     "python_orchestration": self.system_metrics[
@@ -8578,7 +8578,7 @@ class UnifiedSAMSystem:
 
             @self.app.route("/api/emergency/kill", methods=["POST"])
             def emergency_kill():
-                """EMERGENCY KILL SWITCH - Instant termination (SAM 4.0)"""
+                """EMERGENCY KILL SWITCH - Instant termination (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive))"""
                 ok, error = _require_admin_token()
                 if not ok and os.getenv("SAM_ALLOW_ANONYMOUS_KILL", "0") != "1":
                     message, status = error
@@ -8895,7 +8895,7 @@ class UnifiedSAMSystem:
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
 
-                # Add growth diagnostics (Enriched for SAM 4.0)
+                # Add growth diagnostics (Enriched for SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive))
                 diagnostics = self._get_growth_diagnostics()
                 status.update(diagnostics)
 
@@ -10584,7 +10584,7 @@ class UnifiedSAMSystem:
         </div>
 
         <div class="terminal-output" id="terminalOutput">
-SAM 2.0 Interactive Terminal
+SAM-D Interactive Terminal
 Type 'help' for available commands.
 
 sam@terminal:~$ 
@@ -10633,7 +10633,7 @@ sam@terminal:~$
 
         async function executeCommand(command) {
             if (command.toLowerCase() === 'clear') {
-                terminalOutput.textContent = 'SAM 2.0 Interactive Terminal\\nType \\'help\\' for available commands.\\n\\nsam@terminal:~$ ';
+                terminalOutput.textContent = 'SAM-D Interactive Terminal\\nType \\'help\\' for available commands.\\n\\nsam@terminal:~$ ';
                 return '';
             }
             
@@ -11626,7 +11626,7 @@ sam@terminal:~$
         args = parts[1:] if len(parts) > 1 else []
 
         if cmd == "/help":
-            return """🤖 **SAM 2.0 Unified Complete System Commands:**
+            return """🤖 **SAM-D Unified Complete System Commands:**
 
 📋 **Available Commands:**
 • `/help` - Show this help message
@@ -11688,7 +11688,7 @@ sam@terminal:~$
 • Web Search: Integrated research capabilities"""
 
         elif cmd == "/status":
-            status_msg = f"🤖 **SAM 2.0 Unified System Status**\n\n"
+            status_msg = f"🤖 **SAM-D Unified System Status**\n\n"
             status_msg += f"**Connected Agents:** {len(self.connected_agents)}\n"
             for agent_id, agent_data in self.connected_agents.items():
                 agent_config = agent_data["config"]
@@ -11714,7 +11714,7 @@ sam@terminal:~$
             return status_msg
 
         elif cmd == "/agents":
-            agents_msg = "🤖 **SAM 2.0 Available Agents:**\n\n"
+            agents_msg = "🤖 **SAM-D Available Agents:**\n\n"
 
             # Group agents by type
             sam_agents = [
@@ -13689,7 +13689,7 @@ sam@terminal:~$
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>SAM 2.0 Unified Complete System</title>
+            <title>SAM-D Unified Complete System</title>
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -14213,7 +14213,7 @@ sam@terminal:~$
                     <div class="brand">
                         <div class="logo">SAM</div>
                         <div class="brand-text">
-                            <span class="title">SAM 2.0</span>
+                            <span class="title">SAM-D</span>
                             <span class="subtitle">Unified Complete System</span>
                         </div>
                     </div>
@@ -14234,7 +14234,7 @@ sam@terminal:~$
                 <main class="main">
                     <section class="hero">
                         <div>
-                            <h1>🧠 SAM 2.0 Unified Complete System</h1>
+                            <h1>🧠 SAM-D Unified Complete System</h1>
                             <p>The final AGI implementation combining a pure C core, Python orchestration, and real-time multi-agent governance.</p>
                         </div>
                         <div class="hero-metrics">
@@ -14968,7 +14968,7 @@ sam@terminal:~$
             import time
             last_finance_log = 0.0
             while not is_shutting_down():
-                # Emergency Kill Switch Check (SAM 4.0+)
+                # Emergency Kill Switch Check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)
                 self._check_kill_switch()
                 
                 try:
@@ -16204,7 +16204,7 @@ sam@terminal:~$
 
     def _shutdown_system(self):
         """Shutdown the unified system gracefully"""
-        print("🛑 Shutting down Unified SAM 2.0 Complete System...")
+        print("🛑 Shutting down Unified SAM-D Complete System...")
 
         # Save final metrics
         try:
@@ -16217,11 +16217,11 @@ sam@terminal:~$
         # Persist full state snapshot
         self._save_system_state()
 
-        print("  ✅ Unified SAM 2.0 System shutdown complete")
+        print("  ✅ Unified SAM-D System shutdown complete")
 
     def run(self):
         """Run the unified system"""
-        print("🚀 Starting Unified SAM 2.0 Complete System...")
+        print("🚀 Starting Unified SAM-D Complete System...")
         print("=" * 80)
         print("📋 Unified System Capabilities:")
         print("  🧠 Pure C AGI Core (consciousness, orchestrator, agents)")
@@ -16279,7 +16279,7 @@ sam@terminal:~$
         # Start continuous self-healing system
         self._start_continuous_self_healing()
 
-        print("✅ UNIFIED SAM 2.0 COMPLETE SYSTEM INITIALIZED")
+        print("✅ UNIFIED SAM-D COMPLETE SYSTEM INITIALIZED")
         print("=" * 80)
 
         try:
@@ -16302,7 +16302,7 @@ sam@terminal:~$
             traceback.print_exc()
 
         finally:
-            print("🏁 Unified SAM 2.0 System stopped")
+            print("🏁 Unified SAM-D System stopped")
 
 
 class RAMAwareModelSwitcher:
@@ -17001,7 +17001,7 @@ exec(open('{script_path}').read())
 def main():
     """Main entry point"""
     setup_runtime_logging()
-    print("🎯 SAM 2.0 UNIFIED COMPLETE SYSTEM")
+    print("🎯 SAM-D UNIFIED COMPLETE SYSTEM")
     print("=" * 80)
     print("🚀 Combining Pure C Core + Python Orchestration")
     print("🎯 Zero Fallbacks - Production Deployment Ready")

@@ -217,4 +217,39 @@ The God Equation is both the generator and validator of its own subcomponents. D
 
 ---
 
+## XI. Telemetry & Morphogenetic Metrics (ASI vs AGI)
+
+To distinguish between computable scaling (ASI) and universal intelligence (AGI), the system utilizes two orthogonal axes of evolution:
+
+### 1. Capacity Integral ($\hat{C}$) - The ASI Axis
+Represents the accumulated, computable capability of the system. It grows as the system scales compute, tools, and task domains.
+\[
+\hat{C}(t+1) = \hat{C}(t) + \Delta t \cdot (Cap \cdot Br \cdot Sp \cdot Rel)
+\]
+Where:
+- **$Cap$**: Capability (Task Score + Tool Success + Planner Gain).
+- **$Br$**: Breadth (Domain diversity / Inverse interference).
+- **$Sp$**: Speed (Throughput relative to target).
+- **$Rel$**: Reliability (1 - Hallucination/Contradiction rate).
+
+### 2. Universality Estimator ($\hat{U}$) - The AGI Axis
+Represents the ability to change internal form/ontology while preserving identity and coherence. It rises only when structural mutations are successful and aligned with identity anchors.
+\[
+\hat{U} = Coh \cdot Rel \cdot (1 - \text{interference}) \cdot MorphOK \cdot IdOK
+\]
+Where:
+- **$Coh$**: Coherence (1 - Contradiction/Entropy).
+- **$MorphOK$**: Success rate of recent structural changes.
+- **$IdOK$**: Similarity to identity anchor $\Sigma$.
+
+### 3. Innocence Gate ($I_t$)
+A Power-to-Wisdom gating scalar that prevents the system from taking irreversible actions or growing too fast before it can be verified.
+\[
+I_t = \sigma(a - b \cdot Cap - c \cdot Ag - d \cdot Ir + e \cdot Ver)
+\]
+- **Guilt Detection**: If Capability ($Cap$) or Agency ($Ag$) grows significantly faster than Verification ($Ver$), Innocence drops.
+- **Outcome**: Low Innocence triggers **STASIS** or **VERIFY** regimes, blocking structural mutations.
+
+---
+
 **This document represents the current, most advanced understanding of the God Equation and its operational principles.**

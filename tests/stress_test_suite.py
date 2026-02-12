@@ -117,7 +117,7 @@ def test_concurrent_load(system):
         return False
 
 def run_stress_suite():
-    print("🚀 Starting SAM 2.1 Deep Stress Test Suite")
+    print("🚀 Starting SAM-D Deep Stress Test Suite")
     
     # Initialize system in testing mode
     os.environ["SAM_TEST_MODE"] = "1"

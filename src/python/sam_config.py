@@ -5,8 +5,8 @@ import os
 
 config = {
     # System Identification
-    'system_name': 'SAM 2.1 AGI',
-    'system_version': '2.1.0 (ΨΔ-Core)',
+    'system_name': 'SAM-D AGI',
+    'system_version': '5.0.0 (ΨΔ•Ω-Core Recursive)',
     'system_description': 'Self-healing AGI system with multi-agent orchestration and ΨΔ-Core morphogenesis',
 
     # Core Settings

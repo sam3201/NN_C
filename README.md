@@ -1,6 +1,6 @@
-# SAM 2.1 AGI (ΨΔ-Core)
+# SAM-D AGI (ΨΔ•Ω-Core v5.0.0 Recursive)
 
-SAM 2.1 is a hybrid Python/C multi-agent system with a web dashboard, slash-command interface, and C-accelerated cores for meta-control and dual-system simulation. It features the advanced ΨΔ-Core morphogenesis and PDI-T submodel lifecycle.
+SAM-D is a hybrid Python/C recursive meta-evolutionary system with a web dashboard, slash-command interface, and C-accelerated cores for meta-control and dual-system simulation. It features the advanced ΨΔ•Ω-Core morphogenesis and PDI-T submodel lifecycle.
 
 ## What's Included
 - Python orchestration, API server, and CLI: `complete_sam_unified.py`
