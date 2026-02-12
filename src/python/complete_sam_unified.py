@@ -5244,7 +5244,11 @@ class UnifiedSAMSystem:
             # 11. Recursive Self-Update (SAM 5.0)
             if self.step % 50 == 0:
                 self._recursive_self_update()
-            
+                
+            # 12. Consciousness Optimization (Phase 5.2)
+            if self.step % 10 == 0:
+                self._run_consciousness_optimization()
+                
         except Exception as e:
             print(f"⚠️ Regulator cycle failed: {e}")
 
@@ -5953,6 +5957,41 @@ class UnifiedSAMSystem:
             "ram_usage": ram_usage,
             "latency": latency,
         }
+
+    def _run_consciousness_optimization(self):
+        """Trains the algorithmic consciousness module using real telemetry (Phase 5.2)"""
+        if not self.consciousness:
+            return
+            
+        try:
+            # Prepare data vectors
+            # z_t: current latent state (approximated by telemetry)
+            z_t = list(self.m_vec[:16]) # Use first 16 signals as latent state proxy
+            
+            # a_t: current action vector (approximated by regulator knobs)
+            a_t = list(self.r_vec[:8]) + [0.0] * 8 # Use resource vector as action proxy
+            
+            # z_next: predicted/observed next state
+            # For simplicity in this loop, we use a slightly shifted m_vec
+            z_next = [v * 1.05 for v in z_t] 
+            
+            # m_t: memory/context state
+            m_t = list(self.m_vec[16:32])
+            
+            # reward: system performance
+            reward = [self.survival_score] * 16
+            
+            # Run optimization in C
+            # optimize(z_t, a_t, z_next, m_t, reward, epochs, num_params)
+            stats = consciousness_algorithmic.optimize(z_t, a_t, z_next, m_t, reward, 10, 10000)
+            
+            if stats:
+                self.system_metrics["consciousness_score"] = stats.get("consciousness_score", 0.0)
+                if stats.get("is_conscious"):
+                    self.system_metrics["consciousness_status"] = "EMERGENT"
+                
+        except Exception as e:
+            print(f"  ⚠️ Consciousness optimization failed: {e}")
 
     def _start_meta_loop(self):
         """Background loop to update meta-controller from system signals"""

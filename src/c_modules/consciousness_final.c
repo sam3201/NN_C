@@ -486,18 +486,42 @@ static PyObject *py_consciousness_create(PyObject *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+// Helper to extract double array from Python sequence
+static int extract_doubles(PyObject *obj, double *buf, size_t expected_n) {
+    PyObject *fast = PySequence_Fast(obj, "Argument must be a sequence");
+    if (!fast) return -1;
+    size_t n = (size_t)PySequence_Fast_GET_SIZE(fast);
+    if (n < expected_n) {
+        Py_DECREF(fast);
+        return -2;
+    }
+    for (size_t i = 0; i < expected_n; i++) {
+        PyObject *item = PySequence_Fast_GET_ITEM(fast, i);
+        buf[i] = PyFloat_AsDouble(item);
+        if (PyErr_Occurred()) {
+            Py_DECREF(fast);
+            return -3;
+        }
+    }
+    Py_DECREF(fast);
+    return 0;
+}
+
 static PyObject *py_consciousness_optimize(PyObject *self, PyObject *args) {
     if (!global_module) {
         PyErr_SetString(PyExc_RuntimeError, "Consciousness module not initialized");
         return NULL;
     }
 
+    PyObject *z_t_obj, *a_t_obj, *z_next_obj, *m_t_obj, *reward_obj;
     int epochs, num_params;
-    if (!PyArg_ParseTuple(args, "ii", &epochs, &num_params)) {
+    
+    if (!PyArg_ParseTuple(args, "OOOOOii", 
+                          &z_t_obj, &a_t_obj, &z_next_obj, &m_t_obj, &reward_obj,
+                          &epochs, &num_params)) {
         return NULL;
     }
 
-    // Create test data (in real implementation, would parse from Python arrays)
     double *z_t = malloc(global_module->latent_dim * sizeof(double));
     double *a_t = malloc(global_module->action_dim * sizeof(double));
     double *z_next = malloc(global_module->latent_dim * sizeof(double));
@@ -505,19 +529,19 @@ static PyObject *py_consciousness_optimize(PyObject *self, PyObject *args) {
     double *reward = malloc(global_module->action_dim * sizeof(double));
 
     if (!z_t || !a_t || !z_next || !m_t || !reward) {
+        free(z_t); free(a_t); free(z_next); free(m_t); free(reward);
         PyErr_SetString(PyExc_RuntimeError, "Memory allocation failed");
         return NULL;
     }
 
-    // Generate realistic test data
-    for (size_t i = 0; i < global_module->latent_dim; i++) {
-        z_t[i] = sin(i * 0.1) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
-        z_next[i] = sin((i + 1) * 0.1) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
-        m_t[i] = cos(i * 0.05) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
-    }
-    for (size_t i = 0; i < global_module->action_dim; i++) {
-        a_t[i] = (i % 4 == 0) ? 1.0 : 0.0;
-        reward[i] = cos(i * 0.2) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
+    if (extract_doubles(z_t_obj, z_t, global_module->latent_dim) != 0 ||
+        extract_doubles(a_t_obj, a_t, global_module->action_dim) != 0 ||
+        extract_doubles(z_next_obj, z_next, global_module->latent_dim) != 0 ||
+        extract_doubles(m_t_obj, m_t, global_module->latent_dim) != 0 ||
+        extract_doubles(reward_obj, reward, global_module->action_dim) != 0) {
+        free(z_t); free(a_t); free(z_next); free(m_t); free(reward);
+        PyErr_SetString(PyExc_ValueError, "Failed to extract double arrays from arguments. Ensure dimensions match latent_dim/action_dim.");
+        return NULL;
     }
 
     int result = consciousness_optimize(global_module, z_t, a_t, z_next, m_t, reward, num_params, epochs);
