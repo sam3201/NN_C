@@ -124,7 +124,7 @@ def main():
     server_proc.start()
 
     try:
-        if not wait_for_health('http://localhost:5004/api/status', timeout_s=90):
+        if not wait_for_health('http://localhost:5004/api/health', timeout_s=90):
             raise RuntimeError('Server did not become healthy within timeout')
 
         messages = [
