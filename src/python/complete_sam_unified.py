@@ -4526,18 +4526,8 @@ class IntelligentIssueResolver:
         for i, issue in enumerate(unresolved_issues, 1):
             print(f"\\n{i}. {issue['message']}")
             if issue["type"] == "missing_api_key":
-                if "github" in issue["component"]:
-                    print("   💡 Solution: Set GITHUB_TOKEN environment variable")
-                    print("   📝 Run: export GITHUB_TOKEN=<YOUR_KEY>")
-                elif "google" in issue["component"]:
-                    print("   💡 Solution: Set GOOGLE_API_KEY environment variable")
-                    print("   📝 Run: export GOOGLE_API_KEY=<YOUR_KEY>")
-                elif "anthropic" in issue["component"]:
-                    print("   💡 Solution: Set ANTHROPIC_API_KEY environment variable")
-                    print("   📝 Run: export ANTHROPIC_API_KEY=<YOUR_KEY>")
-                elif "openai" in issue["component"]:
-                    print("   💡 Solution: Set OPENAI_API_KEY environment variable")
-                    print("   📝 Run: export OPENAI_API_KEY=<YOUR_KEY>")
+                print("   💡 Solution: Configure the required provider credentials in your environment.")
+                print("   📝 Check documentation for the specific environment variable needed.")
             else:
                 print(
                     "   💡 This integration is not available. The system will continue without it."
@@ -6707,24 +6697,13 @@ class UnifiedSAMSystem:
 
         # Check API keys
         self.claude_available = os.getenv("ANTHROPIC_API_KEY") is not None
-        print(
-            f"  🤖 Claude API: {'✅ Available' if self.claude_available else '❌ Set ANTHROPIC_API_KEY'}",
-            flush=True,
-        )
+        SAM_LOG_DEBUG(f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}")
 
         self.gemini_available = os.getenv("GOOGLE_API_KEY") is not None
-        print(
-            f"  🤖 Gemini API: {'✅ Available' if self.gemini_available else '❌ Set GOOGLE_API_KEY'}",
-            flush=True,
-        )
+        SAM_LOG_DEBUG(f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}")
 
-        self.openai_available = False
-
-            print(f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}",
-
-        
-            flush=True,
-        )
+        self.openai_available = os.getenv("OPENAI_API_KEY") is not None
+        SAM_LOG_DEBUG(f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}")
 
         # Check Flask and SocketIO
         flask_available = False
@@ -7987,6 +7966,7 @@ class UnifiedSAMSystem:
 
             token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
             if not token:
+                SAM_LOG_WARN("⚠️ Admin token security bypass: No SAM_ADMIN_TOKEN configured!")
                 return True, None
             auth_header = request.headers.get("Authorization", "")
             candidate = None

@@ -188,29 +188,29 @@ else
 fi
 
 # Check for API keys (optional)
-print_header "CHECKING API CONFIGURATION"
-API_KEYS_CONFIGURED=0
-
-if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-    ((API_KEYS_CONFIGURED++))
-    print_status "Anthropic API key configured"
-fi
-
-if [ -n "${GOOGLE_API_KEY:-}" ]; then
-    ((API_KEYS_CONFIGURED++))
-    print_status "Google API key configured"
-fi
-
-if [ -n "${OPENAI_API_KEY:-}" ]; then
-    ((API_KEYS_CONFIGURED++))
-    print_status "OpenAI API key configured"
-fi
-
-if [ $API_KEYS_CONFIGURED -eq 0 ]; then
-    print_warning "No API keys configured - system will use available local models"
-else
-    print_status "$API_KEYS_CONFIGURED API key(s) configured"
-fi
+# print_header "CHECKING API CONFIGURATION"
+# API_KEYS_CONFIGURED=0
+# 
+# if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+#     ((API_KEYS_CONFIGURED++))
+#     print_status "Anthropic API key configured"
+# fi
+# 
+# if [ -n "${GOOGLE_API_KEY:-}" ]; then
+#     ((API_KEYS_CONFIGURED++))
+#     print_status "Google API key configured"
+# fi
+# 
+# if [ -n "${OPENAI_API_KEY:-}" ]; then
+#     ((API_KEYS_CONFIGURED++))
+#     print_status "OpenAI API key configured"
+# fi
+# 
+# if [ $API_KEYS_CONFIGURED -eq 0 ]; then
+#     print_warning "No API keys configured - system will use available local models"
+# else
+#     print_status "$API_KEYS_CONFIGURED API key(s) configured"
+# fi
 
 # Run system health check
 print_header "SYSTEM HEALTH CHECK"
