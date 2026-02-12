@@ -16456,6 +16456,8 @@ sam@terminal:~$
                 self.survival_agent.survival_score = min(
                     1.0, self.survival_agent.survival_score + 0.01
                 )
+            # Sync with system metrics
+            self.system_metrics["survival_score"] = self.survival_agent.survival_score
 
     def _execute_goal_cycle(self):
         """Execute goal management cycle"""
