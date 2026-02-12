@@ -8850,7 +8850,7 @@ class UnifiedSAMSystem:
         if getattr(self, "restart_enabled", False):
 
             @self.app.route("/api/restart", methods=["POST"])
-            def restart_system():
+            def restart_system_internal():
                 """Admin-only restart (requires hot-reload runner)."""
                 ok, error = _require_admin_token()
                 if not ok:
@@ -10386,7 +10386,7 @@ class UnifiedSAMSystem:
                 return jsonify({"error": str(e)}), 500
 
         @self.app.route("/api/restart", methods=["POST"])
-        def restart_system():
+        def restart_system_admin():
             """Restart the SAM system (admin only)"""
             try:
                 ok, error = _require_admin_token()
