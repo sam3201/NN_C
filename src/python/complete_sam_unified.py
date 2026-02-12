@@ -12,6 +12,7 @@ This is the unified system that brings together:
 
 import sys
 import os
+import math
 import time
 import json
 import inspect
@@ -4660,6 +4661,10 @@ class UnifiedSAMSystem:
         self.unbounded_mode = os.getenv("SAM_UNBOUNDED_MODE", "1") == "1"
         self.require_meta_agent = os.getenv("SAM_REQUIRE_META_AGENT", "1") == "1"
 
+        # Initialize LoveAgent early (Phase 4.1)
+        self.love_agent = LoveAgent(self)
+        self.innocence_I = 1.0 # Initialize innocence early (Phase 4.4)
+
         # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
             "love_agent": {
@@ -4788,6 +4793,9 @@ class UnifiedSAMSystem:
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
         self.sav_arena = sam_sav_dual_system.create(32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42)
         
+        # Initialize identity anchor in C-core (Phase 4.1)
+        self._initialize_identity_anchor()
+
         # Load persisted state (if available)
         self._load_system_state()
         
@@ -5122,12 +5130,6 @@ class UnifiedSAMSystem:
         # Create meta-agent with sub-agents
         self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
         # MetaAgent is fully integrated in-process; no external attachment needed.
-
-        # Initialize LoveAgent (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) Phase 4.1)
-        self.love_agent = LoveAgent(self)
-        
-        # Initialize identity anchor in C-core
-        self._initialize_identity_anchor()
 
         # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
         self.bootstrap_complete = True
@@ -6949,13 +6951,13 @@ class UnifiedSAMSystem:
 
         # Check API keys
         self.claude_available = os.getenv("ANTHROPIC_API_KEY") is not None
-        SAM_LOG_DEBUG(f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}")
+        print(f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}")
 
         self.gemini_available = os.getenv("GOOGLE_API_KEY") is not None
-        SAM_LOG_DEBUG(f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}")
+        print(f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}")
 
         self.openai_available = os.getenv("OPENAI_API_KEY") is not None
-        SAM_LOG_DEBUG(f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}")
+        print(f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}")
 
         # Check Flask and SocketIO
         flask_available = False
