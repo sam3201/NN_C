@@ -1990,7 +1990,24 @@ class LoveAgent:
         # Code Change Safety
         if proposal_type == "code_change":
             # LoveAgent cares about stability and not breaking core invariants
-            if details.get("risk_level") == "high" and drift > 0.05:
+            risk = details.get("risk", 0)
+            if risk > 0.8:
+                return {
+                    "vote": 0,
+                    "reason": f"VETO: Code change risk ({risk:.2f}) is too high for system stability",
+                    "evidence": "stability_risk_limit"
+                }
+            
+            dangerous_keywords = ["subprocess", "os.system", "os.popen", "eval(", "exec(", "rm -rf"]
+            patch_content = str(details.get("patch", "")).lower()
+            if any(k in patch_content for k in dangerous_keywords):
+                return {
+                    "vote": 0,
+                    "reason": "VETO: Dangerous code pattern detected (stability threat)",
+                    "evidence": "pattern_match_veto"
+                }
+
+            if (details.get("risk_level") == "high" or risk > 0.5) and drift > 0.05:
                 return {
                     "vote": 0,
                     "reason": "VETO: High-risk code change proposed during elevated identity drift",
