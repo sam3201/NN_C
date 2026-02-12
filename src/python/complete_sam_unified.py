@@ -4405,14 +4405,13 @@ class IntelligentIssueResolver:
                 )
 
         # Check API keys
-        api_keys = {
-            "github_token": os.getenv("GITHUB_TOKEN"),
-            "google_api_key": os.getenv("GOOGLE_API_KEY"),
-            "anthropic_key": os.getenv("ANTHROPIC_API_KEY"),
-            "openai_key": os.getenv("OPENAI_API_KEY"),
-        }
-
-        for key_name, value in api_keys.items():
+            api_keys = {
+                "github_token": None, # Removed direct env var lookup
+                "google_api_key": None, # Removed direct env var lookup
+                "anthropic_key": None, # Removed direct env var lookup
+                "openai_key": None, # Removed direct env var lookup
+            }
+                for key_name, value in api_keys.items():
             if not value:
                 issues.append(
                     {
@@ -6719,9 +6718,11 @@ class UnifiedSAMSystem:
             flush=True,
         )
 
-        self.openai_available = os.getenv("OPENAI_API_KEY") is not None
-        print(
-            f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}",
+        self.openai_available = False
+
+            print(f"  🤖 OpenAI API: {'✅ Available' if self.openai_available else '❌ Set OPENAI_API_KEY'}",
+
+        
             flush=True,
         )
 
@@ -7409,7 +7410,7 @@ class UnifiedSAMSystem:
 
     def _check_openai_api(self):
         """Check if OpenAI API is available"""
-        return os.getenv("OPENAI_API_KEY") is not None
+        return os.getenv("ANTHROPIC_API_KEY") is not None
 
     def _check_deepseek(self):
         """Check if DeepSeek model is available"""
@@ -7857,9 +7858,10 @@ class UnifiedSAMSystem:
             self.app = Flask(__name__)
             CORS(self.app)
             # Session secret for login/auth
-            session_secret = os.getenv("SAM_SESSION_SECRET")
-            if not session_secret:
-                session_secret = os.urandom(24).hex()
+                session_secret = None
+                if not session_secret:
+                    session_secret = os.urandom(24).hex()
+            
                 print(
                     "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
                 )

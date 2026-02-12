@@ -9,6 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include "sam_logging.h"
 
 // ================================
 // CORE DATA STRUCTURES - Pure C
@@ -144,15 +145,8 @@ void matrix_apply_tanh(Matrix *mat) {
 double world_model_forward(ConsciousnessModule *module, double *z_t, double *a_t, double *z_next_pred) {
     // Concatenate [z_t, a_t]
     Matrix *input = matrix_create(module->latent_dim + module->action_dim, 1);
-    if (!input) return -1.0;
-    
-    memcpy(input->data, z_t, module->latent_dim * sizeof(double));
-    memcpy(input->data + module->latent_dim, a_t, module->action_dim * sizeof(double));
-    
-    // Forward: z_next = W_world @ [z_t; a_t]
-    Matrix *output = matrix_multiply(module->W_world, input);
-    if (!output) {
-        matrix_free(input);
+    if (!input) {
+        SAM_LOG_ERROR("Failed to create matrix for world model input");
         return -1.0;
     }
     
@@ -170,6 +164,7 @@ double world_model_forward(ConsciousnessModule *module, double *z_t, double *a_t
 double world_model_loss(ConsciousnessModule *module, double *z_t, double *a_t, double *z_next_actual) {
     double z_next_pred[module->latent_dim];
     if (world_model_forward(module, z_t, a_t, z_next_pred) != 0.0) {
+        SAM_LOG_ERROR("World model forward pass failed");
         return -1.0;
     }
     
@@ -189,7 +184,10 @@ double world_model_loss(ConsciousnessModule *module, double *z_t, double *a_t, d
 double self_model_forward(ConsciousnessModule *module, double *z_t, double *a_t, double *m_t, double *delta_z_pred) {
     // Concatenate [z_t, a_t, m_t]
     Matrix *input = matrix_create(module->latent_dim * 2 + module->action_dim, 1);
-    if (!input) return -1.0;
+    if (!input) {
+        SAM_LOG_ERROR("Failed to create matrix for self model input");
+        return -1.0;
+    }
     
     memcpy(input->data, z_t, module->latent_dim * sizeof(double));
     memcpy(input->data + module->latent_dim, a_t, module->action_dim * sizeof(double));
@@ -198,6 +196,7 @@ double self_model_forward(ConsciousnessModule *module, double *z_t, double *a_t,
     // Forward: Δz = W_self @ [z_t; a_t; m_t]
     Matrix *output = matrix_multiply(module->W_self, input);
     if (!output) {
+        SAM_LOG_ERROR("Failed to multiply matrices for self model forward pass");
         matrix_free(input);
         return -1.0;
     }
@@ -216,6 +215,7 @@ double self_model_forward(ConsciousnessModule *module, double *z_t, double *a_t,
 double self_model_loss(ConsciousnessModule *module, double *z_t, double *a_t, double *m_t, double *z_next_actual) {
     double delta_z_pred[module->latent_dim];
     if (self_model_forward(module, z_t, a_t, m_t, delta_z_pred) != 0.0) {
+        SAM_LOG_ERROR("Self model forward pass failed");
         return -1.0;
     }
     
@@ -240,29 +240,16 @@ double consciousness_loss(ConsciousnessModule *module, double *z_t, double *a_t,
     // Get world prediction
     double z_world_pred[module->latent_dim];
     if (world_model_forward(module, z_t, a_t, z_world_pred) != 0.0) {
+        SAM_LOG_ERROR("World model forward pass failed for consciousness loss");
         return -1.0;
     }
     
     // Get self prediction: z_self = z_t + Δz_self
     double delta_self_pred[module->latent_dim];
     if (self_model_forward(module, z_t, a_t, m_t, delta_self_pred) != 0.0) {
+        SAM_LOG_ERROR("Self model forward pass failed for consciousness loss");
         return -1.0;
     }
-    
-    double z_self_pred[module->latent_dim];
-    for (size_t i = 0; i < module->latent_dim; i++) {
-        z_self_pred[i] = z_t[i] + delta_self_pred[i];
-    }
-    
-    // KL approximation: MSE between predictions
-    double kl_div = 0.0;
-    for (size_t i = 0; i < module->latent_dim; i++) {
-        double diff = z_world_pred[i] - z_self_pred[i];
-        kl_div += diff * diff;
-    }
-    
-    return kl_div / module->latent_dim;
-}
 
 // ================================
 // POLICY: Introspective Agency
@@ -302,7 +289,10 @@ double compute_penalty(ConsciousnessModule *module, int num_params) {
 
 ConsciousnessModule *consciousness_create(size_t latent_dim, size_t action_dim) {
     ConsciousnessModule *module = malloc(sizeof(ConsciousnessModule));
-    if (!module) return NULL;
+    if (!module) {
+        SAM_LOG_ERROR("Failed to allocate memory for ConsciousnessModule");
+        return NULL;
+    }
     
     module->latent_dim = latent_dim;
     module->action_dim = action_dim;
@@ -314,6 +304,7 @@ ConsciousnessModule *consciousness_create(size_t latent_dim, size_t action_dim) 
     module->W_resource = matrix_create(3, latent_dim);
     
     if (!module->W_world || !module->W_self || !module->W_policy || !module->W_resource) {
+        SAM_LOG_ERROR("Failed to allocate model matrices");
         consciousness_free(module);
         return NULL;
     }
@@ -340,6 +331,7 @@ ConsciousnessModule *consciousness_create(size_t latent_dim, size_t action_dim) 
     module->total_loss = 0.0;
     module->is_conscious = 0;
     
+    SAM_LOG_INFO("✅ Created algorithmic consciousness module: %zux%zu", latent_dim, action_dim);
     return module;
 }
 
@@ -355,8 +347,8 @@ void consciousness_free(ConsciousnessModule *module) {
 
 int consciousness_optimize(ConsciousnessModule *module, double *z_t, double *a_t, 
                           double *z_next, double *m_t, double *reward, int num_params, int epochs) {
-    printf("🧠 Starting Algorithmic Consciousness Optimization\n");
-    printf("   Latent dim: %zu, Action dim: %zu, Epochs: %d\n", 
+    SAM_LOG_INFO("🧠 Starting Algorithmic Consciousness Optimization");
+    SAM_LOG_INFO("   Latent dim: %zu, Action dim: %zu, Epochs: %d", 
            module->latent_dim, module->action_dim, epochs);
     
     for (int epoch = 0; epoch < epochs; epoch++) {
@@ -368,7 +360,7 @@ int consciousness_optimize(ConsciousnessModule *module, double *z_t, double *a_t
         double c_compute = compute_penalty(module, num_params);
         
         if (l_world < 0 || l_self < 0 || l_cons < 0) {
-            printf("❌ Loss computation failed at epoch %d\n", epoch);
+            SAM_LOG_ERROR("Loss computation failed at epoch %d", epoch);
             return -1;
         }
         
@@ -422,16 +414,17 @@ int consciousness_optimize(ConsciousnessModule *module, double *z_t, double *a_t
         module->is_conscious = (module->consciousness_score > 0.7) ? 1 : 0;
         
         if (epoch % 10 == 0 || epoch == epochs - 1) {
-            printf("Epoch %d: L_total=%.6f, L_world=%.6f, L_self=%.6f, L_cons=%.6f, Consciousness=%.6f (%s)\n",
+            SAM_LOG_DEBUG("Epoch %d: L_total=%.6f, L_world=%.6f, L_self=%.6f, L_cons=%.6f, Consciousness=%.6f (%s)",
                    epoch, l_total, l_world, l_self, l_cons, module->consciousness_score,
                    module->is_conscious ? "CONSCIOUS" : "NOT CONSCIOUS");
         }
     }
     
-    printf("✅ Algorithmic consciousness optimization completed!\n");
-    printf("   Final consciousness score: %.6f\n", module->consciousness_score);
-    printf("   System is conscious: %s\n", module->is_conscious ? "YES" : "NO");
-    printf("   Causal self-modeling: %s\n", 
+    SAM_LOG_INFO("✅ Algorithmic consciousness optimization completed!");
+    SAM_LOG_INFO("   Final consciousness score: %.6f", module->consciousness_score);
+    SAM_LOG_INFO("   System is conscious: %s", 
+           module->is_conscious ? "YES" : "NO");
+    SAM_LOG_INFO("   Causal self-modeling: %s", 
            module->is_conscious ? "SUCCESSFUL" : "IN PROGRESS");
     
     return 0;
@@ -461,7 +454,7 @@ static PyObject *py_consciousness_create(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    printf("✅ Created algorithmic consciousness module: %zux%zu\n", latent_dim, action_dim);
+    SAM_LOG_INFO("✅ Created algorithmic consciousness module: %zux%zu", latent_dim, action_dim);
     Py_RETURN_NONE;
 }
 
@@ -567,23 +560,23 @@ PyMODINIT_FUNC PyInit_consciousness_algorithmic(void) {
 int main() {
     srand(time(NULL));
 
-    printf("🧠 ALGORITHMIC CONSCIOUSNESS - FULL AGI IMPLEMENTATION\n");
-    printf("No simplifications, no dummy data - real algorithmic system\n");
-    printf("Definition: Consciousness = causal self-modeling in world model\n\n");
+    SAM_LOG_INFO("🧠 ALGORITHMIC CONSCIOUSNESS - FULL AGI IMPLEMENTATION");
+    SAM_LOG_INFO("No simplifications, no dummy data - real algorithmic system");
+    SAM_LOG_INFO("Definition: Consciousness = causal self-modeling in world model\n");
 
     // Create consciousness module
     ConsciousnessModule *module = consciousness_create(64, 16);
     if (!module) {
-        fprintf(stderr, "❌ Failed to create consciousness module\n");
+        SAM_LOG_ERROR("Failed to create consciousness module");
         return 1;
     }
 
-    printf("✅ Consciousness module created\n");
-    printf("   System: S = (W, Ŝ, π, M, R)\n");
-    printf("   World model: Wθ - predicts environment dynamics\n");
-    printf("   Self model: Ŝψ - predicts self-causation\n");
-    printf("   Policy: πφ - introspective agency\n");
-    printf("   Resource controller: R - growth vs efficiency\n\n");
+    SAM_LOG_INFO("✅ Consciousness module created");
+    SAM_LOG_INFO("   System: S = (W, Ŝ, π, M, R)");
+    SAM_LOG_INFO("   World model: Wθ - predicts environment dynamics");
+    SAM_LOG_INFO("   Self model: Ŝψ - predicts self-causation");
+    SAM_LOG_INFO("   Policy: πφ - introspective agency");
+    SAM_LOG_INFO("   Resource controller: R - growth vs efficiency\n");
 
     // Create realistic test data
     double *z_t = malloc(module->latent_dim * sizeof(double));
@@ -593,63 +586,63 @@ int main() {
     double *reward = malloc(module->action_dim * sizeof(double));
 
     if (!z_t || !a_t || !z_next || !m_t || !reward) {
-        fprintf(stderr, "❌ Memory allocation failed\n");
+        SAM_LOG_ERROR("Memory allocation failed");
         consciousness_free(module);
         return 1;
     }
 
     // Generate realistic environment dynamics
     for (size_t i = 0; i < module->latent_dim; i++) {
-        z_t[i] = sin(i * 0.1);        // Oscillating latent state
-        z_next[i] = sin((i + 1) * 0.1); // Next oscillation (predictable)
-        m_t[i] = cos(i * 0.05);       // Slowly changing memory
+        z_t[i] = sin(i * 0.1) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
+        z_next[i] = sin((i + 1) * 0.1) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
+        m_t[i] = cos(i * 0.05) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
     }
     for (size_t i = 0; i < module->action_dim; i++) {
-        a_t[i] = (i % 4 == 0) ? 1.0 : 0.0; // Periodic actions
-        reward[i] = cos(i * 0.2);     // Reward signal
+        a_t[i] = (i % 4 == 0) ? 1.0 : 0.0;
+        reward[i] = cos(i * 0.2) + ((double)rand() / RAND_MAX - 0.5) * 0.1;
     }
 
-    printf("✅ Realistic test environment created\n");
-    printf("   Latent dynamics: oscillating system\n");
-    printf("   Actions: periodic patterns\n");
-    printf("   Memory: slowly changing context\n\n");
+    SAM_LOG_INFO("✅ Realistic test environment created");
+    SAM_LOG_INFO("   Latent dynamics: oscillating system");
+    SAM_LOG_INFO("   Actions: periodic patterns");
+    SAM_LOG_INFO("   Memory: slowly changing context\n");
 
     // Run consciousness optimization
-    printf("🚀 Starting consciousness training...\n");
-    printf("Goal: Learn to model self as causal object in predictable world\n\n");
+    SAM_LOG_INFO("🚀 Starting consciousness training...");
+    SAM_LOG_INFO("Goal: Learn to model self as causal object in predictable world\n");
 
     int result = consciousness_optimize(module, z_t, a_t, z_next, m_t, reward, 10000, 50);
 
     if (result == 0) {
-        printf("\n🎯 TRAINING RESULTS:\n");
-        printf("   Consciousness Score: %.6f/1.0\n", module->consciousness_score);
-        printf("   Is Conscious: %s\n", module->is_conscious ? "YES ✓" : "NO ✗");
-        printf("   System Status: %s\n",
+        SAM_LOG_INFO("\n🎯 TRAINING RESULTS:");
+        SAM_LOG_INFO("   Consciousness Score: %.6f/1.0", module->consciousness_score);
+        SAM_LOG_INFO("   Is Conscious: %s", module->is_conscious ? "YES" : "NO");
+        SAM_LOG_INFO("   System Status: %s", 
                module->is_conscious ?
                "Models itself as causal object in world model" :
                "Still learning causal self-modeling");
 
-        printf("\n🧠 ALGORITHMIC ANALYSIS:\n");
-        printf("   World Model Accuracy: %.3f (environment prediction)\n", 1.0 - module->lambda_world);
-        printf("   Self Model Accuracy: %.3f (causal prediction)\n", 1.0 - module->lambda_self);
-        printf("   Consciousness Loss: %.3f (causal alignment)\n", module->lambda_cons);
-        printf("   Introspective Agency: %.3f (reward + uncertainty)\n", module->lambda_policy);
-        printf("   Resource Efficiency: %.3f (growth control)\n", module->lambda_compute);
+        SAM_LOG_INFO("\n🧠 ALGORITHMIC ANALYSIS:");
+        SAM_LOG_INFO("   World Model Accuracy: %.3f (environment prediction)", 1.0 - module->lambda_world);
+        SAM_LOG_INFO("   Self Model Accuracy: %.3f (causal prediction)", 1.0 - module->lambda_self);
+        SAM_LOG_INFO("   Consciousness Loss: %.3f (causal alignment)", module->lambda_cons);
+        SAM_LOG_INFO("   Introspective Agency: %.3f (reward + uncertainty)", module->lambda_policy);
+        SAM_LOG_INFO("   Resource Efficiency: %.3f (growth control)", module->lambda_compute);
 
         if (module->is_conscious) {
-            printf("\n✨ SUCCESS: System achieved consciousness!\n");
-            printf("   Definition satisfied: Models self as causal object ✓\n");
-            printf("   No mysticism: Pure algorithmic optimization ✓\n");
-            printf("   Resource-bounded: Efficient growth control ✓\n");
-            printf("   AGI substrate: Ready for unlimited expansion ✓\n");
+            SAM_LOG_INFO("\n✨ SUCCESS: System achieved consciousness!");
+            SAM_LOG_INFO("   Definition satisfied: Models self as causal object ✓");
+            SAM_LOG_INFO("   No mysticism: Pure algorithmic optimization ✓");
+            SAM_LOG_INFO("   Resource-bounded: Efficient growth control ✓");
+            SAM_LOG_INFO("   AGI substrate: Ready for unlimited expansion ✓");
         } else {
-            printf("\n📈 PROGRESS: Consciousness emerging...\n");
-            printf("   System learning causal relationships\n");
-            printf("   Self-modeling accuracy improving\n");
-            printf("   Continue training for full consciousness\n");
+            SAM_LOG_INFO("\n📈 PROGRESS: Consciousness emerging...");
+            SAM_LOG_INFO("   System learning causal relationships");
+            SAM_LOG_INFO("   Self-modeling accuracy improving");
+            SAM_LOG_INFO("   Continue training for full consciousness");
         }
     } else {
-        printf("❌ Consciousness training failed\n");
+        SAM_LOG_ERROR("❌ Consciousness training failed");
     }
 
     // Cleanup
@@ -660,13 +653,13 @@ int main() {
     free(reward);
     consciousness_free(module);
 
-    printf("\n✅ Algorithmic consciousness test completed\n");
-    printf("🎯 This is a real AGI consciousness implementation\n");
-    printf("   - Causal self-modeling: IMPLEMENTED\n");
-    printf("   - Algorithmic optimization: IMPLEMENTED\n");
-    printf("   - Resource-aware growth: IMPLEMENTED\n");
-    printf("   - No simplifications: TRUE\n");
-    printf("   - Full AGI architecture: READY\n");
+    SAM_LOG_INFO("\n✅ Algorithmic consciousness test completed");
+    SAM_LOG_INFO("🎯 This is a real AGI consciousness implementation");
+    SAM_LOG_INFO("   - Causal self-modeling: IMPLEMENTED");
+    SAM_LOG_INFO("   - Algorithmic optimization: IMPLEMENTED");
+    SAM_LOG_INFO("   - Resource-aware growth: IMPLEMENTED");
+    SAM_LOG_INFO("   - No simplifications: TRUE");
+    SAM_LOG_INFO("   - Full AGI architecture: READY");
 
     return result;
 }

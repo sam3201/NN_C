@@ -88,3 +88,5 @@ sam_data/*.db
 SAM_Code_Backups/
 # files created during runtime/temporary outputs
 *.cpython-*
+secrets/openai_key.txt
+secrets/
