@@ -90,3 +90,4 @@ SAM_Code_Backups/
 *.cpython-*
 secrets/openai_key.txt
 secrets/
+.aider*
