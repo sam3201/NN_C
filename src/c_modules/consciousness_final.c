@@ -9,7 +9,10 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "sam_logging.h"
+
+#define SAM_LOG_INFO(...) { printf("[INFO] "); printf(__VA_ARGS__); printf("\n"); }
+#define SAM_LOG_ERROR(...) { fprintf(stderr, "[ERROR] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
+#define SAM_LOG_DEBUG(...) { printf("[DEBUG] "); printf(__VA_ARGS__); printf("\n"); }
 
 // ================================
 // CORE DATA STRUCTURES - Pure C
@@ -50,6 +53,10 @@ typedef struct {
     size_t latent_dim;
     size_t action_dim;
 } ConsciousnessModule;
+
+// Forward declarations
+void consciousness_free(ConsciousnessModule *module);
+ConsciousnessModule *consciousness_create(size_t latent_dim, size_t action_dim);
 
 // ================================
 // MATRIX OPERATIONS - Pure C
@@ -147,6 +154,17 @@ double world_model_forward(ConsciousnessModule *module, double *z_t, double *a_t
     Matrix *input = matrix_create(module->latent_dim + module->action_dim, 1);
     if (!input) {
         SAM_LOG_ERROR("Failed to create matrix for world model input");
+        return -1.0;
+    }
+    
+    memcpy(input->data, z_t, module->latent_dim * sizeof(double));
+    memcpy(input->data + module->latent_dim, a_t, module->action_dim * sizeof(double));
+    
+    // Forward: z_next = W_world @ [z_t; a_t]
+    Matrix *output = matrix_multiply(module->W_world, input);
+    if (!output) {
+        SAM_LOG_ERROR("Failed to multiply matrices for world model forward pass");
+        matrix_free(input);
         return -1.0;
     }
     
@@ -250,6 +268,16 @@ double consciousness_loss(ConsciousnessModule *module, double *z_t, double *a_t,
         SAM_LOG_ERROR("Self model forward pass failed for consciousness loss");
         return -1.0;
     }
+
+    // L_cons = MSE between world prediction and self-caused prediction
+    double loss = 0.0;
+    for (size_t i = 0; i < module->latent_dim; i++) {
+        double z_self = z_t[i] + delta_self_pred[i];
+        double diff = z_world_pred[i] - z_self;
+        loss += diff * diff;
+    }
+    return loss / module->latent_dim;
+}
 
 // ================================
 // POLICY: Introspective Agency
@@ -533,10 +561,37 @@ static PyObject *py_consciousness_get_stats(PyObject *self, PyObject *args) {
     return dict;
 }
 
+static PyObject *py_consciousness_get_pressures(PyObject *self, PyObject *args) {
+    if (!global_module) {
+        PyErr_SetString(PyExc_RuntimeError, "Consciousness module not initialized");
+        return NULL;
+    }
+
+    // In a real system, these would be the latest computed values from the last optimize call.
+    // For now, we'll derive them from the current state/weights as a proxy if they aren't explicitly stored.
+    PyObject *dict = PyDict_New();
+    
+    // Mathematical pressure signals (Phase 4.2)
+    PyDict_SetItemString(dict, "world_pressure", PyFloat_FromDouble(global_module->lambda_world));
+    PyDict_SetItemString(dict, "self_pressure", PyFloat_FromDouble(global_module->lambda_self));
+    PyDict_SetItemString(dict, "consciousness_pressure", PyFloat_FromDouble(global_module->lambda_cons));
+    PyDict_SetItemString(dict, "policy_pressure", PyFloat_FromDouble(global_module->lambda_policy));
+    PyDict_SetItemString(dict, "compute_pressure", PyFloat_FromDouble(global_module->lambda_compute));
+    
+    // Derived signals
+    double total_entropy = -(global_module->lambda_world * log(global_module->lambda_world + 1e-9) +
+                             global_module->lambda_self * log(global_module->lambda_self + 1e-9) +
+                             global_module->lambda_cons * log(global_module->lambda_cons + 1e-9));
+    PyDict_SetItemString(dict, "telemetry_entropy", PyFloat_FromDouble(total_entropy));
+
+    return dict;
+}
+
 static PyMethodDef ConsciousnessMethods[] = {
     {"create", py_consciousness_create, METH_VARARGS, "Create consciousness module"},
     {"optimize", py_consciousness_optimize, METH_VARARGS, "Optimize consciousness"},
     {"get_stats", py_consciousness_get_stats, METH_NOARGS, "Get consciousness statistics"},
+    {"get_pressures", py_consciousness_get_pressures, METH_NOARGS, "Get mathematical pressure signals"},
     {NULL, NULL, 0, NULL}
 };
 

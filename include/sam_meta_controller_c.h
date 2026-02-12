@@ -95,6 +95,9 @@ int sam_meta_evaluate_contract(SamMetaController *mc,
                                double baseline_worst_case,
                                double proposed_worst_case);
 
+// Innocence Gate (Phase 4.4)
+void sam_meta_set_innocence(SamMetaController *mc, double innocence, double threshold);
+
 // Growth diagnostics getters
 const char *sam_meta_get_last_growth_reason(const SamMetaController *mc);
 int sam_meta_get_last_growth_attempt_successful(const SamMetaController *mc);

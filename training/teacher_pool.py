@@ -425,6 +425,11 @@ class TeacherPool:
         self.min_similarity = min_similarity
         self.min_votes = min_votes
 
+    def set_max_tokens(self, max_tokens: int):
+        """Update max_tokens for all providers in the pool (Phase 4.3)"""
+        for provider in self.providers:
+            provider.max_tokens = int(max_tokens)
+
     def generate(self, prompt: str, n_per_teacher: int = 1) -> List[Candidate]:
         candidates: List[Candidate] = []
         for provider in self.providers:

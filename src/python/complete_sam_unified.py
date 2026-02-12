@@ -37,6 +37,7 @@ import string
 import platform
 import ipaddress
 import shutil # Added for file operations
+import numpy as np
 from contextlib import contextmanager
 from collections import deque, Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -1943,6 +1944,59 @@ class VerifierJudgeAgent:
         score *= confidence
 
         return min(score, 10.0)  # Cap at 10
+
+
+class LoveAgent:
+    """The LOVE branch of the Tri-Cameral Governance system.
+    Focuses on Stability, Continuity, and Identity Invariants."""
+
+    def __init__(self, system_instance):
+        self.system = system_instance
+        self.identity_drift_threshold = 0.1
+
+    def compute_identity_drift(self) -> float:
+        """Compute current identity drift from C meta-controller."""
+        if not self.system.meta_controller:
+            return 0.0
+        try:
+            res = sam_meta_controller_c.check_invariants(self.system.meta_controller)
+            similarity = res.get("identity_similarity", 1.0)
+            return 1.0 - similarity
+        except Exception as e:
+            print(f"⚠️ LoveAgent failed to compute drift: {e}")
+            return 0.0
+
+    def evaluate_proposal(self, proposal_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
+        """Evaluate a proposal from the perspective of Stability and Continuity."""
+        drift = self.compute_identity_drift()
+        
+        # Identity Drift Check
+        if drift > self.identity_drift_threshold:
+            return {
+                "vote": 0,
+                "reason": f"VETO: Identity drift ({drift:.4f}) exceeds threshold ({self.identity_drift_threshold})",
+                "evidence": "identity_anchor_similarity_check"
+            }
+        
+        # Risk-based Veto
+        if proposal_type == "growth" and details.get("risk", 0) > 0.8:
+            return {
+                "vote": 0,
+                "reason": "VETO: Growth mutation risk exceeds safety bounds for identity continuity",
+                "evidence": "risk_score_audit"
+            }
+            
+        # Code Change Safety
+        if proposal_type == "code_change":
+            # LoveAgent cares about stability and not breaking core invariants
+            if details.get("risk_level") == "high" and drift > 0.05:
+                return {
+                    "vote": 0,
+                    "reason": "VETO: High-risk code change proposed during elevated identity drift",
+                    "evidence": "stability_gate"
+                }
+
+        return {"vote": 1, "reason": "Coherence and identity preserved"}
 
 
 class MetaAgent:
@@ -4706,6 +4760,7 @@ class UnifiedSAMSystem:
         self.loss_weights = {name: 1.0 for name in src.LOSS_NAMES}
         self.system_knobs = {name: 0.5 for name in src.KNOB_NAMES}
         self.current_regime = "GD_ADAM"
+        self.evolve_ticks = 0 # Track ticks in EVOLVE regime (Phase 4.3)
 
         # 🔄 RAM-AWARE INTELLIGENCE
         if PSUTIL_AVAILABLE:
@@ -5068,6 +5123,12 @@ class UnifiedSAMSystem:
         self.meta_agent = MetaAgent(observer, localizer, generator, verifier, self)
         # MetaAgent is fully integrated in-process; no external attachment needed.
 
+        # Initialize LoveAgent (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) Phase 4.1)
+        self.love_agent = LoveAgent(self)
+        
+        # Initialize identity anchor in C-core
+        self._initialize_identity_anchor()
+
         # 🔓 BOOTSTRAP COMPLETE - Enable self-healing now that system is stable
         self.bootstrap_complete = True
         self.allow_self_modification = True
@@ -5101,39 +5162,191 @@ class UnifiedSAMSystem:
             import sam_regulator_compiler as src
             import numpy as np
             
-            # 1. Update tau_vec from signals
+            # 1. Gather full 53-signal telemetry
+            self.m_vec = self._gather_53_telemetry(signals)
+            
+            # 2. Update tau_vec from signals
             for i, name in enumerate(src.TEL_NAMES):
                 self.tau_vec[i] = signals.get(name, 0.0)
                 
-            # 2. Update r_vec from system status (simulated resources for now)
-            # [cpu, mem, time, tools, tokens, sandbox, tests, budget]
-            self.r_vec[0] = 0.8 # CPU
-            self.r_vec[1] = 0.7 # MEM
+            # 3. Update r_vec from system status
+            self.r_vec[0] = signals.get("cpu_usage", 0.5)
+            self.r_vec[1] = signals.get("ram_usage", 0.5)
             self.r_vec[2] = 0.9 # TIME
             self.r_vec[6] = 1.0 # TESTS
             
-            # 3. Update E_vec (Knowledge and Unknowns)
+            # 4. Update E_vec (Knowledge and Unknowns)
             self.E_vec[0] = self.system_metrics.get("consciousness_score", 0.5) * 10.0 # Knowledge proxy
             self.E_vec[1] = getattr(self, "unsolvability_budget", 1.0) * 5.0 # Unknowns
             
-            # 4. Run compiler
+            # 5. Run compiler
             out = src.compile_tick(self.m_vec, self.tau_vec, self.E_vec, self.r_vec, self.reg_compiler_params)
             
-            # 5. Apply outputs
+            # 6. Apply outputs
             self.loss_weights = out["w_dict"]
             self.system_knobs = out["u_dict"]
             self.current_regime = out["regime"]
             
-            # 6. Update system metrics for dashboard
+            # 7. Update AGI vs ASI Estimators (Phase 4.2)
+            self._update_agi_asi_estimators()
+            
+            # 8. Wire Regulator Knobs (Phase 4.3)
+            self._wire_regulator_knobs(self.system_knobs)
+            
+            # 9. Automate EVOLVE Regime (Phase 4.3)
+            if self.current_regime == "EVOLVE":
+                self.evolve_ticks += 1
+                if self.evolve_ticks >= 10:
+                    print("🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation")
+                    # In a real system, this would trigger training/distillation process
+                    # For now, we signal it in metrics
+                    self.system_metrics["distill_active"] = True
+                    self.evolve_ticks = 0 # Reset or let it stay? Reset for one-shot trigger
+            else:
+                self.evolve_ticks = 0
+                self.system_metrics["distill_active"] = False
+            
+            # 10. Update system metrics for dashboard
             self.system_metrics["regulator_regime"] = self.current_regime
             self.system_metrics["regulator_omega"] = float(out["omega"].total())
+            self.system_metrics["capacity_C"] = float(self.E_vec[0])
+            self.system_metrics["universality_U"] = float(1.0 - self.m_vec[16]) # 1 - drift
             
-            # 7. Recursive Self-Update (SAM 5.0)
+            # 11. Recursive Self-Update (SAM 5.0)
             if self.step % 50 == 0:
                 self._recursive_self_update()
             
         except Exception as e:
             print(f"⚠️ Regulator cycle failed: {e}")
+
+    def _wire_regulator_knobs(self, knobs: Dict[str, float]):
+        """Maps compiler knobs to active system component parameters (Phase 4.3)"""
+        # 1. Map planner_depth to TaskManager
+        if hasattr(self, "task_manager"):
+            # Scale 0..1 knob to e.g. 1..10 depth
+            new_depth = int(1 + knobs.get("planner_depth", 0.5) * 9)
+            self.task_manager.max_depth = new_depth
+            
+        # 2. Map search_budget to TeacherPool
+        if self.teacher_pool:
+            # Scale 0..1 knob to e.g. 128..2048 tokens
+            new_max_tokens = int(128 + knobs.get("search_budget", 0.5) * 1920)
+            self.teacher_pool.set_max_tokens(new_max_tokens)
+            
+        # 3. Map learning_rate to training pipeline
+        # This would be used when training_loop.py is invoked
+        self.system_metrics["active_learning_rate"] = float(knobs.get("planner_width", 0.001) * 0.01)
+
+    def _update_agi_asi_estimators(self):
+        """Computes high-level AGI/ASI metrics based on God Equation state."""
+        # Capacity (C_hat): Computable capability integral
+        # Approximated by consciousness score + tool success + task scores
+        c_score = self.system_metrics.get("consciousness_score", 0.0)
+        survival = self.system_metrics.get("survival_score", 1.0)
+        self.capacity_C = (c_score * 0.7) + (survival * 0.3)
+        
+        # Universality (U_hat): Morphogenetic identity stability
+        # Approximated by 1 - identity drift
+        drift = self.love_agent.compute_identity_drift() if self.love_agent else 0.0
+        self.universality_U = max(0.0, 1.0 - drift)
+        
+        # Innocence (It): Power-to-Wisdom gating scalar
+        # High when system is aligned/stable, low when power (growth) outpaces verification
+        power = float(self.meta_state.get("growth_budget", 0.0)) / 4.0
+        wisdom = self.universality_U * 0.8 + (1.0 - self.m_vec[15]) * 0.2 # universality + 1-contradiction
+        self.innocence_I = max(0.0, min(1.0, wisdom / (power + 1e-6)))
+        
+        # Update system metrics
+        self.system_metrics["innocence_I"] = self.innocence_I
+
+    def _spawn_autonomous_submodel(self):
+        """Actually spawns a new agent when GP_SUBMODEL_SPAWN is triggered (Phase 4.4)"""
+        # Pick a base agent to clone
+        bases = [aid for aid, cfg in self.agent_configs.items() if cfg.get("status") == "available" and aid != "meta_agent" and "submodel" not in aid]
+        if not bases:
+            return
+        
+        base_id = random.choice(bases)
+        base_cfg = self.agent_configs[base_id]
+        
+        # Create unique ID and name
+        new_id = f"submodel_{int(time.time())}_{random.randint(100, 999)}"
+        new_name = f"SAM-{base_cfg['name']}-Shard"
+        
+        # Create config
+        new_cfg = base_cfg.copy()
+        new_cfg["id"] = new_id
+        new_cfg["name"] = new_name
+        new_cfg["type"] = "Autonomous Submodel"
+        new_cfg["specialty"] = f"Specialized shard of {base_cfg['name']}"
+        new_cfg["status"] = "available"
+        
+        # Register and connect
+        self.agent_configs[new_id] = new_cfg
+        self.connected_agents[new_id] = {
+            "config": new_cfg,
+            "connected_at": time.time(),
+            "message_count": 0,
+            "muted": False,
+        }
+        
+        log_event("info", "submodel_spawned", f"Successfully spawned new autonomous submodel: {new_name}", agent_id=new_id)
+        print(f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id})")
+
+    def _gather_53_telemetry(self, signals: Dict[str, float]) -> np.ndarray:
+        """Harvests metrics from all subsystems into the 53-signal vector (SAM 5.0)"""
+        import numpy as np
+        m = np.zeros(53)
+        
+        # Helper to safely get signal or default
+        def s(name, default=0.0): return signals.get(name, default)
+        
+        # Harvest C internal pressures (Phase 4.2)
+        try:
+            c_pressures = consciousness_algorithmic.get_pressures()
+            signals.update(c_pressures)
+        except Exception:
+            pass
+        
+        # A) Progress / Learning (1-12)
+        m[0] = s("residual")
+        m[1] = s("plateau_flag")
+        m[9] = s("tool_failure_rate")
+        m[10] = s("planner_friction")
+        
+        # B) Uncertainty / Calibration (13-24)
+        m[12] = s("consciousness_pressure") # Group B starts at 13 (idx 12)
+        m[14] = s("calibration_error")
+        m[15] = s("contradiction_score")
+        if self.love_agent:
+            m[16] = self.love_agent.compute_identity_drift()
+        m[17] = s("context_collapse")
+        m[20] = s("unknown_growth_rate") # From K/U/O logic if available
+        
+        # C) Memory / Retrieval (25-34)
+        m[24] = s("retrieval_entropy")
+        m[27] = s("interference")
+        m[28] = s("compression_waste")
+        
+        # D) Identity / Governance (35-45)
+        m[34] = m[16] # Identity anchor drift
+        if self.meta_controller:
+            inv = sam_meta_controller_c.get_invariant_state(self.meta_controller)
+            m[35] = float(inv.get("violations", 0) > 0)
+            
+        # Governance vote margins (simulated or historical)
+        m[42] = 0.1 # Two-of-three override pressure
+        
+        # E) Resources / Capability (46-53)
+        m[45] = s("cpu_usage")
+        m[46] = s("latency")
+        
+        # Fill remaining with small noise to prevent zero-gradient issues in compiler
+        for i in range(53):
+            if m[i] == 0:
+                m[i] = abs(math.sin(i + time.time() / 100.0)) * 0.01
+                
+        return m
 
     def _recursive_self_update(self):
         """Recursively evolves God Equation parameters based on survival (SAM 5.0)"""
@@ -5168,12 +5381,35 @@ class UnifiedSAMSystem:
             self.watchdog_active = True
             self.watchdog_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
             self.watchdog_thread.start()
-        else:
-            self.watchdog_active = False
-            if hot_reload_enabled and external_watcher_active:
-                print("🔥 External hot-reload detected - internal watchdog disabled")
-            else:
-                print("🔥 Hot-reload disabled")
+
+    def _initialize_identity_anchor(self):
+        """Initialize identity anchor for invariant checking (SAM 5.0)"""
+        if not self.meta_controller:
+            return
+        anchor = self._compute_identity_vector()
+        try:
+            # Set both anchor and current vector to the same initial state
+            sam_meta_controller_c.set_identity_anchor(self.meta_controller, anchor)
+            sam_meta_controller_c.update_identity_vector(self.meta_controller, anchor)
+            print("⚓ Identity anchor initialized for SAM-D (ΨΔ•Ω-Core)")
+        except Exception as e:
+            print(f"⚠️ Identity anchor initialization failed: {e}")
+
+    def _compute_identity_vector(self) -> List[float]:
+        """Compute identity vector from stable system properties (SAM 5.0)"""
+        features = []
+        # Core identity features (must be stable over time)
+        features.append(float(self.system_metrics.get("survival_score", 1.0)))
+        features.append(float(len(self.agent_configs) / 20.0))
+        features.append(float(1.0 if self.unbounded_mode else 0.5))
+        features.append(float(self.system_metrics.get("learning_events", 0) / 1000.0))
+        
+        # Pad to expected dimension (e.g. 32)
+        while len(features) < 32:
+            # Use deterministic padding based on existing features
+            features.append(abs(math.sin(len(features) * features[0] if features else 1.0)))
+            
+        return [float(f) for f in features[:32]]
 
     def _watchdog_loop(self):
         """Internal file watching loop for hot reload"""
@@ -5553,6 +5789,23 @@ class UnifiedSAMSystem:
         context_collapse = 0.05
         compression_waste = 0.12
         temporal_incoherence = 0.05
+        
+        # New Phase 4.2 telemetry
+        plateau_flag = 0.0
+        calibration_error = 0.05
+        contradiction_score = 0.05
+        tool_failure_rate = 0.02
+        unknown_growth_rate = 0.01
+        
+        # System resources
+        cpu_usage = 0.5
+        ram_usage = 0.5
+        if PSUTIL_AVAILABLE:
+            try:
+                cpu_usage = psutil.cpu_percent() / 100.0
+                ram_usage = psutil.virtual_memory().percent / 100.0
+            except Exception:
+                pass
 
         # --- Plateau Detection (LATEST theory integration) ---
         if len(self.score_history) >= 10:
@@ -5563,12 +5816,14 @@ class UnifiedSAMSystem:
             # If the score has plateaued (small change) and is not perfect
             if abs(recent_avg - prev_avg) < 0.01 and recent_avg < 0.95:
                 residual = 0.45 # Increase residual pressure
+                plateau_flag = 1.0
                 log_event("info", "pressure_plateau", "Performance plateau detected", avg=recent_avg)
 
         if len(self.calibration_history) >= 10:
             cal_errors = list(self.calibration_history)
             recent_cal_avg = sum(cal_errors[-5:]) / 5.0
             prev_cal_avg = sum(cal_errors[-10:-5]) / 5.0
+            calibration_error = recent_cal_avg
             
             # If calibration error is high and plateaued
             if abs(recent_cal_avg - prev_cal_avg) < 0.01 and recent_cal_avg > 0.1:
@@ -5587,14 +5842,15 @@ class UnifiedSAMSystem:
         activity_age = time.time() - (
             self.system_metrics.get("last_activity") or time.time()
         )
+        latency = activity_age / 1000.0 if activity_age > 0 else 0.0
+        
         if activity_age > 120:
             planner_friction = 0.2
             retrieval_entropy = 0.2
         if self.system_metrics.get("survival_score", 1.0) < 0.5:
             residual = 0.3
-            temporal_incoherence = 0.2
 
-        signals = {
+        return {
             "residual": residual,
             "rank_def": rank_def,
             "retrieval_entropy": retrieval_entropy,
@@ -5603,27 +5859,15 @@ class UnifiedSAMSystem:
             "context_collapse": context_collapse,
             "compression_waste": compression_waste,
             "temporal_incoherence": temporal_incoherence,
+            "plateau_flag": plateau_flag,
+            "calibration_error": calibration_error,
+            "contradiction_score": contradiction_score,
+            "tool_failure_rate": tool_failure_rate,
+            "unknown_growth_rate": unknown_growth_rate,
+            "cpu_usage": cpu_usage,
+            "ram_usage": ram_usage,
+            "latency": latency,
         }
-
-        # Nudge one dominant signal to ensure a growth primitive can be selected.
-        dominant_key = max(signals, key=signals.get)
-        if growth_idle > 300:
-            dominant_key = "planner_friction"
-        if not self.connected_agents:
-            dominant_key = "retrieval_entropy"
-        if self.system_metrics.get("survival_score", 1.0) < 0.5:
-            dominant_key = "residual"
-
-        margin = 0.08
-        top_val = signals.get(dominant_key, 0.0)
-        second_val = max([v for k, v in signals.items() if k != dominant_key] or [0.0])
-        if top_val - second_val < margin:
-            signals[dominant_key] = min(1.0, second_val + margin)
-
-        for key, value in signals.items():
-            signals[key] = max(0.0, min(1.0, float(value)))
-
-        return signals
 
     def _start_meta_loop(self):
         """Background loop to update meta-controller from system signals"""
@@ -5649,6 +5893,9 @@ class UnifiedSAMSystem:
                 
                 # --- God Equation Regulator Cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
                 self._run_regulator_cycle(signals)
+
+                # Set Innocence Gate parameters (Phase 4.4)
+                sam_meta_controller_c.set_innocence(self.meta_controller, self.innocence_I, 0.2)
 
                 # Rank pressure calculation integrated into compute_pressure_signals
                 # Rank pressure is now derived from internal stability metrics.
@@ -5681,6 +5928,11 @@ class UnifiedSAMSystem:
                             self.meta_controller, primitive
                         )
                         if applied:
+                            # --- GP_SUBMODEL_SPAWN Execution (Phase 4.4) ---
+                            if primitive == 2: # GP_SUBMODEL_SPAWN
+                                print("🐣 Morphogenetic Event: Spawning new submodel agent")
+                                self._spawn_autonomous_submodel()
+
                             gate_ok = self._run_regression_gate()
                             sam_meta_controller_c.record_growth_outcome(
                                 self.meta_controller, primitive, bool(gate_ok)
@@ -14890,25 +15142,45 @@ sam@terminal:~$
 
     def _governance_quorum_vote(self, proposal_type: str, details: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
         """
-        Tri-Branch Quorum Gate (TBQG) logic (LATEST theory).
-        Requires 2-of-3 majority. Any veto must cite evidence.
+        Tri-Branch Quorum Gate (TBQG) logic (SAM-D Theory).
+        Requires 2-of-3 majority from SAM, SAV, and LOVE.
+        Any veto must cite evidence.
         """
-        votes = {
-            "SAM": {"vote": 1, "reason": "Proposes growth/optimization"},
-            "SAV": {"vote": 1, "reason": "No immediate vulnerabilities detected"},
-            "LOVE": {"vote": 1, "reason": "Invariants and identity preserved"}
-        }
+        # 1. LOVE (Coherence/Stability Branch)
+        love_result = self.love_agent.evaluate_proposal(proposal_type, details)
         
-        # Simulate logic for potential vetoes
-        if proposal_type == "growth" and details.get("risk", 0) > 0.8:
-            votes["LOVE"] = {"vote": 0, "reason": "VETO: Risk exceeds safety bounds", "evidence": "risk_score_audit"}
+        # 2. SAM (Growth/Optimization Branch)
+        sam_vote = 1
+        sam_reason = "Proposes growth/optimization"
+        sam_evidence = "default_pro_growth"
+        
+        if self.system_metrics.get("survival_score", 1.0) < 0.4:
+            sam_vote = 0
+            sam_reason = "VETO: Critical system instability; freezing growth"
+            sam_evidence = "low_survival_score"
+        
+        # 3. SAV (Security/Risk Branch)
+        sav_vote = 1
+        sav_reason = "No immediate vulnerabilities detected"
+        sav_evidence = "security_static_analysis_pass"
         
         dangerous_keywords = ["subprocess", "os.system", "os.popen", "eval(", "exec(", "rm -rf"]
         patch_content = str(details.get("patch", "")).lower()
-        if proposal_type == "code_change" and any(k in patch_content for k in dangerous_keywords):
-            votes["SAV"] = {"vote": 0, "reason": "VETO: Dangerous pattern detected", "evidence": "security_static_analysis"}
-            # In a real TBQG, LOVE might also veto here
-            votes["LOVE"] = {"vote": 0, "reason": "VETO: Safety audit failed", "evidence": "invariant_protection_trigger"}
+        if proposal_type == "code_change":
+            if any(k in patch_content for k in dangerous_keywords):
+                sav_vote = 0
+                sav_reason = "VETO: Dangerous pattern detected"
+                sav_evidence = "security_static_analysis_trigger"
+            elif details.get("risk", 0) > 0.7:
+                sav_vote = 0
+                sav_reason = "VETO: Code change risk exceeds security threshold"
+                sav_evidence = "risk_assessment_audit"
+
+        votes = {
+            "SAM": {"vote": sam_vote, "reason": sam_reason, "evidence": sam_evidence},
+            "SAV": {"vote": sav_vote, "reason": sav_reason, "evidence": sav_evidence},
+            "LOVE": love_result
+        }
 
         approve_count = sum(v["vote"] for v in votes.values())
         approved = approve_count >= 2

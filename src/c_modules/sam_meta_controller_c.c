@@ -62,6 +62,10 @@ struct SamMetaController {
     int last_growth_attempt_successful; // 0 for false, 1 for true
     int growth_frozen; // 0 for false, 1 for true
 
+    // Innocence Gate (Phase 4.4)
+    double innocence;
+    double innocence_threshold;
+
     // Submodel Lifecycle State
     SubmodelState *submodel_states;
 };
@@ -105,6 +109,8 @@ SamMetaController *sam_meta_create(size_t latent_dim, size_t context_dim, size_t
     mc->last_growth_reason[sizeof(mc->last_growth_reason) - 1] = '\0';
     mc->last_growth_attempt_successful = 0;
     mc->growth_frozen = 0;
+    mc->innocence = 1.0;
+    mc->innocence_threshold = 0.2;
 
     mc->submodel_states = (SubmodelState *)calloc(mc->submodel_max, sizeof(SubmodelState));
     if (!mc->submodel_states) {
@@ -281,6 +287,13 @@ GrowthPrimitive sam_meta_select_primitive(SamMetaController *mc) {
         strcpy(mc->last_growth_reason, "Lambda below threshold");
         return GP_NONE;
     }
+    
+    // Innocence Gate (Phase 4.4)
+    if (mc->innocence < mc->innocence_threshold) {
+        strcpy(mc->last_growth_reason, "Innocence gate: System is 'guilty' (power > wisdom)");
+        return GP_NONE;
+    }
+
     if (mc->growth_budget >= mc->growth_budget_max) {
         mc->last_selected = GP_CONSOLIDATE;
         mc->last_selected_step = mc->step;
@@ -533,6 +546,12 @@ int sam_meta_evaluate_contract(SamMetaController *mc,
                                double proposed_worst_case) {
     if (!mc) return 0;
     return proposed_worst_case > baseline_worst_case;
+}
+
+void sam_meta_set_innocence(SamMetaController *mc, double innocence, double threshold) {
+    if (!mc) return;
+    mc->innocence = innocence;
+    mc->innocence_threshold = threshold;
 }
 
 size_t sam_meta_get_latent_dim(const SamMetaController *mc) { return mc ? mc->latent_dim : 0; }
@@ -839,6 +858,17 @@ static PyObject *py_sam_meta_evaluate_contract(PyObject *self, PyObject *args) {
     return PyBool_FromLong(ok);
 }
 
+static PyObject *py_sam_meta_set_innocence(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *capsule = NULL;
+    double innocence, threshold;
+    if (!PyArg_ParseTuple(args, "Odd", &capsule, &innocence, &threshold)) return NULL;
+    SamMetaController *mc = (SamMetaController *)PyCapsule_GetPointer(capsule, "SamMetaController");
+    if (!mc) return NULL;
+    sam_meta_set_innocence(mc, innocence, threshold);
+    Py_RETURN_NONE;
+}
+
 static PyObject *py_sam_meta_get_state(PyObject *self, PyObject *args) {
     (void)self;
     PyObject *capsule = NULL;
@@ -1019,6 +1049,7 @@ static PyMethodDef MetaMethods[] = {
     {"check_invariants", py_sam_meta_check_invariants, METH_VARARGS, "Check invariants"},
     {"get_invariant_state", py_sam_meta_get_invariant_state, METH_VARARGS, "Get invariant state"},
     {"evaluate_contract", py_sam_meta_evaluate_contract, METH_VARARGS, "Evaluate objective contract"},
+    {"set_innocence", py_sam_meta_set_innocence, METH_VARARGS, "Set innocence gate parameters"},
     {"get_state", py_sam_meta_get_state, METH_VARARGS, "Get meta-controller state"},
     {"trigger_growth_evaluation", py_sam_meta_trigger_growth_evaluation, METH_VARARGS, "Trigger immediate growth evaluation"},
     {"get_growth_diagnostics", py_sam_meta_get_growth_diagnostics, METH_VARARGS, "Get growth diagnostic state"},

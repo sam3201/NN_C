@@ -451,6 +451,7 @@ class TaskManager:
         self.system = system or getattr(goal_manager, "system", None)
         self.task_queue = []
         self.execution_history = []
+        self.max_depth = 4 # Default depth (Phase 4.3 regulator knob)
         self.task_priorities = {
             'critical': 10,
             'high': 8,

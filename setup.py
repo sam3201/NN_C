@@ -22,7 +22,7 @@ COMMON_ARGS = _common_compile_args()
 extensions = [
     Extension(
         'consciousness_algorithmic',
-        sources=['src/c_modules/consciousness_algorithmic.c'],
+        sources=['src/c_modules/consciousness_final.c'],
         include_dirs=['src/c_modules', 'include'],
         library_dirs=[],
         libraries=[],
