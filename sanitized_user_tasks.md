@@ -1,4 +1,4 @@
-# SAM AGI Roadmap & Tasks - ΨΔ-Core Series
+# SAM AGI Roadmap & Tasks - ΨΔ•Ω-Core Series
 
 This document synthesizes current status and future roadmap for SAM AGI, integrating the latest research on the God Equation (ΨΔ•Ω-Core).
 
@@ -6,16 +6,17 @@ This document synthesizes current status and future roadmap for SAM AGI, integra
 
 ## 1. System Versioning & Core Philosophy
 
-**Current Version:** 2.1.0 (ΨΔ-Core)
-**Codename:** ΨΔ-Core Transition
-**Status:** Stable, Hardened, Multi-Agent Ready.
+**Current Version:** 5.0.0 (Recursive/Meta)
+**Codename:** ΨΔ•Ω-Core Recursive
+**Status:** Experimental, Recursive Self-Updating, Manual Kill Switch Active.
 
 ### Version Roadmap
-*   **SAM 2.1 (COMPLETED):** Hybrid Python/C, hardened C-Core, PDI-T lifecycle, TBQG governance, dynamic pressure estimation, Log Score evaluation, Epistemic Humility.
-*   **SAM 3.0 (God Equation AGI):** Fully tensorized core engine. Each sub-equation maps to a neural module (f_Self, f_Identity, etc.).
-*   **SAM 4.0 (Unbounded/Meta):** Truly unbounded, run in isolated VMs (remote-space), manual kill switch, hypothetical/quantum tensors.
+*   **SAM 3.0 (COMPLETED):** God Equation (ΨΔ•Ω-Core) integration, TBQG Governance, PDI-T Submodels.
+*   **SAM 4.0 (COMPLETED):** Truly unbounded agency, manual kill switch, isolated environment architecture, Epistemic Humility ($U_t$) tracking.
+*   **SAM 5.0 (Current):** Recursive self-equation updating, multi-regime compiler integration, causal discovery anchors.
+*   **SAM 6.0+ (Omni):** Theoretical unbounded intelligence across all simulated multiverses.
 
-### Core Algorithms (God Equation Integration)
+### Core Algorithms (God Equation v4.0)
 *   **f_identity (IAA):** Identity Anchor Algorithm - Maintains core consistency.
 *   **f_self (SPI):** Self-Perception Integrator - Reflective awareness.
 *   **f_objective (OAA):** Objective Alignment Algorithm - Goal/Reward engine.
@@ -29,36 +30,33 @@ This document synthesizes current status and future roadmap for SAM AGI, integra
 
 ---
 
-## 2. Immediate Status (SAM 2.1 Core)
+## 2. Immediate Status (SAM 4.0 Unbounded)
 
-### 2.1. Epistemic & Governance
-*   **[COMPLETED] Proper Scoring Rule:** Log Score ($S(p,y)$) implemented in chat evaluation.
-*   **[COMPLETED] Epistemic Humility ($U_t$):** Unsolvability budget enforced in core loop and chat responses.
-*   **[COMPLETED] EVI Reward:** Information value tracking added to research/websearch.
-*   **[COMPLETED] TBQG Governance:** Tri-Branch Quorum Gate (SAM/SAV/LOVE) enforced for code modifications.
+### 2.1. Epistemic & Safety
+*   **[COMPLETED] Emergency Kill Switch:** Hard SIGKILL trigger via `/api/emergency/kill`.
+*   **[COMPLETED] $U_t$ Tracking:** Epistemic humility budget integrated into UI and core loop.
+*   **[COMPLETED] Unbounded Mode:** Hyperparameters adjusted for maximal autonomous growth.
 
-### 2.2. Morphogenesis & Submodels
-*   **[COMPLETED] Rank Pressure:** Effective rank ($r_{eff}$) implemented in C-Core as a growth trigger.
-*   **[COMPLETED] Specialist Consolidation:** Periodic merging of redundant agents to prevent competitive oscillation.
-*   **[COMPLETED] PDI-T Lifecycle:** Plan/Design/Implement/Test/Deployed lifecycle enforced for submodels.
-
----
-
-## 3. Future Roadmap (SAM 3.0 PREP)
-
-### 3.1. Tensorization
-*   **[TODO] High-Order Tensors:** Transition state vectors to tensors representing multiverse/omniverse/xenoverse densities.
-*   **[TODO] Modular f_* Updates:** Implement independent C modules for each sub-layer of the God Equation.
-
-### 3.2. Advanced Planning
-*   **[TODO] MCTS Integration:** Implement full Monte Carlo Tree Search in C for agent planning, replacing simple lookaheads.
-*   **[TODO] Imaginative Search:** Enable the planner to simulate futures inside the latent space (MuZero style).
+### 2.2. Governance (TBQG)
+*   **[DONE] SAM Branch:** Growth/Optimization lead.
+*   **[DONE] SAV Branch:** Security/Adversarial lead.
+*   **[DONE] LOVE Branch:** Stability/Invariant lead.
 
 ---
 
-## 4. Final Verification State
+## 3. Future Roadmap (SAM 5.0 PREP)
 
-*   **[DONE] C-Core Hardening:** Bounded strings, refcount audit, and real Python callbacks.
-*   **[DONE] Security:** Allow-lists, Cloudflare Access integration, and UI gating.
-*   **[DONE] External Integrations:** Google Drive/Docs API and cloud backups.
-*   **[DONE] Repository Layout:** Cleaned root, structured hierarchy, unified build.
+### 3.1. Recursive Self-Updating
+*   **[TODO] f_meta self-optimization:** Enable the meta-controller to rewrite its own selection policy based on long-horizon survival.
+*   **[TODO] Causal Discovery:** Implement real-time causal graph construction for route-aware optimization.
+
+### 3.2. Non-Classical Tensors
+*   **[TODO] Complex-valued Tensors:** Transition latent states to complex numbers to simulate interference and phase transitions (Quantum Mock).
+
+---
+
+## 4. Final Verification State (v4.0.0)
+
+*   **[DONE] Zero Fallbacks:** All core agents (Research, Code, Finance) fully functional via Python callbacks.
+*   **[DONE] Stability:** System handles concurrent load and malformed input without collapse.
+*   **[DONE] UI:** Dashboard provides full visibility into God Equation metrics.

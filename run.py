@@ -111,11 +111,12 @@ def main() -> int:
     print(f"🚀 Starting SAM (profile={args.profile}) ...")
     env = os.environ.copy()
     env["SAM_PROFILE"] = args.profile
-    # Ensure root is in PYTHONPATH so C extensions can be found
+    # Ensure root and src/python are in PYTHONPATH
+    python_path = [str(root), str(root / "src" / "python")]
     if "PYTHONPATH" in env:
-        env["PYTHONPATH"] = f"{root}:{env['PYTHONPATH']}"
+        env["PYTHONPATH"] = ":".join(python_path + [env["PYTHONPATH"]])
     else:
-        env["PYTHONPATH"] = str(root)
+        env["PYTHONPATH"] = ":".join(python_path)
     
     rc = run([str(vpy), "src/python/run_sam.py", "--profile", args.profile], cwd=root, env=env)
     return rc

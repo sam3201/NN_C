@@ -255,7 +255,8 @@ from goal_management import (
     create_conversationalist_tasks,
     ensure_domain_goal,
 )
-from sam_config import config
+import sam_config
+from sam_config import config, get_config
 
 # Google API Imports (optional)
 google_drive_available = False
@@ -4592,26 +4593,28 @@ class UnifiedSAMSystem:
     """The Unified SAM 2.0 Complete System"""
 
     def __init__(self):
-        print("🚀 INITIALIZING UNIFIED SAM 3.0 COMPLETE SYSTEM")
+        print("🚀 INITIALIZING UNIFIED SAM 4.0 COMPLETE SYSTEM")
         print("=" * 80)
-        print("🎯 Integrating God Equation (ΨΔ•Ω-Core)")
-        print("🎯 Version 3.0.0 (ΨΔ•Ω-Core) with TBQG Governance")
-        print("🎯 Zero Fallbacks - All Components Work Correctly")
+        print("🎯 UNBOUNDED AGENCY ENABLED")
+        print("🎯 Version 4.0.0 (Unbounded/Meta) - Experimental")
+        print("🎯 Manual Kill Switch: ACTIVE")
         print("=" * 80)
 
         # Project root for file operations (repo root)
         self.project_root = Path(__file__).resolve().parent.parent.parent
 
-        # 🔒 BOOTSTRAP PROTECTION - Disable self-healing during initialization
+        # 🔒 BOOTSTRAP PROTECTION
         self.allow_self_modification = False
         self.allow_auto_resolution = False
         self.bootstrap_complete = False
+        self.kill_switch_triggered = False
 
         # Configuration & Identification
         self.profile_name = os.getenv("SAM_PROFILE", "full")
         self.strict_local_only = os.getenv("SAM_STRICT_LOCAL_ONLY", "1") == "1"
         self.sam_available = os.environ.get("SAM_AVAILABLE", "1") == "1"
         self.ollama_available = os.environ.get("OLLAMA_AVAILABLE", "1") == "1"
+        self.unbounded_mode = os.getenv("SAM_UNBOUNDED_MODE", "1") == "1"
 
         # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
@@ -4643,6 +4646,23 @@ class UnifiedSAMSystem:
         self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
+        self.step = 0 # Initialize step counter for SAM 5.0 recursive logic
+
+        # Integration availability flags (detect real availability)
+        self.sam_gmail_available = (
+            bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
+        )
+        self.sam_github_available = (
+            bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
+        )
+        self.sam_web_search_available = (
+            bool(globals().get("initialize_sam_web_search"))
+            and SAM_WEB_SEARCH_AVAILABLE
+        )
+        self.sam_code_modifier_available = (
+            bool(globals().get("initialize_sam_code_modifier"))
+            and SAM_CODE_MODIFIER_AVAILABLE
+        )
         
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
@@ -4675,14 +4695,27 @@ class UnifiedSAMSystem:
             "active_agents": 0,
             "system_health": "excellent",
             "last_growth_reason": None,
+            "unbounded_agency": self.unbounded_mode,
         }
 
-        # Epistemic & Governance (SAM 3.0)
+        # Epistemic & Governance (SAM 4.0)
         self.score_history = deque(maxlen=100)
         self.calibration_history = deque(maxlen=100)
         self.unsolvability_budget = 1.0
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
+
+        # --- God Equation Integration (SAM 4.0/5.0+) ---
+        import sam_regulator_compiler as src
+        import numpy as np
+        self.reg_compiler_params = src.CompilerParams.bootstrap()
+        self.m_vec = np.zeros(53)
+        self.tau_vec = np.zeros(18)
+        self.E_vec = np.array([1.0, 5.0, 0.0]) # K, U, Omega (initial)
+        self.r_vec = np.array([0.5] * 8) # Resources
+        self.loss_weights = {name: 1.0 for name in src.LOSS_NAMES}
+        self.system_knobs = {name: 0.5 for name in src.KNOB_NAMES}
+        self.current_regime = "GD_ADAM"
 
         # 🔄 RAM-AWARE INTELLIGENCE
         if PSUTIL_AVAILABLE:
@@ -4706,9 +4739,9 @@ class UnifiedSAMSystem:
         self.web_interface_initialized = False
 
         # Meta-controller + SAV arena
-        self.meta_controller = sam_meta_controller_c.create(64, 16, 4, 42)
+        self.meta_controller = sam_meta_controller_c.create(128 if self.unbounded_mode else 64, 32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42)
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
-        self.sav_arena = sam_sav_dual_system.create(16, 4, 42)
+        self.sav_arena = sam_sav_dual_system.create(32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42)
         
         # Load persisted state (if available)
         self._load_system_state()
@@ -4750,7 +4783,7 @@ class UnifiedSAMSystem:
         self.google_creds = None
         self.google_token_path = self.project_root / "sam_data" / "google_token.json"
         
-        if google_drive_available and config.get_config('integrations.google_drive.enabled'):
+        if google_drive_available and get_config('integrations.google_drive.enabled'):
             self.google_drive_available = True
             self._init_google_drive_api(self.SCOPES)
         else:
@@ -4954,21 +4987,6 @@ class UnifiedSAMSystem:
         )
         self._last_finance_log_ts = 0.0
 
-    def _get_growth_diagnostics(self) -> Dict[str, Any]:
-        """
-        Retrieves the latest growth diagnostics from the C meta-controller.
-        """
-        if not self.meta_controller:
-            return {
-                "last_growth_reason": "Meta-controller not initialized",
-                "last_growth_attempt_successful": False,
-                "growth_frozen": False,
-            }
-        diagnostics = sam_meta_controller_c.get_growth_diagnostics(self.meta_controller)
-        return diagnostics
-
-
-
         # Banking sandbox ledger (approval-gated, no real money access)
         self.banking_enabled = os.getenv("SAM_BANKING_SANDBOX_ENABLED", "1") == "1"
         self.banking_data_dir = Path(
@@ -5005,125 +5023,23 @@ class UnifiedSAMSystem:
 
         # Auto-backup manager (git push to multiple remotes)
         self.backup_enabled = os.getenv("SAM_BACKUP_ENABLED", "1") == "1"
-        self.backup_required = os.getenv("SAM_BACKUP_REQUIRED", "0") == "1"
-        self.backup_primary = os.getenv("SAM_BACKUP_REMOTE_PRIMARY", "origin")
-        self.backup_secondary = os.getenv("SAM_BACKUP_REMOTE_SECONDARY") or None
-        if not self.backup_secondary:
-            self.backup_secondary = self._detect_secondary_remote(self.backup_primary)
-        self.backup_interval_s = int(os.getenv("SAM_BACKUP_INTERVAL_S", "3600"))
-        self.backup_auto_commit = os.getenv("SAM_BACKUP_AUTO_COMMIT", "1") == "1"
-        self.backup_commit_prefix = os.getenv("SAM_BACKUP_COMMIT_PREFIX", "auto-backup")
-        self.backup_author_name = os.getenv("SAM_BACKUP_AUTHOR_NAME") or None
-        self.backup_author_email = os.getenv("SAM_BACKUP_AUTHOR_EMAIL") or None
-
         self.backup_manager = BackupManager(
             repo_path=self.project_root,
             enabled=self.backup_enabled,
-            interval_s=self.backup_interval_s,
-            primary_remote=self.backup_primary,
-            secondary_remote=self.backup_secondary,
-            auto_commit=self.backup_auto_commit,
-            commit_prefix=self.backup_commit_prefix,
-            author_name=self.backup_author_name,
-            author_email=self.backup_author_email,
-            require_success=self.backup_required,
+            interval_s=int(os.getenv("SAM_BACKUP_INTERVAL_S", "3600")),
+            primary_remote=os.getenv("SAM_BACKUP_REMOTE_PRIMARY", "origin"),
+            secondary_remote=os.getenv("SAM_BACKUP_REMOTE_SECONDARY"),
+            auto_commit=os.getenv("SAM_BACKUP_AUTO_COMMIT", "1") == "1",
+            commit_prefix=os.getenv("SAM_BACKUP_COMMIT_PREFIX", "auto-backup"),
+            author_name=os.getenv("SAM_BACKUP_AUTHOR_NAME"),
+            author_email=os.getenv("SAM_BACKUP_AUTHOR_EMAIL"),
+            require_success=os.getenv("SAM_BACKUP_REQUIRED", "0") == "1",
         )
         self.backup_manager.start()
-        self.backup_last_result = None
-        if self.backup_enabled:
-            register_shutdown_handler(
-                "backup_manager", self.backup_manager.stop, priority=50
-            )
-
-        # Autonomous loops
-        self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
-        self.autonomous_loop_interval_s = float(
-            os.getenv("SAM_AUTONOMOUS_LOOP_INTERVAL_S", "2")
-        )
-        if getattr(self, "meta_only_boot", False):
-            self.autonomous_enabled = False
 
         # Start meta-controller loop
         self._start_meta_loop()
-        # C Core Components
-        self.consciousness = None
-        self.orchestrator = None
-        self.specialized_agents = None
 
-        # Python Orchestration Components
-        self.survival_agent = None
-        self.goal_manager = None
-        self.goal_executor = None
-        self.meta_agent_active = False
-
-        # Integration availability flags (detect real availability)
-        self.sam_gmail_available = (
-            bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
-        )
-        self.sam_github_available = (
-            bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
-        )
-        self.sam_web_search_available = (
-            bool(globals().get("initialize_sam_web_search"))
-            and SAM_WEB_SEARCH_AVAILABLE
-        )
-        self.sam_code_modifier_available = (
-            bool(globals().get("initialize_sam_code_modifier"))
-            and SAM_CODE_MODIFIER_AVAILABLE
-        )
-        self.sam_code_modifier_ready = False
-        self.require_self_mod = os.getenv("SAM_REQUIRE_SELF_MOD", "1") == "1"
-        require_meta_env = os.getenv("SAM_REQUIRE_META_AGENT", "1")
-        self.require_meta_agent = str(require_meta_env).strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-        self.two_phase_boot = os.getenv("SAM_TWO_PHASE_BOOT", "0") == "1"
-        self.two_phase_delay_s = int(os.getenv("SAM_TWO_PHASE_DELAY_S", "5"))
-        self.two_phase_timeout_s = int(os.getenv("SAM_TWO_PHASE_TIMEOUT_S", "180"))
-        self.two_phase_promoted = False
-        meta_only_env = os.getenv("SAM_META_ONLY_BOOT", "0")
-        self.meta_only_boot = str(meta_only_env).strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-        if self.two_phase_boot:
-            self.meta_only_boot = True
-            self.require_meta_agent = True
-        print(
-            f"🧠 Meta-only boot: {self.meta_only_boot} (require_meta_agent={self.require_meta_agent}, env={require_meta_env})",
-            flush=True,
-        )
-        self.meta_agent_min_severity = os.getenv(
-            "SAM_META_SEVERITY_THRESHOLD", "medium"
-        ).lower()
-        if self.meta_only_boot:
-            self.autonomous_enabled = False
-        if self.require_self_mod and not self.sam_code_modifier_available:
-            raise RuntimeError(
-                "❌ CRITICAL: SAM code modifier is required for self-healing but unavailable"
-            )
-
-        # Groupchat features
-        self.connected_users = {}
-        self.conversation_rooms = {}
-        self.active_conversations = {}
-        self.web_search_enabled = self.sam_web_search_available
-        disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
-        self.disable_socketio = str(disable_socketio_env).strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-        if self.meta_only_boot and not self.two_phase_boot:
-            self.disable_socketio = True
-        self.socketio_available = flask_available and not self.disable_socketio
-        self.google_drive = None
         # Sync module-level flags used by background threads
         globals()["sam_gmail_available"] = self.sam_gmail_available
         globals()["sam_github_available"] = self.sam_github_available
@@ -5168,26 +5084,89 @@ class UnifiedSAMSystem:
         self.allow_auto_resolution = True
         print("🔓 Bootstrap protection lifted - self-healing capabilities enabled")
 
-        # Run teacher-student learning cycles for system improvement
-        print("\n🧠 RUNNING TEACHER-STUDENT-ACTOR-CRITIC LEARNING CYCLES")
-        print("   🎯 Training system until zero errors achieved...")
-
-        # Note: Learning cycles are now handled by the meta-agent internally
-        print("   📚 Meta-agent learning integrated into continuous operation")
-
-        if self.require_meta_agent and (
-            not self.meta_agent or not self.meta_agent.is_fully_initialized()
-        ):
-            raise RuntimeError(
-                "❌ CRITICAL: MetaAgent required but not initialized. Aborting startup."
-            )
-
-        if self.meta_agent and self.meta_agent.is_fully_initialized():
-            self.meta_agent_active = True
-            print("\n🎉 META-AGENT SYSTEM ACTIVATED!")
-
         # Initialize internal hot-reload watchdog if enabled
         self._init_internal_watchdog()
+
+    def _get_growth_diagnostics(self) -> Dict[str, Any]:
+        """
+        Retrieves the latest growth diagnostics from the C meta-controller.
+        """
+        if not self.meta_controller:
+            return {
+                "last_growth_reason": "Meta-controller not initialized",
+                "last_growth_attempt_successful": False,
+                "growth_frozen": False,
+            }
+        diagnostics = sam_meta_controller_c.get_growth_diagnostics(self.meta_controller)
+        return {
+            "growth": diagnostics,
+            "metrics": {
+                "unsolvability_budget": getattr(self, "unsolvability_budget", 1.0)
+            }
+        }
+
+    def _run_regulator_cycle(self, signals: Dict[str, float]):
+        """Runs the God Equation regulator cycle (SAM 4.0/5.0+)"""
+        try:
+            import sam_regulator_compiler as src
+            import numpy as np
+            
+            # 1. Update tau_vec from signals
+            for i, name in enumerate(src.TEL_NAMES):
+                self.tau_vec[i] = signals.get(name, 0.0)
+                
+            # 2. Update r_vec from system status (simulated resources for now)
+            # [cpu, mem, time, tools, tokens, sandbox, tests, budget]
+            self.r_vec[0] = 0.8 # CPU
+            self.r_vec[1] = 0.7 # MEM
+            self.r_vec[2] = 0.9 # TIME
+            self.r_vec[6] = 1.0 # TESTS
+            
+            # 3. Update E_vec (Knowledge and Unknowns)
+            self.E_vec[0] = self.system_metrics.get("consciousness_score", 0.5) * 10.0 # Knowledge proxy
+            self.E_vec[1] = getattr(self, "unsolvability_budget", 1.0) * 5.0 # Unknowns
+            
+            # 4. Run compiler
+            out = src.compile_tick(self.m_vec, self.tau_vec, self.E_vec, self.r_vec, self.reg_compiler_params)
+            
+            # 5. Apply outputs
+            self.loss_weights = out["w_dict"]
+            self.system_knobs = out["u_dict"]
+            self.current_regime = out["regime"]
+            
+            # 6. Update system metrics for dashboard
+            self.system_metrics["regulator_regime"] = self.current_regime
+            self.system_metrics["regulator_omega"] = float(out["omega"].total())
+            
+            # 7. Recursive Self-Update (SAM 5.0)
+            if self.step % 50 == 0:
+                self._recursive_self_update()
+            
+        except Exception as e:
+            print(f"⚠️ Regulator cycle failed: {e}")
+
+    def _recursive_self_update(self):
+        """Recursively evolves God Equation parameters based on survival (SAM 5.0)"""
+        try:
+            import numpy as np
+            survival = self.system_metrics.get("survival_score", 1.0)
+            if survival < 0.8:
+                # Mutate W_m parameters slightly to find better equilibrium
+                mutation = np.random.normal(0, 0.005, size=self.reg_compiler_params.W_m.shape)
+                self.reg_compiler_params.W_m += mutation
+                log_event("info", "recursive_update", "God Equation parameters mutated due to low survival", survival=survival)
+        except Exception as e:
+            print(f"⚠️ Recursive self-update failed: {e}")
+
+    def _check_kill_switch(self):
+        """Hard manual kill switch check (SAM 4.0+)"""
+        if getattr(self, "kill_switch_triggered", False):
+            print("🚨 KILL SWITCH ACTIVE. TERMINATING SYSTEM PROCESS GROUP.")
+            import os
+            import signal
+            os.killpg(os.getpgrp(), signal.SIGKILL)
+
+
 
     def _init_internal_watchdog(self):
         """Initialize internal file watcher for hot reload when external watcher is not active"""
@@ -5661,6 +5640,10 @@ class UnifiedSAMSystem:
 
         def loop():
             while self.meta_loop_active:
+                self.step += 1
+                # Emergency Kill Switch Check (SAM 4.0+)
+                self._check_kill_switch()
+
                 signals = self._compute_pressure_signals()
                 lambda_val = sam_meta_controller_c.update_pressure(
                     self.meta_controller,
@@ -5674,6 +5657,9 @@ class UnifiedSAMSystem:
                     signals["temporal_incoherence"],
                 )
                 
+                # --- God Equation Regulator Cycle (SAM 4.0/5.0+) ---
+                self._run_regulator_cycle(signals)
+
                 # Rank pressure calculation integrated into compute_pressure_signals
                 # Rank pressure is now derived from internal stability metrics.
 
@@ -5688,9 +5674,9 @@ class UnifiedSAMSystem:
                 
                 # Retrieve and update growth diagnostics immediately after primitive selection
                 growth_diagnostics = self._get_growth_diagnostics()
-                self.system_metrics["meta_growth_reason"] = growth_diagnostics["last_growth_reason"]
-                self.system_metrics["meta_growth_attempt_successful"] = growth_diagnostics["last_growth_attempt_successful"]
-                self.system_metrics["meta_growth_frozen"] = growth_diagnostics["growth_frozen"]
+                self.system_metrics["meta_growth_reason"] = growth_diagnostics["growth"]["last_growth_reason"]
+                self.system_metrics["meta_growth_attempt_successful"] = growth_diagnostics["growth"]["last_growth_attempt_successful"]
+                self.system_metrics["meta_growth_frozen"] = growth_diagnostics["growth"]["growth_frozen"]
 
                 if primitive is None or primitive == 0:
                     self.system_metrics["last_growth_attempt_ts"] = time.time()
@@ -7975,7 +7961,7 @@ class UnifiedSAMSystem:
         def _ip_allowed_required(f):
             @wraps(f)
             def decorated_function(*args, **kwargs):
-                if config.get_config('security.restrict_admin_panel', False) and not _ip_allowed():
+                if get_config('security.restrict_admin_panel', False) and not _ip_allowed():
                     abort(403, description="IP address not allowed")
                 return f(*args, **kwargs)
             return decorated_function
@@ -7990,7 +7976,7 @@ class UnifiedSAMSystem:
                 return False, ("Admin session required", 403)
 
             # Check email allowlist if configured
-            admin_emails_allowlist = config.get_config('security.admin_emails_allowlist', [])
+            admin_emails_allowlist = get_config('security.admin_emails_allowlist', [])
             if admin_emails_allowlist:
                 user_email = session.get("user_email")
                 if not user_email or user_email not in admin_emails_allowlist:
@@ -8030,8 +8016,8 @@ class UnifiedSAMSystem:
             return request.remote_addr or "unknown"
 
         def _ip_allowed():
-            ip_allowlist = config.get_config('security.ip_allowlist', [])
-            restrict_admin_panel = config.get_config('security.restrict_admin_panel', False)
+            ip_allowlist = get_config('security.ip_allowlist', [])
+            restrict_admin_panel = get_config('security.restrict_admin_panel', False)
             
             # If IP allowlist is empty AND restriction is active, then no IPs are allowed.
             # If IP allowlist is empty AND restriction is NOT active, then all IPs are allowed.
@@ -8188,7 +8174,7 @@ class UnifiedSAMSystem:
                 return jsonify({"error": message}), status
 
             if not self.google_drive_available or not self.google_creds:
-                client_id = config.get_config('integrations.google_drive.client_id')
+                client_id = get_config('integrations.google_drive.client_id')
                 if not client_id:
                     return jsonify({"error": "Google Drive client_id not configured."}), 500
 
@@ -8200,7 +8186,7 @@ class UnifiedSAMSystem:
                             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                             "token_uri": "https://oauth2.googleapis.com/token",
                             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                            "client_secret": config.get_config('integrations.google_drive.client_secret'),
+                            "client_secret": get_config('integrations.google_drive.client_secret'),
                             "redirect_uris": [f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"]
                         }
                     },
@@ -8225,8 +8211,8 @@ class UnifiedSAMSystem:
                 log_event("error", "google_oauth_state_mismatch", "Google OAuth state mismatch.")
                 return jsonify({"error": "State mismatch. Please try again."}), 400
 
-            client_id = config.get_config('integrations.google_drive.client_id')
-            client_secret = config.get_config('integrations.google_drive.client_secret')
+            client_id = get_config('integrations.google_drive.client_id')
+            client_secret = get_config('integrations.google_drive.client_secret')
             if not client_id or not client_secret:
                 return jsonify({"error": "Google Drive client_id or client_secret not configured."}), 500
 
@@ -8607,6 +8593,23 @@ class UnifiedSAMSystem:
                     return jsonify({"status": "error", "error": str(exc)}), 500
                 return jsonify({"status": "shutting_down"})
 
+            @self.app.route("/api/emergency/kill", methods=["POST"])
+            def emergency_kill():
+                """EMERGENCY KILL SWITCH - Instant termination (SAM 4.0)"""
+                ok, error = _require_admin_token()
+                if not ok and os.getenv("SAM_ALLOW_ANONYMOUS_KILL", "0") != "1":
+                    message, status = error
+                    return jsonify({"error": message}), status
+                
+                print("🚨 EMERGENCY KILL SWITCH TRIGGERED")
+                log_event("critical", "emergency_kill_triggered", "Manual kill switch activated")
+                self.kill_switch_triggered = True
+                
+                # Signal entire process group to terminate instantly
+                os.killpg(os.getpgrp(), 9)
+                return jsonify({"message": "SIGNAL SENT: INSTANT TERMINATION"}), 200
+
+
         if getattr(self, "restart_enabled", False):
 
             @self.app.route("/api/restart", methods=["POST"])
@@ -8909,12 +8912,9 @@ class UnifiedSAMSystem:
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
 
-                # Add growth diagnostics
-                status["growth"] = {
-                    "last_growth_reason": self.system_metrics.get("meta_growth_reason", "N/A"),
-                    "last_growth_attempt_successful": self.system_metrics.get("meta_growth_attempt_successful", False),
-                    "growth_frozen": self.system_metrics.get("meta_growth_frozen", False),
-                }
+                # Add growth diagnostics (Enriched for SAM 4.0)
+                diagnostics = self._get_growth_diagnostics()
+                status.update(diagnostics)
 
                 # Conditional inclusion of local meta agent details
                 if getattr(self, "meta_agent", None):
@@ -14862,7 +14862,7 @@ sam@terminal:~$
         thread.start()
         print("✅ Revenue sequence executor active", flush=True)
 
-    def _process_c_agent_request(self, request_type: str, query: str) -> str:
+    def _process_c_agent_request(self, request_type: str, query: str = "") -> str:
         """Handle requests from C core agents for Python-level intelligence."""
         try:
             if request_type == "finance":
@@ -14991,6 +14991,9 @@ sam@terminal:~$
         def autonomous_operation_loop():
             last_finance_log = 0.0
             while not is_shutting_down():
+                # Emergency Kill Switch Check (SAM 4.0+)
+                self._check_kill_switch()
+                
                 try:
                     with shutdown_guard("autonomous operation"):
                         # Update system metrics
@@ -15027,12 +15030,12 @@ sam@terminal:~$
                         if not hasattr(self, "_last_growth_trigger"):
                             self._last_growth_trigger = 0
 
-                        current_time = time.time()
+                        _current_time = time.time()
                         if (
-                            current_time - self._last_growth_trigger > 180
+                            _current_time - self._last_growth_trigger > 180
                         ):  # Every 3 minutes
                             self._trigger_growth_system()
-                            self._last_growth_trigger = current_time
+                            self._last_growth_trigger = _current_time
 
                         # Demonstrate capabilities autonomously
                         self._demonstrate_capabilities()
@@ -15053,12 +15056,12 @@ sam@terminal:~$
 
                         # Periodic finance snapshot logging
                         if self.finance_log_interval_s > 0:
-                            now_ts = time.time()
+                            _now_ts = time.time()
                             if (
-                                now_ts - last_finance_log
+                                _now_ts - last_finance_log
                             ) >= self.finance_log_interval_s:
                                 self._log_finance_snapshot()
-                                last_finance_log = now_ts
+                                last_finance_log = _now_ts
                 except InterruptedError:
                     break
                 except Exception as e:

@@ -593,11 +593,11 @@
         <aside class="system-panel">
             <div class="brand">
                 <div class="brand-title">🤖 Agent Ecosystem</div>
-                <div class="brand-subtitle">SAM 2.1 Unified (ΨΔ-Core)</div>
+                <div class="brand-subtitle">SAM 4.0 UNBOUNDED (ΨΔ•Ω-Core)</div>
                 <div class="status-row">
                     <span class="status-pill active">Status: ACTIVE</span>
-                    <span class="status-pill">v2.1.0: ✅</span>
-                    <span class="status-pill">PDI-T Ready: ✅</span>
+                    <span class="status-pill">v4.0.0: ✅</span>
+                    <span class="status-pill">UNBOUNDED: ✅</span>
                 </div>
             </div>
 
@@ -607,7 +607,7 @@
                     <span class="status-item active" id="sam-status">SAM Model: ✅</span>
                     <span class="status-item" id="ollama-status">Ollama: ✅</span>
                     <span class="status-item" id="connection-status">Server: 🔄</span>
-                    <span class="status-item">C AGI Core: Active (v2.1)</span>
+                    <span class="status-item">C AGI Core: Active (v4.0)</span>
                     <span class="status-item">Python Orchestration: Active</span>
                     <span class="status-item">Web Interface: Active</span>
                 </div>
@@ -616,10 +616,18 @@
             <div class="panel-section">
                 <h3>AGI Capabilities</h3>
                 <div class="capability-list">
-                    <span><span class="capability-dot"></span>Consciousness Core (ΨΔ-Core)</span>
-                    <span><span class="capability-dot"></span>Multi-Agent: 5+ Specialized Agents</span>
-                    <span><span class="capability-dot"></span>Submodel Lifecycle: PDI-T Enforced</span>
-                    <span><span class="capability-dot"></span>Survival Score Monitor</span>
+                    <span><span class="capability-dot"></span>God Equation (ΨΔ•Ω-Core)</span>
+                    <span><span class="capability-dot"></span>Unbounded Agency: ENABLED</span>
+                    <span><span class="capability-dot"></span>Emergency Kill Switch: READY</span>
+                    <span><span class="capability-dot"></span>Quantum Tensor Mapping: PREP</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>System Controls</h3>
+                <div class="log-actions">
+                    <button id="logRestartBtn">Restart</button>
+                    <button id="emergencyKillBtn" style="background: var(--danger); color: white; border: none; font-weight: bold; display: none;">🚨 KILL SWITCH</button>
                 </div>
             </div>
 
@@ -628,7 +636,7 @@
                 <div class="capability-list">
                     <span><span class="capability-dot"></span>/status · /agents · /start</span>
                     <span><span class="capability-dot"></span>/research · /code · /modify-code</span>
-                    <span><span class="capability-dot"></span>/save-to-github · /system-report</span>
+                    <span><span class="capability-dot"></span>/emergency-kill · /system-report</span>
                 </div>
             </div>
 
@@ -696,13 +704,14 @@
             </div>
 
             <div class="panel-section" id="growthPanel">
-                <h3>Growth Dynamics</h3>
+                <h3>Growth Dynamics (ΨΔ•Ω)</h3>
                 <div class="memory-meta">
                     <span>Reason: <strong id="growthReason">N/A</strong></span>
                     <span>Status: <strong id="growthStatus">N/A</strong></span>
                 </div>
                 <div class="memory-meta" style="margin-top: 4px;">
                     <span>Frozen: <strong id="growthFrozen">N/A</strong></span>
+                    <span>Budget ($U_t$): <strong id="unsolvabilityBudget">1.00</strong></span>
                 </div>
                 <div class="log-actions" style="margin-top: 10px;">
                     <button id="triggerGrowthBtn" disabled title="Admin only">Trigger Growth</button>
@@ -798,6 +807,7 @@
                 this.logDownloadBtn = document.getElementById('logDownloadBtn');
                 this.logMultiAgentBtn = document.getElementById('logMultiAgentBtn');
                 this.logRestartBtn = document.getElementById('logRestartBtn');
+                this.emergencyKillBtn = document.getElementById('emergencyKillBtn');
                 this.logSummary = document.getElementById('logSummary');
                 this.logSourceFilter = document.getElementById('logSourceFilter');
                 this.logLevelFilter = document.getElementById('logLevelFilter');
@@ -815,6 +825,7 @@
                 this.growthReasonEl = document.getElementById('growthReason');
                 this.growthStatusEl = document.getElementById('growthStatus');
                 this.growthFrozenEl = document.getElementById('growthFrozen');
+                this.unsolvabilityBudgetEl = document.getElementById('unsolvabilityBudget');
                 this.triggerGrowthBtn = document.getElementById('triggerGrowthBtn');
                 this.logPaused = false;
                 this.logSource = null;
@@ -896,6 +907,9 @@
                 }
                 if (this.logRestartBtn) {
                     this.logRestartBtn.addEventListener('click', () => this.restartServer());
+                }
+                if (this.emergencyKillBtn) {
+                    this.emergencyKillBtn.addEventListener('click', () => this.emergencyKill());
                 }
                 if (this.triggerGrowthBtn) {
                     this.triggerGrowthBtn.addEventListener('click', () => this.triggerGrowth());
@@ -1121,6 +1135,9 @@
                 if (this.logRestartBtn) {
                     this.logRestartBtn.style.display = isAdmin ? 'inline-block' : 'none';
                 }
+                if (this.emergencyKillBtn) {
+                    this.emergencyKillBtn.style.display = isAdmin ? 'inline-block' : 'none';
+                }
                 if (this.logMultiAgentBtn) {
                     this.logMultiAgentBtn.style.display = isAdmin ? 'inline-block' : 'none';
                 }
@@ -1246,6 +1263,9 @@
                         this.growthFrozenEl.textContent = growth.growth_frozen ? 'YES' : 'No';
                         this.growthFrozenEl.style.color = growth.growth_frozen ? 'var(--danger)' : 'var(--success)';
                     }
+                    if (this.unsolvabilityBudgetEl && data.metrics) {
+                        this.unsolvabilityBudgetEl.textContent = Number(data.metrics.unsolvability_budget || 1.0).toFixed(4);
+                    }
                 } catch (err) {
                     console.warn('Failed to fetch growth diagnostics:', err);
                 }
@@ -1302,6 +1322,21 @@
                     this.addMessage('Restart requested. Hot reload will bring SAM back up.', 'bot');
                 } catch (err) {
                     this.addMessage(`Restart error: ${err.message}`, 'bot', true);
+                }
+            }
+
+            async emergencyKill() {
+                if (!confirm('🚨 EMERGENCY: Are you sure you want to trigger the KILL SWITCH? This will terminate the entire system process instantly.')) return;
+                try {
+                    const res = await fetch('/api/emergency/kill', { method: 'POST' });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        this.addMessage(`Kill signal failed: ${err.error || 'unknown error'}`, 'bot', true);
+                        return;
+                    }
+                    this.addMessage('🚨 KILL SIGNAL SENT. Goodbye.', 'bot');
+                } catch (err) {
+                    this.addMessage('🚨 Connection lost. Kill signal likely succeeded.', 'bot');
                 }
             }
 
