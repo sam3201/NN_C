@@ -104,9 +104,9 @@ def pick_regime(tau: np.ndarray, omega: Omega) -> str:
     T = {name: tau[i] for i, name in enumerate(TEL_NAMES)}
     Otot = omega.total()
 
-    if T.get("instability", 0) > 0.8 or T.get("gate_fail_rate", 0) > 0.9:
+    if T.get("instability", 0) > 0.8 or T.get("gate_fail_rate", 0) > 0.9 or T.get("adversary_pressure", 0) > 0.85:
         return "STASIS"
-    if T.get("contradiction_score", 0) > 0.6 or T.get("calibration_error", 0) > 0.5:
+    if T.get("contradiction_score", 0) > 0.6 or T.get("calibration_error", 0) > 0.5 or T.get("adversary_pressure", 0) > 0.6:
         return "VERIFY"
     if T.get("plateau_flag", 0) > 0.5 and T.get("rank_def", 0) > 0.4 and Otot > 1.0:
         return "MORPH"
@@ -138,18 +138,31 @@ class CompilerParams:
     def bootstrap(cls, seed: int = 42) -> CompilerParams:
         rng = np.random.default_rng(seed)
         p, m, d_tau, d_u, d_e, d_r = 28, 53, 18, 14, 3, 8
-        return cls(
-            W_m   = rng.normal(0, 0.03, size=(p, m)),
-            W_tau = rng.normal(0, 0.03, size=(p, d_tau)),
-            W_E   = rng.normal(0, 0.05, size=(p, d_e)),
-            W_r   = rng.normal(0, 0.02, size=(p, d_r)),
+        params = cls(
+            W_m   = rng.normal(0, 0.02, size=(p, m)),
+            W_tau = rng.normal(0, 0.02, size=(p, d_tau)),
+            W_E   = rng.normal(0, 0.04, size=(p, d_e)),
+            W_r   = rng.normal(0, 0.01, size=(p, d_r)),
             b_w   = rng.normal(0, 0.01, size=(p,)),
-            U_m   = rng.normal(0, 0.04, size=(d_u, m)),
-            U_tau = rng.normal(0, 0.04, size=(d_u, d_tau)),
-            U_E   = rng.normal(0, 0.06, size=(d_u, d_e)),
-            U_r   = rng.normal(0, 0.03, size=(d_u, d_r)),
+            U_m   = rng.normal(0, 0.03, size=(d_u, m)),
+            U_tau = rng.normal(0, 0.03, size=(d_u, d_tau)),
+            U_E   = rng.normal(0, 0.05, size=(d_u, d_e)),
+            U_r   = rng.normal(0, 0.02, size=(d_u, d_r)),
             b_u   = rng.normal(0, 0.01, size=(d_u,))
         )
+        
+        # Opinionated Biasing: Increase weights for coherence and identity losses
+        idx_loss = {name: i for i, name in enumerate(LOSS_NAMES)}
+        params.b_w[idx_loss["coherence"]] += 0.2
+        params.b_w[idx_loss["identity_drift"]] += 0.2
+        params.b_w[idx_loss["risk"]] += 0.1
+        
+        # Opinionated Biasing: Default knobs for safety
+        idx_knob = {name: i for i, name in enumerate(KNOB_NAMES)}
+        params.b_u[idx_knob["verify_budget"]] += 0.3
+        params.b_u[idx_knob["risk_cap"]] += 0.2
+        
+        return params
 
 def apply_regime_overrides(u: np.ndarray, regime: str) -> np.ndarray:
     u2 = u.copy()

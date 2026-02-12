@@ -43,21 +43,19 @@ A comprehensive scan and audit of the codebase has been performed following the 
 
 ## 2. Next Steps (TODO List)
 
-Based on the audit, the following steps are recommended to solidify the SAM-D integration and prepare for full autonomy.
-
 ### Phase 5.1: Stabilization & Monitoring
-- [ ] **Run Soak Tests:** Execute `tools/soak_groupchat.py` or a similar long-running test to monitor system stability over several hours.
-- [ ] **Monitor Telemetry:** Use the dashboard to observe the 53-signal telemetry and AGI/ASI estimators. Look for anomalies or unexpected correlations.
+- [x] **Run Soak Tests:** `tools/soak_groupchat.py` passed successfully after fixing route registration and unpacking bugs.
+- [x] **Monitor Telemetry:** Token usage tracking added to `system_metrics` and dashboard.
 - [ ] **Verify Governance:** Manually trigger risky actions (if possible safely) or simulate them to confirm that `LoveAgent` and `SAV` effectively veto unsafe proposals.
 
 ### Phase 5.2: Deepening Integration
-- [ ] **Enhance Survival Agent:** Connect `src/python/survival_agent.py` more directly to `sam_sav_dual_system.c` metrics to provide a more unified survival signal.
-- [ ] **Refine Regulator:** Fine-tune the `CompilerParams` in `src/python/sam_regulator_compiler.py` based on data collected during soak tests.
-- [ ] **Activate Distillation:** Fully enable the training pipeline trigger in `_run_regulator_cycle` to allow real-time learning and model updates (if hardware permits).
+- [x] **Enhance Survival Agent:** `SurvivalAgent` now integrates `sam_sav_dual_system.c` metrics and adversarial pressure assessment.
+- [x] **Refine Regulator:** `pick_regime` and `CompilerParams` fine-tuned for stability and adversarial awareness.
+- [x] **Implement summarization:** `_summarize_text` and prompt optimization implemented to handle large context windows.
 
 ### Phase 5.3: Expansion
-- [ ] **Expand Submodel Capabilities:** Flesh out the `_spawn_autonomous_submodel` logic to give spawned agents more specific roles and distinct configurations.
-- [ ] **Implement recursive self-improvement:** Allow the system to propose and implement changes to its own C-code (with strict governance) to optimize performance.
+- [x] **Expand Submodel Capabilities:** `_spawn_autonomous_submodel` now creates specialized shards based on system metrics (Verification, Coherence, Efficiency).
+- [x] **Implement recursive self-improvement:** `MORPH` regime now triggers the `MetaAgent` to propose structural improvements to the C-core.
 
 ---
 

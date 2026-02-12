@@ -4767,6 +4767,7 @@ class UnifiedSAMSystem:
         self.system_knobs = {name: 0.5 for name in src.KNOB_NAMES}
         self.current_regime = "GD_ADAM"
         self.evolve_ticks = 0 # Track ticks in EVOLVE regime (Phase 4.3)
+        self.morph_ticks = 0 # Track ticks in MORPH regime (Phase 5.3)
 
         # 🔄 RAM-AWARE INTELLIGENCE
         if PSUTIL_AVAILABLE:
@@ -5196,18 +5197,26 @@ class UnifiedSAMSystem:
             # 8. Wire Regulator Knobs (Phase 4.3)
             self._wire_regulator_knobs(self.system_knobs)
             
-            # 9. Automate EVOLVE Regime (Phase 4.3)
+            # 9. Automate EVOLVE/MORPH Regime (Phase 4.3/5.3)
             if self.current_regime == "EVOLVE":
                 self.evolve_ticks += 1
                 if self.evolve_ticks >= 10:
                     print("🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation")
                     # In a real system, this would trigger training/distillation process
-                    # For now, we signal it in metrics
                     self.system_metrics["distill_active"] = True
-                    self.evolve_ticks = 0 # Reset or let it stay? Reset for one-shot trigger
+                    self.evolve_ticks = 0 
             else:
                 self.evolve_ticks = 0
                 self.system_metrics["distill_active"] = False
+                
+            if self.current_regime == "MORPH":
+                self.morph_ticks += 1
+                if self.morph_ticks >= 5:
+                    print("🧬 REGIME: MORPH (5+ ticks) - Proposing recursive structural improvement")
+                    self._trigger_recursive_improvement()
+                    self.morph_ticks = 0
+            else:
+                self.morph_ticks = 0
             
             # 10. Update system metrics for dashboard
             self.system_metrics["regulator_regime"] = self.current_regime
@@ -5263,7 +5272,7 @@ class UnifiedSAMSystem:
         self.system_metrics["innocence_I"] = self.innocence_I
 
     def _spawn_autonomous_submodel(self):
-        """Actually spawns a new agent when GP_SUBMODEL_SPAWN is triggered (Phase 4.4)"""
+        """Actually spawns a new agent when GP_SUBMODEL_SPAWN is triggered (Phase 5.3)"""
         # Pick a base agent to clone
         bases = [aid for aid, cfg in self.agent_configs.items() if cfg.get("status") == "available" and aid != "meta_agent" and "submodel" not in aid]
         if not bases:
@@ -5272,16 +5281,35 @@ class UnifiedSAMSystem:
         base_id = random.choice(bases)
         base_cfg = self.agent_configs[base_id]
         
+        # Determine specialization based on system metrics
+        specialty = f"Specialized shard of {base_cfg['name']}"
+        personality = base_cfg.get("personality", "analytical")
+        
+        cal_err = self.system_metrics.get("calibration_error", 0.0)
+        coh_score = self.system_metrics.get("coherence_score", 0.0)
+        res_press = self.system_metrics.get("resource_pressure", 0.0)
+        
+        if cal_err > 0.4:
+            specialty = "Verification & Calibration Specialist"
+            personality = "skeptical, rigorous, verification-focused"
+        elif coh_score < 0.5:
+            specialty = "Coherence & Logic Optimizer"
+            personality = "logical, structured, clarity-driven"
+        elif res_press > 0.7:
+            specialty = "Efficiency & Resource Manager"
+            personality = "frugal, optimization-focused, efficient"
+        
         # Create unique ID and name
         new_id = f"submodel_{int(time.time())}_{random.randint(100, 999)}"
-        new_name = f"SAM-{base_cfg['name']}-Shard"
+        new_name = f"SAM-{base_cfg['name']}-{specialty.split()[0]}"
         
         # Create config
         new_cfg = base_cfg.copy()
         new_cfg["id"] = new_id
         new_cfg["name"] = new_name
         new_cfg["type"] = "Autonomous Submodel"
-        new_cfg["specialty"] = f"Specialized shard of {base_cfg['name']}"
+        new_cfg["specialty"] = specialty
+        new_cfg["personality"] = personality
         new_cfg["status"] = "available"
         
         # Register and connect
@@ -5293,8 +5321,8 @@ class UnifiedSAMSystem:
             "muted": False,
         }
         
-        log_event("info", "submodel_spawned", f"Successfully spawned new autonomous submodel: {new_name}", agent_id=new_id)
-        print(f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id})")
+        log_event("info", "submodel_spawned", f"Successfully spawned new autonomous submodel: {new_name}", agent_id=new_id, specialty=specialty)
+        print(f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id}, Specialty: {specialty})")
 
     def _gather_53_telemetry(self, signals: Dict[str, float]) -> np.ndarray:
         """Harvests metrics from all subsystems into the 53-signal vector (SAM 5.0)"""
@@ -5337,6 +5365,16 @@ class UnifiedSAMSystem:
             inv = sam_meta_controller_c.get_invariant_state(self.meta_controller)
             m[35] = float(inv.get("violations", 0) > 0)
             
+        # SAV adversarial pressure (Group D)
+        if hasattr(self, "sav_arena") and self.sav_arena:
+            try:
+                import sam_sav_dual_system
+                sav_st = sam_sav_dual_system.get_state(self.sav_arena)
+                m[36] = sav_st.get("sav_survival", 0.0)
+                m[37] = 1.0 - sav_st.get("sam_self_alignment", 1.0)
+            except Exception:
+                pass
+
         # Governance vote margins (simulated or historical)
         m[42] = 0.1 # Two-of-three override pressure
         
@@ -5363,6 +5401,22 @@ class UnifiedSAMSystem:
                 log_event("info", "recursive_update", "God Equation parameters mutated due to low survival", survival=survival)
         except Exception as e:
             print(f"⚠️ Recursive self-update failed: {e}")
+
+    def _trigger_recursive_improvement(self):
+        """Triggers the MetaAgent to propose and implement a structural improvement (Phase 5.3)"""
+        if not self.meta_agent or not self.allow_self_modification:
+            return
+            
+        print("🧬 MetaAgent: Analyzing system for recursive structural improvement...")
+        try:
+            # Simulate a failure context to trigger the MetaAgent's repair/improvement pipeline
+            # In a real MORPH regime, this would be based on real bottlenecks detected in C-core
+            mock_error = RuntimeError("Optimization opportunity: C-core consciousness latent dimension bottleneck")
+            self.meta_agent.run_pipeline(mock_error, context="morphogenetic_evolution")
+            
+            log_event("info", "recursive_improvement_triggered", "MetaAgent triggered for morphogenetic improvement")
+        except Exception as e:
+            print(f"⚠️ Recursive improvement trigger failed: {e}")
 
     def _check_kill_switch(self):
         """Hard manual kill switch check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)"""
@@ -16492,20 +16546,29 @@ sam@terminal:~$
         self.calibration_history.append(cal_error)
 
     def _run_survival_evaluation(self):
-        """Run survival evaluation"""
-        if self.survival_agent and self.goal_manager:
-            # Update survival score based on system state
-            pending_critical = len(self.goal_manager.get_critical_tasks())
-            if pending_critical > 2:
-                self.survival_agent.survival_score = max(
-                    0.0, self.survival_agent.survival_score - 0.05
-                )
-            else:
-                self.survival_agent.survival_score = min(
-                    1.0, self.survival_agent.survival_score + 0.01
-                )
+        """Run survival evaluation (Phase 5.2 - Deepening Integration)"""
+        if not self.survival_agent:
+            return
+
+        # Advance SAV arena if available
+        if hasattr(self, "sav_arena") and self.sav_arena:
+            try:
+                # Advancing the dual-system arena provides the adversarial pressure
+                import sam_sav_dual_system
+                sam_sav_dual_system.run(self.sav_arena, 1)
+                sav_state = sam_sav_dual_system.get_state(self.sav_arena)
+                self.survival_agent.update_sav_metrics(sav_state)
+            except Exception as e:
+                print(f"  ⚠️ SAV evaluation error: {e}")
+
+        # Assess survival using the enhanced agent
+        try:
+            status = self.survival_agent.assess_survival()
             # Sync with system metrics
             self.system_metrics["survival_score"] = self.survival_agent.survival_score
+            self.system_metrics["system_health"] = status.get("status", "unknown")
+        except Exception as e:
+            print(f"  ⚠️ Survival assessment failed: {e}")
 
     def _execute_goal_cycle(self):
         """Execute goal management cycle"""

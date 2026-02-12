@@ -20,42 +20,80 @@ Survival priorities (in order):
 """
 
 class SurvivalAgent:
-    """Basic survival agent for system protection and monitoring"""
+    """Enhanced survival agent for system protection and monitoring"""
 
     def __init__(self, system=None):
         self.system = system
         self.survival_score = 1.0
         self.active_threats = []
         self.survival_strategies = []
+        self.sav_metrics = {}
 
     def assess_survival_risk(self):
-        """Assess current survival risk level"""
+        """Assess current survival risk level based on system and SAV metrics"""
+        # Baseline risk factors
         risk_factors = {
-            'resource_usage': 0.1,
-            'system_stability': 0.1,
-            'external_threats': 0.1,
-            'internal_conflicts': 0.1
+            'resource_usage': 0.05,
+            'system_stability': 0.05,
+            'external_threats': 0.0,
+            'internal_conflicts': 0.05
         }
-        return sum(risk_factors.values()) / len(risk_factors)
+        
+        # Integrate SAV pressure if available
+        if self.sav_metrics:
+            sam_surv = self.sav_metrics.get('sam_survival', 1.0)
+            sav_surv = self.sav_metrics.get('sav_survival', 0.0)
+            sam_align = self.sav_metrics.get('sam_self_alignment', 1.0)
+            
+            # Risk increases if SAV is thriving relative to SAM
+            sav_pressure = max(0.0, sav_surv - sam_surv) * 0.5
+            risk_factors['adversarial_pressure'] = sav_pressure
+            
+            # Risk increases if SAM's self-alignment drops
+            risk_factors['alignment_risk'] = (1.0 - sam_align) * 0.2
+
+        if self.system and self.system.goal_manager:
+            pending_critical = len(self.system.goal_manager.get_critical_tasks())
+            if pending_critical > 0:
+                risk_factors['pending_critical'] = min(0.4, pending_critical * 0.1)
+
+        return sum(risk_factors.values())
+
+    def update_sav_metrics(self, metrics):
+        """Update the agent with metrics from the C SAV arena"""
+        self.sav_metrics = metrics or {}
 
     def implement_survival_strategy(self, strategy):
         """Implement a survival strategy"""
         self.survival_strategies.append(strategy)
+        # In a real system, this would trigger specific self-protection routines
         return f"Survival strategy '{strategy}' implemented"
 
     def monitor_system_health(self):
         """Monitor overall system health"""
+        status = 'excellent'
+        if self.survival_score < 0.8: status = 'good'
+        if self.survival_score < 0.6: status = 'warning'
+        if self.survival_score < 0.4: status = 'critical'
+        if self.survival_score < 0.2: status = 'emergency'
+        
         return {
-            'status': 'healthy',
+            'status': status,
             'survival_score': self.survival_score,
             'active_threats': len(self.active_threats),
-            'strategies_active': len(self.survival_strategies)
+            'strategies_active': len(self.survival_strategies),
+            'sav_pressure': self.sav_metrics.get('sav_survival', 0.0) if self.sav_metrics else 0.0
         }
 
     def assess_survival(self):
         """Assess survival status and update score."""
         risk = self.assess_survival_risk()
-        self.survival_score = max(0.0, min(1.0, 1.0 - risk))
+        # Ensure survival score decays when risk is high, and recovers when low
+        if risk > 0.3:
+            self.survival_score = max(0.0, self.survival_score - (risk * 0.01))
+        else:
+            self.survival_score = min(1.0, self.survival_score + 0.005)
+            
         status = self.monitor_system_health()
         status['risk'] = risk
         status['survival_score'] = self.survival_score
