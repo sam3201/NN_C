@@ -12,7 +12,7 @@ SAM 2.1 is a hybrid Python/C multi-agent system with a web dashboard, slash-comm
 - Python 3.10+
 - A C compiler toolchain compatible with Python extensions
 - Optional local model backend: Ollama (if using local models)
-- Optional hosted model backends: set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `GITHUB_TOKEN`
+- Optional hosted model backends: requires appropriate provider credentials (e.g., OpenAI, Anthropic, Google, GitHub) to be set in your environment.
 - Gmail OAuth dependencies (see Gmail section)
 
 ## Quick Start
