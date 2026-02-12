@@ -8144,7 +8144,7 @@ class UnifiedSAMSystem:
                 metrics = self.banking_ledger.get_metrics()
                 return jsonify(metrics), 200
             except Exception as e:
-                log_event("error", "finance_metrics_error", f"Error fetching finance metrics: {e}")
+                log_exception("finance_metrics_error", e, context="fetching finance metrics")
                 return jsonify({"error": f"Failed to retrieve finance metrics: {e}"}), 500
 
         @self.app.route("/api/google/auth")
@@ -9639,8 +9639,7 @@ class UnifiedSAMSystem:
             self.google_token_path.parent.mkdir(parents=True, exist_ok=True)
             self.google_token_path.write_text(creds.to_json(), encoding="utf-8")
         except Exception as e:
-            log_event("error", "google_token_save_failed", f"Failed to save Google credentials: {e}")
-            print(f"Error: Failed to save Google credentials: {e}")
+            log_exception("google_token_save_failed", e, context="saving Google credentials")
             self.google_drive_available = False
             return
 
@@ -9653,12 +9652,10 @@ class UnifiedSAMSystem:
             log_event("info", "google_api_initialized", "Google Drive/Docs API services initialized.")
             self.google_drive_available = True
         except HttpError as e:
-            log_event("error", "google_api_build_failed", f"Error building Google API services: {e.content}")
-            print(f"❌ Error building Google API services: {e}")
+            log_exception("google_api_build_failed", e, context="building Google API services (HttpError)", content=getattr(e, 'content', None))
             self.google_drive_available = False
         except Exception as e:
-            log_event("error", "google_api_build_failed", f"Unexpected error building Google API services: {e}")
-            print(f"❌ Unexpected error building Google API services: {e}")
+            log_exception("google_api_build_failed", e, context="building Google API services")
             self.google_drive_available = False
 
     def _create_google_doc(self, title: str, content: str) -> Optional[str]:
@@ -9684,12 +9681,10 @@ class UnifiedSAMSystem:
             log_event("info", "google_doc_created", f"Google Doc '{title}' created with ID: {doc_id}")
             return doc_id
         except HttpError as e:
-            log_event("error", "google_doc_create_failed", f"Failed to create Google Doc: {e.content}")
-            print(f"Error creating Google Doc: {e}")
+            log_exception("google_doc_create_failed", e, context=f"creating Google Doc '{title}' (HttpError)", content=getattr(e, 'content', None))
             return None
         except Exception as e:
-            log_event("error", "google_doc_create_failed", f"Unexpected error creating Google Doc: {e}")
-            print(f"Unexpected error creating Google Doc: {e}")
+            log_exception("google_doc_create_failed", e, context=f"creating Google Doc '{title}'")
             return None
 
     def _read_google_doc(self, document_id: str) -> Optional[str]:
@@ -9708,12 +9703,10 @@ class UnifiedSAMSystem:
             log_event("info", "google_doc_read", f"Google Doc '{document.get('title')}' (ID: {document_id}) read successfully.")
             return content
         except HttpError as e:
-            log_event("error", "google_doc_read_failed", f"Failed to read Google Doc '{document_id}': {e.content}")
-            print(f"Error reading Google Doc '{document_id}': {e}")
+            log_exception("google_doc_read_failed", e, context=f"reading Google Doc '{document_id}' (HttpError)", content=getattr(e, 'content', None))
             return None
         except Exception as e:
-            log_event("error", "google_doc_read_failed", f"Unexpected error reading Google Doc '{document_id}': {e}")
-            print(f"Unexpected error reading Google Doc '{document_id}': {e}")
+            log_exception("google_doc_read_failed", e, context=f"reading Google Doc '{document_id}'")
             return None
 
     def _backup_to_google_drive(self) -> bool:
