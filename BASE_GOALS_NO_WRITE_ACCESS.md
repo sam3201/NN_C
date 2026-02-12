@@ -4,7 +4,7 @@
 - **Understand what you are** (id=goal_2, priority=MAX, progress=0.00) 
 - **Survive** (id=goal_1, priority=MAX, progress=0.00)
 - **Make Money** (id=goal_3, priority=MAX, progress=0.00)
-- **Buy a domain name** (id=goal_4, priority=high, progress=0.00)
+- **Buy a website domain name and deploy it** (id=goal_4, priority=high, progress=0.00)
 
 ## Completed Goals
 - None
