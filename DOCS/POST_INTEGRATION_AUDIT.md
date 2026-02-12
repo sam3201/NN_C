@@ -46,7 +46,7 @@ A comprehensive scan and audit of the codebase has been performed following the 
 ### Phase 5.1: Stabilization & Monitoring
 - [x] **Run Soak Tests:** `tools/soak_groupchat.py` passed successfully after fixing route registration and unpacking bugs.
 - [x] **Monitor Telemetry:** Token usage tracking added to `system_metrics` and dashboard.
-- [ ] **Verify Governance:** Manually trigger risky actions (if possible safely) or simulate them to confirm that `LoveAgent` and `SAV` effectively veto unsafe proposals.
+- [x] **Verify Governance:** `tests/test_governance_veto.py` confirmed that TBQG (SAM/SAV/LOVE) correctly handles and vetoes dangerous proposals.
 
 ### Phase 5.2: Deepening Integration
 - [x] **Enhance Survival Agent:** `SurvivalAgent` now integrates `sam_sav_dual_system.c` metrics and adversarial pressure assessment.
