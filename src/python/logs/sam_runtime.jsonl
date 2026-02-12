@@ -38,3 +38,4 @@
 {"ts": "2026-02-12T00:09:51.302849Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
 {"ts": "2026-02-12T00:15:26.373877Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
 {"ts": "2026-02-12T22:36:16.971996Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-12T22:36:17.390437Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
