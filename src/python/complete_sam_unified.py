@@ -13709,6 +13709,44 @@ sam@terminal:~$
                     }
                 }
 
+                async function applyUserRole() {
+                    const userId = document.getElementById('admin-target-uid').value.trim();
+                    const role = document.getElementById('admin-target-role').value;
+                    if (!userId) return;
+                    try {
+                        const resp = await fetch('/api/admin/roles', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({user_id: userId, role: role})
+                        });
+                        if (resp.ok) {
+                            showUiAlert(`Role updated: ${userId} is now ${role}`);
+                        } else {
+                            const err = await resp.json();
+                            showUiAlert(err.error || 'Failed to update role');
+                        }
+                    } catch (err) { console.error(err); }
+                }
+
+                async function generateAdminToken() {
+                    const adminId = document.getElementById('admin-gen-id').value.trim();
+                    if (!adminId) return;
+                    const resultEl = document.getElementById('admin-token-result');
+                    try {
+                        const resp = await fetch('/api/admin/generate_token', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({admin_id: adminId})
+                        });
+                        const data = await resp.json();
+                        if (resp.ok) {
+                            resultEl.innerHTML = `<strong>NEW TOKEN:</strong><br>${data.token}<br><small>(Copy this now, it won't be shown again)</small>`;
+                        } else {
+                            showUiAlert(data.error || 'Token generation failed');
+                        }
+                    } catch (err) { console.error(err); }
+                }
+
                 async function updateAuthStatus() {
                     try {
                         const auth = await fetch('/api/auth/status').then((r) => r.json());

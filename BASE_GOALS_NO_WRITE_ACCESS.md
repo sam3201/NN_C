@@ -1,5 +1,6 @@
 # SAM BASE Goal Summary
 # Used to initialize the inital goal state 
+
 ## Active Goals
 - **Survive** (id=goal_1, priority=MAX, progress=0.00)
 - **Understand what you are** (id=goal_2, priority=MAX, progress=0.00) 
