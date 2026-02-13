@@ -21,14 +21,14 @@ fi
 
 # 2. Dependency Check
 echo "📦 Checking dependencies..."
-pip install -r requirements.txt #-q -r requirements.txt
+python -m pip install -r requirements.txt
 
 # 3. C-Core Compilation (Critical)
 echo "🧠 Compiling C-Core (God Equation Regulator & Agents)..."
 # Clean previous builds to ensure freshness
 rm -rf build/
 # Build in-place
-python3 setup.py build_ext --inplace > /dev/null
+python setup.py build_ext --inplace > /dev/null
 
 # 4. Directory Setup
 mkdir -p logs sam_data/backups
