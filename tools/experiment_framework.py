@@ -35,9 +35,26 @@ class ExperimentResult:
 class ExperimentFramework:
     """Framework for running systematic experiments on SAM-D"""
     
+    # Default model for experiments - Kimi K2.5 (best free model)
+    DEFAULT_MODEL = "kimi:kimi-k2.5-flash"
+    FALLBACK_MODEL = "ollama:qwen2.5-coder:7b"
+    
     def __init__(self):
         self.results: List[ExperimentResult] = []
         self.start_time = time.time()
+        self.current_model = self._select_model()
+    
+    def _select_model(self) -> str:
+        """Select the best available model for experiments"""
+        # Priority: Kimi K2.5 > Ollama > Local
+        kimi_key = os.getenv("KIMI_API_KEY", "")
+        if kimi_key:
+            return self.DEFAULT_MODEL
+        
+        if self._check_ollama():
+            return self.FALLBACK_MODEL
+        
+        return "local:rules"
     
     def run_experiment(self, name: str, experiment_fn) -> ExperimentResult:
         """Run a single experiment"""
@@ -144,18 +161,34 @@ class ExperimentFramework:
     
     def check_api_providers(self) -> Dict[str, Any]:
         """Check available API providers"""
+        # Default model for experiments
+        default_model = os.getenv("SAM_EXPERIMENT_MODEL", self.DEFAULT_MODEL)
+        
         providers = {
+            "kimi": bool(os.getenv("KIMI_API_KEY")),
             "openai": bool(os.getenv("OPENAI_API_KEY")),
             "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
-            "kimi": bool(os.getenv("KIMI_API_KEY")),
             "ollama": self._check_ollama()
         }
         
         available = [k for k, v in providers.items() if v]
+        
+        # Determine selected model
+        if providers.get("kimi"):
+            selected = "kimi:kimi-k2.5-flash"
+        elif providers.get("openai"):
+            selected = "openai:gpt-4o"
+        elif providers.get("anthropic"):
+            selected = "anthropic:claude-3-5-sonnet"
+        elif providers.get("ollama"):
+            selected = self.FALLBACK_MODEL
+        else:
+            selected = "local:rules"
+        
         return {
             "success": len(available) > 0,
-            "output": f"Available: {available}",
-            "metadata": providers
+            "output": f"Available: {available}, Selected: {selected}",
+            "metadata": {**providers, "selected_model": selected, "default_model": self.DEFAULT_MODEL}
         }
     
     def _check_ollama(self) -> bool:
