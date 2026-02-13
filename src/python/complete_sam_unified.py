@@ -13070,8 +13070,8 @@ sam@terminal:~$
             return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
         # Research, code, and finance commands (existing)
-        elif cmd == "/research":
-            query = " ".join(args) if args else "current AI developments"
+    elif cmd == "/research":
+        query = " ".join(args) if args else "current AI developments"
                 try:
                     sources = []
                     source_lines = []
