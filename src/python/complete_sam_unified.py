@@ -4022,33 +4022,29 @@ class MetaAgent:
             else:
                 print(f"   🔄 Continuing to cycle {cycle + 1}...")
 
-                # Update learning state
+            # Update learning state
             self.current_performance = current_performance
             self.validation_history.append(
-                    {
-                        "cycle": cycle,
-                        "errors_detected": len(student_errors),
-                        "improvements_applied": len(
-                            implementation_result.get("improvements", [])
-                            ),
-                        "performance": current_performance,
-                        "convergence_check": convergence_achieved,
-                        }
-                    )
+                {
+                    "cycle": cycle,
+                    "errors_detected": len(student_errors),
+                    "improvements_applied": len(implementation_result.get("improvements", [])),
+                    "performance": current_performance,
+                    "convergence_check": convergence_achieved,
+                }
+            )
 
-            # Final assessment
+        # Final assessment
         if convergence_achieved:
-            print("\\n🏆 FINAL RESULT: SUCCESS")
+            print("\n🏆 FINAL RESULT: SUCCESS")
             print("   ✅ Teacher-student-actor-critic validation achieved zero errors")
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
-            print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
-            print("   📊 Final performance may still have some issues")
-            return False
-        else:
-            print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
-            print("   📊 Final performance may still have some issues")
-            return False
+
+        print(f"\n❌ FINAL RESULT: MAX CYCLES REACHED ({cycle}/{max_cycles})")
+        print(f"   ⚠️ Completed {cycle} cycles without achieving zero errors")
+        print("   📊 Final performance may still have some issues")
+        return False
 
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
