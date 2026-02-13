@@ -5661,6 +5661,21 @@ class UnifiedSAMSystem :
 
         return [float (f )for f in features [:32 ]]
 
+    def _git_push_codebase(self, message: str = "Auto-hot-reload: code update"):
+        """Automatically stage, commit, and push codebase changes."""
+        try:
+            print(f"📡 Git: Pushing changes... '{message}'")
+            import subprocess
+            # Stage all changes
+            subprocess.run(["git", "add", "."], cwd=self.project_root, check=True)
+            # Commit (allow empty if no changes actually exist)
+            subprocess.run(["git", "commit", "-m", message], cwd=self.project_root, capture_output=True)
+            # Push to origin
+            subprocess.run(["git", "push", "origin", "main"], cwd=self.project_root, check=True)
+            print("✅ Git: Pushed successfully.")
+        except Exception as e:
+            print(f"⚠️ Git: Push failed: {e}")
+
     def _watchdog_loop (self ):
         """Internal file watching loop for hot reload"""
         if not hasattr (self ,"project_root"):
@@ -5686,6 +5701,7 @@ class UnifiedSAMSystem :
 
                 current_time =sam_time_ref.time ()
                 restart_needed =False 
+                changed_file = ""
 
                 for pattern in watch_patterns :
                     for filepath in self .project_root .rglob (pattern ):
@@ -5699,8 +5715,9 @@ class UnifiedSAMSystem :
                                     # Check if change is recent (within last 10 seconds)
                                         if current_time -current_mtime <10 :
                                             file_age =current_time -current_mtime 
+                                            changed_file = str(filepath.relative_to(self.project_root))
                                             print (
-                                            f"🔥 File changed: {filepath .relative_to (self .project_root )} ({file_age :.1f}s ago)"
+                                            f"🔥 File changed: {changed_file} ({file_age :.1f}s ago)"
                                             )
                                             restart_needed =True 
                                             break 
@@ -5714,6 +5731,10 @@ class UnifiedSAMSystem :
 
                 if restart_needed :
                     print ("🔥 Hot-reload triggered by file changes!")
+                    
+                    # Push to Git before restart
+                    self._git_push_codebase(f"Hot-reload: update in {changed_file}")
+                    
                     log_event (
                     "info",
                     "hot_reload_triggered",
@@ -5725,7 +5746,8 @@ class UnifiedSAMSystem :
                     # Give a brief moment for file writes to complete
                     sam_time_ref .sleep (2 )
 
-                    # Exit to trigger restart by external watcher
+                    # Exit to trigger restart by external launcher
+                    print("🛑 Kill switch: Restarting system...")
                     os ._exit (0 )
 
             except Exception as e :
