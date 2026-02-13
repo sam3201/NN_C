@@ -508,6 +508,11 @@ except ImportError :
     create_prompt_test_suite =None 
 
 try :
+    from sensory_controller import create_sensory_controller 
+except ImportError :
+    create_sensory_controller =None 
+
+try :
     from simulation_arena import create_simulation_arena 
 except ImportError :
     create_simulation_arena =None 
@@ -4765,6 +4770,14 @@ class UnifiedSAMSystem :
         self .prompt_suite =create_prompt_test_suite (self )
         print ("  ✅ Prompt Test Suite active")
 
+        # Initialize Sensory Controller (Phase 5.3)
+        if create_sensory_controller:
+            self .sensory_controller =create_sensory_controller (self )
+            print ("  ✅ Sensory Controller active")
+        else:
+            self .sensory_controller =None
+            print ("  ⚠️ Sensory Controller module missing")
+
         # Initialize vision system early to avoid race conditions
         try :
             from vision_system import create_vision_system 
@@ -5609,6 +5622,17 @@ class UnifiedSAMSystem :
         m [46 ]=s ("latency")
         if self .vision_system :
             m [47 ]=self .vision_system .get_vision_status ().get ("current_complexity",0.0 )
+        
+        # New Sensory Modalities (50-53)
+        if self .sensory_controller:
+            sensory_state = self .sensory_controller .get_sensory_state ()
+            m [49 ]=min (1.0 , sensory_state .get ("recent_events", 0) / 100.0 ) # Sensory frequency
+            last_stim = sensory_state .get ("last_stimulus")
+            if last_stim:
+                if last_stim ["modality"] == "audit":
+                    m [50 ]=last_stim ["intensity"] # Hearing intensity
+                elif last_stim ["modality"] == "haptics":
+                    m [51 ]=last_stim ["intensity"] # Touch intensity
 
             # Fill remaining with small noise to prevent zero-gradient issues in compiler
         for i in range (53 ):
@@ -9327,6 +9351,102 @@ class UnifiedSAMSystem :
             "timestamp":sam_datetime_ref .now ().isoformat (),
             }
             )
+
+        @self .app .route ("/api/files/list",methods =["GET"])
+        def list_files ():
+            """List directory contents (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            path_str =request .args .get ("path",".")
+            try :
+                target =_resolve_repo_path (path_str )
+                items =[]
+                for entry in target .iterdir ():
+                    if entry .name .startswith (".")and entry .name !=".gemini":
+                        continue 
+                    items .append ({
+                        "name":entry .name ,
+                        "path":str (entry .relative_to (self .project_root )),
+                        "type":"dir" if entry .is_dir () else "file",
+                        "size":entry .stat ().st_size if entry .is_file () else 0 ,
+                        "modified":entry .stat ().st_mtime 
+                    })
+                return jsonify ({"path":str (target .relative_to (self .project_root )),"items":items })
+            except Exception as e :
+                return jsonify ({"error":str (e )}),500 
+
+        @self .app .route ("/api/files/read",methods =["GET"])
+        def read_file_content ():
+            """Read file content (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            path_str =request .args .get ("path")
+            if not path_str :
+                return jsonify ({"error":"Path required"}),400 
+            
+            try :
+                target =_resolve_repo_path (path_str )
+                if not target .is_file ():
+                    return jsonify ({"error":"Not a file"}),400 
+                
+                # Check file size to avoid memory issues
+                if target .stat ().st_size > 5 * 1024 * 1024 : # 5MB limit
+                    return jsonify ({"error":"File too large for preview"}),400 
+                    
+                content =target .read_text (encoding ="utf-8",errors ="replace")
+                return jsonify ({
+                    "name":target .name ,
+                    "path":str (target .relative_to (self .project_root )),
+                    "content":content ,
+                    "size":target .stat ().st_size 
+                })
+            except Exception as e :
+                return jsonify ({"error":str (e )}),500 
+
+        @self .app .route ("/api/files/search",methods =["GET"])
+        def search_files ():
+            """Search for files or content (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            query =request .args .get ("query","")
+            if not query :
+                return jsonify ({"error":"Query required"}),400 
+            
+            results =[]
+            try :
+                # Simple file name search
+                for entry in self .project_root .rglob ("*"):
+                    if entry .is_file () and query .lower () in entry .name .lower ():
+                        results .append ({
+                            "name":entry .name ,
+                            "path":str (entry .relative_to (self .project_root )),
+                            "type":"file"
+                        })
+                        if len (results )>= 50 : break 
+                return jsonify ({"results":results })
+            except Exception as e :
+                return jsonify ({"error":str (e )}),500 
+
+        @self .app .route ("/api/sensory/status",methods =["GET"])
+        def sensory_status ():
+            """Return current sensory state (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            if self .sensory_controller :
+                return jsonify (self .sensory_controller .get_sensory_state ())
+            return jsonify ({"error":"Sensory controller not initialized"}),503 
 
         @self .app .route ("/api/admin/roles",methods =["POST"])
         def manage_roles ():
@@ -13550,6 +13670,20 @@ sam@terminal:~$
                     }
                 }
 
+                async function updateSensoryStatus() {
+                    try {
+                        const resp = await fetch(`/api/sensory/status?${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        const countEl = document.getElementById('sense-recent-count');
+                        if (countEl) countEl.textContent = data.recent_events || 0;
+                    } catch (err) {
+                        console.error('Sensory status error:', err);
+                    }
+                }
+
                 async function updateAuthStatus() {
                     try {
                         const auth = await fetch('/api/auth/status').then((r) => r.json());
@@ -14430,6 +14564,96 @@ sam@terminal:~$
                     }
                 }
 
+                // --- File Explorer Logic ---
+                let currentFilePath = '.';
+
+                async function navigateFiles(path) {
+                    currentFilePath = path;
+                    document.getElementById('current-path').textContent = path;
+                    try {
+                        const resp = await fetch(`/api/files/list?path=${encodeURIComponent(path)}${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json();
+                            document.getElementById('file-list').innerHTML = `<div class="error">${escapeHtml(err.error)}</div>`;
+                            return;
+                        }
+                        const data = await resp.json();
+                        renderFileList(data.items);
+                    } catch (err) {
+                        console.error('File list error:', err);
+                    }
+                }
+
+                function renderFileList(items) {
+                    const container = document.getElementById('file-list');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    
+                    if (currentFilePath !== '.') {
+                        const parentPath = currentFilePath.split('/').slice(0, -1).join('/') || '.';
+                        const div = document.createElement('div');
+                        div.className = 'file-item dir';
+                        div.innerHTML = '📁 ..';
+                        div.onclick = () => navigateFiles(parentPath);
+                        container.appendChild(div);
+                    }
+
+                    items.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'dir' ? -1 : 1));
+
+                    items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = `file-item ${item.type}`;
+                        div.innerHTML = `${item.type === 'dir' ? '📁' : '📄'} ${escapeHtml(item.name)}`;
+                        div.onclick = () => {
+                            if (item.type === 'dir') {
+                                navigateFiles(item.path);
+                            } else {
+                                readFileContent(item.path);
+                            }
+                        };
+                        container.appendChild(div);
+                    });
+                }
+
+                async function readFileContent(path) {
+                    try {
+                        const resp = await fetch(`/api/files/read?path=${encodeURIComponent(path)}${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json();
+                            showUiAlert(err.error);
+                            return;
+                        }
+                        const data = await resp.json();
+                        const header = document.getElementById('preview-header');
+                        const content = document.getElementById('preview-content');
+                        if (header) header.textContent = data.path;
+                        if (content) content.textContent = data.content;
+                    } catch (err) {
+                        console.error('File read error:', err);
+                    }
+                }
+
+                async function searchFiles() {
+                    const input = document.getElementById('file-search-input');
+                    if (!input) return;
+                    const query = input.value.trim();
+                    if (!query) return;
+                    try {
+                        const resp = await fetch(`/api/files/search?query=${encodeURIComponent(query)}${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        renderFileList(data.results);
+                    } catch (err) {
+                        console.error('File search error:', err);
+                    }
+                }
+
                 function appendMessage(role, name, text, provenance) {
                     const messages = document.getElementById('chat-messages');
                     const wrapper = document.createElement('div');
@@ -14643,6 +14867,9 @@ sam@terminal:~$
                 loadChatConfig();
                 initDashboardLogStream();
                 fetchDashboardLogSnapshot();
+                navigateFiles('.');
+                updateSensoryStatus();
+                setInterval(updateSensoryStatus, 5000);
 
                 // New MetaAgent Status and Test Initialization
                 setInterval(updateMetaAgentStatus, 15000); // Update every 15 seconds
@@ -15172,6 +15399,72 @@ sam@terminal:~$
                     background: #0c111c;
                     margin-top: 12px;
                 }}
+                .file-browser-layout {{
+                    display: grid;
+                    grid-template-columns: 300px 1fr;
+                    gap: 20px;
+                    height: 500px;
+                    margin-top: 16px;
+                }}
+                .file-list {{
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 12px;
+                    overflow-y: auto;
+                    padding: 8px;
+                    border: 1px solid var(--stroke);
+                }}
+                .file-item {{
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.85rem;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }}
+                .file-item:hover {{
+                    background: rgba(255, 255, 255, 0.05);
+                }}
+                .file-item.dir {{ color: var(--accent-2); font-weight: 600; }}
+                .file-preview {{
+                    background: #0c111c;
+                    border-radius: 12px;
+                    border: 1px solid var(--stroke);
+                    display: grid;
+                    grid-template-rows: auto 1fr;
+                    overflow: hidden;
+                }}
+                .preview-header {{
+                    background: rgba(255, 255, 255, 0.03);
+                    padding: 10px 16px;
+                    border-bottom: 1px solid var(--stroke);
+                    font-size: 0.8rem;
+                    color: var(--muted);
+                }}
+                #preview-content {{
+                    margin: 0;
+                    padding: 16px;
+                    overflow: auto;
+                    font-family: "JetBrains Mono", monospace;
+                    font-size: 0.85rem;
+                    white-space: pre;
+                    color: var(--text);
+                }}
+                .path-nav {{
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 10px;
+                    font-size: 0.9rem;
+                }}
+                .path-nav button {{
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    border: 1px solid var(--stroke);
+                    background: transparent;
+                    color: var(--text);
+                    cursor: pointer;
+                }}
                 @keyframes rise {{
                     from {{ opacity: 0; transform: translateY(12px); }}
                     to {{ opacity: 1; transform: translateY(0); }}
@@ -15347,6 +15640,28 @@ sam@terminal:~$
                             </div>
                         </div>
                         <div class="card">
+                            <h3>👁️ Sensory Map</h3>
+                            <div class="metric-row">
+                                <span class="metric-label">Vision</span>
+                                <span id="sense-vision" class="status-badge" data-state="active">ACTIVE</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Audit (Hearing)</span>
+                                <span id="sense-audit" class="status-badge" data-state="active">LISTENING</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Proprioception</span>
+                                <span id="sense-proprio" class="status-badge" data-state="active">AWARE</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Haptics (Touch)</span>
+                                <span id="sense-haptics" class="status-badge" data-state="active">REACTIVE</span>
+                            </div>
+                            <div style="margin-top:12px; font-size:0.75rem; color:var(--muted);">
+                                <span>Recent Stimuli: </span><span id="sense-recent-count">0</span>
+                            </div>
+                        </div>
+                        <div class="card">
                             <h3>System Actions</h3>
                             <div class="metric-row">
                                 <span class="metric-label">Restart System</span>
@@ -15496,6 +15811,28 @@ sam@terminal:~$
                                 <button onclick="importRevenuePlaybooks()">Import Playbooks</button>
                             </div>
                             <textarea id="revenue-playbooks" placeholder="Playbook JSON will appear here"></textarea>
+                        </div>
+                    </section>
+
+                    <section class="revenue-grid">
+                        <div class="card" style="grid-column: span 2;">
+                            <h3>📁 Codebase Explorer (Vision Core)</h3>
+                            <div class="path-nav">
+                                <button onclick="navigateFiles('.')">🏠 Root</button>
+                                <span id="current-path">.</span>
+                                <div style="flex:1;"></div>
+                                <input id="file-search-input" placeholder="Search files..." style="background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:6px 12px; color:var(--text);" />
+                                <button onclick="searchFiles()">🔍 Search</button>
+                            </div>
+                            <div class="file-browser-layout">
+                                <div id="file-list" class="file-list">
+                                    <div class="agent-empty">Loading codebase...</div>
+                                </div>
+                                <div class="file-preview">
+                                    <div class="preview-header" id="preview-header">No file selected</div>
+                                    <pre id="preview-content">Select a file to preview its content.</pre>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
