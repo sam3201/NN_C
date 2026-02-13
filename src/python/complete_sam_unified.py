@@ -16392,6 +16392,16 @@ sam@terminal:~$
                     print ("🧵 DEBUG: Metric update.")
                     self ._update_system_metrics ()
 
+                    # Multimodal Sensing (Phase 5.3)
+                    if getattr(self, "sensory_controller", None):
+                        # 1. Proprioception: Feel the system pressure
+                        omega = self .system_metrics .get ("regulator_omega", 0.5)
+                        self .sensory_controller .process_stimulus ("proprioception", "regulator_omega", omega)
+                        
+                        # 2. Haptics: Feel the planner friction
+                        friction = self .system_metrics .get ("planner_friction", 0.1)
+                        self .sensory_controller .process_stimulus ("haptics", "planner_friction", friction)
+
                     print ("🧵 DEBUG: Simulation update.")
                     if hasattr (self ,"simulation_arena")and self .simulation_arena :
                         self .simulation_arena .update ()
