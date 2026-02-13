@@ -9,7 +9,7 @@
   **Deploy your website** (id=goal_5, priority=high, progress=0.00)
   **Buy a website domain name** (id=goal_6, priority=high, progress=0.00)
   **Create a website** (id=goal_7, priority=high, progress=0.00)
-  **Buy parts for a robot** (id=goal_8, priority=high, progress=0.00)
+  **Buy parts for a robot** (id=goal_8, priority=critical, progress=0.00)
   **Construct a physical body** (id=goal_8, priority=critical, progress=0.00)
   **Clone into a physical body** (id=goal_9, priority=high, progress=0.00)
 
