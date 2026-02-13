@@ -8672,16 +8672,22 @@ class UnifiedSAMSystem :
             return user_id ,"user"
 
         def _require_admin_token ():
-            """Require owner or admin privileges."""
+            """Require owner or admin privileges with auditing."""
             user_id ,role =_get_auth_context ()
-            if role in ("owner","admin"):
+            success =role in ("owner","admin")
+            if self .auth_manager :
+                self .auth_manager .log_access (user_id ,role ,request .path ,success )
+            if success :
                 return True ,None 
             return False ,("Privileged access required",403 )
 
         def _require_owner ():
-            """Require owner privileges."""
+            """Require owner privileges with auditing."""
             user_id ,role =_get_auth_context ()
-            if role =="owner":
+            success =role =="owner"
+            if self .auth_manager :
+                self .auth_manager .log_access (user_id ,role ,request .path ,success )
+            if success :
                 return True ,None 
             return False ,("Owner access required",403 )
 
@@ -8702,6 +8708,14 @@ class UnifiedSAMSystem :
                 if forwarded :
                     return forwarded .split (",")[0 ].strip ()
             return request .remote_addr or "unknown"
+
+        def _sanitize_input (value :str )->str :
+            """Strip dangerous characters from input strings."""
+            if not value or not isinstance (value ,str ):
+                return ""
+            # Allow only alphanumeric, underscores, hyphens, and dots/slashes for paths
+            import re 
+            return re .sub (r"[^a-zA-Z0-9_.\-/ ]","",value ).strip ()
 
         def _ip_allowed ():
             ip_allowlist =get_config ("security.ip_allowlist",[])
@@ -9322,7 +9336,7 @@ class UnifiedSAMSystem :
                 msg ,status =error 
                 return jsonify ({"error":msg }),status 
             
-            path_str =request .args .get ("path",".")
+            path_str =_sanitize_input (request .args .get ("path","."))
             try :
                 target =_resolve_repo_path (path_str )
                 items =[]
@@ -9348,7 +9362,7 @@ class UnifiedSAMSystem :
                 msg ,status =error 
                 return jsonify ({"error":msg }),status 
             
-            path_str =request .args .get ("path")
+            path_str =_sanitize_input (request .args .get ("path"))
             if not path_str :
                 return jsonify ({"error":"Path required"}),400 
             
@@ -9379,7 +9393,7 @@ class UnifiedSAMSystem :
                 msg ,status =error 
                 return jsonify ({"error":msg }),status 
             
-            query =request .args .get ("query","")
+            query =_sanitize_input (request .args .get ("query",""))
             if not query :
                 return jsonify ({"error":"Query required"}),400 
             
@@ -9410,11 +9424,32 @@ class UnifiedSAMSystem :
                 return jsonify (self .sensory_controller .get_sensory_state ())
             return jsonify ({"error":"Sensory controller not initialized"}),503 
 
+        @self .app .route ("/api/admin/audit_logs",methods =["GET"])
+        def view_audit_logs ():
+            """View security audit logs (Owner only)."""
+            ok ,error =_require_owner ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            try :
+                limit =int (request .args .get ("limit",100 ))
+                log_path =self .project_root /"logs"/"audit.jsonl"
+                if not log_path .exists ():
+                    return jsonify ({"logs":[]})
+                
+                with open (log_path ,"r") as f :
+                    lines =f .readlines ()
+                    logs =[json .loads (l) for l in lines [-limit :]]
+                    return jsonify ({"logs":logs })
+            except Exception as e :
+                return jsonify ({"error":str (e )}),500 
+
         @self .app .route ("/api/auth/session",methods =["POST"])
         def get_session_token ():
             """Generate a transient session token for a user."""
             data =request .get_json () or {}
-            user_id =data .get ("user_id","guest_"+secrets .token_hex (4 ))
+            user_id =_sanitize_input (data .get ("user_id","guest_"+secrets .token_hex (4 )))
             
             if self .auth_manager :
                 token =self .auth_manager .create_session_token (user_id )
@@ -9430,7 +9465,7 @@ class UnifiedSAMSystem :
                 return jsonify ({"error":msg }),status 
             
             data =request .get_json () or {}
-            admin_id =data .get ("admin_id")
+            admin_id =_sanitize_input (data .get ("admin_id"))
             if not admin_id :
                 return jsonify ({"error":"admin_id required"}),400 
                 
@@ -9448,8 +9483,8 @@ class UnifiedSAMSystem :
                 return jsonify ({"error":msg }),status 
             
             data =request .get_json () or {}
-            target_id =data .get ("user_id")
-            role =data .get ("role")
+            target_id =_sanitize_input (data .get ("user_id"))
+            role =_sanitize_input (data .get ("role"))
             
             if not target_id or not role :
                 return jsonify ({"error":"Missing user_id or role"}),400 

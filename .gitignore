@@ -38,6 +38,7 @@ sam_data/sam_system.db
 sam_data/backups/
 !sam_data/backups/.gitkeep # If you want to keep the directory tracked
 sam_data/*.db
+sam_data/*.json
 !sam_data/sam_system.db # If you want to keep the DB tracked
 
 # C/C++ build artifacts
@@ -88,7 +89,6 @@ sam_data/*.db
 SAM_Code_Backups/
 # files created during runtime/temporary outputs
 *.cpython-*
-secrets/openai_key.txt
 secrets/
 .aider*
 
