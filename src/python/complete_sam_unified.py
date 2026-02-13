@@ -4042,10 +4042,10 @@ class MetaAgent:
             print("   ✅ Teacher-student-actor-critic validation achieved zero errors")
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
-            print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
             print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
             print("   📊 Final performance may still have some issues")
             return False
+        print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
 
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
