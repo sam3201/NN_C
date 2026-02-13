@@ -403,3 +403,4 @@
 {"ts": "2026-02-13T00:09:22.980274Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:09:25.959030Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:09:27.987298Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:30.962817Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
