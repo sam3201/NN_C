@@ -614,7 +614,7 @@ class FailureEvent :
         self .context =context or "runtime"
         self .research_notes =research_notes or ""
         self .message =message or ""
-        self .id =f"{error_type }_{int (sam_time_ref .sam_time_ref ()*1000 )}"
+        self .id =f"{error_type }_{int (sam_time_ref.time ()*1000 )}"
 
     def to_dict (self ):
         return {
@@ -899,7 +899,7 @@ class FaultLocalizerAgent :
 
             try :
                 mtime =os .path .getmtime (filepath )
-                hours_old =(sam_time_ref .sam_time_ref ()-mtime )/3600 
+                hours_old =(sam_time_ref.time ()-mtime )/3600 
 
                 # Exponential decay: more recent = more important
                 importance =max (
@@ -1098,7 +1098,7 @@ class FaultLocalizerAgent :
                     if file .endswith (".py"):
                         filepath =os .path .join (root ,file )
                         mtime =os .path .getmtime (filepath )
-                        if sam_time_ref .sam_time_ref ()-mtime <hours *3600 :
+                        if sam_time_ref.time ()-mtime <hours *3600 :
                             recent_files .append (
                             os .path .relpath (filepath ,self .system .project_root )
                             )
@@ -2365,7 +2365,7 @@ class MetaAgent :
         "memory_usage":mem_usage ,
         },
         "recent_improvements":len (self .improvements_applied [-10 :]),
-        "timestamp":sam_time_ref .sam_time_ref (),
+        "timestamp":sam_time_ref.time (),
         }
 
     def generate_system_improvements (self )->Dict [str ,Any ]:
@@ -2455,7 +2455,7 @@ class MetaAgent :
         "summary":"Generated improvement suggestions from live system health.",
         "improvement_phases":improvements ,
         "health":health ,
-        "timestamp":sam_time_ref .sam_time_ref (),
+        "timestamp":sam_time_ref.time (),
         }
 
     def ingest_learning_event (
@@ -2469,7 +2469,7 @@ class MetaAgent :
             "prompt":prompt ,
             "response":response ,
             "user":user or "user",
-            "ts":sam_time_ref .sam_time_ref (),
+            "ts":sam_time_ref.time (),
             }
             self .learning_log .append (record )
             self ._persist_learning_event (record )
@@ -2571,7 +2571,7 @@ class MetaAgent :
             summary_parts .append ("Recent conversation distilled.")
         summary =" | ".join (summary_parts )
         return {
-        "ts":sam_time_ref .sam_time_ref (),
+        "ts":sam_time_ref.time (),
         "summary":summary ,
         "rules":rules [:5 ],
         "topics":top_topics ,
@@ -2586,7 +2586,7 @@ class MetaAgent :
             return 
         self .distilled_memory .append (record )
         self ._persist_distilled_record (record )
-        self .last_distill_ts =record .get ("ts",sam_time_ref .sam_time_ref ())
+        self .last_distill_ts =record .get ("ts",sam_time_ref.time ())
         self .last_distilled =record .get ("summary","")
         self .learning_cycles +=1 
         self .system .log_event (
@@ -5462,7 +5462,7 @@ class UnifiedSAMSystem :
             personality ="frugal, optimization-focused, efficient"
 
             # Create unique ID and name
-        new_id =f"submodel_{int (sam_time_ref .sam_time_ref ())}_{random .randint (100 ,999 )}"
+        new_id =f"submodel_{int (sam_time_ref.time ())}_{random .randint (100 ,999 )}"
         new_name =f"SAM-{base_cfg ['name']}-{specialty .split ()[0 ]}"
 
         # Create config
@@ -5478,7 +5478,7 @@ class UnifiedSAMSystem :
         self .agent_configs [new_id ]=new_cfg 
         self .connected_agents [new_id ]={
         "config":new_cfg ,
-        "connected_at":sam_time_ref .sam_time_ref (),
+        "connected_at":sam_time_ref.time (),
         "message_count":0 ,
         "muted":False ,
         }
@@ -5560,7 +5560,7 @@ class UnifiedSAMSystem :
             # Fill remaining with small noise to prevent zero-gradient issues in compiler
         for i in range (53 ):
             if m [i ]==0 :
-                m [i ]=abs (math .sin (i +sam_time_ref .sam_time_ref ()/100.0 ))*0.01 
+                m [i ]=abs (math .sin (i +sam_time_ref.time ()/100.0 ))*0.01 
 
         return m 
 
@@ -5684,7 +5684,7 @@ class UnifiedSAMSystem :
             try :
                 sam_time_ref .sleep (5 )# Check every 5 seconds
 
-                current_time =sam_time_ref .sam_time_ref ()
+                current_time =sam_time_ref.time ()
                 restart_needed =False 
 
                 for pattern in watch_patterns :
@@ -5992,7 +5992,7 @@ class UnifiedSAMSystem :
     ):
         if not self .distill_writer :
             return 
-        message_id =f"chatbot:{int (sam_time_ref .sam_time_ref ()*1000 )}"
+        message_id =f"chatbot:{int (sam_time_ref.time ()*1000 )}"
         metadata ={
         "room_id":"chatbot",
         "room_name":"Dashboard Chat",
@@ -6000,7 +6000,7 @@ class UnifiedSAMSystem :
         "user_id":user .get ("id"),
         "user_name":user .get ("name"),
         "message_id":message_id ,
-        "timestamp":sam_time_ref .sam_time_ref (),
+        "timestamp":sam_time_ref.time (),
         "context":(context or [])[-10 :],
         "multi_agent":bool (getattr (self ,"chat_multi_agent",False )),
         "agents_max":int (getattr (self ,"chat_agents_max",3 )),
@@ -6108,16 +6108,16 @@ class UnifiedSAMSystem :
                 avg =recent_cal_avg ,
                 )
 
-        growth_idle =sam_time_ref .sam_time_ref ()-(
-        self .system_metrics .get ("last_growth_ts")or sam_time_ref .sam_time_ref ()
+        growth_idle =sam_time_ref.time ()-(
+        self .system_metrics .get ("last_growth_ts")or sam_time_ref.time ()
         )
         if growth_idle >300 :
             residual =max (residual ,0.25 )
             planner_friction =max (planner_friction ,0.25 )
             retrieval_entropy =max (retrieval_entropy ,0.25 )
 
-        activity_age =sam_time_ref .sam_time_ref ()-(
-        self .system_metrics .get ("last_activity")or sam_time_ref .sam_time_ref ()
+        activity_age =sam_time_ref.time ()-(
+        self .system_metrics .get ("last_activity")or sam_time_ref.time ()
         )
         latency =activity_age /1000.0 if activity_age >0 else 0.0 
 
@@ -6226,7 +6226,7 @@ class UnifiedSAMSystem :
                 self .system_metrics ["last_growth_lambda"]=lambda_val 
                 self .system_metrics ["last_growth_signals"]=dict (signals )
                 self .system_metrics ["last_growth_dominant"]=dominant 
-                self .system_metrics ["last_growth_signal_ts"]=sam_time_ref .sam_time_ref ()
+                self .system_metrics ["last_growth_signal_ts"]=sam_time_ref.time ()
                 primitive =sam_meta_controller_c .select_primitive (self .meta_controller )
 
                 # Retrieve and update growth diagnostics immediately after primitive selection
@@ -6242,11 +6242,11 @@ class UnifiedSAMSystem :
                 ]["growth_frozen"]
 
                 if primitive is None or primitive ==0 :
-                    self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref .sam_time_ref ()
+                    self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref.time ()
                     self .system_metrics ["last_growth_attempt_primitive"]=0 
                     self .system_metrics ["last_growth_attempt_result"]="no_primitive"
                 elif primitive is not None and primitive !=0 :
-                    self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref .sam_time_ref ()
+                    self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref.time ()
                     self .system_metrics ["last_growth_attempt_primitive"]=primitive 
                     applied =False 
                     if not self .meta_growth_freeze :
@@ -6267,7 +6267,7 @@ class UnifiedSAMSystem :
                             )
                             if gate_ok :
                                 self .system_metrics ["last_growth_ts"]=(
-                                sam_time_ref .sam_time_ref ()
+                                sam_time_ref.time ()
                                 )
                                 self .system_metrics ["last_growth_primitive"]=primitive 
                                 self .system_metrics ["last_growth_attempt_result"]=(
@@ -6577,7 +6577,7 @@ class UnifiedSAMSystem :
                 )
                 return False 
                 # Throttle to prevent repair loops
-            now =sam_time_ref .sam_time_ref ()
+            now =sam_time_ref.time ()
             last =getattr (self ,"_last_meta_repair",0 )
             if now -last <120 :
                 log_event (
@@ -7841,7 +7841,7 @@ class UnifiedSAMSystem :
             self .connected_agents ={
             "meta_agent":{
             "config":self .agent_configs ["meta_agent"],
-            "connected_at":sam_time_ref .sam_time_ref (),
+            "connected_at":sam_time_ref.time (),
             "message_count":0 ,
             "muted":False ,
             }
@@ -7857,13 +7857,13 @@ class UnifiedSAMSystem :
         if self .sam_available :
             self .connected_agents ["sam_alpha"]={
             "config":self .agent_configs ["sam_alpha"],
-            "connected_at":sam_time_ref .sam_time_ref (),
+            "connected_at":sam_time_ref.time (),
             "message_count":0 ,
             "muted":False ,
             }
             self .connected_agents ["sam_beta"]={
             "config":self .agent_configs ["sam_beta"],
-            "connected_at":sam_time_ref .sam_time_ref (),
+            "connected_at":sam_time_ref.time (),
             "message_count":0 ,
             "muted":False ,
             }
@@ -7889,7 +7889,7 @@ class UnifiedSAMSystem :
                 if agent_id in self .agent_configs and connected_count <max_ollama :
                     self .connected_agents [agent_id ]={
                     "config":self .agent_configs [agent_id ],
-                    "connected_at":sam_time_ref .sam_time_ref (),
+                    "connected_at":sam_time_ref.time (),
                     "message_count":0 ,
                     "muted":False ,
                     }
@@ -7923,7 +7923,7 @@ class UnifiedSAMSystem :
                     self .agent_configs [agent_id ]["status"]="available"
                     self .connected_agents [agent_id ]={
                     "config":self .agent_configs [agent_id ],
-                    "connected_at":sam_time_ref .sam_time_ref (),
+                    "connected_at":sam_time_ref.time (),
                     "message_count":0 ,
                     "muted":False ,
                     }
@@ -7953,7 +7953,7 @@ class UnifiedSAMSystem :
             if agent_id in self .agent_configs :
                 self .connected_agents [agent_id ]={
                 "config":self .agent_configs [agent_id ],
-                "connected_at":sam_time_ref .sam_time_ref (),
+                "connected_at":sam_time_ref.time (),
                 "message_count":0 ,
                 "muted":False ,
                 }
@@ -9309,7 +9309,7 @@ class UnifiedSAMSystem :
             return jsonify (
             {
             "status":"ok",
-            "timestamp":sam_time_ref .sam_time_ref (),
+            "timestamp":sam_time_ref.time (),
             "c_core":self .system_metrics .get ("c_core_status","unknown"),
             "python_orchestration":self .system_metrics .get (
             "python_orchestration_status","unknown"
@@ -9930,7 +9930,7 @@ class UnifiedSAMSystem :
                 "success":result .success ,
                 "message":result .message ,
                 "details":result .details ,
-                "timestamp":sam_time_ref .sam_time_ref (),
+                "timestamp":sam_time_ref.time (),
                 }
                 status =200 if result .success else 500 
                 return jsonify (self .backup_last_result ),status 
@@ -11537,7 +11537,7 @@ sam@terminal:~$
             self .connected_users [user_id ]={
             "id":user_id ,
             "name":f"User-{len (self .connected_users )+1 }",
-            "joined_at":sam_time_ref .sam_time_ref (),
+            "joined_at":sam_time_ref.time (),
             "current_room":None ,
             "sid":user_id ,
             }
@@ -11604,7 +11604,7 @@ sam@terminal:~$
                 self .conversation_rooms [room_id ]={
                 "id":room_id ,
                 "name":data .get ("room_name",f"Room-{room_id }"),
-                "created_at":sam_time_ref .sam_time_ref (),
+                "created_at":sam_time_ref.time (),
                 "users":[],
                 "messages":[],
                 "agent_type":agent_type ,
@@ -11692,11 +11692,11 @@ sam@terminal:~$
 
             # Store user message
             message_data ={
-            "id":f"msg_{int (sam_time_ref .sam_time_ref ()*1000 )}",
+            "id":f"msg_{int (sam_time_ref.time ()*1000 )}",
             "user_id":user_id ,
             "user_name":user .get ("name","Unknown"),
             "message":message ,
-            "timestamp":sam_time_ref .sam_time_ref (),
+            "timestamp":sam_time_ref.time (),
             "message_type":"user",
             }
 
@@ -11716,11 +11716,11 @@ sam@terminal:~$
                     cfg ,message ,conversation_context 
                     )
                     response_data ={
-                    "id":f"msg_{int (sam_time_ref .sam_time_ref ()*1000 )+random .randint (1 ,999 )}",
+                    "id":f"msg_{int (sam_time_ref.time ()*1000 )+random .randint (1 ,999 )}",
                     "user_id":"sam_agent",
                     "user_name":cfg .get ("name")or cfg .get ("id")or "Agent",
                     "message":local_reply ,
-                    "timestamp":sam_time_ref .sam_time_ref (),
+                    "timestamp":sam_time_ref.time (),
                     "message_type":"agent",
                     "agent_type":(cfg .get ("type")or cfg .get ("id")or "agent"),
                     "capabilities":cfg .get ("capabilities",[]),
@@ -11751,7 +11751,7 @@ sam@terminal:~$
                 )
 
                 # Simulate typing delay
-                sam_time_ref .sleep (1 +(sam_time_ref .sam_time_ref ()%2 ))# 1-3 seconds
+                sam_time_ref .sleep (1 +(sam_time_ref.time ()%2 ))# 1-3 seconds
 
                 # Stop typing indicator
                 self .socketio .start_background_task (
@@ -11781,11 +11781,11 @@ sam@terminal:~$
                         )
                 except Exception as exc :
                     error_data ={
-                    "id":f"msg_{int (sam_time_ref .sam_time_ref ()*1000 )+1 }",
+                    "id":f"msg_{int (sam_time_ref.time ()*1000 )+1 }",
                     "user_id":"system_error",
                     "user_name":"System",
                     "message":f"Teacher pool error: {exc }",
-                    "timestamp":sam_time_ref .sam_time_ref (),
+                    "timestamp":sam_time_ref.time (),
                     "message_type":"error",
                     }
                     room ["messages"].append (error_data )
@@ -11795,11 +11795,11 @@ sam@terminal:~$
                     return 
 
                 response_data ={
-                "id":f"msg_{int (sam_time_ref .sam_time_ref ()*1000 )+1 }",
+                "id":f"msg_{int (sam_time_ref.time ()*1000 )+1 }",
                 "user_id":"sam_agent",
                 "user_name":enhanced_response ["agent_name"],
                 "message":enhanced_response ["response"],
-                "timestamp":sam_time_ref .sam_time_ref (),
+                "timestamp":sam_time_ref.time (),
                 "message_type":"agent",
                 "agent_type":enhanced_response ["agent_type"],
                 "capabilities":enhanced_response .get ("capabilities",[]),
@@ -11942,7 +11942,7 @@ sam@terminal:~$
 
         self .agent_statuses [agent_type ]={
         "status":status ,# online, idle, responding, disconnected
-        "last_active":sam_time_ref .sam_time_ref (),
+        "last_active":sam_time_ref.time (),
         "current_task":status ,
         }
 
@@ -11953,7 +11953,7 @@ sam@terminal:~$
             {
             "agent_type":agent_type ,
             "status":status ,
-            "timestamp":sam_time_ref .sam_time_ref (),
+            "timestamp":sam_time_ref.time (),
             },
             )
 
@@ -11983,7 +11983,7 @@ sam@terminal:~$
                 statuses [agent_id ]={
                 "name":agent_config ["name"],
                 "status":connection_status ,
-                "last_active":sam_time_ref .sam_time_ref (),
+                "last_active":sam_time_ref.time (),
                 "current_task":"idle",
                 }
 
@@ -12021,7 +12021,7 @@ sam@terminal:~$
         "project_manager",
         ]
         if priority :
-            offset =int (sam_time_ref .sam_time_ref ())%len (priority )
+            offset =int (sam_time_ref.time ())%len (priority )
             rotated =priority [offset :]+priority [:offset ]
         else :
             rotated =[]
@@ -12378,7 +12378,7 @@ sam@terminal:~$
             "prompt":prompt ,
             "response":response ,
             "user":user .get ("name")or user .get ("id"),
-            "ts":sam_time_ref .sam_time_ref (),
+            "ts":sam_time_ref.time (),
             }
             )
         if getattr (self ,"distill_dashboard_enabled",False ):
@@ -12450,8 +12450,8 @@ sam@terminal:~$
                     "name":(context or {}).get ("user_name","User"),
                     }
                     message_data ={
-                    "id":f"chatbot:{int (sam_time_ref .sam_time_ref ()*1000 )}",
-                    "timestamp":sam_time_ref .sam_time_ref (),
+                    "id":f"chatbot:{int (sam_time_ref.time ()*1000 )}",
+                    "timestamp":sam_time_ref.time (),
                     "user_id":user ["id"],
                     "user_name":user ["name"],
                     }
@@ -12623,7 +12623,7 @@ sam@terminal:~$
                 if agent_config ["status"]=="available":
                     self .connected_agents [agent_id ]={
                     "config":agent_config ,
-                    "connected_at":sam_time_ref .sam_time_ref (),
+                    "connected_at":sam_time_ref.time (),
                     "message_count":0 ,
                     "muted":False ,
                     }
@@ -12656,7 +12656,7 @@ sam@terminal:~$
                 base_agent =self .connected_agents [base_agent_id ]["config"]
 
                 # Generate unique ID for new agent
-                clone_id =f"{base_agent_id }_clone_{int (sam_time_ref .sam_time_ref ())}"
+                clone_id =f"{base_agent_id }_clone_{int (sam_time_ref.time ())}"
                 clone_name =custom_name or f"{base_agent ['name']}-Clone"
 
                 # Create cloned agent configuration
@@ -12678,7 +12678,7 @@ sam@terminal:~$
                 self .agent_configs [clone_id ]=cloned_agent 
                 self .connected_agents [clone_id ]={
                 "config":cloned_agent ,
-                "connected_at":sam_time_ref .sam_time_ref (),
+                "connected_at":sam_time_ref.time (),
                 "message_count":0 ,
                 "muted":False ,
                 }
@@ -12697,7 +12697,7 @@ sam@terminal:~$
             )
 
             # Generate unique ID
-            spawn_id =f"spawn_{agent_type }_{int (sam_time_ref .sam_time_ref ())}"
+            spawn_id =f"spawn_{agent_type }_{int (sam_time_ref.time ())}"
 
             # Determine provider and capabilities based on type
             if agent_type .lower ()in ["sam","neural"]:
@@ -12748,7 +12748,7 @@ sam@terminal:~$
             self .agent_configs [spawn_id ]=spawned_agent 
             self .connected_agents [spawn_id ]={
             "config":spawned_agent ,
-            "connected_at":sam_time_ref .sam_time_ref (),
+            "connected_at":sam_time_ref.time (),
             "message_count":0 ,
             "muted":False ,
             }
@@ -15865,7 +15865,7 @@ sam@terminal:~$
         "approved":approved ,
         "quorum":f"{approve_count }/3",
         "votes":votes ,
-        "timestamp":sam_time_ref .sam_time_ref (),
+        "timestamp":sam_time_ref.time (),
         }
 
         log_event (
@@ -15990,7 +15990,7 @@ sam@terminal:~$
                     print ("🧵 DEBUG: Growth check.")
                     if not hasattr (self ,"_last_growth_trigger"):
                         self ._last_growth_trigger =0 
-                    _current_time =sam_time_ref .sam_time_ref ()
+                    _current_time =sam_time_ref.time ()
                     if (_current_time -self ._last_growth_trigger >180 ):
                         self ._trigger_growth_system ()
                         self ._last_growth_trigger =_current_time 
@@ -16014,7 +16014,7 @@ sam@terminal:~$
 
                     print ("🧵 DEBUG: Finance log.")
                     if self .finance_log_interval_s >0 :
-                        _now_ts =sam_time_ref .sam_time_ref ()
+                        _now_ts =sam_time_ref.time ()
                         if (_now_ts -last_finance_log )>=self .finance_log_interval_s :
                             self ._log_finance_snapshot ()
                             last_finance_log =_now_ts 
@@ -16042,14 +16042,14 @@ sam@terminal:~$
             delay =max (0 ,int (getattr (self ,"two_phase_delay_s",5 )))
             if delay :
                 sam_time_ref .sleep (delay )
-            deadline =sam_time_ref .sam_time_ref ()+max (
+            deadline =sam_time_ref.time ()+max (
             10 ,int (getattr (self ,"two_phase_timeout_s",180 ))
             )
             while not is_shutting_down ():
                 if self ._can_promote_to_full_boot ():
                     self ._promote_to_full_boot ()
                     return 
-                if sam_time_ref .sam_time_ref ()>=deadline :
+                if sam_time_ref.time ()>=deadline :
                     print (
                     "⚠️ Two-phase promotion timed out - staying in meta-only mode",
                     flush =True ,
@@ -16183,7 +16183,7 @@ sam@terminal:~$
             if not hasattr (self ,"goal_manager"):
                 return 
 
-            current_time =sam_time_ref .sam_time_ref ()
+            current_time =sam_time_ref.time ()
             if not hasattr (self ,"_last_goal_generation"):
                 self ._last_goal_generation =0 
 
@@ -16390,7 +16390,7 @@ sam@terminal:~$
             if not hasattr (self ,"conversation_rooms")or not self .socketio_available :
                 return 
 
-            current_time =sam_time_ref .sam_time_ref ()
+            current_time =sam_time_ref.time ()
             if not hasattr (self ,"_last_convo_gen"):
                 self ._last_convo_gen =0 
 
@@ -16471,7 +16471,7 @@ sam@terminal:~$
                 # Check if growth is frozen
             if getattr (self ,"meta_growth_freeze",False ):
                 print ("🧊 Growth system frozen - skipping trigger")
-                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref .sam_time_ref ()
+                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref.time ()
                 self .system_metrics ["last_growth_attempt_primitive"]=0 
                 self .system_metrics ["last_growth_attempt_result"]="frozen"
                 self .system_metrics ["last_growth_reason"]="growth_freeze_enabled"
@@ -16496,13 +16496,13 @@ sam@terminal:~$
             self .system_metrics ["last_growth_lambda"]=lambda_val 
             self .system_metrics ["last_growth_signals"]=dict (signals )
             self .system_metrics ["last_growth_dominant"]=dominant 
-            self .system_metrics ["last_growth_signal_ts"]=sam_time_ref .sam_time_ref ()
+            self .system_metrics ["last_growth_signal_ts"]=sam_time_ref.time ()
 
             # Select and apply growth primitive
             primitive =sam_meta_controller_c .select_primitive (self .meta_controller )
 
             if primitive and primitive !=0 :
-                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref .sam_time_ref ()
+                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref.time ()
                 self .system_metrics ["last_growth_attempt_primitive"]=primitive 
                 self .system_metrics ["last_growth_reason"]="primitive_selected"
                 print (f"🌱 Growth primitive selected: {primitive }")
@@ -16522,7 +16522,7 @@ sam@terminal:~$
                         sam_meta_controller_c .record_growth_outcome (
                         self .meta_controller ,primitive ,True 
                         )
-                        self .system_metrics ["last_growth_ts"]=sam_time_ref .sam_time_ref ()
+                        self .system_metrics ["last_growth_ts"]=sam_time_ref.time ()
                         self .system_metrics ["last_growth_primitive"]=primitive 
                         self .system_metrics ["last_growth_attempt_result"]="applied"
                         self .system_metrics ["last_growth_reason"]=(
@@ -16545,7 +16545,7 @@ sam@terminal:~$
                     self .system_metrics ["last_growth_reason"]="primitive_apply_failed"
                     print (f"❌ Failed to apply growth primitive: {primitive }")
             else :
-                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref .sam_time_ref ()
+                self .system_metrics ["last_growth_attempt_ts"]=sam_time_ref.time ()
                 self .system_metrics ["last_growth_attempt_primitive"]=0 
                 self .system_metrics ["last_growth_attempt_result"]="no_primitive"
                 self .system_metrics ["last_growth_reason"]="no_primitive_selected"
@@ -16626,7 +16626,7 @@ sam@terminal:~$
     def _demonstrate_capabilities (self ):
         """Autonomously explore and test system capabilities based on active goals (Phase 5.3)"""
         try :
-            current_time =sam_time_ref .sam_time_ref ()
+            current_time =sam_time_ref.time ()
             if not hasattr (self ,"_last_autonomous_test"):
                 self ._last_autonomous_test =0.0 
 
@@ -16685,7 +16685,7 @@ sam@terminal:~$
     def _agent_to_agent_communication (self ):
         """Enable agent-to-agent communication visible in chat interface"""
         try :
-            current_time =sam_time_ref .sam_time_ref ()
+            current_time =sam_time_ref.time ()
             # Ensure default room exists for messages
             self ._ensure_default_chat_ready ()
 
@@ -16749,11 +16749,11 @@ sam@terminal:~$
                     if room .get ("users"):# Room has active users
                     # Create agent-to-agent message
                         message_data ={
-                        "id":f"msg_{int (sam_time_ref .sam_time_ref ()*1000 )}_agent_comm",
+                        "id":f"msg_{int (sam_time_ref.time ()*1000 )}_agent_comm",
                         "user_id":sender_agent ,
                         "user_name":f"🤖 {self .connected_agents [sender_agent ]['config']['name']}",
                         "message":f"💬 *to {self .connected_agents [receiver_agent ]['config']['name']}*: {agent_message }",
-                        "timestamp":sam_time_ref .sam_time_ref (),
+                        "timestamp":sam_time_ref.time (),
                         "message_type":"agent_communication",
                         "agent_sender":sender_agent ,
                         "agent_receiver":receiver_agent ,
@@ -16786,7 +16786,7 @@ sam@terminal:~$
                 self .connected_users [user_id ]={
                 "id":user_id ,
                 "name":user_name ,
-                "connected_at":sam_time_ref .sam_time_ref (),
+                "connected_at":sam_time_ref.time (),
                 "current_room":None ,
                 }
             if room_id not in self .conversation_rooms :
@@ -16859,7 +16859,7 @@ sam@terminal:~$
         "quantum computing applications",
         ]
 
-        topic =research_topics [int (sam_time_ref .sam_time_ref ())%len (research_topics )]
+        topic =research_topics [int (sam_time_ref.time ())%len (research_topics )]
         result =specialized_agents_c .research (f"Latest developments in {topic }")
         score ,reason =self ._extract_score (result )
         suffix =f"; reason: {reason }"if reason else ""
@@ -16899,7 +16899,7 @@ sam@terminal:~$
         "construct a database schema",
         ]
 
-        task =code_tasks [int (sam_time_ref .sam_time_ref ()/30 )%len (code_tasks )]
+        task =code_tasks [int (sam_time_ref.time ()/30 )%len (code_tasks )]
         result =specialized_agents_c .generate_code (f"Create {task } in Python")
         print (f"💻 [DEMO] Autonomous code generation: {task [:30 ]}...",flush =True )
 
@@ -16907,7 +16907,7 @@ sam@terminal:~$
         """Demonstrate financial analysis capabilities autonomously"""
         markets =["cryptocurrency","commodities","forex","options","bonds"]
         market =markets [
-        int (sam_time_ref .sam_time_ref ()/120 )%len (markets )
+        int (sam_time_ref.time ()/120 )%len (markets )
         ]# Different timing than others
 
         result =specialized_agents_c .analyze_market (
@@ -17237,7 +17237,7 @@ sam@terminal:~$
                 self .connected_agents ={
                 "meta_agent":{
                 "config":meta_cfg ,
-                "connected_at":sam_time_ref .sam_time_ref (),
+                "connected_at":sam_time_ref.time (),
                 "message_count":0 ,
                 "muted":False ,
                 }
@@ -17482,7 +17482,7 @@ class RAMAwareModelSwitcher :
         "current_ram_usage":self .current_ram_usage ,
         "current_tier":self .current_tier ,
         "thresholds":self .model_switch_thresholds ,
-        "last_check":sam_time_ref .sam_time_ref (),
+        "last_check":sam_time_ref.time (),
         }
 
 
@@ -17530,7 +17530,7 @@ class ConversationDiversityManager :
 
     def _check_response_patterns (self ):
         """Check for repetitive response patterns"""
-        current_time =sam_time_ref .sam_time_ref ()
+        current_time =sam_time_ref.time ()
         window_start =current_time -(self .response_window_minutes *60 )
 
         # Count MetaAgent responses in recent window
@@ -17653,7 +17653,7 @@ class ConversationDiversityManager :
             # Add new response
         response_entry ={
         "content":response_content ,
-        "timestamp":sam_time_ref .sam_time_ref (),
+        "timestamp":sam_time_ref.time (),
         "type":response_type ,
         }
 
@@ -17667,7 +17667,7 @@ class ConversationDiversityManager :
 
     def _cleanup_old_history (self ):
         """Clean up old response history"""
-        cutoff_time =sam_time_ref .sam_time_ref ()-(24 *60 *60 )# 24 hours ago
+        cutoff_time =sam_time_ref.time ()-(24 *60 *60 )# 24 hours ago
 
         for agent_id in self .response_history :
             self .response_history [agent_id ]=[
@@ -17776,7 +17776,7 @@ class VirtualEnvironmentsManager :
 
         try :
         # Create unique container name
-            container_name =f"sam_container_{int (sam_time_ref .sam_time_ref ())}"
+            container_name =f"sam_container_{int (sam_time_ref.time ())}"
 
             # Build docker run command
             docker_cmd =[
@@ -17806,7 +17806,7 @@ class VirtualEnvironmentsManager :
 
             # Track container
             self .active_containers [container_name ]={
-            "start_time":sam_time_ref .sam_time_ref (),
+            "start_time":sam_time_ref.time (),
             "command":command ,
             "status":"completed",
             }
@@ -17960,13 +17960,13 @@ exec(open('{script_path }').read())
 
         result ="🐳 Active Containers:\\n"
         for name ,info in self .active_containers .items ():
-            runtime =sam_time_ref .sam_time_ref ()-info ["start_time"]
+            runtime =sam_time_ref.time ()-info ["start_time"]
             result +=f"• {name }: {info ['status']} ({runtime :.1f}s)\\n"
         return result 
 
     def cleanup_containers (self ):
         """Clean up old containers"""
-        current_time =sam_time_ref .sam_time_ref ()
+        current_time =sam_time_ref.time ()
         to_remove =[]
 
         for name ,info in self .active_containers .items ():
