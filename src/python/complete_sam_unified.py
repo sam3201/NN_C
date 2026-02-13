@@ -4798,6 +4798,12 @@ class UnifiedSAMSystem :
         self .google_drive =None 
         self .google_drive_available =False 
         self .require_self_mod =os .getenv ("SAM_REQUIRE_SELF_MOD","1")=="1"
+
+        # User Management & RBAC (Phase 5.3)
+        self .users_path =self .project_root /"sam_data"/"users.json"
+        self .users ={}
+        self ._load_users ()
+        self ._ensure_owner ()
         self .kill_switch_enabled =os .getenv ("SAM_KILL_SWITCH_ENABLED","1")=="1"
         self .invariants_disabled =os .getenv ("SAM_INVARIANTS_DISABLED","0")=="1"
         self .allow_unsafe_patches =os .getenv ("SAM_ALLOW_UNSAFE_PATCHES","0")=="1"
@@ -5268,6 +5274,53 @@ class UnifiedSAMSystem :
 
         # Initialize internal hot-reload watchdog if enabled
         self ._init_internal_watchdog ()
+
+    def _load_users (self ):
+        """Load users and roles from storage."""
+        if self .users_path .exists ():
+            try :
+                self .users =json .loads (self .users_path .read_text ())
+            except Exception as e :
+                print (f"⚠️ Failed to load users: {e }")
+                self .users ={}
+
+    def _save_users (self ):
+        """Save users and roles to storage."""
+        try :
+            self .users_path .write_text (json .dumps (self .users ,indent =2 ))
+        except Exception as e :
+            print (f"⚠️ Failed to save users: {e }")
+
+    def _ensure_owner (self ):
+        """Ensure the owner exists in the user database."""
+        # The owner is the primary user who starts the system
+        # For local deployment, we assume the initial 'system' or configured owner
+        owner_id =os .getenv ("SAM_OWNER_ID","owner_1")
+        if owner_id not in self .users :
+            self .users [owner_id ]={"role":"owner","name":"System Owner"}
+            self ._save_users ()
+            print (f"👑 Owner recognized: {owner_id }")
+
+    def get_user_role (self ,user_id :str )->str :
+        """Return the role of a given user ID."""
+        if user_id in self .users :
+            return self .users [user_id ].get ("role","user")
+        return "user"
+
+    def set_user_role (self ,caller_id :str ,target_id :str ,role :str )->bool :
+        """Set a user's role. Only 'owner' can set 'admin' or 'owner'."""
+        if self .get_user_role (caller_id )!="owner":
+            return False 
+        
+        if role not in ("owner","admin","user"):
+            return False 
+            
+        if target_id not in self .users :
+            self .users [target_id ]={"name":f"User {target_id }"}
+            
+        self .users [target_id ]["role"]=role 
+        self ._save_users ()
+        return True 
 
     def _get_growth_diagnostics (self )->Dict [str ,Any ]:
         """
@@ -8608,37 +8661,43 @@ class UnifiedSAMSystem :
 
             return decorated_function 
 
-        def _require_admin_token ():
-        # Require authenticated admin session
-            if not session .get ("user_email"):
-                return False ,("Login required",401 )
-            if not session .get ("is_admin"):
-                return False ,("Admin session required",403 )
-
-                # Check email allowlist if configured
-            admin_emails_allowlist =get_config ("security.admin_emails_allowlist",[])
-            if admin_emails_allowlist :
-                user_email =session .get ("user_email")
-                if not user_email or user_email not in admin_emails_allowlist :
-                    return False ,("Access denied: Email not in allowlist",403 )
-
+        def _get_auth_context ():
+            """Determine the current user and their role."""
+            user_id =request .headers .get ("X-SAM-USER-ID","anonymous")
+            
+            # Check for admin token first
             token =os .getenv ("SAM_ADMIN_TOKEN")or os .getenv ("SAM_CODE_MODIFY_TOKEN")
-            if not token :
-                SAM_LOG_WARN (
-                "⚠️ Admin token security bypass: No SAM_ADMIN_TOKEN configured!"
-                )
-                return True ,None 
             auth_header =request .headers .get ("Authorization","")
             candidate =None 
             if auth_header .startswith ("Bearer "):
                 candidate =auth_header .split (" ",1 )[1 ].strip ()
             if not candidate :
-                candidate =request .headers .get (
-                "X-SAM-ADMIN-TOKEN"
-                )or request .args .get ("token")
-            if candidate !=token :
-                return False ,("Unauthorized",403 )
-            return True ,None 
+                candidate =request .headers .get ("X-SAM-ADMIN-TOKEN")or request .args .get ("token")
+            
+            if candidate and token and candidate ==token :
+                # If they have the admin token, check if they are the owner
+                owner_id =os .getenv ("SAM_OWNER_ID","owner_1")
+                if user_id ==owner_id :
+                    return user_id ,"owner"
+                return user_id ,"admin"
+                
+            # If no valid token, check persistent user database
+            role =self .get_user_role (user_id )
+            return user_id ,role 
+
+        def _require_admin_token ():
+            """Require owner or admin privileges."""
+            user_id ,role =_get_auth_context ()
+            if role in ("owner","admin"):
+                return True ,None 
+            return False ,("Privileged access required",403 )
+
+        def _require_owner ():
+            """Require owner privileges."""
+            user_id ,role =_get_auth_context ()
+            if role =="owner":
+                return True ,None 
+            return False ,("Owner access required",403 )
 
         def _resolve_repo_path (path_value :str )->Path :
             project_root =Path (self .project_root ).resolve ()
@@ -9234,12 +9293,25 @@ class UnifiedSAMSystem :
             "sam_available":bool (getattr (self ,"sam_available",False )),
             "ollama_available":bool (getattr (self ,"ollama_available",False )),
             "active_agents":len (getattr (self ,"connected_agents",{})or {}),
-            "survival_score":getattr (
-            self .survival_agent ,"survival_score",0.0 
-            )
-            if self .survival_agent 
-            else 0.0 ,
-            "finance":self ._collect_finance_summary (),
+            survival_score = (getattr (self .survival_agent ,"survival_score",0.0 ) if self .survival_agent else 0.0 )
+            
+            # RBAC for finance data
+            user_id ,role =_get_auth_context ()
+            finance_data =self ._collect_finance_summary () if role in ("owner","admin") else {"status":"restricted"}
+            
+            return jsonify (
+            {
+            "system":"SAM-D Unified Complete System",
+            "status":"active",
+            "c_core":self .system_metrics ["c_core_status"],
+            "python_orchestration":self .system_metrics [
+            "python_orchestration_status"
+            ],
+            "sam_available":bool (getattr (self ,"sam_available",False )),
+            "ollama_available":bool (getattr (self ,"ollama_available",False )),
+            "active_agents":len (getattr (self ,"connected_agents",{})or {}),
+            "survival_score":survival_score ,
+            "finance":finance_data ,
             "kill_switch_enabled":bool (
             getattr (self ,"kill_switch_enabled",False )
             ),
@@ -9266,6 +9338,27 @@ class UnifiedSAMSystem :
             "timestamp":sam_datetime_ref .now ().isoformat (),
             }
             )
+
+        @self .app .route ("/api/admin/roles",methods =["POST"])
+        def manage_roles ():
+            """Assign roles to users (Owner only)."""
+            ok ,error =_require_owner ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            data =request .get_json () or {}
+            caller_id =request .headers .get ("X-SAM-USER-ID")
+            target_id =data .get ("user_id")
+            role =data .get ("role")
+            
+            if not target_id or not role :
+                return jsonify ({"error":"Missing user_id or role"}),400 
+                
+            if self .set_user_role (caller_id ,target_id ,role ):
+                return jsonify ({"success":True ,"user_id":target_id ,"role":role })
+            else :
+                return jsonify ({"error":"Failed to set role or unauthorized"}),403 
 
         if getattr (self ,"kill_switch_enabled",False ):
 
@@ -11015,6 +11108,10 @@ class UnifiedSAMSystem :
         @self .app .route ("/api/finance/summary")
         def finance_summary ():
             """Combined finance summary (revenue + banking)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
             try :
                 return jsonify (self ._collect_finance_summary ())
             except Exception as e :
@@ -11411,7 +11508,7 @@ class UnifiedSAMSystem :
                 <div class="dot yellow"></div>
                 <div class="dot green"></div>
             </div>
-            <div class="terminal-title">SAM Terminal v2.0</div>
+            <div class="terminal-title">SAM Terminal v5.0.0 (ΨΔ•Ω-Core Recursive)</div>
         </div>
 
         <div class="terminal-output" id="terminalOutput">

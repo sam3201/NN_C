@@ -615,7 +615,7 @@ SAM-D Core (sam_cores.py)
   Control: 0.453
   Self-awareness: 0.300
   Introspection patterns: 0
-  Version: 2.0
+  Version: 5.0.0 (ΨΔ•Ω-Core Recursive)
   Phase: 2
   K: 0.97
   All systems operational!

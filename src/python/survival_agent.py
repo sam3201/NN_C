@@ -1,5 +1,5 @@
 # SAM Survival Agent Module
-# Basic survival agent functionality for SAM 2.0 AGI
+# Basic survival agent functionality for SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)
 
 SURVIVAL_PROMPT = """
 You are the SAM Survival Agent. Your role is to ensure the survival and continued operation of the SAM AGI system.

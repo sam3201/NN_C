@@ -1,5 +1,5 @@
 # SAM Circuit Breaker Module
-# Circuit breaker pattern implementation for SAM 2.0 AGI
+# Circuit breaker pattern implementation for SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)
 
 import time as sam_time_ref
 import threading

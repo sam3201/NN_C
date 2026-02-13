@@ -595,7 +595,7 @@ class MetaObserver:
         self.rng = np.random.default_rng(seed)
         self.self_model = {
             'identity': 'SAM-D AGI',
-            'version': '2.0',
+            'version': '5.0.0 (ΨΔ•Ω-Core Recursive)',
             'phase': 3,
             'purpose': 'Self-referential meta-learning and growth'
         }
@@ -849,7 +849,7 @@ class VersionalityTracker:
             'components': ['Id/Ego/Superego', 'Emotion', 'Wisdom'],
             'timestamp': 0
         }]
-        self.current_version = '2.0'
+        self.current_version = '5.0.0 (ΨΔ•Ω-Core Recursive)'
         self.capability_matrix = {
             'reasoning': 0.7,
             'learning': 0.6,

@@ -1,5 +1,5 @@
 # SAM Goal Management Module
-# Goal management and task coordination for SAM 2.0 AGI
+# Goal management and task coordination for SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)
 
 import time as sam_time_ref
 import re

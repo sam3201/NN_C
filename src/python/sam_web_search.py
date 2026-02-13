@@ -53,7 +53,7 @@ def search_web_with_sam(query: str, save_to_drive: bool = False, max_results: in
         return {"query": query, "results": [], "source": "duckduckgo", "timestamp": sam_time_ref.time()}
 
     headers = {
-        "User-Agent": "SAM/2.0 (web search)"
+        "User-Agent": "SAM/5.0.0 (web search)"
     }
     params = {"q": query}
     response = requests.get("https://duckduckgo.com/html/", params=params, headers=headers, timeout=20)

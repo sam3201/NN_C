@@ -1,5 +1,5 @@
 # SAM Concurrent Executor Module
-# Concurrent task execution for SAM 2.0 AGI
+# Concurrent task execution for SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)
 
 import threading
 import time as sam_time_ref
