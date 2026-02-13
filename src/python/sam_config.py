@@ -35,6 +35,12 @@ config = {
     # Integration Settings
     'integrations': {
         'ollama': {'enabled': True, 'endpoint': 'http://localhost:11434'},
+        'kimi': {
+            'enabled': True, 
+            'endpoint': os.getenv('KIMI_ENDPOINT', 'https://api.moonshot.cn/v1'),
+            'api_key': os.getenv('KIMI_API_KEY', ''),
+            'model': os.getenv('KIMI_MODEL', 'kimi-k2.5-flash')
+        },
         'gmail': {'enabled': False},  # Requires API key
         'github': {'enabled': True},  # Read-only without token
         'google_drive': {

@@ -15,16 +15,30 @@
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
       "enabled": true
+    },
+    "openclaw-webhook": {
+      "type": "local",
+      "command": ["python3", "-m", "automation_framework.python.webhook_server"],
+      "enabled": true,
+      "port": 8765
     }
   },
   "tools": {
     "context7": true,
     "github-search": true,
     "filesystem": true,
-    "skill": true
+    "skill": true,
+    "openclaw": true
   },
   "skills": {
     "*": "allow"
+  },
+  "webhook": {
+    "openclaw": {
+      "url": "http://localhost:8765/webhook",
+      "auth_token": "${OPENCLAW_WEBHOOK_TOKEN}",
+      "retry_count": 3,
+      "timeout_seconds": 30
+    }
   }
 }
-

@@ -44,8 +44,22 @@ def main() -> int:
     os.environ.setdefault("SAM_STRICT_LOCAL_ONLY", "1")
 
     os.environ.setdefault("SAM_PROVIDER_AUTO_SWITCH", "1")
+    
+    # Check for kimi configuration
+    use_kimi = os.environ.get("SAM_USE_KIMI", "0") == "1"
+    kimi_api_key = os.environ.get("KIMI_API_KEY", "")
+    
     strict_local_only = os.environ.get("SAM_STRICT_LOCAL_ONLY", "0") == "1"
-    if strict_local_only:
+    
+    if use_kimi and kimi_api_key:
+        # Use Kimi as primary model (OpenAI-compatible API)
+        os.environ["SAM_POLICY_PROVIDER_PRIMARY"] = "kimi:kimi-k2.5-flash"
+        os.environ["SAM_POLICY_PROVIDER_FALLBACK"] = "kimi:kimi-k2.5-flash"
+        os.environ["SAM_TEACHER_POOL_PRIMARY"] = "kimi:kimi-k2.5-flash"
+        os.environ["SAM_TEACHER_POOL_FALLBACK"] = "kimi:kimi-k2.5-flash"
+        os.environ["SAM_CHAT_PROVIDER"] = "kimi:kimi-k2.5-flash"
+        print("[Kimi] Using Kimi K2.5 as primary model")
+    elif strict_local_only:
         local_spec = "local:rules"
         os.environ["SAM_POLICY_PROVIDER_PRIMARY"] = local_spec
         os.environ["SAM_POLICY_PROVIDER_FALLBACK"] = local_spec
