@@ -1,0 +1,14 @@
+services:
+  samd:
+    build: .
+    ports:
+      - "5005:5005"
+    environment:
+      SAM_PROFILE: "full"
+      SAM_HOT_RELOAD: "0"
+      # SAM_LOGIN_PASSWORD: "set_me"
+      # SAM_SESSION_SECRET: "set_me"
+    volumes:
+      - ./logs:/app/logs
+      - ./sam_data:/app/sam_data
+
