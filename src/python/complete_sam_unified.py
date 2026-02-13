@@ -13747,6 +13747,33 @@ sam@terminal:~$
                     } catch (err) { console.error(err); }
                 }
 
+                async function updateAuditLogs() {
+                    const panel = document.getElementById('audit-log-panel');
+                    if (!panel) return;
+                    try {
+                        const resp = await fetch(`/api/admin/audit_logs?limit=50${adminTokenQuery()}`, {
+                            headers: adminHeaders()
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            panel.innerHTML = `<div class="log-entry level-warn"><div class="text">${escapeHtml(err.error || 'Access denied.')}</div></div>`;
+                            return;
+                        }
+                        const data = await resp.json();
+                        panel.innerHTML = '';
+                        (data.logs || []).reverse().forEach(log => {
+                            const entry = document.createElement('div');
+                            entry.className = `log-entry ${log.success ? 'level-info' : 'level-error'}`;
+                            const ts = new Date(log.ts).toLocaleTimeString();
+                            entry.innerHTML = `
+                                <div class="meta">${escapeHtml(ts)} • ${escapeHtml(log.role)} (${escapeHtml(log.user_id)})</div>
+                                <div class="text"><strong>${log.success ? '✅' : '❌'} ${escapeHtml(log.endpoint)}</strong> ${escapeHtml(log.msg || '')}</div>
+                            `;
+                            panel.appendChild(entry);
+                        });
+                    } catch (err) { console.error(err); }
+                }
+
                 async function updateAuthStatus() {
                     try {
                         const auth = await fetch('/api/auth/status').then((r) => r.json());
@@ -15807,6 +15834,18 @@ sam@terminal:~$
                                 </select>
                             </div>
                             <div class="log-summary" id="dashboard-log-summary"></div>
+                        </div>
+                        <div class="card">
+                            <h3>📜 Security Audit Logs</h3>
+                            <div class="log-panel" id="audit-log-panel" style="max-height: 250px;">
+                                <div class="log-entry level-info">
+                                    <div class="meta">Awaiting auth…</div>
+                                    <div class="text">Only the Owner can view security audit logs.</div>
+                                </div>
+                            </div>
+                            <div class="log-actions">
+                                <button onclick="updateAuditLogs()">Refresh Logs</button>
+                            </div>
                         </div>
                         <div class="card">
                             <h3>🧠 Learning Memory</h3>
