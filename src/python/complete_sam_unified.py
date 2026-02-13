@@ -4047,6 +4047,8 @@ class MetaAgent:
             return False
         else:
             print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
+            print("   📊 Final performance may still have some issues")
+            return False
 
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
