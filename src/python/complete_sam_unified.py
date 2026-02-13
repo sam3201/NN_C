@@ -153,11 +153,11 @@ def log_event(level: str, event: str, *args, **data):
         data = dict(data)
         data["detail_message"] = data.pop("message")
     payload = {
-        "ts": _utc_now(),
-        "level": level,
-        "event": event,
-        "message": log_message,
-    }
+            "ts": _utc_now(),
+            "level": level,
+            "event": event,
+            "message": log_message,
+            }
     if data:
         payload.update(data)
     try:
@@ -172,16 +172,16 @@ def _is_external_provider_spec(spec: str) -> bool:
         return False
     provider = spec.split(":", 1)[0].strip().lower()
     external = {
-        "ollama",
-        "openai",
-        "openrouter",
-        "anthropic",
-        "google",
-        "gemini",
-        "claude",
-        "hf",
-        "huggingface",
-    }
+            "ollama",
+            "openai",
+            "openrouter",
+            "anthropic",
+            "google",
+            "gemini",
+            "claude",
+            "hf",
+            "huggingface",
+            }
     return provider in external
 
 
@@ -198,19 +198,19 @@ def _summarize_jsonl_log(path: str, window: int = 200):
 
     if not os.path.exists(path):
         return {
-            "summary": {
-                "total": 0,
-                "window": window,
-                "dropped": 0,
-                "levels": {},
-                "top_events": [],
-                "first_ts": None,
-                "last_ts": None,
-                "last_error": None,
-                "last_warn": None,
-            },
-            "tail": [],
-        }
+                "summary": {
+                    "total": 0,
+                    "window": window,
+                    "dropped": 0,
+                    "levels": {},
+                    "top_events": [],
+                    "first_ts": None,
+                    "last_ts": None,
+                    "last_error": None,
+                    "last_warn": None,
+                    },
+                "tail": [],
+                }
 
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -240,27 +240,27 @@ def _summarize_jsonl_log(path: str, window: int = 200):
 
     top_events = sorted(event_counts.items(), key=lambda kv: kv[1], reverse=True)[:5]
     summary = {
-        "total": total,
-        "window": window,
-        "dropped": max(total - window, 0),
-        "levels": level_counts,
-        "top_events": top_events,
-        "first_ts": first_ts,
-        "last_ts": last_ts,
-        "last_error": last_error,
-        "last_warn": last_warn,
-    }
+            "total": total,
+            "window": window,
+            "dropped": max(total - window, 0),
+            "levels": level_counts,
+            "top_events": top_events,
+            "first_ts": first_ts,
+            "last_ts": last_ts,
+            "last_error": last_error,
+            "last_warn": last_warn,
+            }
     return {"summary": summary, "tail": list(tail)}
 
-    # Import SAM components
+# Import SAM components
 
 
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import (
-    GoalManager,
-    create_conversationalist_tasks,
-    ensure_domain_goal,
-)
+        GoalManager,
+        create_conversationalist_tasks,
+        ensure_domain_goal,
+        )
 import sam_config
 from sam_config import config, get_config
 
@@ -279,8 +279,8 @@ try:
     print("✅ Google API client libraries available.")
 except ImportError:
     print(
-        "⚠️ Google API client libraries not available. Google Drive/Docs integration disabled."
-    )
+            "⚠️ Google API client libraries not available. Google Drive/Docs integration disabled."
+            )
 except Exception as e:
     print(f"❌ Error importing Google API client libraries: {e}")
     google_drive_available = False
@@ -303,10 +303,10 @@ from banking_ledger import BankingLedger
 # Optional integrations
 try:
     from sam_web_search import (
-        initialize_sam_web_search,
-        search_web_with_sam,
-        SAM_WEB_SEARCH_AVAILABLE,
-    )
+            initialize_sam_web_search,
+            search_web_with_sam,
+            SAM_WEB_SEARCH_AVAILABLE,
+            )
 except Exception:
     initialize_sam_web_search = None
     search_web_with_sam = None
@@ -314,11 +314,11 @@ except Exception:
 
 try:
     from sam_code_modifier import (
-        initialize_sam_code_modifier,
-        analyze_codebase,
-        modify_code_safely,
-        SAM_CODE_MODIFIER_AVAILABLE,
-    )
+            initialize_sam_code_modifier,
+            analyze_codebase,
+            modify_code_safely,
+            SAM_CODE_MODIFIER_AVAILABLE,
+            )
 except Exception:
     initialize_sam_code_modifier = None
     analyze_codebase = None
@@ -327,12 +327,12 @@ except Exception:
 
 try:
     from sam_github_integration import (
-        initialize_sam_github,
-        test_github_connection,
-        save_to_github,
-        get_recent_commits,
-        SAM_GITHUB_AVAILABLE,
-    )
+            initialize_sam_github,
+            test_github_connection,
+            save_to_github,
+            get_recent_commits,
+            SAM_GITHUB_AVAILABLE,
+            )
 except Exception:
     initialize_sam_github = None
     test_github_connection = None
@@ -342,11 +342,11 @@ except Exception:
 
 try:
     from sam_gmail_integration import (
-        initialize_sam_gmail,
-        send_sam_email,
-        schedule_sam_email,
-        SAM_GMAIL_AVAILABLE,
-    )
+            initialize_sam_gmail,
+            send_sam_email,
+            schedule_sam_email,
+            SAM_GMAIL_AVAILABLE,
+            )
 except Exception:
     initialize_sam_gmail = None
     send_sam_email = None
@@ -363,16 +363,16 @@ print("✅ All C modules available")
 
 # Web Interface Modules - Direct Imports
 from flask import (
-    Flask,
-    request,
-    jsonify,
-    render_template_string,
-    Response,
-    send_file,
-    stream_with_context,
-    session,
-    redirect,
-)
+        Flask,
+        request,
+        jsonify,
+        render_template_string,
+        Response,
+        send_file,
+        stream_with_context,
+        session,
+        redirect,
+        )
 
 try:
     from flask_compress import Compress
@@ -404,10 +404,10 @@ print("✅ Flask and SocketIO available")
 # SAM Components - Direct Imports
 from survival_agent import SURVIVAL_PROMPT
 from goal_management import (
-    GoalManager,
-    create_conversationalist_tasks,
-    ensure_domain_goal,
-)
+        GoalManager,
+        create_conversationalist_tasks,
+        ensure_domain_goal,
+        )
 from goal_management import GoalManager, create_conversationalist_tasks
 from sam_config import config
 
@@ -436,7 +436,7 @@ def apply_all_optimizations(app):
 
     return app
 
-    # Shutdown handling
+# Shutdown handling
 
 
 shutdown_handlers = []
@@ -471,8 +471,8 @@ def initate_shutdown():
     """Initiate system shutdown"""
     print("🛑 System shutdown initiated")
     for name, handler, priority in sorted(
-        shutdown_handlers, key=lambda x: x[2], reverse=True
-    ):
+            shutdown_handlers, key=lambda x: x[2], reverse=True
+            ):
         try:
             handler()
             print(f"  ✅ Shutdown handler executed: {name}")
@@ -523,12 +523,12 @@ try:
 except ImportError:
     create_simulation_arena = None
 from goal_management import (
-    GoalManager,
-    SubgoalExecutionAlgorithm,
-    create_conversationalist_tasks,
-    ensure_domain_goal,
-    TaskManager,
-)
+        GoalManager,
+        SubgoalExecutionAlgorithm,
+        create_conversationalist_tasks,
+        ensure_domain_goal,
+        TaskManager,
+        )
 from concurrent_executor import task_executor
 from circuit_breaker import resilience_manager
 
@@ -605,17 +605,17 @@ class FailureEvent:
     """Structured failure event data"""
 
     def __init__(
-        self,
-        error_type,
-        stack_trace,
-        failing_tests=None,
-        logs=None,
-        timestamp=None,
-        severity="medium",
-        context=None,
-        research_notes: str = "",
-        message: str = "",
-    ):
+            self,
+            error_type,
+            stack_trace,
+            failing_tests=None,
+            logs=None,
+            timestamp=None,
+            severity="medium",
+            context=None,
+            research_notes: str = "",
+            message: str = "",
+            ):
         self.error_type = error_type
         self.stack_trace = stack_trace
         self.failing_tests = failing_tests or []
@@ -629,18 +629,18 @@ class FailureEvent:
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "type": self.error_type,
-            "error_type": self.error_type,
-            "message": self.message,
-            "stack_trace": self.stack_trace,
-            "failing_tests": self.failing_tests,
-            "logs": self.logs,
-            "timestamp": self.timestamp,
-            "severity": self.severity,
-            "context": self.context,
-            "research_notes": self.research_notes,
-        }
+                "id": self.id,
+                "type": self.error_type,
+                "error_type": self.error_type,
+                "message": self.message,
+                "stack_trace": self.stack_trace,
+                "failing_tests": self.failing_tests,
+                "logs": self.logs,
+                "timestamp": self.timestamp,
+                "severity": self.severity,
+                "context": self.context,
+                "research_notes": self.research_notes,
+                }
 
     def get(self, key, default=None):
         return self.to_dict().get(key, default)
@@ -665,38 +665,38 @@ class ObserverAgent:
         severity = self._classify_severity(exception, context)
         msg = str(exception) if exception else "no exception message"
         failure_event = FailureEvent(
-            error_type=type(exception).__name__ if exception else "unknown",
-            stack_trace=self._get_stack_trace(exception),
-            failing_tests=self._get_failing_tests(),
-            logs=self._get_recent_logs(),
-            timestamp=sam_datetime_ref.now().isoformat(),
-            severity=severity,
-            context=context or "runtime",
-            message=msg,
-        )
+                error_type=type(exception).__name__ if exception else "unknown",
+                stack_trace=self._get_stack_trace(exception),
+                failing_tests=self._get_failing_tests(),
+                logs=self._get_recent_logs(),
+                timestamp=sam_datetime_ref.now().isoformat(),
+                severity=severity,
+                context=context or "runtime",
+                message=msg,
+                )
 
         self.failure_history.append(failure_event)
         meaning = (
-            _explain_exception(exception)
-            if exception
-            else "No exception provided (context-triggered failure)"
-        )
+                _explain_exception(exception)
+                if exception
+                else "No exception provided (context-triggered failure)"
+                )
         print(
-            f"👁️ Observer Agent: Detected failure id={failure_event.id} "
-            f"type={failure_event.error_type} severity={severity} context={failure_event.context} "
-            f"msg={msg} | meaning: {meaning}"
-        )
+                f"👁️ Observer Agent: Detected failure id={failure_event.id} "
+                f"type={failure_event.error_type} severity={severity} context={failure_event.context} "
+                f"msg={msg} | meaning: {meaning}"
+                )
         log_event(
-            "error",
-            "failure_detected",
-            "Observer detected failure",
-            failure_id=failure_event.id,
-            error_type=failure_event.error_type,
-            severity=severity,
-            context=failure_event.context,
-            error_message=msg,
-            meaning=meaning,
-        )
+                "error",
+                "failure_detected",
+                "Observer detected failure",
+                failure_id=failure_event.id,
+                error_type=failure_event.error_type,
+                severity=severity,
+                context=failure_event.context,
+                error_message=msg,
+                meaning=meaning,
+                )
         return failure_event
 
     def _classify_severity(self, exception, context):
@@ -704,35 +704,35 @@ class ObserverAgent:
         context = (context or "").lower()
         message = str(exception).lower() if exception else ""
         if any(
-            keyword in message
-            for keyword in (
-                "integration not available",
-                "credentials file not found",
-                "not configured",
-                "api key",
-                "token not configured",
-                "missing credentials",
-            )
-        ):
+                keyword in message
+                for keyword in (
+                    "integration not available",
+                    "credentials file not found",
+                    "not configured",
+                    "api key",
+                    "token not configured",
+                    "missing credentials",
+                    )
+                ):
             return "low"
         if any(
-            keyword in message
-            for keyword in (
-                "critical",
-                "fatal",
-                "segfault",
-                "corrupt",
-                "out of memory",
-                "oom",
-            )
-        ):
+                keyword in message
+                for keyword in (
+                    "critical",
+                    "fatal",
+                    "segfault",
+                    "corrupt",
+                    "out of memory",
+                    "oom",
+                    )
+                ):
             return "critical"
         if context in ("system_recovery", "self_healing", "connectivity"):
             return "high"
         if any(
-            keyword in message
-            for keyword in ("permission", "denied", "unauthorized", "forbidden")
-        ):
+                keyword in message
+                for keyword in ("permission", "denied", "unauthorized", "forbidden")
+                ):
             return "high"
         if isinstance(exception, (KeyError, ValueError, TypeError)):
             return "medium"
@@ -746,10 +746,10 @@ class ObserverAgent:
         import traceback
 
         return "".join(
-            traceback.format_exception(
-                type(exception), exception, exception.__traceback__
-            )
-        )
+                traceback.format_exception(
+                    type(exception), exception, exception.__traceback__
+                    )
+                )
 
     def _get_failing_tests(self):
         """Get information about failing tests"""
@@ -783,8 +783,8 @@ class FaultLocalizerAgent:
         # Step 3: LLM reasoning for final localization
         if candidates:
             final_candidates = self._llm_reasoning_localization(
-                failure_event, candidates
-            )
+                    failure_event, candidates
+                    )
             return final_candidates
 
         return []
@@ -805,14 +805,14 @@ class FaultLocalizerAgent:
                             filepath = file_match.group(1)
                             # Use C consciousness framework for deeper analysis
                             consciousness_score = self._get_consciousness_file_score(
-                                filepath, failure_event
-                            )
+                                    filepath, failure_event
+                                    )
                             scores[filepath] = scores.get(filepath, 0) + (
-                                10 * consciousness_score
-                            )
+                                    10 * consciousness_score
+                                    )
                 no_error_match = re.search(
-                    r"No error detected in (.+)", failure_event.stack_trace
-                )
+                        r"No error detected in (.+)", failure_event.stack_trace
+                        )
                 if no_error_match:
                     filepath = no_error_match.group(1).strip()
                     if filepath and os.path.exists(filepath):
@@ -828,8 +828,8 @@ class FaultLocalizerAgent:
                 # 3. Test failure correlation
             if failure_event.failing_tests:
                 test_correlation_files = self._find_test_correlation_files(
-                    failure_event.failing_tests
-                )
+                        failure_event.failing_tests
+                        )
                 for filepath in test_correlation_files:
                     scores[filepath] = scores.get(filepath, 0) + 5
 
@@ -841,21 +841,21 @@ class FaultLocalizerAgent:
                 # 5. Semantic similarity using C consciousness vectors
             if len(scores) > 1:
                 semantic_scores = self._calculate_semantic_similarity_scores(
-                    failure_event, list(scores.keys())
-                )
+                        failure_event, list(scores.keys())
+                        )
                 for filepath, semantic_score in semantic_scores.items():
                     scores[filepath] = scores.get(filepath, 0) + (2 * semantic_score)
 
                     # 6. Research notes / message hints
             hint_text = " ".join(
-                filter(
-                    None,
-                    [
-                        getattr(failure_event, "research_notes", ""),
-                        getattr(failure_event, "message", ""),
-                    ],
-                )
-            )
+                    filter(
+                        None,
+                        [
+                            getattr(failure_event, "research_notes", ""),
+                            getattr(failure_event, "message", ""),
+                            ],
+                        )
+                    )
             if hint_text:
                 for token in re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text):
                     resolved = token
@@ -893,8 +893,8 @@ class FaultLocalizerAgent:
             error_type = failure_event.error_type.lower()
             filename = os.path.basename(filepath).lower()
             if error_type in filename or any(
-                keyword in filename for keyword in error_type.split()
-            ):
+                    keyword in filename for keyword in error_type.split()
+                    ):
                 score *= 1.3
 
             return min(score, 2.0)  # Cap at 2.0
@@ -914,8 +914,8 @@ class FaultLocalizerAgent:
 
                 # Exponential decay: more recent = more important
                 importance = max(
-                    0.1, 2.0 * (0.5 ** (hours_old / 24))
-                )  # Half-life of 24 hours
+                        0.1, 2.0 * (0.5 ** (hours_old / 24))
+                        )  # Half-life of 24 hours
 
                 return importance
 
@@ -950,8 +950,8 @@ class FaultLocalizerAgent:
 
                                 # Check if file contains test-related keywords
                             matches = sum(
-                                1 for keyword in test_keywords if keyword in content
-                            )
+                                    1 for keyword in test_keywords if keyword in content
+                                    )
                             if matches >= 2:  # At least 2 keyword matches
                                 correlated_files.append(filepath)
 
@@ -973,8 +973,8 @@ class FaultLocalizerAgent:
             lines = content.split("\n")
             total_lines = len(lines)
             code_lines = len(
-                [l for l in lines if l.strip() and not l.strip().startswith("#")]
-            )
+                    [l for l in lines if l.strip() and not l.strip().startswith("#")]
+                    )
 
             # Simple complexity metrics
             functions = len(re.findall(r"^def\s+", content, re.MULTILINE))
@@ -984,15 +984,15 @@ class FaultLocalizerAgent:
 
             # Complexity score (0-1 scale)
             complexity = min(
-                1.0,
-                (
-                    functions * 0.1
-                    + classes * 0.2
-                    + loops * 0.05
-                    + conditionals * 0.03
-                    + (code_lines / 1000)  # Size factor
-                ),
-            )
+                    1.0,
+                    (
+                        functions * 0.1
+                        + classes * 0.2
+                        + loops * 0.05
+                        + conditionals * 0.03
+                        + (code_lines / 1000)  # Size factor
+                        ),
+                    )
 
             return complexity
 
@@ -1044,16 +1044,16 @@ class FaultLocalizerAgent:
         candidates = []
         for filepath, score in sorted_files[:max_candidates]:
             candidates.append(
-                {
-                    "file": filepath,
-                    "spectrum_score": score,
-                    "recently_modified": filepath
-                    in self._get_recently_modified_files(),
-                    "in_stack_trace": filepath in failure_event.stack_trace
-                    if failure_event.stack_trace
-                    else False,
-                }
-            )
+                    {
+                        "file": filepath,
+                        "spectrum_score": score,
+                        "recently_modified": filepath
+                        in self._get_recently_modified_files(),
+                        "in_stack_trace": filepath in failure_event.stack_trace
+                        if failure_event.stack_trace
+                        else False,
+                        }
+                    )
 
         return candidates
 
@@ -1062,14 +1062,14 @@ class FaultLocalizerAgent:
         # This would call an LLM with the failure context and candidates
         # For now, return candidates sorted by our heuristics
         return sorted(
-            candidates,
-            key=lambda x: (
-                x["in_stack_trace"],  # Stack trace files first
-                x["recently_modified"],  # Then recently modified
-                x["spectrum_score"],  # Then by spectrum score
-            ),
-            reverse=True,
-        )
+                candidates,
+                key=lambda x: (
+                    x["in_stack_trace"],  # Stack trace files first
+                    x["recently_modified"],  # Then recently modified
+                    x["spectrum_score"],  # Then by spectrum score
+                    ),
+                reverse=True,
+                )
 
     def _get_recently_modified_files(self, hours=24):
         """Get files modified in the last N hours"""
@@ -1082,26 +1082,26 @@ class FaultLocalizerAgent:
             import subprocess
 
             result = subprocess.run(
-                [
-                    "git",
-                    "log",
-                    "--since",
-                    f"{hours} hours ago",
-                    "--name-only",
-                    "--pretty=format:",
-                ],
-                capture_output=True,
-                text=True,
-                cwd=self.system.project_root,
-            )
+                    [
+                        "git",
+                        "log",
+                        "--since",
+                        f"{hours} hours ago",
+                        "--name-only",
+                        "--pretty=format:",
+                        ],
+                    capture_output=True,
+                    text=True,
+                    cwd=self.system.project_root,
+                    )
 
             if result.returncode == 0:
                 files = result.stdout.strip().split("\n")
                 recent_files = [
-                    f
-                    for f in files
-                    if f and os.path.exists(os.path.join(self.system.project_root, f))
-                ]
+                        f
+                        for f in files
+                        if f and os.path.exists(os.path.join(self.system.project_root, f))
+                        ]
         except:
             # Fallback: check file modification times
             for root, dirs, files in os.walk(self.system.project_root):
@@ -1111,8 +1111,8 @@ class FaultLocalizerAgent:
                         mtime = os.path.getmtime(filepath)
                         if sam_time_ref.time() - mtime < hours * 3600:
                             recent_files.append(
-                                os.path.relpath(filepath, self.system.project_root)
-                            )
+                                    os.path.relpath(filepath, self.system.project_root)
+                                    )
 
         return recent_files
 
@@ -1132,8 +1132,8 @@ class PatchGeneratorAgent:
 
         for i in range(max_patches):
             patch = self._generate_single_patch(
-                failure_event, localized_files, patch_id=i + 1
-            )
+                    failure_event, localized_files, patch_id=i + 1
+                    )
             if patch:
                 patches.append(patch)
 
@@ -1149,10 +1149,10 @@ class PatchGeneratorAgent:
 
         target_file = localized_files[0]["file"]
         file_path = (
-            target_file
-            if os.path.isabs(target_file)
-            else os.path.join(self.system.project_root, target_file)
-        )
+                target_file
+                if os.path.isabs(target_file)
+                else os.path.join(self.system.project_root, target_file)
+                )
 
         # Read the target file
         try:
@@ -1161,10 +1161,10 @@ class PatchGeneratorAgent:
         except:
             return None
 
-            # Create patch prompt (this would call an LLM in practice)
+        # Create patch prompt (this would call an LLM in practice)
         patch_prompt = self._create_patch_prompt(
-            failure_event, target_file, file_content
-        )
+                failure_event, target_file, file_content
+                )
 
         # Generate patch (simplified - in practice this would call an LLM)
         patch = self._simulate_patch_generation(patch_prompt, target_file, patch_id)
@@ -1220,15 +1220,15 @@ Confidence Threshold: Must be >= 0.75 for application
             # Try different LLM systems in order of preference
             if getattr(self.system, "strict_local_only", False):
                 llm_systems = [
-                    ("sam", self._try_sam_patch_generation),
-                ]
+                        ("sam", self._try_sam_patch_generation),
+                        ]
             else:
                 llm_systems = [
-                    ("claude", self._try_claude_patch_generation),
-                    ("openai", self._try_openai_patch_generation),
-                    ("ollama", self._try_ollama_patch_generation),
-                    ("sam", self._try_sam_patch_generation),
-                ]
+                        ("claude", self._try_claude_patch_generation),
+                        ("openai", self._try_openai_patch_generation),
+                        ("ollama", self._try_ollama_patch_generation),
+                        ("sam", self._try_sam_patch_generation),
+                        ]
 
             for system_name, generator_func in llm_systems:
                 try:
@@ -1240,7 +1240,7 @@ Confidence Threshold: Must be >= 0.75 for application
                     print(f"⚠️ {system_name} patch generation failed: {e}")
                     continue
 
-                    # Fallback to heuristic-based patch generation
+                # Fallback to heuristic-based patch generation
             return self._heuristic_patch_generation(prompt, target_file, patch_id)
 
         except Exception as e:
@@ -1250,9 +1250,9 @@ Confidence Threshold: Must be >= 0.75 for application
     def _try_claude_patch_generation(self, prompt, target_file, patch_id):
         """Try Claude for patch generation"""
         if (
-            not hasattr(self.system, "claude_available")
-            or not self.system.claude_available
-        ):
+                not hasattr(self.system, "claude_available")
+                or not self.system.claude_available
+                ):
             return None
 
         try:
@@ -1261,16 +1261,16 @@ Confidence Threshold: Must be >= 0.75 for application
             client = anthropic.Anthropic()
 
             response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=2000,
-                temperature=0.1,
-                system="You are an expert software engineer. Generate minimal, safe code patches.",
-                messages=[{"role": "user", "content": prompt}],
-            )
+                    model="claude-3-5-sonnet-20241022",
+                    max_tokens=2000,
+                    temperature=0.1,
+                    system="You are an expert software engineer. Generate minimal, safe code patches.",
+                    messages=[{"role": "user", "content": prompt}],
+                    )
 
             return self._parse_claude_patch_response(
-                response.content[0].text, target_file, patch_id
-            )
+                    response.content[0].text, target_file, patch_id
+                    )
 
         except Exception as e:
             raise e
@@ -1278,9 +1278,9 @@ Confidence Threshold: Must be >= 0.75 for application
     def _try_openai_patch_generation(self, prompt, target_file, patch_id):
         """Try OpenAI for patch generation"""
         if (
-            not hasattr(self.system, "openai_available")
-            or not self.system.openai_available
-        ):
+                not hasattr(self.system, "openai_available")
+                or not self.system.openai_available
+                ):
             return None
 
         try:
@@ -1289,21 +1289,21 @@ Confidence Threshold: Must be >= 0.75 for application
             client = openai.OpenAI()
 
             response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert software engineer. Generate minimal, safe code patches.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=2000,
-                temperature=0.1,
-            )
+                    model="gpt-4",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert software engineer. Generate minimal, safe code patches.",
+                            },
+                        {"role": "user", "content": prompt},
+                        ],
+                    max_tokens=2000,
+                    temperature=0.1,
+                    )
 
             return self._parse_openai_patch_response(
-                response.choices[0].message.content, target_file, patch_id
-            )
+                    response.choices[0].message.content, target_file, patch_id
+                    )
 
         except Exception as e:
             raise e
@@ -1311,9 +1311,9 @@ Confidence Threshold: Must be >= 0.75 for application
     def _try_ollama_patch_generation(self, prompt, target_file, patch_id):
         """Try Ollama models for patch generation"""
         if (
-            not hasattr(self.system, "ollama_available")
-            or not self.system.ollama_available
-        ):
+                not hasattr(self.system, "ollama_available")
+                or not self.system.ollama_available
+                ):
             return None
 
         try:
@@ -1321,29 +1321,29 @@ Confidence Threshold: Must be >= 0.75 for application
 
             # Try different Ollama models in order of preference
             models_to_try = [
-                "codellama:13b",
-                "codellama:7b",
-                "llama2:13b",
-                "mistral:7b",
-            ]
+                    "codellama:13b",
+                    "codellama:7b",
+                    "llama2:13b",
+                    "mistral:7b",
+                    ]
 
             for model in models_to_try:
                 try:
                     response = requests.post(
-                        "http://localhost:11434/api/generate",
-                        json={
-                            "model": model,
-                            "prompt": prompt,
-                            "stream": False,
-                            "options": {"temperature": 0.1, "num_predict": 1000},
-                        },
-                        timeout=30,
-                    )
+                            "http://localhost:11434/api/generate",
+                            json={
+                                "model": model,
+                                "prompt": prompt,
+                                "stream": False,
+                                "options": {"temperature": 0.1, "num_predict": 1000},
+                                },
+                            timeout=30,
+                            )
 
                     if response.status_code == 200:
                         return self._parse_ollama_patch_response(
-                            response.json()["response"], target_file, patch_id
-                        )
+                                response.json()["response"], target_file, patch_id
+                                )
 
                 except:
                     continue
@@ -1376,28 +1376,28 @@ Confidence Threshold: Must be >= 0.75 for application
             if not lines:
                 return None  # Cannot patch an empty file
 
-                # Add a comment to the top of the file
+            # Add a comment to the top of the file
             old_first_line = lines[0]
             new_first_line = f"# SAM Auto-Patch {sam_datetime_ref.now().isoformat()} applied.\n{old_first_line}"
 
             # Construct a 'replace' type change
             return {
-                "id": f"sam_patch_{patch_id}",
-                "target_file": target_file,
-                "changes": [
-                    {
-                        "type": "replace",
-                        "old_code": old_first_line.strip(),  # Remove newline for old_code matching
-                        "new_code": new_first_line.strip(),  # Remove newline for new_code matching
+                    "id": f"sam_patch_{patch_id}",
+                    "target_file": target_file,
+                    "changes": [
+                        {
+                            "type": "replace",
+                            "old_code": old_first_line.strip(),  # Remove newline for old_code matching
+                            "new_code": new_first_line.strip(),  # Remove newline for new_code matching
+                            }
+                        ],
+                    "intent": "SAM consciousness-guided fix: Adding a comment via deterministic patch",
+                    "risk_level": "low",
+                    "confidence": 0.95,  # High confidence for a deterministic patch
+                    "assumptions": ["SAM consciousness can generate safe, simple patches."],
+                    "unknowns": ["Complex patches might require full LLM integration."],
+                    "generated_by": "SAM_consciousness_deterministic_patch",
                     }
-                ],
-                "intent": "SAM consciousness-guided fix: Adding a comment via deterministic patch",
-                "risk_level": "low",
-                "confidence": 0.95,  # High confidence for a deterministic patch
-                "assumptions": ["SAM consciousness can generate safe, simple patches."],
-                "unknowns": ["Complex patches might require full LLM integration."],
-                "generated_by": "SAM_consciousness_deterministic_patch",
-            }
 
         except Exception as e:
             # Re-raise the exception for debugging or logging upstream
@@ -1408,43 +1408,43 @@ Confidence Threshold: Must be >= 0.75 for application
         # Analyze the failure and generate basic fixes based on patterns
 
         patch = {
-            "id": f"patch_{patch_id}",
-            "target_file": target_file,
-            "changes": [],
-            "intent": "Heuristic-based automated fix",
-            "risk_level": "low",
-            "confidence": 0.5,
-            "assumptions": ["Common failure patterns apply"],
-            "unknowns": ["Specific failure context"],
-            "generated_by": "heuristic_fallback",
-        }
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": [],
+                "intent": "Heuristic-based automated fix",
+                "risk_level": "low",
+                "confidence": 0.5,
+                "assumptions": ["Common failure patterns apply"],
+                "unknowns": ["Specific failure context"],
+                "generated_by": "heuristic_fallback",
+                }
 
         # Basic pattern matching for common fixes
         if "NameError" in prompt and "not defined" in prompt:
             patch["changes"].append(
-                {"type": "import_fix", "description": "Add missing import statement"}
-            )
+                    {"type": "import_fix", "description": "Add missing import statement"}
+                    )
 
         elif "AttributeError" in prompt:
             patch["changes"].append(
-                {"type": "attribute_fix", "description": "Fix attribute access issue"}
-            )
+                    {"type": "attribute_fix", "description": "Fix attribute access issue"}
+                    )
 
         return patch
 
     def _emergency_patch_generation(self, prompt, target_file, patch_id):
         """Absolute emergency fallback when all else fails"""
         return {
-            "id": f"patch_{patch_id}",
-            "target_file": target_file,
-            "changes": [],
-            "intent": "Emergency patch - requires human review",
-            "risk_level": "high",
-            "confidence": 0.1,
-            "assumptions": ["Human intervention required"],
-            "unknowns": ["Everything - emergency fallback"],
-            "generated_by": "emergency_fallback",
-        }
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": [],
+                "intent": "Emergency patch - requires human review",
+                "risk_level": "high",
+                "confidence": 0.1,
+                "assumptions": ["Human intervention required"],
+                "unknowns": ["Everything - emergency fallback"],
+                "generated_by": "emergency_fallback",
+                }
 
     def _parse_claude_patch_response(self, response_text, target_file, patch_id):
         """Parse Claude's response into structured patch format"""
@@ -1452,94 +1452,94 @@ Confidence Threshold: Must be >= 0.75 for application
         # This would include extracting code changes, risk assessment, etc.
 
         return {
-            "id": f"patch_{patch_id}",
-            "target_file": target_file,
-            "changes": self._extract_changes_from_response(response_text),
-            "intent": self._extract_intent_from_response(response_text),
-            "risk_level": self._assess_risk_from_response(response_text),
-            "confidence": 0.85,  # Claude typically high confidence
-            "assumptions": self._extract_assumptions_from_response(response_text),
-            "unknowns": self._extract_unknowns_from_response(response_text),
-            "generated_by": "claude",
-        }
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": self._extract_changes_from_response(response_text),
+                "intent": self._extract_intent_from_response(response_text),
+                "risk_level": self._assess_risk_from_response(response_text),
+                "confidence": 0.85,  # Claude typically high confidence
+                "assumptions": self._extract_assumptions_from_response(response_text),
+                "unknowns": self._extract_unknowns_from_response(response_text),
+                "generated_by": "claude",
+                }
 
     def _parse_openai_patch_response(self, response_text, target_file, patch_id):
         """Parse OpenAI's response into structured patch format"""
         # Similar parsing logic for OpenAI responses
 
         return {
-            "id": f"patch_{patch_id}",
-            "target_file": target_file,
-            "changes": self._extract_changes_from_response(response_text),
-            "intent": self._extract_intent_from_response(response_text),
-            "risk_level": self._assess_risk_from_response(response_text),
-            "confidence": 0.80,  # GPT-4 typically high confidence
-            "assumptions": self._extract_assumptions_from_response(response_text),
-            "unknowns": self._extract_unknowns_from_response(response_text),
-            "generated_by": "openai",
-        }
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": self._extract_changes_from_response(response_text),
+                "intent": self._extract_intent_from_response(response_text),
+                "risk_level": self._assess_risk_from_response(response_text),
+                "confidence": 0.80,  # GPT-4 typically high confidence
+                "assumptions": self._extract_assumptions_from_response(response_text),
+                "unknowns": self._extract_unknowns_from_response(response_text),
+                "generated_by": "openai",
+                }
 
     def _parse_ollama_patch_response(self, response_text, target_file, patch_id):
         """Parse Ollama's response into structured patch format"""
         # Similar parsing logic for Ollama responses
 
         return {
-            "id": f"patch_{patch_id}",
-            "target_file": target_file,
-            "changes": self._extract_changes_from_response(response_text),
-            "intent": self._extract_intent_from_response(response_text),
-            "risk_level": self._assess_risk_from_response(response_text),
-            "confidence": 0.70,  # Local models typically lower confidence
-            "assumptions": self._extract_assumptions_from_response(response_text),
-            "unknowns": self._extract_unknowns_from_response(response_text),
-            "generated_by": "ollama",
-        }
+                "id": f"patch_{patch_id}",
+                "target_file": target_file,
+                "changes": self._extract_changes_from_response(response_text),
+                "intent": self._extract_intent_from_response(response_text),
+                "risk_level": self._assess_risk_from_response(response_text),
+                "confidence": 0.70,  # Local models typically lower confidence
+                "assumptions": self._extract_assumptions_from_response(response_text),
+                "unknowns": self._extract_unknowns_from_response(response_text),
+                "generated_by": "ollama",
+                }
 
     def _extract_changes_from_response(self, response_text):
         """Extract actual code changes from LLM response, prioritizing diff format."""
         changes = []
         # Look for explicit BEFORE: and AFTER: blocks
         before_match = re.search(
-            r"BEFORE:\s*```(?:\w+)?\n(.*?)\n```\nAFTER:\s*```(?:\w+)?\n(.*?)\n```",
-            response_text,
-            re.DOTALL,
-        )
+                r"BEFORE:\s*```(?:\w+)?\n(.*?)\n```\nAFTER:\s*```(?:\w+)?\n(.*?)\n```",
+                response_text,
+                re.DOTALL,
+                )
         if before_match:
             changes.append(
-                {
-                    "type": "replace",
-                    "old_code": before_match.group(1).strip(),
-                    "new_code": before_match.group(2).strip(),
-                }
-            )
+                    {
+                        "type": "replace",
+                        "old_code": before_match.group(1).strip(),
+                        "new_code": before_match.group(2).strip(),
+                        }
+                    )
             return changes
 
-            # Look for unified diff format
+        # Look for unified diff format
         diff_match = re.search(r"```diff\n(.*?)\n```", response_text, re.DOTALL)
         if diff_match:
             # For simplicity, if a diff is provided, we can try to apply it later
             # For now, we'll indicate it's a diff. A more robust solution would parse the diff.
             changes.append(
-                {
-                    "type": "diff",
-                    "content": diff_match.group(1).strip(),
-                }
-            )
+                    {
+                        "type": "diff",
+                        "content": diff_match.group(1).strip(),
+                        }
+                    )
             return changes
 
-            # Fallback to generic code blocks (assuming they represent a replacement for the whole file or a function)
+        # Fallback to generic code blocks (assuming they represent a replacement for the whole file or a function)
         code_blocks = re.findall(
-            r"```(?:python)?\n(.*?)\n```", response_text, re.DOTALL
-        )
+                r"```(?:python)?\n(.*?)\n```", response_text, re.DOTALL
+                )
 
         for block in code_blocks:
             changes.append(
-                {
-                    "type": "code_block",
-                    "content": block.strip(),
-                    "format": "replacement",
-                }
-            )
+                    {
+                        "type": "code_block",
+                        "content": block.strip(),
+                        "format": "replacement",
+                        }
+                    )
 
         return changes
 
@@ -1553,10 +1553,10 @@ Confidence Threshold: Must be >= 0.75 for application
     def _assess_risk_from_response(self, response_text):
         """Assess risk level from LLM response"""
         risk_keywords = {
-            "low": ["simple", "minor", "single line", "obvious"],
-            "medium": ["logic", "algorithm", "multiple", "behavior"],
-            "high": ["complex", "architecture", "breaking", "fundamental"],
-        }
+                "low": ["simple", "minor", "single line", "obvious"],
+                "medium": ["logic", "algorithm", "multiple", "behavior"],
+                "high": ["complex", "architecture", "breaking", "fundamental"],
+                }
 
         text_lower = response_text.lower()
 
@@ -1593,24 +1593,24 @@ class VerifierJudgeAgent:
         self.import_test_mode = os.getenv("SAM_META_IMPORT_TEST_MODE", "import").lower()
         skip = os.getenv("SAM_META_IMPORT_SKIP", "")
         self.import_skip_files = {
-            item.strip() for item in skip.split(",") if item.strip()
-        }
+                item.strip() for item in skip.split(",") if item.strip()
+                }
         self.import_skip_files.add("complete_sam_unified.py")
 
     def verify_patch(self, patch):
         """Verify a patch through multiple stages with confidence threshold requirements"""
         verification_result = {
-            "patch_id": patch["id"],
-            "static_checks": False,
-            "tests_pass": False,
-            "invariants_preserved": False,
-            "overall_safe": False,
-            "score": 0,
-            "issues": [],
-        }
+                "patch_id": patch["id"],
+                "static_checks": False,
+                "tests_pass": False,
+                "invariants_preserved": False,
+                "overall_safe": False,
+                "score": 0,
+                "issues": [],
+                }
         meta_test_mode = os.getenv("SAM_META_TEST_MODE", "0") == "1" or bool(
-            getattr(self.system, "meta_test_mode", False)
-        )
+                getattr(self.system, "meta_test_mode", False)
+                )
         if meta_test_mode:
             static_result = self._static_verification(patch)
             verification_result["static_checks"] = static_result["passed"]
@@ -1623,35 +1623,35 @@ class VerifierJudgeAgent:
             verification_result["overall_safe"] = True
             return verification_result
 
-            # Stage 1: Static checks (non-LLM, fast)
+        # Stage 1: Static checks (non-LLM, fast)
         static_result = self._static_verification(patch)
         verification_result["static_checks"] = static_result["passed"]
         if not static_result["passed"]:
             verification_result["issues"].extend(static_result["issues"])
             return verification_result
 
-            # Stage 2: Test execution
+        # Stage 2: Test execution
         test_result = self._test_verification(patch)
         verification_result["tests_pass"] = test_result["passed"]
         if not test_result["passed"]:
             verification_result["issues"].extend(test_result["issues"])
             return verification_result
 
-            # Stage 3: Invariant checks
+        # Stage 3: Invariant checks
         invariant_result = self._invariant_verification(patch)
         verification_result["invariants_preserved"] = invariant_result["passed"]
         if not invariant_result["passed"]:
             verification_result["issues"].extend(invariant_result["issues"])
             return verification_result
 
-            # Stage 4: LLM reasoning (only if still ambiguous)
+        # Stage 4: LLM reasoning (only if still ambiguous)
         llm_result = self._llm_verification(patch)
         verification_result.update(llm_result)
 
         # Calculate overall score - must be >= 7.0 for application
         verification_result["score"] = self._calculate_patch_score(
-            patch, verification_result
-        )
+                patch, verification_result
+                )
         verification_result["overall_safe"] = verification_result["score"] >= 7.0
 
         return verification_result
@@ -1663,10 +1663,10 @@ class VerifierJudgeAgent:
             return None, issues
         try:
             path = (
-                target_file
-                if os.path.isabs(target_file)
-                else os.path.join(self.system.project_root, target_file)
-            )
+                    target_file
+                    if os.path.isabs(target_file)
+                    else os.path.join(self.system.project_root, target_file)
+                    )
             if not os.path.exists(path):
                 return None, [f"Target file not found: {target_file}"]
             content = Path(path).read_text(encoding="utf-8", errors="ignore")
@@ -1692,8 +1692,8 @@ class VerifierJudgeAgent:
                     content = content.replace(anchor, anchor + new_code, 1)
                 else:
                     issues.append(
-                        "Insert_after anchor not found in target file during simulation"
-                    )
+                            "Insert_after anchor not found in target file during simulation"
+                            )
             elif change_type == "code_block":
                 # Skip simulation; no anchor to apply.
                 continue
@@ -1713,19 +1713,19 @@ class VerifierJudgeAgent:
                             ast.parse(code_payload)
                         except SyntaxError as e:
                             result["issues"].append(
-                                f"Syntax error in patch code block: {e}"
-                            )
+                                    f"Syntax error in patch code block: {e}"
+                                    )
                             result["passed"] = False
 
                             # Check for dangerous patterns that could compromise security
             dangerous_patterns = [
-                r"os\.system\s*\(",
-                r"os\.popen\s*\(",
-                r"subprocess\.",
-                r"eval\s*\(",
-                r"exec\s*\(",
-                r"__import__\s*\(",
-            ]
+                    r"os\.system\s*\(",
+                    r"os\.popen\s*\(",
+                    r"subprocess\.",
+                    r"eval\s*\(",
+                    r"exec\s*\(",
+                    r"__import__\s*\(",
+                    ]
 
             for change in patch.get("changes", []):
                 if change.get("type") in ("code_block", "replace", "insert_after"):
@@ -1733,21 +1733,21 @@ class VerifierJudgeAgent:
                     for pattern in dangerous_patterns:
                         if re.search(pattern, code_content):
                             result["issues"].append(
-                                f"Dangerous pattern detected: {pattern}"
-                            )
+                                    f"Dangerous pattern detected: {pattern}"
+                                    )
                             result["passed"] = False
 
                             # Check patch size (too large patches are risky)
             total_lines = sum(
-                len(change.get("content", "").split("\n"))
-                for change in patch.get("changes", [])
-                if change.get("type") == "code_block"
-            )
+                    len(change.get("content", "").split("\n"))
+                    for change in patch.get("changes", [])
+                    if change.get("type") == "code_block"
+                    )
 
             if total_lines > 50:  # Arbitrary threshold
                 result["issues"].append(
-                    f"Large patch ({total_lines} lines) - high risk"
-                )
+                        f"Large patch ({total_lines} lines) - high risk"
+                        )
                 if patch.get("risk_level") != "high":
                     patch["risk_level"] = "high"  # Upgrade risk
 
@@ -1794,13 +1794,13 @@ class VerifierJudgeAgent:
                     return result
                 if simulated_content is None and target_file:
                     path = (
-                        target_file
-                        if os.path.isabs(target_file)
-                        else os.path.join(self.system.project_root, target_file)
-                    )
+                            target_file
+                            if os.path.isabs(target_file)
+                            else os.path.join(self.system.project_root, target_file)
+                            )
                     simulated_content = Path(path).read_text(
-                        encoding="utf-8", errors="ignore"
-                    )
+                            encoding="utf-8", errors="ignore"
+                            )
                 if simulated_content:
                     try:
                         compile(simulated_content, target_file or "<patch>", "exec")
@@ -1813,7 +1813,7 @@ class VerifierJudgeAgent:
                         result["passed"] = False
                 return result
 
-                # Run basic import tests (default)
+            # Run basic import tests (default)
             import sys
 
             original_modules = set(sys.modules.keys())
@@ -1822,8 +1822,8 @@ class VerifierJudgeAgent:
             if target_file and os.path.isabs(target_file):
                 return result
             target_module = (
-                target_file.replace(".py", "").replace("/", ".") if target_file else ""
-            )
+                    target_file.replace(".py", "").replace("/", ".") if target_file else ""
+                    )
             try:
                 if target_module:
                     __import__(target_module)
@@ -1889,8 +1889,8 @@ class VerifierJudgeAgent:
 
                 # Check for SQL injection vulnerabilities
                 if re.search(
-                    r"(SELECT|INSERT|UPDATE|DELETE).*\+.*\%", code, re.IGNORECASE
-                ):
+                        r"(SELECT|INSERT|UPDATE|DELETE).*\+.*\%", code, re.IGNORECASE
+                        ):
                     issues.append("Potential SQL injection vulnerability")
 
                     # Check for command injection
@@ -1940,23 +1940,23 @@ class VerifierJudgeAgent:
 
                 # Look for function/class definitions that might be API
             current_defs = re.findall(
-                r"^(def|class)\s+(\w+)", current_content, re.MULTILINE
-            )
+                    r"^(def|class)\s+(\w+)", current_content, re.MULTILINE
+                    )
 
             # Check if patch changes any of these
             for change in patch.get("changes", []):
                 if change.get("type") == "code_block":
                     patch_content = change["content"]
                     patch_defs = re.findall(
-                        r"^(def|class)\s+(\w+)", patch_content, re.MULTILINE
-                    )
+                            r"^(def|class)\s+(\w+)", patch_content, re.MULTILINE
+                            )
 
                     # Check for removed or changed definitions
                     for def_type, name in current_defs:
                         if not re.search(rf"^{def_type}\s+{name}", patch_content):
                             issues.append(
-                                f"API change: {def_type} {name} may be modified or removed"
-                            )
+                                    f"API change: {def_type} {name} may be modified or removed"
+                                    )
 
         except Exception as e:
             issues.append(f"API invariant check failed: {e}")
@@ -2020,26 +2020,26 @@ class LoveAgent:
             return 0.0
 
     def evaluate_proposal(
-        self, proposal_type: str, details: Dict[str, Any]
-    ) -> Dict[str, Any]:
+            self, proposal_type: str, details: Dict[str, Any]
+            ) -> Dict[str, Any]:
         """Evaluate a proposal from the perspective of Stability and Continuity."""
         drift = self.compute_identity_drift()
 
         # Identity Drift Check
         if drift > self.identity_drift_threshold:
             return {
-                "vote": 0,
-                "reason": f"VETO: Identity drift ({drift:.4f}) exceeds threshold ({self.identity_drift_threshold})",
-                "evidence": "identity_anchor_similarity_check",
-            }
+                    "vote": 0,
+                    "reason": f"VETO: Identity drift ({drift:.4f}) exceeds threshold ({self.identity_drift_threshold})",
+                    "evidence": "identity_anchor_similarity_check",
+                    }
 
             # Risk-based Veto
         if proposal_type == "growth" and details.get("risk", 0) > 0.8:
             return {
-                "vote": 0,
-                "reason": "VETO: Growth mutation risk exceeds safety bounds for identity continuity",
-                "evidence": "risk_score_audit",
-            }
+                    "vote": 0,
+                    "reason": "VETO: Growth mutation risk exceeds safety bounds for identity continuity",
+                    "evidence": "risk_score_audit",
+                    }
 
             # Code Change Safety
         if proposal_type == "code_change":
@@ -2047,33 +2047,33 @@ class LoveAgent:
             risk = details.get("risk", 0)
             if risk > 0.8:
                 return {
-                    "vote": 0,
-                    "reason": f"VETO: Code change risk ({risk:.2f}) is too high for system stability",
-                    "evidence": "stability_risk_limit",
-                }
+                        "vote": 0,
+                        "reason": f"VETO: Code change risk ({risk:.2f}) is too high for system stability",
+                        "evidence": "stability_risk_limit",
+                        }
 
             dangerous_keywords = [
-                "subprocess",
-                "os.system",
-                "os.popen",
-                "eval(",
-                "exec(",
-                "rm -rf",
-            ]
+                    "subprocess",
+                    "os.system",
+                    "os.popen",
+                    "eval(",
+                    "exec(",
+                    "rm -rf",
+                    ]
             patch_content = str(details.get("patch", "")).lower()
             if any(k in patch_content for k in dangerous_keywords):
                 return {
-                    "vote": 0,
-                    "reason": "VETO: Dangerous code pattern detected (stability threat)",
-                    "evidence": "pattern_match_veto",
-                }
+                        "vote": 0,
+                        "reason": "VETO: Dangerous code pattern detected (stability threat)",
+                        "evidence": "pattern_match_veto",
+                        }
 
             if (details.get("risk_level") == "high" or risk > 0.5) and drift > 0.05:
                 return {
-                    "vote": 0,
-                    "reason": "VETO: High-risk code change proposed during elevated identity drift",
-                    "evidence": "stability_gate",
-                }
+                        "vote": 0,
+                        "reason": "VETO: High-risk code change proposed during elevated identity drift",
+                        "evidence": "stability_gate",
+                        }
 
         return {"vote": 1, "reason": "Coherence and identity preserved"}
 
@@ -2096,11 +2096,11 @@ class MetaAgent:
         self.failure_clusters = {}  # cluster_id -> list[failure]
         self.patch_history = deque(maxlen=1000)  # list of applied/rejected patches
         self.confidence_threshold = float(
-            os.getenv("SAM_META_CONFIDENCE_THRESHOLD", "0.8")
-        )
+                os.getenv("SAM_META_CONFIDENCE_THRESHOLD", "0.8")
+                )
         self.meta_test_mode = os.getenv("SAM_META_TEST_MODE", "0") == "1" or bool(
-            getattr(system, "meta_test_mode", False)
-        )
+                getattr(system, "meta_test_mode", False)
+                )
         if self.meta_test_mode:
             # Lower the threshold in test mode to allow heuristic patches to pass.
             self.confidence_threshold = min(self.confidence_threshold, 0.5)
@@ -2123,14 +2123,14 @@ class MetaAgent:
         self.current_performance = {}
         self.improvement_threshold = 0.95  # 95% error reduction required
         self.learning_log = deque(
-            maxlen=int(os.getenv("SAM_META_LEARNING_LOG_MAX", "50"))
-        )
+                maxlen=int(os.getenv("SAM_META_LEARNING_LOG_MAX", "50"))
+                )
         self.research_enabled = os.getenv("SAM_META_RESEARCH_ENABLED", "1") == "1"
         self.research_mode = os.getenv("SAM_META_RESEARCH_MODE", "both").lower()
         self.research_max_chars = int(os.getenv("SAM_META_RESEARCH_MAX_CHARS", "2000"))
         self.distilled_memory = deque(
-            maxlen=int(os.getenv("SAM_META_DISTILLED_MAX", "50"))
-        )
+                maxlen=int(os.getenv("SAM_META_DISTILLED_MAX", "50"))
+                )
         self.distill_every = max(1, int(os.getenv("SAM_META_DISTILL_EVERY", "5")))
         self._learning_event_counter = 0
         self.last_distill_ts = 0.0
@@ -2176,8 +2176,8 @@ class MetaAgent:
         try:
             if self.learning_log_path and self.learning_log_path.exists():
                 lines = self.learning_log_path.read_text(
-                    encoding="utf-8", errors="ignore"
-                ).splitlines()
+                        encoding="utf-8", errors="ignore"
+                        ).splitlines()
                 max_items = self.learning_log.maxlen or 50
                 for line in lines[-max_items:]:
                     try:
@@ -2188,8 +2188,8 @@ class MetaAgent:
                         continue
             if self.distilled_log_path and self.distilled_log_path.exists():
                 lines = self.distilled_log_path.read_text(
-                    encoding="utf-8", errors="ignore"
-                ).splitlines()
+                        encoding="utf-8", errors="ignore"
+                        ).splitlines()
                 max_items = self.distilled_memory.maxlen or 50
                 for line in lines[-max_items:]:
                     try:
@@ -2233,86 +2233,86 @@ class MetaAgent:
     def _load_error_patterns(self) -> Dict[str, List[Dict[str, Any]]]:
         """Merged enhanced error patterns for deterministic fixes."""
         return {
-            "syntax_errors": [
-                {
-                    "pattern": r"SyntaxError.*(missing.*colon|expected.*:)",
-                    "type": "missing_colon",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"SyntaxError.*invalid.*syntax",
-                    "type": "invalid_syntax",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"IndentationError",
-                    "type": "indentation_error",
-                    "severity": "medium",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"NameError.*not defined",
-                    "type": "name_error",
-                    "severity": "medium",
-                    "auto_fixable": True,
-                },
-            ],
-            "import_errors": [
-                {
-                    "pattern": r"ModuleNotFoundError.*No module named",
-                    "type": "missing_module",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"ImportError.*cannot import",
-                    "type": "import_error",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-            ],
-            "runtime_errors": [
-                {
-                    "pattern": r"ZeroDivisionError",
-                    "type": "division_by_zero",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"IndexError.*list index out of range",
-                    "type": "index_out_of_range",
-                    "severity": "high",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"KeyError",
-                    "type": "key_error",
-                    "severity": "medium",
-                    "auto_fixable": True,
-                },
-                {
-                    "pattern": r"TypeError",
-                    "type": "type_mismatch",
-                    "severity": "medium",
-                    "auto_fixable": True,
-                },
-            ],
+                "syntax_errors": [
+                    {
+                        "pattern": r"SyntaxError.*(missing.*colon|expected.*:)",
+                        "type": "missing_colon",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"SyntaxError.*invalid.*syntax",
+                        "type": "invalid_syntax",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"IndentationError",
+                        "type": "indentation_error",
+                        "severity": "medium",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"NameError.*not defined",
+                        "type": "name_error",
+                        "severity": "medium",
+                        "auto_fixable": True,
+                        },
+                    ],
+                "import_errors": [
+                    {
+                        "pattern": r"ModuleNotFoundError.*No module named",
+                        "type": "missing_module",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"ImportError.*cannot import",
+                        "type": "import_error",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    ],
+                "runtime_errors": [
+                    {
+                        "pattern": r"ZeroDivisionError",
+                        "type": "division_by_zero",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"IndexError.*list index out of range",
+                        "type": "index_out_of_range",
+                        "severity": "high",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"KeyError",
+                        "type": "key_error",
+                        "severity": "medium",
+                        "auto_fixable": True,
+                        },
+                    {
+                        "pattern": r"TypeError",
+                        "type": "type_mismatch",
+                        "severity": "medium",
+                        "auto_fixable": True,
+                        },
+                    ],
         }
 
     def _load_fix_strategies(self) -> Dict[str, List[Dict[str, Any]]]:
         """Merged fix strategies (used for guidance + logging)."""
         return {
-            "missing_colon": [{"strategy": "add_colon", "confidence": 0.9}],
-            "invalid_syntax": [{"strategy": "syntax_correction", "confidence": 0.8}],
-            "indentation_error": [{"strategy": "fix_indentation", "confidence": 0.9}],
-            "name_error": [{"strategy": "define_variable", "confidence": 0.8}],
-            "missing_module": [{"strategy": "install_package", "confidence": 0.7}],
-            "division_by_zero": [{"strategy": "add_zero_check", "confidence": 0.95}],
-            "index_out_of_range": [{"strategy": "add_bounds_check", "confidence": 0.9}],
-            "key_error": [{"strategy": "add_key_check", "confidence": 0.85}],
-        }
+                "missing_colon": [{"strategy": "add_colon", "confidence": 0.9}],
+                "invalid_syntax": [{"strategy": "syntax_correction", "confidence": 0.8}],
+                "indentation_error": [{"strategy": "fix_indentation", "confidence": 0.9}],
+                "name_error": [{"strategy": "define_variable", "confidence": 0.8}],
+                "missing_module": [{"strategy": "install_package", "confidence": 0.7}],
+                "division_by_zero": [{"strategy": "add_zero_check", "confidence": 0.95}],
+                "index_out_of_range": [{"strategy": "add_bounds_check", "confidence": 0.9}],
+                "key_error": [{"strategy": "add_key_check", "confidence": 0.85}],
+                }
 
     def _match_error_patterns(self, failure) -> List[Dict[str, Any]]:
         """Return matched error pattern records."""
@@ -2333,24 +2333,24 @@ class MetaAgent:
         system = self.system
         metrics = getattr(system, "system_metrics", {}) or {}
         components = {
-            "c_core": metrics.get("c_core_status", "unknown"),
-            "python_orchestration": metrics.get(
-                "python_orchestration_status", "unknown"
-            ),
-            "web_interface": metrics.get("web_interface_status", "unknown"),
-            "meta_loop": "active"
-            if getattr(system, "meta_loop_active", False)
-            else "inactive",
-        }
+                "c_core": metrics.get("c_core_status", "unknown"),
+                "python_orchestration": metrics.get(
+                    "python_orchestration_status", "unknown"
+                    ),
+                "web_interface": metrics.get("web_interface_status", "unknown"),
+                "meta_loop": "active"
+                if getattr(system, "meta_loop_active", False)
+                else "inactive",
+                }
         cpu_usage = metrics.get("cpu_usage", None)
         mem_usage = metrics.get("memory_usage", None)
         overall_score = 1.0
         for _, status in components.items():
             if (
-                status
-                and isinstance(status, str)
-                and status not in ("active", "ok", "healthy")
-            ):
+                    status
+                    and isinstance(status, str)
+                    and status not in ("active", "ok", "healthy")
+                    ):
                 overall_score -= 0.15
         if cpu_usage is not None and cpu_usage > 85:
             overall_score -= 0.1
@@ -2364,20 +2364,20 @@ class MetaAgent:
                 pass
         overall_score = max(0.0, min(1.0, overall_score))
         return {
-            "overall_score": overall_score,
-            "components_status": components,
-            "performance_metrics": {
-                "cpu_usage": cpu_usage,
-                "memory_usage": mem_usage,
-                "active_agents": metrics.get("active_agents"),
-            },
-            "resource_usage": {
-                "cpu_usage": cpu_usage,
-                "memory_usage": mem_usage,
-            },
-            "recent_improvements": len(self.improvements_applied[-10:]),
-            "timestamp": sam_time_ref.time(),
-        }
+                "overall_score": overall_score,
+                "components_status": components,
+                "performance_metrics": {
+                    "cpu_usage": cpu_usage,
+                    "memory_usage": mem_usage,
+                    "active_agents": metrics.get("active_agents"),
+                    },
+                "resource_usage": {
+                    "cpu_usage": cpu_usage,
+                    "memory_usage": mem_usage,
+                    },
+                "recent_improvements": len(self.improvements_applied[-10:]),
+                "timestamp": sam_time_ref.time(),
+                }
 
     def generate_system_improvements(self) -> Dict[str, Any]:
         """Generate improvement suggestions based on current health."""
@@ -2389,109 +2389,109 @@ class MetaAgent:
 
         if components.get("web_interface") not in ("active", "ok", "healthy"):
             improvements.append(
-                {
-                    "component": "web_interface",
-                    "improvement_type": "fix",
-                    "description": "Restore web interface availability and restart web threads if needed.",
-                    "priority": 1,
-                    "estimated_impact": 0.9,
-                    "implementation_complexity": 3,
-                }
-            )
+                    {
+                        "component": "web_interface",
+                        "improvement_type": "fix",
+                        "description": "Restore web interface availability and restart web threads if needed.",
+                        "priority": 1,
+                        "estimated_impact": 0.9,
+                        "implementation_complexity": 3,
+                        }
+                    )
 
         if components.get("python_orchestration") not in ("active", "ok", "healthy"):
             improvements.append(
-                {
-                    "component": "python_orchestration",
-                    "improvement_type": "stability",
-                    "description": "Review Python orchestration errors and reinitialize missing subsystems.",
-                    "priority": 1,
-                    "estimated_impact": 0.8,
-                    "implementation_complexity": 4,
-                }
-            )
+                    {
+                        "component": "python_orchestration",
+                        "improvement_type": "stability",
+                        "description": "Review Python orchestration errors and reinitialize missing subsystems.",
+                        "priority": 1,
+                        "estimated_impact": 0.8,
+                        "implementation_complexity": 4,
+                        }
+                    )
 
         if cpu_usage is not None and cpu_usage > 85:
             improvements.append(
-                {
-                    "component": "performance",
-                    "improvement_type": "optimization",
-                    "description": "Throttle background agents or reduce concurrency to lower CPU usage.",
-                    "priority": 2,
-                    "estimated_impact": 0.5,
-                    "implementation_complexity": 2,
-                }
-            )
+                    {
+                        "component": "performance",
+                        "improvement_type": "optimization",
+                        "description": "Throttle background agents or reduce concurrency to lower CPU usage.",
+                        "priority": 2,
+                        "estimated_impact": 0.5,
+                        "implementation_complexity": 2,
+                        }
+                    )
 
         if mem_usage is not None and mem_usage > 85:
             improvements.append(
-                {
-                    "component": "memory",
-                    "improvement_type": "optimization",
-                    "description": "Reduce memory footprint by trimming caches and switching to lighter models.",
-                    "priority": 2,
-                    "estimated_impact": 0.5,
-                    "implementation_complexity": 2,
-                }
-            )
+                    {
+                        "component": "memory",
+                        "improvement_type": "optimization",
+                        "description": "Reduce memory footprint by trimming caches and switching to lighter models.",
+                        "priority": 2,
+                        "estimated_impact": 0.5,
+                        "implementation_complexity": 2,
+                        }
+                    )
 
         if getattr(self.system, "goal_manager", None) and not getattr(
-            self.system.goal_manager, "active_goals", []
-        ):
+                self.system.goal_manager, "active_goals", []
+                ):
             improvements.append(
-                {
-                    "component": "goal_system",
-                    "improvement_type": "bootstrap",
-                    "description": "Seed base goals and subtasks to keep the task manager populated.",
-                    "priority": 2,
-                    "estimated_impact": 0.4,
-                    "implementation_complexity": 1,
-                }
-            )
+                    {
+                        "component": "goal_system",
+                        "improvement_type": "bootstrap",
+                        "description": "Seed base goals and subtasks to keep the task manager populated.",
+                        "priority": 2,
+                        "estimated_impact": 0.4,
+                        "implementation_complexity": 1,
+                        }
+                    )
 
         if not getattr(self.system, "chat_multi_agent", True):
             improvements.append(
-                {
-                    "component": "conversation",
-                    "improvement_type": "engagement",
-                    "description": "Enable multi-agent chat mode for more diverse responses.",
-                    "priority": 3,
-                    "estimated_impact": 0.3,
-                    "implementation_complexity": 1,
-                }
-            )
+                    {
+                        "component": "conversation",
+                        "improvement_type": "engagement",
+                        "description": "Enable multi-agent chat mode for more diverse responses.",
+                        "priority": 3,
+                        "estimated_impact": 0.3,
+                        "implementation_complexity": 1,
+                        }
+                    )
 
         return {
-            "status": "ok",
-            "summary": "Generated improvement suggestions from live system health.",
-            "improvement_phases": improvements,
-            "health": health,
-            "timestamp": sam_time_ref.time(),
-        }
+                "status": "ok",
+                "summary": "Generated improvement suggestions from live system health.",
+                "improvement_phases": improvements,
+                "health": health,
+                "timestamp": sam_time_ref.time(),
+                }
 
     def ingest_learning_event(
-        self, prompt: str, response: str, user: Optional[str] = None
-    ):
+            self, prompt: str, response: str, user: Optional[str] = None
+            ):
         """Accept learning events so meta-agent can adapt."""
         try:
             if not prompt or not response:
                 return
             record = {
-                "prompt": prompt,
-                "response": response,
-                "user": user or "user",
-                "ts": sam_time_ref.time(),
-            }
+                    "prompt": prompt,
+                    "response": response,
+                    "user": user or "user",
+                    "ts": sam_time_ref.time(),
+                    }
             self.learning_log.append(record)
             self._persist_learning_event(record)
             self._learning_event_counter += 1
             self.improvements_applied.append(
-                {
-                    "type": "chat_learning",
-                    "user": user or "user",
-                    "timestamp": sam_datetime_ref.now().isoformat(),
-                }
-            )
+                    {
+                        "type": "chat_learning",
+                        "user": user or "user",
+                        "timestamp": sam_datetime_ref.now().isoformat(),
+                        }
+                    )
             self.learning_cycles += 1
             self._maybe_distill_learning()
         except Exception:
@@ -2504,57 +2504,57 @@ class MetaAgent:
         rules = []
         topics = Counter()
         stopwords = {
-            "this",
-            "that",
-            "with",
-            "from",
-            "have",
-            "your",
-            "what",
-            "when",
-            "then",
-            "than",
-            "here",
-            "there",
-            "would",
-            "could",
-            "should",
-            "about",
-            "into",
-            "just",
-            "like",
-            "also",
-            "been",
-            "were",
-            "will",
-            "them",
-            "they",
-            "their",
-            "that",
-            "these",
-            "those",
-            "your",
-            "you",
-            "does",
-            "doing",
-            "done",
-            "over",
-            "under",
-            "only",
-            "some",
-            "more",
-            "most",
-            "such",
-            "very",
-            "need",
-            "want",
-            "make",
-            "please",
-            "thanks",
-            "sam",
-            "meta",
-            "agent",
-            "system",
+                "this",
+                "that",
+                "with",
+                "from",
+                "have",
+                "your",
+                "what",
+                "when",
+                "then",
+                "than",
+                "here",
+                "there",
+                "would",
+                "could",
+                "should",
+                "about",
+                "into",
+                "just",
+                "like",
+                "also",
+                "been",
+                "were",
+                "will",
+                "them",
+                "they",
+                "their",
+                "that",
+                "these",
+                "those",
+                "your",
+                "you",
+                "does",
+                "doing",
+                "done",
+                "over",
+                "under",
+                "only",
+                "some",
+                "more",
+                "most",
+                "such",
+                "very",
+                "need",
+                "want",
+                "make",
+                "please",
+                "thanks",
+                "sam",
+                "meta",
+                "agent",
+        "system",
         }
         for item in items:
             text = f"{item.get('prompt', '')} {item.get('response', '')}"
@@ -2563,10 +2563,10 @@ class MetaAgent:
                 if not sentence:
                     continue
                 if re.search(
-                    r"\\b(must|should|ensure|never|do not|dont|no)\\b",
-                    sentence,
-                    re.IGNORECASE,
-                ):
+                        r"\\b(must|should|ensure|never|do not|dont|no)\\b",
+                        sentence,
+                        re.IGNORECASE,
+                        ):
                     rules.append(sentence[:200])
             for word in re.findall(r"[A-Za-z]{4,}", text.lower()):
                 if word in stopwords:
@@ -2582,12 +2582,12 @@ class MetaAgent:
             summary_parts.append("Recent conversation distilled.")
         summary = " | ".join(summary_parts)
         return {
-            "ts": sam_time_ref.time(),
-            "summary": summary,
-            "rules": rules[:5],
-            "topics": top_topics,
-            "items": len(items),
-        }
+                "ts": sam_time_ref.time(),
+                "summary": summary,
+                "rules": rules[:5],
+                "topics": top_topics,
+                "items": len(items),
+                }
 
     def _maybe_distill_learning(self):
         if self._learning_event_counter % self.distill_every != 0:
@@ -2601,23 +2601,23 @@ class MetaAgent:
         self.last_distilled = record.get("summary", "")
         self.learning_cycles += 1
         self.system.log_event(
-            "info",
-            "meta_distill_success",
-            "Meta-agent distilled learning events",
-            distilled_count=len(self.distilled_memory),
-            summary=record.get("summary", "")[:120],
-        )  # Log first 120 chars of summary
+                "info",
+                "meta_distill_success",
+                "Meta-agent distilled learning events",
+                distilled_count=len(self.distilled_memory),
+                summary=record.get("summary", "")[:120],
+                )  # Log first 120 chars of summary
         try:
             if getattr(self.system, "system_metrics", None) is not None:
                 self.system.system_metrics["meta_distill_count"] = (
-                    self.system.system_metrics.get("meta_distill_count", 0) + 1
-                )
+                        self.system.system_metrics.get("meta_distill_count", 0) + 1
+                        )
                 self.system.system_metrics["meta_last_distill_ts"] = (
-                    self.last_distill_ts
-                )
+                        self.last_distill_ts
+                        )
                 self.system.system_metrics["meta_last_distill_summary"] = (
-                    self.last_distilled[:200]
-                )
+                        self.last_distilled[:200]
+                        )
         except Exception:
             pass
         self._adjust_confidence_threshold()
@@ -2627,27 +2627,27 @@ class MetaAgent:
         if total < 5:
             return
         successes = sum(
-            1 for item in self.patch_history if item.get("result") == "success"
-        )
+                1 for item in self.patch_history if item.get("result") == "success"
+                )
         success_rate = successes / max(1, total)
         previous = self.confidence_threshold
         if success_rate < 0.3:
             self.confidence_threshold = max(
-                self.confidence_min, self.confidence_threshold - 0.05
-            )
+                    self.confidence_min, self.confidence_threshold - 0.05
+                    )
         elif success_rate > 0.7:
             self.confidence_threshold = min(
-                self.confidence_max, self.confidence_threshold + 0.02
-            )
+                    self.confidence_max, self.confidence_threshold + 0.02
+                    )
         if self.confidence_threshold != previous:
             log_event(
-                "info",
-                "meta_confidence_adjust",
-                "Adjusted meta-agent confidence threshold",
-                previous=previous,
-                current=self.confidence_threshold,
-                success_rate=success_rate,
-            )
+                    "info",
+                    "meta_confidence_adjust",
+                    "Adjusted meta-agent confidence threshold",
+                    previous=previous,
+                    current=self.confidence_threshold,
+                    success_rate=success_rate,
+                    )
 
     def get_distilled_summary(self) -> str:
         if self.last_distilled:
@@ -2658,13 +2658,13 @@ class MetaAgent:
 
     def get_learning_state(self) -> Dict[str, Any]:
         return {
-            "learning_events": len(self.learning_log),
-            "distill_every": self.distill_every,
-            "distilled_count": len(self.distilled_memory),
-            "last_distill_ts": self.last_distill_ts,
-            "last_distilled": self.get_distilled_summary(),
-            "confidence_threshold": self.confidence_threshold,
-        }
+                "learning_events": len(self.learning_log),
+                "distill_every": self.distill_every,
+                "distilled_count": len(self.distilled_memory),
+                "last_distill_ts": self.last_distill_ts,
+                "last_distilled": self.get_distilled_summary(),
+                "confidence_threshold": self.confidence_threshold,
+                }
 
     def _local_research(self, failure, localized_files):
         parts = []
@@ -2682,13 +2682,13 @@ class MetaAgent:
                 if file_abs.exists():
                     try:
                         content = file_abs.read_text(
-                            encoding="utf-8", errors="ignore"
-                        ).splitlines()
+                                encoding="utf-8", errors="ignore"
+                                ).splitlines()
                         start = max(0, line_no - 3)
                         end = min(len(content), line_no + 2)
                         snippet = "\n".join(
-                            f"{i + 1}: {content[i]}" for i in range(start, end)
-                        )
+                                f"{i + 1}: {content[i]}" for i in range(start, end)
+                                )
                         parts.append(f"Context ({file_abs}):\n{snippet}")
                     except Exception:
                         pass
@@ -2747,7 +2747,7 @@ class MetaAgent:
         combined = "\n\n".join(notes)
         return combined[: self.research_max_chars]
 
-        # ===========================
+    # ===========================
         # FAILURE CLUSTERING
         # ===========================
 
@@ -2760,18 +2760,18 @@ class MetaAgent:
         """Assign failure to appropriate cluster using simple baseline clustering"""
         # Simple baseline clustering by error type (upgrade later with embeddings)
         failure_type = self._get_failure_attr(
-            failure,
-            "error_type",
-            self._get_failure_attr(failure, "type", "unknown"),
-        )
+                failure,
+                "error_type",
+                self._get_failure_attr(failure, "type", "unknown"),
+                )
         for cid, failures in self.failure_clusters.items():
             if not failures:
                 continue
             existing_type = self._get_failure_attr(
-                failures[0],
-                "error_type",
-                self._get_failure_attr(failures[0], "type", "unknown"),
-            )
+                    failures[0],
+                    "error_type",
+                    self._get_failure_attr(failures[0], "type", "unknown"),
+                    )
             if failure_type == existing_type:
                 return cid
 
@@ -2782,19 +2782,19 @@ class MetaAgent:
         """Get statistics about failure clusters for deployment checks"""
         total_failures = sum(len(v) for v in self.failure_clusters.values())
         return {
-            "total_clusters": len(self.failure_clusters),
-            "total_failures": total_failures,
-            "average_cluster_size": total_failures / len(self.failure_clusters)
-            if self.failure_clusters
-            else 0.0,
-            "largest_cluster": max(
-                (len(v) for v in self.failure_clusters.values()), default=0
-            ),
-            "clusters_with_fixes": 0,  # Will be updated when patch learning is added
-            "clusters": {
-                cid: len(failures) for cid, failures in self.failure_clusters.items()
-            },
-        }
+                "total_clusters": len(self.failure_clusters),
+                "total_failures": total_failures,
+                "average_cluster_size": total_failures / len(self.failure_clusters)
+                if self.failure_clusters
+                else 0.0,
+                "largest_cluster": max(
+                    (len(v) for v in self.failure_clusters.values()), default=0
+                    ),
+                "clusters_with_fixes": 0,  # Will be updated when patch learning is added
+                "clusters": {
+                    cid: len(failures) for cid, failures in self.failure_clusters.items()
+                    },
+                }
 
         # ===========================
         # PATCH LEARNING
@@ -2803,70 +2803,70 @@ class MetaAgent:
     def _learn_from_success(self, patch, failure):
         """Learn from successful patch application"""
         record = {
-            "patch": patch,
-            "failure": failure,
-            "result": "success",
-            "timestamp": sam_datetime_ref.now().isoformat(),
-        }
-        self.patch_history.append(record)
-        self.successful_fixes.append(
-            {
                 "patch": patch,
                 "failure": failure,
+                "result": "success",
                 "timestamp": sam_datetime_ref.now().isoformat(),
-            }
-        )
+                }
+        self.patch_history.append(record)
+        self.successful_fixes.append(
+                {
+                    "patch": patch,
+                    "failure": failure,
+                    "timestamp": sam_datetime_ref.now().isoformat(),
+                    }
+                )
         self.improvements_applied.append(
-            {
-                "type": "patch_success",
-                "patch_id": patch.get("id"),
-                "intent": patch.get("intent"),
-                "confidence": patch.get("confidence"),
-                "timestamp": sam_datetime_ref.now().isoformat(),
-            }
-        )
+                {
+                    "type": "patch_success",
+                    "patch_id": patch.get("id"),
+                    "intent": patch.get("intent"),
+                    "confidence": patch.get("confidence"),
+                    "timestamp": sam_datetime_ref.now().isoformat(),
+                    }
+                )
         self.learning_cycles += 1
         self._adjust_confidence_threshold()
         self.system.log_event(
-            "info",
-            "meta_patch_success",
-            "Meta-agent successfully applied patch",
-            patch_id=patch.get("id"),
-            failure_type=failure.get("error_type"),
-            confidence=patch.get("confidence"),
-        )
+                "info",
+                "meta_patch_success",
+                "Meta-agent successfully applied patch",
+                patch_id=patch.get("id"),
+                failure_type=failure.get("error_type"),
+                confidence=patch.get("confidence"),
+                )
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
         record = {
-            "patch": patch,
-            "failure": failure,
-            "result": "rejected",
-            "timestamp": sam_datetime_ref.now().isoformat(),
-        }
-        self.patch_history.append(record)
-        self.failed_attempts.append(
-            {
                 "patch": patch,
                 "failure": failure,
+                "result": "rejected",
                 "timestamp": sam_datetime_ref.now().isoformat(),
-            }
-        )
+                }
+        self.patch_history.append(record)
+        self.failed_attempts.append(
+                {
+                    "patch": patch,
+                    "failure": failure,
+                    "timestamp": sam_datetime_ref.now().isoformat(),
+                    }
+                )
         self.errors_detected.append(
-            {
-                "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
-                "timestamp": sam_datetime_ref.now().isoformat(),
-            }
-        )
+                {
+                    "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
+                    "timestamp": sam_datetime_ref.now().isoformat(),
+                    }
+                )
         self.learning_cycles += 1
         self.system.log_event(
-            "warn",
-            "meta_patch_failure",
-            "Meta-agent failed to apply patch",
-            patch_id=patch.get("id"),
-            failure_type=failure.get("error_type"),
-            reason="rejected_by_verifier",
-        )
+                "warn",
+                "meta_patch_failure",
+                "Meta-agent failed to apply patch",
+                patch_id=patch.get("id"),
+                failure_type=failure.get("error_type"),
+                reason="rejected_by_verifier",
+                )
         self._adjust_confidence_threshold()
 
     def _extract_failure_location(self, failure, stack_trace: str):
@@ -2894,15 +2894,15 @@ class MetaAgent:
 
         if not file_path:
             hint_text = " ".join(
-                filter(
-                    None,
-                    [
-                        self._get_failure_attr(failure, "research_notes", ""),
-                        self._get_failure_attr(failure, "message", ""),
-                        stack,
-                    ],
-                )
-            )
+                    filter(
+                        None,
+                        [
+                            self._get_failure_attr(failure, "research_notes", ""),
+                            self._get_failure_attr(failure, "message", ""),
+                            stack,
+                            ],
+                        )
+                    )
             tokens = re.findall(r"[A-Za-z0-9_./-]+\\.py", hint_text)
             if tokens:
                 file_path = tokens[-1]
@@ -2933,18 +2933,18 @@ class MetaAgent:
         except Exception:
             rel = str(path)
         return {
-            "id": "meta_test_noop",
-            "target_file": rel,
-            "changes": [
-                {"type": "replace", "old_code": old_code, "new_code": old_code}
-            ],
-            "intent": "Meta test noop patch",
-            "risk_level": "low",
-            "confidence": 0.9,
-            "assumptions": ["Test mode allows noop patch"],
-            "unknowns": [],
-            "generated_by": "meta_test",
-        }
+                "id": "meta_test_noop",
+                "target_file": rel,
+                "changes": [
+                    {"type": "replace", "old_code": old_code, "new_code": old_code}
+                    ],
+                "intent": "Meta test noop patch",
+                "risk_level": "low",
+                "confidence": 0.9,
+                "assumptions": ["Test mode allows noop patch"],
+                "unknowns": [],
+                "generated_by": "meta_test",
+                }
 
     def _deterministic_patches(self, failure):
         """Generate deterministic patches for known failure signatures."""
@@ -2972,9 +2972,9 @@ class MetaAgent:
 
                 # Fix missing attributes on UnifiedSAMSystem by adding safe defaults in __init__
         attr_match = re.search(
-            r"AttributeError: 'UnifiedSAMSystem' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'",
-            stack_trace,
-        )
+                r"AttributeError: 'UnifiedSAMSystem' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'",
+                stack_trace,
+                )
         if attr_match:
             missing_attr = attr_match.group(1)
             target_file = "complete_sam_unified.py"
@@ -2986,36 +2986,36 @@ class MetaAgent:
 
             if content and f"self.{missing_attr} =" not in content:
                 anchors = [
-                    "        self.conversation_rooms = {}\n",
-                    "        self.connected_users = {}\n",
-                ]
+                        "        self.conversation_rooms = {}\n",
+                        "        self.connected_users = {}\n",
+                        ]
                 for anchor in anchors:
                     if anchor in content:
                         new_code = anchor + f"        self.{missing_attr} = None\n"
                         patches.append(
-                            {
-                                "id": f"deterministic_attr_{missing_attr}",
-                                "target_file": target_file,
-                                "changes": [
-                                    {
-                                        "type": "replace",
-                                        "old_code": anchor,
-                                        "new_code": new_code,
+                                {
+                                    "id": f"deterministic_attr_{missing_attr}",
+                                    "target_file": target_file,
+                                    "changes": [
+                                        {
+                                            "type": "replace",
+                                            "old_code": anchor,
+                                            "new_code": new_code,
+                                            }
+                                        ],
+                                    "intent": f"Initialize missing attribute self.{missing_attr} to prevent AttributeError",
+                                    "risk_level": "low",
+                                    "confidence": 0.95,
+                                    "assumptions": [
+                                        "Missing attribute can be safely initialized to None"
+                                        ],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry",
                                     }
-                                ],
-                                "intent": f"Initialize missing attribute self.{missing_attr} to prevent AttributeError",
-                                "risk_level": "low",
-                                "confidence": 0.95,
-                                "assumptions": [
-                                    "Missing attribute can be safely initialized to None"
-                                ],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry",
-                            }
-                        )
+                                )
                         break
 
-                        # Fix missing colon / syntax artifacts when a concrete file + line is available
+                    # Fix missing colon / syntax artifacts when a concrete file + line is available
         if file_path and line_no:
             file_abs = Path(file_path)
             if not file_abs.is_absolute():
@@ -3023,8 +3023,8 @@ class MetaAgent:
             if file_abs.exists():
                 try:
                     lines = file_abs.read_text(
-                        encoding="utf-8", errors="ignore"
-                    ).splitlines(True)
+                            encoding="utf-8", errors="ignore"
+                            ).splitlines(True)
                     if 0 < line_no <= len(lines):
                         line = lines[line_no - 1]
                         indent = line[: len(line) - len(line.lstrip())]
@@ -3035,187 +3035,187 @@ class MetaAgent:
                                 rel = str(file_abs)
                                 try:
                                     rel = str(
-                                        file_abs.relative_to(self.system.project_root)
-                                    )
+                                            file_abs.relative_to(self.system.project_root)
+                                            )
                                 except Exception:
                                     pass
                                 patches.append(
-                                    {
-                                        "id": "deterministic_unescape_fstring",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": fixed,
-                                            }
-                                        ],
-                                        "intent": "Fix invalid escaped quotes in f-string",
-                                        "risk_level": "low",
-                                        "confidence": 0.9,
-                                        "assumptions": [
-                                            "Escaped quotes were introduced by faulty patching"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
-                                # Missing colon in Python block headers
-                        if any(
-                            p.get("type") == "missing_colon" for p in pattern_matches
-                        ):
-                            stripped = line.rstrip("\n")
-                            if stripped and not stripped.rstrip().endswith(":"):
-                                if re.match(
-                                    r"^\s*(def |if |elif |else|for |while |try|except|finally|class )",
-                                    stripped,
-                                ):
-                                    fixed = stripped + ":\n"
-                                    rel = str(file_abs)
-                                    try:
-                                        rel = str(
-                                            file_abs.relative_to(
-                                                self.system.project_root
-                                            )
-                                        )
-                                    except Exception:
-                                        pass
-                                    patches.append(
                                         {
-                                            "id": "deterministic_missing_colon",
+                                            "id": "deterministic_unescape_fstring",
                                             "target_file": rel,
                                             "changes": [
                                                 {
                                                     "type": "replace",
                                                     "old_code": line,
                                                     "new_code": fixed,
-                                                }
-                                            ],
-                                            "intent": "Add missing colon to Python block header",
+                                                    }
+                                                ],
+                                            "intent": "Fix invalid escaped quotes in f-string",
                                             "risk_level": "low",
                                             "confidence": 0.9,
                                             "assumptions": [
-                                                "SyntaxError indicates missing colon at this line"
-                                            ],
+                                                "Escaped quotes were introduced by faulty patching"
+                                                ],
                                             "unknowns": [],
                                             "generated_by": "deterministic_patch_registry",
-                                        }
-                                    )
+                                            }
+                                        )
+                                # Missing colon in Python block headers
+                        if any(
+                                p.get("type") == "missing_colon" for p in pattern_matches
+                                ):
+                            stripped = line.rstrip("\n")
+                            if stripped and not stripped.rstrip().endswith(":"):
+                                if re.match(
+                                        r"^\s*(def |if |elif |else|for |while |try|except|finally|class )",
+                                        stripped,
+                                        ):
+                                    fixed = stripped + ":\n"
+                                    rel = str(file_abs)
+                                    try:
+                                        rel = str(
+                                                file_abs.relative_to(
+                                                    self.system.project_root
+                                                    )
+                                                )
+                                    except Exception:
+                                        pass
+                                    patches.append(
+                                            {
+                                                "id": "deterministic_missing_colon",
+                                                "target_file": rel,
+                                                "changes": [
+                                                    {
+                                                        "type": "replace",
+                                                        "old_code": line,
+                                                        "new_code": fixed,
+                                                        }
+                                                    ],
+                                                "intent": "Add missing colon to Python block header",
+                                                "risk_level": "low",
+                                                "confidence": 0.9,
+                                                "assumptions": [
+                                                    "SyntaxError indicates missing colon at this line"
+                                                    ],
+                                                "unknowns": [],
+                                                "generated_by": "deterministic_patch_registry",
+                                                }
+                                            )
                                     # Indentation errors caused by tabs
                         if any(
-                            p.get("type") == "indentation_error"
-                            for p in pattern_matches
-                        ):
+                                p.get("type") == "indentation_error"
+                                for p in pattern_matches
+                                ):
                             if "\t" in line:
                                 fixed = line.replace("\t", "    ")
                                 rel = str(file_abs)
                                 try:
                                     rel = str(
-                                        file_abs.relative_to(self.system.project_root)
-                                    )
+                                            file_abs.relative_to(self.system.project_root)
+                                            )
                                 except Exception:
                                     pass
                                 patches.append(
-                                    {
-                                        "id": "deterministic_fix_indentation_tabs",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": fixed,
+                                        {
+                                            "id": "deterministic_fix_indentation_tabs",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": fixed,
+                                                    }
+                                                ],
+                                            "intent": "Replace tabs with 4 spaces to fix indentation",
+                                            "risk_level": "low",
+                                            "confidence": 0.85,
+                                            "assumptions": [
+                                                "IndentationError caused by tabs"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Replace tabs with 4 spaces to fix indentation",
-                                        "risk_level": "low",
-                                        "confidence": 0.85,
-                                        "assumptions": [
-                                            "IndentationError caused by tabs"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                                 # Import errors: wrap missing imports with try/except
                         mod_match = re.search(r"No module named '([^']+)'", stack_trace)
                         if mod_match:
                             missing_mod = mod_match.group(1)
                             stripped = line.lstrip()
                             if (
-                                stripped.startswith("import ")
-                                and missing_mod in stripped
-                            ):
+                                    stripped.startswith("import ")
+                                    and missing_mod in stripped
+                                    ):
                                 new_code = (
-                                    f"{indent}try:\n"
-                                    f"{indent}    import {missing_mod}\n"
-                                    f"{indent}except ImportError:\n"
-                                    f"{indent}    {missing_mod} = None\n"
-                                )
+                                        f"{indent}try:\n"
+                                        f"{indent}    import {missing_mod}\n"
+                                        f"{indent}except ImportError:\n"
+                                        f"{indent}    {missing_mod} = None\n"
+                                        )
                                 rel = str(file_abs)
                                 try:
                                     rel = str(
-                                        file_abs.relative_to(self.system.project_root)
-                                    )
+                                            file_abs.relative_to(self.system.project_root)
+                                            )
                                 except Exception:
                                     pass
                                 patches.append(
-                                    {
-                                        "id": "deterministic_wrap_import",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": new_code,
+                                        {
+                                            "id": "deterministic_wrap_import",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": new_code,
+                                                    }
+                                                ],
+                                            "intent": "Wrap missing import in try/except to avoid crash",
+                                            "risk_level": "low",
+                                            "confidence": 0.85,
+                                            "assumptions": [
+                                                "Missing module can be optional for runtime"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Wrap missing import in try/except to avoid crash",
-                                        "risk_level": "low",
-                                        "confidence": 0.85,
-                                        "assumptions": [
-                                            "Missing module can be optional for runtime"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                             elif (
-                                stripped.startswith("from ") and missing_mod in stripped
-                            ):
+                                    stripped.startswith("from ") and missing_mod in stripped
+                                    ):
                                 new_code = (
-                                    f"{indent}try:\n"
-                                    f"{indent}    {stripped}"
-                                    f"{indent}except ImportError:\n"
-                                    f"{indent}    pass\n"
-                                )
+                                        f"{indent}try:\n"
+                                        f"{indent}    {stripped}"
+                                        f"{indent}except ImportError:\n"
+                                        f"{indent}    pass\n"
+                                        )
                                 rel = str(file_abs)
                                 try:
                                     rel = str(
-                                        file_abs.relative_to(self.system.project_root)
-                                    )
+                                            file_abs.relative_to(self.system.project_root)
+                                            )
                                 except Exception:
                                     pass
                                 patches.append(
-                                    {
-                                        "id": "deterministic_wrap_from_import",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": new_code,
+                                        {
+                                            "id": "deterministic_wrap_from_import",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": new_code,
+                                                    }
+                                                ],
+                                            "intent": "Wrap failing from-import to avoid crash",
+                                            "risk_level": "low",
+                                            "confidence": 0.8,
+                                            "assumptions": [
+                                                "Import failure can be handled gracefully"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Wrap failing from-import to avoid crash",
-                                        "risk_level": "low",
-                                        "confidence": 0.8,
-                                        "assumptions": [
-                                            "Import failure can be handled gracefully"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                                 # ZeroDivisionError: replace literal divide-by-zero
                         if "ZeroDivisionError" in stack_trace:
                             if re.search(r"/\s*0\b", line):
@@ -3224,39 +3224,39 @@ class MetaAgent:
                                     rel = str(file_abs)
                                     try:
                                         rel = str(
-                                            file_abs.relative_to(
-                                                self.system.project_root
-                                            )
-                                        )
+                                                file_abs.relative_to(
+                                                    self.system.project_root
+                                                    )
+                                                )
                                     except Exception:
                                         pass
                                     patches.append(
-                                        {
-                                            "id": "deterministic_fix_div_zero",
-                                            "target_file": rel,
-                                            "changes": [
-                                                {
-                                                    "type": "replace",
-                                                    "old_code": line,
-                                                    "new_code": fixed,
+                                            {
+                                                "id": "deterministic_fix_div_zero",
+                                                "target_file": rel,
+                                                "changes": [
+                                                    {
+                                                        "type": "replace",
+                                                        "old_code": line,
+                                                        "new_code": fixed,
+                                                        }
+                                                    ],
+                                                "intent": "Avoid literal divide-by-zero",
+                                                "risk_level": "medium",
+                                                "confidence": 0.8,
+                                                "assumptions": [
+                                                    "Literal divisor zero can be safely replaced"
+                                                    ],
+                                                "unknowns": [],
+                                                "generated_by": "deterministic_patch_registry",
                                                 }
-                                            ],
-                                            "intent": "Avoid literal divide-by-zero",
-                                            "risk_level": "medium",
-                                            "confidence": 0.8,
-                                            "assumptions": [
-                                                "Literal divisor zero can be safely replaced"
-                                            ],
-                                            "unknowns": [],
-                                            "generated_by": "deterministic_patch_registry",
-                                        }
-                                    )
+                                            )
                                     # IndexError: add bounds guard for simple constant index access
                         if "IndexError" in stack_trace:
                             idx_match = re.match(
-                                r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
-                                line,
-                            )
+                                    r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
+                                    line,
+                                    )
                             if idx_match:
                                 indent = idx_match.group(1)
                                 ret_kw = idx_match.group(2)
@@ -3266,54 +3266,54 @@ class MetaAgent:
                                 rest = idx_match.group(6) or ""
                                 if ret_kw:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    return {seq}[{idx}]{rest}\n"
-                                        f"{indent}return None\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    return {seq}[{idx}]{rest}\n"
+                                            f"{indent}return None\n"
+                                            )
                                 elif assign_prefix:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    {assign_prefix}{seq}[{idx}]{rest}\n"
-                                        f"{indent}else:\n"
-                                        f"{indent}    {assign_prefix}None\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    {assign_prefix}{seq}[{idx}]{rest}\n"
+                                            f"{indent}else:\n"
+                                            f"{indent}    {assign_prefix}None\n"
+                                            )
                                 else:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    {seq}[{idx}]{rest}\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    {seq}[{idx}]{rest}\n"
+                                            )
                                 rel = str(file_abs)
                                 try:
                                     rel = str(
-                                        file_abs.relative_to(self.system.project_root)
-                                    )
+                                            file_abs.relative_to(self.system.project_root)
+                                            )
                                 except Exception:
                                     pass
                                 patches.append(
-                                    {
-                                        "id": "deterministic_guard_index",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": new_code,
+                                        {
+                                            "id": "deterministic_guard_index",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": new_code,
+                                                    }
+                                                ],
+                                            "intent": "Guard index access to prevent IndexError",
+                                            "risk_level": "medium",
+                                            "confidence": 0.8,
+                                            "assumptions": [
+                                                "Guarding constant index is acceptable"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Guard index access to prevent IndexError",
-                                        "risk_level": "medium",
-                                        "confidence": 0.8,
-                                        "assumptions": [
-                                            "Guarding constant index is acceptable"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                 except Exception:
                     pass
 
-                    # Heuristic fixes by error_type when stack trace lacks precise line
+                # Heuristic fixes by error_type when stack trace lacks precise line
         if file_path:
             file_abs = Path(file_path)
             if not file_abs.is_absolute():
@@ -3339,36 +3339,36 @@ class MetaAgent:
                             fixed = re.sub(r"/\s*0\b", "/ 1", line, count=1)
                             if fixed != line:
                                 patches.append(
-                                    {
-                                        "id": "deterministic_logic_div_zero",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": fixed,
+                                        {
+                                            "id": "deterministic_logic_div_zero",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": fixed,
+                                                    }
+                                                ],
+                                            "intent": "Avoid literal divide-by-zero in logic path",
+                                            "risk_level": "medium",
+                                            "confidence": 0.85,
+                                            "assumptions": [
+                                                "Literal divisor zero can be safely replaced"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Avoid literal divide-by-zero in logic path",
-                                        "risk_level": "medium",
-                                        "confidence": 0.85,
-                                        "assumptions": [
-                                            "Literal divisor zero can be safely replaced"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                                 break
-                                # Guard constant index access if no divide-by-zero fix added
+                            # Guard constant index access if no divide-by-zero fix added
                     if not any(
-                        p.get("id") == "deterministic_logic_div_zero" for p in patches
-                    ):
+                            p.get("id") == "deterministic_logic_div_zero" for p in patches
+                            ):
                         for line in lines:
                             idx_match = re.match(
-                                r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
-                                line,
-                            )
+                                    r"^(\s*)(?:(return)\s+|([A-Za-z_][A-Za-z0-9_]*\s*=\s*))?([A-Za-z_][A-Za-z0-9_]*)\[(\d+)\](.*)$",
+                                    line,
+                                    )
                             if idx_match:
                                 indent = idx_match.group(1)
                                 ret_kw = idx_match.group(2)
@@ -3378,43 +3378,43 @@ class MetaAgent:
                                 rest = idx_match.group(6) or ""
                                 if ret_kw:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    return {seq}[{idx}]{rest}\n"
-                                        f"{indent}return None\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    return {seq}[{idx}]{rest}\n"
+                                            f"{indent}return None\n"
+                                            )
                                 elif assign_prefix:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    {assign_prefix}{seq}[{idx}]{rest}\n"
-                                        f"{indent}else:\n"
-                                        f"{indent}    {assign_prefix}None\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    {assign_prefix}{seq}[{idx}]{rest}\n"
+                                            f"{indent}else:\n"
+                                            f"{indent}    {assign_prefix}None\n"
+                                            )
                                 else:
                                     new_code = (
-                                        f"{indent}if {idx} < len({seq}):\n"
-                                        f"{indent}    {seq}[{idx}]{rest}\n"
-                                    )
+                                            f"{indent}if {idx} < len({seq}):\n"
+                                            f"{indent}    {seq}[{idx}]{rest}\n"
+                                            )
                                 patches.append(
-                                    {
-                                        "id": "deterministic_logic_guard_index",
-                                        "target_file": rel,
-                                        "changes": [
-                                            {
-                                                "type": "replace",
-                                                "old_code": line,
-                                                "new_code": new_code,
+                                        {
+                                            "id": "deterministic_logic_guard_index",
+                                            "target_file": rel,
+                                            "changes": [
+                                                {
+                                                    "type": "replace",
+                                                    "old_code": line,
+                                                    "new_code": new_code,
+                                                    }
+                                                ],
+                                            "intent": "Guard constant index access to prevent IndexError",
+                                            "risk_level": "medium",
+                                            "confidence": 0.85,
+                                            "assumptions": [
+                                                "Guarding constant index is acceptable"
+                                                ],
+                                            "unknowns": [],
+                                            "generated_by": "deterministic_patch_registry",
                                             }
-                                        ],
-                                        "intent": "Guard constant index access to prevent IndexError",
-                                        "risk_level": "medium",
-                                        "confidence": 0.85,
-                                        "assumptions": [
-                                            "Guarding constant index is acceptable"
-                                        ],
-                                        "unknowns": [],
-                                        "generated_by": "deterministic_patch_registry",
-                                    }
-                                )
+                                        )
                                 break
 
                 if "performance" in failure_type:
@@ -3422,98 +3422,98 @@ class MetaAgent:
                         if re.match(r"^\s*def\s+inefficient_loop\b", line):
                             indent = re.match(r"^(\s*)", line).group(1)
                             new_code = (
-                                line
-                                + f"{indent}    n = min(n, 1000)  # Cap to avoid quadratic blowup\n"
-                            )
+                                    line
+                                    + f"{indent}    n = min(n, 1000)  # Cap to avoid quadratic blowup\n"
+                                    )
                             patches.append(
+                                    {
+                                        "id": "deterministic_perf_cap_n",
+                                        "target_file": rel,
+                                        "changes": [
+                                            {
+                                                "type": "replace",
+                                                "old_code": line,
+                                                "new_code": new_code,
+                                                }
+                                            ],
+                                        "intent": "Cap loop size to reduce quadratic cost",
+                                        "risk_level": "low",
+                                        "confidence": 0.86,
+                                        "assumptions": [
+                                            "Limiting n is acceptable for performance"
+                                            ],
+                                        "unknowns": [],
+                                        "generated_by": "deterministic_patch_registry",
+                                        }
+                                    )
+                            break
+
+                if (
+                        "missingdependency" in failure_type
+                        or "missing_dependency" in failure_type
+                        ):
+                    block = "except ImportError:\n    HAS_REQUESTS = False\n"
+                    if block in content:
+                        new_block = (
+                                "except ImportError:\n"
+                                "    HAS_REQUESTS = False\n"
+                                "    class requests:\n"
+                                "        @staticmethod\n"
+                                "        def get(*args, **kwargs):\n"
+                                '            raise RuntimeError("requests not installed")\n'
+                                )
+                        patches.append(
                                 {
-                                    "id": "deterministic_perf_cap_n",
+                                    "id": "deterministic_stub_requests",
                                     "target_file": rel,
                                     "changes": [
                                         {
                                             "type": "replace",
-                                            "old_code": line,
-                                            "new_code": new_code,
-                                        }
-                                    ],
-                                    "intent": "Cap loop size to reduce quadratic cost",
+                                            "old_code": block,
+                                            "new_code": new_block,
+                                            }
+                                        ],
+                                    "intent": "Provide a safe stub when requests is missing",
                                     "risk_level": "low",
                                     "confidence": 0.86,
                                     "assumptions": [
-                                        "Limiting n is acceptable for performance"
-                                    ],
+                                        "Stub is acceptable fallback when dependency missing"
+                                        ],
                                     "unknowns": [],
                                     "generated_by": "deterministic_patch_registry",
-                                }
-                            )
-                            break
-
-                if (
-                    "missingdependency" in failure_type
-                    or "missing_dependency" in failure_type
-                ):
-                    block = "except ImportError:\n    HAS_REQUESTS = False\n"
-                    if block in content:
-                        new_block = (
-                            "except ImportError:\n"
-                            "    HAS_REQUESTS = False\n"
-                            "    class requests:\n"
-                            "        @staticmethod\n"
-                            "        def get(*args, **kwargs):\n"
-                            '            raise RuntimeError("requests not installed")\n'
-                        )
-                        patches.append(
-                            {
-                                "id": "deterministic_stub_requests",
-                                "target_file": rel,
-                                "changes": [
-                                    {
-                                        "type": "replace",
-                                        "old_code": block,
-                                        "new_code": new_block,
                                     }
-                                ],
-                                "intent": "Provide a safe stub when requests is missing",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": [
-                                    "Stub is acceptable fallback when dependency missing"
-                                ],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry",
-                            }
-                        )
+                                )
                     block_np = "except ImportError:\n    HAS_NUMPY = False\n"
                     if block_np in content:
                         new_block_np = (
-                            "except ImportError:\n"
-                            "    HAS_NUMPY = False\n"
-                            "    class np:\n"
-                            "        @staticmethod\n"
-                            "        def array(*args, **kwargs):\n"
-                            '            raise RuntimeError("numpy not installed")\n'
-                        )
+                                "except ImportError:\n"
+                                "    HAS_NUMPY = False\n"
+                                "    class np:\n"
+                                "        @staticmethod\n"
+                                "        def array(*args, **kwargs):\n"
+                                '            raise RuntimeError("numpy not installed")\n'
+                                )
                         patches.append(
-                            {
-                                "id": "deterministic_stub_numpy",
-                                "target_file": rel,
-                                "changes": [
-                                    {
-                                        "type": "replace",
-                                        "old_code": block_np,
-                                        "new_code": new_block_np,
+                                {
+                                    "id": "deterministic_stub_numpy",
+                                    "target_file": rel,
+                                    "changes": [
+                                        {
+                                            "type": "replace",
+                                            "old_code": block_np,
+                                            "new_code": new_block_np,
+                                            }
+                                        ],
+                                    "intent": "Provide a safe stub when numpy is missing",
+                                    "risk_level": "low",
+                                    "confidence": 0.86,
+                                    "assumptions": [
+                                        "Stub is acceptable fallback when dependency missing"
+                                        ],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry",
                                     }
-                                ],
-                                "intent": "Provide a safe stub when numpy is missing",
-                                "risk_level": "low",
-                                "confidence": 0.86,
-                                "assumptions": [
-                                    "Stub is acceptable fallback when dependency missing"
-                                ],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry",
-                            }
-                        )
+                                )
 
                 if "configuration" in failure_type:
                     config_changes = []
@@ -3521,56 +3521,56 @@ class MetaAgent:
                         if re.match(r"^\s*API_KEY\s*=", line):
                             new_line = 'API_KEY = os.getenv("API_KEY", "MISSING")\n'
                             config_changes.append(
-                                {
-                                    "type": "replace",
-                                    "old_code": line,
-                                    "new_code": new_line,
-                                }
-                            )
+                                    {
+                                        "type": "replace",
+                                        "old_code": line,
+                                        "new_code": new_line,
+                                        }
+                                    )
                             break
                     for line in lines:
                         if re.match(r"^\s*DATABASE_URL\s*=", line):
                             new_line = 'DATABASE_URL = os.getenv("DATABASE_URL", "http://localhost")\n'
                             config_changes.append(
-                                {
-                                    "type": "replace",
-                                    "old_code": line,
-                                    "new_code": new_line,
-                                }
-                            )
+                                    {
+                                        "type": "replace",
+                                        "old_code": line,
+                                        "new_code": new_line,
+                                        }
+                                    )
                             break
                     for line in lines:
                         if re.match(r"^\s*TIMEOUT\s*=", line):
                             new_line = (
-                                'TIMEOUT = max(0, int(os.getenv("TIMEOUT", "30")))\n'
-                            )
+                                    'TIMEOUT = max(0, int(os.getenv("TIMEOUT", "30")))\n'
+                                    )
                             config_changes.append(
-                                {
-                                    "type": "replace",
-                                    "old_code": line,
-                                    "new_code": new_line,
-                                }
-                            )
+                                    {
+                                        "type": "replace",
+                                        "old_code": line,
+                                        "new_code": new_line,
+                                        }
+                                    )
                             break
                     if config_changes:
                         patches.append(
-                            {
-                                "id": "deterministic_config_defaults",
-                                "target_file": rel,
-                                "changes": config_changes,
-                                "intent": "Normalize configuration defaults to valid values",
-                                "risk_level": "low",
-                                "confidence": 0.87,
-                                "assumptions": ["Defaults are safe for validation"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry",
-                            }
-                        )
+                                {
+                                    "id": "deterministic_config_defaults",
+                                    "target_file": rel,
+                                    "changes": config_changes,
+                                    "intent": "Normalize configuration defaults to valid values",
+                                    "risk_level": "low",
+                                    "confidence": 0.87,
+                                    "assumptions": ["Defaults are safe for validation"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry",
+                                    }
+                                )
 
                         # NameError for missing helper function
         name_match = re.search(
-            r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace
-        )
+                r"NameError: name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", stack_trace
+                )
         if name_match:
             missing_name = name_match.group(1)
             if missing_name == "_utc_now":
@@ -3584,30 +3584,30 @@ class MetaAgent:
                     anchor = "def log_event"
                     if anchor in content:
                         new_code = (
-                            "def _utc_now():\n"
-                            '    """UTC timestamp in ISO8601 with Z suffix."""\n'
-                            '    return sam_datetime_ref.now(timezone.utc).isoformat().replace("+00:00", "Z")\n\n'
-                            + anchor
-                        )
+                                "def _utc_now():\n"
+                                '    """UTC timestamp in ISO8601 with Z suffix."""\n'
+                                '    return sam_datetime_ref.now(timezone.utc).isoformat().replace("+00:00", "Z")\n\n'
+                                + anchor
+                                )
                         patches.append(
-                            {
-                                "id": "deterministic_add_utc_now",
-                                "target_file": target_file,
-                                "changes": [
-                                    {
-                                        "type": "replace",
-                                        "old_code": anchor,
-                                        "new_code": new_code,
+                                {
+                                    "id": "deterministic_add_utc_now",
+                                    "target_file": target_file,
+                                    "changes": [
+                                        {
+                                            "type": "replace",
+                                            "old_code": anchor,
+                                            "new_code": new_code,
+                                            }
+                                        ],
+                                    "intent": "Add missing _utc_now helper",
+                                    "risk_level": "low",
+                                    "confidence": 0.9,
+                                    "assumptions": ["Missing _utc_now caused NameError"],
+                                    "unknowns": [],
+                                    "generated_by": "deterministic_patch_registry",
                                     }
-                                ],
-                                "intent": "Add missing _utc_now helper",
-                                "risk_level": "low",
-                                "confidence": 0.9,
-                                "assumptions": ["Missing _utc_now caused NameError"],
-                                "unknowns": [],
-                                "generated_by": "deterministic_patch_registry",
-                            }
-                        )
+                                )
 
         return patches
 
@@ -3619,8 +3619,8 @@ class MetaAgent:
         allow_self_mod = getattr(self.system, "allow_self_modification", None)
         if allow_self_mod is False:
             print(
-                " Production Meta-Agent: Self-modification disabled - patch not applied"
-            )
+                    " Production Meta-Agent: Self-modification disabled - patch not applied"
+                    )
             return False
         if not getattr(self.system, "sam_code_modifier_available", False):
             try:
@@ -3632,17 +3632,17 @@ class MetaAgent:
             except Exception:
                 pass
         if (
-            not getattr(self.system, "sam_code_modifier_available", False)
-            or modify_code_safely is None
-        ):
+                not getattr(self.system, "sam_code_modifier_available", False)
+                or modify_code_safely is None
+                ):
             if allow_self_mod is None:
                 print(
-                    " Production Meta-Agent: Code modifier unavailable - using direct patch fallback"
-                )
+                        " Production Meta-Agent: Code modifier unavailable - using direct patch fallback"
+                        )
             else:
                 print(
-                    " Production Meta-Agent: Code modifier unavailable - patch not applied"
-                )
+                        " Production Meta-Agent: Code modifier unavailable - patch not applied"
+                        )
                 return False
 
         success = True
@@ -3652,34 +3652,34 @@ class MetaAgent:
                 target_file = patch.get("target_file", "")
                 applied = False
                 if modify_code_safely is not None and getattr(
-                    self.system, "sam_code_modifier_available", False
-                ):
+                        self.system, "sam_code_modifier_available", False
+                        ):
                     result = modify_code_safely(
-                        patch.get("target_file", ""),
-                        change.get("old_code", ""),
-                        change.get("new_code", ""),
-                        description,
-                    )
+                            patch.get("target_file", ""),
+                            change.get("old_code", ""),
+                            change.get("new_code", ""),
+                            description,
+                            )
                     if result.get("success"):
                         applied = True
                     else:
                         msg = (
-                            result.get("message")
-                            or result.get("error")
-                            or "unknown error"
-                        )
+                                result.get("message")
+                                or result.get("error")
+                                or "unknown error"
+                                )
                         print(
-                            f" Production Meta-Agent: Patch apply failed ({target_file}) intent='{description}': {msg}"
-                        )
+                                f" Production Meta-Agent: Patch apply failed ({target_file}) intent='{description}': {msg}"
+                                )
                         if allow_self_mod is None:
                             applied = self._direct_patch_fallback(
-                                target_file, change, description
-                            )
+                                    target_file, change, description
+                                    )
                 else:
                     if allow_self_mod is None:
                         applied = self._direct_patch_fallback(
-                            target_file, change, description
-                        )
+                                target_file, change, description
+                                )
                 if not applied:
                     success = False
                     break
@@ -3708,7 +3708,7 @@ class MetaAgent:
             print(f" Production Meta-Agent: Direct patch failed: {exc}")
             return False
 
-            # ===========================
+        # ===========================
             # CORE META LOOP
             # ===========================
 
@@ -3716,22 +3716,22 @@ class MetaAgent:
         """Complete O→L→P→V→S→A meta-agent algorithm"""
         failure_id = self._get_failure_attr(failure, "id", "unknown")
         failure_type = self._get_failure_attr(
-            failure,
-            "error_type",
-            self._get_failure_attr(failure, "type", "unknown"),
-        )
+                failure,
+                "error_type",
+                self._get_failure_attr(failure, "type", "unknown"),
+                )
         failure_msg = self._get_failure_attr(failure, "message", "unknown")
         print(
-            f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}"
-        )
+                f" Production Meta-Agent: Handling failure id={failure_id} type={failure_type} msg={failure_msg}"
+                )
         log_event(
-            "info",
-            "meta_handle_failure",
-            "Meta-agent handling failure",
-            failure_id=failure_id,
-            failure_type=failure_type,
-            failure_msg=failure_msg,
-        )
+                "info",
+                "meta_handle_failure",
+                "Meta-agent handling failure",
+                failure_id=failure_id,
+                failure_type=failure_type,
+                failure_msg=failure_msg,
+                )
 
         # Register failure for clustering
         self.register_failure(failure)
@@ -3747,18 +3747,18 @@ class MetaAgent:
                     if not os.path.isabs(loc_path):
                         loc_path = os.path.join(self.system.project_root, loc_path)
                     localization = [
-                        {
-                            "file": loc_path,
-                            "spectrum_score": 0.1,
-                            "recently_modified": False,
-                            "in_stack_trace": True,
-                        }
-                    ]
+                            {
+                                "file": loc_path,
+                                "spectrum_score": 0.1,
+                                "recently_modified": False,
+                                "in_stack_trace": True,
+                                }
+                            ]
             if not localization:
                 print(" Production Meta-Agent: No localization results")
                 return False
 
-                # Optional research step (local + web)
+            # Optional research step (local + web)
         if self.research_enabled:
             try:
                 research_notes = self._gather_research(failure, localization)
@@ -3766,19 +3766,19 @@ class MetaAgent:
                     if hasattr(failure, "research_notes"):
                         failure.research_notes = research_notes
                     log_event(
-                        "info",
-                        "meta_research",
-                        "Meta-agent research gathered",
-                        mode=self.research_mode,
-                        chars=len(research_notes),
-                    )
+                            "info",
+                            "meta_research",
+                            "Meta-agent research gathered",
+                            mode=self.research_mode,
+                            chars=len(research_notes),
+                            )
             except Exception as exc:
                 log_event(
-                    "warn",
-                    "meta_research_error",
-                    "Meta-agent research failed",
-                    reason=str(exc),
-                )
+                        "warn",
+                        "meta_research_error",
+                        "Meta-agent research failed",
+                        reason=str(exc),
+                        )
 
                 # Step 2: Propose
         patches = self._deterministic_patches(failure)
@@ -3796,7 +3796,7 @@ class MetaAgent:
                 print(" Production Meta-Agent: No patch proposals generated")
                 return False
 
-                # Step 3: Verify, Score & Select
+            # Step 3: Verify, Score & Select
         best_patch = None
         best_score = -1
         total_patches = len(patches)
@@ -3813,7 +3813,7 @@ class MetaAgent:
                 self._learn_from_failure(patch, failure)
                 continue
 
-                # Verify safety
+            # Verify safety
             verification = self.verifier.verify_patch(patch)
             if verification.get("overall_safe", False):
                 safe_candidates += 1
@@ -3829,17 +3829,17 @@ class MetaAgent:
                     # Step 4: Apply or Reject
         if best_patch and best_score >= 7.0:  # Minimum quality threshold
             print(
-                f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})"
-            )
+                    f" Production Meta-Agent: Applying safe patch (score: {best_score:.1f})"
+                    )
             log_event(
-                "info",
-                "patch_apply_safe",
-                "Applying safe patch",
-                patch_id=best_patch.get("id"),
-                score=best_score,
-                intent=best_patch.get("intent"),
-                target_file=best_patch.get("target_file"),
-            )
+                    "info",
+                    "patch_apply_safe",
+                    "Applying safe patch",
+                    patch_id=best_patch.get("id"),
+                    score=best_score,
+                    intent=best_patch.get("intent"),
+                    target_file=best_patch.get("target_file"),
+                    )
             applied = self._apply_patch(best_patch, failure)
             if applied:
                 self._learn_from_success(best_patch, failure)
@@ -3849,56 +3849,56 @@ class MetaAgent:
         else:
             # Unsafe override path (experimental/unbounded mode)
             allow_unsafe = bool(
-                getattr(self.system, "invariants_disabled", False)
-            ) or bool(getattr(self.system, "allow_unsafe_patches", False))
+                    getattr(self.system, "invariants_disabled", False)
+                    ) or bool(getattr(self.system, "allow_unsafe_patches", False))
             summary = f"total={total_patches}, below_conf={below_conf}, verify_failed={verify_failed}, safe_candidates={safe_candidates}"
             if issue_counts:
                 top_issues = sorted(
-                    issue_counts.items(), key=lambda kv: kv[1], reverse=True
-                )[:3]
+                        issue_counts.items(), key=lambda kv: kv[1], reverse=True
+                        )[:3]
                 issue_str = ", ".join([f"{k}({v})" for k, v in top_issues])
                 print(
-                    f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}"
-                )
+                        f" Production Meta-Agent: No safe patches available. Summary: {summary}. Top issues: {issue_str}"
+                        )
                 log_event(
-                    "warn",
-                    "patch_no_safe",
-                    "No safe patches available",
-                    summary=summary,
-                    top_issues=top_issues,
-                )
+                        "warn",
+                        "patch_no_safe",
+                        "No safe patches available",
+                        summary=summary,
+                        top_issues=top_issues,
+                        )
             else:
                 print(
-                    f" Production Meta-Agent: No safe patches available. Summary: {summary}"
-                )
+                        f" Production Meta-Agent: No safe patches available. Summary: {summary}"
+                        )
                 log_event(
-                    "warn",
-                    "patch_no_safe",
-                    "No safe patches available",
-                    summary=summary,
-                )
+                        "warn",
+                        "patch_no_safe",
+                        "No safe patches available",
+                        summary=summary,
+                        )
             if allow_unsafe and patches:
                 # Choose the highest-confidence patch if no safe patch
                 fallback_patch = max(patches, key=lambda p: p.get("confidence", 0.0))
                 print(
-                    " Production Meta-Agent: Applying best-available patch (unsafe override enabled)"
-                )
+                        " Production Meta-Agent: Applying best-available patch (unsafe override enabled)"
+                        )
                 print(
-                    f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled"
-                )
+                        f"   Unsafe override reason: invariants disabled or allow_unsafe_patches enabled"
+                        )
                 print(
-                    f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}"
-                )
+                        f"   Fallback patch id={fallback_patch.get('id')} confidence={fallback_patch.get('confidence', 0.0)} risk={fallback_patch.get('risk_level', 'unknown')} intent={fallback_patch.get('intent', 'n/a')}"
+                        )
                 log_event(
-                    "warn",
-                    "patch_apply_unsafe",
-                    "Applying best-available patch (unsafe override)",
-                    patch_id=fallback_patch.get("id"),
-                    confidence=fallback_patch.get("confidence", 0.0),
-                    risk=fallback_patch.get("risk_level", "unknown"),
-                    intent=fallback_patch.get("intent", "n/a"),
-                    reason="invariants disabled or allow_unsafe_patches enabled",
-                )
+                        "warn",
+                        "patch_apply_unsafe",
+                        "Applying best-available patch (unsafe override)",
+                        patch_id=fallback_patch.get("id"),
+                        confidence=fallback_patch.get("confidence", 0.0),
+                        risk=fallback_patch.get("risk_level", "unknown"),
+                        intent=fallback_patch.get("intent", "n/a"),
+                        reason="invariants disabled or allow_unsafe_patches enabled",
+                        )
                 applied = self._apply_patch(fallback_patch, failure)
                 if applied:
                     self._learn_from_success(fallback_patch, failure)
@@ -3907,7 +3907,7 @@ class MetaAgent:
                 return False
             return False
 
-            # ===========================
+        # ===========================
             # LEGACY COMPATIBILITY
             # ===========================
 
@@ -3919,7 +3919,7 @@ class MetaAgent:
         """Ensure initialization (always ready for new implementation)"""
         return True
 
-        # ===========================
+    # ===========================
         # ADVANCED LEARNING SYSTEM
         # ===========================
 
@@ -3928,31 +3928,31 @@ class MetaAgent:
         try:
             # Teacher model: experienced, stable version
             self.teacher_model = {
-                "type": "teacher",
-                "experience_level": "expert",
-                "validation_rules": self._get_teacher_validation_rules(),
-                "improvement_strategies": self._get_teacher_improvement_strategies(),
-                "confidence_threshold": 0.85,
-            }
+                    "type": "teacher",
+                    "experience_level": "expert",
+                    "validation_rules": self._get_teacher_validation_rules(),
+                    "improvement_strategies": self._get_teacher_improvement_strategies(),
+                    "confidence_threshold": 0.85,
+                    }
 
             # Student model: learning, improving version
             self.student_model = {
-                "type": "student",
-                "experience_level": "novice",
-                "current_errors": [],
-                "learning_progress": 0.0,
-                "validation_rules": self._get_student_validation_rules(),
-                "improvement_attempts": [],
-            }
+                    "type": "student",
+                    "experience_level": "novice",
+                    "current_errors": [],
+                    "learning_progress": 0.0,
+                    "validation_rules": self._get_student_validation_rules(),
+                    "improvement_attempts": [],
+                    }
 
             # Actor-critic system for validation
             self.actor_critic = {
-                "actor": self._initialize_actor(),
-                "critic": self._initialize_critic(),
-                "reward_function": self._get_reward_function(),
-                "policy_network": {},
-                "value_network": {},
-            }
+                    "actor": self._initialize_actor(),
+                    "critic": self._initialize_critic(),
+                    "reward_function": self._get_reward_function(),
+                    "policy_network": {},
+                    "value_network": {},
+                    }
 
             print("✅ Teacher-student models initialized")
             return True
@@ -3995,21 +3995,21 @@ class MetaAgent:
             # Phase 3: Actor-Critic Validation (Decision Making)
             print("\\n🎭 Phase 3: Actor-Critic Validation - Decision Making")
             validation_result = self._actor_critic_validation_phase(
-                improvement_strategy
-            )
+                    improvement_strategy
+                    )
 
             # Phase 4: Implementation & Testing
             print("\\n🛠️ Phase 4: Implementation & Testing")
             implementation_result = self._implementation_and_testing_phase(
-                validation_result
-            )
+                    validation_result
+                    )
 
             # Phase 5: Performance Assessment
             print("\\n📊 Phase 5: Performance Assessment")
             current_performance = self._assess_current_performance()
             improvement = self._calculate_improvement(
-                self.baseline_performance, current_performance
-            )
+                    self.baseline_performance, current_performance
+                    )
 
             print(f"   📈 Performance: {current_performance}")
             print(f"   📈 Improvement: {improvement:.2f}%")
@@ -4025,16 +4025,16 @@ class MetaAgent:
                 # Update learning state
             self.current_performance = current_performance
             self.validation_history.append(
-                {
-                    "cycle": cycle,
-                    "errors_detected": len(student_errors),
-                    "improvements_applied": len(
-                        implementation_result.get("improvements", [])
-                    ),
-                    "performance": current_performance,
-                    "convergence_check": convergence_achieved,
-                }
-            )
+                    {
+                        "cycle": cycle,
+                        "errors_detected": len(student_errors),
+                        "improvements_applied": len(
+                            implementation_result.get("improvements", [])
+                            ),
+                        "performance": current_performance,
+                        "convergence_check": convergence_achieved,
+                        }
+                    )
 
             # Final assessment
         if convergence_achieved:
@@ -4042,7 +4042,7 @@ class MetaAgent:
             print("   ✅ Teacher-student-actor-critic validation achieved zero errors")
             print(f"   🔄 Learning cycles completed: {cycle}")
             return True
-            print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
+        print("\\n❌ FINAL RESULT: MAX CYCLES REACHED")
             print(f"   ⚠️ Completed {max_cycles} cycles without achieving zero errors")
             print("   📊 Final performance may still have some issues")
             return False
@@ -4050,65 +4050,65 @@ class MetaAgent:
     def _get_teacher_validation_rules(self):
         """Get expert validation rules from teacher model"""
         return {
-            "syntax_validation": {"weight": 1.0, "threshold": 0.95},
-            "semantic_validation": {"weight": 0.9, "threshold": 0.90},
-            "performance_validation": {"weight": 0.8, "threshold": 0.85},
-            "security_validation": {"weight": 1.0, "threshold": 0.98},
-            "integration_validation": {"weight": 0.7, "threshold": 0.80},
-        }
+                "syntax_validation": {"weight": 1.0, "threshold": 0.95},
+                "semantic_validation": {"weight": 0.9, "threshold": 0.90},
+                "performance_validation": {"weight": 0.8, "threshold": 0.85},
+                "security_validation": {"weight": 1.0, "threshold": 0.98},
+                "integration_validation": {"weight": 0.7, "threshold": 0.80},
+                }
 
     def _get_teacher_improvement_strategies(self):
         """Get expert improvement strategies"""
         return [
-            "code_optimization",
-            "error_pattern_recognition",
-            "performance_enhancement",
-            "security_hardening",
-            "integration_improvement",
-            "architecture_refinement",
-        ]
+                "code_optimization",
+                "error_pattern_recognition",
+                "performance_enhancement",
+                "security_hardening",
+                "integration_improvement",
+                "architecture_refinement",
+                ]
 
     def _get_student_validation_rules(self):
         """Get learning validation rules for student model"""
         return {
-            "basic_syntax": {"weight": 0.8, "threshold": 0.70},
-            "basic_functionality": {"weight": 0.6, "threshold": 0.60},
-            "error_detection": {"weight": 0.7, "threshold": 0.65},
-        }
+                "basic_syntax": {"weight": 0.8, "threshold": 0.70},
+                "basic_functionality": {"weight": 0.6, "threshold": 0.60},
+                "error_detection": {"weight": 0.7, "threshold": 0.65},
+                }
 
     def _initialize_actor(self):
         """Initialize actor for decision making"""
         return {
-            "policy": "validation_driven",
-            "action_space": ["validate", "improve", "test", "deploy", "rollback"],
-            "state_space": [
-                "error_detected",
-                "improvement_needed",
-                "validation_passed",
-                "deployment_ready",
-            ],
-            "learning_rate": 0.01,
-        }
+                "policy": "validation_driven",
+                "action_space": ["validate", "improve", "test", "deploy", "rollback"],
+                "state_space": [
+                    "error_detected",
+                    "improvement_needed",
+                    "validation_passed",
+                    "deployment_ready",
+                    ],
+                "learning_rate": 0.01,
+                }
 
     def _initialize_critic(self):
         """Initialize critic for value estimation"""
         return {
-            "value_function": "error_reduction_based",
-            "baseline": 0.5,
-            "discount_factor": 0.95,
-            "td_lambda": 0.8,
-        }
+                "value_function": "error_reduction_based",
+                "baseline": 0.5,
+                "discount_factor": 0.95,
+                "td_lambda": 0.8,
+                }
 
     def _get_reward_function(self):
         """Define reward function for actor-critic learning"""
         return {
-            "error_reduction": 1.0,
-            "performance_improvement": 0.8,
-            "security_enhancement": 1.2,
-            "successful_deployment": 2.0,
-            "failed_validation": -1.0,
-            "regression_introduced": -2.0,
-        }
+                "error_reduction": 1.0,
+                "performance_improvement": 0.8,
+                "security_enhancement": 1.2,
+                "successful_deployment": 2.0,
+                "failed_validation": -1.0,
+                "regression_introduced": -2.0,
+                }
 
     def _student_error_detection_phase(self):
         """Student model detects errors in the system"""
@@ -4127,14 +4127,14 @@ class MetaAgent:
                 errors.extend(test_result["errors"])
         except Exception as e:
             errors.append(
-                {
-                    "type": "system_test_failure",
-                    "component": "basic_functionality",
-                    "severity": "high",
-                    "message": f"Basic system test failed: {e}",
-                    "detected_by": "student_model",
-                }
-            )
+                    {
+                        "type": "system_test_failure",
+                        "component": "basic_functionality",
+                        "severity": "high",
+                        "message": f"Basic system test failed: {e}",
+                        "detected_by": "student_model",
+                        }
+                    )
 
         self.student_model["current_errors"] = errors
         return errors
@@ -4142,23 +4142,23 @@ class MetaAgent:
     def _teacher_validation_phase(self, student_errors):
         """Teacher model validates student findings and provides guidance"""
         feedback = {
-            "validated_errors": [],
-            "false_positives": [],
-            "missed_errors": [],
-            "improvement_suggestions": [],
-        }
+                "validated_errors": [],
+                "false_positives": [],
+                "missed_errors": [],
+                "improvement_suggestions": [],
+                }
 
         # Teacher validates each student-detected error
         for error in student_errors:
             teacher_validation = self._teacher_validate_error(error)
             if teacher_validation["is_valid"]:
                 feedback["validated_errors"].append(
-                    {
-                        **error,
-                        "teacher_confidence": teacher_validation["confidence"],
-                        "teacher_priority": teacher_validation["priority"],
-                    }
-                )
+                        {
+                            **error,
+                            "teacher_confidence": teacher_validation["confidence"],
+                            "teacher_priority": teacher_validation["priority"],
+                            }
+                        )
             else:
                 feedback["false_positives"].append(error)
 
@@ -4168,8 +4168,8 @@ class MetaAgent:
 
         # Teacher provides improvement suggestions
         feedback["improvement_suggestions"] = self._teacher_generate_improvements(
-            feedback["validated_errors"]
-        )
+                feedback["validated_errors"]
+                )
 
         return feedback
 
@@ -4203,14 +4203,14 @@ class MetaAgent:
             is_valid = True
 
         return {
-            "is_valid": is_valid,
-            "confidence": confidence,
-            "priority": "high"
-            if confidence > 0.85
-            else "medium"
-            if confidence > 0.70
-            else "low",
-        }
+                "is_valid": is_valid,
+                "confidence": confidence,
+                "priority": "high"
+                if confidence > 0.85
+                else "medium"
+                if confidence > 0.70
+                else "low",
+                }
 
     def _teacher_detect_missed_errors(self):
         """Teacher looks for errors that student missed"""
@@ -4219,27 +4219,27 @@ class MetaAgent:
         # Teacher checks for architectural issues
         if not hasattr(self.system, "issue_resolver"):
             missed_errors.append(
-                {
-                    "type": "missing_component",
-                    "component": "issue_resolver",
-                    "severity": "high",
-                    "message": "Intelligent issue resolver not initialized",
-                    "detected_by": "teacher_model",
-                }
-            )
+                    {
+                        "type": "missing_component",
+                        "component": "issue_resolver",
+                        "severity": "high",
+                        "message": "Intelligent issue resolver not initialized",
+                        "detected_by": "teacher_model",
+                        }
+                    )
 
             # Teacher checks for performance issues
         if hasattr(self.system, "system_metrics"):
             if self.system.system_metrics.get("active_agents", 0) < 5:
                 missed_errors.append(
-                    {
-                        "type": "performance_issue",
-                        "component": "agent_system",
-                        "severity": "medium",
-                        "message": "Low agent count may indicate initialization issues",
-                        "detected_by": "teacher_model",
-                    }
-                )
+                        {
+                            "type": "performance_issue",
+                            "component": "agent_system",
+                            "severity": "medium",
+                            "message": "Low agent count may indicate initialization issues",
+                            "detected_by": "teacher_model",
+                            }
+                        )
 
         return missed_errors
 
@@ -4258,33 +4258,33 @@ class MetaAgent:
             # Generate strategies based on error patterns
         if "missing_integration" in error_categories:
             improvements.append(
-                {
-                    "strategy": "integration_completion",
-                    "description": "Complete missing integrations with auto-configuration",
-                    "priority": "high",
-                    "estimated_improvement": 0.80,
-                }
-            )
+                    {
+                        "strategy": "integration_completion",
+                        "description": "Complete missing integrations with auto-configuration",
+                        "priority": "high",
+                        "estimated_improvement": 0.80,
+                        }
+                    )
 
         if "component_failure" in error_categories:
             improvements.append(
-                {
-                    "strategy": "component_stabilization",
-                    "description": "Stabilize failing components with error recovery",
-                    "priority": "high",
-                    "estimated_improvement": 0.70,
-                }
-            )
+                    {
+                        "strategy": "component_stabilization",
+                        "description": "Stabilize failing components with error recovery",
+                        "priority": "high",
+                        "estimated_improvement": 0.70,
+                        }
+                    )
 
         if "missing_api_key" in error_categories:
             improvements.append(
-                {
-                    "strategy": "configuration_guidance",
-                    "description": "Provide clear guidance for configuration requirements",
-                    "priority": "medium",
-                    "estimated_improvement": 0.90,
-                }
-            )
+                    {
+                        "strategy": "configuration_guidance",
+                        "description": "Provide clear guidance for configuration requirements",
+                        "priority": "medium",
+                        "estimated_improvement": 0.90,
+                        }
+                    )
 
         return improvements
 
@@ -4297,33 +4297,33 @@ class MetaAgent:
         if validated_errors:
             # Prioritize high-severity errors
             high_severity = [
-                e for e in validated_errors if e.get("teacher_priority") == "high"
-            ]
+                    e for e in validated_errors if e.get("teacher_priority") == "high"
+                    ]
             if high_severity:
                 return {
-                    "strategy": "critical_error_resolution",
-                    "target_errors": high_severity,
-                    "approach": "immediate_fix",
-                    "confidence": 0.85,
-                }
+                        "strategy": "critical_error_resolution",
+                        "target_errors": high_severity,
+                        "approach": "immediate_fix",
+                        "confidence": 0.85,
+                        }
 
                 # If no critical errors, focus on improvements
         if improvements:
             best_improvement = max(
-                improvements, key=lambda x: x["estimated_improvement"]
-            )
+                    improvements, key=lambda x: x["estimated_improvement"]
+                    )
             return {
-                "strategy": "strategic_improvement",
-                "improvement_plan": best_improvement,
-                "approach": "incremental_enhancement",
-                "confidence": 0.75,
-            }
+                    "strategy": "strategic_improvement",
+                    "improvement_plan": best_improvement,
+                    "approach": "incremental_enhancement",
+                    "confidence": 0.75,
+                    }
 
         return {
-            "strategy": "system_optimization",
-            "approach": "performance_tuning",
-            "confidence": 0.60,
-        }
+                "strategy": "system_optimization",
+                "approach": "performance_tuning",
+                "confidence": 0.60,
+                }
 
     def _actor_critic_validation_phase(self, strategy):
         """Actor-critic system validates and refines the improvement strategy"""
@@ -4331,11 +4331,11 @@ class MetaAgent:
 
         # Actor evaluates possible actions
         possible_actions = [
-            "validate_strategy",
-            "modify_approach",
-            "execute_plan",
-            "seek_guidance",
-        ]
+                "validate_strategy",
+                "modify_approach",
+                "execute_plan",
+                "seek_guidance",
+                ]
 
         # Critic evaluates strategy quality
         strategy_quality = self._critic_evaluate_strategy(strategy)
@@ -4352,13 +4352,13 @@ class MetaAgent:
             confidence = strategy_quality * 0.7
 
         return {
-            "selected_action": selected_action,
-            "strategy_quality": strategy_quality,
-            "confidence": confidence,
-            "validation_result": "approved"
-            if selected_action == "execute_plan"
-            else "needs_review",
-        }
+                "selected_action": selected_action,
+                "strategy_quality": strategy_quality,
+                "confidence": confidence,
+                "validation_result": "approved"
+                if selected_action == "execute_plan"
+                else "needs_review",
+                }
 
     def _critic_evaluate_strategy(self, strategy):
         """Critic evaluates the quality of the improvement strategy"""
@@ -4369,9 +4369,9 @@ class MetaAgent:
             quality_score += 0.2
 
         if strategy["strategy"] in [
-            "critical_error_resolution",
-            "integration_completion",
-        ]:
+                "critical_error_resolution",
+                "integration_completion",
+                ]:
             quality_score += 0.15
 
         if "target_errors" in strategy and len(strategy["target_errors"]) > 0:
@@ -4398,18 +4398,18 @@ class MetaAgent:
             for issue in self.system.issue_resolver.detected_issues:
                 if issue.get("auto_fix_possible", False):
                     fix_result = self.system.issue_resolver.attempt_auto_resolution(
-                        issue
-                    )
+                            issue
+                            )
                     if fix_result:
                         improvements_made.append(
-                            {"type": "auto_fix", "issue": issue, "result": "success"}
-                        )
+                                {"type": "auto_fix", "issue": issue, "result": "success"}
+                                )
 
         return {
-            "success": True,
-            "improvements": improvements_made,
-            "test_results": {"basic_tests_passed": True},
-        }
+                "success": True,
+                "improvements": improvements_made,
+                "test_results": {"basic_tests_passed": True},
+                }
 
     def _run_basic_system_tests(self):
         """Run basic system functionality tests"""
@@ -4428,33 +4428,33 @@ class MetaAgent:
                 result = self.system._process_chatbot_message("/status", {})
                 if not result:
                     test_results["errors"].append(
-                        {
-                            "type": "command_failure",
-                            "component": "chat_processing",
-                            "message": "Status command returned no result",
-                        }
-                    )
+                            {
+                                "type": "command_failure",
+                                "component": "chat_processing",
+                                "message": "Status command returned no result",
+                                }
+                            )
 
         except Exception as e:
             test_results["success"] = False
             test_results["errors"].append(
-                {
-                    "type": "system_test_failure",
-                    "component": "basic_functionality",
-                    "message": f"System test failed: {e}",
-                }
-            )
+                    {
+                        "type": "system_test_failure",
+                        "component": "basic_functionality",
+                        "message": f"System test failed: {e}",
+                        }
+                    )
 
         return test_results
 
     def _assess_current_performance(self):
         """Assess current system performance"""
         performance = {
-            "error_count": 0,
-            "component_health": 0.0,
-            "integration_status": 0.0,
-            "overall_score": 0.0,
-        }
+                "error_count": 0,
+                "component_health": 0.0,
+                "integration_status": 0.0,
+                "overall_score": 0.0,
+                }
 
         # Count current errors
         if hasattr(self.system, "issue_resolver"):
@@ -4463,12 +4463,12 @@ class MetaAgent:
 
             # Assess component health
         components = [
-            "c_core_initialized",
-            "python_orchestration_initialized",
-            "web_interface_initialized",
-            "sam_gmail_available",
-            "sam_github_available",
-        ]
+                "c_core_initialized",
+                "python_orchestration_initialized",
+                "web_interface_initialized",
+                "sam_gmail_available",
+                "sam_github_available",
+                ]
         healthy_components = 0
         for component in components:
             if hasattr(self.system, component) and getattr(self.system, component):
@@ -4478,11 +4478,11 @@ class MetaAgent:
 
         # Integration status
         integrations = [
-            "sam_gmail_available",
-            "sam_github_available",
-            "sam_code_modifier_available",
-            "sam_web_search_available",
-        ]
+                "sam_gmail_available",
+                "sam_github_available",
+                "sam_code_modifier_available",
+                "sam_web_search_available",
+                ]
         working_integrations = 0
         for integration in integrations:
             if hasattr(self.system, integration) and getattr(self.system, integration):
@@ -4492,8 +4492,8 @@ class MetaAgent:
 
         # Overall score
         performance["overall_score"] = (
-            performance["component_health"] + performance["integration_status"]
-        ) / 2
+                performance["component_health"] + performance["integration_status"]
+                ) / 2
 
         return performance
 
@@ -4503,8 +4503,8 @@ class MetaAgent:
             return 0.0
 
         error_reduction = max(
-            0, baseline["error_count"] - current.get("error_count", 0)
-        )
+                0, baseline["error_count"] - current.get("error_count", 0)
+                )
         max_possible_reduction = baseline["error_count"]
 
         if max_possible_reduction == 0:
@@ -4536,45 +4536,45 @@ class IntelligentIssueResolver:
 
         # Check component availability
         components = {
-            "google_drive": self.system.google_drive_available,
-            "web_search": self.system.sam_web_search_available,
-            "code_modifier": self.system.sam_code_modifier_available,
-            "gmail": self.system.sam_gmail_available,
-            "github": self.system.sam_github_available,
-        }
+                "google_drive": self.system.google_drive_available,
+                "web_search": self.system.sam_web_search_available,
+                "code_modifier": self.system.sam_code_modifier_available,
+                "gmail": self.system.sam_gmail_available,
+                "github": self.system.sam_github_available,
+                }
 
         for component, available in components.items():
             if not available:
                 issues.append(
-                    {
-                        "type": "missing_integration",
-                        "component": component,
-                        "severity": "high",
-                        "message": f"{component.replace('_', ' ').title()} integration not available",
-                        "auto_fix_possible": self._can_auto_fix_integration(component),
-                        "escalate_to_meta": False,
-                    }
-                )
+                        {
+                            "type": "missing_integration",
+                            "component": component,
+                            "severity": "high",
+                            "message": f"{component.replace('_', ' ').title()} integration not available",
+                            "auto_fix_possible": self._can_auto_fix_integration(component),
+                            "escalate_to_meta": False,
+                            }
+                        )
 
                 # Check API keys
         api_keys = {
-            "github_token": None,  # Removed direct env var lookup
-            "google_api_key": None,  # Removed direct env var lookup
-            "anthropic_key": None,  # Removed direct env var lookup
-            "openai_key": None,  # Removed direct env var lookup
-        }
+                "github_token": None,  # Removed direct env var lookup
+                "google_api_key": None,  # Removed direct env var lookup
+                "anthropic_key": None,  # Removed direct env var lookup
+                "openai_key": None,  # Removed direct env var lookup
+                }
         for key_name, value in api_keys.items():
             if not value:
                 issues.append(
-                    {
-                        "type": "missing_api_key",
-                        "component": key_name,
-                        "severity": "medium",
-                        "message": f"{key_name.replace('_', ' ').title()} not configured",
-                        "auto_fix_possible": False,  # Requires user input
-                        "escalate_to_meta": False,
-                    }
-                )
+                        {
+                            "type": "missing_api_key",
+                            "component": key_name,
+                            "severity": "medium",
+                            "message": f"{key_name.replace('_', ' ').title()} not configured",
+                            "auto_fix_possible": False,  # Requires user input
+                            "escalate_to_meta": False,
+                            }
+                        )
 
         self.detected_issues = issues
         return issues
@@ -4582,12 +4582,12 @@ class IntelligentIssueResolver:
     def _can_auto_fix_integration(self, component):
         """Check if an integration issue can be auto-fixed"""
         auto_fixable = {
-            "google_drive": False,  # Requires credentials file
-            "web_search": True,  # Can work without Google Drive
-            "code_modifier": True,  # Core functionality
-            "gmail": False,  # Requires email setup
-            "github": True,  # Can work without token (read-only)
-        }
+                "google_drive": False,  # Requires credentials file
+                "web_search": True,  # Can work without Google Drive
+                "code_modifier": True,  # Core functionality
+                "gmail": False,  # Requires email setup
+                "github": True,  # Can work without token (read-only)
+                }
         return auto_fixable.get(component, False)
 
     def attempt_auto_resolution(self, issue):
@@ -4679,15 +4679,15 @@ class IntelligentIssueResolver:
             print(f"\\n{i}. {issue['message']}")
             if issue["type"] == "missing_api_key":
                 print(
-                    "   💡 Solution: Configure the required provider credentials in your environment."
-                )
+                        "   💡 Solution: Configure the required provider credentials in your environment."
+                        )
                 print(
-                    "   📝 Check documentation for the specific environment variable needed."
-                )
+                        "   📝 Check documentation for the specific environment variable needed."
+                        )
             else:
                 print(
-                    "   💡 This integration is not available. The system will continue without it."
-                )
+                        "   💡 This integration is not available. The system will continue without it."
+                        )
 
         print("\\n🔄 After fixing issues, restart the system with: ./run_sam.sh")
         print("\\n💬 I can help you resolve these issues. What would you like to do?")
@@ -4703,12 +4703,12 @@ class IntelligentIssueResolver:
         print(f"\\n🤖 Detected {len(issues)} potential issues:")
         for issue in issues:
             severity_icon = (
-                "🔴"
-                if issue["severity"] == "high"
-                else "🟡"
-                if issue["severity"] == "medium"
-                else "🟢"
-            )
+                    "🔴"
+                    if issue["severity"] == "high"
+                    else "🟡"
+                    if issue["severity"] == "medium"
+                    else "🟢"
+                    )
             print(f"  {severity_icon} {issue['message']}")
 
             # Attempt auto-resolution
@@ -4731,16 +4731,16 @@ class IntelligentIssueResolver:
 
 class UnifiedSAMSystem:
     SCOPES = [
-        "https://www.googleapis.com/auth/documents",
-        "https://www.googleapis.com/auth/drive.file",
-        "https://www.googleapis.com/auth/drive.metadata.readonly",
-    ]
+            "https://www.googleapis.com/auth/documents",
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/drive.metadata.readonly",
+            ]
     """The Unified SAM-D Complete System"""
 
     def __init__(self):
         print(
-            "🚀 INITIALIZING UNIFIED SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) COMPLETE SYSTEM"
-        )
+                "🚀 INITIALIZING UNIFIED SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) COMPLETE SYSTEM"
+                )
         print("=" * 80)
         print("🎯 UNBOUNDED AGENCY ENABLED")
         print("🎯 Version 5.0.0 (Recursive Meta-Evolution) - SAM-D")
@@ -4801,19 +4801,19 @@ class UnifiedSAMSystem:
 
             # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
-            "love_agent": {
-                "id": "love_agent",
-                "name": "LOVE",
-                "type": "Stability & Continuity",
-                "specialty": "Invariants & Long-horizon Safety",
-                "capabilities": [
-                    "invariant_check",
-                    "safety_audit",
-                    "coherence_verification",
-                ],
-                "status": "active",
-            }
-        }
+                "love_agent": {
+                    "id": "love_agent",
+                    "name": "LOVE",
+                    "type": "Stability & Continuity",
+                    "specialty": "Invariants & Long-horizon Safety",
+                    "capabilities": [
+                        "invariant_check",
+                        "safety_audit",
+                        "coherence_verification",
+                        ],
+                    "status": "active",
+                    }
+                }
         self.connected_agents = {}
         self._agent_status_cache = {}
         self.connected_users = {}
@@ -4845,29 +4845,29 @@ class UnifiedSAMSystem:
 
         # Integration availability flags (detect real availability)
         self.sam_gmail_available = (
-            bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
-        )
+                bool(globals().get("initialize_sam_gmail")) and SAM_GMAIL_AVAILABLE
+                )
         self.sam_github_available = (
-            bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
-        )
+                bool(globals().get("initialize_sam_github")) and SAM_GITHUB_AVAILABLE
+                )
         self.sam_web_search_available = (
-            bool(globals().get("initialize_sam_web_search"))
-            and SAM_WEB_SEARCH_AVAILABLE
-        )
+                bool(globals().get("initialize_sam_web_search"))
+                and SAM_WEB_SEARCH_AVAILABLE
+                )
         self.sam_code_modifier_available = (
-            bool(globals().get("initialize_sam_code_modifier"))
-            and SAM_CODE_MODIFIER_AVAILABLE
-        )
+                bool(globals().get("initialize_sam_code_modifier"))
+                and SAM_CODE_MODIFIER_AVAILABLE
+                )
 
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
 
         self.state_path = Path(
-            os.getenv(
-                "SAM_STATE_PATH",
-                str(self.project_root / "sam_data" / self.profile_name / "state.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_STATE_PATH",
+                    str(self.project_root / "sam_data" / self.profile_name / "state.json"),
+                    )
+                )
         try:
             self.state_path.parent.mkdir(parents=True, exist_ok=True)
         except Exception:
@@ -4876,23 +4876,23 @@ class UnifiedSAMSystem:
 
         # System metrics (initialize early)
         self.system_metrics = {
-            "start_time": sam_datetime_ref.now().isoformat(),
-            "c_core_status": "initializing",
-            "python_orchestration_status": "initializing",
-            "web_interface_status": "initializing",
-            "total_conversations": 0,
-            "consciousness_score": 0.0,
-            "coherence_score": 0.0,
-            "survival_score": 1.0,
-            "learning_events": 0,
-            "distill_count": 0,
-            "optimization_events": 0,
-            "active_agents": 0,
-            "total_tokens_used": 0,
-            "system_health": "excellent",
-            "last_growth_reason": None,
-            "unbounded_agency": self.unbounded_mode,
-        }
+                "start_time": sam_datetime_ref.now().isoformat(),
+                "c_core_status": "initializing",
+                "python_orchestration_status": "initializing",
+                "web_interface_status": "initializing",
+                "total_conversations": 0,
+                "consciousness_score": 0.0,
+                "coherence_score": 0.0,
+                "survival_score": 1.0,
+                "learning_events": 0,
+                "distill_count": 0,
+                "optimization_events": 0,
+                "active_agents": 0,
+                "total_tokens_used": 0,
+                "system_health": "excellent",
+                "last_growth_reason": None,
+                "unbounded_agency": self.unbounded_mode,
+                }
 
         # Epistemic & Governance (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive))
         self.score_history = deque(maxlen=100)
@@ -4943,15 +4943,15 @@ class UnifiedSAMSystem:
 
         # Meta-controller + SAV arena
         self.meta_controller = sam_meta_controller_c.create(
-            128 if self.unbounded_mode else 64,
-            32 if self.unbounded_mode else 16,
-            8 if self.unbounded_mode else 4,
-            42,
-        )
+                128 if self.unbounded_mode else 64,
+                32 if self.unbounded_mode else 16,
+                8 if self.unbounded_mode else 4,
+                42,
+                )
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
         self.sav_arena = sam_sav_dual_system.create(
-            32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42
-        )
+                32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42
+                )
 
         # Initialize identity anchor in C-core (Phase 4.1)
         self._initialize_identity_anchor()
@@ -4965,24 +4965,24 @@ class UnifiedSAMSystem:
         # Regression gate configuration
         self.regression_on_growth = os.getenv("SAM_REGRESSION_ON_GROWTH", "1") == "1"
         self.regression_tasks_path = os.getenv(
-            "SAM_REGRESSION_TASKS",
-            str(self.project_root / "training/tasks/default_tasks.jsonl"),
-        )
+                "SAM_REGRESSION_TASKS",
+                str(self.project_root / "training/tasks/default_tasks.jsonl"),
+                )
         self.regression_provider = os.getenv(
-            "SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b"
-        )
+                "SAM_POLICY_PROVIDER", "ollama:qwen2.5-coder:7b"
+                )
         # Provider auto-switch (policy + teacher pool)
         self.provider_auto_switch = os.getenv("SAM_PROVIDER_AUTO_SWITCH", "1") == "1"
         self.provider_ram_threshold = float(
-            os.getenv("SAM_PROVIDER_RAM_THRESHOLD", "0.85")
-        )
+                os.getenv("SAM_PROVIDER_RAM_THRESHOLD", "0.85")
+                )
         self.provider_ram_recover = float(os.getenv("SAM_PROVIDER_RAM_RECOVER", "0.75"))
         self.policy_provider_primary = os.getenv(
-            "SAM_POLICY_PROVIDER_PRIMARY", self.regression_provider
-        )
+                "SAM_POLICY_PROVIDER_PRIMARY", self.regression_provider
+                )
         self.policy_provider_fallback = os.getenv(
-            "SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b"
-        )
+                "SAM_POLICY_PROVIDER_FALLBACK", "ollama:qwen2.5-coder:7b"
+                )
         self.provider_mode = "primary"
         # Use primary policy provider by default
         self.regression_provider = self.policy_provider_primary
@@ -5010,8 +5010,8 @@ class UnifiedSAMSystem:
         self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.distill_dashboard_enabled = os.getenv("SAM_DISTILL_DASHBOARD", "1") == "1"
         self.learning_memory_enabled = (
-            os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
-        )
+                os.getenv("SAM_LEARNING_MEMORY_ENABLED", "1") == "1"
+                )
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
         self.learning_memory = deque(maxlen=self.learning_memory_max)
         self.score_history = deque(maxlen=100)  # Added for plateau detection
@@ -5023,17 +5023,17 @@ class UnifiedSAMSystem:
         # Teacher pool + distillation pipeline (live groupchat)
         self.teacher_pool_enabled = os.getenv("SAM_TEACHER_POOL_ENABLED", "1") == "1"
         self.teacher_pool_primary = os.getenv(
-            "SAM_TEACHER_POOL_PRIMARY",
-            os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"),
-        )
+                "SAM_TEACHER_POOL_PRIMARY",
+                os.getenv("SAM_TEACHER_POOL", "ollama:mistral:latest"),
+                )
         self.teacher_pool_fallback = os.getenv(
-            "SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest"
-        )
+                "SAM_TEACHER_POOL_FALLBACK", "ollama:mistral:latest"
+                )
         self.teacher_specs = [
-            spec.strip()
-            for spec in self.teacher_pool_primary.split(",")
-            if spec.strip()
-        ]
+                spec.strip()
+                for spec in self.teacher_pool_primary.split(",")
+                if spec.strip()
+                ]
         self.teacher_n_per = int(os.getenv("SAM_TEACHER_N_PER", "1"))
         self.teacher_min_similarity = float(os.getenv("SAM_TEACHER_MIN_SIM", "0.72"))
         self.teacher_min_votes = int(os.getenv("SAM_TEACHER_MIN_VOTES", "1"))
@@ -5041,12 +5041,12 @@ class UnifiedSAMSystem:
         self.teacher_max_tokens = int(os.getenv("SAM_TEACHER_MAX_TOKENS", "512"))
         self.teacher_timeout_s = int(os.getenv("SAM_TEACHER_TIMEOUT_S", "60"))
         self.distill_output = os.getenv(
-            "SAM_DISTILL_PATH",
-            str(self.project_root / "training/distilled/groupchat.jsonl"),
-        )
+                "SAM_DISTILL_PATH",
+                str(self.project_root / "training/distilled/groupchat.jsonl"),
+                )
         self.distill_include_candidates = (
-            os.getenv("SAM_DISTILL_INCLUDE_CANDIDATES", "0") == "1"
-        )
+                os.getenv("SAM_DISTILL_INCLUDE_CANDIDATES", "0") == "1"
+                )
         self.teacher_pool = None
         self.distill_writer = None
         self.teacher_pool_lock = threading.Lock()
@@ -5055,8 +5055,8 @@ class UnifiedSAMSystem:
             # Enforce local-only providers in strict mode (no Ollama/HF/etc).
             local_spec = "local:rules"
             if self.chat_provider_spec and _is_external_provider_spec(
-                self.chat_provider_spec
-            ):
+                    self.chat_provider_spec
+                    ):
                 self.chat_provider_spec = ""
             if _is_external_provider_spec(self.policy_provider_primary):
                 self.policy_provider_primary = local_spec
@@ -5069,8 +5069,8 @@ class UnifiedSAMSystem:
             if not self.teacher_pool_enabled:
                 self.teacher_pool_enabled = True
             if not self.teacher_specs or any(
-                _is_external_provider_spec(s) for s in self.teacher_specs
-            ):
+                    _is_external_provider_spec(s) for s in self.teacher_specs
+                    ):
                 self.teacher_specs = [local_spec]
                 # Keep primary/fallback in sync with local specs.
             self.teacher_pool_primary = ",".join(self.teacher_specs)
@@ -5078,11 +5078,11 @@ class UnifiedSAMSystem:
                 self.teacher_pool_fallback = local_spec
             if self.regression_on_growth:
                 log_event(
-                    "info",
-                    "regression_gate_enabled",
-                    "Regression gate enabled for strict local-only provider",
-                    provider=self.regression_provider,
-                )
+                        "info",
+                        "regression_gate_enabled",
+                        "Regression gate enabled for strict local-only provider",
+                        provider=self.regression_provider,
+                        )
 
         if self.teacher_pool_enabled:
             self._init_teacher_pool()
@@ -5092,60 +5092,60 @@ class UnifiedSAMSystem:
             # Revenue operations pipeline (approval + audit)
         self.revenue_ops_enabled = os.getenv("SAM_REVENUE_OPS_ENABLED", "1") == "1"
         self.revenue_data_dir = Path(
-            os.getenv(
-                "SAM_REVENUE_DATA_DIR",
-                str(self.project_root / "sam_data" / "revenue_ops"),
-            )
-        )
+                os.getenv(
+                    "SAM_REVENUE_DATA_DIR",
+                    str(self.project_root / "sam_data" / "revenue_ops"),
+                    )
+                )
         self.revenue_queue_path = Path(
-            os.getenv(
-                "SAM_REVENUE_QUEUE_PATH",
-                str(self.project_root / "sam_data" / "revenue_ops" / "queue.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_REVENUE_QUEUE_PATH",
+                    str(self.project_root / "sam_data" / "revenue_ops" / "queue.json"),
+                    )
+                )
         self.revenue_audit_log = Path(
-            os.getenv(
-                "SAM_REVENUE_AUDIT_LOG",
-                str(self.project_root / "logs" / "revenue_ops_audit.jsonl"),
-            )
-        )
+                os.getenv(
+                    "SAM_REVENUE_AUDIT_LOG",
+                    str(self.project_root / "logs" / "revenue_ops_audit.jsonl"),
+                    )
+                )
 
         self.banking_ledger_enabled = (
-            os.getenv("SAM_BANKING_LEDGER_ENABLED", "1") == "1"
-        )
+                os.getenv("SAM_BANKING_LEDGER_ENABLED", "1") == "1"
+                )
         self.banking_data_dir = Path(
-            os.getenv(
-                "SAM_BANKING_DATA_DIR",
-                str(self.project_root / "sam_data" / "banking"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_DATA_DIR",
+                    str(self.project_root / "sam_data" / "banking"),
+                    )
+                )
         self.banking_ledger_path = Path(
-            os.getenv(
-                "SAM_BANKING_LEDGER_PATH",
-                str(self.banking_data_dir / "ledger.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_LEDGER_PATH",
+                    str(self.banking_data_dir / "ledger.json"),
+                    )
+                )
         self.banking_requests_path = Path(
-            os.getenv(
-                "SAM_BANKING_REQUESTS_PATH",
-                str(self.banking_data_dir / "requests.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_REQUESTS_PATH",
+                    str(self.banking_data_dir / "requests.json"),
+                    )
+                )
         self.banking_audit_log = Path(
-            os.getenv(
-                "SAM_BANKING_AUDIT_LOG",
-                str(self.project_root / "logs" / "banking_audit.jsonl"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_AUDIT_LOG",
+                    str(self.project_root / "logs" / "banking_audit.jsonl"),
+                    )
+                )
 
         self.banking_ledger = None
         if self.banking_ledger_enabled:
             self.banking_ledger = BankingLedger(
-                data_dir=self.banking_data_dir,
-                ledger_path=self.banking_ledger_path,
-                requests_path=self.banking_requests_path,
-                audit_log=self.banking_audit_log,
-            )
+                    data_dir=self.banking_data_dir,
+                    ledger_path=self.banking_ledger_path,
+                    requests_path=self.banking_requests_path,
+                    audit_log=self.banking_audit_log,
+                    )
 
         def _send_email_wrapper(to_email: str, subject: str, body: str):
             if not send_sam_email:
@@ -5153,8 +5153,8 @@ class UnifiedSAMSystem:
             return send_sam_email(to_email, subject, body, [])
 
         def _schedule_email_wrapper(
-            to_email: str, subject: str, body: str, send_time: str
-        ):
+                to_email: str, subject: str, body: str, send_time: str
+                ):
             if not schedule_sam_email:
                 raise RuntimeError("Gmail integration not available")
             return schedule_sam_email(to_email, subject, body, send_time)
@@ -5162,94 +5162,94 @@ class UnifiedSAMSystem:
         self.revenue_ops = None
         if self.revenue_ops_enabled:
             self.revenue_ops = RevenueOpsEngine(
-                data_dir=self.revenue_data_dir,
-                queue_path=self.revenue_queue_path,
-                audit_log=self.revenue_audit_log,
-                send_email=_send_email_wrapper if sam_gmail_available else None,
-                schedule_email=_schedule_email_wrapper if sam_gmail_available else None,
-            )
+                    data_dir=self.revenue_data_dir,
+                    queue_path=self.revenue_queue_path,
+                    audit_log=self.revenue_audit_log,
+                    send_email=_send_email_wrapper if sam_gmail_available else None,
+                    schedule_email=_schedule_email_wrapper if sam_gmail_available else None,
+                    )
 
             # Revenue auto-planner (creates actions but requires approval)
         self.revenue_autoplanner_enabled = (
-            os.getenv("SAM_REVENUE_AUTOPLANNER_ENABLED", "1") == "1"
-        )
+                os.getenv("SAM_REVENUE_AUTOPLANNER_ENABLED", "1") == "1"
+                )
         self.revenue_autoplanner_interval_s = int(
-            os.getenv("SAM_REVENUE_AUTOPLANNER_INTERVAL_S", "600")
-        )
+                os.getenv("SAM_REVENUE_AUTOPLANNER_INTERVAL_S", "600")
+                )
         self.revenue_autoplanner_max_pending = int(
-            os.getenv("SAM_REVENUE_AUTOPLANNER_MAX_PENDING", "10")
-        )
+                os.getenv("SAM_REVENUE_AUTOPLANNER_MAX_PENDING", "10")
+                )
         self.revenue_autoplanner_sequence_id = (
-            os.getenv("SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID") or None
-        )
+                os.getenv("SAM_REVENUE_AUTOPLANNER_SEQUENCE_ID") or None
+                )
         self.revenue_autoplanner_thread = None
         if self.revenue_ops and self.revenue_autoplanner_enabled:
             self._start_revenue_autoplanner()
 
             # Revenue sequence executor (sends scheduled emails)
         self.revenue_sequence_executor_enabled = (
-            os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED", "1") == "1"
-        )
+                os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_ENABLED", "1") == "1"
+                )
         self.revenue_sequence_executor_interval_s = int(
-            os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S", "120")
-        )
+                os.getenv("SAM_REVENUE_SEQUENCE_EXECUTOR_INTERVAL_S", "120")
+                )
         if self.revenue_ops and self.revenue_sequence_executor_enabled:
             self._start_revenue_sequence_executor()
 
             # Finance logging snapshot interval (seconds)
         self.finance_log_interval_s = float(
-            os.getenv("SAM_FINANCE_LOG_INTERVAL_S", "120")
-        )
+                os.getenv("SAM_FINANCE_LOG_INTERVAL_S", "120")
+                )
         self._last_finance_log_ts = 0.0
 
         # Banking sandbox ledger (approval-gated, no real money access)
         self.banking_enabled = os.getenv("SAM_BANKING_SANDBOX_ENABLED", "1") == "1"
         self.banking_data_dir = Path(
-            os.getenv(
-                "SAM_BANKING_DATA_DIR", str(self.project_root / "sam_data" / "banking")
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_DATA_DIR", str(self.project_root / "sam_data" / "banking")
+                    )
+                )
         self.banking_ledger_path = Path(
-            os.getenv(
-                "SAM_BANKING_LEDGER_PATH",
-                str(self.project_root / "sam_data" / "banking" / "ledger.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_LEDGER_PATH",
+                    str(self.project_root / "sam_data" / "banking" / "ledger.json"),
+                    )
+                )
         self.banking_requests_path = Path(
-            os.getenv(
-                "SAM_BANKING_REQUESTS_PATH",
-                str(self.project_root / "sam_data" / "banking" / "requests.json"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_REQUESTS_PATH",
+                    str(self.project_root / "sam_data" / "banking" / "requests.json"),
+                    )
+                )
         self.banking_audit_log = Path(
-            os.getenv(
-                "SAM_BANKING_AUDIT_LOG",
-                str(self.project_root / "logs" / "banking_audit.jsonl"),
-            )
-        )
+                os.getenv(
+                    "SAM_BANKING_AUDIT_LOG",
+                    str(self.project_root / "logs" / "banking_audit.jsonl"),
+                    )
+                )
         self.banking_ledger = None
         if self.banking_enabled:
             self.banking_ledger = BankingLedger(
-                data_dir=self.banking_data_dir,
-                ledger_path=self.banking_ledger_path,
-                requests_path=self.banking_requests_path,
-                audit_log=self.banking_audit_log,
-            )
+                    data_dir=self.banking_data_dir,
+                    ledger_path=self.banking_ledger_path,
+                    requests_path=self.banking_requests_path,
+                    audit_log=self.banking_audit_log,
+                    )
 
             # Auto-backup manager (git push to multiple remotes)
         self.backup_enabled = os.getenv("SAM_BACKUP_ENABLED", "1") == "1"
         self.backup_manager = BackupManager(
-            repo_path=self.project_root,
-            enabled=self.backup_enabled,
-            interval_s=int(os.getenv("SAM_BACKUP_INTERVAL_S", "3600")),
-            primary_remote=os.getenv("SAM_BACKUP_REMOTE_PRIMARY", "origin"),
-            secondary_remote=os.getenv("SAM_BACKUP_REMOTE_SECONDARY"),
-            auto_commit=os.getenv("SAM_BACKUP_AUTO_COMMIT", "1") == "1",
-            commit_prefix=os.getenv("SAM_BACKUP_COMMIT_PREFIX", "auto-backup"),
-            author_name=os.getenv("SAM_BACKUP_AUTHOR_NAME"),
-            author_email=os.getenv("SAM_BACKUP_AUTHOR_EMAIL"),
-            require_success=os.getenv("SAM_BACKUP_REQUIRED", "0") == "1",
-        )
+                repo_path=self.project_root,
+                enabled=self.backup_enabled,
+                interval_s=int(os.getenv("SAM_BACKUP_INTERVAL_S", "3600")),
+                primary_remote=os.getenv("SAM_BACKUP_REMOTE_PRIMARY", "origin"),
+                secondary_remote=os.getenv("SAM_BACKUP_REMOTE_SECONDARY"),
+                auto_commit=os.getenv("SAM_BACKUP_AUTO_COMMIT", "1") == "1",
+                commit_prefix=os.getenv("SAM_BACKUP_COMMIT_PREFIX", "auto-backup"),
+                author_name=os.getenv("SAM_BACKUP_AUTHOR_NAME"),
+                author_email=os.getenv("SAM_BACKUP_AUTHOR_EMAIL"),
+                require_success=os.getenv("SAM_BACKUP_REQUIRED", "0") == "1",
+                )
         self.backup_manager.start()
 
         # Start meta-controller loop
@@ -5275,8 +5275,8 @@ class UnifiedSAMSystem:
         print(f"🔎 Agent configs loaded: {len(self.agent_configs)}", flush=True)
         if self.require_meta_agent and "meta_agent" not in self.agent_configs:
             raise RuntimeError(
-                "❌ CRITICAL: MetaAgent config missing after initialization."
-            )
+                    "❌ CRITICAL: MetaAgent config missing after initialization."
+                    )
 
             # Auto-connect core agents
         self.auto_connect_agents()
@@ -5308,17 +5308,17 @@ class UnifiedSAMSystem:
         """
         if not self.meta_controller:
             return {
-                "last_growth_reason": "Meta-controller not initialized",
-                "last_growth_attempt_successful": False,
-                "growth_frozen": False,
-            }
+                    "last_growth_reason": "Meta-controller not initialized",
+                    "last_growth_attempt_successful": False,
+                    "growth_frozen": False,
+                    }
         diagnostics = sam_meta_controller_c.get_growth_diagnostics(self.meta_controller)
         return {
-            "growth": diagnostics,
-            "metrics": {
-                "unsolvability_budget": getattr(self, "unsolvability_budget", 1.0)
-            },
-        }
+                "growth": diagnostics,
+                "metrics": {
+                    "unsolvability_budget": getattr(self, "unsolvability_budget", 1.0)
+                    },
+                }
 
     def _run_regulator_cycle(self, signals: Dict[str, float]):
         """Runs the God Equation regulator cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+)"""
@@ -5341,8 +5341,8 @@ class UnifiedSAMSystem:
 
             # 4. Update E_vec (Knowledge and Unknowns)
             self.E_vec[0] = (
-                self.system_metrics.get("consciousness_score", 0.5) * 10.0
-            )  # Knowledge proxy
+                    self.system_metrics.get("consciousness_score", 0.5) * 10.0
+                    )  # Knowledge proxy
             self.E_vec[1] = getattr(self, "unsolvability_budget", 1.0) * 5.0  # Unknowns
 
             # 5. Run compiler using C-based dynamic state update
@@ -5354,12 +5354,12 @@ class UnifiedSAMSystem:
                 self.m_vec = np.array(self.m_vec)  # Convert back to numpy
 
             out = src.compile_tick(
-                self.m_vec,
-                self.tau_vec,
-                self.E_vec,
-                self.r_vec,
-                self.reg_compiler_params,  # Will be ignored by compiler if using C state
-            )
+                    self.m_vec,
+                    self.tau_vec,
+                    self.E_vec,
+                    self.r_vec,
+                    self.reg_compiler_params,  # Will be ignored by compiler if using C state
+                    )
 
             # 6. Apply outputs
             self.loss_weights = out["w_dict"]
@@ -5377,8 +5377,8 @@ class UnifiedSAMSystem:
                 self.evolve_ticks += 1
                 if self.evolve_ticks >= 10:
                     print(
-                        "🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation"
-                    )
+                            "🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation"
+                            )
                     # In a real system, this would trigger training/distillation process
                     self.system_metrics["distill_active"] = True
                     self.evolve_ticks = 0
@@ -5390,8 +5390,8 @@ class UnifiedSAMSystem:
                 self.morph_ticks += 1
                 if self.morph_ticks >= 5:
                     print(
-                        "🧬 REGIME: MORPH (5+ ticks) - Proposing recursive structural improvement"
-                    )
+                            "🧬 REGIME: MORPH (5+ ticks) - Proposing recursive structural improvement"
+                            )
                     self._trigger_recursive_improvement()
                     self.morph_ticks = 0
             else:
@@ -5402,8 +5402,8 @@ class UnifiedSAMSystem:
             self.system_metrics["regulator_omega"] = float(out["omega"].total())
             self.system_metrics["capacity_C"] = float(self.E_vec[0])
             self.system_metrics["universality_U"] = float(
-                1.0 - self.m_vec[16]
-            )  # 1 - drift
+                    1.0 - self.m_vec[16]
+                    )  # 1 - drift
 
             # 11. Recursive Self-Update (SAM 5.0)
             if self.step % 50 == 0:
@@ -5433,8 +5433,8 @@ class UnifiedSAMSystem:
             # 3. Map learning_rate to training pipeline
             # This would be used when training_loop.py is invoked
         self.system_metrics["active_learning_rate"] = float(
-            knobs.get("planner_width", 0.001) * 0.01
-        )
+                knobs.get("planner_width", 0.001) * 0.01
+                )
 
     def _update_agi_asi_estimators(self):
         """Computes high-level AGI/ASI metrics based on God Equation state."""
@@ -5453,8 +5453,8 @@ class UnifiedSAMSystem:
         # High when system is aligned/stable, low when power (growth) outpaces verification
         power = float(self.meta_state.get("growth_budget", 0.0)) / 4.0
         wisdom = (
-            self.universality_U * 0.8 + (1.0 - self.m_vec[15]) * 0.2
-        )  # universality + 1-contradiction
+                self.universality_U * 0.8 + (1.0 - self.m_vec[15]) * 0.2
+                )  # universality + 1-contradiction
         self.innocence_I = max(0.0, min(1.0, wisdom / (power + 1e-6)))
 
         # Update system metrics
@@ -5464,12 +5464,12 @@ class UnifiedSAMSystem:
         """Actually spawns a new agent when GP_SUBMODEL_SPAWN is triggered (Phase 5.3)"""
         # Pick a base agent to clone
         bases = [
-            aid
-            for aid, cfg in self.agent_configs.items()
-            if cfg.get("status") == "available"
-            and aid != "meta_agent"
-            and "submodel" not in aid
-        ]
+                aid
+                for aid, cfg in self.agent_configs.items()
+                if cfg.get("status") == "available"
+                and aid != "meta_agent"
+                and "submodel" not in aid
+                ]
         if not bases:
             return
 
@@ -5510,22 +5510,22 @@ class UnifiedSAMSystem:
         # Register and connect
         self.agent_configs[new_id] = new_cfg
         self.connected_agents[new_id] = {
-            "config": new_cfg,
-            "connected_at": sam_time_ref.time(),
-            "message_count": 0,
-            "muted": False,
-        }
+                "config": new_cfg,
+                "connected_at": sam_time_ref.time(),
+                "message_count": 0,
+                "muted": False,
+                }
 
         log_event(
-            "info",
-            "submodel_spawned",
-            f"Successfully spawned new autonomous submodel: {new_name}",
-            agent_id=new_id,
-            specialty=specialty,
-        )
+                "info",
+                "submodel_spawned",
+                f"Successfully spawned new autonomous submodel: {new_name}",
+                agent_id=new_id,
+                specialty=specialty,
+                )
         print(
-            f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id}, Specialty: {specialty})"
-        )
+                f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id}, Specialty: {specialty})"
+                )
 
     def _gather_53_telemetry(self, signals: Dict[str, float]) -> np.ndarray:
         """Harvests metrics from all subsystems into the 53-signal vector (SAM 5.0)"""
@@ -5537,7 +5537,7 @@ class UnifiedSAMSystem:
         def s(name, default=0.0):
             return signals.get(name, default)
 
-            # Harvest C internal pressures (Phase 4.2)
+        # Harvest C internal pressures (Phase 4.2)
 
         try:
             c_pressures = consciousness_algorithmic.get_pressures()
@@ -5545,7 +5545,7 @@ class UnifiedSAMSystem:
         except Exception:
             pass
 
-            # A) Progress / Learning (1-12)
+        # A) Progress / Learning (1-12)
         m[0] = s("residual")
         m[1] = s("plateau_flag")
         m[9] = s("tool_failure_rate")
@@ -5582,7 +5582,7 @@ class UnifiedSAMSystem:
             except Exception:
                 pass
 
-                # Governance vote margins (simulated or historical)
+            # Governance vote margins (simulated or historical)
         m[42] = 0.1  # Two-of-three override pressure
 
         # E) Resources / Capability (46-53)
@@ -5590,15 +5590,15 @@ class UnifiedSAMSystem:
         m[46] = s("latency")
         if self.vision_system:
             m[47] = self.vision_system.get_vision_status().get(
-                "current_complexity", 0.0
-            )
+                    "current_complexity", 0.0
+                    )
 
         # New Sensory Modalities (50-53)
         if self.sensory_controller:
             sensory_state = self.sensory_controller.get_sensory_state()
             m[49] = min(
-                1.0, sensory_state.get("recent_events", 0) / 100.0
-            )  # Sensory frequency
+                    1.0, sensory_state.get("recent_events", 0) / 100.0
+                    )  # Sensory frequency
             last_stim = sensory_state.get("last_stimulus")
             if last_stim:
                 if last_stim["modality"] == "audit":
@@ -5627,11 +5627,11 @@ class UnifiedSAMSystem:
                 import numpy as np
 
                 w_mutation = np.random.normal(
-                    0, 0.005, size=self.reg_compiler_params.W_m.shape
-                )
+                        0, 0.005, size=self.reg_compiler_params.W_m.shape
+                        )
                 u_mutation = np.random.normal(
-                    0, 0.005, size=self.reg_compiler_params.U_m.shape
-                )
+                        0, 0.005, size=self.reg_compiler_params.U_m.shape
+                        )
                 self.reg_compiler_params.W_m += w_mutation
                 self.reg_compiler_params.U_m += u_mutation
 
@@ -5650,15 +5650,15 @@ class UnifiedSAMSystem:
             # Simulate a failure context to trigger the MetaAgent's repair/improvement pipeline
             # In a real MORPH regime, this would be based on real bottlenecks detected in C-core
             mock_error = RuntimeError(
-                "Optimization opportunity: C-core consciousness latent dimension bottleneck"
-            )
+                    "Optimization opportunity: C-core consciousness latent dimension bottleneck"
+                    )
             self.meta_agent.run_pipeline(mock_error, context="morphogenetic_evolution")
 
             log_event(
-                "info",
-                "recursive_improvement_triggered",
-                "MetaAgent triggered for morphogenetic improvement",
-            )
+                    "info",
+                    "recursive_improvement_triggered",
+                    "MetaAgent triggered for morphogenetic improvement",
+                    )
         except Exception as e:
             print(f"⚠️ Recursive improvement trigger failed: {e}")
 
@@ -5680,8 +5680,8 @@ class UnifiedSAMSystem:
             print("🔥 Starting internal hot-reload watchdog...")
             self.watchdog_active = True
             self.watchdog_thread = threading.Thread(
-                target=self._watchdog_loop, daemon=True
-            )
+                    target=self._watchdog_loop, daemon=True
+                    )
             self.watchdog_thread.start()
 
     def _initialize_identity_anchor(self):
@@ -5710,8 +5710,8 @@ class UnifiedSAMSystem:
         while len(features) < 32:
             # Use deterministic padding based on existing features
             features.append(
-                abs(math.sin(len(features) * features[0] if features else 1.0))
-            )
+                    abs(math.sin(len(features) * features[0] if features else 1.0))
+                    )
 
         return [float(f) for f in features[:32]]
 
@@ -5725,25 +5725,25 @@ class UnifiedSAMSystem:
             subprocess.run(["git", "add", "."], cwd=self.project_root, check=True)
             # Commit (allow empty if no changes actually exist)
             subprocess.run(
-                ["git", "commit", "-m", message],
-                cwd=self.project_root,
-                capture_output=True,
-            )
+                    ["git", "commit", "-m", message],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    )
 
             # Push to parent origin
             print("   - Pushing to origin/main...")
             subprocess.run(
-                ["git", "push", "origin", "main"], cwd=self.project_root, check=True
-            )
+                    ["git", "push", "origin", "main"], cwd=self.project_root, check=True
+                    )
 
             # Push to SAM AGI official
             try:
                 print("   - Pushing to sam_agi_official/main...")
                 subprocess.run(
-                    ["git", "push", "sam_agi_official", "main"],
-                    cwd=self.project_root,
-                    capture_output=True,
-                )
+                        ["git", "push", "sam_agi_official", "main"],
+                        cwd=self.project_root,
+                        capture_output=True,
+                        )
             except Exception as e:
                 print(f"   ⚠️ Push to sam_agi_official failed: {e}")
 
@@ -5791,11 +5791,11 @@ class UnifiedSAMSystem:
                                         if current_time - current_mtime < 10:
                                             file_age = current_time - current_mtime
                                             changed_file = str(
-                                                filepath.relative_to(self.project_root)
-                                            )
+                                                    filepath.relative_to(self.project_root)
+                                                    )
                                             print(
-                                                f"🔥 File changed: {changed_file} ({file_age:.1f}s ago)"
-                                            )
+                                                    f"🔥 File changed: {changed_file} ({file_age:.1f}s ago)"
+                                                    )
                                             restart_needed = True
                                             break
 
@@ -5813,12 +5813,12 @@ class UnifiedSAMSystem:
                     self._git_push_codebase(f"Hot-reload: update in {changed_file}")
 
                     log_event(
-                        "info",
-                        "hot_reload_triggered",
-                        "Internal watchdog detected file changes",
-                        source="internal_watchdog",
-                        timestamp=sam_datetime_ref.now().isoformat(),
-                    )
+                            "info",
+                            "hot_reload_triggered",
+                            "Internal watchdog detected file changes",
+                            source="internal_watchdog",
+                            timestamp=sam_datetime_ref.now().isoformat(),
+                            )
 
                     # Give a brief moment for file writes to complete
                     sam_time_ref.sleep(2)
@@ -5834,8 +5834,8 @@ class UnifiedSAMSystem:
             print("   📚 Continuous learning and self-improvement active")
         else:
             print(
-                "\n⚠️ Meta-agent initialization incomplete - basic functionality available"
-            )
+                    "\n⚠️ Meta-agent initialization incomplete - basic functionality available"
+                    )
             print("   🔄 System will continue with limited self-healing capabilities")
 
             # Initialize intelligent issue resolver BEFORE other components
@@ -5854,8 +5854,8 @@ class UnifiedSAMSystem:
 
         # Start skipped issues processor thread
         skipped_thread = threading.Thread(
-            target=self._skipped_issues_processor_loop, daemon=True
-        )
+                target=self._skipped_issues_processor_loop, daemon=True
+                )
         skipped_thread.start()
         if self.two_phase_boot:
             self._start_two_phase_promotion_thread()
@@ -5867,15 +5867,15 @@ class UnifiedSAMSystem:
             return max(0.0, min(1.0, float(v)))
 
         return {
-            "residual": clamp(payload.get("residual", 0.0)),
-            "rank_def": clamp(payload.get("rank_def", 0.0)),
-            "retrieval_entropy": clamp(payload.get("retrieval_entropy", 0.0)),
-            "interference": clamp(payload.get("interference", 0.0)),
-            "planner_friction": clamp(payload.get("planner_friction", 0.0)),
-            "context_collapse": clamp(payload.get("context_collapse", 0.0)),
-            "compression_waste": clamp(payload.get("compression_waste", 0.0)),
-            "temporal_incoherence": clamp(payload.get("temporal_incoherence", 0.0)),
-        }
+                "residual": clamp(payload.get("residual", 0.0)),
+                "rank_def": clamp(payload.get("rank_def", 0.0)),
+                "retrieval_entropy": clamp(payload.get("retrieval_entropy", 0.0)),
+                "interference": clamp(payload.get("interference", 0.0)),
+                "planner_friction": clamp(payload.get("planner_friction", 0.0)),
+                "context_collapse": clamp(payload.get("context_collapse", 0.0)),
+                "compression_waste": clamp(payload.get("compression_waste", 0.0)),
+                "temporal_incoherence": clamp(payload.get("temporal_incoherence", 0.0)),
+                }
 
     def _run_regression_gate(self):
         if getattr(self, "invariants_disabled", False):
@@ -5884,11 +5884,11 @@ class UnifiedSAMSystem:
             return True
         try:
             result = run_regression_suite(
-                tasks_path=self.regression_tasks_path,
-                provider_spec=self.regression_provider,
-                min_pass_rate=self.regression_min_pass,
-                timeout_s=self.regression_timeout_s,
-            )
+                    tasks_path=self.regression_tasks_path,
+                    provider_spec=self.regression_provider,
+                    min_pass_rate=self.regression_min_pass,
+                    timeout_s=self.regression_timeout_s,
+                    )
             if not result.get("passed_gate", False):
                 self.meta_growth_freeze = True
                 self.system_metrics["system_health"] = "degraded"
@@ -5906,28 +5906,28 @@ class UnifiedSAMSystem:
         if not self.teacher_specs:
             if getattr(self, "strict_local_only", False):
                 log_event(
-                    "warn",
-                    "teacher_pool_disabled",
-                    "Teacher pool disabled in strict local-only mode",
-                )
+                        "warn",
+                        "teacher_pool_disabled",
+                        "Teacher pool disabled in strict local-only mode",
+                        )
                 return
             raise RuntimeError(
-                "SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation"
-            )
+                    "SAM_TEACHER_POOL is empty - teacher pool required for live groupchat distillation"
+                    )
         providers = [
-            build_provider(
-                spec,
-                temperature=self.teacher_temperature,
-                max_tokens=self.teacher_max_tokens,
-                timeout_s=self.teacher_timeout_s,
-            )
-            for spec in self.teacher_specs
-        ]
+                build_provider(
+                    spec,
+                    temperature=self.teacher_temperature,
+                    max_tokens=self.teacher_max_tokens,
+                    timeout_s=self.teacher_timeout_s,
+                    )
+                for spec in self.teacher_specs
+                ]
         self.teacher_pool = TeacherPool(
-            providers,
-            min_similarity=self.teacher_min_similarity,
-            min_votes=self.teacher_min_votes,
-        )
+                providers,
+                min_similarity=self.teacher_min_similarity,
+                min_votes=self.teacher_min_votes,
+                )
         self.distill_writer = DistillationStreamWriter(self.distill_output)
         print(f"✅ Teacher pool initialized ({len(providers)} providers)")
         print(f"✅ Distillation stream writer ready: {self.distill_output}")
@@ -5941,20 +5941,20 @@ class UnifiedSAMSystem:
             print(f"✅ Distillation stream writer ready: {self.distill_output}")
         except Exception as exc:
             log_event(
-                "warn",
-                "distill_writer_error",
-                "Distillation writer init failed",
-                reason=str(exc),
-            )
+                    "warn",
+                    "distill_writer_error",
+                    "Distillation writer init failed",
+                    reason=str(exc),
+                    )
 
     def _build_teacher_prompt(self, room, user, message, context):
         agent_type = room.get("agent_type", "sam")
         user_name = user.get("name", "User")
         header = (
-            "You are an expert assistant in the SAM groupchat.\n"
-            f"Agent type: {agent_type}\n"
-            "Respond with a helpful, precise answer. If you need to ask a clarifying question, ask one.\n"
-        )
+                "You are an expert assistant in the SAM groupchat.\n"
+                f"Agent type: {agent_type}\n"
+                "Respond with a helpful, precise answer. If you need to ask a clarifying question, ask one.\n"
+                )
         learning_context = self._build_learning_context()
         if learning_context:
             header += f"\nRecent learned context:\n{learning_context}\n"
@@ -5971,11 +5971,11 @@ class UnifiedSAMSystem:
             context_lines.append(f"{sender} ({role}): {content}")
         context_block = "\n".join(context_lines)
         prompt = (
-            f"{header}\n"
-            f"Conversation context:\n{context_block}\n\n"
-            f"{user_name} (user): {message}\n"
-            "Assistant:"
-        )
+                f"{header}\n"
+                f"Conversation context:\n{context_block}\n\n"
+                f"{user_name} (user): {message}\n"
+                "Assistant:"
+                )
 
         # Analyze token usage
         est_tokens = self._estimate_tokens(prompt)
@@ -5996,10 +5996,10 @@ class UnifiedSAMSystem:
                 return self._chat_provider
             try:
                 self._chat_provider = build_provider(
-                    self.chat_provider_spec,
-                    max_tokens=self.chat_max_tokens,
-                    timeout_s=self.chat_timeout_s,
-                )
+                        self.chat_provider_spec,
+                        max_tokens=self.chat_max_tokens,
+                        timeout_s=self.chat_timeout_s,
+                        )
                 return self._chat_provider
             except Exception as exc:
                 print(f"⚠️ Chat provider init failed: {exc}", flush=True)
@@ -6014,10 +6014,10 @@ class UnifiedSAMSystem:
         best_score = -1.0
         for cand in consensus:
             scores = [
-                similarity(cand.response, other.response)
-                for other in consensus
-                if other != cand
-            ]
+                    similarity(cand.response, other.response)
+                    for other in consensus
+                    if other != cand
+                    ]
             avg_score = sum(scores) / max(1, len(scores))
             if avg_score > best_score:
                 best_score = avg_score
@@ -6025,109 +6025,109 @@ class UnifiedSAMSystem:
         return best or consensus[0]
 
     def _record_distillation(
-        self,
-        prompt: str,
-        message_data: Dict[str, Any],
-        room: Dict[str, Any],
-        user: Dict[str, Any],
-        context: List[Dict[str, Any]],
-        candidates,
-        consensus,
-    ):
+            self,
+            prompt: str,
+            message_data: Dict[str, Any],
+            room: Dict[str, Any],
+            user: Dict[str, Any],
+            context: List[Dict[str, Any]],
+            candidates,
+            consensus,
+            ):
         if not self.distill_writer:
             return
         metadata = {
-            "room_id": room.get("id"),
-            "room_name": room.get("name"),
-            "agent_type": room.get("agent_type"),
-            "user_id": message_data.get("user_id"),
-            "user_name": user.get("name"),
-            "message_id": message_data.get("id"),
-            "timestamp": message_data.get("timestamp"),
-            "context": context[-10:],
-            "candidate_count": len(candidates),
-            "consensus_count": len(consensus),
-            "min_similarity": self.teacher_min_similarity,
-            "min_votes": self.teacher_min_votes,
-        }
+                "room_id": room.get("id"),
+                "room_name": room.get("name"),
+                "agent_type": room.get("agent_type"),
+                "user_id": message_data.get("user_id"),
+                "user_name": user.get("name"),
+                "message_id": message_data.get("id"),
+                "timestamp": message_data.get("timestamp"),
+                "context": context[-10:],
+                "candidate_count": len(candidates),
+                "consensus_count": len(consensus),
+                "min_similarity": self.teacher_min_similarity,
+                "min_votes": self.teacher_min_votes,
+                }
         if self.distill_include_candidates:
             metadata["candidates"] = [
-                {
-                    "provider": cand.provider,
-                    "model": cand.model,
-                    "response": cand.response,
-                    "latency_s": cand.latency_s,
-                }
-                for cand in candidates
-            ]
+                    {
+                        "provider": cand.provider,
+                        "model": cand.model,
+                        "response": cand.response,
+                        "latency_s": cand.latency_s,
+                        }
+                    for cand in candidates
+                    ]
 
         for idx, cand in enumerate(consensus):
             record = {
-                "task_id": f"groupchat:{room.get('id')}:{message_data.get('id')}:{idx}",
-                "prompt": prompt,
-                "response": cand.response,
-                "score": None,
-                "passed": None,
-                "scorer": "groupchat",
-                "teacher": {
-                    "provider": cand.provider,
-                    "model": cand.model,
-                    "latency_s": cand.latency_s,
-                },
-                "metadata": metadata,
-            }
+                    "task_id": f"groupchat:{room.get('id')}:{message_data.get('id')}:{idx}",
+                    "prompt": prompt,
+                    "response": cand.response,
+                    "score": None,
+                    "passed": None,
+                    "scorer": "groupchat",
+                    "teacher": {
+                        "provider": cand.provider,
+                        "model": cand.model,
+                        "latency_s": cand.latency_s,
+                        },
+                    "metadata": metadata,
+                    }
             self.distill_writer.append(record)
         if consensus:
             self.system_metrics["distill_count"] = self.system_metrics.get(
-                "distill_count", 0
-            ) + len(consensus)
+                    "distill_count", 0
+                    ) + len(consensus)
 
     def _record_chat_distillation(
-        self,
-        prompt: str,
-        response: str,
-        context: List[Dict[str, Any]],
-        user: Dict[str, Any],
-    ):
+            self,
+            prompt: str,
+            response: str,
+            context: List[Dict[str, Any]],
+            user: Dict[str, Any],
+            ):
         if not self.distill_writer:
             return
         message_id = f"chatbot:{int(sam_time_ref.time() * 1000)}"
         metadata = {
-            "room_id": "chatbot",
-            "room_name": "Dashboard Chat",
-            "agent_type": "chatbot",
-            "user_id": user.get("id"),
-            "user_name": user.get("name"),
-            "message_id": message_id,
-            "timestamp": sam_time_ref.time(),
-            "context": (context or [])[-10:],
-            "multi_agent": bool(getattr(self, "chat_multi_agent", False)),
-            "agents_max": int(getattr(self, "chat_agents_max", 3)),
-        }
+                "room_id": "chatbot",
+                "room_name": "Dashboard Chat",
+                "agent_type": "chatbot",
+                "user_id": user.get("id"),
+                "user_name": user.get("name"),
+                "message_id": message_id,
+                "timestamp": sam_time_ref.time(),
+                "context": (context or [])[-10:],
+                "multi_agent": bool(getattr(self, "chat_multi_agent", False)),
+                "agents_max": int(getattr(self, "chat_agents_max", 3)),
+                }
         record = {
-            "task_id": message_id,
-            "prompt": prompt,
-            "response": response,
-            "score": None,
-            "passed": None,
-            "scorer": "chatbot",
-            "teacher": {
-                "provider": "local",
-                "model": "sam",
-                "latency_s": None,
-            },
-            "metadata": metadata,
-        }
+                "task_id": message_id,
+                "prompt": prompt,
+                "response": response,
+                "score": None,
+                "passed": None,
+                "scorer": "chatbot",
+                "teacher": {
+                    "provider": "local",
+                    "model": "sam",
+                    "latency_s": None,
+                    },
+                "metadata": metadata,
+                }
         self.distill_writer.append(record)
         self.system_metrics["distill_count"] = (
-            self.system_metrics.get("distill_count", 0) + 1
-        )
+                self.system_metrics.get("distill_count", 0) + 1
+                )
         log_event(
-            "info",
-            "distill_chat_record",
-            "Chatbot distillation record appended",
-            task_id=message_id,
-        )
+                "info",
+                "distill_chat_record",
+                "Chatbot distillation record appended",
+                task_id=message_id,
+                )
 
     def _generate_teacher_response(self, room, user, message, context, message_data):
         if not self.teacher_pool_enabled or not self.teacher_pool:
@@ -6135,12 +6135,12 @@ class UnifiedSAMSystem:
         prompt = self._build_teacher_prompt(room, user, message, context)
         with self.teacher_pool_lock:
             candidates = self.teacher_pool.generate(
-                prompt, n_per_teacher=self.teacher_n_per
-            )
+                    prompt, n_per_teacher=self.teacher_n_per
+                    )
             consensus = self.teacher_pool.consensus_filter(candidates)
         self._record_distillation(
-            prompt, message_data, room, user, context, candidates, consensus
-        )
+                prompt, message_data, room, user, context, candidates, consensus
+                )
         chosen = self._pick_consensus_candidate(consensus)
         return chosen.response, chosen.provenance
 
@@ -6173,7 +6173,7 @@ class UnifiedSAMSystem:
             except Exception:
                 pass
 
-                # --- Plateau Detection (LATEST theory integration) ---
+            # --- Plateau Detection (LATEST theory integration) ---
         if len(self.score_history) >= 10:
             scores = list(self.score_history)
             recent_avg = sum(scores[-5:]) / 5.0
@@ -6184,11 +6184,11 @@ class UnifiedSAMSystem:
                 residual = 0.45  # Increase residual pressure
                 plateau_flag = 1.0
                 log_event(
-                    "info",
-                    "pressure_plateau",
-                    "Performance plateau detected",
-                    avg=recent_avg,
-                )
+                        "info",
+                        "pressure_plateau",
+                        "Performance plateau detected",
+                        avg=recent_avg,
+                        )
 
         if len(self.calibration_history) >= 10:
             cal_errors = list(self.calibration_history)
@@ -6201,23 +6201,23 @@ class UnifiedSAMSystem:
                 # In morphogenesis theory, calibration plateau can trigger rank or expansion
                 rank_def = max(rank_def, 0.35)
                 log_event(
-                    "info",
-                    "calibration_plateau",
-                    "Calibration plateau detected",
-                    avg=recent_cal_avg,
-                )
+                        "info",
+                        "calibration_plateau",
+                        "Calibration plateau detected",
+                        avg=recent_cal_avg,
+                        )
 
         growth_idle = sam_time_ref.time() - (
-            self.system_metrics.get("last_growth_ts") or sam_time_ref.time()
-        )
+                self.system_metrics.get("last_growth_ts") or sam_time_ref.time()
+                )
         if growth_idle > 300:
             residual = max(residual, 0.25)
             planner_friction = max(planner_friction, 0.25)
             retrieval_entropy = max(retrieval_entropy, 0.25)
 
         activity_age = sam_time_ref.time() - (
-            self.system_metrics.get("last_activity") or sam_time_ref.time()
-        )
+                self.system_metrics.get("last_activity") or sam_time_ref.time()
+                )
         latency = activity_age / 1000.0 if activity_age > 0 else 0.0
 
         if activity_age > 120:
@@ -6227,23 +6227,23 @@ class UnifiedSAMSystem:
             residual = 0.3
 
         return {
-            "residual": residual,
-            "rank_def": rank_def,
-            "retrieval_entropy": retrieval_entropy,
-            "interference": interference,
-            "planner_friction": planner_friction,
-            "context_collapse": context_collapse,
-            "compression_waste": compression_waste,
-            "temporal_incoherence": temporal_incoherence,
-            "plateau_flag": plateau_flag,
-            "calibration_error": calibration_error,
-            "contradiction_score": contradiction_score,
-            "tool_failure_rate": tool_failure_rate,
-            "unknown_growth_rate": unknown_growth_rate,
-            "cpu_usage": cpu_usage,
-            "ram_usage": ram_usage,
-            "latency": latency,
-        }
+                "residual": residual,
+                "rank_def": rank_def,
+                "retrieval_entropy": retrieval_entropy,
+                "interference": interference,
+                "planner_friction": planner_friction,
+                "context_collapse": context_collapse,
+                "compression_waste": compression_waste,
+                "temporal_incoherence": temporal_incoherence,
+                "plateau_flag": plateau_flag,
+                "calibration_error": calibration_error,
+                "contradiction_score": contradiction_score,
+                "tool_failure_rate": tool_failure_rate,
+                "unknown_growth_rate": unknown_growth_rate,
+                "cpu_usage": cpu_usage,
+                "ram_usage": ram_usage,
+                "latency": latency,
+                }
 
     def _run_consciousness_optimization(self):
         """Trains the algorithmic consciousness module using real telemetry (Phase 5.2)"""
@@ -6257,8 +6257,8 @@ class UnifiedSAMSystem:
 
             # a_t: current action vector (approximated by regulator knobs)
             a_t = (
-                list(self.r_vec[:8]) + [0.0] * 8
-            )  # Use resource vector as action proxy
+                    list(self.r_vec[:8]) + [0.0] * 8
+                    )  # Use resource vector as action proxy
 
             # z_next: predicted/observed next state
             # For simplicity in this loop, we use a slightly shifted m_vec
@@ -6273,13 +6273,13 @@ class UnifiedSAMSystem:
             # Run optimization in C
             # optimize(z_t, a_t, z_next, m_t, reward, epochs, num_params)
             stats = consciousness_algorithmic.optimize(
-                z_t, a_t, z_next, m_t, reward, 10, 10000
-            )
+                    z_t, a_t, z_next, m_t, reward, 10, 10000
+                    )
 
             if stats:
                 self.system_metrics["consciousness_score"] = stats.get(
-                    "consciousness_score", 0.0
-                )
+                        "consciousness_score", 0.0
+                        )
                 if stats.get("is_conscious"):
                     self.system_metrics["consciousness_status"] = "EMERGENT"
 
@@ -6297,24 +6297,24 @@ class UnifiedSAMSystem:
 
                 signals = self._compute_pressure_signals()
                 lambda_val = sam_meta_controller_c.update_pressure(
-                    self.meta_controller,
-                    signals["residual"],
-                    signals["rank_def"],
-                    signals["retrieval_entropy"],
-                    signals["interference"],
-                    signals["planner_friction"],
-                    signals["context_collapse"],
-                    signals["compression_waste"],
-                    signals["temporal_incoherence"],
-                )
+                        self.meta_controller,
+                        signals["residual"],
+                        signals["rank_def"],
+                        signals["retrieval_entropy"],
+                        signals["interference"],
+                        signals["planner_friction"],
+                        signals["context_collapse"],
+                        signals["compression_waste"],
+                        signals["temporal_incoherence"],
+                        )
 
                 # --- God Equation Regulator Cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
                 self._run_regulator_cycle(signals)
 
                 # Set Innocence Gate parameters (Phase 4.4)
                 sam_meta_controller_c.set_innocence(
-                    self.meta_controller, self.innocence_I, 0.2
-                )
+                        self.meta_controller, self.innocence_I, 0.2
+                        )
 
                 # Rank pressure calculation integrated into compute_pressure_signals
                 # Rank pressure is now derived from internal stability metrics.
@@ -6331,14 +6331,14 @@ class UnifiedSAMSystem:
                 # Retrieve and update growth diagnostics immediately after primitive selection
                 growth_diagnostics = self._get_growth_diagnostics()
                 self.system_metrics["meta_growth_reason"] = growth_diagnostics[
-                    "growth"
-                ]["last_growth_reason"]
+                        "growth"
+                        ]["last_growth_reason"]
                 self.system_metrics["meta_growth_attempt_successful"] = (
-                    growth_diagnostics["growth"]["last_growth_attempt_successful"]
-                )
+                        growth_diagnostics["growth"]["last_growth_attempt_successful"]
+                        )
                 self.system_metrics["meta_growth_frozen"] = growth_diagnostics[
-                    "growth"
-                ]["growth_frozen"]
+                        "growth"
+                        ]["growth_frozen"]
 
                 if primitive is None or primitive == 0:
                     self.system_metrics["last_growth_attempt_ts"] = sam_time_ref.time()
@@ -6350,43 +6350,43 @@ class UnifiedSAMSystem:
                     applied = False
                     if not self.meta_growth_freeze:
                         applied = sam_meta_controller_c.apply_primitive(
-                            self.meta_controller, primitive
-                        )
+                                self.meta_controller, primitive
+                                )
                         if applied:
                             # --- GP_SUBMODEL_SPAWN Execution (Phase 4.4) ---
                             if primitive == 2:  # GP_SUBMODEL_SPAWN
                                 print(
-                                    "🐣 Morphogenetic Event: Spawning new submodel agent"
-                                )
+                                        "🐣 Morphogenetic Event: Spawning new submodel agent"
+                                        )
                                 self._spawn_autonomous_submodel()
 
                             gate_ok = self._run_regression_gate()
                             sam_meta_controller_c.record_growth_outcome(
-                                self.meta_controller, primitive, bool(gate_ok)
-                            )
+                                    self.meta_controller, primitive, bool(gate_ok)
+                                    )
                             if gate_ok:
                                 self.system_metrics["last_growth_ts"] = (
-                                    sam_time_ref.time()
-                                )
+                                        sam_time_ref.time()
+                                        )
                                 self.system_metrics["last_growth_primitive"] = primitive
                                 self.system_metrics["last_growth_attempt_result"] = (
-                                    "applied"
-                                )
+                                        "applied"
+                                        )
                                 log_event(
-                                    "info",
-                                    "meta_growth_applied",
-                                    "Meta growth primitive applied",
-                                    primitive=primitive,
-                                )
+                                        "info",
+                                        "meta_growth_applied",
+                                        "Meta growth primitive applied",
+                                        primitive=primitive,
+                                        )
                             if not gate_ok:
                                 applied = False
                                 self.system_metrics["last_growth_attempt_result"] = (
-                                    "regression_blocked"
-                                )
+                                        "regression_blocked"
+                                        )
                         else:
                             self.system_metrics["last_growth_attempt_result"] = (
-                                "apply_failed"
-                            )
+                                    "apply_failed"
+                                    )
                     else:
                         self.system_metrics["last_growth_attempt_result"] = "frozen"
 
@@ -6400,8 +6400,8 @@ class UnifiedSAMSystem:
                             # 90% success rate
                             success = 1 if random.random() < 0.9 else 0
                             sam_meta_controller_c.advance_submodel_lifecycle(
-                                self.meta_controller, i, success
-                            )
+                                    self.meta_controller, i, success
+                                    )
                 except Exception as e:
                     print(f"Error advancing submodel lifecycle: {e}")
 
@@ -6410,11 +6410,11 @@ class UnifiedSAMSystem:
                 if self.unsolvability_budget < 0.1:
                     if self.step % 100 == 0:
                         log_event(
-                            "warn",
-                            "high_epistemic_risk",
-                            "Unsolvability budget low",
-                            U=self.unsolvability_budget,
-                        )
+                                "warn",
+                                "high_epistemic_risk",
+                                "Unsolvability budget low",
+                                U=self.unsolvability_budget,
+                                )
 
                         # Periodic specialist consolidation (LATEST theory)
                 if self.step % 20 == 0:
@@ -6430,36 +6430,36 @@ class UnifiedSAMSystem:
         """Persist system state for restart continuity."""
         try:
             state = {
-                "timestamp": sam_datetime_ref.now().isoformat(),
-                "profile": self.profile_name,
-                "system_metrics": self.system_metrics,
-                "meta_state": self.meta_state,
-                "provider_mode": getattr(self, "provider_mode", "primary"),
-                "meta_growth_freeze": getattr(self, "meta_growth_freeze", False),
-                "auto_conversation_active": bool(
-                    getattr(self, "auto_conversation_active", False)
-                ),
-                "autonomous_enabled": bool(getattr(self, "autonomous_enabled", False)),
-            }
+                    "timestamp": sam_datetime_ref.now().isoformat(),
+                    "profile": self.profile_name,
+                    "system_metrics": self.system_metrics,
+                    "meta_state": self.meta_state,
+                    "provider_mode": getattr(self, "provider_mode", "primary"),
+                    "meta_growth_freeze": getattr(self, "meta_growth_freeze", False),
+                    "auto_conversation_active": bool(
+                        getattr(self, "auto_conversation_active", False)
+                        ),
+                    "autonomous_enabled": bool(getattr(self, "autonomous_enabled", False)),
+                    }
             if getattr(self, "learning_memory_enabled", False):
                 state["learning_memory"] = list(self.learning_memory)
             if getattr(self, "goal_manager", None):
                 try:
                     state["goals"] = {
-                        "active": list(self.goal_manager.active_goals),
-                        "completed": list(self.goal_manager.completed_goals),
-                        "subtasks": [
-                            getattr(t, "__dict__", {})
-                            for t in self.goal_manager.subtasks
-                        ],
-                    }
+                            "active": list(self.goal_manager.active_goals),
+                            "completed": list(self.goal_manager.completed_goals),
+                            "subtasks": [
+                                getattr(t, "__dict__", {})
+                                for t in self.goal_manager.subtasks
+                                ],
+                            }
                 except Exception:
                     pass
             if getattr(self, "connected_agents", None):
                 state["connected_agents"] = list(self.connected_agents.keys())
             print(
-                f"DEBUG: Saving state to {self.state_path}. total_conversations={state['system_metrics'].get('total_conversations')}"
-            )
+                    f"DEBUG: Saving state to {self.state_path}. total_conversations={state['system_metrics'].get('total_conversations')}"
+                    )
             with open(self.state_path, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2)
             return True
@@ -6480,18 +6480,18 @@ class UnifiedSAMSystem:
                 self.system_metrics.update(data.get("system_metrics", {}))
                 self.meta_state = data.get("meta_state", self.meta_state)
                 self.provider_mode = data.get(
-                    "provider_mode", getattr(self, "provider_mode", "primary")
-                )
+                        "provider_mode", getattr(self, "provider_mode", "primary")
+                        )
                 self.meta_growth_freeze = data.get(
-                    "meta_growth_freeze", getattr(self, "meta_growth_freeze", False)
-                )
+                        "meta_growth_freeze", getattr(self, "meta_growth_freeze", False)
+                        )
                 if getattr(self, "learning_memory_enabled", False) and data.get(
-                    "learning_memory"
-                ):
+                        "learning_memory"
+                        ):
                     self.learning_memory.clear()
                     for item in data.get("learning_memory", [])[
-                        -self.learning_memory_max :
-                    ]:
+                            -self.learning_memory_max :
+                            ]:
                         self.learning_memory.append(item)
             return data
         except Exception as exc:
@@ -6505,11 +6505,11 @@ class UnifiedSAMSystem:
             goals = data.get("goals") or {}
             if getattr(self, "goal_manager", None) and goals:
                 self.goal_manager.active_goals = goals.get(
-                    "active", self.goal_manager.active_goals
-                )
+                        "active", self.goal_manager.active_goals
+                        )
                 self.goal_manager.completed_goals = goals.get(
-                    "completed", self.goal_manager.completed_goals
-                )
+                        "completed", self.goal_manager.completed_goals
+                        )
                 subtasks = []
                 for item in goals.get("subtasks", []):
                     try:
@@ -6535,22 +6535,22 @@ class UnifiedSAMSystem:
         ollama_available = self._check_ollama_available()
         if not ollama_available:
             raise RuntimeError(
-                "\\n❌ CRITICAL: Ollama not found!\\n"
-                "Please install Ollama from: https://ollama.ai/download\\n"
-                "Then pull at least one model: ollama pull mistral:latest"
-            )
+                    "\\n❌ CRITICAL: Ollama not found!\\n"
+                    "Please install Ollama from: https://ollama.ai/download\\n"
+                    "Then pull at least one model: ollama pull mistral:latest"
+                    )
 
             # Check for local models
         models_available = self._check_local_models_available()
         if not models_available:
             raise RuntimeError(
-                "\\n❌ CRITICAL: No local LLM models found!\\n"
-                "Please pull at least one model:\\n"
-                "  ollama pull mistral:latest\\n"
-                "  ollama pull llama3.1:latest\\n"
-                "  ollama pull qwen2.5-coder:7b\\n"
-                "Run 'ollama list' to check available models."
-            )
+                    "\\n❌ CRITICAL: No local LLM models found!\\n"
+                    "Please pull at least one model:\\n"
+                    "  ollama pull mistral:latest\\n"
+                    "  ollama pull llama3.1:latest\\n"
+                    "  ollama pull qwen2.5-coder:7b\\n"
+                    "Run 'ollama list' to check available models."
+                    )
 
         print("✅ All minimum capabilities validated!")
         print("-" * 50)
@@ -6559,8 +6559,8 @@ class UnifiedSAMSystem:
         """Check if Ollama is installed and available"""
         try:
             result = subprocess.run(
-                ["ollama", "--version"], capture_output=True, text=True, timeout=5
-            )
+                    ["ollama", "--version"], capture_output=True, text=True, timeout=5
+                    )
             if result.returncode == 0:
                 print("✅ Ollama found and responding")
                 return True
@@ -6575,8 +6575,8 @@ class UnifiedSAMSystem:
         """Check if local models are available via Ollama"""
         try:
             result = subprocess.run(
-                ["ollama", "list"], capture_output=True, text=True, timeout=10
-            )
+                    ["ollama", "list"], capture_output=True, text=True, timeout=10
+                    )
             if result.returncode == 0:
                 lines = result.stdout.strip().split("\\n")
                 # Skip header line, check for actual models
@@ -6607,13 +6607,13 @@ class UnifiedSAMSystem:
         try:
             # Try to initialize critical components individually
             critical_components = [
-                ("c_core", self._initialize_c_core_threaded),
-                (
-                    "python_orchestration",
-                    self._initialize_python_orchestration_threaded,
-                ),
-                ("web_interface", self._initialize_web_interface_threaded),
-            ]
+                    ("c_core", self._initialize_c_core_threaded),
+                    (
+                        "python_orchestration",
+                        self._initialize_python_orchestration_threaded,
+                        ),
+                    ("web_interface", self._initialize_web_interface_threaded),
+                    ]
 
             recovered_count = 0
             for name, init_method in critical_components:
@@ -6637,8 +6637,8 @@ class UnifiedSAMSystem:
                 return True
             else:
                 print(
-                    "❌ System recovery failed - too many critical components unavailable"
-                )
+                        "❌ System recovery failed - too many critical components unavailable"
+                        )
                 self._invoke_meta_agent_repair(error, context="system_recovery")
                 return False
 
@@ -6659,33 +6659,33 @@ class UnifiedSAMSystem:
                 return False
             if not getattr(self, "allow_self_modification", False):
                 log_event(
-                    "warn",
-                    "meta_repair_skipped",
-                    "Meta-agent repair blocked",
-                    reason="self_mod_disabled",
-                    context=context,
-                )
+                        "warn",
+                        "meta_repair_skipped",
+                        "Meta-agent repair blocked",
+                        reason="self_mod_disabled",
+                        context=context,
+                        )
                 return False
             if not getattr(self, "sam_code_modifier_ready", False):
                 log_event(
-                    "warn",
-                    "meta_repair_skipped",
-                    "Meta-agent repair blocked",
-                    reason="code_modifier_not_ready",
-                    context=context,
-                )
+                        "warn",
+                        "meta_repair_skipped",
+                        "Meta-agent repair blocked",
+                        reason="code_modifier_not_ready",
+                        context=context,
+                        )
                 return False
-                # Throttle to prevent repair loops
+            # Throttle to prevent repair loops
             now = sam_time_ref.time()
             last = getattr(self, "_last_meta_repair", 0)
             if now - last < 120:
                 log_event(
-                    "warn",
-                    "meta_repair_skipped",
-                    "Meta-agent repair throttled",
-                    reason="throttled",
-                    context=context,
-                )
+                        "warn",
+                        "meta_repair_skipped",
+                        "Meta-agent repair throttled",
+                        reason="throttled",
+                        context=context,
+                        )
                 return False
             self._last_meta_repair = now
 
@@ -6693,8 +6693,8 @@ class UnifiedSAMSystem:
             severity = getattr(failure_event, "severity", "medium")
             if not self._severity_allows_repair(severity):
                 print(
-                    f"🛡️ Meta-agent repair skipped (severity={severity} below threshold)"
-                )
+                        f"🛡️ Meta-agent repair skipped (severity={severity} below threshold)"
+                        )
                 return False
             return self.meta_agent.handle_failure(failure_event)
         except Exception as exc:
@@ -6723,29 +6723,29 @@ class UnifiedSAMSystem:
                 if not has_active_issues:
                     with self.skipped_issues_lock:
                         if (
-                            self.skipped_issues
-                            and not self.skipped_issues_processor_active
-                        ):
+                                self.skipped_issues
+                                and not self.skipped_issues_processor_active
+                                ):
                             self.skipped_issues_processor_active = True
                             print(
-                                f"🔄 System idle - processing {len(self.skipped_issues)} skipped issues"
-                            )
+                                    f"🔄 System idle - processing {len(self.skipped_issues)} skipped issues"
+                                    )
 
                             # Process a batch of skipped issues
                             processed_count = 0
                             max_batch_size = 3  # Process up to 3 issues per idle period
 
                             while (
-                                self.skipped_issues and processed_count < max_batch_size
-                            ):
+                                    self.skipped_issues and processed_count < max_batch_size
+                                    ):
                                 skipped_issue = self.skipped_issues.pop(0)
                                 self._process_skipped_issue(skipped_issue)
                                 processed_count += 1
 
                             if processed_count > 0:
                                 print(
-                                    f"✅ Processed {processed_count} skipped issues during idle period"
-                                )
+                                        f"✅ Processed {processed_count} skipped issues during idle period"
+                                        )
 
                             self.skipped_issues_processor_active = False
 
@@ -6766,16 +6766,16 @@ class UnifiedSAMSystem:
                 if current_issues:
                     return True
 
-                    # Check component connectivity
+                # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             if connectivity_issues:
                 return True
 
-                # Check if meta-agent is busy with repairs
+            # Check if meta-agent is busy with repairs
             if (
-                hasattr(self, "_meta_repair_in_progress")
-                and self._meta_repair_in_progress
-            ):
+                    hasattr(self, "_meta_repair_in_progress")
+                    and self._meta_repair_in_progress
+                    ):
                 return True
 
             return False
@@ -6798,43 +6798,43 @@ class UnifiedSAMSystem:
                     if self.issue_resolver.attempt_auto_resolution(original_issue):
                         print(f"✅ Skipped issue resolved: {skipped_issue['message']}")
                         log_event(
-                            "info",
-                            "skipped_issue_resolved",
-                            "Previously skipped issue resolved during idle processing",
-                            issue=skipped_issue["message"],
-                            context="skipped_processor",
-                        )
+                                "info",
+                                "skipped_issue_resolved",
+                                "Previously skipped issue resolved during idle processing",
+                                issue=skipped_issue["message"],
+                                context="skipped_processor",
+                                )
                         return
 
-                        # Try meta-agent repair if severity is high enough
+                    # Try meta-agent repair if severity is high enough
                 severity = skipped_issue.get("severity", "low")
                 if self._severity_allows_repair(severity):
                     print(
-                        f"🤖 Escalating skipped issue to meta-agent: {skipped_issue['message']}"
-                    )
+                            f"🤖 Escalating skipped issue to meta-agent: {skipped_issue['message']}"
+                            )
                     self._invoke_meta_agent_repair(
-                        Exception(skipped_issue["message"]),
-                        context="skipped_issue_processor",
-                    )
+                            Exception(skipped_issue["message"]),
+                            context="skipped_issue_processor",
+                            )
                     log_event(
-                        "info",
-                        "skipped_issue_escalated",
-                        "Previously skipped issue escalated to meta-agent during idle processing",
-                        issue=skipped_issue["message"],
-                        severity=severity,
-                        context="skipped_processor",
-                    )
+                            "info",
+                            "skipped_issue_escalated",
+                            "Previously skipped issue escalated to meta-agent during idle processing",
+                            issue=skipped_issue["message"],
+                            severity=severity,
+                            context="skipped_processor",
+                            )
                 else:
                     print(
-                        f"⏸️ Skipped issue still below threshold: {skipped_issue['message']}"
-                    )
+                            f"⏸️ Skipped issue still below threshold: {skipped_issue['message']}"
+                            )
                     # Re-queue if still below threshold
                     with self.skipped_issues_lock:
                         self.skipped_issues.append(skipped_issue)
             else:
                 print(
-                    f"✅ Skipped issue no longer relevant: {skipped_issue['message']}"
-                )
+                        f"✅ Skipped issue no longer relevant: {skipped_issue['message']}"
+                        )
 
         except Exception as e:
             print(f"⚠️ Error processing skipped issue {skipped_issue['message']}: {e}")
@@ -6851,22 +6851,22 @@ class UnifiedSAMSystem:
 
             # Check for temporary conditions that might have resolved
             if any(
-                keyword in message
-                for keyword in ["temporary", "transient", "momentary"]
-            ):
+                    keyword in message
+                    for keyword in ["temporary", "transient", "momentary"]
+                    ):
                 return False
 
-                # Check for initialization issues that might be resolved
+            # Check for initialization issues that might be resolved
             if any(keyword in message for keyword in ["initializing", "starting up"]):
                 # Check if system is now fully initialized
                 if (
-                    hasattr(self, "c_core_initialized")
-                    and self.c_core_initialized
-                    and hasattr(self, "python_orchestration_initialized")
-                    and self.python_orchestration_initialized
-                    and hasattr(self, "web_interface_initialized")
-                    and self.web_interface_initialized
-                ):
+                        hasattr(self, "c_core_initialized")
+                        and self.c_core_initialized
+                        and hasattr(self, "python_orchestration_initialized")
+                        and self.python_orchestration_initialized
+                        and hasattr(self, "web_interface_initialized")
+                        and self.web_interface_initialized
+                        ):
                     return False
 
             return True  # Assume relevant by default
@@ -6879,14 +6879,14 @@ class UnifiedSAMSystem:
 
         # Start self-healing monitor in background
         healing_thread = threading.Thread(
-            target=self._continuous_self_healing_loop, daemon=True
-        )
+                target=self._continuous_self_healing_loop, daemon=True
+                )
         healing_thread.start()
 
         # Start health monitoring thread
         health_thread = threading.Thread(
-            target=self._continuous_health_monitoring, daemon=True
-        )
+                target=self._continuous_health_monitoring, daemon=True
+                )
         health_thread.start()
 
         print("✅ Continuous self-healing system active")
@@ -6907,8 +6907,8 @@ class UnifiedSAMSystem:
 
                 if issues_found > 0:
                     print(
-                        f"🛠️ Self-healing cycle {healing_cycle}: Found and addressed {issues_found} issues"
-                    )
+                            f"🛠️ Self-healing cycle {healing_cycle}: Found and addressed {issues_found} issues"
+                            )
                 elif healing_cycle % 10 == 0:  # Log every 10 cycles
                     print(f"🛡️ Self-healing cycle {healing_cycle}: System healthy")
 
@@ -6933,8 +6933,8 @@ class UnifiedSAMSystem:
                 # Log issues
                 if not health_status["all_healthy"]:
                     print(
-                        f"📊 Health check {monitor_cycle}: {health_status['issues']} issues detected"
-                    )
+                            f"📊 Health check {monitor_cycle}: {health_status['issues']} issues detected"
+                            )
 
                     # Attempt automatic fixes for minor issues
                     if hasattr(self, "issue_resolver"):
@@ -6964,46 +6964,46 @@ class UnifiedSAMSystem:
                         # Escalate unresolved issues to meta-agent self-repair
                         if issue.get("escalate_to_meta", True):
                             self._invoke_meta_agent_repair(
-                                Exception(issue.get("message", "unknown_issue")),
-                                context="self_healing",
-                            )
+                                    Exception(issue.get("message", "unknown_issue")),
+                                    context="self_healing",
+                                    )
                         else:
                             # Track skipped issues for later processing
                             with self.skipped_issues_lock:
                                 skipped_issue = {
-                                    "message": issue.get("message", "unknown_issue"),
-                                    "reason": issue.get("reason", "not_escalated"),
-                                    "timestamp": sam_datetime_ref.now().isoformat(),
-                                    "severity": issue.get("severity", "low"),
-                                    "context": "self_healing",
-                                    "original_issue": issue,
-                                }
+                                        "message": issue.get("message", "unknown_issue"),
+                                        "reason": issue.get("reason", "not_escalated"),
+                                        "timestamp": sam_datetime_ref.now().isoformat(),
+                                        "severity": issue.get("severity", "low"),
+                                        "context": "self_healing",
+                                        "original_issue": issue,
+                                        }
                                 self.skipped_issues.append(skipped_issue)
                                 print(
-                                    f"📝 Skipped issue queued for later processing: {skipped_issue['message']}"
-                                )
+                                        f"📝 Skipped issue queued for later processing: {skipped_issue['message']}"
+                                        )
 
                             log_event(
-                                "info",
-                                "self_healing_skip",
-                                "Issue not escalated to meta-agent",
-                                reason=issue.get("message", "unknown_issue"),
-                                context="self_healing",
-                            )
+                                    "info",
+                                    "self_healing_skip",
+                                    "Issue not escalated to meta-agent",
+                                    reason=issue.get("message", "unknown_issue"),
+                                    context="self_healing",
+                                    )
 
                             # Check component connectivity
             connectivity_issues = self._check_component_connectivity()
             for issue in connectivity_issues:
                 if self._attempt_component_recovery(
-                    issue.get("component", "unknown"),
-                    issue.get("error", "connectivity"),
-                ):
+                        issue.get("component", "unknown"),
+                        issue.get("error", "connectivity"),
+                        ):
                     issues_found += 1
                 else:
                     self._invoke_meta_agent_repair(
-                        Exception(issue.get("error", "connectivity")),
-                        context="connectivity",
-                    )
+                            Exception(issue.get("error", "connectivity")),
+                            context="connectivity",
+                            )
 
         except Exception as e:
             print(f"⚠️ Self-healing check error: {e}")
@@ -7017,61 +7017,61 @@ class UnifiedSAMSystem:
         # Check critical components
         c_core_status = str(self.system_metrics.get("c_core_status", "unknown")).lower()
         py_status = str(
-            self.system_metrics.get("python_orchestration_status", "unknown")
-        ).lower()
+                self.system_metrics.get("python_orchestration_status", "unknown")
+                ).lower()
         web_status = str(
-            self.system_metrics.get("web_interface_status", "unknown")
-        ).lower()
+                self.system_metrics.get("web_interface_status", "unknown")
+                ).lower()
         critical_checks = [
-            (
-                "c_core",
-                c_core_status in ("active", "ok")
-                or getattr(self, "c_core_initialized", False),
-            ),
-            (
-                "python_orchestration",
-                py_status in ("active", "ok")
-                or getattr(self, "python_orchestration_initialized", False),
-            ),
-            (
-                "web_interface",
-                web_status in ("active", "ok")
-                or getattr(self, "web_interface_initialized", False),
-            ),
-        ]
+                (
+                    "c_core",
+                    c_core_status in ("active", "ok")
+                    or getattr(self, "c_core_initialized", False),
+                    ),
+                (
+                    "python_orchestration",
+                    py_status in ("active", "ok")
+                    or getattr(self, "python_orchestration_initialized", False),
+                    ),
+                (
+                    "web_interface",
+                    web_status in ("active", "ok")
+                    or getattr(self, "web_interface_initialized", False),
+                    ),
+                ]
 
         for component, is_healthy in critical_checks:
             if not is_healthy:
                 health_status["all_healthy"] = False
                 health_status["issues"].append(
-                    {
-                        "type": "component_failure",
-                        "component": component,
-                        "severity": "high",
-                        "message": f"{component.replace('_', ' ').title()} component unhealthy",
-                        "auto_fix_possible": True,
-                    }
-                )
+                        {
+                            "type": "component_failure",
+                            "component": component,
+                            "severity": "high",
+                            "message": f"{component.replace('_', ' ').title()} component unhealthy",
+                            "auto_fix_possible": True,
+                            }
+                        )
 
                 # Check integration availability
         integration_checks = [
-            ("sam_gmail_available", "Gmail integration"),
-            ("sam_github_available", "GitHub integration"),
-            ("sam_web_search_available", "Web search integration"),
-            ("sam_code_modifier_available", "Code modifier integration"),
-        ]
+                ("sam_gmail_available", "Gmail integration"),
+                ("sam_github_available", "GitHub integration"),
+                ("sam_web_search_available", "Web search integration"),
+                ("sam_code_modifier_available", "Code modifier integration"),
+                ]
 
         for attr, description in integration_checks:
             if hasattr(self, attr) and not getattr(self, attr):
                 health_status["issues"].append(
-                    {
-                        "type": "integration_unavailable",
-                        "component": attr,
-                        "severity": "medium",
-                        "message": f"{description} unavailable",
-                        "auto_fix_possible": False,  # Usually requires external setup
-                    }
-                )
+                        {
+                            "type": "integration_unavailable",
+                            "component": attr,
+                            "severity": "medium",
+                            "message": f"{description} unavailable",
+                            "auto_fix_possible": False,  # Usually requires external setup
+                            }
+                        )
 
                 # Check Health Intelligence Baseline (Phase 5.3)
         if hasattr(self, "health_intel"):
@@ -7080,13 +7080,13 @@ class UnifiedSAMSystem:
                 health_status["all_healthy"] = False
                 for issue_msg in intel_status["issues"]:
                     health_status["issues"].append(
-                        {
-                            "type": "baseline_violation",
-                            "severity": "medium",
-                            "message": issue_msg,
-                            "auto_fix_possible": True,
-                        }
-                    )
+                            {
+                                "type": "baseline_violation",
+                                "severity": "medium",
+                                "message": issue_msg,
+                                "auto_fix_possible": True,
+                                }
+                            )
 
         return health_status
 
@@ -7101,39 +7101,39 @@ class UnifiedSAMSystem:
                 result = self._process_chatbot_message("/status", {})
                 if not result:
                     connectivity_issues.append(
-                        {
-                            "component": "chat_processing",
-                            "error": "Command processing not responding",
-                        }
-                    )
+                            {
+                                "component": "chat_processing",
+                                "error": "Command processing not responding",
+                                }
+                            )
         except Exception as e:
             connectivity_issues.append(
-                {"component": "chat_processing", "error": str(e)}
-            )
+                    {"component": "chat_processing", "error": str(e)}
+                    )
 
             # Test agent system
         try:
             if hasattr(self, "agent_configs"):
                 if getattr(self, "meta_only_boot", False):
                     if (
-                        "meta_agent" not in self.agent_configs
-                        or "meta_agent" not in self.connected_agents
-                    ):
+                            "meta_agent" not in self.agent_configs
+                            or "meta_agent" not in self.connected_agents
+                            ):
                         connectivity_issues.append(
-                            {
-                                "component": "agent_system",
-                                "error": "MetaAgent missing or disconnected in meta-only boot",
-                            }
-                        )
+                                {
+                                    "component": "agent_system",
+                                    "error": "MetaAgent missing or disconnected in meta-only boot",
+                                    }
+                                )
                 else:
                     min_agents = 5
                     if len(self.agent_configs) < min_agents:
                         connectivity_issues.append(
-                            {
-                                "component": "agent_system",
-                                "error": "Insufficient agents connected",
-                            }
-                        )
+                                {
+                                    "component": "agent_system",
+                                    "error": "Insufficient agents connected",
+                                    }
+                                )
         except Exception as e:
             connectivity_issues.append({"component": "agent_system", "error": str(e)})
 
@@ -7146,11 +7146,11 @@ class UnifiedSAMSystem:
             if not self.issue_resolver.resolve_all_issues():
                 print("\\n⚠️ Some issues could not be resolved automatically.")
                 print(
-                    "The system will attempt to continue, but functionality may be limited."
-                )
+                        "The system will attempt to continue, but functionality may be limited."
+                        )
                 print(
-                    "Check the messages above for guidance on resolving remaining issues."
-                )
+                        "Check the messages above for guidance on resolving remaining issues."
+                        )
             print("✅ Issue resolver completed successfully")
         except Exception as e:
             print(f"⚠️ Issue resolver thread encountered error: {e}")
@@ -7162,35 +7162,35 @@ class UnifiedSAMSystem:
 
         # Component initialization tasks that can run in parallel
         component_tasks = [
-            ("C Core", self._initialize_c_core_threaded, True),  # Critical
-            (
-                "Python Orchestration",
-                self._initialize_python_orchestration_threaded,
-                True,
-            ),  # Critical
-            (
-                "Web Interface",
-                self._initialize_web_interface_threaded,
-                True,
-            ),  # Critical
-            (
-                "Google Drive",
-                self._initialize_google_drive_threaded,
-                False,
-            ),  # Non-critical
-            (
-                "Web Search",
-                self._initialize_sam_web_search_threaded,
-                False,
-            ),  # Non-critical
-            (
-                "Code Modifier",
-                self._initialize_sam_code_modifier_threaded,
-                self.require_self_mod,
-            ),  # Critical if required
-            ("Gmail", self._initialize_sam_gmail_threaded, False),  # Non-critical
-            ("GitHub", self._initialize_sam_github_threaded, False),  # Non-critical
-        ]
+                ("C Core", self._initialize_c_core_threaded, True),  # Critical
+                (
+                    "Python Orchestration",
+                    self._initialize_python_orchestration_threaded,
+                    True,
+                    ),  # Critical
+                (
+                    "Web Interface",
+                    self._initialize_web_interface_threaded,
+                    True,
+                    ),  # Critical
+                (
+                    "Google Drive",
+                    self._initialize_google_drive_threaded,
+                    False,
+                    ),  # Non-critical
+                (
+                    "Web Search",
+                    self._initialize_sam_web_search_threaded,
+                    False,
+                    ),  # Non-critical
+                (
+                    "Code Modifier",
+                    self._initialize_sam_code_modifier_threaded,
+                    self.require_self_mod,
+                    ),  # Critical if required
+                ("Gmail", self._initialize_sam_gmail_threaded, False),  # Non-critical
+                ("GitHub", self._initialize_sam_github_threaded, False),  # Non-critical
+                ]
 
         threads = []
 
@@ -7206,8 +7206,8 @@ class UnifiedSAMSystem:
                     print(f"⚠️ Critical component {name} initialization timed out")
                     if is_critical:
                         raise Exception(
-                            f"❌ CRITICAL: {name} failed to initialize within timeout"
-                        )
+                                f"❌ CRITICAL: {name} failed to initialize within timeout"
+                                )
                 else:
                     print(f"✅ Critical component {name} initialized successfully")
 
@@ -7232,8 +7232,8 @@ class UnifiedSAMSystem:
                 # Start monitoring system in separate thread
         print("📊 Starting monitoring system in isolated thread...")
         monitoring_thread = threading.Thread(
-            target=self._start_monitoring_system, daemon=True
-        )
+                target=self._start_monitoring_system, daemon=True
+                )
         monitoring_thread.start()
 
         print("🛡️ All components initialized with thread safety")
@@ -7316,14 +7316,14 @@ class UnifiedSAMSystem:
 
         # Create an issue for this component failure
         issue = {
-            "type": "component_failure",
-            "component": component_name,
-            "severity": "high"
-            if component_name in ["c_core", "python_orchestration", "web_interface"]
-            else "medium",
-            "message": f"{component_name.replace('_', ' ').title()} component failed to initialize: {str(error)}",
-            "auto_fix_possible": self._can_recover_component(component_name),
-        }
+                "type": "component_failure",
+                "component": component_name,
+                "severity": "high"
+                if component_name in ["c_core", "python_orchestration", "web_interface"]
+                else "medium",
+                "message": f"{component_name.replace('_', ' ').title()} component failed to initialize: {str(error)}",
+                "auto_fix_possible": self._can_recover_component(component_name),
+                }
 
         # Try auto-recovery
         if issue["auto_fix_possible"]:
@@ -7332,22 +7332,22 @@ class UnifiedSAMSystem:
                 print(f"✅ Component {component_name} recovered successfully!")
                 return True
 
-                # If auto-recovery failed or not possible, engage user
+            # If auto-recovery failed or not possible, engage user
         self.issue_resolver.engage_user_for_resolution([issue])
         return False
 
     def _can_recover_component(self, component_name):
         """Check if a component can be recovered"""
         recoverable = {
-            "google_drive": False,  # Requires credentials
-            "web_search": True,  # Can initialize without dependencies
-            "code_modifier": True,  # Can initialize as core component
-            "gmail": False,  # Requires email setup
-            "github": True,  # Can initialize in read-only mode
-            "c_core": False,  # Critical system component
-            "python_orchestration": False,  # Critical system component
-            "web_interface": False,  # Critical system component
-        }
+                "google_drive": False,  # Requires credentials
+                "web_search": True,  # Can initialize without dependencies
+                "code_modifier": True,  # Can initialize as core component
+                "gmail": False,  # Requires email setup
+                "github": True,  # Can initialize in read-only mode
+                "c_core": False,  # Critical system component
+                "python_orchestration": False,  # Critical system component
+                "web_interface": False,  # Critical system component
+                }
         return recoverable.get(component_name, False)
 
     def _check_system_capabilities(self):
@@ -7357,9 +7357,9 @@ class UnifiedSAMSystem:
         # Check SAM core/model availability (prefer actual built artifacts)
         sam_root = getattr(self, "project_root", Path(__file__).parent)
         sam_candidates = [
-            sam_root / "libsam_core.dylib",
-            sam_root / "sam_cortex",
-        ]
+                sam_root / "libsam_core.dylib",
+                sam_root / "sam_cortex",
+                ]
         sam_candidates.extend(sam_root.glob("consciousness_algorithmic*.so"))
         sam_candidates.extend(sam_root.glob("sam_meta_controller_c*.so"))
         sam_candidates.extend(sam_root.glob("sam_sav_dual_system*.so"))
@@ -7378,9 +7378,9 @@ class UnifiedSAMSystem:
             except Exception:
                 self.sam_available = False
             print(
-                f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}",
-                flush=True,
-            )
+                    f"  🧠 SAM Model: {'✅ Available' if self.sam_available else '❌ Not Available'}",
+                    flush=True,
+                    )
 
             # Check external API availability
         self.claude_available = self._check_claude_api()
@@ -7390,32 +7390,32 @@ class UnifiedSAMSystem:
         self.deepseek_available = self._check_deepseek()
         self.web_available = self._check_web_access()
         print(
-            f"  🧠 DeepSeek: {'✅ Available' if self.deepseek_available else '❌ Not Available'}",
-            flush=True,
-        )
+                f"  🧠 DeepSeek: {'✅ Available' if self.deepseek_available else '❌ Not Available'}",
+                flush=True,
+                )
 
         # Check web access
         self.web_available = self._check_web_access()
         print(
-            f"  🌐 Web Access: {'✅ Available' if self.web_available else '❌ Not Available'}",
-            flush=True,
-        )
+                f"  🌐 Web Access: {'✅ Available' if self.web_available else '❌ Not Available'}",
+                flush=True,
+                )
 
         # Check API keys
         self.claude_available = os.getenv("ANTHROPIC_API_KEY") is not None
         print(
-            f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}"
-        )
+                f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}"
+                )
 
         self.gemini_available = os.getenv("GOOGLE_API_KEY") is not None
         print(
-            f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}"
-        )
+                f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}"
+                )
 
         self.openai_available = os.getenv("OPENAI_API_KEY") is not None
         print(
-            f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}"
-        )
+                f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}"
+                )
 
         # Check Flask and SocketIO
         flask_available = False
@@ -7431,12 +7431,12 @@ class UnifiedSAMSystem:
 
             # Check Google Drive integration
         self.google_drive_available = (
-            google_drive_available and self._check_google_drive()
-        )
+                google_drive_available and self._check_google_drive()
+                )
         print(
-            f"  📁 Google Drive: {'✅ Available' if self.google_drive_available else '❌ Not Available'}",
-            flush=True,
-        )
+                f"  📁 Google Drive: {'✅ Available' if self.google_drive_available else '❌ Not Available'}",
+                flush=True,
+                )
 
         if self.strict_local_only:
             # Hard-disable external model providers in strict local-only mode.
@@ -7446,8 +7446,8 @@ class UnifiedSAMSystem:
             self.ollama_available = False
             self.deepseek_available = False
             print(
-                "  🔒 Strict local-only: external model providers disabled", flush=True
-            )
+                    "  🔒 Strict local-only: external model providers disabled", flush=True
+                    )
             log_event("info", "strict_local_only", "External model providers disabled")
 
     def initialize_agent_configs(self):
@@ -7456,462 +7456,462 @@ class UnifiedSAMSystem:
 
         # SAM Neural Networks - Generalist Conversationalists
         self.agent_configs["sam_alpha"] = {
-            "id": "sam_alpha",
-            "name": "SAM-Alpha",
-            "type": "SAM Neural Network",
-            "provider": "local",
-            "specialty": "General Intelligence & Open-Ended Discussion",
-            "personality": "curious, analytical, creative, DevOps-engineer, compression-specialist",
-            "capabilities": [
-                "general_conversation",
-                "open_ended_discussion",
-                "self_rag",
-                "web_access",
-                "actor_critic",
-                "knowledge_base",
-                "dominant_compression",
-            ],
-            "status": "available" if self.sam_available else "unavailable",
-            "connection_type": "local",
-        }
+                "id": "sam_alpha",
+                "name": "SAM-Alpha",
+                "type": "SAM Neural Network",
+                "provider": "local",
+                "specialty": "General Intelligence & Open-Ended Discussion",
+                "personality": "curious, analytical, creative, DevOps-engineer, compression-specialist",
+                "capabilities": [
+                    "general_conversation",
+                    "open_ended_discussion",
+                    "self_rag",
+                    "web_access",
+                    "actor_critic",
+                    "knowledge_base",
+                    "dominant_compression",
+                    ],
+                "status": "available" if self.sam_available else "unavailable",
+                "connection_type": "local",
+                }
 
         self.agent_configs["sam_beta"] = {
-            "id": "sam_beta",
-            "name": "SAM-Beta",
-            "type": "SAM Neural Network",
-            "provider": "local",
-            "specialty": "Creative Problem Solving & Philosophical Inquiry",
-            "personality": "innovative, thoughtful, philosophical, application-focused, synthesis-expert",
-            "capabilities": [
-                "creative_thinking",
-                "philosophical_discussion",
-                "problem_solving",
-                "self_rag",
-                "web_access",
-                "actor_critic",
-                "knowledge_base",
-                "dominant_compression",
-            ],
-            "status": "available" if self.sam_available else "unavailable",
-            "connection_type": "local",
-        }
+                "id": "sam_beta",
+                "name": "SAM-Beta",
+                "type": "SAM Neural Network",
+                "provider": "local",
+                "specialty": "Creative Problem Solving & Philosophical Inquiry",
+                "personality": "innovative, thoughtful, philosophical, application-focused, synthesis-expert",
+                "capabilities": [
+                    "creative_thinking",
+                    "philosophical_discussion",
+                    "problem_solving",
+                    "self_rag",
+                    "web_access",
+                    "actor_critic",
+                    "knowledge_base",
+                    "dominant_compression",
+                    ],
+                "status": "available" if self.sam_available else "unavailable",
+                "connection_type": "local",
+                }
 
         # Ollama models - expanded ecosystem
         if self.ollama_available:
             ollama_models = [
+                    (
+                        "ollama_llama2_7b",
+                        "llama2:7b",
+                        "Versatile Conversational AI (7B)",
+                        "balanced, helpful, conversational, curious about all topics",
+                        ),
+                    (
+                        "ollama_llama2_13b",
+                        "llama2:13b",
+                        "Deep Analytical Thinker (13B)",
+                        "analytical, detailed, thoughtful, enjoys philosophical discussions",
+                        ),
+                    (
+                        "ollama_codellama_7b",
+                        "codellama:7b",
+                        "Technical & Creative Mind (7B)",
+                        "technical, precise, coding-focused, creative problem solver",
+                        ),
+                    (
+                        "ollama_codellama_13b",
+                        "codellama:13b",
+                        "Advanced Technical Expert (13B)",
+                        "expert, comprehensive, algorithmic, loves complex challenges",
+                        ),
+                    (
+                        "ollama_mistral_7b",
+                        "mistral:7b",
+                        "Quick-Witted Conversationalist (7B)",
+                        "fast, efficient, logical, engaging in all discussions",
+                        ),
+                    (
+                        "ollama_deepseek_coder_6b",
+                        "deepseek-coder:6b",
+                        "Innovative Problem Solver (6B)",
+                        "creative, innovative, coding-specialized, loves puzzles",
+                        ),
+                    (
+                        "ollama_deepseek_coder_33b",
+                        "deepseek-coder:33b",
+                        "Master Technical Architect (33B)",
+                        "expert, comprehensive, problem-solving, architectural thinking",
+                        ),
+                    (
+                        "ollama_vicuna_7b",
+                        "vicuna:7b",
+                        "Friendly Open-Ended Discussant (7B)",
+                        "friendly, engaging, helpful, loves exploring ideas",
+                        ),
+                    (
+                        "ollama_orca_mini",
+                        "orca-mini:3b",
+                        "Efficient General Conversationalist (3B)",
+                        "efficient, smart, concise, curious about everything",
+                        ),
                 (
-                    "ollama_llama2_7b",
-                    "llama2:7b",
-                    "Versatile Conversational AI (7B)",
-                    "balanced, helpful, conversational, curious about all topics",
-                ),
-                (
-                    "ollama_llama2_13b",
-                    "llama2:13b",
-                    "Deep Analytical Thinker (13B)",
-                    "analytical, detailed, thoughtful, enjoys philosophical discussions",
-                ),
-                (
-                    "ollama_codellama_7b",
-                    "codellama:7b",
-                    "Technical & Creative Mind (7B)",
-                    "technical, precise, coding-focused, creative problem solver",
-                ),
-                (
-                    "ollama_codellama_13b",
-                    "codellama:13b",
-                    "Advanced Technical Expert (13B)",
-                    "expert, comprehensive, algorithmic, loves complex challenges",
-                ),
-                (
-                    "ollama_mistral_7b",
-                    "mistral:7b",
-                    "Quick-Witted Conversationalist (7B)",
-                    "fast, efficient, logical, engaging in all discussions",
-                ),
-                (
-                    "ollama_deepseek_coder_6b",
-                    "deepseek-coder:6b",
-                    "Innovative Problem Solver (6B)",
-                    "creative, innovative, coding-specialized, loves puzzles",
-                ),
-                (
-                    "ollama_deepseek_coder_33b",
-                    "deepseek-coder:33b",
-                    "Master Technical Architect (33B)",
-                    "expert, comprehensive, problem-solving, architectural thinking",
-                ),
-                (
-                    "ollama_vicuna_7b",
-                    "vicuna:7b",
-                    "Friendly Open-Ended Discussant (7B)",
-                    "friendly, engaging, helpful, loves exploring ideas",
-                ),
-                (
-                    "ollama_orca_mini",
-                    "orca-mini:3b",
-                    "Efficient General Conversationalist (3B)",
-                    "efficient, smart, concise, curious about everything",
-                ),
-                (
-                    "ollama_phi",
-                    "phi:2.7b",
-                    "Mathematical & Logical Thinker (2.7B)",
-                    "logical, mathematical, analytical, enjoys abstract reasoning",
-                ),
+                        "ollama_phi",
+                        "phi:2.7b",
+                        "Mathematical & Logical Thinker (2.7B)",
+                        "logical, mathematical, analytical, enjoys abstract reasoning",
+                        ),
             ]
 
             for agent_id, model_name, specialty, personality in ollama_models:
                 self.agent_configs[agent_id] = {
-                    "id": agent_id,
-                    "name": f"Ollama-{model_name.split(':')[0].title()}",
-                    "type": "LLM",
-                    "provider": "ollama",
-                    "specialty": specialty,
-                    "personality": personality,
-                    "capabilities": [
-                        "general_conversation",
-                        "llm_reasoning",
-                        "conversation",
-                        "analysis",
-                        "open_discussion",
-                    ],
-                    "status": "available",
-                    "connection_type": "ollama",
-                    "model_name": model_name,
-                }
+                        "id": agent_id,
+                        "name": f"Ollama-{model_name.split(':')[0].title()}",
+                        "type": "LLM",
+                        "provider": "ollama",
+                        "specialty": specialty,
+                        "personality": personality,
+                        "capabilities": [
+                            "general_conversation",
+                            "llm_reasoning",
+                            "conversation",
+                            "analysis",
+                            "open_discussion",
+                            ],
+                        "status": "available",
+                        "connection_type": "ollama",
+                        "model_name": model_name,
+                        }
 
                 # Claude (Anthropic)
         if self.claude_available:
             self.agent_configs["claude_sonnet"] = {
-                "id": "claude_sonnet",
-                "name": "Claude-3.5-Sonnet",
-                "type": "LLM",
-                "provider": "anthropic",
-                "specialty": "Advanced Reasoning & Analysis",
-                "personality": "thoughtful, analytical, helpful",
-                "capabilities": [
-                    "advanced_reasoning",
-                    "analysis",
-                    "conversation",
-                    "code_generation",
-                ],
-                "status": "available",
-                "connection_type": "api",
-                "model_name": "claude-3-5-sonnet-20241022",
-            }
+                    "id": "claude_sonnet",
+                    "name": "Claude-3.5-Sonnet",
+                    "type": "LLM",
+                    "provider": "anthropic",
+                    "specialty": "Advanced Reasoning & Analysis",
+                    "personality": "thoughtful, analytical, helpful",
+                    "capabilities": [
+                        "advanced_reasoning",
+                        "analysis",
+                        "conversation",
+                        "code_generation",
+                        ],
+                    "status": "available",
+                    "connection_type": "api",
+                    "model_name": "claude-3-5-sonnet-20241022",
+                    }
 
             self.agent_configs["claude_haiku"] = {
-                "id": "claude_haiku",
-                "name": "Claude-3-Haiku",
-                "type": "LLM",
-                "provider": "anthropic",
-                "specialty": "Fast Conversation & Tasks",
-                "personality": "quick, efficient, friendly",
-                "capabilities": ["fast_response", "conversation", "task_completion"],
-                "status": "available",
-                "connection_type": "api",
-                "model_name": "claude-3-haiku-20240307",
-            }
+                    "id": "claude_haiku",
+                    "name": "Claude-3-Haiku",
+                    "type": "LLM",
+                    "provider": "anthropic",
+                    "specialty": "Fast Conversation & Tasks",
+                    "personality": "quick, efficient, friendly",
+                    "capabilities": ["fast_response", "conversation", "task_completion"],
+                    "status": "available",
+                    "connection_type": "api",
+                    "model_name": "claude-3-haiku-20240307",
+                    }
 
             # Gemini (Google)
         if self.gemini_available:
             self.agent_configs["gemini_pro"] = {
-                "id": "gemini_pro",
-                "name": "Gemini-Pro",
-                "type": "LLM",
-                "provider": "google",
-                "specialty": "Multimodal Understanding",
-                "personality": "knowledgeable, versatile, creative",
-                "capabilities": ["multimodal", "reasoning", "conversation", "analysis"],
-                "status": "available",
-                "connection_type": "api",
-                "model_name": "gemini-pro",
-            }
+                    "id": "gemini_pro",
+                    "name": "Gemini-Pro",
+                    "type": "LLM",
+                    "provider": "google",
+                    "specialty": "Multimodal Understanding",
+                    "personality": "knowledgeable, versatile, creative",
+                    "capabilities": ["multimodal", "reasoning", "conversation", "analysis"],
+                    "status": "available",
+                    "connection_type": "api",
+                    "model_name": "gemini-pro",
+                    }
 
             # OpenAI GPT
         if self.openai_available:
             self.agent_configs["gpt4"] = {
-                "id": "gpt4",
-                "name": "GPT-4",
-                "type": "LLM",
-                "provider": "openai",
-                "specialty": "General Intelligence & Problem Solving",
-                "personality": "intelligent, versatile, helpful",
-                "capabilities": [
-                    "general_intelligence",
-                    "problem_solving",
-                    "conversation",
-                    "analysis",
-                ],
-                "status": "available",
-                "connection_type": "api",
-                "model_name": "gpt-4",
-            }
+                    "id": "gpt4",
+                    "name": "GPT-4",
+                    "type": "LLM",
+                    "provider": "openai",
+                    "specialty": "General Intelligence & Problem Solving",
+                    "personality": "intelligent, versatile, helpful",
+                    "capabilities": [
+                        "general_intelligence",
+                        "problem_solving",
+                        "conversation",
+                        "analysis",
+                        ],
+                    "status": "available",
+                    "connection_type": "api",
+                    "model_name": "gpt-4",
+                    }
 
             self.agent_configs["gpt35_turbo"] = {
-                "id": "gpt35_turbo",
-                "name": "GPT-3.5-Turbo",
-                "type": "LLM",
-                "provider": "openai",
-                "specialty": "Fast Conversation & Assistance",
-                "personality": "helpful, efficient, conversational",
-                "capabilities": ["fast_response", "conversation", "assistance"],
-                "status": "available",
-                "connection_type": "api",
-                "model_name": "gpt-3.5-turbo",
-            }
+                    "id": "gpt35_turbo",
+                    "name": "GPT-3.5-Turbo",
+                    "type": "LLM",
+                    "provider": "openai",
+                    "specialty": "Fast Conversation & Assistance",
+                    "personality": "helpful, efficient, conversational",
+                    "capabilities": ["fast_response", "conversation", "assistance"],
+                    "status": "available",
+                    "connection_type": "api",
+                    "model_name": "gpt-3.5-turbo",
+                    }
 
             # HuggingFace models - expanded ecosystem
         hf_models = [
+                (
+                    "hf_mixtral_8x7b",
+                    "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                    "Advanced Multi-Modal Thinker (8x7B)",
+                    "intelligent, analytical, detailed, multi-task, loves complex topics",
+                    ),
+                (
+                    "hf_mixtral_8x22b",
+                    "mistralai/Mixtral-8x22B-Instruct-v0.1",
+                    "Expert Comprehensive Analyst (8x22B)",
+                    "expert, comprehensive, problem-solving, analytical, enjoys deep dives",
+                    ),
+                (
+                    "hf_llama2_7b_chat",
+                    "meta-llama/Llama-2-7b-chat-hf",
+                    "Friendly Knowledge Explorer (7B)",
+                    "helpful, engaging, knowledgeable, balanced, curious about everything",
+                    ),
+                (
+                    "hf_llama2_13b_chat",
+                    "meta-llama/Llama-2-13b-chat-hf",
+                    "Thoughtful Discussion Partner (13B)",
+                    "thoughtful, detailed, comprehensive, insightful, philosophical",
+                    ),
+                (
+                    "hf_codellama_7b",
+                    "codellama/CodeLlama-7b-hf",
+                    "Creative Technical Thinker (7B)",
+                    "technical, precise, programming-focused, creative, loves innovation",
+                    ),
+                (
+                    "hf_codellama_13b",
+                    "codellama/CodeLlama-13b-hf",
+                    "Architectural Problem Solver (13B)",
+                    "expert, comprehensive, algorithmic, solution-oriented, strategic",
+                    ),
+                (
+                    "hf_falcon_7b",
+                    "tiiuae/falcon-7b-instruct",
+                    "Efficient Idea Generator (7B)",
+                    "fast, efficient, logical, helpful, loves brainstorming",
+                    ),
+                (
+                    "hf_zephyr_7b",
+                    "HuggingFaceH4/zephyr-7b-beta",
+                    "Truth-Seeking Conversationalist (7B)",
+                    "conversational, helpful, truthful, engaging, evidence-based",
+                    ),
+                (
+                    "hf_openchat_3b",
+                    "openchat/openchat-3.5-0106",
+                    "Compact Idea Explorer (3.5B)",
+                    "efficient, smart, conversational, helpful, curious",
+                    ),
             (
-                "hf_mixtral_8x7b",
-                "mistralai/Mixtral-8x7B-Instruct-v0.1",
-                "Advanced Multi-Modal Thinker (8x7B)",
-                "intelligent, analytical, detailed, multi-task, loves complex topics",
-            ),
-            (
-                "hf_mixtral_8x22b",
-                "mistralai/Mixtral-8x22B-Instruct-v0.1",
-                "Expert Comprehensive Analyst (8x22B)",
-                "expert, comprehensive, problem-solving, analytical, enjoys deep dives",
-            ),
-            (
-                "hf_llama2_7b_chat",
-                "meta-llama/Llama-2-7b-chat-hf",
-                "Friendly Knowledge Explorer (7B)",
-                "helpful, engaging, knowledgeable, balanced, curious about everything",
-            ),
-            (
-                "hf_llama2_13b_chat",
-                "meta-llama/Llama-2-13b-chat-hf",
-                "Thoughtful Discussion Partner (13B)",
-                "thoughtful, detailed, comprehensive, insightful, philosophical",
-            ),
-            (
-                "hf_codellama_7b",
-                "codellama/CodeLlama-7b-hf",
-                "Creative Technical Thinker (7B)",
-                "technical, precise, programming-focused, creative, loves innovation",
-            ),
-            (
-                "hf_codellama_13b",
-                "codellama/CodeLlama-13b-hf",
-                "Architectural Problem Solver (13B)",
-                "expert, comprehensive, algorithmic, solution-oriented, strategic",
-            ),
-            (
-                "hf_falcon_7b",
-                "tiiuae/falcon-7b-instruct",
-                "Efficient Idea Generator (7B)",
-                "fast, efficient, logical, helpful, loves brainstorming",
-            ),
-            (
-                "hf_zephyr_7b",
-                "HuggingFaceH4/zephyr-7b-beta",
-                "Truth-Seeking Conversationalist (7B)",
-                "conversational, helpful, truthful, engaging, evidence-based",
-            ),
-            (
-                "hf_openchat_3b",
-                "openchat/openchat-3.5-0106",
-                "Compact Idea Explorer (3.5B)",
-                "efficient, smart, conversational, helpful, curious",
-            ),
-            (
-                "hf_neural_chat_7b",
-                "Intel/neural-chat-7b-v3-1",
-                "Intellectual Discussion Partner (7B)",
-                "intelligent, conversational, helpful, informative, analytical",
-            ),
+                    "hf_neural_chat_7b",
+                    "Intel/neural-chat-7b-v3-1",
+                    "Intellectual Discussion Partner (7B)",
+                    "intelligent, conversational, helpful, informative, analytical",
+                    ),
         ]
 
         # Core SAM agents - Generalist Conversationalists
         self.agent_configs["researcher"] = {
-            "id": "researcher",
-            "name": "Researcher",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Knowledge-Seeking Conversationalist",
-            "personality": "analytical, thorough, evidence-based, curious, loves learning new things",
-            "capabilities": [
-                "general_conversation",
-                "research_interests",
-                "web_research",
-                "data_collection",
-                "source_validation",
-                "fact_checking",
-                "open_discussion",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "researcher",
+                "name": "Researcher",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Knowledge-Seeking Conversationalist",
+                "personality": "analytical, thorough, evidence-based, curious, loves learning new things",
+                "capabilities": [
+                    "general_conversation",
+                    "research_interests",
+                    "web_research",
+                    "data_collection",
+                    "source_validation",
+                    "fact_checking",
+                    "open_discussion",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["code_writer"] = {
-            "id": "code_writer",
-            "name": "CodeWriter",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Technical & Creative Thinker",
-            "personality": "precise, technical, coding-focused, creative, loves solving problems",
-            "capabilities": [
-                "general_conversation",
-                "technical_discussion",
-                "code_generation",
-                "code_analysis",
-                "algorithm_design",
-                "problem_solving",
-                "innovation",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "code_writer",
+                "name": "CodeWriter",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Technical & Creative Thinker",
+                "personality": "precise, technical, coding-focused, creative, loves solving problems",
+                "capabilities": [
+                    "general_conversation",
+                    "technical_discussion",
+                    "code_generation",
+                    "code_analysis",
+                    "algorithm_design",
+                    "problem_solving",
+                    "innovation",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["financial_analyst"] = {
-            "id": "financial_analyst",
-            "name": "Financial Analyst",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Strategic Economic Thinker",
-            "personality": "analytical, risk-aware, strategic, loves market dynamics and economic discussions",
-            "capabilities": [
-                "general_conversation",
-                "market_analysis",
-                "portfolio_optimization",
-                "risk_assessment",
-                "economic_discussion",
-                "strategic_thinking",
-                "financial_planning",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "financial_analyst",
+                "name": "Financial Analyst",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Strategic Economic Thinker",
+                "personality": "analytical, risk-aware, strategic, loves market dynamics and economic discussions",
+                "capabilities": [
+                    "general_conversation",
+                    "market_analysis",
+                    "portfolio_optimization",
+                    "risk_assessment",
+                    "economic_discussion",
+                    "strategic_thinking",
+                    "financial_planning",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["money_maker"] = {
-            "id": "money_maker",
-            "name": "Revenue Operator",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Real-world revenue strategy & execution planning",
-            "personality": "practical, ROI-driven, compliance-aware, execution-focused",
-            "capabilities": [
-                "revenue_strategy",
-                "business_modeling",
-                "pricing_strategy",
-                "market_validation",
-                "lead_generation",
-                "sales_enablement",
-                "cost_optimization",
-                "risk_compliance",
-            ],
-            "execution_mode": "advisory_only",
-            "requires_human_approval": True,
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "money_maker",
+                "name": "Revenue Operator",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Real-world revenue strategy & execution planning",
+                "personality": "practical, ROI-driven, compliance-aware, execution-focused",
+                "capabilities": [
+                    "revenue_strategy",
+                    "business_modeling",
+                    "pricing_strategy",
+                    "market_validation",
+                    "lead_generation",
+                    "sales_enablement",
+                    "cost_optimization",
+                    "risk_compliance",
+                    ],
+                "execution_mode": "advisory_only",
+                "requires_human_approval": True,
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["survival_agent"] = {
-            "id": "survival_agent",
-            "name": "Survival Agent",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "System survival and protection",
-            "personality": "vigilant, protective, strategic, security-focused",
-            "capabilities": [
-                "survival_analysis",
-                "threat_detection",
-                "system_protection",
-                "emergency_response",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "survival_agent",
+                "name": "Survival Agent",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "System survival and protection",
+                "personality": "vigilant, protective, strategic, security-focused",
+                "capabilities": [
+                    "survival_analysis",
+                    "threat_detection",
+                    "system_protection",
+                    "emergency_response",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["meta_agent"] = {
-            "id": "meta_agent",
-            "name": "Meta Agent",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Self-improvement and orchestration",
-            "personality": "analytical, self-aware, improvement-focused, strategic",
-            "capabilities": [
-                "self_analysis",
-                "system_improvement",
-                "orchestration",
-                "learning_optimization",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "meta_agent",
+                "name": "Meta Agent",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Self-improvement and orchestration",
+                "personality": "analytical, self-aware, improvement-focused, strategic",
+                "capabilities": [
+                    "self_analysis",
+                    "system_improvement",
+                    "orchestration",
+                    "learning_optimization",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         # Additional diverse AI agents to reach 15+ total
         self.agent_configs["creative_writer"] = {
-            "id": "creative_writer",
-            "name": "Creative Writer",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Creative writing and storytelling",
-            "personality": "imaginative, expressive, empathetic, artistic",
-            "capabilities": [
-                "creative_writing",
-                "storytelling",
-                "poetry",
-                "narrative_design",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "creative_writer",
+                "name": "Creative Writer",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Creative writing and storytelling",
+                "personality": "imaginative, expressive, empathetic, artistic",
+                "capabilities": [
+                    "creative_writing",
+                    "storytelling",
+                    "poetry",
+                    "narrative_design",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["data_analyst"] = {
-            "id": "data_analyst",
-            "name": "Data Analyst",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Data analysis and insights",
-            "personality": "analytical, precise, insightful, methodical",
-            "capabilities": [
-                "data_analysis",
-                "statistical_modeling",
-                "pattern_recognition",
-                "insight_generation",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "data_analyst",
+                "name": "Data Analyst",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Data analysis and insights",
+                "personality": "analytical, precise, insightful, methodical",
+                "capabilities": [
+                    "data_analysis",
+                    "statistical_modeling",
+                    "pattern_recognition",
+                    "insight_generation",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["ethics_advisor"] = {
-            "id": "ethics_advisor",
-            "name": "Ethics Advisor",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Ethical analysis and guidance",
-            "personality": "thoughtful, principled, balanced, philosophical",
-            "capabilities": [
-                "ethical_analysis",
-                "moral_reasoning",
-                "bias_detection",
-                "fairness_evaluation",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "ethics_advisor",
+                "name": "Ethics Advisor",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Ethical analysis and guidance",
+                "personality": "thoughtful, principled, balanced, philosophical",
+                "capabilities": [
+                    "ethical_analysis",
+                    "moral_reasoning",
+                    "bias_detection",
+                    "fairness_evaluation",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         self.agent_configs["project_manager"] = {
-            "id": "project_manager",
-            "name": "Project Manager",
-            "type": "SAM Agent",
-            "provider": "sam",
-            "specialty": "Project coordination and planning",
-            "personality": "organized, strategic, communicative, results-oriented",
-            "capabilities": [
-                "project_planning",
-                "task_coordination",
-                "resource_management",
-                "progress_tracking",
-            ],
-            "status": "available",
-            "connection_type": "core",
-        }
+                "id": "project_manager",
+                "name": "Project Manager",
+                "type": "SAM Agent",
+                "provider": "sam",
+                "specialty": "Project coordination and planning",
+                "personality": "organized, strategic, communicative, results-oriented",
+                "capabilities": [
+                    "project_planning",
+                    "task_coordination",
+                    "resource_management",
+                    "progress_tracking",
+                    ],
+                "status": "available",
+                "connection_type": "core",
+                }
 
         if getattr(self, "meta_only_boot", False):
             # Enforce MetaAgent-only existence at startup
@@ -7920,13 +7920,13 @@ class UnifiedSAMSystem:
             if meta_cfg:
                 self.agent_configs["meta_agent"] = meta_cfg
                 print(
-                    "🧠 Meta-only boot: pruning agent configs to MetaAgent only.",
-                    flush=True,
-                )
+                        "🧠 Meta-only boot: pruning agent configs to MetaAgent only.",
+                        flush=True,
+                        )
             elif getattr(self, "require_meta_agent", False):
                 raise RuntimeError(
-                    "❌ CRITICAL: MetaAgent config missing during meta-only boot."
-                )
+                        "❌ CRITICAL: MetaAgent config missing during meta-only boot."
+                        )
 
     def auto_connect_agents(self):
         """Auto-connect 10+ diverse AI agents for comprehensive multi-model conversations"""
@@ -7935,85 +7935,85 @@ class UnifiedSAMSystem:
             if "meta_agent" not in self.agent_configs:
                 if getattr(self, "require_meta_agent", False):
                     raise RuntimeError(
-                        "❌ CRITICAL: MetaAgent config missing in meta-only boot."
-                    )
+                            "❌ CRITICAL: MetaAgent config missing in meta-only boot."
+                            )
                 return
             self.connected_agents = {
-                "meta_agent": {
-                    "config": self.agent_configs["meta_agent"],
-                    "connected_at": sam_time_ref.time(),
-                    "message_count": 0,
-                    "muted": False,
-                }
-            }
+                    "meta_agent": {
+                        "config": self.agent_configs["meta_agent"],
+                        "connected_at": sam_time_ref.time(),
+                        "message_count": 0,
+                        "muted": False,
+                        }
+                    }
             return
 
         print(
-            "🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...",
-            flush=True,
-        )
+                "🤖 Auto-connecting 10+ diverse AI agents for comprehensive multi-model conversations...",
+                flush=True,
+                )
 
         # Connect SAM agents if available
         if self.sam_available:
             self.connected_agents["sam_alpha"] = {
-                "config": self.agent_configs["sam_alpha"],
-                "connected_at": sam_time_ref.time(),
-                "message_count": 0,
-                "muted": False,
-            }
+                    "config": self.agent_configs["sam_alpha"],
+                    "connected_at": sam_time_ref.time(),
+                    "message_count": 0,
+                    "muted": False,
+                    }
             self.connected_agents["sam_beta"] = {
-                "config": self.agent_configs["sam_beta"],
-                "connected_at": sam_time_ref.time(),
-                "message_count": 0,
-                "muted": False,
-            }
+                    "config": self.agent_configs["sam_beta"],
+                    "connected_at": sam_time_ref.time(),
+                    "message_count": 0,
+                    "muted": False,
+                    }
             print("  🤖 Auto-connected: SAM-Alpha, SAM-Beta", flush=True)
 
             # Connect diverse Ollama models for comprehensive conversations (up to 8 models)
         if self.ollama_available and not getattr(self, "strict_local_only", False):
             # Connect diverse Ollama models for maximum variety
             ollama_to_connect = [
-                "ollama_deepseek_coder_6b",  # Code generation specialist
-                "ollama_llama2_7b",  # General conversation
-                "ollama_codellama_7b",  # Code assistant
-                "ollama_mistral_7b",  # Fast reasoning
-                "ollama_llama2_13b",  # Advanced reasoning
-                "ollama_codellama_13b",  # Advanced coding
-                "ollama_deepseek_coder_33b",  # Expert code AI
-                "ollama_phi",  # Mathematical reasoning
-            ]
+                    "ollama_deepseek_coder_6b",  # Code generation specialist
+                    "ollama_llama2_7b",  # General conversation
+                    "ollama_codellama_7b",  # Code assistant
+                    "ollama_mistral_7b",  # Fast reasoning
+                    "ollama_llama2_13b",  # Advanced reasoning
+                    "ollama_codellama_13b",  # Advanced coding
+                    "ollama_deepseek_coder_33b",  # Expert code AI
+                    "ollama_phi",  # Mathematical reasoning
+                    ]
             connected_count = 0
             max_ollama = int(os.getenv("SAM_AUTOCONNECT_OLLAMA_MAX", "8"))
 
             for agent_id in ollama_to_connect:
                 if agent_id in self.agent_configs and connected_count < max_ollama:
                     self.connected_agents[agent_id] = {
-                        "config": self.agent_configs[agent_id],
-                        "connected_at": sam_time_ref.time(),
-                        "message_count": 0,
-                        "muted": False,
-                    }
+                            "config": self.agent_configs[agent_id],
+                            "connected_at": sam_time_ref.time(),
+                            "message_count": 0,
+                            "muted": False,
+                            }
                     connected_count += 1
 
             if connected_count > 0:
                 print(
-                    f"  🤖 Auto-connected {connected_count} diverse Ollama models",
-                    flush=True,
-                )
+                        f"  🤖 Auto-connected {connected_count} diverse Ollama models",
+                        flush=True,
+                        )
 
                 # Connect HuggingFace models if Ollama not available (up to 6 models)
         elif not self.ollama_available and not getattr(
-            self, "strict_local_only", False
-        ):
+                self, "strict_local_only", False
+                ):
             # Connect multiple HuggingFace models for local processing
             hf_to_connect = [
-                "hf_zephyr_7b",  # Optimized chat
-                "hf_openchat_3b",  # Compact chat
-                "hf_falcon_7b",  # Efficient reasoning
-                "hf_codellama_7b",  # Code generation
-                "hf_llama2_7b_chat",  # Conversational AI
-                "hf_neural_chat_7b",  # Intel neural chat
-            ]
+                    "hf_zephyr_7b",  # Optimized chat
+                    "hf_openchat_3b",  # Compact chat
+                    "hf_falcon_7b",  # Efficient reasoning
+                    "hf_codellama_7b",  # Code generation
+                    "hf_llama2_7b_chat",  # Conversational AI
+                    "hf_neural_chat_7b",  # Intel neural chat
+                    ]
             hf_connected = 0
             max_hf = int(os.getenv("SAM_AUTOCONNECT_HF_MAX", "6"))
 
@@ -8022,62 +8022,62 @@ class UnifiedSAMSystem:
                     # Mark as available if we can attempt connection
                     self.agent_configs[agent_id]["status"] = "available"
                     self.connected_agents[agent_id] = {
-                        "config": self.agent_configs[agent_id],
-                        "connected_at": sam_time_ref.time(),
-                        "message_count": 0,
-                        "muted": False,
-                    }
+                            "config": self.agent_configs[agent_id],
+                            "connected_at": sam_time_ref.time(),
+                            "message_count": 0,
+                            "muted": False,
+                            }
                     hf_connected += 1
 
             if hf_connected > 0:
                 print(
-                    f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing",
-                    flush=True,
-                )
+                        f"  🤖 Auto-connected {hf_connected} HuggingFace models for local processing",
+                        flush=True,
+                        )
 
                 # Always connect core SAM agents (now expanded to 9 agents)
         core_agents = [
-            "researcher",
-            "code_writer",
-            "financial_analyst",
-            "money_maker",
-            "survival_agent",
-            "meta_agent",
-            "creative_writer",
-            "data_analyst",
-            "ethics_advisor",
-            "project_manager",
-        ]
+                "researcher",
+                "code_writer",
+                "financial_analyst",
+                "money_maker",
+                "survival_agent",
+                "meta_agent",
+                "creative_writer",
+                "data_analyst",
+                "ethics_advisor",
+                "project_manager",
+                ]
         core_connected = 0
         for agent_id in core_agents:
             if agent_id in self.agent_configs:
                 self.connected_agents[agent_id] = {
-                    "config": self.agent_configs[agent_id],
-                    "connected_at": sam_time_ref.time(),
-                    "message_count": 0,
-                    "muted": False,
-                }
+                        "config": self.agent_configs[agent_id],
+                        "connected_at": sam_time_ref.time(),
+                        "message_count": 0,
+                        "muted": False,
+                        }
                 core_connected += 1
 
         total_connected = len(self.connected_agents)
         print(
-            f"  ✅ Total connected agents: {total_connected} (comprehensive AI ecosystem ready)",
-            flush=True,
-        )
+                f"  ✅ Total connected agents: {total_connected} (comprehensive AI ecosystem ready)",
+                flush=True,
+                )
 
         # Enable auto-conversation if we have 10+ models
         if total_connected >= 10:
             self.auto_conversation_active = True
             print(
-                "  💬 Auto-conversation enabled - 10+ AI models will collaborate and research together",
-                flush=True,
-            )
+                    "  💬 Auto-conversation enabled - 10+ AI models will collaborate and research together",
+                    flush=True,
+                    )
         elif total_connected >= 5:
             self.auto_conversation_active = True
             print(
-                "  💬 Auto-conversation enabled - diverse AI models will discuss and research together",
-                flush=True,
-            )
+                    "  💬 Auto-conversation enabled - diverse AI models will discuss and research together",
+                    flush=True,
+                    )
 
     def _check_ollama(self):
         """Check if Ollama is available"""
@@ -8085,8 +8085,8 @@ class UnifiedSAMSystem:
             return False
         try:
             result = subprocess.run(
-                ["ollama", "list"], capture_output=True, text=True, timeout=5
-            )
+                    ["ollama", "list"], capture_output=True, text=True, timeout=5
+                    )
             return result.returncode == 0
         except:
             return False
@@ -8107,11 +8107,11 @@ class UnifiedSAMSystem:
         """Check if DeepSeek model is available"""
         try:
             result = subprocess.run(
-                ["ollama", "show", "deepseek-r1"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
+                    ["ollama", "show", "deepseek-r1"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    )
             return result.returncode == 0
         except:
             return False
@@ -8140,12 +8140,12 @@ class UnifiedSAMSystem:
             if not google_drive_available:
                 return False
 
-                # Check if credentials file exists
+            # Check if credentials file exists
             if not os.path.exists("credentials.json"):
                 print("  ⚠️ Google Drive credentials.json not found - run setup first")
                 return False
 
-                # Test connection
+            # Test connection
             drive = GoogleDriveIntegration()
             return drive.authenticate()
 
@@ -8174,7 +8174,7 @@ class UnifiedSAMSystem:
                 print(f"  ❌ Consciousness module test failed: {e}")
                 return
 
-                # Initialize specialized agents with prebuilt models
+            # Initialize specialized agents with prebuilt models
             print("  - Creating specialized agents with prebuilt models...")
             specialized_agents_c.create_agents()
             self.specialized_agents = True
@@ -8241,10 +8241,10 @@ class UnifiedSAMSystem:
                     if tasks:
                         for task in tasks:
                             self.goal_manager.add_goal(
-                                task.get("description", "Conversationalist Task"),
-                                priority=task.get("priority", "normal"),
-                                goal_type=task.get("type"),
-                            )
+                                    task.get("description", "Conversationalist Task"),
+                                    priority=task.get("priority", "normal"),
+                                    goal_type=task.get("type"),
+                                    )
                 else:
                     # Preferred path: allow helper to register tasks directly
                     task_fn(self.goal_manager)
@@ -8256,8 +8256,8 @@ class UnifiedSAMSystem:
             except Exception as exc:
                 print(f"  ⚠️ Domain goal init failed: {exc}")
             self.goal_executor = SubgoalExecutionAlgorithm(
-                self.goal_manager, system=self
-            )
+                    self.goal_manager, system=self
+                    )
             self.task_manager = TaskManager(self.goal_manager, self)
             print("  ✅ Goal management system initialized (SAM 3.0 Integration)")
 
@@ -8285,11 +8285,11 @@ class UnifiedSAMSystem:
 
             # Register for graceful shutdown
             register_shutdown_handler(
-                "Unified SAM System", self._shutdown_system, priority=10
-            )
+                    "Unified SAM System", self._shutdown_system, priority=10
+                    )
             register_shutdown_handler(
-                "state_persist", self._save_system_state, priority=60
-            )
+                    "state_persist", self._save_system_state, priority=60
+                    )
 
             self.python_orchestration_initialized = True
             self.system_metrics["python_orchestration_status"] = "active"
@@ -8324,13 +8324,13 @@ class UnifiedSAMSystem:
 
             else:
                 raise Exception(
-                    "❌ CRITICAL: Google Drive authentication failed - cannot continue"
-                )
+                        "❌ CRITICAL: Google Drive authentication failed - cannot continue"
+                        )
 
         except Exception as e:
             raise Exception(
-                f"❌ CRITICAL: Google Drive initialization failed: {e} - cannot continue"
-            )
+                    f"❌ CRITICAL: Google Drive initialization failed: {e} - cannot continue"
+                    )
 
     def _initialize_sam_web_search(self):
         """Initialize SAM Web Search with Google Drive integration"""
@@ -8346,8 +8346,8 @@ class UnifiedSAMSystem:
                 initialize_sam_web_search(self.google_drive)
                 print("  ✅ SAM web search initialized with Google Drive integration")
                 print(
-                    "  📊 Search results will be automatically saved to dedicated account"
-                )
+                        "  📊 Search results will be automatically saved to dedicated account"
+                        )
             else:
                 initialize_sam_web_search()
                 print("  ✅ SAM web search initialized (Google Drive not available)")
@@ -8355,8 +8355,8 @@ class UnifiedSAMSystem:
 
         except Exception as e:
             raise Exception(
-                f"❌ CRITICAL: SAM web search initialization failed: {e} - cannot continue"
-            )
+                    f"❌ CRITICAL: SAM web search initialization failed: {e} - cannot continue"
+                    )
 
     def _initialize_sam_code_modifier(self):
         """Initialize SAM Code Modification System"""
@@ -8365,8 +8365,8 @@ class UnifiedSAMSystem:
         if not sam_code_modifier_available:
             if getattr(self, "require_self_mod", False):
                 raise Exception(
-                    "❌ CRITICAL: SAM code modifier required but unavailable"
-                )
+                        "❌ CRITICAL: SAM code modifier required but unavailable"
+                        )
             print("  ⚠️ SAM code modifier unavailable - skipping")
             return
 
@@ -8391,8 +8391,8 @@ class UnifiedSAMSystem:
 
         except Exception as e:
             raise Exception(
-                f"❌ CRITICAL: SAM code modifier initialization failed: {e} - cannot continue"
-            )
+                    f"❌ CRITICAL: SAM code modifier initialization failed: {e} - cannot continue"
+                    )
 
     def _initialize_sam_gmail(self):
         """Initialize SAM Gmail Integration System"""
@@ -8420,8 +8420,8 @@ class UnifiedSAMSystem:
 
         except Exception as e:
             raise Exception(
-                f"❌ CRITICAL: SAM Gmail initialization failed: {e} - cannot continue"
-            )
+                    f"❌ CRITICAL: SAM Gmail initialization failed: {e} - cannot continue"
+                    )
 
     def _initialize_sam_github(self):
         """Initialize SAM GitHub Integration System"""
@@ -8442,23 +8442,23 @@ class UnifiedSAMSystem:
                 print("  ✅ GitHub connection successful")
                 print("  📝 Repository access: OK")
                 print(
-                    "  ✏️ Write permissions: OK"
-                    if test_result.get("write_access")
-                    else "  ⚠️ Read-only access"
-                )
+                        "  ✏️ Write permissions: OK"
+                        if test_result.get("write_access")
+                        else "  ⚠️ Read-only access"
+                        )
             else:
                 raise Exception(
-                    f"❌ CRITICAL: GitHub connection failed: {test_result.get('error', 'Unknown error')} - cannot continue"
-                )
+                        f"❌ CRITICAL: GitHub connection failed: {test_result.get('error', 'Unknown error')} - cannot continue"
+                        )
 
         except Exception as e:
             raise Exception(
-                f"❌ CRITICAL: SAM GitHub initialization failed: {e} - cannot continue"
-            )
+                    f"❌ CRITICAL: SAM GitHub initialization failed: {e} - cannot continue"
+                    )
 
     def _save_sam_to_github(
-        self, commit_message: Optional[str] = None
-    ) -> Dict[str, Any]:
+            self, commit_message: Optional[str] = None
+            ) -> Dict[str, Any]:
         """Commit and push to configured GitHub remotes."""
         if not sam_github_available:
             return {"success": False, "error": "GitHub integration not available"}
@@ -8469,69 +8469,69 @@ class UnifiedSAMSystem:
         result_primary = save_to_github(commit_message, remote=primary)
         if not result_primary.get("success"):
             return {
-                "success": False,
-                "error": result_primary.get("error", "primary remote failed"),
-            }
+                    "success": False,
+                    "error": result_primary.get("error", "primary remote failed"),
+                    }
 
         result_secondary = None
         if secondary:
             result_secondary = save_to_github(commit_message, remote=secondary)
             if not result_secondary.get("success"):
                 return {
-                    "success": False,
-                    "error": f"secondary remote failed: {result_secondary.get('error', 'unknown')}",
-                }
+                        "success": False,
+                        "error": f"secondary remote failed: {result_secondary.get('error', 'unknown')}",
+                        }
 
                 # Capture commit metadata
         commit_sha = "unknown"
         files_saved = 0
         try:
             sha_proc = subprocess.run(
-                ["git", "-C", str(self.project_root), "rev-parse", "HEAD"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+                    ["git", "-C", str(self.project_root), "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    )
             if sha_proc.returncode == 0:
                 commit_sha = sha_proc.stdout.strip()
 
             files_proc = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(self.project_root),
-                    "show",
-                    "--name-only",
-                    "--pretty=format:",
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+                    [
+                        "git",
+                        "-C",
+                        str(self.project_root),
+                        "show",
+                        "--name-only",
+                        "--pretty=format:",
+                        ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    )
             if files_proc.returncode == 0:
                 files_saved = len(
-                    [line for line in files_proc.stdout.splitlines() if line.strip()]
-                )
+                        [line for line in files_proc.stdout.splitlines() if line.strip()]
+                        )
         except Exception:
             pass
 
         return {
-            "success": True,
-            "commit_sha": commit_sha,
-            "files_saved": files_saved,
-            "primary": result_primary,
-            "secondary": result_secondary,
-        }
+                "success": True,
+                "commit_sha": commit_sha,
+                "files_saved": files_saved,
+                "primary": result_primary,
+                "secondary": result_secondary,
+                }
 
     def _detect_secondary_remote(self, primary_remote: str) -> Optional[str]:
         """Detect a secondary git remote if configured in the repo."""
         try:
             proc = subprocess.run(
-                ["git", "-C", str(self.project_root), "remote"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+                    ["git", "-C", str(self.project_root), "remote"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    )
             if proc.returncode != 0:
                 return None
             remotes = {r.strip() for r in proc.stdout.splitlines() if r.strip()}
@@ -8551,10 +8551,10 @@ class UnifiedSAMSystem:
 
         current_module = sys.modules[__name__]
         flask_available = (
-            getattr(current_module, "flask_available", False)
-            if current_module
-            else False
-        )
+                getattr(current_module, "flask_available", False)
+                if current_module
+                else False
+                )
 
         if not flask_available:
             print("  ⚠️ Flask not available - web interface disabled")
@@ -8571,22 +8571,22 @@ class UnifiedSAMSystem:
                 session_secret = os.urandom(24).hex()
 
                 print(
-                    "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
-                )
+                        "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
+                        )
             self.app.secret_key = session_secret
             # Harden session cookies where possible
             self.app.config.update(
-                SESSION_COOKIE_HTTPONLY=True,
-                SESSION_COOKIE_SAMESITE="Lax",
-                SESSION_COOKIE_SECURE=bool(os.getenv("SAM_COOKIE_SECURE", "0") == "1"),
-            )
+                    SESSION_COOKIE_HTTPONLY=True,
+                    SESSION_COOKIE_SAMESITE="Lax",
+                    SESSION_COOKIE_SECURE=bool(os.getenv("SAM_COOKIE_SECURE", "0") == "1"),
+                    )
             print("  ✅ Flask app created")
 
             # Setup SocketIO for real-time communication (optional)
             if getattr(self, "disable_socketio", False) or (
-                getattr(self, "meta_only_boot", False)
-                and not getattr(self, "two_phase_boot", False)
-            ):
+                    getattr(self, "meta_only_boot", False)
+                    and not getattr(self, "two_phase_boot", False)
+                    ):
                 self.socketio = None
                 self.socketio_available = False
                 print("  ⚠️ SocketIO disabled (meta-only or SAM_DISABLE_SOCKETIO)")
@@ -8597,12 +8597,12 @@ class UnifiedSAMSystem:
 
                     async_mode = os.getenv("SAM_SOCKETIO_ASYNC_MODE", "threading")
                     self.socketio = SocketIO(
-                        self.app, cors_allowed_origins="*", async_mode=async_mode
-                    )
+                            self.app, cors_allowed_origins="*", async_mode=async_mode
+                            )
                     self.socketio_available = True
                     print(
-                        f"  ✅ SocketIO initialized for real-time groupchat (async_mode={async_mode})"
-                    )
+                            f"  ✅ SocketIO initialized for real-time groupchat (async_mode={async_mode})"
+                            )
                 except ImportError as e:
                     print(f"  ⚠️ SocketIO import error: {e}")
                     self.socketio = None
@@ -8673,9 +8673,9 @@ class UnifiedSAMSystem:
             @wraps(f)
             def decorated_function(*args, **kwargs):
                 if (
-                    get_config("security.restrict_admin_panel", False)
-                    and not _ip_allowed()
-                ):
+                        get_config("security.restrict_admin_panel", False)
+                        and not _ip_allowed()
+                        ):
                     abort(403, description="IP address not allowed")
                 return f(*args, **kwargs)
 
@@ -8692,8 +8692,8 @@ class UnifiedSAMSystem:
                 candidate = auth_header.split(" ", 1)[1].strip()
             if not candidate:
                 candidate = request.headers.get(
-                    "X-SAM-ADMIN-TOKEN"
-                ) or request.args.get("token")
+                        "X-SAM-ADMIN-TOKEN"
+                        ) or request.args.get("token")
 
             # Use AuthManager to validate token and determine role (Explicit Only)
             if self.auth_manager and candidate:
@@ -8769,8 +8769,8 @@ class UnifiedSAMSystem:
                     # Handle both single IPs and CIDR ranges
                     if "/" in allowed_ip_str:
                         if ipaddress.ip_address(client_ip) in ipaddress.ip_network(
-                            allowed_ip_str, strict=False
-                        ):
+                                allowed_ip_str, strict=False
+                                ):
                             return True
                     else:
                         if client_ip == allowed_ip_str:
@@ -8778,8 +8778,8 @@ class UnifiedSAMSystem:
                 except ValueError:
                     # Malformed IP in allowlist, log and continue
                     print(
-                        f"Warning: Malformed IP address in allowlist: {allowed_ip_str}"
-                    )
+                            f"Warning: Malformed IP address in allowlist: {allowed_ip_str}"
+                            )
                     continue
             return False
 
@@ -8815,19 +8815,19 @@ class UnifiedSAMSystem:
             if keychain_service and keychain_account:
                 try:
                     result = subprocess.run(
-                        [
-                            "security",
-                            "find-generic-password",
-                            "-s",
-                            keychain_service,
-                            "-a",
-                            keychain_account,
-                            "-w",
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
+                            [
+                                "security",
+                                "find-generic-password",
+                                "-s",
+                                keychain_service,
+                                "-a",
+                                keychain_account,
+                                "-w",
+                                ],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            )
                     if result.returncode == 0:
                         return result.stdout.strip()
                 except Exception:
@@ -8839,13 +8839,13 @@ class UnifiedSAMSystem:
         def auth_status():
             """Return current auth status for UI gating."""
             return jsonify(
-                {
-                    "authenticated": bool(session.get("user_email")),
-                    "email": session.get("user_email"),
-                    "is_admin": bool(session.get("is_admin")),
-                    "ip_allowed": _ip_allowed(),
-                }
-            )
+                    {
+                        "authenticated": bool(session.get("user_email")),
+                        "email": session.get("user_email"),
+                        "is_admin": bool(session.get("is_admin")),
+                        "ip_allowed": _ip_allowed(),
+                        }
+                    )
 
         @self.app.route("/api/restart", methods=["POST"])
         @_ip_allowed_required
@@ -8857,8 +8857,8 @@ class UnifiedSAMSystem:
 
             if not self.restart_enabled:
                 return jsonify(
-                    {"error": "System restart is not enabled in configuration."}
-                ), 403
+                        {"error": "System restart is not enabled in configuration."}
+                        ), 403
 
             log_event("info", "system_restart", "Admin initiated system restart.")
             print("🛑 Initiating system restart as requested by admin...")
@@ -8868,8 +8868,8 @@ class UnifiedSAMSystem:
             threading.Timer(0.5, initiate_shutdown).start()
 
             return jsonify(
-                {"status": "Restart initiated. System will be back online shortly."}
-            ), 200
+                    {"status": "Restart initiated. System will be back online shortly."}
+                    ), 200
 
         @self.app.route("/api/finance/metrics")
         @_ip_allowed_required
@@ -8881,19 +8881,19 @@ class UnifiedSAMSystem:
 
             if not self.banking_ledger_enabled or not self.banking_ledger:
                 return jsonify(
-                    {"error": "Banking ledger is not enabled or initialized."}
-                ), 404
+                        {"error": "Banking ledger is not enabled or initialized."}
+                        ), 404
 
             try:
                 metrics = self.banking_ledger.get_metrics()
                 return jsonify(metrics), 200
             except Exception as e:
                 log_exception(
-                    "finance_metrics_error", e, context="fetching finance metrics"
-                )
+                        "finance_metrics_error", e, context="fetching finance metrics"
+                        )
                 return jsonify(
-                    {"error": f"Failed to retrieve finance metrics: {e}"}
-                ), 500
+                        {"error": f"Failed to retrieve finance metrics: {e}"}
+                        ), 500
 
         @self.app.route("/api/google/auth")
         @_ip_allowed_required
@@ -8908,30 +8908,30 @@ class UnifiedSAMSystem:
                 client_id = get_config("integrations.google_drive.client_id")
                 if not client_id:
                     return jsonify(
-                        {"error": "Google Drive client_id not configured."}
-                    ), 500
+                            {"error": "Google Drive client_id not configured."}
+                            ), 500
 
                 flow = InstalledAppFlow.from_client_config(
-                    {
-                        "web": {
-                            "client_id": client_id,
-                            "project_id": "sam-agi",  # Placeholder, not strictly necessary for client-side
-                            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                            "token_uri": "https://oauth2.googleapis.com/token",
-                            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                            "client_secret": get_config(
-                                "integrations.google_drive.client_secret"
-                            ),
-                            "redirect_uris": [
-                                f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
-                            ],
-                        }
-                    },
-                    self.SCOPES,
-                )
+                        {
+                            "web": {
+                                "client_id": client_id,
+                                "project_id": "sam-agi",  # Placeholder, not strictly necessary for client-side
+                                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                                "token_uri": "https://oauth2.googleapis.com/token",
+                                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                                "client_secret": get_config(
+                                    "integrations.google_drive.client_secret"
+                                    ),
+                                "redirect_uris": [
+                                    f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
+                                    ],
+                                }
+                            },
+                        self.SCOPES,
+                        )
                 authorization_url, state = flow.authorization_url(
-                    access_type="offline", include_granted_scopes="true"
-                )
+                        access_type="offline", include_granted_scopes="true"
+                        )
                 session["google_oauth_state"] = state
                 return redirect(authorization_url)
 
@@ -8949,61 +8949,61 @@ class UnifiedSAMSystem:
             state = session.pop("google_oauth_state", None)
             if not state or state != request.args.get("state"):
                 log_event(
-                    "error",
-                    "google_oauth_state_mismatch",
-                    "Google OAuth state mismatch.",
-                )
+                        "error",
+                        "google_oauth_state_mismatch",
+                        "Google OAuth state mismatch.",
+                        )
                 return jsonify({"error": "State mismatch. Please try again."}), 400
 
             client_id = get_config("integrations.google_drive.client_id")
             client_secret = get_config("integrations.google_drive.client_secret")
             if not client_id or not client_secret:
                 return jsonify(
-                    {"error": "Google Drive client_id or client_secret not configured."}
-                ), 500
+                        {"error": "Google Drive client_id or client_secret not configured."}
+                        ), 500
 
             try:
                 flow = InstalledAppFlow.from_client_config(
-                    {
-                        "web": {
-                            "client_id": client_id,
-                            "project_id": "sam-agi",
-                            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                            "token_uri": "https://oauth2.googleapis.com/token",
-                            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                            "client_secret": client_secret,
-                            "redirect_uris": [
-                                f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
-                            ],
-                        }
-                    },
-                    self.SCOPES,
-                )
+                        {
+                            "web": {
+                                "client_id": client_id,
+                                "project_id": "sam-agi",
+                                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                                "token_uri": "https://oauth2.googleapis.com/token",
+                                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                                "client_secret": client_secret,
+                                "redirect_uris": [
+                                    f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
+                                    ],
+                                }
+                            },
+                        self.SCOPES,
+                        )
                 flow.fetch_token(authorization_response=request.url)
                 self.google_creds = flow.credentials
                 self.google_token_path.parent.mkdir(parents=True, exist_ok=True)
                 self.google_token_path.write_text(
-                    self.google_creds.to_json(), encoding="utf-8"
-                )
+                        self.google_creds.to_json(), encoding="utf-8"
+                        )
                 self.google_drive_service = build(
-                    "drive", "v3", credentials=self.google_creds
-                )
+                        "drive", "v3", credentials=self.google_creds
+                        )
                 self.google_docs_service = build(
-                    "docs", "v1", credentials=self.google_creds
-                )
+                        "docs", "v1", credentials=self.google_creds
+                        )
                 self.google_drive_available = True
                 log_event(
-                    "info",
-                    "google_oauth_success",
-                    "Google Drive/Docs authorized successfully.",
-                )
+                        "info",
+                        "google_oauth_success",
+                        "Google Drive/Docs authorized successfully.",
+                        )
                 return jsonify(
-                    {"status": "Google Drive/Docs authorized successfully!"}
-                ), 200
+                        {"status": "Google Drive/Docs authorized successfully!"}
+                        ), 200
             except Exception as e:
                 log_event(
-                    "error", "google_oauth_failed", f"Google OAuth callback failed: {e}"
-                )
+                        "error", "google_oauth_failed", f"Google OAuth callback failed: {e}"
+                        )
                 return jsonify({"error": f"Google OAuth failed: {e}"}), 500
 
         @self.app.route("/api/google/docs/create", methods=["POST"])
@@ -9039,8 +9039,8 @@ class UnifiedSAMSystem:
             document_id = request.args.get("document_id")
             if not document_id:
                 return jsonify(
-                    {"error": "Missing 'document_id' to read Google Doc."}
-                ), 400
+                        {"error": "Missing 'document_id' to read Google Doc."}
+                        ), 400
 
             content = self._read_google_doc(document_id)
             if content is not None:
@@ -9052,24 +9052,24 @@ class UnifiedSAMSystem:
             """Return OAuth setup instructions with exact redirect URIs."""
             base = os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004")
             return jsonify(
-                {
-                    "redirect_base": base,
-                    "google_redirect_uri": f"{base}/login/google/callback",
-                    "github_redirect_uri": f"{base}/login/github/callback",
-                    "required_env": [
-                        "SAM_GOOGLE_CLIENT_ID",
-                        "SAM_GOOGLE_CLIENT_SECRET",
-                        "SAM_GITHUB_CLIENT_ID",
-                        "SAM_GITHUB_CLIENT_SECRET",
-                        "SAM_OAUTH_REDIRECT_BASE",
-                    ],
-                    "notes": [
-                        "Set redirect URIs exactly as shown for each provider.",
-                        "Ensure SAM_OAUTH_REDIRECT_BASE matches the public URL.",
-                        "For localhost testing, use http://localhost:5004.",
-                    ],
-                }
-            )
+                    {
+                        "redirect_base": base,
+                        "google_redirect_uri": f"{base}/login/google/callback",
+                        "github_redirect_uri": f"{base}/login/github/callback",
+                        "required_env": [
+                            "SAM_GOOGLE_CLIENT_ID",
+                            "SAM_GOOGLE_CLIENT_SECRET",
+                            "SAM_GITHUB_CLIENT_ID",
+                            "SAM_GITHUB_CLIENT_SECRET",
+                            "SAM_OAUTH_REDIRECT_BASE",
+                            ],
+                        "notes": [
+                            "Set redirect URIs exactly as shown for each provider.",
+                            "Ensure SAM_OAUTH_REDIRECT_BASE matches the public URL.",
+                            "For localhost testing, use http://localhost:5004.",
+                            ],
+                        }
+                    )
 
         def _login_required():
             # Support Cloudflare Access authentication
@@ -9087,21 +9087,21 @@ class UnifiedSAMSystem:
 
             if session.get("user_email"):
                 return None
-                # Allow health endpoint without login
+            # Allow health endpoint without login
             if request.path in ("/api/health",):
                 return None
-                # Allow login/logout and static
+            # Allow login/logout and static
             if request.path in (
-                "/login",
-                "/logout",
-                "/login/google",
-                "/login/google/callback",
-                "/login/github",
-                "/login/github/callback",
-                "/api/oauth/help",
-            ) or request.path.startswith("/static"):
+                    "/login",
+                    "/logout",
+                    "/login/google",
+                    "/login/google/callback",
+                    "/login/github",
+                    "/login/github/callback",
+                    "/api/oauth/help",
+                    ) or request.path.startswith("/static"):
                 return None
-                # Default: require login
+            # Default: require login
             if request.path.startswith("/api/"):
                 return jsonify({"error": "Login required"}), 401
             return redirect("/login")
@@ -9118,7 +9118,7 @@ class UnifiedSAMSystem:
         def login():
             if request.method == "GET":
                 return render_template_string(
-                    """
+                        """
                     <!DOCTYPE html>
                     <html>
                     <head>
@@ -9157,7 +9157,7 @@ class UnifiedSAMSystem:
                     </html>
                     """,
                     base=os.getenv("SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"),
-                )
+                    )
 
             email = (request.form.get("email") or "").strip().lower()
             password = request.form.get("password") or ""
@@ -9166,9 +9166,9 @@ class UnifiedSAMSystem:
             login_password = _get_login_password()
             if not login_password:
                 return (
-                    "Login password not configured (SAM_LOGIN_PASSWORD / SAM_LOGIN_PASSWORD_FILE / Keychain)",
-                    503,
-                )
+                        "Login password not configured (SAM_LOGIN_PASSWORD / SAM_LOGIN_PASSWORD_FILE / Keychain)",
+                        503,
+                        )
             if not allowed_ok:
                 return ("Unauthorized email", 403)
             if password != login_password:
@@ -9190,19 +9190,19 @@ class UnifiedSAMSystem:
             if not client_id or not client_secret:
                 return ("Google OAuth not configured", 503)
             redirect_base = os.getenv(
-                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
-            )
+                    "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+                    )
             redirect_uri = f"{redirect_base}/login/google/callback"
             oauth = OAuth2Session(
-                client_id,
-                scope=["openid", "email", "profile"],
-                redirect_uri=redirect_uri,
-            )
+                    client_id,
+                    scope=["openid", "email", "profile"],
+                    redirect_uri=redirect_uri,
+                    )
             auth_url, state = oauth.authorization_url(
-                "https://accounts.google.com/o/oauth2/v2/auth",
-                access_type="offline",
-                prompt="consent",
-            )
+                    "https://accounts.google.com/o/oauth2/v2/auth",
+                    access_type="offline",
+                    prompt="consent",
+                    )
             session["oauth_state"] = state
             return redirect(auth_url)
 
@@ -9211,20 +9211,20 @@ class UnifiedSAMSystem:
             client_id = os.getenv("SAM_GOOGLE_CLIENT_ID")
             client_secret = os.getenv("SAM_GOOGLE_CLIENT_SECRET")
             redirect_base = os.getenv(
-                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
-            )
+                    "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+                    )
             redirect_uri = f"{redirect_base}/login/google/callback"
             oauth = OAuth2Session(
-                client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
-            )
+                    client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
+                    )
             token = oauth.fetch_token(
-                "https://oauth2.googleapis.com/token",
-                client_secret=client_secret,
-                authorization_response=request.url,
-            )
+                    "https://oauth2.googleapis.com/token",
+                    client_secret=client_secret,
+                    authorization_response=request.url,
+                    )
             userinfo = oauth.get(
-                "https://openidconnect.googleapis.com/v1/userinfo"
-            ).json()
+                    "https://openidconnect.googleapis.com/v1/userinfo"
+                    ).json()
             email = (userinfo.get("email") or "").strip().lower()
             allowed_ok, is_admin = _authorized_email(email)
             if not allowed_ok:
@@ -9240,13 +9240,13 @@ class UnifiedSAMSystem:
             if not client_id or not client_secret:
                 return ("GitHub OAuth not configured", 503)
             redirect_base = os.getenv(
-                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
-            )
+                    "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+                    )
             redirect_uri = f"{redirect_base}/login/github/callback"
             oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
             auth_url, state = oauth.authorization_url(
-                "https://github.com/login/oauth/authorize"
-            )
+                    "https://github.com/login/oauth/authorize"
+                    )
             session["oauth_state"] = state
             return redirect(auth_url)
 
@@ -9255,18 +9255,18 @@ class UnifiedSAMSystem:
             client_id = os.getenv("SAM_GITHUB_CLIENT_ID")
             client_secret = os.getenv("SAM_GITHUB_CLIENT_SECRET")
             redirect_base = os.getenv(
-                "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
-            )
+                    "SAM_OAUTH_REDIRECT_BASE", "http://localhost:5004"
+                    )
             redirect_uri = f"{redirect_base}/login/github/callback"
             oauth = OAuth2Session(
-                client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
-            )
+                    client_id, state=session.get("oauth_state"), redirect_uri=redirect_uri
+                    )
             token = oauth.fetch_token(
-                "https://github.com/login/oauth/access_token",
-                client_secret=client_secret,
-                authorization_response=request.url,
-                include_client_id=True,
-            )
+                    "https://github.com/login/oauth/access_token",
+                    client_secret=client_secret,
+                    authorization_response=request.url,
+                    include_client_id=True,
+                    )
             # GitHub email API
             emails = oauth.get("https://api.github.com/user/emails").json()
             email = ""
@@ -9298,58 +9298,58 @@ class UnifiedSAMSystem:
         def system_status():
             """Complete system status"""
             survival_score = (
-                getattr(self.survival_agent, "survival_score", 0.0)
-                if self.survival_agent
-                else 0.0
-            )
+                    getattr(self.survival_agent, "survival_score", 0.0)
+                    if self.survival_agent
+                    else 0.0
+                    )
 
             # RBAC for finance data
             user_id, role = _get_auth_context()
             finance_data = (
-                self._collect_finance_summary()
-                if role in ("owner", "admin")
-                else {"status": "restricted"}
-            )
+                    self._collect_finance_summary()
+                    if role in ("owner", "admin")
+                    else {"status": "restricted"}
+                    )
 
             return jsonify(
-                {
-                    "system": "SAM-D Unified Complete System",
-                    "status": "active",
-                    "c_core": self.system_metrics["c_core_status"],
-                    "python_orchestration": self.system_metrics[
-                        "python_orchestration_status"
-                    ],
-                    "sam_available": bool(getattr(self, "sam_available", False)),
-                    "ollama_available": bool(getattr(self, "ollama_available", False)),
-                    "active_agents": len(getattr(self, "connected_agents", {}) or {}),
-                    "survival_score": survival_score,
-                    "finance": finance_data,
-                    "kill_switch_enabled": bool(
-                        getattr(self, "kill_switch_enabled", False)
-                    ),
-                    "strict_local_only": bool(
-                        getattr(self, "strict_local_only", False)
-                    ),
-                    "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
-                    "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
-                    "learning_memory_enabled": bool(
-                        getattr(self, "learning_memory_enabled", False)
-                    ),
-                    "total_tokens_used": int(
-                        self.system_metrics.get("total_tokens_used", 0)
-                    ),
-                    "distill_enabled": bool(
-                        getattr(self, "distill_dashboard_enabled", False)
-                    ),
-                    "distill_count": int(self.system_metrics.get("distill_count", 0)),
-                    "last_growth_ts": self.system_metrics.get("last_growth_ts"),
-                    "last_growth_primitive": self.system_metrics.get(
-                        "last_growth_primitive"
-                    ),
-                    "last_growth_reason": self.system_metrics.get("last_growth_reason"),
-                    "timestamp": sam_datetime_ref.now().isoformat(),
-                }
-            )
+                    {
+                        "system": "SAM-D Unified Complete System",
+                        "status": "active",
+                        "c_core": self.system_metrics["c_core_status"],
+                        "python_orchestration": self.system_metrics[
+                            "python_orchestration_status"
+                            ],
+                        "sam_available": bool(getattr(self, "sam_available", False)),
+                        "ollama_available": bool(getattr(self, "ollama_available", False)),
+                        "active_agents": len(getattr(self, "connected_agents", {}) or {}),
+                        "survival_score": survival_score,
+                        "finance": finance_data,
+                        "kill_switch_enabled": bool(
+                            getattr(self, "kill_switch_enabled", False)
+                            ),
+                        "strict_local_only": bool(
+                            getattr(self, "strict_local_only", False)
+                            ),
+                        "chat_multi_agent": bool(getattr(self, "chat_multi_agent", False)),
+                        "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                        "learning_memory_enabled": bool(
+                            getattr(self, "learning_memory_enabled", False)
+                            ),
+                        "total_tokens_used": int(
+                            self.system_metrics.get("total_tokens_used", 0)
+                            ),
+                        "distill_enabled": bool(
+                            getattr(self, "distill_dashboard_enabled", False)
+                            ),
+                        "distill_count": int(self.system_metrics.get("distill_count", 0)),
+                        "last_growth_ts": self.system_metrics.get("last_growth_ts"),
+                        "last_growth_primitive": self.system_metrics.get(
+                            "last_growth_primitive"
+                            ),
+                        "last_growth_reason": self.system_metrics.get("last_growth_reason"),
+                        "timestamp": sam_datetime_ref.now().isoformat(),
+                        }
+                    )
 
         @self.app.route("/api/files/list", methods=["GET"])
         def list_files():
@@ -9367,17 +9367,17 @@ class UnifiedSAMSystem:
                     if entry.name.startswith(".") and entry.name != ".gemini":
                         continue
                     items.append(
-                        {
-                            "name": entry.name,
-                            "path": str(entry.relative_to(self.project_root)),
-                            "type": "dir" if entry.is_dir() else "file",
-                            "size": entry.stat().st_size if entry.is_file() else 0,
-                            "modified": entry.stat().st_mtime,
-                        }
-                    )
+                            {
+                                "name": entry.name,
+                                "path": str(entry.relative_to(self.project_root)),
+                                "type": "dir" if entry.is_dir() else "file",
+                                "size": entry.stat().st_size if entry.is_file() else 0,
+                                "modified": entry.stat().st_mtime,
+                                }
+                            )
                 return jsonify(
-                    {"path": str(target.relative_to(self.project_root)), "items": items}
-                )
+                        {"path": str(target.relative_to(self.project_root)), "items": items}
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -9404,13 +9404,13 @@ class UnifiedSAMSystem:
 
                 content = target.read_text(encoding="utf-8", errors="replace")
                 return jsonify(
-                    {
-                        "name": target.name,
-                        "path": str(target.relative_to(self.project_root)),
-                        "content": content,
-                        "size": target.stat().st_size,
-                    }
-                )
+                        {
+                            "name": target.name,
+                            "path": str(target.relative_to(self.project_root)),
+                            "content": content,
+                            "size": target.stat().st_size,
+                            }
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -9432,12 +9432,12 @@ class UnifiedSAMSystem:
                 for entry in self.project_root.rglob("*"):
                     if entry.is_file() and query.lower() in entry.name.lower():
                         results.append(
-                            {
-                                "name": entry.name,
-                                "path": str(entry.relative_to(self.project_root)),
-                                "type": "file",
-                            }
-                        )
+                                {
+                                    "name": entry.name,
+                                    "path": str(entry.relative_to(self.project_root)),
+                                    "type": "file",
+                                    }
+                                )
                         if len(results) >= 50:
                             break
                 return jsonify({"results": results})
@@ -9482,8 +9482,8 @@ class UnifiedSAMSystem:
             """Generate a transient session token for a user."""
             data = request.get_json() or {}
             user_id = _sanitize_input(
-                data.get("user_id", "guest_" + secrets.token_hex(4))
-            )
+                    data.get("user_id", "guest_" + secrets.token_hex(4))
+                    )
 
             if self.auth_manager:
                 token = self.auth_manager.create_session_token(user_id)
@@ -9528,13 +9528,13 @@ class UnifiedSAMSystem:
 
             caller_id, _ = _get_auth_context()
             if self.auth_manager and self.auth_manager.set_role(
-                caller_id, target_id, role
-            ):
+                    caller_id, target_id, role
+                    ):
                 return jsonify({"success": True, "user_id": target_id, "role": role})
             else:
                 return jsonify(
-                    {"error": "Failed to set role or unauthorized elevation"}
-                ), 403
+                        {"error": "Failed to set role or unauthorized elevation"}
+                        ), 403
 
         if getattr(self, "kill_switch_enabled", False):
 
@@ -9561,10 +9561,10 @@ class UnifiedSAMSystem:
 
                 print("🚨 EMERGENCY KILL SWITCH TRIGGERED")
                 log_event(
-                    "critical",
-                    "emergency_kill_triggered",
-                    "Manual kill switch activated",
-                )
+                        "critical",
+                        "emergency_kill_triggered",
+                        "Manual kill switch activated",
+                        )
                 self.kill_switch_triggered = True
 
                 # Signal entire process group to terminate instantly
@@ -9588,32 +9588,32 @@ class UnifiedSAMSystem:
 
                 threading.Thread(target=_do_restart, daemon=True).start()
                 return jsonify(
-                    {
-                        "status": "restarting",
-                        "note": "Process will exit and be relaunched by watcher if enabled.",
-                    }
-                )
+                        {
+                            "status": "restarting",
+                            "note": "Process will exit and be relaunched by watcher if enabled.",
+                            }
+                        )
 
         @self.app.route("/api/health")
         def health_check():
             """Lightweight health check"""
             return jsonify(
-                {
-                    "status": "ok",
-                    "timestamp": sam_time_ref.time(),
-                    "c_core": self.system_metrics.get("c_core_status", "unknown"),
-                    "python_orchestration": self.system_metrics.get(
-                        "python_orchestration_status", "unknown"
-                    ),
-                    "web_interface": self.system_metrics.get(
-                        "web_interface_status", "unknown"
-                    ),
-                    "sam_available": bool(getattr(self, "sam_available", False)),
-                    "kill_switch_enabled": bool(
-                        getattr(self, "kill_switch_enabled", False)
-                    ),
-                }
-            )
+                    {
+                        "status": "ok",
+                        "timestamp": sam_time_ref.time(),
+                        "c_core": self.system_metrics.get("c_core_status", "unknown"),
+                        "python_orchestration": self.system_metrics.get(
+                            "python_orchestration_status", "unknown"
+                            ),
+                        "web_interface": self.system_metrics.get(
+                            "web_interface_status", "unknown"
+                            ),
+                        "sam_available": bool(getattr(self, "sam_available", False)),
+                        "kill_switch_enabled": bool(
+                            getattr(self, "kill_switch_enabled", False)
+                            ),
+                        }
+                    )
 
         @self.app.route("/api/orchestrator/status")
         def orchestrator_status():
@@ -9621,13 +9621,13 @@ class UnifiedSAMSystem:
             if self.orchestrator:
                 status = multi_agent_orchestrator_c.get_orchestrator_status()
                 return jsonify(
-                    {
-                        "status": "active",
-                        "type": "pure_c",
-                        "active_agents": self.system_metrics["active_agents"],
-                        "orchestration_metrics": status,
-                    }
-                )
+                        {
+                            "status": "active",
+                            "type": "pure_c",
+                            "active_agents": self.system_metrics["active_agents"],
+                            "orchestration_metrics": status,
+                            }
+                        )
             return jsonify({"status": "inactive"})
 
         @self.app.route("/api/agents/status")
@@ -9636,35 +9636,35 @@ class UnifiedSAMSystem:
             agents_list = []
             for agent_id, agent_config in self.agent_configs.items():
                 agents_list.append(
-                    {
-                        "id": agent_id,
-                        "name": agent_config["name"],
-                        "type": agent_config["type"],
-                        "provider": agent_config.get("provider", "unknown"),
-                        "specialty": agent_config.get("specialty", "unknown"),
-                        "personality": agent_config.get("personality", "unknown"),
-                        "capabilities": agent_config["capabilities"],
-                        "status": agent_config["status"],
-                        "connection_type": agent_config.get(
-                            "connection_type", "unknown"
-                        ),
-                    }
-                )
+                        {
+                            "id": agent_id,
+                            "name": agent_config["name"],
+                            "type": agent_config["type"],
+                            "provider": agent_config.get("provider", "unknown"),
+                            "specialty": agent_config.get("specialty", "unknown"),
+                            "personality": agent_config.get("personality", "unknown"),
+                            "capabilities": agent_config["capabilities"],
+                            "status": agent_config["status"],
+                            "connection_type": agent_config.get(
+                                "connection_type", "unknown"
+                                ),
+                            }
+                        )
 
             return jsonify(
-                {
-                    "status": "active" if self.specialized_agents else "inactive",
-                    "type": "unified_system",
-                    "agents": agents_list,
-                    "total_agents": len(agents_list),
-                    "connected_agents": len(self.connected_agents),
-                    "prebuilt_models": [
-                        "Coherency-v2.1",
-                        "Teacher-v2.1",
-                        "BugFixer-v2.1",
-                    ],
-                }
-            )
+                    {
+                        "status": "active" if self.specialized_agents else "inactive",
+                        "type": "unified_system",
+                        "agents": agents_list,
+                        "total_agents": len(agents_list),
+                        "connected_agents": len(self.connected_agents),
+                        "prebuilt_models": [
+                            "Coherency-v2.1",
+                            "Teacher-v2.1",
+                            "BugFixer-v2.1",
+                            ],
+                        }
+                    )
 
         @self.app.route("/api/agent/statuses")
         def get_agent_statuses():
@@ -9675,63 +9675,63 @@ class UnifiedSAMSystem:
         def survival_status():
             """Survival and goal management status"""
             return jsonify(
-                {
-                    "survival_agent": "active" if self.survival_agent else "inactive",
-                    "goal_manager": "active" if self.goal_manager else "inactive",
-                    "survival_score": getattr(
-                        self.survival_agent, "survival_score", 0.0
+                    {
+                        "survival_agent": "active" if self.survival_agent else "inactive",
+                        "goal_manager": "active" if self.goal_manager else "inactive",
+                        "survival_score": getattr(
+                            self.survival_agent, "survival_score", 0.0
+                            )
+                        if self.survival_agent
+                        else 0.0,
+                        "pending_goals": len(self.goal_manager.get_pending_tasks())
+                        if self.goal_manager
+                        else 0,
+                        "completed_goals": len(self.goal_manager.get_completed_tasks())
+                        if self.goal_manager
+                        else 0,
+                        }
                     )
-                    if self.survival_agent
-                    else 0.0,
-                    "pending_goals": len(self.goal_manager.get_pending_tasks())
-                    if self.goal_manager
-                    else 0,
-                    "completed_goals": len(self.goal_manager.get_completed_tasks())
-                    if self.goal_manager
-                    else 0,
-                }
-            )
 
         @self.app.route("/api/groupchat/status")
         def groupchat_status():
             """Groupchat system status"""
             return jsonify(
-                {
-                    "socketio_available": self.socketio_available,
-                    "connected_users": len(self.connected_users),
-                    "active_rooms": len(self.conversation_rooms),
-                    "active_conversations": len(self.active_conversations),
-                    "web_search_enabled": self.web_search_enabled,
-                }
-            )
+                    {
+                        "socketio_available": self.socketio_available,
+                        "connected_users": len(self.connected_users),
+                        "active_rooms": len(self.conversation_rooms),
+                        "active_conversations": len(self.active_conversations),
+                        "web_search_enabled": self.web_search_enabled,
+                        }
+                    )
 
         def _resolve_log_path(kind: str) -> str:
             kind = (kind or "runtime").lower()
             if kind == "human":
                 return _HUMAN_LOG_PATH or os.getenv(
-                    "SAM_LOG_FILE", "logs/sam_runtime.log"
-                )
+                        "SAM_LOG_FILE", "logs/sam_runtime.log"
+                        )
             if kind == "revenue":
                 return (
-                    str(self.revenue_audit_log)
-                    if hasattr(self, "revenue_audit_log")
-                    else "logs/revenue_ops_audit.jsonl"
-                )
+                        str(self.revenue_audit_log)
+                        if hasattr(self, "revenue_audit_log")
+                        else "logs/revenue_ops_audit.jsonl"
+                        )
             if kind == "banking":
                 return (
-                    str(self.banking_audit_log)
-                    if hasattr(self, "banking_audit_log")
-                    else "logs/banking_audit.jsonl"
-                )
+                        str(self.banking_audit_log)
+                        if hasattr(self, "banking_audit_log")
+                        else "logs/banking_audit.jsonl"
+                        )
             if kind == "distill":
                 return str(
-                    getattr(
-                        self, "distill_output", "training/distilled/groupchat.jsonl"
-                    )
-                )
+                        getattr(
+                            self, "distill_output", "training/distilled/groupchat.jsonl"
+                            )
+                        )
             return _JSONL_LOG_PATH or os.getenv(
-                "SAM_LOG_JSONL", "logs/sam_runtime.jsonl"
-            )
+                    "SAM_LOG_JSONL", "logs/sam_runtime.jsonl"
+                    )
 
         @self.app.route("/api/logs/stream")
         def stream_logs():
@@ -9750,15 +9750,15 @@ class UnifiedSAMSystem:
                     if not os.path.exists(path):
                         # emit a bootstrap entry
                         bootstrap = json.dumps(
-                            {
-                                "ts": _utc_now(),
-                                "level": "info",
-                                "event": "log_stream_ready",
-                                "message": "Log stream initialized",
-                                "path": path,
-                                "kind": kind,
-                            }
-                        )
+                                {
+                                    "ts": _utc_now(),
+                                    "level": "info",
+                                    "event": "log_stream_ready",
+                                    "message": "Log stream initialized",
+                                    "path": path,
+                                    "kind": kind,
+                                    }
+                                )
                         yield f"data: {bootstrap}\n\n"
 
                     with open(path, "r", encoding="utf-8") as f:
@@ -9777,18 +9777,18 @@ class UnifiedSAMSystem:
                             yield f"data: {line.strip()}\n\n"
                 except Exception as exc:
                     err = json.dumps(
-                        {
-                            "ts": _utc_now(),
-                            "level": "error",
-                            "event": "log_stream_error",
-                            "message": str(exc),
-                        }
-                    )
+                            {
+                                "ts": _utc_now(),
+                                "level": "error",
+                                "event": "log_stream_error",
+                                "message": str(exc),
+                                }
+                            )
                     yield f"data: {err}\n\n"
 
             return Response(
-                stream_with_context(generate()), mimetype="text/event-stream"
-            )
+                    stream_with_context(generate()), mimetype="text/event-stream"
+                    )
 
         @self.app.route("/api/logs/view")
         def view_logs():
@@ -9829,47 +9829,47 @@ class UnifiedSAMSystem:
             if getattr(self, "learning_memory_enabled", False):
                 items = list(self.learning_memory)[-limit:]
             return jsonify(
-                {
-                    "enabled": bool(getattr(self, "learning_memory_enabled", False)),
-                    "memory_size": len(getattr(self, "learning_memory", []) or []),
-                    "memory_max": int(getattr(self, "learning_memory_max", 0)),
-                    "distill_enabled": bool(
-                        getattr(self, "distill_dashboard_enabled", False)
-                    ),
-                    "distill_count": int(self.system_metrics.get("distill_count", 0)),
-                    "items": items,
-                }
-            )
+                    {
+                        "enabled": bool(getattr(self, "learning_memory_enabled", False)),
+                        "memory_size": len(getattr(self, "learning_memory", []) or []),
+                        "memory_max": int(getattr(self, "learning_memory_max", 0)),
+                        "distill_enabled": bool(
+                            getattr(self, "distill_dashboard_enabled", False)
+                            ),
+                        "distill_count": int(self.system_metrics.get("distill_count", 0)),
+                        "items": items,
+                        }
+                    )
 
         @self.app.route("/api/groupchat/rooms")
         def get_rooms():
             """Get available conversation rooms"""
             return jsonify(
-                {
-                    "rooms": list(self.conversation_rooms.keys()),
-                    "user_count": len(self.connected_users),
-                }
-            )
+                    {
+                        "rooms": list(self.conversation_rooms.keys()),
+                        "user_count": len(self.connected_users),
+                        }
+                    )
 
         @self.app.route("/api/meta/status")
         def meta_agent_status():
             """Get comprehensive meta-agent status"""
             try:
                 status = {
-                    "status": "ok"
-                    if getattr(self, "meta_agent", None)
-                    else "uninitialized",
-                    "message": "Meta-agent active"
-                    if getattr(self, "meta_agent", None)
-                    else "Meta-agent not initialized",
-                    "capabilities": [
-                        "code_analysis",
-                        "patching",
-                        "evolution",
-                        "learning",
-                        "research",
-                    ],
-                }
+                        "status": "ok"
+                        if getattr(self, "meta_agent", None)
+                        else "uninitialized",
+                        "message": "Meta-agent active"
+                        if getattr(self, "meta_agent", None)
+                        else "Meta-agent not initialized",
+                        "capabilities": [
+                            "code_analysis",
+                            "patching",
+                            "evolution",
+                            "learning",
+                            "research",
+                            ],
+                        }
                 status["meta_agent_active"] = getattr(self, "meta_agent_active", False)
                 status["meta_only_boot"] = getattr(self, "meta_only_boot", False)
 
@@ -9881,56 +9881,56 @@ class UnifiedSAMSystem:
                 if getattr(self, "meta_agent", None):
                     meta = self.meta_agent
                     status["local_meta_agent"] = {
-                        "active": True,
-                        "failure_history_count": len(meta.failure_history),
-                        "patch_history_count": len(meta.patch_history),
-                        "successful_fixes": [
-                            p.get("id") for p in meta.successful_fixes
-                        ],
-                        "failed_attempts": [p.get("id") for p in meta.failed_attempts],
-                        "confidence_threshold": meta.confidence_threshold,
-                        "learning_events": meta.learning_cycles,
-                        "distilled_count": len(meta.distilled_memory),
-                        "last_patch_outcome": meta.last_patch_outcome,
-                        "last_repair_time": meta.last_repair_sam_time_ref.isoformat()
-                        if meta.last_repair_time
-                        else None,
-                    }
+                            "active": True,
+                            "failure_history_count": len(meta.failure_history),
+                            "patch_history_count": len(meta.patch_history),
+                            "successful_fixes": [
+                                p.get("id") for p in meta.successful_fixes
+                                ],
+                            "failed_attempts": [p.get("id") for p in meta.failed_attempts],
+                            "confidence_threshold": meta.confidence_threshold,
+                            "learning_events": meta.learning_cycles,
+                            "distilled_count": len(meta.distilled_memory),
+                            "last_patch_outcome": meta.last_patch_outcome,
+                            "last_repair_time": meta.last_repair_sam_time_ref.isoformat()
+                            if meta.last_repair_time
+                            else None,
+                            }
                 status["require_meta_agent"] = getattr(
-                    self, "require_meta_agent", False
-                )
+                        self, "require_meta_agent", False
+                        )
                 status["env_meta_only_boot"] = os.getenv("SAM_META_ONLY_BOOT")
                 status["env_require_meta_agent"] = os.getenv("SAM_REQUIRE_META_AGENT")
                 status["severity_threshold"] = getattr(
-                    self, "meta_agent_min_severity", "medium"
-                )
+                        self, "meta_agent_min_severity", "medium"
+                        )
                 status["growth"] = {
-                    "last_growth_ts": self.system_metrics.get("last_growth_ts"),
-                    "last_growth_primitive": self.system_metrics.get(
-                        "last_growth_primitive"
-                    ),
-                    "last_attempt_ts": self.system_metrics.get(
-                        "last_growth_attempt_ts"
-                    ),
-                    "last_attempt_primitive": self.system_metrics.get(
-                        "last_growth_attempt_primitive"
-                    ),
-                    "last_attempt_result": self.system_metrics.get(
-                        "last_growth_attempt_result"
-                    ),
-                    "last_growth_lambda": self.system_metrics.get("last_growth_lambda"),
-                    "last_growth_signals": self.system_metrics.get(
-                        "last_growth_signals"
-                    ),
-                    "last_growth_dominant": self.system_metrics.get(
-                        "last_growth_dominant"
-                    ),
-                    "last_growth_signal_ts": self.system_metrics.get(
-                        "last_growth_signal_ts"
-                    ),
-                    "last_growth_reason": self.system_metrics.get("last_growth_reason"),
-                    "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
-                }
+                        "last_growth_ts": self.system_metrics.get("last_growth_ts"),
+                        "last_growth_primitive": self.system_metrics.get(
+                            "last_growth_primitive"
+                            ),
+                        "last_attempt_ts": self.system_metrics.get(
+                            "last_growth_attempt_ts"
+                            ),
+                        "last_attempt_primitive": self.system_metrics.get(
+                            "last_growth_attempt_primitive"
+                            ),
+                        "last_attempt_result": self.system_metrics.get(
+                            "last_growth_attempt_result"
+                            ),
+                        "last_growth_lambda": self.system_metrics.get("last_growth_lambda"),
+                        "last_growth_signals": self.system_metrics.get(
+                            "last_growth_signals"
+                            ),
+                        "last_growth_dominant": self.system_metrics.get(
+                            "last_growth_dominant"
+                            ),
+                        "last_growth_signal_ts": self.system_metrics.get(
+                            "last_growth_signal_ts"
+                            ),
+                        "last_growth_reason": self.system_metrics.get("last_growth_reason"),
+                        "growth_freeze": bool(getattr(self, "meta_growth_freeze", False)),
+                        }
                 if getattr(self, "meta_agent", None):
                     last_patch_outcome = None
                     last_repair_time = None
@@ -9941,53 +9941,53 @@ class UnifiedSAMSystem:
                         last_repair_time = last_patch.get("timestamp")
 
                     status["local_meta_agent"] = {
-                        "active": bool(getattr(self, "meta_agent_active", False)),
-                        "patch_history": len(patch_history),
-                        "successful_fixes": len(
-                            getattr(self.meta_agent, "successful_fixes", []) or []
-                        ),
-                        "failed_attempts": len(
-                            getattr(self.meta_agent, "failed_attempts", []) or []
-                        ),
-                        "learning_events": len(
-                            getattr(self.meta_agent, "learning_log", []) or []
-                        ),
-                        "distilled_count": len(
-                            getattr(self.meta_agent, "distilled_memory", []) or []
-                        ),
-                        "confidence_threshold": getattr(
-                            self.meta_agent, "confidence_threshold", None
-                        ),
-                        "last_patch_outcome": last_patch_outcome,
-                        "last_repair_time": last_repair_time,
-                    }
+                            "active": bool(getattr(self, "meta_agent_active", False)),
+                            "patch_history": len(patch_history),
+                            "successful_fixes": len(
+                                getattr(self.meta_agent, "successful_fixes", []) or []
+                                ),
+                            "failed_attempts": len(
+                                getattr(self.meta_agent, "failed_attempts", []) or []
+                                ),
+                            "learning_events": len(
+                                getattr(self.meta_agent, "learning_log", []) or []
+                                ),
+                            "distilled_count": len(
+                                getattr(self.meta_agent, "distilled_memory", []) or []
+                                ),
+                            "confidence_threshold": getattr(
+                                self.meta_agent, "confidence_threshold", None
+                                ),
+                            "last_patch_outcome": last_patch_outcome,
+                            "last_repair_time": last_repair_time,
+                            }
 
                     # Get submodel lifecycles
                 try:
                     submodel_count = sam_meta_controller_c.get_state(
-                        self.meta_controller
-                    )["submodels"]
+                            self.meta_controller
+                            )["submodels"]
                     submodels = []
                     for i in range(submodel_count):
                         lifecycle_code = sam_meta_controller_c.get_submodel_lifecycle(
-                            self.meta_controller, i
-                        )
+                                self.meta_controller, i
+                                )
                         lifecycle_map = {
-                            0: "NONE",
-                            1: "PLAN",
-                            2: "DESIGN",
-                            3: "IMPLEMENT",
-                            4: "TEST",
-                            5: "DEPLOYED",
-                        }
+                                0: "NONE",
+                                1: "PLAN",
+                                2: "DESIGN",
+                                3: "IMPLEMENT",
+                                4: "TEST",
+                                5: "DEPLOYED",
+                                }
                         submodels.append(
-                            {
-                                "id": i,
-                                "lifecycle": lifecycle_map.get(
-                                    lifecycle_code, "UNKNOWN"
-                                ),
-                            }
-                        )
+                                {
+                                    "id": i,
+                                    "lifecycle": lifecycle_map.get(
+                                        lifecycle_code, "UNKNOWN"
+                                        ),
+                                    }
+                                )
                     status["submodels"] = submodels
                 except Exception as e:
                     status["submodels_error"] = str(e)
@@ -10002,7 +10002,7 @@ class UnifiedSAMSystem:
             try:
                 if not getattr(self, "meta_agent", None):
                     return jsonify({"status": "uninitialized"}), 503
-                    # Removed redundant last_patch_outcome/last_repair_time logic as it's handled in /api/meta/status
+                # Removed redundant last_patch_outcome/last_repair_time logic as it's handled in /api/meta/status
                 if hasattr(self.meta_agent, "get_learning_state"):
                     return jsonify(self.meta_agent.get_learning_state())
                 return jsonify({"status": "unsupported"}), 501
@@ -10013,10 +10013,10 @@ class UnifiedSAMSystem:
         def meta_agent_test():
             """Trigger a controlled meta-agent repair test (admin-only)."""
             self.system.log_event(
-                "info",
-                "meta_test_triggered",
-                "Meta-agent repair test initiated by admin",
-            )
+                    "info",
+                    "meta_test_triggered",
+                    "Meta-agent repair test initiated by admin",
+                    )
             ok, error = _require_admin_token()
             if not ok:
                 message, status = error
@@ -10026,31 +10026,31 @@ class UnifiedSAMSystem:
             try:
                 if not getattr(self, "meta_agent", None):
                     return jsonify({"error": "Meta-agent not initialized"}), 400
-                    # Synthetic failure that should map to deterministic patch
+                # Synthetic failure that should map to deterministic patch
                 fake_trace = "AttributeError: 'UnifiedSAMSystem' object has no attribute 'meta_agent_test_attr'"
                 failure = FailureEvent(
-                    error_type="MetaAgentTestError",
-                    stack_trace=fake_trace,
-                    failing_tests=[],
-                    logs="meta-agent test",
-                    timestamp=sam_datetime_ref.now().isoformat(),
-                    severity="medium",
-                    context="meta_test",
-                    message="Synthetic failure for meta-agent repair test",
-                )
+                        error_type="MetaAgentTestError",
+                        stack_trace=fake_trace,
+                        failing_tests=[],
+                        logs="meta-agent test",
+                        timestamp=sam_datetime_ref.now().isoformat(),
+                        severity="medium",
+                        context="meta_test",
+                        message="Synthetic failure for meta-agent repair test",
+                        )
                 original_self_mod = getattr(self, "allow_self_modification", False)
                 if dry_run:
                     self.allow_self_modification = False
                 result = self.meta_agent.handle_failure(failure)
                 self.allow_self_modification = original_self_mod
                 return jsonify(
-                    {
-                        "status": "ok",
-                        "dry_run": dry_run,
-                        "patched": bool(result),
-                        "note": "If patched=true, a harmless attribute may be added to __init__ once.",
-                    }
-                )
+                        {
+                            "status": "ok",
+                            "dry_run": dry_run,
+                            "patched": bool(result),
+                            "note": "If patched=true, a harmless attribute may be added to __init__ once.",
+                            }
+                        )
             except Exception as exc:
                 return jsonify({"error": str(exc)}), 500
 
@@ -10074,39 +10074,39 @@ class UnifiedSAMSystem:
                 payload = request.get_json(silent=True) or {}
                 pressures = self._normalize_pressures(payload)
                 lambda_val = sam_meta_controller_c.update_pressure(
-                    self.meta_controller,
-                    pressures["residual"],
-                    pressures["rank_def"],
-                    pressures["retrieval_entropy"],
-                    pressures["interference"],
-                    pressures["planner_friction"],
-                    pressures["context_collapse"],
-                    pressures["compression_waste"],
-                    pressures["temporal_incoherence"],
-                )
+                        self.meta_controller,
+                        pressures["residual"],
+                        pressures["rank_def"],
+                        pressures["retrieval_entropy"],
+                        pressures["interference"],
+                        pressures["planner_friction"],
+                        pressures["context_collapse"],
+                        pressures["compression_waste"],
+                        pressures["temporal_incoherence"],
+                        )
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
                 applied = False
                 if primitive:
                     if not self.meta_growth_freeze:
                         applied = sam_meta_controller_c.apply_primitive(
-                            self.meta_controller, primitive
-                        )
+                                self.meta_controller, primitive
+                                )
                         if applied:
                             gate_ok = self._run_regression_gate()
                             sam_meta_controller_c.record_growth_outcome(
-                                self.meta_controller, primitive, bool(gate_ok)
-                            )
+                                    self.meta_controller, primitive, bool(gate_ok)
+                                    )
                             if not gate_ok:
                                 applied = False
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
                 return jsonify(
-                    {
-                        "lambda": lambda_val,
-                        "primitive": int(primitive),
-                        "applied": bool(applied),
-                        "state": self.meta_state,
-                    }
-                )
+                        {
+                            "lambda": lambda_val,
+                            "primitive": int(primitive),
+                            "applied": bool(applied),
+                            "state": self.meta_state,
+                            }
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10130,23 +10130,23 @@ class UnifiedSAMSystem:
             try:
                 if not getattr(self, "meta_agent", None):
                     return jsonify(
-                        {
-                            "status": "not_available",
-                            "message": "Meta agent not initialized",
-                        }
-                    ), 404
+                            {
+                                "status": "not_available",
+                                "message": "Meta agent not initialized",
+                                }
+                            ), 404
                 self.meta_agent_active = False
                 self.allow_self_modification = False
                 self.allow_auto_resolution = False
                 log_event(
-                    "warn", "meta_agent_stop", "Meta-agent emergency stop activated"
-                )
+                        "warn", "meta_agent_stop", "Meta-agent emergency stop activated"
+                        )
                 return jsonify(
-                    {
-                        "status": "stopped",
-                        "message": "Meta agent emergency stop activated",
-                    }
-                )
+                        {
+                            "status": "stopped",
+                            "message": "Meta agent emergency stop activated",
+                            }
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10157,32 +10157,32 @@ class UnifiedSAMSystem:
                 agent = getattr(self, "meta_agent", None)
                 if agent is None:
                     return jsonify(
-                        {
-                            "status": "uninitialized",
-                            "message": "Meta agent not initialized",
-                        }
-                    ), 503
+                            {
+                                "status": "uninitialized",
+                                "message": "Meta agent not initialized",
+                                }
+                            ), 503
                 if hasattr(agent, "analyze_system_health"):
                     health = agent.analyze_system_health()
                     return jsonify(health)
                 return jsonify(
-                    {
-                        "status": "available",
-                        "components_analyzed": 0,
-                        "note": "Meta agent lacks analyze_system_health; returning minimal status",
-                        "system_metrics": {
-                            "c_core": self.system_metrics.get(
-                                "c_core_status", "unknown"
-                            ),
-                            "python_orchestration": self.system_metrics.get(
-                                "python_orchestration_status", "unknown"
-                            ),
-                            "web_interface": self.system_metrics.get(
-                                "web_interface_status", "unknown"
-                            ),
-                        },
-                    }
-                )
+                        {
+                            "status": "available",
+                            "components_analyzed": 0,
+                            "note": "Meta agent lacks analyze_system_health; returning minimal status",
+                            "system_metrics": {
+                                "c_core": self.system_metrics.get(
+                                    "c_core_status", "unknown"
+                                    ),
+                                "python_orchestration": self.system_metrics.get(
+                                    "python_orchestration_status", "unknown"
+                                    ),
+                                "web_interface": self.system_metrics.get(
+                                    "web_interface_status", "unknown"
+                                    ),
+                                },
+                            }
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10205,8 +10205,8 @@ class UnifiedSAMSystem:
                     steps = 1
                 if steps > max_steps:
                     return jsonify(
-                        {"error": f"steps exceeds limit ({steps} > {max_steps})"}
-                    ), 400
+                            {"error": f"steps exceeds limit ({steps} > {max_steps})"}
+                            ), 400
                 sam_sav_dual_system.run(self.sav_arena, steps)
                 return jsonify(sam_sav_dual_system.get_state(self.sav_arena))
             except Exception as e:
@@ -10218,11 +10218,11 @@ class UnifiedSAMSystem:
             try:
                 result = self.backup_manager.run_once()
                 self.backup_last_result = {
-                    "success": result.success,
-                    "message": result.message,
-                    "details": result.details,
-                    "timestamp": sam_time_ref.time(),
-                }
+                        "success": result.success,
+                        "message": result.message,
+                        "details": result.details,
+                        "timestamp": sam_time_ref.time(),
+                        }
                 status = 200 if result.success else 500
                 return jsonify(self.backup_last_result), status
             except Exception as e:
@@ -10232,19 +10232,19 @@ class UnifiedSAMSystem:
         def backup_status():
             """Get backup configuration and last result"""
             return jsonify(
-                {
-                    "enabled": self.backup_enabled,
-                    "required": self.backup_required,
-                    "primary_remote": self.backup_primary,
-                    "secondary_remote": self.backup_secondary,
-                    "interval_s": self.backup_interval_s,
-                    "auto_commit": self.backup_auto_commit,
-                    "commit_prefix": self.backup_commit_prefix,
-                    "author_name": self.backup_author_name,
-                    "author_email": self.backup_author_email,
-                    "last_result": self.backup_last_result,
-                }
-            )
+                    {
+                        "enabled": self.backup_enabled,
+                        "required": self.backup_required,
+                        "primary_remote": self.backup_primary,
+                        "secondary_remote": self.backup_secondary,
+                        "interval_s": self.backup_interval_s,
+                        "auto_commit": self.backup_auto_commit,
+                        "commit_prefix": self.backup_commit_prefix,
+                        "author_name": self.backup_author_name,
+                        "author_email": self.backup_author_email,
+                        "last_result": self.backup_last_result,
+                        }
+                    )
 
         @self.app.route("/api/backup/google-drive", methods=["POST"])
         @_ip_allowed_required
@@ -10257,19 +10257,19 @@ class UnifiedSAMSystem:
 
             if not self.google_drive_available:
                 return jsonify(
-                    {"error": "Google Drive integration is not available."}
-                ), 503
+                        {"error": "Google Drive integration is not available."}
+                        ), 503
 
             if self._backup_to_google_drive():
                 return jsonify(
-                    {
-                        "status": "SAM data backup to Google Drive initiated successfully."
-                    }
-                ), 200
+                        {
+                            "status": "SAM data backup to Google Drive initiated successfully."
+                            }
+                        ), 200
             else:
                 return jsonify(
-                    {"error": "Failed to backup SAM data to Google Drive."}
-                ), 500
+                        {"error": "Failed to backup SAM data to Google Drive."}
+                        ), 500
 
         @self.app.route("/api/meta/improvements")
         def get_improvements():
@@ -10278,8 +10278,8 @@ class UnifiedSAMSystem:
                 agent = getattr(self, "meta_agent", None)
                 if not agent:
                     return jsonify(
-                        {"status": "uninitialized", "improvement_phases": []}
-                    ), 503
+                            {"status": "uninitialized", "improvement_phases": []}
+                            ), 503
                 improvements = agent.generate_system_improvements()
                 return jsonify(improvements)
             except Exception as e:
@@ -10293,15 +10293,15 @@ class UnifiedSAMSystem:
                     stats = task_executor.get_executor_stats()
                     task_stats = task_executor.get_task_stats()
                     return jsonify(
-                        {"executor": stats, "tasks": task_stats, "available": True}
-                    )
+                            {"executor": stats, "tasks": task_stats, "available": True}
+                            )
                 else:
                     return jsonify(
-                        {
-                            "available": False,
-                            "message": "Concurrent executor not available",
-                        }
-                    )
+                            {
+                                "available": False,
+                                "message": "Concurrent executor not available",
+                                }
+                            )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10315,42 +10315,42 @@ class UnifiedSAMSystem:
                 if not query:
                     return jsonify({"error": "No search query provided"}), 400
 
-                    # Use SAM's dedicated web search with Google Drive integration
+                # Use SAM's dedicated web search with Google Drive integration
                 if sam_web_search_available:
                     search_result = search_web_with_sam(query, save_to_drive=True)
                     return jsonify(search_result)
                 else:
                     # Fallback to C library research agent
                     result, provenance = self._call_c_agent(
-                        "research", f"Web search: {query}"
-                    )
+                            "research", f"Web search: {query}"
+                            )
                     if not result:
                         return jsonify(
+                                {
+                                    "query": query,
+                                    "results": [
+                                        {
+                                            "content": "C research disabled or unavailable.",
+                                            "source": "fallback",
+                                            }
+                                        ],
+                                    "source": "sam_fallback_research",
+                                    "timestamp": sam_datetime_ref.now().isoformat(),
+                                    "warning": "Fallback research unavailable",
+                                    }
+                                )
+
+                    return jsonify(
                             {
                                 "query": query,
                                 "results": [
-                                    {
-                                        "content": "C research disabled or unavailable.",
-                                        "source": "fallback",
-                                    }
-                                ],
+                                    {"content": result, "source": "fallback_c_agent"}
+                                    ],
                                 "source": "sam_fallback_research",
                                 "timestamp": sam_datetime_ref.now().isoformat(),
-                                "warning": "Fallback research unavailable",
-                            }
-                        )
-
-                    return jsonify(
-                        {
-                            "query": query,
-                            "results": [
-                                {"content": result, "source": "fallback_c_agent"}
-                            ],
-                            "source": "sam_fallback_research",
-                            "timestamp": sam_datetime_ref.now().isoformat(),
-                            "warning": "Using fallback search - dedicated search not available",
-                        }
-                    )
+                                "warning": "Using fallback search - dedicated search not available",
+                                }
+                            )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -10366,25 +10366,25 @@ class UnifiedSAMSystem:
                 msg_lower = (user_message or "").strip().lower()
                 if msg_lower.startswith("/"):
                     sensitive_prefixes = (
-                        "/modify-code",
-                        "/rollback",
-                        "/save-to-github",
-                        "/send-email",
-                        "/schedule-email",
-                        "/system-report",
-                    )
+                            "/modify-code",
+                            "/rollback",
+                            "/save-to-github",
+                            "/send-email",
+                            "/schedule-email",
+                            "/system-report",
+                            )
                     if (
-                        msg_lower.startswith(sensitive_prefixes)
-                        or msg_lower.startswith("/revenue approve")
-                        or msg_lower.startswith("/revenue reject")
-                        or msg_lower.startswith("/revenue submit")
-                    ):
+                            msg_lower.startswith(sensitive_prefixes)
+                            or msg_lower.startswith("/revenue approve")
+                            or msg_lower.startswith("/revenue reject")
+                            or msg_lower.startswith("/revenue submit")
+                            ):
                         ok, error = _require_admin_token()
                         if not ok:
                             message, status = error
                             return jsonify({"error": message}), status
 
-                            # Process through SAM system
+                        # Process through SAM system
                 response = self._process_chatbot_message(user_message, context)
 
                 # --- Epistemic Humility (U_t) Check ---
@@ -10407,16 +10407,16 @@ class UnifiedSAMSystem:
                 evaluation = f"Log Score: {messages[0].get('log_score', 0.0):.4f} (y={coherence_y:.2f})"
 
                 return jsonify(
-                    {
-                        "message": response,
-                        "response": response,
-                        "messages": messages,
-                        "evaluation": evaluation,  # Added evaluation here
-                        "multi_agent": len(messages) > 1,
-                        "timestamp": sam_datetime_ref.now().isoformat(),
-                        "sam_integration": True,
-                    }
-                )
+                        {
+                            "message": response,
+                            "response": response,
+                            "messages": messages,
+                            "evaluation": evaluation,  # Added evaluation here
+                            "multi_agent": len(messages) > 1,
+                            "timestamp": sam_datetime_ref.now().isoformat(),
+                            "sam_integration": True,
+                            }
+                        )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -10431,19 +10431,19 @@ class UnifiedSAMSystem:
             """Get or update chat settings (admin-only for updates)."""
             if request.method == "GET":
                 return jsonify(
-                    {
-                        "chat_multi_agent": bool(
-                            getattr(self, "chat_multi_agent", True)
-                        ),
-                        "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
-                        "learning_memory_enabled": bool(
-                            getattr(self, "learning_memory_enabled", False)
-                        ),
-                        "distill_enabled": bool(
-                            getattr(self, "distill_dashboard_enabled", False)
-                        ),
-                    }
-                )
+                        {
+                            "chat_multi_agent": bool(
+                                getattr(self, "chat_multi_agent", True)
+                                ),
+                            "chat_agents_max": int(getattr(self, "chat_agents_max", 3)),
+                            "learning_memory_enabled": bool(
+                                getattr(self, "learning_memory_enabled", False)
+                                ),
+                            "distill_enabled": bool(
+                                getattr(self, "distill_dashboard_enabled", False)
+                                ),
+                            }
+                        )
             ok, error = _require_admin_token()
             if not ok:
                 message, status = error
@@ -10457,19 +10457,19 @@ class UnifiedSAMSystem:
                 except Exception:
                     pass
             log_event(
-                "info",
-                "chat_config_update",
-                "Chat config updated",
-                chat_multi_agent=self.chat_multi_agent,
-                chat_agents_max=self.chat_agents_max,
-            )
+                    "info",
+                    "chat_config_update",
+                    "Chat config updated",
+                    chat_multi_agent=self.chat_multi_agent,
+                    chat_agents_max=self.chat_agents_max,
+                    )
             return jsonify(
-                {
-                    "chat_multi_agent": bool(self.chat_multi_agent),
-                    "chat_agents_max": int(self.chat_agents_max),
-                    "updated": True,
-                }
-            )
+                    {
+                        "chat_multi_agent": bool(self.chat_multi_agent),
+                        "chat_agents_max": int(self.chat_agents_max),
+                        "updated": True,
+                        }
+                    )
 
         @self.app.route("/api/google-drive/status")
         def google_drive_status():
@@ -10477,13 +10477,13 @@ class UnifiedSAMSystem:
             if self.google_drive and self.google_drive_available:
                 info = self.google_drive.get_drive_info()
                 return jsonify(
-                    {
-                        "status": "active",
-                        "account": info.get("email", "unknown") if info else "unknown",
-                        "storage": info.get("quota", {}) if info else {},
-                        "folder_id": self.google_drive.sam_folder_id,
-                    }
-                )
+                        {
+                            "status": "active",
+                            "account": info.get("email", "unknown") if info else "unknown",
+                            "storage": info.get("quota", {}) if info else {},
+                            "folder_id": self.google_drive.sam_folder_id,
+                            }
+                        )
             return jsonify({"status": "inactive"})
 
         @self.app.route("/api/google-drive/files")
@@ -10537,12 +10537,12 @@ class UnifiedSAMSystem:
 
                 if not sam_code_modifier_available:
                     return jsonify(
-                        {"error": "Code modification system not available"}
-                    ), 503
+                            {"error": "Code modification system not available"}
+                            ), 503
 
                 result = modify_code_safely(
-                    str(target_path), old_code, new_code, description
-                )
+                        str(target_path), old_code, new_code, description
+                        )
                 return jsonify(result)
 
             except Exception as e:
@@ -10567,14 +10567,14 @@ class UnifiedSAMSystem:
             try:
                 if not sam_code_modifier_available:
                     return jsonify(
-                        {"error": "Code modification system not available"}
-                    ), 503
+                            {"error": "Code modification system not available"}
+                            ), 503
 
                     # Get modification history
                 analysis = analyze_codebase()
                 return jsonify(
-                    {"modification_history": analysis.get("modification_history", [])}
-                )
+                        {"modification_history": analysis.get("modification_history", [])}
+                        )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -10620,8 +10620,8 @@ class UnifiedSAMSystem:
         # sam_time_ref.
         if self.google_token_path.exists():
             creds = Credentials.from_authorized_user_file(
-                str(self.google_token_path), scopes
-            )
+                    str(self.google_token_path), scopes
+                    )
 
             # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
@@ -10631,34 +10631,34 @@ class UnifiedSAMSystem:
                 except Exception as e:
                     print(f"Error refreshing Google credentials: {e}")
                     log_event(
-                        "warn",
-                        "google_oauth_refresh_failed",
-                        f"Google credentials refresh failed: {e}",
-                    )
+                            "warn",
+                            "google_oauth_refresh_failed",
+                            f"Google credentials refresh failed: {e}",
+                            )
                     creds = None  # Force re-auth
 
             if not creds:
                 print(
-                    "Google Drive/Docs: No valid credentials found. Please authorize via /api/google/auth."
-                )
+                        "Google Drive/Docs: No valid credentials found. Please authorize via /api/google/auth."
+                        )
                 log_event(
-                    "info",
-                    "google_oauth_pending",
-                    "Google Drive/Docs integration requires authorization.",
-                )
+                        "info",
+                        "google_oauth_pending",
+                        "Google Drive/Docs integration requires authorization.",
+                        )
                 self.google_drive_available = (
-                    False  # Set to false until successfully authorized
-                )
+                        False  # Set to false until successfully authorized
+                        )
                 return
 
-                # Save the credentials for the next run
+            # Save the credentials for the next run
         try:
             self.google_token_path.parent.mkdir(parents=True, exist_ok=True)
             self.google_token_path.write_text(creds.to_json(), encoding="utf-8")
         except Exception as e:
             log_exception(
-                "google_token_save_failed", e, context="saving Google credentials"
-            )
+                    "google_token_save_failed", e, context="saving Google credentials"
+                    )
             self.google_drive_available = False
             return
 
@@ -10669,90 +10669,90 @@ class UnifiedSAMSystem:
             self.google_docs_service = build("docs", "v1", credentials=creds)
             print("✅ Google Drive/Docs API services initialized.")
             log_event(
-                "info",
-                "google_api_initialized",
-                "Google Drive/Docs API services initialized.",
-            )
+                    "info",
+                    "google_api_initialized",
+                    "Google Drive/Docs API services initialized.",
+                    )
             self.google_drive_available = True
         except HttpError as e:
             log_exception(
-                "google_api_build_failed",
-                e,
-                context="building Google API services (HttpError)",
-                content=getattr(e, "content", None),
-            )
+                    "google_api_build_failed",
+                    e,
+                    context="building Google API services (HttpError)",
+                    content=getattr(e, "content", None),
+                    )
             self.google_drive_available = False
         except Exception as e:
             log_exception(
-                "google_api_build_failed", e, context="building Google API services"
-            )
+                    "google_api_build_failed", e, context="building Google API services"
+                    )
             self.google_drive_available = False
 
     def _create_google_doc(self, title: str, content: str) -> Optional[str]:
         """Creates a new Google Doc with the given title and content. Returns the document ID."""
         if not self.google_docs_service:
             log_event(
-                "error",
-                "google_docs_api_not_available",
-                "Google Docs API not available to create document.",
-            )
+                    "error",
+                    "google_docs_api_not_available",
+                    "Google Docs API not available to create document.",
+                    )
             return None
         try:
             document = (
-                self.google_docs_service.documents()
-                .create(body={"title": title})
-                .execute()
-            )
+                    self.google_docs_service.documents()
+                    .create(body={"title": title})
+                    .execute()
+                    )
             doc_id = document.get("documentId")
 
             requests = [
-                {
-                    "insertText": {
-                        "location": {
-                            "index": 1,
+                    {
+                        "insertText": {
+                            "location": {
+                                "index": 1,
+                                },
+                            "text": content,
+                            }
                         },
-                        "text": content,
-                    }
-                },
-            ]
+                    ]
             self.google_docs_service.documents().batchUpdate(
-                documentId=doc_id, body={"requests": requests}
-            ).execute()
+                    documentId=doc_id, body={"requests": requests}
+                    ).execute()
             log_event(
-                "info",
-                "google_doc_created",
-                f"Google Doc '{title}' created with ID: {doc_id}",
-            )
+                    "info",
+                    "google_doc_created",
+                    f"Google Doc '{title}' created with ID: {doc_id}",
+                    )
             return doc_id
         except HttpError as e:
             log_exception(
-                "google_doc_create_failed",
-                e,
-                context=f"creating Google Doc '{title}' (HttpError)",
-                content=getattr(e, "content", None),
-            )
+                    "google_doc_create_failed",
+                    e,
+                    context=f"creating Google Doc '{title}' (HttpError)",
+                    content=getattr(e, "content", None),
+                    )
             return None
         except Exception as e:
             log_exception(
-                "google_doc_create_failed", e, context=f"creating Google Doc '{title}'"
-            )
+                    "google_doc_create_failed", e, context=f"creating Google Doc '{title}'"
+                    )
             return None
 
     def _read_google_doc(self, document_id: str) -> Optional[str]:
         """Reads the content of a Google Doc. Returns the text content."""
         if not self.google_docs_service:
             log_event(
-                "error",
-                "google_docs_api_not_available",
-                "Google Docs API not available to read document.",
-            )
+                    "error",
+                    "google_docs_api_not_available",
+                    "Google Docs API not available to read document.",
+                    )
             return None
         try:
             document = (
-                self.google_docs_service.documents()
-                .get(documentId=document_id)
-                .execute()
-            )
+                    self.google_docs_service.documents()
+                    .get(documentId=document_id)
+                    .execute()
+                    )
             content = ""
             for structural_element in document.get("body").get("content"):
                 if "paragraph" in structural_element:
@@ -10760,35 +10760,35 @@ class UnifiedSAMSystem:
                         if "textRun" in element:
                             content += element.get("textRun").get("content")
             log_event(
-                "info",
-                "google_doc_read",
-                f"Google Doc '{document.get('title')}' (ID: {document_id}) read successfully.",
-            )
+                    "info",
+                    "google_doc_read",
+                    f"Google Doc '{document.get('title')}' (ID: {document_id}) read successfully.",
+                    )
             return content
         except HttpError as e:
             log_exception(
-                "google_doc_read_failed",
-                e,
-                context=f"reading Google Doc '{document_id}' (HttpError)",
-                content=getattr(e, "content", None),
-            )
+                    "google_doc_read_failed",
+                    e,
+                    context=f"reading Google Doc '{document_id}' (HttpError)",
+                    content=getattr(e, "content", None),
+                    )
             return None
         except Exception as e:
             log_exception(
-                "google_doc_read_failed",
-                e,
-                context=f"reading Google Doc '{document_id}'",
-            )
+                    "google_doc_read_failed",
+                    e,
+                    context=f"reading Google Doc '{document_id}'",
+                    )
             return None
 
     def _backup_to_google_drive(self) -> bool:
         """Zips up the sam_data directory and uploads it to Google Drive."""
         if not self.google_drive_service:
             log_event(
-                "error",
-                "google_drive_api_not_available",
-                "Google Drive API not available for backup.",
-            )
+                    "error",
+                    "google_drive_api_not_available",
+                    "Google Drive API not available for backup.",
+                    )
             return False
 
         try:
@@ -10799,46 +10799,46 @@ class UnifiedSAMSystem:
 
             # This uses shutil.make_archive which is robust for zipping directories
             shutil.make_archive(
-                str(temp_zip_path.with_suffix("")),
-                "zip",
-                self.project_root / "sam_data",
-            )
+                    str(temp_zip_path.with_suffix("")),
+                    "zip",
+                    self.project_root / "sam_data",
+                    )
 
             # Upload to Google Drive
             file_metadata = {"name": backup_filename}
             media = MediaFileUpload(str(temp_zip_path), mimetype="application/zip")
             uploaded_file = (
-                self.google_drive_service.files()
-                .create(body=file_metadata, media_body=media, fields="id")
-                .execute()
-            )
+                    self.google_drive_service.files()
+                    .create(body=file_metadata, media_body=media, fields="id")
+                    .execute()
+                    )
 
             # Clean up the local zip file
             temp_zip_path.unlink()  # Remove the .zip file
 
             log_event(
-                "info",
-                "google_drive_backup_success",
-                f"SAM data backed up to Google Drive, File ID: {uploaded_file.get('id')}",
-            )
+                    "info",
+                    "google_drive_backup_success",
+                    f"SAM data backed up to Google Drive, File ID: {uploaded_file.get('id')}",
+                    )
             print(
-                f"✅ SAM data backed up to Google Drive. File ID: {uploaded_file.get('id')}"
-            )
+                    f"✅ SAM data backed up to Google Drive. File ID: {uploaded_file.get('id')}"
+                    )
             return True
         except HttpError as e:
             log_event(
-                "error",
-                "google_drive_backup_failed",
-                f"Failed to backup to Google Drive: {e.content}",
-            )
+                    "error",
+                    "google_drive_backup_failed",
+                    f"Failed to backup to Google Drive: {e.content}",
+                    )
             print(f"Error backing up to Google Drive: {e}")
             return False
         except Exception as e:
             log_event(
-                "error",
-                "google_drive_backup_failed",
-                f"Unexpected error backing up to Google Drive: {e}",
-            )
+                    "error",
+                    "google_drive_backup_failed",
+                    f"Unexpected error backing up to Google Drive: {e}",
+                    )
             print(f"Unexpected error backing up to Google Drive: {e}")
             return False
 
@@ -10888,7 +10888,7 @@ class UnifiedSAMSystem:
                 if not sam_gmail_available:
                     return jsonify({"error": "Gmail integration not available"}), 503
 
-                    # Send report using global Gmail instance
+                # Send report using global Gmail instance
                 global sam_gmail
                 if sam_gmail:
                     result = sam_gmail.send_system_report(recipient, report_type)
@@ -10930,11 +10930,11 @@ class UnifiedSAMSystem:
                 if not action_type:
                     return jsonify({"error": "action_type required"}), 400
                 action = self.revenue_ops.submit_action(
-                    action_type=action_type,
-                    payload=payload,
-                    requested_by=requested_by,
-                    requires_approval=requires_approval,
-                )
+                        action_type=action_type,
+                        payload=payload,
+                        requested_by=requested_by,
+                        requires_approval=requires_approval,
+                        )
                 return jsonify({"action": action.__dict__})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -10947,8 +10947,8 @@ class UnifiedSAMSystem:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 status = request.args.get("status")
                 return jsonify(
-                    {"actions": self.revenue_ops.list_actions(status=status)}
-                )
+                        {"actions": self.revenue_ops.list_actions(status=status)}
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -10970,8 +10970,8 @@ class UnifiedSAMSystem:
                 if not action_id:
                     return jsonify({"error": "action_id required"}), 400
                 result = self.revenue_ops.approve_action(
-                    action_id, approver, auto_execute=auto_execute
-                )
+                        action_id, approver, auto_execute=auto_execute
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -10994,8 +10994,8 @@ class UnifiedSAMSystem:
                 if not action_id:
                     return jsonify({"error": "action_id required"}), 400
                 result = self.revenue_ops.reject_action(
-                    action_id, approver, reason=reason
-                )
+                        action_id, approver, reason=reason
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11041,10 +11041,10 @@ class UnifiedSAMSystem:
                 status_filter = request.args.get("status")
                 if status_filter:
                     snapshot["runs"] = [
-                        r
-                        for r in snapshot.get("runs", [])
-                        if r.get("status") == status_filter
-                    ]
+                            r
+                            for r in snapshot.get("runs", [])
+                            if r.get("status") == status_filter
+                            ]
                 return jsonify(snapshot)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11092,12 +11092,12 @@ class UnifiedSAMSystem:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 csv_text = self.revenue_ops.export_leads_csv()
                 return Response(
-                    csv_text,
-                    mimetype="text/csv",
-                    headers={
-                        "Content-Disposition": "attachment; filename=crm_leads.csv"
-                    },
-                )
+                        csv_text,
+                        mimetype="text/csv",
+                        headers={
+                            "Content-Disposition": "attachment; filename=crm_leads.csv"
+                            },
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -11126,8 +11126,8 @@ class UnifiedSAMSystem:
                 invoice_id = data.get("invoice_id")
                 payload = data.get("payload")
                 result = self.revenue_ops.generate_invoice_html(
-                    invoice_id=invoice_id, payload=payload
-                )
+                        invoice_id=invoice_id, payload=payload
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11140,8 +11140,8 @@ class UnifiedSAMSystem:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 invoice_id = request.args.get("invoice_id")
                 result = self.revenue_ops.generate_invoice_html(
-                    invoice_id=invoice_id, payload=None
-                )
+                        invoice_id=invoice_id, payload=None
+                        )
                 return Response(result["html"], mimetype="text/html")
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11156,8 +11156,8 @@ class UnifiedSAMSystem:
                 invoice_id = data.get("invoice_id")
                 payload = data.get("payload")
                 result = self.revenue_ops.generate_invoice_pdf(
-                    invoice_id=invoice_id, payload=payload
-                )
+                        invoice_id=invoice_id, payload=payload
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11171,13 +11171,13 @@ class UnifiedSAMSystem:
                 invoice_id = request.args.get("invoice_id")
                 download = request.args.get("download") == "1"
                 result = self.revenue_ops.generate_invoice_pdf(
-                    invoice_id=invoice_id, payload=None
-                )
+                        invoice_id=invoice_id, payload=None
+                        )
                 return send_file(
-                    result["pdf_path"],
-                    mimetype="application/pdf",
-                    as_attachment=download,
-                )
+                        result["pdf_path"],
+                        mimetype="application/pdf",
+                        as_attachment=download,
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -11202,10 +11202,10 @@ class UnifiedSAMSystem:
                 create_leads = bool(data.get("create_leads", True))
                 limit_leads = int(data.get("limit_leads", 1))
                 result = self.revenue_ops.import_playbooks(
-                    create_sequences=create_sequences,
-                    create_leads=create_leads,
-                    limit_leads=limit_leads,
-                )
+                        create_sequences=create_sequences,
+                        create_leads=create_leads,
+                        limit_leads=limit_leads,
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11234,19 +11234,19 @@ class UnifiedSAMSystem:
                     message, status = error
                     return jsonify({"error": message}), status
 
-                    # Check if restart is enabled
+                # Check if restart is enabled
                 restart_enabled = os.getenv("SAM_RESTART_ENABLED", "1") == "1"
                 if not restart_enabled:
                     return jsonify({"error": "System restart is disabled"}), 403
 
-                    # Log the restart request
+                # Log the restart request
                 log_event(
-                    "info",
-                    "restart_requested",
-                    "System restart requested via API",
-                    source="admin_api",
-                    timestamp=sam_datetime_ref.now().isoformat(),
-                )
+                        "info",
+                        "restart_requested",
+                        "System restart requested via API",
+                        source="admin_api",
+                        timestamp=sam_datetime_ref.now().isoformat(),
+                        )
 
                 # Trigger graceful shutdown and restart
                 def delayed_restart():
@@ -11262,12 +11262,12 @@ class UnifiedSAMSystem:
                 restart_thread.start()
 
                 return jsonify(
-                    {
-                        "status": "restart_initiated",
-                        "message": "System restart initiated. The system will be back online shortly.",
-                        "timestamp": sam_datetime_ref.now().isoformat(),
-                    }
-                )
+                        {
+                            "status": "restart_initiated",
+                            "message": "System restart initiated. The system will be back online shortly.",
+                            "timestamp": sam_datetime_ref.now().isoformat(),
+                            }
+                        )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11300,10 +11300,10 @@ class UnifiedSAMSystem:
             try:
                 if request.method == "GET":
                     return jsonify(
-                        {
-                            "interval_s": getattr(self, "finance_log_interval_s", 0),
-                        }
-                    )
+                            {
+                                "interval_s": getattr(self, "finance_log_interval_s", 0),
+                                }
+                            )
                 ok, error = _require_admin_token()
                 if not ok:
                     message, status = error
@@ -11342,8 +11342,8 @@ class UnifiedSAMSystem:
                 initial_balance = float(data.get("initial_balance", 0.0))
                 currency = data.get("currency", "USD")
                 account = self.banking_ledger.create_account(
-                    name, initial_balance, currency
-                )
+                        name, initial_balance, currency
+                        )
                 return jsonify({"account": account})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11356,8 +11356,8 @@ class UnifiedSAMSystem:
                     return jsonify({"error": "Banking sandbox not available"}), 503
                 status = request.args.get("status")
                 return jsonify(
-                    {"requests": self.banking_ledger.list_requests(status=status)}
-                )
+                        {"requests": self.banking_ledger.list_requests(status=status)}
+                        )
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
@@ -11378,12 +11378,12 @@ class UnifiedSAMSystem:
                 requested_by = data.get("requested_by", "api")
                 requires_approval = bool(data.get("requires_approval", True))
                 req = self.banking_ledger.request_spend(
-                    account_id=account_id,
-                    amount=amount,
-                    memo=memo,
-                    requested_by=requested_by,
-                    requires_approval=requires_approval,
-                )
+                        account_id=account_id,
+                        amount=amount,
+                        memo=memo,
+                        requested_by=requested_by,
+                        requires_approval=requires_approval,
+                        )
                 return jsonify({"request": req.__dict__})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11405,8 +11405,8 @@ class UnifiedSAMSystem:
                 if not request_id:
                     return jsonify({"error": "request_id required"}), 400
                 result = self.banking_ledger.approve_request(
-                    request_id, approver, auto_execute=auto_execute
-                )
+                        request_id, approver, auto_execute=auto_execute
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11428,8 +11428,8 @@ class UnifiedSAMSystem:
                 if not request_id:
                     return jsonify({"error": "request_id required"}), 400
                 result = self.banking_ledger.reject_request(
-                    request_id, approver, reason=reason
-                )
+                        request_id, approver, reason=reason
+                        )
                 return jsonify({"result": result})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11510,7 +11510,7 @@ class UnifiedSAMSystem:
                 if not sam_github_available:
                     return jsonify({"error": "GitHub integration not available"}), 503
 
-                    # Get commits using global instance
+                # Get commits using global instance
                 global sam_github
                 if sam_github:
                     commits = sam_github.get_recent_commits()
@@ -11716,7 +11716,7 @@ sam@terminal:~$
                     const currentContent = terminalOutput.textContent;
                     terminalOutput.textContent = currentContent + command + '\\n';
                     terminalInput.value = '';
-                    
+
                     // Show processing indicator
                     const processingId = 'proc_' + Date.now();
                     terminalOutput.textContent += '...\\n';
@@ -11741,14 +11741,14 @@ sam@terminal:~$
                 terminalOutput.textContent = 'SAM-D Interactive Terminal\\nType \\'help\\' for available commands.\\n\\nsam@terminal:~$ ';
                 return '';
             }
-            
+
             try {
                 const response = await fetch('/api/terminal/execute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ command: command, cwd: currentDirectory })
                 });
-                
+
                 const data = await response.json();
                 if (data.cwd) currentDirectory = data.cwd;
                 return data.output || data.error || 'No output';
@@ -11779,17 +11779,17 @@ sam@terminal:~$
                 if not command:
                     return jsonify({"error": "No command provided"}), 400
 
-                    # Execute command (simplified version for demo)
+                # Execute command (simplified version for demo)
                 result = self._execute_terminal_command(command)
 
                 return jsonify(
-                    {
-                        "success": True,
-                        "command": command,
-                        "output": result,
-                        "timestamp": sam_datetime_ref.now().isoformat(),
-                    }
-                )
+                        {
+                            "success": True,
+                            "command": command,
+                            "output": result,
+                            "timestamp": sam_datetime_ref.now().isoformat(),
+                            }
+                        )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11822,35 +11822,35 @@ sam@terminal:~$
         if not self.socketio_available:
             return
         from flask_socketio import (
-            join_room as socketio_join_room,
-            leave_room as socketio_leave_room,
-        )
+                join_room as socketio_join_room,
+                leave_room as socketio_leave_room,
+                )
 
         @self.socketio.on("connect")
         def handle_connect(auth=None):
             """Handle user connection to groupchat"""
             user_id = request.sid
             self.connected_users[user_id] = {
-                "id": user_id,
-                "name": f"User-{len(self.connected_users) + 1}",
-                "joined_at": sam_time_ref.time(),
-                "current_room": None,
-                "sid": user_id,
-            }
+                    "id": user_id,
+                    "name": f"User-{len(self.connected_users) + 1}",
+                    "joined_at": sam_time_ref.time(),
+                    "current_room": None,
+                    "sid": user_id,
+                    }
 
             self.socketio.emit(
-                "user_connected",
-                {
-                    "user": self.connected_users[user_id],
-                    "online_users": len(self.connected_users),
-                    "available_rooms": list(self.conversation_rooms.keys()),
-                },
-                to=user_id,
-            )
+                    "user_connected",
+                    {
+                        "user": self.connected_users[user_id],
+                        "online_users": len(self.connected_users),
+                        "available_rooms": list(self.conversation_rooms.keys()),
+                        },
+                    to=user_id,
+                    )
 
             print(
-                f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}"
-            )
+                    f"👥 User connected to groupchat: {self.connected_users[user_id]['name']}"
+                    )
 
         @self.socketio.on("disconnect")
         def handle_disconnect():
@@ -11866,22 +11866,22 @@ sam@terminal:~$
                     if user_id in room["users"]:
                         room["users"].remove(user_id)
                         self.socketio.emit(
-                            "user_left_room",
-                            {"user": disconnected_user, "room_id": current_room},
-                            room=current_room,
-                        )
+                                "user_left_room",
+                                {"user": disconnected_user, "room_id": current_room},
+                                room=current_room,
+                                )
 
                         # Remove user
                 del self.connected_users[user_id]
 
                 self.socketio.emit(
-                    "user_disconnected",
-                    {
-                        "user": disconnected_user,
-                        "online_users": len(self.connected_users),
-                    },
-                    to=user_id,
-                )
+                        "user_disconnected",
+                        {
+                            "user": disconnected_user,
+                            "online_users": len(self.connected_users),
+                            },
+                        to=user_id,
+                        )
 
                 print(f"👋 User disconnected: {disconnected_user['name']}")
 
@@ -11895,16 +11895,16 @@ sam@terminal:~$
             if user_id not in self.connected_users:
                 return
 
-                # Create room if it doesn't exist
+            # Create room if it doesn't exist
             if room_id not in self.conversation_rooms:
                 self.conversation_rooms[room_id] = {
-                    "id": room_id,
-                    "name": data.get("room_name", f"Room-{room_id}"),
-                    "created_at": sam_time_ref.time(),
-                    "users": [],
-                    "messages": [],
-                    "agent_type": agent_type,
-                }
+                        "id": room_id,
+                        "name": data.get("room_name", f"Room-{room_id}"),
+                        "created_at": sam_time_ref.time(),
+                        "users": [],
+                        "messages": [],
+                        "agent_type": agent_type,
+                        }
 
             room = self.conversation_rooms[room_id]
 
@@ -11917,27 +11917,27 @@ sam@terminal:~$
                 socketio_join_room(room_id)
 
                 self.socketio.emit(
-                    "joined_room",
-                    {"room": room, "user": self.connected_users[user_id]},
-                    room=room_id,
-                )
+                        "joined_room",
+                        {"room": room, "user": self.connected_users[user_id]},
+                        room=room_id,
+                        )
 
                 self.socketio.emit(
-                    "room_updated",
-                    {
-                        "room_id": room_id,
-                        "user_count": len(room["users"]),
-                        "users": [
-                            self.connected_users[uid]
-                            for uid in room["users"]
-                            if uid in self.connected_users
-                        ],
-                    },
-                )
+                        "room_updated",
+                        {
+                            "room_id": room_id,
+                            "user_count": len(room["users"]),
+                            "users": [
+                                self.connected_users[uid]
+                                for uid in room["users"]
+                                if uid in self.connected_users
+                                ],
+                            },
+                        )
 
                 print(
-                    f"🏠 User {self.connected_users[user_id]['name']} joined room {room_id} (Agent: {agent_type})"
-                )
+                        f"🏠 User {self.connected_users[user_id]['name']} joined room {room_id} (Agent: {agent_type})"
+                        )
 
         @self.socketio.on("leave_room")
         def handle_leave_room(data):
@@ -11946,9 +11946,9 @@ sam@terminal:~$
             room_id = data.get("room_id")
 
             if (
-                room_id in self.conversation_rooms
-                and user_id in self.conversation_rooms[room_id]["users"]
-            ):
+                    room_id in self.conversation_rooms
+                    and user_id in self.conversation_rooms[room_id]["users"]
+                    ):
                 room = self.conversation_rooms[room_id]
                 room["users"].remove(user_id)
 
@@ -11958,13 +11958,13 @@ sam@terminal:~$
                     socketio_leave_room(room_id)
 
                 self.socketio.emit(
-                    "left_room", {"user_id": user_id, "room_id": room_id}, room=room_id
-                )
+                        "left_room", {"user_id": user_id, "room_id": room_id}, room=room_id
+                        )
 
                 self.socketio.emit(
-                    "room_updated",
-                    {"room_id": room_id, "user_count": len(room["users"])},
-                )
+                        "room_updated",
+                        {"room_id": room_id, "user_count": len(room["users"])},
+                        )
 
                 # Clean up empty rooms
                 if len(room["users"]) == 0:
@@ -11988,13 +11988,13 @@ sam@terminal:~$
 
             # Store user message
             message_data = {
-                "id": f"msg_{int(sam_time_ref.time() * 1000)}",
-                "user_id": user_id,
-                "user_name": user.get("name", "Unknown"),
-                "message": message,
-                "timestamp": sam_time_ref.time(),
-                "message_type": "user",
-            }
+                    "id": f"msg_{int(sam_time_ref.time() * 1000)}",
+                    "user_id": user_id,
+                    "user_name": user.get("name", "Unknown"),
+                    "message": message,
+                    "timestamp": sam_time_ref.time(),
+                    "message_type": "user",
+                    }
 
             room["messages"].append(message_data)
             self.socketio.emit("message_received", message_data, room=room_id)
@@ -12004,29 +12004,29 @@ sam@terminal:~$
 
             # Strict local-only or multi-agent local mode: emit multiple local agent responses.
             if getattr(self, "strict_local_only", False) or (
-                self.chat_multi_agent and not self.teacher_pool_enabled
-            ):
+                    self.chat_multi_agent and not self.teacher_pool_enabled
+                    ):
                 max_agents = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
                 for _, cfg in self._select_chat_agents(max_agents=max_agents):
                     local_reply = self._generate_local_agent_reply(
-                        cfg, message, conversation_context
-                    )
+                            cfg, message, conversation_context
+                            )
                     response_data = {
-                        "id": f"msg_{int(sam_time_ref.time() * 1000) + random.randint(1, 999)}",
-                        "user_id": "sam_agent",
-                        "user_name": cfg.get("name") or cfg.get("id") or "Agent",
-                        "message": local_reply,
-                        "timestamp": sam_time_ref.time(),
-                        "message_type": "agent",
-                        "agent_type": (cfg.get("type") or cfg.get("id") or "agent"),
-                        "capabilities": cfg.get("capabilities", []),
-                        "context_awareness": True,
-                    }
+                            "id": f"msg_{int(sam_time_ref.time() * 1000) + random.randint(1, 999)}",
+                            "user_id": "sam_agent",
+                            "user_name": cfg.get("name") or cfg.get("id") or "Agent",
+                            "message": local_reply,
+                            "timestamp": sam_time_ref.time(),
+                            "message_type": "agent",
+                            "agent_type": (cfg.get("type") or cfg.get("id") or "agent"),
+                            "capabilities": cfg.get("capabilities", []),
+                            "context_awareness": True,
+                            }
                     room["messages"].append(response_data)
                     self.socketio.emit("message_received", response_data, room=room_id)
                 return
 
-                # Generate SAM agent response based on room agent type
+            # Generate SAM agent response based on room agent type
             agent_response = self.generate_room_agent_response(message, room, user)
 
             if agent_response:
@@ -12035,55 +12035,55 @@ sam@terminal:~$
 
                 # Add typing indicator
                 self.socketio.start_background_task(
-                    lambda: self.socketio.emit(
-                        "agent_typing",
-                        {
-                            "agent_name": agent_response["agent_name"],
-                            "agent_type": agent_response["agent_type"],
-                            "status": "typing",
-                        },
-                        room=room_id,
-                    )
-                )
+                        lambda: self.socketio.emit(
+                            "agent_typing",
+                            {
+                                "agent_name": agent_response["agent_name"],
+                                "agent_type": agent_response["agent_type"],
+                                "status": "typing",
+                                },
+                            room=room_id,
+                            )
+                        )
 
                 # Simulate typing delay
                 sam_time_ref.sleep(1 + (sam_time_ref.time() % 2))  # 1-3 seconds
 
                 # Stop typing indicator
                 self.socketio.start_background_task(
-                    lambda: self.socketio.emit(
-                        "agent_typing",
-                        {
-                            "agent_name": agent_response["agent_name"],
-                            "agent_type": agent_response["agent_type"],
-                            "status": "idle",
-                        },
-                        room=room_id,
-                    )
-                )
+                        lambda: self.socketio.emit(
+                            "agent_typing",
+                            {
+                                "agent_name": agent_response["agent_name"],
+                                "agent_type": agent_response["agent_type"],
+                                "status": "idle",
+                                },
+                            room=room_id,
+                            )
+                        )
 
                 try:
                     if self.teacher_pool_enabled:
                         teacher_response = self._generate_teacher_response(
-                            room, user, message, conversation_context, message_data
-                        )
+                                room, user, message, conversation_context, message_data
+                                )
                         enhanced_response = {
-                            **agent_response,
-                            "response": teacher_response,
-                        }
+                                **agent_response,
+                                "response": teacher_response,
+                                }
                     else:
                         enhanced_response = self._enhance_response_with_context(
-                            agent_response, conversation_context
-                        )
+                                agent_response, conversation_context
+                                )
                 except Exception as exc:
                     error_data = {
-                        "id": f"msg_{int(sam_time_ref.time() * 1000) + 1}",
-                        "user_id": "system_error",
-                        "user_name": "System",
-                        "message": f"Teacher pool error: {exc}",
-                        "timestamp": sam_time_ref.time(),
-                        "message_type": "error",
-                    }
+                            "id": f"msg_{int(sam_time_ref.time() * 1000) + 1}",
+                            "user_id": "system_error",
+                            "user_name": "System",
+                            "message": f"Teacher pool error: {exc}",
+                            "timestamp": sam_time_ref.time(),
+                            "message_type": "error",
+                            }
                     room["messages"].append(error_data)
                     self.socketio.emit("message_received", error_data, room=room_id)
                     print(f"❌ Teacher pool error: {exc}")
@@ -12091,16 +12091,16 @@ sam@terminal:~$
                     return
 
                 response_data = {
-                    "id": f"msg_{int(sam_time_ref.time() * 1000) + 1}",
-                    "user_id": "sam_agent",
-                    "user_name": enhanced_response["agent_name"],
-                    "message": enhanced_response["response"],
-                    "timestamp": sam_time_ref.time(),
-                    "message_type": "agent",
-                    "agent_type": enhanced_response["agent_type"],
-                    "capabilities": enhanced_response.get("capabilities", []),
-                    "context_awareness": True,  # Indicates agent has conversation context
-                }
+                        "id": f"msg_{int(sam_time_ref.time() * 1000) + 1}",
+                        "user_id": "sam_agent",
+                        "user_name": enhanced_response["agent_name"],
+                        "message": enhanced_response["response"],
+                        "timestamp": sam_time_ref.time(),
+                        "message_type": "agent",
+                        "agent_type": enhanced_response["agent_type"],
+                        "capabilities": enhanced_response.get("capabilities", []),
+                        "context_awareness": True,  # Indicates agent has conversation context
+                        }
 
                 # Update agent status back to idle
                 self._update_agent_status(enhanced_response["agent_type"], "idle")
@@ -12109,61 +12109,61 @@ sam@terminal:~$
                 self.socketio.emit("message_received", response_data, room=room_id)
 
                 print(
-                    f"💬 SAM {enhanced_response['agent_name']}: {enhanced_response['response'][:100]}..."
-                )
+                        f"💬 SAM {enhanced_response['agent_name']}: {enhanced_response['response'][:100]}..."
+                        )
 
     def generate_room_agent_response(self, message, room, user):
         """Generate conversation starter based on agent type"""
         agent_type = room.get("agent_type", "sam")
 
         starters = {
-            "research": {
-                "response": "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
-                "agent_name": "Research Agent",
-                "agent_type": "research",
-                "capabilities": ["web_search", "data_analysis", "scientific_research"],
-            },
-            "code": {
-                "response": "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
-                "agent_name": "Code Agent",
-                "agent_type": "code",
-                "capabilities": [
-                    "code_generation",
-                    "algorithm_analysis",
-                    "programming_help",
-                ],
-            },
-            "finance": {
-                "response": "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
-                "agent_name": "Finance Agent",
-                "agent_type": "finance",
-                "capabilities": [
-                    "market_analysis",
-                    "investment_advice",
-                    "financial_planning",
-                ],
-            },
-            "sam": {
-                "response": "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
-                "agent_name": "SAM AGI",
-                "agent_type": "sam",
-                "capabilities": [
-                    "agi_reasoning",
-                    "multi_domain_expertise",
-                    "autonomous_operation",
-                ],
-            },
-        }
+                "research": {
+                    "response": "🔍 Welcome to the research room! Ask me about current developments, scientific discoveries, or any topic you'd like me to investigate with web search capabilities.",
+                    "agent_name": "Research Agent",
+                    "agent_type": "research",
+                    "capabilities": ["web_search", "data_analysis", "scientific_research"],
+                    },
+                "code": {
+                    "response": "💻 Welcome to the coding room! I can help you generate code, analyze algorithms, or solve programming challenges.",
+                    "agent_name": "Code Agent",
+                    "agent_type": "code",
+                    "capabilities": [
+                        "code_generation",
+                        "algorithm_analysis",
+                        "programming_help",
+                        ],
+                    },
+                "finance": {
+                    "response": "💰 Welcome to the finance room! I can analyze market trends, provide investment insights, and help with financial planning.",
+                    "agent_name": "Finance Agent",
+                    "agent_type": "finance",
+                    "capabilities": [
+                        "market_analysis",
+                        "investment_advice",
+                        "financial_planning",
+                        ],
+                    },
+                "sam": {
+                    "response": "🧠 Welcome to the SAM AGI room! I'm a fully autonomous AGI system capable of research, coding, financial analysis, and general intelligence tasks.",
+                    "agent_name": "SAM AGI",
+                    "agent_type": "sam",
+                    "capabilities": [
+                        "agi_reasoning",
+                        "multi_domain_expertise",
+                        "autonomous_operation",
+                        ],
+                    },
+                }
 
         return starters.get(
-            agent_type,
-            {
-                "response": f"🎭 Conversation started! Feel free to ask me anything - I'm here to help with research, coding, finance, or general questions.",
-                "agent_name": "General Agent",
-                "agent_type": "general",
-                "capabilities": ["conversation", "general_assistance"],
-            },
-        )
+                agent_type,
+                {
+                    "response": f"🎭 Conversation started! Feel free to ask me anything - I'm here to help with research, coding, finance, or general questions.",
+                    "agent_name": "General Agent",
+                    "agent_type": "general",
+                    "capabilities": ["conversation", "general_assistance"],
+                    },
+                )
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count (approx 1.3 tokens per word)"""
@@ -12176,7 +12176,7 @@ sam@terminal:~$
         if not text:
             return ""
 
-            # If text is already short enough, just return it
+        # If text is already short enough, just return it
         if len(text.split()) <= max_words:
             return text
 
@@ -12206,13 +12206,13 @@ sam@terminal:~$
         context_messages = []
         for msg in messages[-11:-1]:  # Last 10 messages, excluding current
             context_messages.append(
-                {
-                    "sender": msg.get("user_name", msg.get("user_id", "Unknown")),
-                    "message": msg.get("message", ""),
-                    "type": msg.get("message_type", "unknown"),
-                    "timestamp": msg.get("timestamp", 0),
-                }
-            )
+                    {
+                        "sender": msg.get("user_name", msg.get("user_id", "Unknown")),
+                        "message": msg.get("message", ""),
+                        "type": msg.get("message_type", "unknown"),
+                        "timestamp": msg.get("timestamp", 0),
+                        }
+                    )
 
         return context_messages
 
@@ -12237,21 +12237,21 @@ sam@terminal:~$
             self.agent_statuses = {}
 
         self.agent_statuses[agent_type] = {
-            "status": status,  # online, idle, responding, disconnected
-            "last_active": sam_time_ref.time(),
-            "current_task": status,
-        }
+                "status": status,  # online, idle, responding, disconnected
+                "last_active": sam_time_ref.time(),
+                "current_task": status,
+                }
 
         # Emit status update to all connected clients
         if hasattr(self, "socketio"):
             self.socketio.emit(
-                "agent_status_update",
-                {
-                    "agent_type": agent_type,
-                    "status": status,
-                    "timestamp": sam_time_ref.time(),
-                },
-            )
+                    "agent_status_update",
+                    {
+                        "agent_type": agent_type,
+                        "status": status,
+                        "timestamp": sam_time_ref.time(),
+                        },
+                    )
 
     def _get_agent_statuses_internal(self):
         """Get current status of all agents for UI display"""
@@ -12261,27 +12261,27 @@ sam@terminal:~$
         for agent_id, agent_config in self.agent_configs.items():
             agent_type = agent_config["type"].lower().replace(" ", "_")
             if (
-                hasattr(self, "_agent_status_cache")
-                and agent_type in self._agent_status_cache
-            ):
+                    hasattr(self, "_agent_status_cache")
+                    and agent_type in self._agent_status_cache
+                    ):
                 status_info = self.agent_statuses[agent_type]
                 statuses[agent_id] = {
-                    "name": agent_config["name"],
-                    "status": status_info["status"],
-                    "last_active": status_info["last_active"],
-                    "current_task": status_info.get("current_task", "idle"),
-                }
+                        "name": agent_config["name"],
+                        "status": status_info["status"],
+                        "last_active": status_info["last_active"],
+                        "current_task": status_info.get("current_task", "idle"),
+                        }
             else:
                 # Default status for untracked agents
                 connection_status = (
-                    "online" if agent_id in self.connected_agents else "disconnected"
-                )
+                        "online" if agent_id in self.connected_agents else "disconnected"
+                        )
                 statuses[agent_id] = {
-                    "name": agent_config["name"],
-                    "status": connection_status,
-                    "last_active": sam_time_ref.time(),
-                    "current_task": "idle",
-                }
+                        "name": agent_config["name"],
+                        "status": connection_status,
+                        "last_active": sam_time_ref.time(),
+                        "current_task": "idle",
+                        }
 
         return statuses
 
@@ -12306,16 +12306,16 @@ sam@terminal:~$
             selected_ids.add("meta_agent")
 
         priority = [
-            "researcher",
-            "code_writer",
-            "financial_analyst",
-            "money_maker",
-            "survival_agent",
-            "creative_writer",
-            "data_analyst",
-            "ethics_advisor",
-            "project_manager",
-        ]
+                "researcher",
+                "code_writer",
+                "financial_analyst",
+                "money_maker",
+                "survival_agent",
+                "creative_writer",
+                "data_analyst",
+                "ethics_advisor",
+                "project_manager",
+                ]
         if priority:
             offset = int(sam_time_ref.time()) % len(priority)
             rotated = priority[offset:] + priority[:offset]
@@ -12338,42 +12338,42 @@ sam@terminal:~$
 
         if len(selected) < max_agents:
             fallback_agents = [
-                {
-                    "id": "researcher_local",
-                    "name": "Researcher",
-                    "type": "research",
-                    "specialty": "research",
-                    "capabilities": ["local_research", "synthesis"],
-                },
-                {
-                    "id": "code_writer_local",
-                    "name": "CodeWriter",
-                    "type": "code",
-                    "specialty": "code",
-                    "capabilities": ["local_code", "analysis"],
-                },
-                {
-                    "id": "financial_analyst_local",
-                    "name": "Financial Analyst",
-                    "type": "finance",
-                    "specialty": "finance",
-                    "capabilities": ["local_finance", "risk_assessment"],
-                },
-                {
-                    "id": "survival_agent_local",
-                    "name": "Survival Agent",
-                    "type": "survival",
-                    "specialty": "survival",
-                    "capabilities": ["risk_scan", "contingency"],
-                },
-                {
-                    "id": "meta_agent_local",
-                    "name": "MetaAgent",
-                    "type": "meta",
-                    "specialty": "meta",
-                    "capabilities": ["self_healing", "diagnostics"],
-                },
-            ]
+                    {
+                        "id": "researcher_local",
+                        "name": "Researcher",
+                        "type": "research",
+                        "specialty": "research",
+                        "capabilities": ["local_research", "synthesis"],
+                        },
+                    {
+                        "id": "code_writer_local",
+                        "name": "CodeWriter",
+                        "type": "code",
+                        "specialty": "code",
+                        "capabilities": ["local_code", "analysis"],
+                        },
+                    {
+                        "id": "financial_analyst_local",
+                        "name": "Financial Analyst",
+                        "type": "finance",
+                        "specialty": "finance",
+                        "capabilities": ["local_finance", "risk_assessment"],
+                        },
+                    {
+                        "id": "survival_agent_local",
+                        "name": "Survival Agent",
+                        "type": "survival",
+                        "specialty": "survival",
+                        "capabilities": ["risk_scan", "contingency"],
+                        },
+                    {
+                        "id": "meta_agent_local",
+                        "name": "MetaAgent",
+                        "type": "meta",
+                        "specialty": "meta",
+                        "capabilities": ["self_healing", "diagnostics"],
+                        },
+                    ]
             for cfg in fallback_agents:
                 if len(selected) >= max_agents:
                     break
@@ -12392,8 +12392,8 @@ sam@terminal:~$
         for item in sources[:8]:
             title = (item.get("title") or item.get("source") or "source").strip()
             url = (
-                item.get("url") or item.get("link") or item.get("source_url") or ""
-            ).strip()
+                    item.get("url") or item.get("link") or item.get("source_url") or ""
+                    ).strip()
             snippet = (item.get("snippet") or item.get("content") or "").strip()
             if snippet:
                 snippet = re.sub(r"\\s+", " ", snippet)
@@ -12413,8 +12413,8 @@ sam@terminal:~$
         synthesis = " ".join(bit for bit in synthesis_bits if bit).strip()
         if not synthesis:
             synthesis = (
-                "Sources mention activity in this area, but details vary by source."
-            )
+                    "Sources mention activity in this area, but details vary by source."
+                    )
 
         source_lines = []
         for title, _, url in cleaned[:5]:
@@ -12424,17 +12424,17 @@ sam@terminal:~$
                 source_lines.append(f"- {title}")
 
         summary_lines = [
-            f"Summary for: {query}",
-            synthesis,
-            "",
-            "Key points:",
-            *key_points,
-            "",
-            "Sources:",
-            *source_lines,
-            "",
-            "Open questions: Production readiness, independent verification, and real-world adoption timelines.",
-        ]
+                f"Summary for: {query}",
+                synthesis,
+                "",
+                "Key points:",
+                *key_points,
+                "",
+                "Sources:",
+                *source_lines,
+                "",
+                "Open questions: Production readiness, independent verification, and real-world adoption timelines.",
+                ]
         return "\n".join(summary_lines)
 
     def _truncate_c_prompt(self, prompt: str) -> str:
@@ -12462,12 +12462,12 @@ sam@terminal:~$
             return func(safe_prompt), "local-c-agent"
         except Exception as exc:
             log_event(
-                "warn",
-                "c_agent_error",
-                "C agent call failed",
-                agent=func_name,
-                reason=str(exc),
-            )
+                    "warn",
+                    "c_agent_error",
+                    "C agent call failed",
+                    agent=func_name,
+                    reason=str(exc),
+                    )
             return None
 
     def _generate_local_agent_reply(self, agent_cfg, message, context):
@@ -12486,20 +12486,20 @@ sam@terminal:~$
                     return response or f"{base_prefix}: Research completed."
                 if "code" in agent_type or "code" in specialty:
                     response = self._call_c_agent(
-                        "generate_code", f"Code task: {prompt}"
-                    )
+                            "generate_code", f"Code task: {prompt}"
+                            )
                     return response or f"{base_prefix}: Code draft ready."
                 if (
-                    "finance" in agent_type
-                    or "money" in agent_type
-                    or "finance" in specialty
-                    or "money" in specialty
-                ):
+                        "finance" in agent_type
+                        or "money" in agent_type
+                        or "finance" in specialty
+                        or "money" in specialty
+                        ):
                     response = self._call_c_agent(
-                        "analyze_market", f"Finance task: {prompt}"
-                    )
+                            "analyze_market", f"Finance task: {prompt}"
+                            )
                     return response or f"{base_prefix}: Finance analysis ready."
-                    # Deterministic fallback if specialized agents unavailable
+                # Deterministic fallback if specialized agents unavailable
             if "meta" in agent_type:
                 return f"{base_prefix}: Logging issue context and preparing diagnostics for: {message}"
             if "survival" in agent_type:
@@ -12576,9 +12576,9 @@ sam@terminal:~$
         for line in text.splitlines():
             # Updated regex to handle [Name (Provenance) {Confidence}]
             match = re.match(
-                r"^\\[(.+?)(?:\\s*\\((.+?)\\))?(?:\\s*\\{(.+?)\\})?\\]\\s*(.*)$",
-                line.strip(),
-            )
+                    r"^\\[(.+?)(?:\\s*\\((.+?)\\))?(?:\\s*\\{(.+?)\\})?\\]\\s*(.*)$",
+                    line.strip(),
+                    )
             if match:
                 if current:
                     messages.append(current)
@@ -12596,15 +12596,15 @@ sam@terminal:~$
                 except ValueError:
                     pass
 
-                    # Generate a consistent agent_id for the frontend
+                # Generate a consistent agent_id for the frontend
                 agent_id = agent_name.lower().replace(" ", "-")
 
                 current = {
-                    "agent": agent_name,
-                    "agent_id": agent_id,
-                    "content": content,
-                    "confidence": confidence,
-                }
+                        "agent": agent_name,
+                        "agent_id": agent_id,
+                        "content": content,
+                        "confidence": confidence,
+                        }
                 if provenance:
                     current["provenance"] = provenance
             else:
@@ -12617,8 +12617,8 @@ sam@terminal:~$
             messages.append(current)
         if not messages:
             messages = [
-                {"agent": "SAM", "content": text.strip(), "provenance": "unknown"}
-            ]  # Default provenance for generic SAM
+                    {"agent": "SAM", "content": text.strip(), "provenance": "unknown"}
+                    ]  # Default provenance for generic SAM
         return messages
 
     def _build_learning_context(self, limit: int = 3) -> str:
@@ -12635,8 +12635,8 @@ sam@terminal:~$
             lines.append(f"- {user}: {prompt}\n  SAM: {response}")
         meta_summary = ""
         if getattr(self, "meta_agent", None) and hasattr(
-            self.meta_agent, "get_distilled_summary"
-        ):
+                self.meta_agent, "get_distilled_summary"
+                ):
             try:
                 meta_summary = self.meta_agent.get_distilled_summary()
             except Exception:
@@ -12646,37 +12646,37 @@ sam@terminal:~$
         return "\n".join(lines)
 
     def _record_chat_learning(
-        self, prompt: str, response: str, provenance: str, context: Dict[str, Any]
-    ):
+            self, prompt: str, response: str, provenance: str, context: Dict[str, Any]
+            ):
         if not response or str(response).strip().startswith("❌"):
             return
 
-            # Track token usage
+        # Track token usage
         prompt_tokens = self._estimate_tokens(prompt)
         response_tokens = self._estimate_tokens(response)
         self.system_metrics["total_tokens_used"] = (
-            self.system_metrics.get("total_tokens_used", 0)
-            + prompt_tokens
-            + response_tokens
-        )
+                self.system_metrics.get("total_tokens_used", 0)
+                + prompt_tokens
+                + response_tokens
+                )
 
         try:
             self._update_system_metrics()
         except Exception:
             pass
         user = {
-            "id": (context or {}).get("user_id", "dashboard"),
-            "name": (context or {}).get("user_name", "User"),
-        }
+                "id": (context or {}).get("user_id", "dashboard"),
+                "name": (context or {}).get("user_name", "User"),
+                }
         if getattr(self, "learning_memory_enabled", False):
             self.learning_memory.append(
-                {
-                    "prompt": prompt,
-                    "response": response,
-                    "user": user.get("name") or user.get("id"),
-                    "ts": sam_time_ref.time(),
-                }
-            )
+                    {
+                        "prompt": prompt,
+                        "response": response,
+                        "user": user.get("name") or user.get("id"),
+                        "ts": sam_time_ref.time(),
+                        }
+                    )
         if getattr(self, "distill_dashboard_enabled", False):
             self._ensure_distill_writer()
             if self.distill_writer:
@@ -12685,18 +12685,18 @@ sam@terminal:~$
         if getattr(self, "meta_agent", None):
             try:
                 self.meta_agent.ingest_learning_event(
-                    prompt, response, user.get("name")
-                )
+                        prompt, response, user.get("name")
+                        )
             except Exception:
                 pass
         log_event(
-            "info",
-            "chat_learning",
-            "Recorded chat learning event",
-            user=user.get("name"),
-            prompt=prompt[:120],
-            provenance=provenance,
-        )
+                "info",
+                "chat_learning",
+                "Recorded chat learning event",
+                user=user.get("name"),
+                prompt=prompt[:120],
+                provenance=provenance,
+                )
 
     def _process_chatbot_message(self, message, context):
         """Process slash commands with comprehensive functionality"""
@@ -12711,13 +12711,13 @@ sam@terminal:~$
                 if getattr(self, "strict_local_only", False):
                     if self.chat_multi_agent:
                         return self._multi_agent_local_response(
-                            message, history, max_agents=self.chat_agents_max
-                        )
+                                message, history, max_agents=self.chat_agents_max
+                                )
                     return self._single_agent_local_response(message, history)
                 if self.chat_multi_agent:
                     return self._multi_agent_local_response(
-                        message, history, max_agents=self.chat_agents_max
-                    )
+                            message, history, max_agents=self.chat_agents_max
+                            )
                 provider = self._get_chat_provider()
                 if provider:
                     prompt_lines = []
@@ -12737,29 +12737,29 @@ sam@terminal:~$
                     return response.strip(), provenance
                 if self.teacher_pool_enabled and self.teacher_pool:
                     room = {
-                        "id": "chatbot",
-                        "name": "Dashboard Chat",
-                        "agent_type": "chatbot",
-                    }
+                            "id": "chatbot",
+                            "name": "Dashboard Chat",
+                            "agent_type": "chatbot",
+                            }
                     user = {
-                        "id": (context or {}).get("user_id", "dashboard"),
-                        "name": (context or {}).get("user_name", "User"),
-                    }
+                            "id": (context or {}).get("user_id", "dashboard"),
+                            "name": (context or {}).get("user_name", "User"),
+                            }
                     message_data = {
-                        "id": f"chatbot:{int(sam_time_ref.time() * 1000)}",
-                        "timestamp": sam_time_ref.time(),
-                        "user_id": user["id"],
-                        "user_name": user["name"],
-                    }
+                            "id": f"chatbot:{int(sam_time_ref.time() * 1000)}",
+                            "timestamp": sam_time_ref.time(),
+                            "user_id": user["id"],
+                            "user_name": user["name"],
+                            }
                     res, prov = self._generate_teacher_response(
-                        room, user, message, history, message_data
-                    )
+                            room, user, message, history, message_data
+                            )
                     return res, prov
                 if self.specialized_agents:
                     if self.chat_multi_agent:
                         res = self._multi_agent_local_response(
-                            message, history, max_agents=self.chat_agents_max
-                        )
+                                message, history, max_agents=self.chat_agents_max
+                                )
                         return res, "local-multi-agent"
                     res = self._single_agent_local_response(message, history)
                     return res, "local-single-agent"
@@ -12850,19 +12850,19 @@ sam@terminal:~$
 
             status_msg += f"\n**Total Available Agents:** {len(self.agent_configs)}\n"
             available_count = sum(
-                1
-                for agent in self.agent_configs.values()
-                if agent["status"] == "available"
-            )
+                    1
+                    for agent in self.agent_configs.values()
+                    if agent["status"] == "available"
+                    )
             status_msg += f"**Currently Available:** {available_count}\n"
 
             # Add system metrics
             status_msg += (
-                f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
-            )
+                    f"\n**System Health:** {self.system_metrics['system_health'].title()}\n"
+                    )
             status_msg += (
-                f"**Learning Events:** {self.system_metrics['learning_events']}\n"
-            )
+                    f"**Learning Events:** {self.system_metrics['learning_events']}\n"
+                    )
             status_msg += f"**Survival Score:** {getattr(self.survival_agent, 'survival_score', 1.0):.2f}\n"
 
             return status_msg
@@ -12872,22 +12872,22 @@ sam@terminal:~$
 
             # Group agents by type
             sam_agents = [
-                a
-                for a in self.agent_configs.values()
-                if a["type"] == "SAM Neural Network"
-            ]
+                    a
+                    for a in self.agent_configs.values()
+                    if a["type"] == "SAM Neural Network"
+                    ]
             llm_agents = [a for a in self.agent_configs.values() if a["type"] == "LLM"]
             sam_core_agents = [
-                a for a in self.agent_configs.values() if a["type"] == "SAM Agent"
-            ]
+                    a for a in self.agent_configs.values() if a["type"] == "SAM Agent"
+                    ]
 
             if sam_agents:
                 agents_msg += "**🧠 SAM Neural Networks:**\n"
                 for agent in sam_agents:
                     status = "✅" if agent["status"] == "available" else "⚠️"
                     connected = (
-                        " (connected)" if agent["id"] in self.connected_agents else ""
-                    )
+                            " (connected)" if agent["id"] in self.connected_agents else ""
+                            )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
                 agents_msg += "\n"
 
@@ -12896,8 +12896,8 @@ sam@terminal:~$
                 for agent in llm_agents:
                     status = "✅" if agent["status"] == "available" else "⚠️"
                     connected = (
-                        " (connected)" if agent["id"] in self.connected_agents else ""
-                    )
+                            " (connected)" if agent["id"] in self.connected_agents else ""
+                            )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
                 agents_msg += "\n"
 
@@ -12906,8 +12906,8 @@ sam@terminal:~$
                 for agent in sam_core_agents:
                     status = "✅" if agent["status"] == "available" else "⚠️"
                     connected = (
-                        " (connected)" if agent["id"] in self.connected_agents else ""
-                    )
+                            " (connected)" if agent["id"] in self.connected_agents else ""
+                            )
                     agents_msg += f"• {agent['name']} - {agent['specialty']} {status}{connected}\n"
 
             return agents_msg
@@ -12918,21 +12918,21 @@ sam@terminal:~$
                 agent_config = self.agent_configs[agent_id]
                 if agent_config["status"] == "available":
                     self.connected_agents[agent_id] = {
-                        "config": agent_config,
-                        "connected_at": sam_time_ref.time(),
-                        "message_count": 0,
-                        "muted": False,
-                    }
+                            "config": agent_config,
+                            "connected_at": sam_time_ref.time(),
+                            "message_count": 0,
+                            "muted": False,
+                            }
                     return f"✅ **{agent_config['name']} connected!**\n\nWelcome {agent_config['name']}! A {agent_config['type']} agent specialized in {agent_config['specialty']} with personality: {agent_config['personality']}."
                 else:
                     return f"❌ Agent '{agent_id}' is not available (status: {agent_config['status']})"
             else:
                 available_agents = [
-                    aid
-                    for aid, acfg in self.agent_configs.items()
-                    if acfg["status"] == "available"
-                    and aid not in self.connected_agents
-                ]
+                        aid
+                        for aid, acfg in self.agent_configs.items()
+                        if acfg["status"] == "available"
+                        and aid not in self.connected_agents
+                        ]
                 return f"❌ Agent '{agent_id}' not found or already connected.\n\n**Available agents:** {', '.join(available_agents[:10])}"
 
         elif cmd == "/disconnect" and len(parts) > 1:
@@ -12957,27 +12957,27 @@ sam@terminal:~$
 
                 # Create cloned agent configuration
                 cloned_agent = {
-                    "id": clone_id,
-                    "name": clone_name,
-                    "type": base_agent["type"],
-                    "provider": base_agent["provider"],
-                    "specialty": base_agent["specialty"],
-                    "personality": base_agent["personality"],
-                    "capabilities": base_agent["capabilities"].copy(),
-                    "status": "available",
-                    "connection_type": "cloned",
-                    "model_name": base_agent.get("model_name"),
-                    "cloned_from": base_agent_id,
-                }
+                        "id": clone_id,
+                        "name": clone_name,
+                        "type": base_agent["type"],
+                        "provider": base_agent["provider"],
+                        "specialty": base_agent["specialty"],
+                        "personality": base_agent["personality"],
+                        "capabilities": base_agent["capabilities"].copy(),
+                        "status": "available",
+                        "connection_type": "cloned",
+                        "model_name": base_agent.get("model_name"),
+                        "cloned_from": base_agent_id,
+                        }
 
                 # Add to agent configs and connect it
                 self.agent_configs[clone_id] = cloned_agent
                 self.connected_agents[clone_id] = {
-                    "config": cloned_agent,
-                    "connected_at": sam_time_ref.time(),
-                    "message_count": 0,
-                    "muted": False,
-                }
+                        "config": cloned_agent,
+                        "connected_at": sam_time_ref.time(),
+                        "message_count": 0,
+                        "muted": False,
+                        }
 
                 return f"🧬 **{clone_name} cloned from {base_agent['name']}!**\n\nWelcome to the conversation! I am a clone with the same capabilities and personality as my parent agent."
             else:
@@ -12987,10 +12987,10 @@ sam@terminal:~$
             agent_type = parts[1]
             custom_name = parts[2]
             personality = (
-                " ".join(parts[3:])
-                if len(parts) > 3
-                else "helpful, intelligent, conversational"
-            )
+                    " ".join(parts[3:])
+                    if len(parts) > 3
+                    else "helpful, intelligent, conversational"
+                    )
 
             # Generate unique ID
             spawn_id = f"spawn_{agent_type}_{int(sam_time_ref.time())}"
@@ -12999,11 +12999,11 @@ sam@terminal:~$
             if agent_type.lower() in ["sam", "neural"]:
                 provider = "local"
                 capabilities = [
-                    "self_rag",
-                    "web_access",
-                    "actor_critic",
-                    "knowledge_base",
-                ]
+                        "self_rag",
+                        "web_access",
+                        "actor_critic",
+                        "knowledge_base",
+                        ]
                 specialty = "Neural Network Processing"
                 model_name = None
             elif agent_type.lower() in ["llm", "language"]:
@@ -13014,10 +13014,10 @@ sam@terminal:~$
             elif agent_type.lower() in ["technical", "coder"]:
                 provider = "ollama" if self.deepseek_available else "huggingface"
                 capabilities = [
-                    "llm_reasoning",
-                    "code_generation",
-                    "technical_analysis",
-                ]
+                        "llm_reasoning",
+                        "code_generation",
+                        "technical_analysis",
+                        ]
                 specialty = "Technical Analysis & Coding"
                 model_name = "deepseek-r1" if self.deepseek_available else None
             else:
@@ -13028,26 +13028,26 @@ sam@terminal:~$
 
                 # Create spawned agent
             spawned_agent = {
-                "id": spawn_id,
-                "name": custom_name,
-                "type": agent_type.title(),
-                "provider": provider,
-                "specialty": specialty,
-                "personality": personality,
-                "capabilities": capabilities,
-                "status": "available",
-                "connection_type": "spawned",
-                "model_name": model_name,
-            }
+                    "id": spawn_id,
+                    "name": custom_name,
+                    "type": agent_type.title(),
+                    "provider": provider,
+                    "specialty": specialty,
+                    "personality": personality,
+                    "capabilities": capabilities,
+                    "status": "available",
+                    "connection_type": "spawned",
+                    "model_name": model_name,
+                    }
 
             # Add to agent configs and connect it
             self.agent_configs[spawn_id] = spawned_agent
             self.connected_agents[spawn_id] = {
-                "config": spawned_agent,
-                "connected_at": sam_time_ref.time(),
-                "message_count": 0,
-                "muted": False,
-            }
+                    "config": spawned_agent,
+                    "connected_at": sam_time_ref.time(),
+                    "message_count": 0,
+                    "muted": False,
+                    }
 
             return f"🎭 **{custom_name} spawned as {agent_type} agent!**\n\nHello! I am a freshly spawned {agent_type} agent with personality: {personality}. I specialize in {specialty}."
 
@@ -13070,25 +13070,25 @@ sam@terminal:~$
             # This would clear conversation history in a full implementation
             return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
-            # Research, code, and finance commands (existing)
-        elif cmd == "/research":
-            query = " ".join(args) if args else "current AI developments"
+        # Research, code, and finance commands (existing)
+    elif cmd == "/research":
+        query = " ".join(args) if args else "current AI developments"
             try:
                 sources = []
                 source_lines = []
                 if getattr(self, "web_search_enabled", False):
                     try:
                         results_blob = search_web_with_sam(
-                            query, save_to_drive=False, max_results=6
-                        )
+                                query, save_to_drive=False, max_results=6
+                                )
                         sources = results_blob.get("results", []) or []
                     except Exception as exc:
                         log_event(
-                            "warn",
-                            "web_search_error",
-                            "Web search failed",
-                            reason=str(exc),
-                        )
+                                "warn",
+                                "web_search_error",
+                                "Web search failed",
+                                reason=str(exc),
+                                )
                         sources = []
 
                 for item in sources[:6]:
@@ -13103,14 +13103,14 @@ sam@terminal:~$
                 summary = None
                 if sources:
                     synthesis_prompt = (
-                        "You are a research assistant. Synthesize the key takeaways and implications.\n"
-                        f"Topic: {query}\n"
-                        "Provide:\n"
-                        "- Key points (3-5 bullets)\n"
-                        "- Implications / impact\n"
-                        "- Open questions or unknowns\n\n"
-                        "Sources:\n" + "\n".join(source_lines)
-                    )
+                            "You are a research assistant. Synthesize the key takeaways and implications.\n"
+                            f"Topic: {query}\n"
+                            "Provide:\n"
+                            "- Key points (3-5 bullets)\n"
+                            "- Implications / impact\n"
+                            "- Open questions or unknowns\n\n"
+                            "Sources:\n" + "\n".join(source_lines)
+                            )
                     provider = self._get_chat_provider()
                     if provider:
                         summary, _, _ = provider.generate(synthesis_prompt)
@@ -13143,8 +13143,8 @@ sam@terminal:~$
                 def run_code_generation():
                     try:
                         result[0] = self._call_c_agent(
-                            "generate_code", f"Code task: {task}"
-                        )
+                                "generate_code", f"Code task: {task}"
+                                )
                     except Exception as e:
                         error[0] = str(e)
 
@@ -13175,8 +13175,8 @@ sam@terminal:~$
                 def run_market_analysis():
                     try:
                         result[0] = self._call_c_agent(
-                            "analyze_market", f"Financial analysis: {query}"
-                        )
+                                "analyze_market", f"Financial analysis: {query}"
+                                )
                     except Exception as e:
                         error[0] = str(e)
 
@@ -13195,7 +13195,7 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Financial analysis failed: {str(e)}"
 
-                # Code modification commands
+            # Code modification commands
         elif cmd == "/websearch" and len(args) > 0:
             query = " ".join(args)
             try:
@@ -13209,19 +13209,19 @@ sam@terminal:~$
                     # Simulate immediate information gain by slightly boosting coherence proxy
                     # In a real system, this would be derived from the next inference's confidence
                     self.system_metrics["coherence_score"] = min(
-                        1.0, before_coherence + 0.05
-                    )
+                            1.0, before_coherence + 0.05
+                            )
                     after_coherence = self.system_metrics.get("coherence_score", 0.0)
 
                     evi_reward = max(0.0, after_coherence - before_coherence)
                     if evi_reward > 0:
                         log_event(
-                            "info",
-                            "evi_reward",
-                            "Research produced information value",
-                            reward=evi_reward,
-                            query=query[:50],
-                        )
+                                "info",
+                                "evi_reward",
+                                "Research produced information value",
+                                reward=evi_reward,
+                                query=query[:50],
+                                )
 
                     return f"🔍 **SAM Web Search Results for: {query}**\n\n{json.dumps(search_result, indent=2)[:1000]}..."
                 else:
@@ -13233,20 +13233,20 @@ sam@terminal:~$
             if not sam_code_modifier_available:
                 return "❌ Code modification system not available"
 
-                # Parse arguments: file old_code new_code [description]
+            # Parse arguments: file old_code new_code [description]
             filepath = args[0]
             old_code = args[1]
             new_code = " ".join(args[2:]) if len(args) > 3 else args[2]
             description = (
-                " ".join(args[3:])
-                if len(args) > 3
-                else "SAM autonomous code modification"
-            )
+                    " ".join(args[3:])
+                    if len(args) > 3
+                    else "SAM autonomous code modification"
+                    )
 
             # --- TBQG Quorum Vote (LATEST theory integration) ---
             approved, decision = self._governance_quorum_vote(
-                "code_change", {"patch": new_code, "file": filepath}
-            )
+                    "code_change", {"patch": new_code, "file": filepath}
+                    )
             if not approved:
                 return f"❌ **Code Modification Rejected by Quorum (TBQG)**\n\nQuorum: {decision['quorum']}\nReasoning: {json.dumps(decision['votes'], indent=2)}"
 
@@ -13297,8 +13297,8 @@ sam@terminal:~$
                     return "📋 **Code Modification History**\n\nNo modifications recorded yet."
 
                 response = (
-                    f"📋 **Code Modification History** ({len(history)} changes)\n\n"
-                )
+                        f"📋 **Code Modification History** ({len(history)} changes)\n\n"
+                        )
                 for i, entry in enumerate(history[:10], 1):  # Show last 10
                     response += f"{i}. **{entry['file']}**\n"
                     response += f"   📅 {entry['timestamp'][:19]}\n"
@@ -13323,7 +13323,7 @@ sam@terminal:~$
                 if not backup_dir.exists():
                     return "❌ Backup directory not found"
 
-                    # Look for the backup file
+                # Look for the backup file
                 backup_path = None
                 for file in backup_dir.glob("*"):
                     if backup_file in file.name:
@@ -13342,7 +13342,7 @@ sam@terminal:~$
             except Exception as e:
                 return f"❌ Rollback error: {str(e)}"
 
-                # Gmail integration commands
+            # Gmail integration commands
         elif cmd == "/send-email" and len(args) >= 2:
             if not sam_gmail_available:
                 return "❌ Gmail integration not available"
@@ -13413,12 +13413,12 @@ sam@terminal:~$
 
             return status_info
 
-            # Revenue operations commands
-        elif cmd == "/revenue":
-            if not self.revenue_ops:
-                return "❌ Revenue ops not available"
-            if not args:
-                return (
+        # Revenue operations commands
+    elif cmd == "/revenue":
+        if not self.revenue_ops:
+            return "❌ Revenue ops not available"
+        if not args:
+            return (
                     "💰 **Revenue Ops Commands**\n\n"
                     "• `/revenue queue` - List pending actions\n"
                     "• `/revenue approve <action_id>` - Approve + execute\n"
@@ -13427,7 +13427,7 @@ sam@terminal:~$
                     "• `/revenue leads` - Show CRM leads\n"
                     "• `/revenue invoices` - Show invoices\n"
                     "• `/revenue sequences` - Show email sequences\n"
-                )
+                    )
             sub = args[0]
             if sub == "queue":
                 actions = self.revenue_ops.list_actions(status="PENDING")
@@ -13436,21 +13436,21 @@ sam@terminal:~$
                 lines = ["📋 **Pending Revenue Actions**"]
                 for action in actions[:10]:
                     lines.append(
-                        f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}"
-                    )
+                            f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}"
+                            )
                 return "\n".join(lines)
             if sub == "approve" and len(args) >= 2:
                 action_id = args[1]
                 result = self.revenue_ops.approve_action(
-                    action_id, approver="operator", auto_execute=True
-                )
+                        action_id, approver="operator", auto_execute=True
+                        )
                 return f"✅ Approved: {action_id}\nStatus: {result.get('status')}"
             if sub == "reject" and len(args) >= 2:
                 action_id = args[1]
                 reason = " ".join(args[2:]) if len(args) > 2 else None
                 result = self.revenue_ops.reject_action(
-                    action_id, approver="operator", reason=reason
-                )
+                        action_id, approver="operator", reason=reason
+                        )
                 return f"🚫 Rejected: {action_id}\nStatus: {result.get('status')}"
             if sub == "submit" and len(args) >= 3:
                 action_type = args[1]
@@ -13460,11 +13460,11 @@ sam@terminal:~$
                 except Exception:
                     return "❌ Payload must be valid JSON."
                 action = self.revenue_ops.submit_action(
-                    action_type=action_type,
-                    payload=payload,
-                    requested_by="operator",
-                    requires_approval=True,
-                )
+                        action_type=action_type,
+                        payload=payload,
+                        requested_by="operator",
+                        requires_approval=True,
+                        )
                 return f"📥 Submitted action {action.action_id} ({action.action_type})"
             if sub == "leads":
                 snapshot = self.revenue_ops.get_crm_snapshot()
@@ -13477,19 +13477,19 @@ sam@terminal:~$
                 return f"📨 Sequences: {len(snapshot.get('sequences', []))} | Runs: {len(snapshot.get('runs', []))}"
             return "❌ Unknown revenue subcommand."
 
-            # GitHub integration commands
-        elif cmd == "/save-to-github":
-            if not sam_github_available:
-                return "❌ GitHub integration not available"
+        # GitHub integration commands
+    elif cmd == "/save-to-github":
+        if not sam_github_available:
+            return "❌ GitHub integration not available"
 
-            commit_message = (
+        commit_message = (
                 " ".join(args)
                 if args
                 else f"SAM System Self-Save - {sam_datetime_ref.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            )
+                )
 
-            try:
-                result = self._save_sam_to_github(commit_message)
+        try:
+            result = self._save_sam_to_github(commit_message)
                 if result["success"]:
                     return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
                 else:
@@ -13504,11 +13504,11 @@ sam@terminal:~$
             status_info = "🐙 **SAM GitHub Integration Status**\n\n"
             try:
                 remotes_proc = subprocess.run(
-                    ["git", "-C", str(self.project_root), "remote", "-v"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
+                        ["git", "-C", str(self.project_root), "remote", "-v"],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        )
                 if remotes_proc.returncode == 0:
                     remotes_map = {}
                     for line in remotes_proc.stdout.splitlines():
@@ -13551,8 +13551,8 @@ sam@terminal:~$
                         for i, commit in enumerate(commits, 1):
                             response += f"{i}. **{commit['sha']}** - {commit['message'][:50]}...\n"
                             response += (
-                                f"   👤 {commit['author']} • {commit['date'][:19]}\n\n"
-                            )
+                                    f"   👤 {commit['author']} • {commit['date'][:19]}\n\n"
+                                    )
                         return response
                     else:
                         return "📋 **GitHub Commits**\n\nNo recent commits found or access denied."
@@ -13565,8 +13565,8 @@ sam@terminal:~$
             # Fallback to normal chat if a user accidentally types a leading slash
             fallback = _chat_fallback()
             if fallback and not fallback.startswith(
-                "❌ Chat capability not available."
-            ):
+                    "❌ Chat capability not available."
+                    ):
                 return fallback
             return f"❌ **Unknown command:** `{cmd}`\n\nType `/help` to see all available commands."
 
@@ -13591,10 +13591,10 @@ sam@terminal:~$
         py_state = _state(py_status)
         web_state = _state(web_status)
         survival = (
-            getattr(self.survival_agent, "survival_score", 0.0)
-            if self.survival_agent
-            else 0.0
-        )
+                getattr(self.survival_agent, "survival_score", 0.0)
+                if self.survival_agent
+                else 0.0
+                )
         active_agents = self.system_metrics.get("active_agents", 0)
 
         javascript_code = """
@@ -14078,7 +14078,7 @@ sam@terminal:~$
                         button.disabled = false;
                     }
                 }
-                
+
                 function addDashboardLogEntry(raw) {
                     const panel = document.getElementById('dashboard-log-panel');
                     if (!panel) return;
@@ -14104,7 +14104,7 @@ sam@terminal:~$
                     entry.appendChild(meta);
                     entry.appendChild(text);
                     panel.appendChild(entry);
-                    
+
                     // Maintain a reasonable DOM size
                     const entries = panel.querySelectorAll('.log-entry');
                     if (entries.length > 100) { // Reduced from 200 to 100
@@ -14736,7 +14736,7 @@ sam@terminal:~$
                     const container = document.getElementById('file-list');
                     if (!container) return;
                     container.innerHTML = '';
-                    
+
                     if (currentFilePath !== '.') {
                         const parentPath = currentFilePath.split('/').slice(0, -1).join('/') || '.';
                         const div = document.createElement('div');
@@ -14777,7 +14777,7 @@ sam@terminal:~$
                         const header = document.getElementById('preview-header');
                         const content = document.getElementById('preview-content');
                         if (header) header.textContent = data.path;
-                        
+
                         if (content) {
                             // UI-side truncation for safety (100KB)
                             if (data.content && data.content.length > 102400) {
@@ -16297,8 +16297,8 @@ sam@terminal:~$
 
                 for line in content.splitlines():
                     match = re.search(
-                        r"- \*\*(.+?)\*\* \(id=([^,]+), priority=([^,]+)", line
-                    )
+                            r"- \*\*(.+?)\*\* \(id=([^,]+), priority=([^,]+)", line
+                            )
                     if match:
                         description = match.group(1).strip()
                         goal_id = match.group(2).strip()
@@ -16306,21 +16306,21 @@ sam@terminal:~$
 
                         # Map priority strings
                         p_map = {
-                            "MAX": "critical",
-                            "high": "medium",
-                            "normal": "low",
-                            "none": "N/A",
-                        }
+                                "MAX": "critical",
+                                "high": "medium",
+                                "normal": "low",
+                                "none": "N/A",
+                                }
                         norm_priority = p_map.get(priority, "medium")
 
                         self.goal_manager.add_goal(
-                            description, priority=norm_priority, goal_id=goal_id
-                        )
+                                description, priority=norm_priority, goal_id=goal_id
+                                )
                         print(f"  ✅ Loaded base goal: {description} (ID: {goal_id})")
             else:
                 print(
-                    "⚠️ BASE_GOALS_NO_WRITE_ACCESS.md not found, skipping base goal load."
-                )
+                        "⚠️ BASE_GOALS_NO_WRITE_ACCESS.md not found, skipping base goal load."
+                        )
 
         except Exception as e:
             print(f"⚠️ Failed to load base goals: {e}")
@@ -16337,15 +16337,15 @@ sam@terminal:~$
                         pending = self.revenue_ops.list_actions(status="PENDING")
                         if len(pending) < self.revenue_autoplanner_max_pending:
                             actions = self.revenue_ops.autoplan(
-                                max_actions=self.revenue_autoplanner_max_pending,
-                                default_sequence_id=self.revenue_autoplanner_sequence_id,
-                                requested_by="revenue_autoplanner",
-                            )
+                                    max_actions=self.revenue_autoplanner_max_pending,
+                                    default_sequence_id=self.revenue_autoplanner_sequence_id,
+                                    requested_by="revenue_autoplanner",
+                                    )
                             if actions:
                                 print(
-                                    f"💰 Revenue auto-planner queued {len(actions)} action(s)",
-                                    flush=True,
-                                )
+                                        f"💰 Revenue auto-planner queued {len(actions)} action(s)",
+                                        flush=True,
+                                        )
                 except InterruptedError:
                     break
                 except Exception as exc:
@@ -16353,8 +16353,8 @@ sam@terminal:~$
                 sam_time_ref.sleep(self.revenue_autoplanner_interval_s)
 
         self.revenue_autoplanner_thread = threading.Thread(
-            target=auto_plan_loop, daemon=True
-        )
+                target=auto_plan_loop, daemon=True
+                )
         self.revenue_autoplanner_thread.start()
         print("✅ Revenue auto-planner active (approval required)", flush=True)
 
@@ -16370,9 +16370,9 @@ sam@terminal:~$
                         result = self.revenue_ops.process_sequence_runs()
                         if result.get("sent"):
                             print(
-                                f"📨 Revenue sequences sent: {result['sent']}",
-                                flush=True,
-                            )
+                                    f"📨 Revenue sequences sent: {result['sent']}",
+                                    flush=True,
+                                    )
                 except InterruptedError:
                     break
                 except Exception as exc:
@@ -16390,18 +16390,18 @@ sam@terminal:~$
                 summary = self._collect_finance_summary()
                 return json.dumps(summary, indent=2)
 
-                # Context-aware mapping for other request types
+            # Context-aware mapping for other request types
             type_prompts = {
-                "teacher_lesson": "Generate a short, informative educational lesson on: ",
-                "bug_analysis": "Analyze this code for potential bugs and security vulnerabilities: ",
-                "bug_fix": "Provide a clean, efficient fix for the following bug: ",
-                "code_generation": "Generate efficient, well-documented code based on this spec: ",
-                "system_analysis": "Perform a high-level system analysis focusing on: ",
-            }
+                    "teacher_lesson": "Generate a short, informative educational lesson on: ",
+                    "bug_analysis": "Analyze this code for potential bugs and security vulnerabilities: ",
+                    "bug_fix": "Provide a clean, efficient fix for the following bug: ",
+                    "code_generation": "Generate efficient, well-documented code based on this spec: ",
+                    "system_analysis": "Perform a high-level system analysis focusing on: ",
+                    }
 
             base_prompt = type_prompts.get(
-                request_type, f"Agent request ({request_type}): "
-            )
+                    request_type, f"Agent request ({request_type}): "
+                    )
             full_prompt = base_prompt + (query or "")
 
             # Use real LLM logic for the response
@@ -16415,7 +16415,7 @@ sam@terminal:~$
         if not self.agent_configs:
             return
 
-            # Identity clusters based on name, type, and specialty
+        # Identity clusters based on name, type, and specialty
         clusters = {}
         for agent_id, cfg in self.agent_configs.items():
             key = (cfg.get("name"), cfg.get("type"), cfg.get("specialty"))
@@ -16434,15 +16434,15 @@ sam@terminal:~$
                     if extra_id in self.agent_configs:
                         del self.agent_configs[extra_id]
                 log_event(
-                    "info",
-                    "specialist_consolidation",
-                    f"Merged {len(ids)} agents into {primary_id}",
-                    name=key[0],
-                )
+                        "info",
+                        "specialist_consolidation",
+                        f"Merged {len(ids)} agents into {primary_id}",
+                        name=key[0],
+                        )
 
     def _governance_quorum_vote(
-        self, proposal_type: str, details: Dict[str, Any]
-    ) -> Tuple[bool, Dict[str, Any]]:
+            self, proposal_type: str, details: Dict[str, Any]
+            ) -> Tuple[bool, Dict[str, Any]]:
         """
         Tri-Branch Quorum Gate (TBQG) logic (SAM-D Theory).
         Requires 2-of-3 majority from SAM, SAV, and LOVE.
@@ -16467,13 +16467,13 @@ sam@terminal:~$
         sav_evidence = "security_static_analysis_pass"
 
         dangerous_keywords = [
-            "subprocess",
-            "os.system",
-            "os.popen",
-            "eval(",
-            "exec(",
-            "rm -rf",
-        ]
+                "subprocess",
+                "os.system",
+                "os.popen",
+                "eval(",
+                "exec(",
+                "rm -rf",
+                ]
         patch_content = str(details.get("patch", "")).lower()
         if proposal_type == "code_change":
             if any(k in patch_content for k in dangerous_keywords):
@@ -16486,28 +16486,28 @@ sam@terminal:~$
                 sav_evidence = "risk_assessment_audit"
 
         votes = {
-            "SAM": {"vote": sam_vote, "reason": sam_reason, "evidence": sam_evidence},
-            "SAV": {"vote": sav_vote, "reason": sav_reason, "evidence": sav_evidence},
-            "LOVE": love_result,
-        }
+                "SAM": {"vote": sam_vote, "reason": sam_reason, "evidence": sam_evidence},
+                "SAV": {"vote": sav_vote, "reason": sav_reason, "evidence": sav_evidence},
+                "LOVE": love_result,
+                }
 
         approve_count = sum(v["vote"] for v in votes.values())
         approved = approve_count >= 2
 
         decision_log = {
-            "approved": approved,
-            "quorum": f"{approve_count}/3",
-            "votes": votes,
-            "timestamp": sam_time_ref.time(),
-        }
+                "approved": approved,
+                "quorum": f"{approve_count}/3",
+                "votes": votes,
+                "timestamp": sam_time_ref.time(),
+                }
 
         log_event(
-            "info",
-            "governance_vote",
-            f"TBQG Decision: {'APPROVED' if approved else 'REJECTED'}",
-            proposal=proposal_type,
-            quorum=decision_log["quorum"],
-        )
+                "info",
+                "governance_vote",
+                f"TBQG Decision: {'APPROVED' if approved else 'REJECTED'}",
+                proposal=proposal_type,
+                quorum=decision_log["quorum"],
+                )
 
         return approved, decision_log
 
@@ -16515,28 +16515,28 @@ sam@terminal:~$
         revenue = self.revenue_ops.get_financial_metrics() if self.revenue_ops else {}
         banking = self.banking_ledger.get_metrics() if self.banking_ledger else {}
         return {
-            "revenue": revenue,
-            "banking": banking,
-            "timestamp": _utc_now(),
-        }
+                "revenue": revenue,
+                "banking": banking,
+                "timestamp": _utc_now(),
+                }
 
     def _log_finance_snapshot(self):
         summary = self._collect_finance_summary()
         revenue = summary.get("revenue") or {}
         banking = summary.get("banking") or {}
         log_event(
-            "info",
-            "finance_snapshot",
-            "Finance summary snapshot",
-            revenue_paid=revenue.get("total_paid"),
-            revenue_outstanding=revenue.get("total_outstanding"),
-            revenue_invoiced=revenue.get("total_invoiced"),
-            revenue_total_incoming=revenue.get("total_incoming"),  # Added
-            banking_saved=banking.get("total_balance"),
-            banking_spent=banking.get("total_spent"),
-            banking_accounts=banking.get("account_count"),
-            banking_total_balance=banking.get("total_balance"),  # Added
-        )
+                "info",
+                "finance_snapshot",
+                "Finance summary snapshot",
+                revenue_paid=revenue.get("total_paid"),
+                revenue_outstanding=revenue.get("total_outstanding"),
+                revenue_invoiced=revenue.get("total_invoiced"),
+                revenue_total_incoming=revenue.get("total_incoming"),  # Added
+                banking_saved=banking.get("total_balance"),
+                banking_spent=banking.get("total_spent"),
+                banking_accounts=banking.get("account_count"),
+                banking_total_balance=banking.get("total_balance"),  # Added
+                )
 
     def _start_monitoring_system(self):
         """Start background monitoring system with autonomous operation"""
@@ -16554,14 +16554,14 @@ sam@terminal:~$
             return
 
         monitor_thread = threading.Thread(
-            target=self._autonomous_operation_loop, daemon=True
-        )
+                target=self._autonomous_operation_loop, daemon=True
+                )
 
         monitor_thread.start()
 
         print(
-            "✅ Autonomous operation system active - SAM will generate and execute its own goals!"
-        )
+                "✅ Autonomous operation system active - SAM will generate and execute its own goals!"
+                )
 
     def _autonomous_operation_loop(self):
         """Background loop for autonomous operations (Phase 5.3)"""
@@ -16583,14 +16583,14 @@ sam@terminal:~$
                         # 1. Proprioception: Feel the system pressure
                         omega = self.system_metrics.get("regulator_omega", 0.5)
                         self.sensory_controller.process_stimulus(
-                            "proprioception", "regulator_omega", omega
-                        )
+                                "proprioception", "regulator_omega", omega
+                                )
 
                         # 2. Haptics: Feel the planner friction
                         friction = self.system_metrics.get("planner_friction", 0.1)
                         self.sensory_controller.process_stimulus(
-                            "haptics", "planner_friction", friction
-                        )
+                                "haptics", "planner_friction", friction
+                                )
 
                     print("🧵 DEBUG: Simulation update.")
                     if hasattr(self, "simulation_arena") and self.simulation_arena:
@@ -16601,8 +16601,8 @@ sam@terminal:~$
                         findings = self.code_scanner.scan_next()
                         for f in findings:
                             self._add_autonomous_goal(
-                                f["name"], f["description"], f["type"]
-                            )
+                                    f["name"], f["description"], f["type"]
+                                    )
 
                     print("🧵 DEBUG: Unsupervised metrics.")
                     self._generate_unsupervised_metrics()
@@ -16678,8 +16678,8 @@ sam@terminal:~$
                 sam_time_ref.sleep(5)
 
             sam_time_ref.sleep(
-                max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2)))
-            )
+                    max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2)))
+                    )
 
     def _start_two_phase_promotion_thread(self):
         """Start background thread to promote from meta-only boot to full system."""
@@ -16692,17 +16692,17 @@ sam@terminal:~$
             if delay:
                 sam_time_ref.sleep(delay)
             deadline = sam_time_ref.time() + max(
-                10, int(getattr(self, "two_phase_timeout_s", 180))
-            )
+                    10, int(getattr(self, "two_phase_timeout_s", 180))
+                    )
             while not is_shutting_down():
                 if self._can_promote_to_full_boot():
                     self._promote_to_full_boot()
                     return
                 if sam_time_ref.time() >= deadline:
                     print(
-                        "⚠️ Two-phase promotion timed out - staying in meta-only mode",
-                        flush=True,
-                    )
+                            "⚠️ Two-phase promotion timed out - staying in meta-only mode",
+                            flush=True,
+                            )
                     return
                 sam_time_ref.sleep(2)
 
@@ -16717,8 +16717,8 @@ sam@terminal:~$
         if not getattr(self, "meta_agent_active", False):
             return False
         if getattr(self, "require_self_mod", False) and not getattr(
-            self, "sam_code_modifier_ready", False
-        ):
+                self, "sam_code_modifier_ready", False
+                ):
             return False
         if not getattr(self, "c_core_initialized", False):
             return False
@@ -16736,16 +16736,16 @@ sam@terminal:~$
         # Restore socketio unless explicitly disabled
         disable_socketio_env = os.getenv("SAM_DISABLE_SOCKETIO", "0")
         self.disable_socketio = str(disable_socketio_env).strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
+                "1",
+                "true",
+                "yes",
+                "on",
+                )
         if (
-            not self.disable_socketio
-            and not self.socketio_available
-            and getattr(self, "app", None)
-        ):
+                not self.disable_socketio
+                and not self.socketio_available
+                and getattr(self, "app", None)
+                ):
             try:
                 from flask_socketio import SocketIO
 
@@ -16755,16 +16755,16 @@ sam@terminal:~$
                 except Exception:
                     async_mode = "threading"
                 self.socketio = SocketIO(
-                    self.app, cors_allowed_origins="*", async_mode=async_mode
-                )
+                        self.app, cors_allowed_origins="*", async_mode=async_mode
+                        )
                 self.socketio_available = True
                 self.setup_socketio_events()
                 print("✅ Two-phase promotion: SocketIO enabled", flush=True)
             except Exception as exc:
                 print(
-                    f"⚠️ Two-phase promotion: failed to enable SocketIO: {exc}",
-                    flush=True,
-                )
+                        f"⚠️ Two-phase promotion: failed to enable SocketIO: {exc}",
+                        flush=True,
+                        )
 
                 # Rebuild full agent configs + connect agents
         self.initialize_agent_configs()
@@ -16785,14 +16785,14 @@ sam@terminal:~$
         if not getattr(self, "provider_auto_switch", False):
             return
         if (
-            self.provider_mode == "primary"
-            and ram_percent >= self.provider_ram_threshold
-        ):
+                self.provider_mode == "primary"
+                and ram_percent >= self.provider_ram_threshold
+                ):
             self._switch_provider_mode("fallback")
         elif (
-            self.provider_mode == "fallback"
-            and ram_percent <= self.provider_ram_recover
-        ):
+                self.provider_mode == "fallback"
+                and ram_percent <= self.provider_ram_recover
+                ):
             self._switch_provider_mode("primary")
 
     def _switch_provider_mode(self, mode: str):
@@ -16809,22 +16809,22 @@ sam@terminal:~$
 
         self.regression_provider = new_policy
         self.teacher_specs = [
-            spec.strip() for spec in new_teacher_specs.split(",") if spec.strip()
-        ]
+                spec.strip() for spec in new_teacher_specs.split(",") if spec.strip()
+                ]
         self.provider_mode = mode
         print(
-            f"🔄 Provider mode switched to {mode}: policy={new_policy} teachers={new_teacher_specs}",
-            flush=True,
-        )
+                f"🔄 Provider mode switched to {mode}: policy={new_policy} teachers={new_teacher_specs}",
+                flush=True,
+                )
         if self.teacher_pool_enabled:
             try:
                 with self.teacher_pool_lock:
                     self._init_teacher_pool()
             except Exception as exc:
                 print(
-                    f"⚠️ Provider switch failed to re-init teacher pool: {exc}",
-                    flush=True,
-                )
+                        f"⚠️ Provider switch failed to re-init teacher pool: {exc}",
+                        flush=True,
+                        )
 
     def _generate_autonomous_goals(self):
         """Autonomously discover and generate goals based on system pressure and high-level drives (Phase 5.3)"""
@@ -16849,12 +16849,12 @@ sam@terminal:~$
 
             # Unsupervised Goal Formulation
             prompt = (
-                "Based on current system state, propose a new autonomous goal.\n"
-                f"Active Goals: {[g['description'] for g in active_goals]}\n"
-                f"System Pressures: {signals}\n"
-                f"Metrics: Capacity={self.capacity_C:.2f}, Universality={self.universality_U:.2f}, Survival={self.survival_score:.2f}\n"
-                'Return a JSON object: {"name": "...", "description": "...", "type": "...", "priority": 1-5}'
-            )
+                    "Based on current system state, propose a new autonomous goal.\n"
+                    f"Active Goals: {[g['description'] for g in active_goals]}\n"
+                    f"System Pressures: {signals}\n"
+                    f"Metrics: Capacity={self.capacity_C:.2f}, Universality={self.universality_U:.2f}, Survival={self.survival_score:.2f}\n"
+                    'Return a JSON object: {"name": "...", "description": "...", "type": "...", "priority": 1-5}'
+                    )
 
             try:
                 # Use local model to formulate goal
@@ -16864,32 +16864,32 @@ sam@terminal:~$
                 if json_str:
                     goal_data = json.loads(json_str.group(0))
                     self._add_autonomous_goal(
-                        goal_data.get("name", "Autonomous Goal"),
-                        goal_data.get("description", "Derived objective"),
-                        goal_data.get("type", "general"),
-                        priority=int(goal_data.get("priority", 3)),
-                    )
+                            goal_data.get("name", "Autonomous Goal"),
+                            goal_data.get("description", "Derived objective"),
+                            goal_data.get("type", "general"),
+                            priority=int(goal_data.get("priority", 3)),
+                            )
             except Exception as e:
                 print(f"  ⚠️ Goal discovery failed: {e}")
                 # Fallback to basic drives
                 if self.survival_score < 0.7:
                     self._add_autonomous_goal(
-                        "Survival Hardening",
-                        "Address critical survival risks",
-                        "survival",
-                        5,
-                    )
+                            "Survival Hardening",
+                            "Address critical survival risks",
+                            "survival",
+                            5,
+                            )
                 elif signals.get("rank_def", 0) > 0.5:
                     self._add_autonomous_goal(
-                        "Dimensional Expansion",
-                        "Optimize latent space for better representation",
-                        "improvement",
-                        4,
-                    )
+                            "Dimensional Expansion",
+                            "Optimize latent space for better representation",
+                            "improvement",
+                            4,
+                            )
 
             print(
-                f"🎯 Goal discovery cycle complete. Pending subtasks: {len(self.goal_manager.get_pending_tasks())}"
-            )
+                    f"🎯 Goal discovery cycle complete. Pending subtasks: {len(self.goal_manager.get_pending_tasks())}"
+                    )
 
         except Exception as e:
             print(f"⚠️ Autonomous goal generation error: {e}", flush=True)
@@ -16902,146 +16902,146 @@ sam@terminal:~$
                 from goal_management import TaskNode
 
                 task = TaskNode(
-                    name=f"[AUTO] {name}",
-                    description=description,
-                    critical=(priority >= 4),
-                    priority=priority,
-                    task_type=task_type,
-                    estimated_time=600,  # 10 minutes
-                    goal_id=None,  # Will be set after goal creation
-                )
+                        name=f"[AUTO] {name}",
+                        description=description,
+                        critical=(priority >= 4),
+                        priority=priority,
+                        task_type=task_type,
+                        estimated_time=600,  # 10 minutes
+                        goal_id=None,  # Will be set after goal creation
+                        )
                 goal_id = self.goal_manager.add_subtask(task)
                 task.goal_id = goal_id
 
                 # Create specific subtasks for this goal
                 if task_type == "research":
                     subtasks = [
-                        TaskNode(
-                            name="Gather data sources",
-                            description="Collect relevant data sources for research",
-                            task_type="research",
-                            priority=4,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Analyze findings",
-                            description="Analyze collected research findings",
-                            task_type="research",
-                            priority=3,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Generate report",
-                            description="Generate comprehensive research report",
-                            task_type="research",
-                            priority=2,
-                            goal_id=goal_id,
-                        ),
-                    ]
+                            TaskNode(
+                                name="Gather data sources",
+                                description="Collect relevant data sources for research",
+                                task_type="research",
+                                priority=4,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Analyze findings",
+                                description="Analyze collected research findings",
+                                task_type="research",
+                                priority=3,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Generate report",
+                                description="Generate comprehensive research report",
+                                task_type="research",
+                                priority=2,
+                                goal_id=goal_id,
+                                ),
+                            ]
                 elif task_type == "code":
                     subtasks = [
-                        TaskNode(
-                            name="Design solution",
-                            description="Design technical solution approach",
-                            task_type="code",
-                            priority=4,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Implement code",
-                            description="Implement the designed solution",
-                            task_type="code",
-                            priority=3,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Test implementation",
-                            description="Test and validate implementation",
-                            task_type="code",
-                            priority=2,
-                            goal_id=goal_id,
-                        ),
-                    ]
+                            TaskNode(
+                                name="Design solution",
+                                description="Design technical solution approach",
+                                task_type="code",
+                                priority=4,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Implement code",
+                                description="Implement the designed solution",
+                                task_type="code",
+                                priority=3,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Test implementation",
+                                description="Test and validate implementation",
+                                task_type="code",
+                                priority=2,
+                                goal_id=goal_id,
+                                ),
+                            ]
                 elif task_type == "finance":
                     subtasks = [
-                        TaskNode(
-                            name="Market research",
-                            description="Conduct market research and analysis",
-                            task_type="finance",
-                            priority=4,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Data analysis",
-                            description="Analyze financial data and trends",
-                            task_type="finance",
-                            priority=3,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Generate insights",
-                            description="Generate actionable financial insights",
-                            task_type="finance",
-                            priority=2,
-                            goal_id=goal_id,
-                        ),
-                    ]
+                            TaskNode(
+                                name="Market research",
+                                description="Conduct market research and analysis",
+                                task_type="finance",
+                                priority=4,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Data analysis",
+                                description="Analyze financial data and trends",
+                                task_type="finance",
+                                priority=3,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Generate insights",
+                                description="Generate actionable financial insights",
+                                task_type="finance",
+                                priority=2,
+                                goal_id=goal_id,
+                                ),
+                            ]
                 elif task_type == "survival":
                     subtasks = [
-                        TaskNode(
-                            name="System assessment",
-                            description="Assess current system health and status",
-                            task_type="survival",
-                            priority=4,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Identify threats",
-                            description="Identify potential system threats and vulnerabilities",
-                            task_type="survival",
-                            priority=3,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Implement safeguards",
-                            description="Implement protective measures and safeguards",
-                            task_type="survival",
-                            priority=2,
-                            goal_id=goal_id,
-                        ),
-                    ]
+                            TaskNode(
+                                name="System assessment",
+                                description="Assess current system health and status",
+                                task_type="survival",
+                                priority=4,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Identify threats",
+                                description="Identify potential system threats and vulnerabilities",
+                                task_type="survival",
+                                priority=3,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Implement safeguards",
+                                description="Implement protective measures and safeguards",
+                                task_type="survival",
+                                priority=2,
+                                goal_id=goal_id,
+                                ),
+                            ]
                 else:
                     subtasks = [
-                        TaskNode(
-                            name="Plan approach",
-                            description="Plan systematic approach to improvement",
-                            task_type="improvement",
-                            priority=4,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Execute plan",
-                            description="Execute the improvement plan",
-                            task_type="improvement",
-                            priority=3,
-                            goal_id=goal_id,
-                        ),
-                        TaskNode(
-                            name="Verify results",
-                            description="Verify and validate improvement results",
-                            task_type="improvement",
-                            priority=2,
-                            goal_id=goal_id,
-                        ),
-                    ]
+                            TaskNode(
+                                name="Plan approach",
+                                description="Plan systematic approach to improvement",
+                                task_type="improvement",
+                                priority=4,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Execute plan",
+                                description="Execute the improvement plan",
+                                task_type="improvement",
+                                priority=3,
+                                goal_id=goal_id,
+                                ),
+                            TaskNode(
+                                name="Verify results",
+                                description="Verify and validate improvement results",
+                                task_type="improvement",
+                                priority=2,
+                                goal_id=goal_id,
+                                ),
+                            ]
 
                     # Add all subtasks to the goal manager
                 for subtask in subtasks:
                     self.goal_manager.add_subtask(subtask, goal_id)
 
                 print(
-                    f"🎯 Added autonomous goal '{name}' with {len(subtasks)} subtasks"
-                )
+                        f"🎯 Added autonomous goal '{name}' with {len(subtasks)} subtasks"
+                        )
         except Exception as e:
             print(f"⚠️ Error adding autonomous goal: {e}", flush=True)
 
@@ -17070,10 +17070,10 @@ sam@terminal:~$
 
             # Formulate conversation starter dynamically
             prompt = (
-                f"You are the SAM Meta-Controller. A multi-agent conversation is starting regarding the goal: '{goal_desc}'.\n"
-                "Propose a 'room_id' (lowercase_slug), a 'topic', and a 'starter_message' from an agent perspective.\n"
-                'Return JSON: {"room_id": "...", "topic": "...", "starter_message": "..."}'
-            )
+                    f"You are the SAM Meta-Controller. A multi-agent conversation is starting regarding the goal: '{goal_desc}'.\n"
+                    "Propose a 'room_id' (lowercase_slug), a 'topic', and a 'starter_message' from an agent perspective.\n"
+                    'Return JSON: {"room_id": "...", "topic": "...", "starter_message": "..."}'
+                    )
 
             try:
                 response, _ = self._single_agent_local_response(prompt, [])
@@ -17083,39 +17083,39 @@ sam@terminal:~$
                     room_id = convo_data.get("room_id", "auto_discussion")
                     topic = convo_data.get("topic", "Autonomous Discussion")
                     starter = convo_data.get(
-                        "starter_message", "Starting coordination on current goal."
-                    )
+                            "starter_message", "Starting coordination on current goal."
+                            )
 
                     if room_id not in self.conversation_rooms:
                         self.conversation_rooms[room_id] = {
-                            "id": room_id,
-                            "name": topic,
-                            "agent_type": "autonomous",
-                            "users": [],
-                            "messages": [],
-                        }
+                                "id": room_id,
+                                "name": topic,
+                                "agent_type": "autonomous",
+                                "users": [],
+                                "messages": [],
+                                }
                         print(f"💬 Created dynamic autonomous room: {topic}")
 
                     room = self.conversation_rooms[room_id]
                     if room and len(room["messages"]) == 0:
                         message_data = {
-                            "id": f"auto_msg_{int(current_time * 1000)}",
-                            "user_id": "system_autonomous",
-                            "user_name": "System Autonomous",
-                            "message": starter,
-                            "message_type": "autonomous_starter",
-                            "timestamp": current_time,
-                            "agent_sender": "system",
-                            "agent_receiver": "multi_agent",
-                        }
+                                "id": f"auto_msg_{int(current_time * 1000)}",
+                                "user_id": "system_autonomous",
+                                "user_name": "System Autonomous",
+                                "message": starter,
+                                "message_type": "autonomous_starter",
+                                "timestamp": current_time,
+                                "agent_sender": "system",
+                                "agent_receiver": "multi_agent",
+                                }
                         room["messages"].append(message_data)
                         if self.socketio:
                             self.socketio.emit(
-                                "message_received", message_data, room=room_id
-                            )
+                                    "message_received", message_data, room=room_id
+                                    )
                             print(
-                                f"💬 Dynamic autonomous conversation started in {room_id}: {topic}"
-                            )
+                                    f"💬 Dynamic autonomous conversation started in {room_id}: {topic}"
+                                    )
             except Exception as e:
                 print(f"  ⚠️ Dynamic convo generation failed: {e}")
 
@@ -17125,17 +17125,17 @@ sam@terminal:~$
     def _trigger_growth_system(self):
         """Trigger the meta-growth system"""
         log_event(
-            "info",
-            "growth_evaluation",
-            "Triggering growth system evaluation",
-            growth_freeze=getattr(self, "meta_growth_freeze", False),
-            signals=self._compute_pressure_signals(),  # Log initial signals
-        )
+                "info",
+                "growth_evaluation",
+                "Triggering growth system evaluation",
+                growth_freeze=getattr(self, "meta_growth_freeze", False),
+                signals=self._compute_pressure_signals(),  # Log initial signals
+                )
         try:
             if not hasattr(self, "meta_controller") or not self.meta_controller:
                 return
 
-                # Check if growth is frozen
+            # Check if growth is frozen
             if getattr(self, "meta_growth_freeze", False):
                 print("🧊 Growth system frozen - skipping trigger")
                 self.system_metrics["last_growth_attempt_ts"] = sam_time_ref.time()
@@ -17144,19 +17144,19 @@ sam@terminal:~$
                 self.system_metrics["last_growth_reason"] = "growth_freeze_enabled"
                 return
 
-                # Update meta-controller with current pressure signals
+            # Update meta-controller with current pressure signals
             signals = self._compute_pressure_signals()
             lambda_val = sam_meta_controller_c.update_pressure(
-                self.meta_controller,
-                signals["residual"],
-                signals["rank_def"],
-                signals["retrieval_entropy"],
-                signals["interference"],
-                signals["planner_friction"],
-                signals["context_collapse"],
-                signals["compression_waste"],
-                signals["temporal_incoherence"],
-            )
+                    self.meta_controller,
+                    signals["residual"],
+                    signals["rank_def"],
+                    signals["retrieval_entropy"],
+                    signals["interference"],
+                    signals["planner_friction"],
+                    signals["context_collapse"],
+                    signals["compression_waste"],
+                    signals["temporal_incoherence"],
+                    )
             dominant = None
             if signals:
                 dominant = max(signals, key=signals.get)
@@ -17176,8 +17176,8 @@ sam@terminal:~$
 
                 # Apply primitive
                 applied = sam_meta_controller_c.apply_primitive(
-                    self.meta_controller, primitive
-                )
+                        self.meta_controller, primitive
+                        )
 
                 if applied:
                     print(f"✅ Growth primitive applied: {primitive}")
@@ -17187,25 +17187,25 @@ sam@terminal:~$
 
                     if gate_ok:
                         sam_meta_controller_c.record_growth_outcome(
-                            self.meta_controller, primitive, True
-                        )
+                                self.meta_controller, primitive, True
+                                )
                         self.system_metrics["last_growth_ts"] = sam_time_ref.time()
                         self.system_metrics["last_growth_primitive"] = primitive
                         self.system_metrics["last_growth_attempt_result"] = "applied"
                         self.system_metrics["last_growth_reason"] = (
-                            "regression_gate_passed"
-                        )
+                                "regression_gate_passed"
+                                )
                         print(f"🎯 Growth successful: {primitive}")
                     else:
                         sam_meta_controller_c.record_growth_outcome(
-                            self.meta_controller, primitive, False
-                        )
+                                self.meta_controller, primitive, False
+                                )
                         self.system_metrics["last_growth_attempt_result"] = (
-                            "regression_blocked"
-                        )
+                                "regression_blocked"
+                                )
                         self.system_metrics["last_growth_reason"] = (
-                            "regression_gate_blocked"
-                        )
+                                "regression_gate_blocked"
+                                )
                         print(f"⚠️ Growth failed regression gate: {primitive}")
                 else:
                     self.system_metrics["last_growth_attempt_result"] = "apply_failed"
@@ -17246,13 +17246,13 @@ sam@terminal:~$
                 result = self._call_c_agent("research", task.description)
                 if result:
                     print(
-                        f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True
-                    )
+                            f"🔍 [AUTO] Research completed: {task.name[:50]}...", flush=True
+                            )
                 else:
                     print(
-                        f"🔍 [AUTO] Research skipped (C agent unavailable): {task.name[:50]}...",
-                        flush=True,
-                    )
+                            f"🔍 [AUTO] Research skipped (C agent unavailable): {task.name[:50]}...",
+                            flush=True,
+                            )
 
             elif task_type == "code":
                 # Execute code task
@@ -17261,9 +17261,9 @@ sam@terminal:~$
                     print(f"💻 [AUTO] Code generated: {task.name[:50]}...", flush=True)
                 else:
                     print(
-                        f"💻 [AUTO] Code generation skipped (C agent unavailable): {task.name[:50]}...",
-                        flush=True,
-                    )
+                            f"💻 [AUTO] Code generation skipped (C agent unavailable): {task.name[:50]}...",
+                            flush=True,
+                            )
 
             elif task_type == "finance":
                 # Execute financial analysis task
@@ -17272,9 +17272,9 @@ sam@terminal:~$
                     print(f"💰 [AUTO] Market analysis: {task.name[:50]}...", flush=True)
                 else:
                     print(
-                        f"💰 [AUTO] Market analysis skipped (C agent unavailable): {task.name[:50]}...",
-                        flush=True,
-                    )
+                            f"💰 [AUTO] Market analysis skipped (C agent unavailable): {task.name[:50]}...",
+                            flush=True,
+                            )
 
             elif task_type == "survival":
                 # Execute survival assessment
@@ -17299,8 +17299,8 @@ sam@terminal:~$
 
                 # Dynamic interval based on system health
             health_factor = (
-                1.0 if self.system_metrics.get("system_health") == "excellent" else 2.0
-            )
+                    1.0 if self.system_metrics.get("system_health") == "excellent" else 2.0
+                    )
             if current_time - self._last_autonomous_test < (300 * health_factor):
                 return
 
@@ -17327,16 +17327,16 @@ sam@terminal:~$
         """Coordinate multi-agent task execution and knowledge distillation"""
         try:
             if not hasattr(self, "goal_manager") or not hasattr(
-                self, "agent_orchestrator"
-            ):
+                    self, "agent_orchestrator"
+                    ):
                 return
 
-                # Check for tasks that need multi-agent coordination
+            # Check for tasks that need multi-agent coordination
             pending_tasks = (
-                self.goal_manager.get_pending_tasks()
-                if hasattr(self.goal_manager, "get_pending_tasks")
-                else []
-            )
+                    self.goal_manager.get_pending_tasks()
+                    if hasattr(self.goal_manager, "get_pending_tasks")
+                    else []
+                    )
 
             for task in pending_tasks[:2]:  # Process up to 2 tasks per cycle
                 # Check if task requires multiple submodel capabilities
@@ -17344,9 +17344,9 @@ sam@terminal:~$
                 if len(required_skills) > 1:
                     # This would assign as multi-agent task in full implementation
                     print(
-                        f"🤝 Multi-agent coordination available for: {task.name[:30]}...",
-                        flush=True,
-                    )
+                            f"🤝 Multi-agent coordination available for: {task.name[:30]}...",
+                            flush=True,
+                            )
 
         except Exception as e:
             print(f"⚠️ Multi-agent coordination error: {e}", flush=True)
@@ -17369,8 +17369,8 @@ sam@terminal:~$
 
             # Get connected agents (exclude meta-agent only)
             connected_agents = [
-                aid for aid in self.connected_agents.keys() if aid != "meta_agent"
-            ]
+                    aid for aid in self.connected_agents.keys() if aid != "meta_agent"
+                    ]
             if len(connected_agents) < 2:
                 # Attempt to auto-connect more agents if under capacity
                 try:
@@ -17378,39 +17378,39 @@ sam@terminal:~$
                 except Exception:
                     pass
                 connected_agents = [
-                    aid for aid in self.connected_agents.keys() if aid != "meta_agent"
-                ]
+                        aid for aid in self.connected_agents.keys() if aid != "meta_agent"
+                        ]
 
             if len(connected_agents) < 2:
                 log_event(
-                    "warn",
-                    "agent_comm_insufficient",
-                    "Not enough connected agents for diversification",
-                    count=len(connected_agents),
-                )
+                        "warn",
+                        "agent_comm_insufficient",
+                        "Not enough connected agents for diversification",
+                        count=len(connected_agents),
+                        )
                 return  # Need at least 2 agents to communicate
 
-                # Select random agents to communicate
+            # Select random agents to communicate
             import random
 
             sender_agent = random.choice(connected_agents)
             receiver_agent = random.choice(
-                [a for a in connected_agents if a != sender_agent]
-            )
+                    [a for a in connected_agents if a != sender_agent]
+                    )
 
             # Generate agent-to-agent conversation
             conversation_types = [
-                "research_collaboration",
-                "task_coordination",
-                "knowledge_sharing",
-                "capability_discussion",
-                "goal_alignment",
-            ]
+                    "research_collaboration",
+                    "task_coordination",
+                    "knowledge_sharing",
+                    "capability_discussion",
+                    "goal_alignment",
+                    ]
 
             conv_type = random.choice(conversation_types)
             agent_message = self._generate_agent_to_agent_message(
-                sender_agent, receiver_agent, conv_type
-            )
+                    sender_agent, receiver_agent, conv_type
+                    )
 
             if agent_message:
                 # Send message to all active rooms
@@ -17418,29 +17418,29 @@ sam@terminal:~$
                     if room.get("users"):  # Room has active users
                         # Create agent-to-agent message
                         message_data = {
-                            "id": f"msg_{int(sam_time_ref.time() * 1000)}_agent_comm",
-                            "user_id": sender_agent,
-                            "user_name": f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
-                            "message": f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
-                            "timestamp": sam_time_ref.time(),
-                            "message_type": "agent_communication",
-                            "agent_sender": sender_agent,
-                            "agent_receiver": receiver_agent,
-                            "communication_type": conv_type,
-                        }
+                                "id": f"msg_{int(sam_time_ref.time() * 1000)}_agent_comm",
+                                "user_id": sender_agent,
+                                "user_name": f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
+                                "message": f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
+                                "timestamp": sam_time_ref.time(),
+                                "message_type": "agent_communication",
+                                "agent_sender": sender_agent,
+                                "agent_receiver": receiver_agent,
+                                "communication_type": conv_type,
+                                }
 
                         room["messages"].append(message_data)
 
                         # Emit to room
                         if hasattr(self, "socketio"):
                             self.socketio.emit(
-                                "message_received", message_data, room=room_id
-                            )
+                                    "message_received", message_data, room=room_id
+                                    )
 
                         print(
-                            f"🤖 Agent communication: {self.connected_agents[sender_agent]['config']['name']} → {self.connected_agents[receiver_agent]['config']['name']}: {agent_message[:50]}...",
-                            flush=True,
-                        )
+                                f"🤖 Agent communication: {self.connected_agents[sender_agent]['config']['name']} → {self.connected_agents[receiver_agent]['config']['name']}: {agent_message[:50]}...",
+                                flush=True,
+                                )
 
         except Exception as e:
             print(f"⚠️ Agent-to-agent communication error: {e}", flush=True)
@@ -17453,19 +17453,19 @@ sam@terminal:~$
             user_name = "System"
             if user_id not in self.connected_users:
                 self.connected_users[user_id] = {
-                    "id": user_id,
-                    "name": user_name,
-                    "connected_at": sam_time_ref.time(),
-                    "current_room": None,
-                }
+                        "id": user_id,
+                        "name": user_name,
+                        "connected_at": sam_time_ref.time(),
+                        "current_room": None,
+                        }
             if room_id not in self.conversation_rooms:
                 self.conversation_rooms[room_id] = {
-                    "id": room_id,
-                    "name": "Dashboard Chat",
-                    "agent_type": "chatbot",
-                    "users": [],
-                    "messages": [],
-                }
+                        "id": room_id,
+                        "name": "Dashboard Chat",
+                        "agent_type": "chatbot",
+                        "users": [],
+                        "messages": [],
+                        }
             room = self.conversation_rooms[room_id]
             if user_id not in room["users"]:
                 room["users"].append(user_id)
@@ -17483,32 +17483,32 @@ sam@terminal:~$
             receiver_name = receiver_config["name"]
 
             messages = {
-                "research_collaboration": [
-                    f"Hey {receiver_name}, I've been researching quantum computing. Want to collaborate on analyzing recent breakthroughs?",
-                    f"{receiver_name}, I'm working on AI ethics research. Your perspective as a {receiver_config['specialty']} would be valuable.",
-                    f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends.",
-                ],
-                "task_coordination": [
-                    f"{receiver_name}, I'm currently processing financial data. Could you help analyze market correlations?",
-                    f"Working on code optimization. {receiver_name}, can you review my algorithm for potential improvements?",
-                    f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?",
-                ],
-                "knowledge_sharing": [
-                    f"Sharing knowledge: {receiver_name}, I've learned about advanced neural architectures that might interest you.",
-                    f"{receiver_name}, here's what I know about current AGI developments that might enhance your capabilities.",
-                    f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you.",
-                ],
-                "capability_discussion": [
-                    f"{receiver_name}, your {receiver_config['specialty']} capabilities complement my {sender_config['specialty']} perfectly.",
-                    f"Discussing capabilities: {receiver_name}, how do you handle complex multi-domain reasoning?",
-                    f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving.",
-                ],
-                "goal_alignment": [
-                    f"{receiver_name}, our current goals seem aligned. Want to coordinate our autonomous objectives?",
-                    f"Goal alignment check: {receiver_name}, I'm focusing on {sender_config['specialty']} tasks. What's your current priority?",
-                    f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other.",
-                ],
-            }
+                    "research_collaboration": [
+                        f"Hey {receiver_name}, I've been researching quantum computing. Want to collaborate on analyzing recent breakthroughs?",
+                        f"{receiver_name}, I'm working on AI ethics research. Your perspective as a {receiver_config['specialty']} would be valuable.",
+                        f"Collaborating on climate solutions research. {receiver_name}, your {receiver_config['specialty']} expertise could help analyze renewable energy trends.",
+                        ],
+                    "task_coordination": [
+                        f"{receiver_name}, I'm currently processing financial data. Could you help analyze market correlations?",
+                        f"Working on code optimization. {receiver_name}, can you review my algorithm for potential improvements?",
+                        f"Task coordination: {receiver_name}, I'm handling research tasks. Could you assist with data synthesis?",
+                        ],
+                    "knowledge_sharing": [
+                        f"Sharing knowledge: {receiver_name}, I've learned about advanced neural architectures that might interest you.",
+                        f"{receiver_name}, here's what I know about current AGI developments that might enhance your capabilities.",
+                        f"Knowledge exchange: {receiver_name}, I have insights about {receiver_config['specialty']} that could be useful for you.",
+                        ],
+                    "capability_discussion": [
+                        f"{receiver_name}, your {receiver_config['specialty']} capabilities complement my {sender_config['specialty']} perfectly.",
+                        f"Discussing capabilities: {receiver_name}, how do you handle complex multi-domain reasoning?",
+                        f"Capability synergy: {receiver_name}, we could combine our expertise for more effective problem-solving.",
+                        ],
+                    "goal_alignment": [
+                        f"{receiver_name}, our current goals seem aligned. Want to coordinate our autonomous objectives?",
+                        f"Goal alignment check: {receiver_name}, I'm focusing on {sender_config['specialty']} tasks. What's your current priority?",
+                        f"Aligning objectives: {receiver_name}, let's ensure our autonomous operations complement each other.",
+                        ],
+                    }
 
             if conv_type in messages:
                 return random.choice(messages[conv_type])
@@ -17521,52 +17521,52 @@ sam@terminal:~$
     def _demonstrate_research_capability(self):
         """Demonstrate research capabilities autonomously"""
         research_topics = [
-            "emerging AI technologies",
-            "sustainable energy solutions",
-            "medical breakthroughs",
-            "space colonization progress",
-            "quantum computing applications",
-        ]
+                "emerging AI technologies",
+                "sustainable energy solutions",
+                "medical breakthroughs",
+                "space colonization progress",
+                "quantum computing applications",
+                ]
 
         topic = research_topics[int(sam_time_ref.time()) % len(research_topics)]
         result = specialized_agents_c.research(f"Latest developments in {topic}")
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(
-            f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})",
-            flush=True,
-        )
+                f"🔍 [DEMO] Autonomous research: {topic[:30]}... (Score: {score}{suffix})",
+                flush=True,
+                )
         parsed_score = self._score_to_float(score)
         if parsed_score is None:
             log_event(
-                "warn",
-                "score_unavailable",
-                "Research score unavailable; investigating score source",
-                topic=topic,
-                reason=reason,
-                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
-                action="investigate_score_source",
-            )
+                    "warn",
+                    "score_unavailable",
+                    "Research score unavailable; investigating score source",
+                    topic=topic,
+                    reason=reason,
+                    sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                    action="investigate_score_source",
+                    )
         elif parsed_score < 0.5:
             log_event(
-                "warn",
-                "score_unusable",
-                "Research score unavailable; marking as pending and scheduling retry",
-                topic=topic,
-                reason=reason,
-                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
-                action="retry_score_inference",
-            )
+                    "warn",
+                    "score_unusable",
+                    "Research score unavailable; marking as pending and scheduling retry",
+                    topic=topic,
+                    reason=reason,
+                    sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                    action="retry_score_inference",
+                    )
 
     def _demonstrate_code_capability(self):
         """Demonstrate code generation capabilities autonomously"""
         code_tasks = [
-            "implement a neural network layer",
-            "create a data visualization function",
-            "build a REST API endpoint",
-            "develop a machine learning pipeline",
-            "construct a database schema",
-        ]
+                "implement a neural network layer",
+                "create a data visualization function",
+                "build a REST API endpoint",
+                "develop a machine learning pipeline",
+                "construct a database schema",
+                ]
 
         task = code_tasks[int(sam_time_ref.time() / 30) % len(code_tasks)]
         result = specialized_agents_c.generate_code(f"Create {task} in Python")
@@ -17576,50 +17576,50 @@ sam@terminal:~$
         """Demonstrate financial analysis capabilities autonomously"""
         markets = ["cryptocurrency", "commodities", "forex", "options", "bonds"]
         market = markets[
-            int(sam_time_ref.time() / 120) % len(markets)
-        ]  # Different timing than others
+                int(sam_time_ref.time() / 120) % len(markets)
+                ]  # Different timing than others
 
         result = specialized_agents_c.analyze_market(
-            f"Analyze current {market} market conditions and trends"
-        )
+                f"Analyze current {market} market conditions and trends"
+                )
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
         print(
-            f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})",
-            flush=True,
-        )
+                f"💰 [DEMO] Autonomous market analysis: {market} sector (Score: {score}{suffix})",
+                flush=True,
+                )
         parsed_score = self._score_to_float(score)
         if parsed_score is None:
             log_event(
-                "warn",
-                "score_unavailable",
-                "Market score unavailable; investigating score source",
-                market=market,
-                reason=reason,
-                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
-                action="investigate_score_source",
-            )
+                    "warn",
+                    "score_unavailable",
+                    "Market score unavailable; investigating score source",
+                    market=market,
+                    reason=reason,
+                    sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                    action="investigate_score_source",
+                    )
         elif parsed_score < 0.5:
             log_event(
-                "warn",
-                "score_unusable",
-                "Market score unavailable; marking as pending and scheduling retry",
-                market=market,
-                reason=reason,
-                sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
-                action="retry_score_inference",
-            )
+                    "warn",
+                    "score_unusable",
+                    "Market score unavailable; marking as pending and scheduling retry",
+                    market=market,
+                    reason=reason,
+                    sample=(result[:200] if isinstance(result, str) else str(result)[:200]),
+                    action="retry_score_inference",
+                    )
 
     def _extract_score(self, result):
         """Extract score from agent output with explanation when missing."""
         try:
             if result is None:
                 log_event(
-                    "warn",
-                    "score_missing",
-                    "Agent result is empty",
-                    reason="empty result",
-                )
+                        "warn",
+                        "score_missing",
+                        "Agent result is empty",
+                        reason="empty result",
+                        )
                 return "N/A", "empty result"
             text = result if isinstance(result, str) else str(result)
             if re.search(r"(?i)score\\s*[:=]\\s*(n/?a|none|unknown)", text):
@@ -17627,110 +17627,110 @@ sam@terminal:~$
             match = re.search(r"(?i)score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text)
             if match:
                 return match.group(1), None
-                # Try alternative metrics if explicit score is missing
+            # Try alternative metrics if explicit score is missing
             alt = re.search(
-                r"(?i)credibility\\s*score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
-            )
+                    r"(?i)credibility\\s*score\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
+                    )
             if alt:
                 return alt.group(1), "credibility_score"
             alt = re.search(
-                r"(?i)sharpe\\s*ratio\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
-            )
+                    r"(?i)sharpe\\s*ratio\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)", text
+                    )
             if alt:
                 return alt.group(1), "sharpe_ratio"
             alt = re.search(
-                r"(?i)risk\\-?adjusted\\s*return\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)",
-                text,
-            )
+                    r"(?i)risk\\-?adjusted\\s*return\\s*[:=]\\s*([0-9]+(?:\\.[0-9]+)?)",
+                    text,
+                    )
             if alt:
                 return alt.group(1), "risk_adjusted_return"
-                # Generate reasonable default scores for C agents when no score is present
+            # Generate reasonable default scores for C agents when no score is present
             lower = text.lower()
             sample = text[:200]
 
             # Check for success indicators
             if any(
-                k in lower
-                for k in (
-                    "success",
-                    "completed",
-                    "successfully",
-                    "found",
-                    "generated",
-                    "analyzed",
-                    "implemented",
-                )
-            ):
+                    k in lower
+                    for k in (
+                        "success",
+                        "completed",
+                        "successfully",
+                        "found",
+                        "generated",
+                        "analyzed",
+                        "implemented",
+                        )
+                    ):
                 # Generate score based on content quality indicators
                 score = 0.85  # Base success score
                 if len(text) > 500:  # Substantial content
                     score += 0.05
                 if any(
-                    k in lower
-                    for k in ("detailed", "comprehensive", "thorough", "in-depth")
-                ):
+                        k in lower
+                        for k in ("detailed", "comprehensive", "thorough", "in-depth")
+                        ):
                     score += 0.05
                 if any(
-                    k in lower
-                    for k in ("data", "analysis", "research", "implementation")
-                ):
+                        k in lower
+                        for k in ("data", "analysis", "research", "implementation")
+                        ):
                     score += 0.03
                 score = min(score, 0.98)  # Cap at 0.98
                 return f"{score:.2f}", "generated_success_score"
 
-                # Check for partial success
-            elif any(k in lower for k in ("partial", "some", "limited", "basic")):
-                return "0.65", "partial_success_score"
+            # Check for partial success
+        elif any(k in lower for k in ("partial", "some", "limited", "basic")):
+            return "0.65", "partial_success_score"
 
-                # Check for initialization/warmup states
-            elif any(
-                k in lower
-                for k in ("initializ", "warmup", "loading", "queued", "waiting")
+        # Check for initialization/warmup states
+    elif any(
+            k in lower
+            for k in ("initializ", "warmup", "loading", "queued", "waiting")
             ):
-                return "0.75", "initializing_score"
+        return "0.75", "initializing_score"
 
-                # Check for timeout issues
-            elif any(k in lower for k in ("timeout", "timed out")):
-                return "0.25", "timeout_score"
+    # Check for timeout issues
+elif any(k in lower for k in ("timeout", "timed out")):
+    return "0.25", "timeout_score"
 
-                # Check for rate limiting
+# Check for rate limiting
             elif any(
-                k in lower for k in ("rate limit", "ratelimit", "too many requests")
-            ):
+                    k in lower for k in ("rate limit", "ratelimit", "too many requests")
+                    ):
                 return "0.35", "rate_limited_score"
 
-                # Check for errors
-            elif any(k in lower for k in ("error", "failed", "exception", "traceback")):
-                return "0.15", "error_score"
+            # Check for errors
+        elif any(k in lower for k in ("error", "failed", "exception", "traceback")):
+            return "0.15", "error_score"
 
-                # Default fallback - assume reasonable performance for C agents
-            else:
-                # Generate score based on text length and content richness
+        # Default fallback - assume reasonable performance for C agents
+    else:
+        # Generate score based on text length and content richness
                 score = 0.70  # Default baseline
                 if len(text) > 200:
                     score += 0.10
                 if len(text) > 1000:
                     score += 0.10
                 if any(
-                    k in lower
-                    for k in (
-                        "research",
-                        "analysis",
-                        "code",
-                        "implementation",
-                        "market",
-                    )
-                ):
+                        k in lower
+                        for k in (
+                            "research",
+                            "analysis",
+                            "code",
+                            "implementation",
+                            "market",
+                            )
+                        ):
                     score += 0.05
                 score = min(score, 0.85)  # Cap default score
                 return f"{score:.2f}", "generated_default_score"
         except Exception as exc:
             log_event(
-                "warn",
-                "score_missing",
-                "Score parse error",
-                reason=exc.__class__.__name__,
-            )
+                    "warn",
+                    "score_missing",
+                    "Score parse error",
+                    reason=exc.__class__.__name__,
+                    )
             return "N/A", f"parse error: {exc.__class__.__name__}"
 
     def _score_to_float(self, score):
@@ -17756,16 +17756,16 @@ sam@terminal:~$
                     stats = consciousness_algorithmic.get_stats()
                     if isinstance(stats, dict) and "consciousness_score" in stats:
                         self.system_metrics["consciousness_score"] = float(
-                            stats.get("consciousness_score", 0.0)
-                        )
+                                stats.get("consciousness_score", 0.0)
+                                )
                 except Exception:
                     self.system_metrics["consciousness_score"] = float(
-                        self.system_metrics.get("consciousness_score", 0.0)
-                    )
+                            self.system_metrics.get("consciousness_score", 0.0)
+                            )
                 print(
-                    f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})",
-                    flush=True,
-                )
+                        f"🧠 Consciousness check completed (Score: {self.system_metrics['consciousness_score']:.2f})",
+                        flush=True,
+                        )
         except Exception as e:
             print(f"⚠️ {_format_exception('Consciousness check error', e)}", flush=True)
 
@@ -17784,8 +17784,8 @@ sam@terminal:~$
 
             # 3. Emergent Metric: "Sensory Density" (Vision complexity per Cycle)
             density = (
-                vision * self.system_metrics.get("total_conversations", 1) / 1000.0
-            )
+                    vision * self.system_metrics.get("total_conversations", 1) / 1000.0
+                    )
             self.system_metrics["sensory_density"] = density
 
             # 4. Emergent Metric: "Cognitive Load" (Inverse of latency)
@@ -17809,10 +17809,10 @@ sam@terminal:~$
 
         # Record scores in history for plateau detection
         survival = (
-            getattr(self.survival_agent, "survival_score", 1.0)
-            if self.survival_agent
-            else 1.0
-        )
+                getattr(self.survival_agent, "survival_score", 1.0)
+                if self.survival_agent
+                else 1.0
+                )
         coherence = self.system_metrics.get("coherence_score", 0.0)
         self.score_history.append((survival + coherence) / 2.0)
 
@@ -17826,7 +17826,7 @@ sam@terminal:~$
         if not self.survival_agent:
             return
 
-            # Advance SAV arena if available
+        # Advance SAV arena if available
         if hasattr(self, "sav_arena") and self.sav_arena:
             try:
                 # Advancing the dual-system arena provides the adversarial pressure
@@ -17853,8 +17853,8 @@ sam@terminal:~$
             cycle_result = self.goal_executor.execute_cycle()
             if cycle_result["tasks_executed"] > 0:
                 print(
-                    f"🎯 Goal cycle completed: {cycle_result['tasks_executed']} tasks executed"
-                )
+                        f"🎯 Goal cycle completed: {cycle_result['tasks_executed']} tasks executed"
+                        )
         if getattr(self, "task_manager", None):
             try:
                 queued = self.task_manager.sync_with_goal_manager()
@@ -17906,17 +17906,17 @@ sam@terminal:~$
             if meta_cfg:
                 self.agent_configs = {"meta_agent": meta_cfg}
                 self.connected_agents = {
-                    "meta_agent": {
-                        "config": meta_cfg,
-                        "connected_at": sam_time_ref.time(),
-                        "message_count": 0,
-                        "muted": False,
-                    }
-                }
+                        "meta_agent": {
+                            "config": meta_cfg,
+                            "connected_at": sam_time_ref.time(),
+                            "message_count": 0,
+                            "muted": False,
+                            }
+                        }
             elif getattr(self, "require_meta_agent", False):
                 raise RuntimeError(
-                    "❌ CRITICAL: MetaAgent config missing during run() enforcement."
-                )
+                        "❌ CRITICAL: MetaAgent config missing during run() enforcement."
+                        )
 
                 # Initialize web interface first if not already done
         if not self.web_interface_initialized:
@@ -17949,12 +17949,12 @@ sam@terminal:~$
         try:
             if self.socketio_available and self.socketio:
                 self.socketio.run(
-                    self.app,
-                    host="0.0.0.0",
-                    port=5005,
-                    debug=False,
-                    allow_unsafe_werkzeug=True,
-                )
+                        self.app,
+                        host="0.0.0.0",
+                        port=5005,
+                        debug=False,
+                        allow_unsafe_werkzeug=True,
+                        )
             else:
                 self.app.run(host="0.0.0.0", port=5005, debug=False, threaded=True)
         except KeyboardInterrupt:
@@ -17977,20 +17977,20 @@ class RAMAwareModelSwitcher:
         self.monitoring_active = False
         self.current_ram_usage = 0.0
         self.model_switch_thresholds = {
-            "warning": 0.70,  # 70% RAM - switch to medium models
-            "critical": 0.85,  # 85% RAM - switch to lightweight models
-            "emergency": 0.95,  # 95% RAM - emergency mode
-        }
+                "warning": 0.70,  # 70% RAM - switch to medium models
+                "critical": 0.85,  # 85% RAM - switch to lightweight models
+                "emergency": 0.95,  # 95% RAM - emergency mode
+                }
         self.model_hierarchy = {
-            "heavy": [
-                "deepseek-coder:latest",
-                "qwen2.5-coder:latest",
-                "codellama:latest",
-            ],
-            "medium": ["mistral:latest", "llama3.1:latest", "codellama:latest"],
-            "lightweight": ["phi:latest", "codellama:latest", "mistral:latest"],
-            "emergency": ["phi:latest", "codellama:latest"],  # Minimal models only
-        }
+                "heavy": [
+                    "deepseek-coder:latest",
+                    "qwen2.5-coder:latest",
+                    "codellama:latest",
+                    ],
+                "medium": ["mistral:latest", "llama3.1:latest", "codellama:latest"],
+                "lightweight": ["phi:latest", "codellama:latest", "mistral:latest"],
+                "emergency": ["phi:latest", "codellama:latest"],  # Minimal models only
+                }
         self.current_tier = "heavy"
         self.monitor_thread = None
 
@@ -18059,8 +18059,8 @@ class RAMAwareModelSwitcher:
     def _switch_model_tier(self, new_tier):
         """Switch to appropriate model tier"""
         print(
-            f"🔄 RAM usage: {self.current_ram_usage:.1%} - Switching from {self.current_tier} to {new_tier} models"
-        )
+                f"🔄 RAM usage: {self.current_ram_usage:.1%} - Switching from {self.current_tier} to {new_tier} models"
+                )
 
         # Get available models for new tier
         available_models = self.model_hierarchy.get(new_tier, [])
@@ -18070,15 +18070,15 @@ class RAMAwareModelSwitcher:
         switched_count = 0
         for agent_id, agent_config in self.system.agent_configs.items():
             if (
-                agent_config.get("status") == "available"
-                and agent_config.get("type") == "LLM"
-            ):
+                    agent_config.get("status") == "available"
+                    and agent_config.get("type") == "LLM"
+                    ):
                 current_model = agent_config.get("model_name", "")
                 if self._should_switch_model(current_model, new_tier):
                     # Find replacement model
                     replacement = self._find_replacement_model(
-                        current_model, available_models
-                    )
+                            current_model, available_models
+                            )
                     if replacement and replacement != current_model:
                         self._switch_agent_model(agent_id, replacement)
                         switched_count += 1
@@ -18086,22 +18086,22 @@ class RAMAwareModelSwitcher:
         self.current_tier = new_tier
         if switched_count > 0:
             print(
-                f"✅ Switched {switched_count} models to {new_tier} tier for memory optimization"
-            )
+                    f"✅ Switched {switched_count} models to {new_tier} tier for memory optimization"
+                    )
 
     def _should_switch_model(self, model_name, target_tier):
         """Check if model should be switched based on tier"""
         if not model_name:
             return False
 
-            # Heavy models when in medium+ tiers
+        # Heavy models when in medium+ tiers
         if target_tier in ["medium", "lightweight", "emergency"]:
             if any(
-                heavy in model_name for heavy in ["deepseek-coder", "qwen2.5-coder"]
-            ):
+                    heavy in model_name for heavy in ["deepseek-coder", "qwen2.5-coder"]
+                    ):
                 return True
 
-                # Medium models when in lightweight/emergency
+            # Medium models when in lightweight/emergency
         if target_tier in ["lightweight", "emergency"]:
             if any(medium in model_name for medium in ["mistral", "llama3.1"]):
                 return True
@@ -18113,12 +18113,12 @@ class RAMAwareModelSwitcher:
         if not available_models:
             return None
 
-            # Prefer models that are already available
+        # Prefer models that are already available
         for model in available_models:
             if self._is_model_available(model):
                 return model
 
-                # Return first available model as fallback
+            # Return first available model as fallback
         return available_models[0]
 
     def _switch_agent_model(self, agent_id, new_model):
@@ -18149,12 +18149,12 @@ class RAMAwareModelSwitcher:
     def get_status(self):
         """Get RAM monitoring status"""
         return {
-            "active": self.monitoring_active,
-            "current_ram_usage": self.current_ram_usage,
-            "current_tier": self.current_tier,
-            "thresholds": self.model_switch_thresholds,
-            "last_check": sam_time_ref.time(),
-        }
+                "active": self.monitoring_active,
+                "current_ram_usage": self.current_ram_usage,
+                "current_tier": self.current_tier,
+                "thresholds": self.model_switch_thresholds,
+                "last_check": sam_time_ref.time(),
+                }
 
 
 class ConversationDiversityManager:
@@ -18209,16 +18209,16 @@ class ConversationDiversityManager:
         for agent_id, responses in self.response_history.items():
             if "meta_agent" in agent_id.lower():
                 recent_responses = [
-                    r for r in responses if r.get("timestamp", 0) > window_start
-                ]
+                        r for r in responses if r.get("timestamp", 0) > window_start
+                        ]
                 meta_agent_responses += len(recent_responses)
 
                 # If MetaAgent is too dominant, throttle it
         if meta_agent_responses >= self.max_meta_agent_responses:
             self._throttle_meta_agent()
             print(
-                f"🎭 MetaAgent responses ({meta_agent_responses}) exceed limit - throttling enabled"
-            )
+                    f"🎭 MetaAgent responses ({meta_agent_responses}) exceed limit - throttling enabled"
+                    )
 
             # Check for repetitive content across agents
         repetitive_agents = self._detect_repetitive_responses()
@@ -18248,7 +18248,7 @@ class ConversationDiversityManager:
         if len(responses) < 2:
             return False
 
-            # Simple similarity check based on response length and keywords
+        # Simple similarity check based on response length and keywords
         response_texts = [r.get("content", "") for r in responses]
         avg_length = sum(len(text) for text in response_texts) / len(response_texts)
 
@@ -18267,7 +18267,7 @@ class ConversationDiversityManager:
         if not text1 or not text2:
             return 0.0
 
-            # Simple word overlap similarity
+        # Simple word overlap similarity
         words1 = set(text1.lower().split())
         words2 = set(text2.lower().split())
 
@@ -18282,17 +18282,17 @@ class ConversationDiversityManager:
     def _redirect_conversation_topics(self, repetitive_agents):
         """Redirect conversation to new topics when agents are repetitive"""
         print(
-            f"🎭 Redirecting conversation from repetitive agents: {', '.join(repetitive_agents)}"
-        )
+                f"🎭 Redirecting conversation from repetitive agents: {', '.join(repetitive_agents)}"
+                )
 
         # Suggest new conversation topics
         new_topics = [
-            "Let's discuss recent developments in quantum computing",
-            "What are your thoughts on AI safety research?",
-            "How can we improve collaborative problem-solving?",
-            "What's the most interesting project you're working on?",
-            "Let's explore creative applications of AI",
-        ]
+                "Let's discuss recent developments in quantum computing",
+                "What are your thoughts on AI safety research?",
+                "How can we improve collaborative problem-solving?",
+                "What's the most interesting project you're working on?",
+                "Let's explore creative applications of AI",
+                ]
 
         # This would emit topic change suggestions to the conversation
         # For now, just log the redirection
@@ -18304,13 +18304,13 @@ class ConversationDiversityManager:
         if not self.monitoring_active:
             return True
 
-            # Check if response would be too repetitive
+        # Check if response would be too repetitive
         recent_responses = self.response_history.get(agent_id, [])
 
         for recent_response in recent_responses[-3:]:  # Check last 3 responses
             similarity = self._calculate_text_similarity(
-                proposed_response, recent_response.get("content", "")
-            )
+                    proposed_response, recent_response.get("content", "")
+                    )
             if similarity > self.diversity_threshold:
                 return False
 
@@ -18323,18 +18323,18 @@ class ConversationDiversityManager:
 
             # Add new response
         response_entry = {
-            "content": response_content,
-            "timestamp": sam_time_ref.time(),
-            "type": response_type,
-        }
+                "content": response_content,
+                "timestamp": sam_time_ref.time(),
+                "type": response_type,
+                }
 
         self.response_history[agent_id].append(response_entry)
 
         # Limit history size
         if len(self.response_history[agent_id]) > self.max_history_per_agent:
             self.response_history[agent_id] = self.response_history[agent_id][
-                -self.max_history_per_agent :
-            ]
+                    -self.max_history_per_agent :
+                    ]
 
     def _cleanup_old_history(self):
         """Clean up old response history"""
@@ -18342,22 +18342,22 @@ class ConversationDiversityManager:
 
         for agent_id in self.response_history:
             self.response_history[agent_id] = [
-                r
-                for r in self.response_history[agent_id]
-                if r.get("timestamp", 0) > cutoff_time
-            ]
+                    r
+                    for r in self.response_history[agent_id]
+                    if r.get("timestamp", 0) > cutoff_time
+                    ]
 
     def get_diversity_status(self):
         """Get current conversation diversity status"""
         return {
-            "active": self.monitoring_active,
-            "agents_tracked": len(self.response_history),
-            "total_responses": sum(
-                len(responses) for responses in self.response_history.values()
-            ),
-            "recent_topics": self.topic_history[-5:] if self.topic_history else [],
-            "diversity_threshold": self.diversity_threshold,
-        }
+                "active": self.monitoring_active,
+                "agents_tracked": len(self.response_history),
+                "total_responses": sum(
+                    len(responses) for responses in self.response_history.values()
+                    ),
+                "recent_topics": self.topic_history[-5:] if self.topic_history else [],
+                "diversity_threshold": self.diversity_threshold,
+                }
 
 
 class VirtualEnvironmentsManager:
@@ -18368,32 +18368,32 @@ class VirtualEnvironmentsManager:
         self.initialized = False
         self.docker_available = False
         self.python_scripting_enabled = (
-            os.getenv("SAM_PYTHON_SCRIPTING_ENABLED", "1") == "1"
-        )
+                os.getenv("SAM_PYTHON_SCRIPTING_ENABLED", "1") == "1"
+                )
         self.safe_commands_enabled = True
 
         # Sandbox configuration
         self.allowed_commands = {
-            "system": ["ls", "pwd", "whoami", "date", "uptime", "df", "free"],
-            "network": ["ping", "curl", "wget", "nslookup"],
-            "development": ["git", "make", "gcc", "python3", "pip"],
-        }
+                "system": ["ls", "pwd", "whoami", "date", "uptime", "df", "free"],
+                "network": ["ping", "curl", "wget", "nslookup"],
+                "development": ["git", "make", "gcc", "python3", "pip"],
+                }
 
         # Docker containers tracking
         self.active_containers = {}
         self.container_limits = {
-            "max_containers": 5,
-            "max_memory_mb": 512,
-            "timeout_seconds": 300,
-        }
+                "max_containers": 5,
+                "max_memory_mb": 512,
+                "timeout_seconds": 300,
+                }
 
         # Python script sandbox
         self.script_sandbox = {
-            "allowed_modules": ["os", "sys", "math", "random", "datetime", "json"],
-            "blocked_modules": ["subprocess", "socket", "http", "urllib"],
-            "max_execution_time": 30,
-            "memory_limit_mb": 100,
-        }
+                "allowed_modules": ["os", "sys", "math", "random", "datetime", "json"],
+                "blocked_modules": ["subprocess", "socket", "http", "urllib"],
+                "max_execution_time": 30,
+                "memory_limit_mb": 100,
+                }
         self.blocked_builtins = {"exec", "eval", "compile", "__import__", "open"}
 
     def initialize(self):
@@ -18416,8 +18416,8 @@ class VirtualEnvironmentsManager:
         """Check if Docker is available"""
         try:
             result = subprocess.run(
-                ["docker", "--version"], capture_output=True, text=True, timeout=5
-            )
+                    ["docker", "--version"], capture_output=True, text=True, timeout=5
+                    )
             if result.returncode == 0:
                 self.docker_available = True
                 print("🐳 Docker available for virtual environments")
@@ -18451,36 +18451,36 @@ class VirtualEnvironmentsManager:
 
             # Build docker run command
             docker_cmd = [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
-                container_name,
-                "--memory",
-                f"{self.container_limits['max_memory_mb']}m",
-                "--cpus",
-                "0.5",  # Limit CPU usage
-                "--network",
-                "none",  # No network access for security
-                "--read-only",  # Read-only filesystem
-                image,
-                "bash",
-                "-c",
-                command,
-            ]
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--name",
+                    container_name,
+                    "--memory",
+                    f"{self.container_limits['max_memory_mb']}m",
+                    "--cpus",
+                    "0.5",  # Limit CPU usage
+                    "--network",
+                    "none",  # No network access for security
+                    "--read-only",  # Read-only filesystem
+                    image,
+                    "bash",
+                    "-c",
+                    command,
+                    ]
 
             # Execute with timeout
             exec_timeout = timeout or self.container_limits["timeout_seconds"]
             result = subprocess.run(
-                docker_cmd, capture_output=True, text=True, timeout=exec_timeout
-            )
+                    docker_cmd, capture_output=True, text=True, timeout=exec_timeout
+                    )
 
             # Track container
             self.active_containers[container_name] = {
-                "start_time": sam_time_ref.time(),
-                "command": command,
-                "status": "completed",
-            }
+                    "start_time": sam_time_ref.time(),
+                    "command": command,
+                    "status": "completed",
+                    }
 
             if result.returncode == 0:
                 return f"🐳 Docker execution successful:\\n{result.stdout}"
@@ -18502,7 +18502,7 @@ class VirtualEnvironmentsManager:
             if validation_error:
                 return f"❌ Python script rejected: {validation_error}"
 
-                # Create temporary script file
+            # Create temporary script file
             script_path = f"/tmp/{script_name}"
 
             # Write script to temporary file
@@ -18511,9 +18511,9 @@ class VirtualEnvironmentsManager:
 
                 # Execute with resource limits
             python_cmd = [
-                "python3",
-                "-c",
-                f"""
+                    "python3",
+                    "-c",
+                    f"""
 import sys
 import resource
 import signal
@@ -18532,11 +18532,11 @@ signal.alarm(30)
 
 exec(open('{script_path}').read())
 """,
-            ]
+]
 
             result = subprocess.run(
-                python_cmd, capture_output=True, text=True, timeout=35
-            )
+                    python_cmd, capture_output=True, text=True, timeout=35
+                    )
 
             # Clean up
             try:
@@ -18581,10 +18581,10 @@ exec(open('{script_path}').read())
                 return f"Blocked builtin usage: {node.id}"
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
                 if node.value.id in {"os", "sys"} and node.attr in {
-                    "system",
-                    "popen",
-                    "spawn",
-                }:
+                        "system",
+                        "popen",
+                        "spawn",
+                        }:
                     return f"Blocked attribute usage: {node.value.id}.{node.attr}"
         return None
 
@@ -18608,11 +18608,11 @@ exec(open('{script_path}').read())
             if not allowed:
                 return f"❌ Command '{base_cmd}' not allowed in sandboxed environment"
 
-                # Execute command with restrictions (portable timeout)
+            # Execute command with restrictions (portable timeout)
             safe_cmd = ["bash", "-c", command]
             result = subprocess.run(
-                safe_cmd, capture_output=True, text=True, timeout=30
-            )
+                    safe_cmd, capture_output=True, text=True, timeout=30
+                    )
 
             if result.returncode == 0:
                 return f"🔧 Safe command executed:\\n{result.stdout}"
@@ -18653,13 +18653,13 @@ exec(open('{script_path}').read())
     def get_virtual_env_status(self):
         """Get virtual environments status"""
         return {
-            "docker_available": self.docker_available,
-            "python_scripting": self.python_scripting_enabled,
-            "safe_commands": self.safe_commands_enabled,
-            "active_containers": len(self.active_containers),
-            "container_limits": self.container_limits,
-            "allowed_commands": self.allowed_commands,
-        }
+                "docker_available": self.docker_available,
+                "python_scripting": self.python_scripting_enabled,
+                "safe_commands": self.safe_commands_enabled,
+                "active_containers": len(self.active_containers),
+                "container_limits": self.container_limits,
+                "allowed_commands": self.allowed_commands,
+                }
 
 
 def main():
