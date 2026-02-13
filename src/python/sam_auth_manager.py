@@ -159,27 +159,63 @@ class AuthManager:
             
         return None, "user"
 
-    def set_role(self, target_id: str, role: str) -> bool:
-        """Update a user's role and persist."""
-        # Sanitize target_id
+    def set_role(self, caller_id: str, target_id: str, role: str) -> bool:
+        """Update a user's role with strict hierarchy enforcement."""
+        # Sanitize identifiers
+        caller_id = "".join(c for c in caller_id if c.isalnum() or c == "_")
         target_id = "".join(c for c in target_id if c.isalnum() or c == "_")
         
-        if role not in ("owner", "admin", "user"):
+        caller_role = self.get_role(caller_id)
+        target_role = self.get_role(target_id)
+        
+        # 1. Owner is immutable
+        if target_id == os.getenv("SAM_OWNER_ID", "owner_1"):
             return False
+            
+        # 2. Only owner can set 'admin' role
+        if role == "admin" and caller_role != "owner":
+            return False
+            
+        # 3. Only owner or admin can set roles
+        if caller_role not in ("owner", "admin"):
+            return False
+            
+        # 4. Admins can only manage 'user' roles
+        if caller_role == "admin" and role != "user":
+            return False
+            
+        # 5. Admins cannot demote other admins or the owner
+        if caller_role == "admin" and target_role in ("owner", "admin"):
+            return False
+
         if target_id not in self.user_data:
             self.user_data[target_id] = {"name": f"User {target_id}"}
+            
         self.user_data[target_id]["role"] = role
         self._save_auth()
+        
         # Update active tokens role
         for tinfo in self.tokens.values():
             if tinfo["user_id"] == target_id:
                 tinfo["role"] = role
         return True
 
-    def create_admin_token(self, admin_id: str) -> str:
-        """Generate a persistent admin token."""
+    def get_role(self, user_id: str) -> str:
+        """Return the role of a given user ID."""
+        if user_id == os.getenv("SAM_OWNER_ID", "owner_1"):
+            return "owner"
+        if user_id in self.user_data:
+            return self.user_data[user_id].get("role", "user")
+        return "user"
+
+    def create_admin_token(self, caller_id: str, admin_id: str) -> Optional[str]:
+        """Generate a persistent admin token. Only owner can do this."""
+        if self.get_role(caller_id) != "owner":
+            return None
+            
         admin_id = "".join(c for c in admin_id if c.isalnum() or c == "_")
         token = "sam_admin_" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+        
         self.user_data[admin_id] = {
             "role": "admin",
             "name": f"Admin {admin_id}",
@@ -190,9 +226,17 @@ class AuthManager:
         return token
 
     def create_session_token(self, user_id: str) -> str:
-        """Generate a temporary user token."""
+        """Generate a temporary user token with memory capping."""
         user_id = "".join(c for c in user_id if c.isalnum() or c == "_")
         token = "sam_user_" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(24))
+        
+        # Memory capping for transient tokens (limit to 1000 active sessions)
+        if len([t for t in self.tokens.values() if t["role"] == "user"]) > 1000:
+            # Find and remove oldest user token
+            user_tokens = [t for t in self.tokens if self.tokens[t]["role"] == "user"]
+            if user_tokens:
+                del self.tokens[user_tokens[0]]
+                
         self.tokens[token] = {"user_id": user_id, "role": "user"}
         return token
 

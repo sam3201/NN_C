@@ -48,6 +48,17 @@ class SimulationArena:
                 sim["status"] = "completed"
                 print(f"🎮 COMPLETED Simulation: {sim_id} (Yield: {sim['revenue']:.2f})")
                 
+        # Maintain reasonable memory usage (limit to 100 historical sims)
+        if len(self.active_simulations) > 100:
+            # Find a completed simulation to remove
+            completed = [sid for sid, s in self.active_simulations.items() if s["status"] == "completed"]
+            if completed:
+                del self.active_simulations[completed[0]]
+            else:
+                # If all are running, remove the oldest one
+                oldest = min(self.active_simulations.keys(), key=lambda k: self.active_simulations[k]["start_time"])
+                del self.active_simulations[oldest]
+
         # Sync with system banking if available
         if self.system and hasattr(self.system, "banking"):
             # Map virtual revenue to system metrics (Phase 5.3)

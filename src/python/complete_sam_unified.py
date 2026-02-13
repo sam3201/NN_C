@@ -652,7 +652,7 @@ class ObserverAgent :
 
     def __init__ (self ,system_instance ):
         self .system =system_instance 
-        self .failure_history =[]
+        self .failure_history =deque (maxlen =1000 )
         self .monitoring_active =False 
 
     def start_monitoring (self ):
@@ -2094,7 +2094,7 @@ class MetaAgent :
 
         # REQUIRED STATE (DEPLOYMENT BLOCKERS FIXED)
         self .failure_clusters ={}# cluster_id -> list[failure]
-        self .patch_history =[]# list of applied/rejected patches
+        self .patch_history =deque (maxlen =1000 )# list of applied/rejected patches
         self .confidence_threshold =float (
         os .getenv ("SAM_META_CONFIDENCE_THRESHOLD","0.8")
         )
@@ -2111,14 +2111,14 @@ class MetaAgent :
         # Enhanced pattern library (merged from enhanced meta-agent)
         self .error_patterns =self ._load_error_patterns ()
         self .fix_strategies =self ._load_fix_strategies ()
-        self .successful_fixes =[]
-        self .failed_attempts =[]
+        self .successful_fixes =deque (maxlen =1000 )
+        self .failed_attempts =deque (maxlen =1000 )
 
         # Advanced learning system attributes
         self .learning_cycles =0 
-        self .errors_detected =[]
-        self .improvements_applied =[]
-        self .validation_history =[]
+        self .errors_detected =deque (maxlen =1000 )
+        self .improvements_applied =deque (maxlen =1000 )
+        self .validation_history =deque (maxlen =1000 )
         self .baseline_performance ={}
         self .current_performance ={}
         self .improvement_threshold =0.95 # 95% error reduction required
@@ -9469,15 +9469,18 @@ class UnifiedSAMSystem :
             if not admin_id :
                 return jsonify ({"error":"admin_id required"}),400 
                 
+            caller_id ,_ =_get_auth_context ()
             if self .auth_manager :
-                token =self .auth_manager .create_admin_token (admin_id )
-                return jsonify ({"admin_id":admin_id ,"token":token })
+                token =self .auth_manager .create_admin_token (caller_id ,admin_id )
+                if token:
+                    return jsonify ({"admin_id":admin_id ,"token":token })
+                return jsonify ({"error":"Unauthorized elevation attempt"}),403 
             return jsonify ({"error":"AuthManager unavailable"}),503 
 
         @self .app .route ("/api/admin/roles",methods =["POST"])
         def manage_roles ():
-            """Assign roles to users (Owner only)."""
-            ok ,error =_require_owner ()
+            """Assign roles to users (Owner/Admin allowed)."""
+            ok ,error =_require_admin_token ()
             if not ok :
                 msg ,status =error 
                 return jsonify ({"error":msg }),status 
@@ -9489,10 +9492,11 @@ class UnifiedSAMSystem :
             if not target_id or not role :
                 return jsonify ({"error":"Missing user_id or role"}),400 
                 
-            if self .auth_manager and self .auth_manager .set_role (target_id ,role ):
+            caller_id ,_ =_get_auth_context ()
+            if self .auth_manager and self .auth_manager .set_role (caller_id ,target_id ,role ):
                 return jsonify ({"success":True ,"user_id":target_id ,"role":role })
             else :
-                return jsonify ({"error":"Failed to set role or unauthorized"}),403 
+                return jsonify ({"error":"Failed to set role or unauthorized elevation"}),403 
 
         if getattr (self ,"kill_switch_enabled",False ):
 
@@ -14061,13 +14065,21 @@ sam@terminal:~$
                     entry.appendChild(meta);
                     entry.appendChild(text);
                     panel.appendChild(entry);
-                    panel.scrollTop = panel.scrollHeight;
-
+                    
+                    // Maintain a reasonable DOM size
                     const entries = panel.querySelectorAll('.log-entry');
-                    if (entries.length > 200) {
+                    if (entries.length > 100) { // Reduced from 200 to 100
                         entries[0].remove();
                     }
-                    refreshDashboardLogVisibility();
+                    panel.scrollTop = panel.scrollHeight;
+
+                    // Throttle visibility refresh
+                    if (!window._logRefreshTimeout) {
+                        window._logRefreshTimeout = setTimeout(() => {
+                            refreshDashboardLogVisibility();
+                            window._logRefreshTimeout = null;
+                        }, 500);
+                    }
                 }
 
                 function refreshDashboardLogVisibility() {
@@ -14158,13 +14170,18 @@ sam@terminal:~$
                     }
                 }
 
+                let agentsDataCache = "";
+
                 async function updateAgents() {
                     try {
                         const response = await fetch('/api/agent/statuses');
                         if (response.ok) {
                             const data = await response.json();
-                            agentsData = data;
-                            renderAgents(data);
+                            const dataString = JSON.stringify(data);
+                            if (dataString !== agentsDataCache) {
+                                agentsDataCache = dataString;
+                                renderAgents(data);
+                            }
                         }
                     } catch (error) {
                         console.error('Failed to fetch agent statuses:', error);
@@ -14721,7 +14738,15 @@ sam@terminal:~$
                         const header = document.getElementById('preview-header');
                         const content = document.getElementById('preview-content');
                         if (header) header.textContent = data.path;
-                        if (content) content.textContent = data.content;
+                        
+                        if (content) {
+                            // UI-side truncation for safety (100KB)
+                            if (data.content && data.content.length > 102400) {
+                                content.textContent = data.content.substring(0, 102400) + "\n\n... [TRUNCATED FOR PERFORMANCE] ...";
+                            } else {
+                                content.textContent = data.content;
+                            }
+                        }
                     } catch (err) {
                         console.error('File read error:', err);
                     }
