@@ -683,7 +683,6 @@ class SubgoalExecutionAlgorithm:
                                     subtask.progress = 0.5
                                     
                                     # Simulate completion after some time
-                                    import time
                                     if time.time() - subtask.created_at > 30:  # 30 seconds old
                                         subtask.status = 'completed'
                                         subtask.progress = 1.0

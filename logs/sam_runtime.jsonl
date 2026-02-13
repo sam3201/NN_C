@@ -389,3 +389,17 @@
 {"ts": "2026-02-13T00:08:47.943130Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:08:50.916180Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:08:52.949625Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:55.919015Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:57.956174Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:00.925505Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:02.961510Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:05.935225Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:07.964683Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:10.940259Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:12.970018Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:15.946688Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:17.975685Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:20.953352Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:22.980274Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:25.959030Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:09:27.987298Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
