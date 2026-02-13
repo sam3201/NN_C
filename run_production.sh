@@ -1,69 +1,76 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# SAM-D Production Launcher (with Auto-Restart & Hot-Reload Support)
-# Automates environment setup, compilation, and launch.
+echo "🚀 Initializing SAM-D Production Launcher..."
 
-echo "🚀 Initializing SAM-D (ΨΔ•Ω-Core) Production Launcher..."
+VENV_DIR="venv"
 
-# 1. Environment Check
-if [[ -z "${VIRTUAL_ENV}" ]]; then
-    echo "⚠️  No virtual environment detected."
-    if [ -d "venv" ]; then
-        echo "   Activating existing venv..."
-        source venv/bin/activate
-    else
-        echo "   Creating new virtual environment..."
-        python3 -m venv venv
-        source venv/bin/activate
-    fi
+die() { echo "❌ $*" >&2; exit 1; }
+
+# Choose Python (prefer python3, fallback to python)
+PY_BIN="${PY_BIN:-}"
+if [[ -z "$PY_BIN" ]]; then
+  if command -v python3 >/dev/null 2>&1; then PY_BIN="python3"
+  elif command -v python >/dev/null 2>&1; then PY_BIN="python"
+  else die "No python found on PATH"; fi
 fi
 
-# 2. Dependency Check
-echo "📦 Checking dependencies..."
+# Create venv if missing
+if [[ ! -d "$VENV_DIR" ]]; then
+  echo "🧪 Creating venv with: $PY_BIN"
+  "$PY_BIN" -m venv "$VENV_DIR"
+fi
+
+# Activate venv (POSIX vs Windows)
+if [[ -f "$VENV_DIR/bin/activate" ]]; then
+  # macOS/Linux
+  # shellcheck disable=SC1090
+  source "$VENV_DIR/bin/activate"
+elif [[ -f "$VENV_DIR/Scripts/activate" ]]; then
+  # Windows Git Bash
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/Scripts/activate"
+else
+  die "Could not find venv activation script"
+fi
+
+echo "🐍 Python: $(command -v python)"
+python -V
+
+# Guardrail: enforce supported python range from pyproject.toml intent
+python - <<'PY'
+import sys
+maj, minor = sys.version_info[:2]
+if not ((maj, minor) >= (3,10) and (maj, minor) < (3,14)):
+    raise SystemExit(f"Unsupported Python {maj}.{minor}. Use Python >=3.10,<3.14")
+print("✅ Python version OK")
+PY
+
+echo "⬆️  Upgrading pip tooling..."
+python -m pip install -U pip setuptools wheel
+
+echo "📦 Installing dependencies..."
 python -m pip install -r requirements.txt
 
-# 3. C-Core Compilation (Critical)
-echo "🧠 Compiling C-Core (God Equation Regulator & Agents)..."
-# Clean previous builds to ensure freshness
-rm -rf build/
-# Build in-place
-python setup.py build_ext --inplace > /dev/null
+echo "🧠 Building C extensions..."
+rm -rf build/ 2>/dev/null || true
+python setup.py build_ext --inplace >/dev/null
 
-# 4. Directory Setup
 mkdir -p logs sam_data/backups
 
-# 5. Continuous Launch Loop
-echo "========================================================"
-echo "🤖 SAM-D is starting in AUTONOMOUS MODE."
-echo "🔥 Hot-Reload & Git-Push enabled (SAM_HOT_RELOAD=1)."
-echo "👑 Master Token exported to ~/.zshrc (SAM_OWNER_TOKEN)."
-echo "📊 Dashboard: http://localhost:5005"
-echo "📜 Logs:      tail -f logs/sam_runtime.log"
-echo "========================================================"
-
-# Set critical environment variables
 export PYTHONPATH=src/python:.
 export SAM_PROFILE=full
 export SAM_AUTONOMOUS_ENABLED=1
 export SAM_UNBOUNDED_MODE=1
 export SAM_RESTART_ENABLED=1
-export SAM_STRICT_LOCAL_ONLY=1 
+export SAM_STRICT_LOCAL_ONLY=1
 export SAM_HOT_RELOAD=1
 
-# Restart loop
+echo "🎯 Launching..."
 while true; do
-    echo "🎯 Launching system..."
-    # We don't use nohup here inside the loop because the loop itself should be backgrounded if needed.
-    # But for ease of use, we'll let the user run this script in foreground or background.
-    python src/python/complete_sam_unified.py --port 5005
-    
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 0 ]; then
-        echo "🔄 System requested restart (hot-reload). Restarting in 2s..."
-    else
-        echo "⚠️  System exited with code $EXIT_CODE. Restarting in 5s..."
-        sleep 3
-    fi
-    sleep 2
+  python src/python/complete_sam_unified.py --port 5005
+  code=$?
+  echo "⚠️  Exited ($code). Restarting..."
+  sleep 3
 done
+
