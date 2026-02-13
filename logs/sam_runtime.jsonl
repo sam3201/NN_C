@@ -385,3 +385,7 @@
 {"ts": "2026-02-13T00:08:37.932985Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:08:40.905451Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
 {"ts": "2026-02-13T00:08:42.935675Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:45.911035Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:47.943130Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:50.916180Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T00:08:52.949625Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
