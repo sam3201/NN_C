@@ -4025,14 +4025,14 @@ class MetaAgent:
             # Update learning state
             self.current_performance = current_performance
             self.validation_history.append(
-                {
-                    "cycle": cycle,
-                    "errors_detected": len(student_errors),
-                    "improvements_applied": len(implementation_result.get("improvements", [])),
-                    "performance": current_performance,
-                    "convergence_check": convergence_achieved,
-                }
-            )
+                    {
+                        "cycle": cycle,
+                        "errors_detected": len(student_errors),
+                        "improvements_applied": len(implementation_result.get("improvements", [])),
+                        "performance": current_performance,
+                        "convergence_check": convergence_achieved,
+                        }
+                    )
 
         # Final assessment
         if convergence_achieved:
