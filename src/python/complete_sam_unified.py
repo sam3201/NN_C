@@ -13070,25 +13070,25 @@ sam@terminal:~$
             return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
         # Research, code, and finance commands (existing)
-    elif cmd == "/research":
-        query = " ".join(args) if args else "current AI developments"
-            try:
-                sources = []
-                source_lines = []
-                if getattr(self, "web_search_enabled", False):
-                    try:
-                        results_blob = search_web_with_sam(
-                                query, save_to_drive=False, max_results=6
-                                )
-                        sources = results_blob.get("results", []) or []
-                    except Exception as exc:
-                        log_event(
-                                "warn",
-                                "web_search_error",
-                                "Web search failed",
-                                reason=str(exc),
-                                )
-                        sources = []
+        elif cmd == "/research":
+            query = " ".join(args) if args else "current AI developments"
+                try:
+                    sources = []
+                    source_lines = []
+                    if getattr(self, "web_search_enabled", False):
+                        try:
+                            results_blob = search_web_with_sam(
+                                    query, save_to_drive=False, max_results=6
+                                    )
+                            sources = results_blob.get("results", []) or []
+                        except Exception as exc:
+                            log_event(
+                                    "warn",
+                                    "web_search_error",
+                                    "Web search failed",
+                                    reason=str(exc),
+                                    )
+                            sources = []
 
                 for item in sources[:6]:
                     title = item.get("title") or item.get("source") or "source"
