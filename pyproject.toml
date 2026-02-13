@@ -1,0 +1,21 @@
+[project]
+name = "sam-d"
+version = "0.1.0"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "flask==3.0.0",
+  "flask-cors==4.0.0",
+  "flask-socketio==5.3.6",
+  "eventlet==0.33.3",
+  "requests==2.31.0",
+  "python-dotenv==1.0.0",
+  "colorama==0.4.6",
+  "psutil>=5.9.8,<6",
+  "pillow>=10.2.0,<11",
+  "numpy>=2.0,<3",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
