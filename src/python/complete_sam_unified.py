@@ -4756,6 +4756,11 @@ class UnifiedSAMSystem:
         self.health_intel = create_health_intelligence(self)
         print("  ✅ Health Intelligence active")
 
+        # Initialize Survival Agent early
+        from survival_agent import create_survival_agent
+        self.survival_agent = create_survival_agent()
+        print("  ✅ Survival Agent pre-initialized")
+
         # Initialize Prompt Test Suite (Phase 5.3)
         self.prompt_suite = create_prompt_test_suite(self)
         print("  ✅ Prompt Test Suite active")
@@ -8101,11 +8106,6 @@ class UnifiedSAMSystem:
         print("🤖 Initializing Python Orchestration Components...")
 
         try:
-            # Initialize survival agent
-            print("  - Creating survival agent...")
-            self.survival_agent = create_survival_agent()
-            print("  ✅ Survival agent initialized")
-
             # Initialize goal management system
             print("  - Creating goal management system...")
             self.goal_manager = GoalManager(self)
