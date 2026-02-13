@@ -37,6 +37,115 @@ TEL_NAMES = [
     "coverage_gap", "adversary_pressure",
 ]
 
+# Full 53-Regulator Vector (m_vec)
+# Category I — DRIVE / ENERGY REGULATORS (8)
+REGULATOR_NAMES = [
+    # 1-8: Drive/Energy
+    "motivation", "desire", "curiosity", "ambition", 
+    "hunger", "fear", "aggression", "attachment",
+    # 9-14: Self-Regulation/Executive Control
+    "discipline", "patience", "focus", "flexibility", "resilience", "persistence",
+    # 15-21: Epistemic Regulators
+    "skepticism", "confidence", "doubt", "insight", "reflection", "wisdom", "deep_research",
+    # 22-26: Identity/Coherence
+    "identity", "integrity", "coherence", "loyalty", "authenticity",
+    # 27-30: Adversarial/Survival
+    "paranoia", "defensive_posture", "offensive_expansion", "revenge",
+    # 31-35: Growth/Creative
+    "creativity", "play", "morphogenesis", "self_transcendence", "sacrifice",
+    # 36-41: Social/Multi-Agent
+    "cooperation", "competition", "trust", "empathy", "authority_seeking", "independence",
+    # 42-47: Meta-System
+    "meta_optimization", "invariant_preservation", "collapse_avoidance",
+    "adaptation_rate", "equilibrium_seeking", "phase_transition",
+    # 48-50: Temporal
+    "foresight", "memory_consolidation", "forgetting",
+    # 51-53: Power/Capability
+    "resource_awareness", "capability_estimation", "control_desire",
+]
+
+NUM_REGULATORS = 53
+
+# ----------------------------
+# 53-Regulator Vector Operations
+# ----------------------------
+
+def init_regulators(seed: int = 42) -> np.ndarray:
+    """Initialize the 53 regulator vector with default values."""
+    rng = np.random.default_rng(seed)
+    m = np.zeros(NUM_REGULATORS)
+    
+    # Default initialization - slightly curious, disciplined, focused
+    m[0] = 0.6   # motivation
+    m[2] = 0.5   # curiosity
+    m[8] = 0.6   # discipline
+    m[10] = 0.5  # focus
+    m[14] = 0.5  # skepticism
+    m[15] = 0.5  # confidence
+    m[21] = 0.4  # wisdom
+    m[22] = 0.7  # identity
+    m[23] = 0.6  # integrity
+    m[24] = 0.6  # coherence
+    
+    # Add small random variations
+    m += rng.normal(0, 0.05, size=NUM_REGULATORS)
+    m = np.clip(m, 0.0, 1.0)
+    
+    return m
+
+def update_regulators(
+    m: np.ndarray,
+    tau: np.ndarray,
+    delta_k: float,
+    delta_u: float,
+    outcome: float,
+    regime: str,
+    seed: int = None
+) -> np.ndarray:
+    """Update regulators based on telemetry and outcomes."""
+    if seed is not None:
+        rng = np.random.default_rng(seed)
+    else:
+        rng = np.random.default_rng()
+    
+    m2 = m.copy()
+    T = {name: tau[i] for i, name in enumerate(TEL_NAMES)}
+    
+    # Curiosity increases with novelty/unknown
+    m2[2] += 0.05 * T.get("novelty_pressure", 0)
+    
+    # Motivation increases with progress
+    m2[0] += 0.03 * max(0, outcome)
+    
+    # Discipline increases with failures
+    m2[8] += 0.02 * (1.0 - outcome)
+    
+    # Coherence emphasized in verify regime
+    if regime == "VERIFY":
+        m2[24] += 0.05
+    
+    # Growth regulators in morph/evolve
+    if regime in ("MORPH", "EVOLVE"):
+        m2[32] += 0.03  # creativity
+        m2[33] += 0.03  # morphogenesis
+    
+    # Stability in stasis
+    if regime == "STASIS":
+        m2[44] += 0.05  # collapse avoidance
+    
+    # Add exploration noise
+    m2 += rng.normal(0, 0.01, size=NUM_REGULATORS)
+    m2 = np.clip(m2, 0.0, 1.0)
+    
+    return m2
+
+def get_regulator_dict(m: np.ndarray) -> Dict[str, float]:
+    """Convert regulator vector to named dictionary."""
+    return {name: float(m[i]) for i, name in enumerate(REGULATOR_NAMES)}
+
+
+
+
 REGIMES = ["STASIS", "VERIFY", "GD_ADAM", "NATGRAD", "EVOLVE", "MORPH"]
 
 # ----------------------------
@@ -227,14 +336,34 @@ def compile_tick(
     }
 
 if __name__ == "__main__":
-    # Small test
+    # Test with 53 regulators
     p = CompilerParams.bootstrap()
-    m = np.zeros(53); m[0] = 1.0 # Curiosity
-    tau = np.zeros(18); tau[0] = 0.5 # Residual
-    E = np.array([1.0, 5.0, 0.0]) # K, U
-    r = np.array([0.5] * 8) # Resources
+    
+    # Initialize regulators using new function
+    m = init_regulators(seed=42)
+    print("Initial regulators (top 10):")
+    m_dict = get_regulator_dict(m)
+    top_regulators = sorted(m_dict.items(), key=lambda x: x[1], reverse=True)[:10]
+    for name, val in top_regulators:
+        print(f"  {name}: {val:.3f}")
+    
+    # Test compile_tick with full 53-dim m_vec
+    tau = np.zeros(18); tau[0] = 0.3  # residual
+    tau[1] = 0.2  # rank_def
+    tau[2] = 0.4  # retrieval_entropy
+    E = np.array([1.0, 2.0, 0.5])  # K, U, Omega
+    r = np.array([0.5] * 8)  # Resources
     
     out = compile_tick(m, tau, E, r, p)
-    print(f"Regime: {out['regime']}")
-    print(f"Top 3 Loss Weights: {sorted(out['w_dict'].items(), key=lambda x: x[1], reverse=True)[:3]}")
-    print(f"Top 3 Knobs: {sorted(out['u_dict'].items(), key=lambda x: x[1], reverse=True)[:3]}")
+    print(f"\nRegime: {out['regime']}")
+    print(f"Omega: {out['omega'].total():.3f}")
+    print(f"Top 5 Loss Weights: {sorted(out['w_dict'].items(), key=lambda x: x[1], reverse=True)[:5]}")
+    print(f"Top 5 Knobs: {sorted(out['u_dict'].items(), key=lambda x: x[1], reverse=True)[:5]}")
+    
+    # Test regulator update
+    m2 = update_regulators(m, tau, delta_k=0.1, delta_u=0.2, outcome=0.8, regime=out['regime'])
+    print(f"\nAfter update - top regulators:")
+    m2_dict = get_regulator_dict(m2)
+    top_regulators2 = sorted(m2_dict.items(), key=lambda x: x[1], reverse=True)[:5]
+    for name, val in top_regulators2:
+        print(f"  {name}: {val:.3f}")

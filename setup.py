@@ -70,7 +70,44 @@ extensions = [
         libraries=[],
         extra_compile_args=COMMON_ARGS,
         extra_link_args=[]
-    )
+    ),
+    # New C modules - Pure C implementations
+    Extension(
+        'sam_fast_rng',
+        sources=['src/c_modules/sam_fast_rng.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
+    Extension(
+        'sam_telemetry_core',
+        sources=['src/c_modules/sam_telemetry_core.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
+    Extension(
+        'sam_god_equation',
+        sources=['src/c_modules/sam_god_equation.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
+    Extension(
+        'sam_regulator_compiler_c',
+        sources=['src/c_modules/sam_regulator_compiler.c', 'src/c_modules/sam_fast_rng.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
 ]
 
 setup(
