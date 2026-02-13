@@ -5700,19 +5700,29 @@ class UnifiedSAMSystem :
         return [float (f )for f in features [:32 ]]
 
     def _git_push_codebase(self, message: str = "Auto-hot-reload: code update"):
-        """Automatically stage, commit, and push codebase changes."""
+        """Automatically stage, commit, and push codebase changes to all remotes."""
         try:
-            print(f"📡 Git: Pushing changes... '{message}'")
+            print(f"📡 Git: Syncing changes... '{message}'")
             import subprocess
             # Stage all changes
             subprocess.run(["git", "add", "."], cwd=self.project_root, check=True)
             # Commit (allow empty if no changes actually exist)
             subprocess.run(["git", "commit", "-m", message], cwd=self.project_root, capture_output=True)
-            # Push to origin
+            
+            # Push to parent origin
+            print("   - Pushing to origin/main...")
             subprocess.run(["git", "push", "origin", "main"], cwd=self.project_root, check=True)
-            print("✅ Git: Pushed successfully.")
+            
+            # Push to SAM AGI official
+            try:
+                print("   - Pushing to sam_agi_official/main...")
+                subprocess.run(["git", "push", "sam_agi_official", "main"], cwd=self.project_root, capture_output=True)
+            except Exception as e:
+                print(f"   ⚠️ Push to sam_agi_official failed: {e}")
+                
+            print("✅ Git: Sync complete.")
         except Exception as e:
-            print(f"⚠️ Git: Push failed: {e}")
+            print(f"⚠️ Git: Sync failed: {e}")
 
     def _watchdog_loop (self ):
         """Internal file watching loop for hot reload"""
@@ -8647,7 +8657,7 @@ class UnifiedSAMSystem :
             return decorated_function 
 
         def _get_auth_context ():
-            """Determine the current user and their role via AuthManager."""
+            """Determine the current user and their role via AuthManager (Phase 5.3)"""
             user_id =request .headers .get ("X-SAM-USER-ID","anonymous")
             
             # Extract token from headers or query
@@ -8658,17 +8668,14 @@ class UnifiedSAMSystem :
             if not candidate :
                 candidate =request .headers .get ("X-SAM-ADMIN-TOKEN")or request .args .get ("token")
             
-            # Use AuthManager to validate token and determine role
+            # Use AuthManager to validate token and determine role (Explicit Only)
             if self .auth_manager and candidate :
                 uid ,role =self .auth_manager .validate_token (candidate )
                 if uid:
                     return uid ,role 
                 
-            # If no valid token, check legacy static tokens or defaults
-            token =os .getenv ("SAM_ADMIN_TOKEN")or os .getenv ("SAM_CODE_MODIFY_TOKEN")
-            if candidate and token and candidate ==token:
-                return user_id, "admin"
-
+            # All implicit/static grants removed for production security.
+            # Role defaults to 'user' for any unauthenticated or unrecognized request.
             return user_id ,"user"
 
         def _require_admin_token ():
@@ -8749,38 +8756,18 @@ class UnifiedSAMSystem :
             return False 
 
         def _authorized_email (email :str ):
-            """Email allowlist + admin list (env-driven).
-
-            Env vars:
-            - SAM_ALLOWED_EMAILS: comma-separated allowlist (empty => allow admins only, unless no owner/admin configured)
-            - SAM_ADMIN_EMAILS: comma-separated admin list
-            - SAM_OWNER_EMAIL: always-admin address (recommended)
-            """
-
-            def _parse_list (raw :str )->set [str ]:
-                items =re .split (r"[\\s,]+",raw or "")
-                return {item .strip ().lower ()for item in items if item .strip ()}
-
+            """Verify email authorization via AuthManager only (explicit RBAC)."""
             email =(email or "").strip ().lower ()
-            owner =(os .getenv ("SAM_OWNER_EMAIL")or "").strip ().lower ()
-            admins =_parse_list (os .getenv ("SAM_ADMIN_EMAILS",""))
-            allowed =_parse_list (os .getenv ("SAM_ALLOWED_EMAILS",""))
+            
+            if self .auth_manager :
+                role =self .auth_manager .get_role (email )
+                # Owner and Admin roles are granted administrative access
+                allowed_ok =role in ("owner","admin","user")
+                is_admin =role in ("owner","admin")
+                return allowed_ok ,is_admin 
 
-            if owner :
-                admins .add (owner )
-
-            allow_all =False 
-            if not allowed :
-            # If nothing is configured, default to allow-all for local dev.
-                if not owner and not admins :
-                    allow_all =True 
-                else :
-                # If only admins/owner are configured, default to "admins-only".
-                    allowed =set (admins )
-
-            allowed_ok =allow_all or (email in allowed )
-            is_admin =(owner and email ==owner )or (email in admins )
-            return allowed_ok ,is_admin 
+            # If AuthManager is missing, deny all for security
+            return False ,False 
 
         def _get_login_password ():
             """Resolve admin login password from env, file, or macOS Keychain."""

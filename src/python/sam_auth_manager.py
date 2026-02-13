@@ -168,23 +168,26 @@ class AuthManager:
         caller_role = self.get_role(caller_id)
         target_role = self.get_role(target_id)
         
-        # 1. Owner is immutable
-        if target_id == os.getenv("SAM_OWNER_ID", "owner_1"):
+        # 1. Owner is immutable - cannot be changed by anyone (including themselves via this API)
+        if target_id == os.getenv("SAM_OWNER_ID", "owner_1") or target_role == "owner":
             return False
             
         # 2. Only owner can set 'admin' role
-        if role == "admin" and caller_role != "owner":
-            return False
+        if role == "admin":
+            if caller_role != "owner":
+                self.log_access(caller_id, caller_role, "set_role_admin_attempt", False, f"Denied elevation of {target_id} to admin")
+                return False
             
         # 3. Only owner or admin can set roles
         if caller_role not in ("owner", "admin"):
             return False
             
-        # 4. Admins can only manage 'user' roles
+        # 4. Admins can only manage 'user' roles (they can whitelist/add users)
         if caller_role == "admin" and role != "user":
+            self.log_access(caller_id, caller_role, "set_role_non_user_attempt", False, f"Admin tried to set role {role} for {target_id}")
             return False
             
-        # 5. Admins cannot demote other admins or the owner
+        # 5. Admins cannot demote/modify other admins or the owner
         if caller_role == "admin" and target_role in ("owner", "admin"):
             return False
 
@@ -198,6 +201,8 @@ class AuthManager:
         for tinfo in self.tokens.values():
             if tinfo["user_id"] == target_id:
                 tinfo["role"] = role
+        
+        self.log_access(caller_id, caller_role, "set_role_success", True, f"Set {target_id} to {role}")
         return True
 
     def get_role(self, user_id: str) -> str:
