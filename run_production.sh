@@ -37,6 +37,7 @@ mkdir -p logs sam_data/backups
 echo "========================================================"
 echo "🤖 SAM-D is starting in AUTONOMOUS MODE."
 echo "🔥 Hot-Reload & Git-Push enabled (SAM_HOT_RELOAD=1)."
+echo "👑 Master Token exported to ~/.zshrc (SAM_OWNER_TOKEN)."
 echo "📊 Dashboard: http://localhost:5005"
 echo "📜 Logs:      tail -f logs/sam_runtime.log"
 echo "========================================================"

@@ -13,6 +13,7 @@ This is the unified system that brings together:
 import sys 
 import os 
 import math 
+import secrets 
 import time as sam_time_ref 
 import json 
 import inspect 
@@ -501,6 +502,11 @@ try :
     from health_intelligence import create_health_intelligence 
 except ImportError :
     create_health_intelligence =None 
+
+try :
+    from sam_auth_manager import create_auth_manager 
+except ImportError :
+    create_auth_manager =None 
 
 try :
     from prompt_test_suite import create_prompt_test_suite 
@@ -4813,10 +4819,12 @@ class UnifiedSAMSystem :
         self .require_self_mod =os .getenv ("SAM_REQUIRE_SELF_MOD","1")=="1"
 
         # User Management & RBAC (Phase 5.3)
-        self .users_path =self .project_root /"sam_data"/"users.json"
-        self .users ={}
-        self ._load_users ()
-        self ._ensure_owner ()
+        if create_auth_manager:
+            self .auth_manager =create_auth_manager (self .project_root )
+            print ("  ✅ Auth Manager initialized (Tokens generated)")
+        else:
+            self .auth_manager =None
+            print ("  ⚠️ Auth Manager missing")
         self .kill_switch_enabled =os .getenv ("SAM_KILL_SWITCH_ENABLED","1")=="1"
         self .invariants_disabled =os .getenv ("SAM_INVARIANTS_DISABLED","0")=="1"
         self .allow_unsafe_patches =os .getenv ("SAM_ALLOW_UNSAFE_PATCHES","0")=="1"
@@ -5287,53 +5295,6 @@ class UnifiedSAMSystem :
 
         # Initialize internal hot-reload watchdog if enabled
         self ._init_internal_watchdog ()
-
-    def _load_users (self ):
-        """Load users and roles from storage."""
-        if self .users_path .exists ():
-            try :
-                self .users =json .loads (self .users_path .read_text ())
-            except Exception as e :
-                print (f"⚠️ Failed to load users: {e }")
-                self .users ={}
-
-    def _save_users (self ):
-        """Save users and roles to storage."""
-        try :
-            self .users_path .write_text (json .dumps (self .users ,indent =2 ))
-        except Exception as e :
-            print (f"⚠️ Failed to save users: {e }")
-
-    def _ensure_owner (self ):
-        """Ensure the owner exists in the user database."""
-        # The owner is the primary user who starts the system
-        # For local deployment, we assume the initial 'system' or configured owner
-        owner_id =os .getenv ("SAM_OWNER_ID","owner_1")
-        if owner_id not in self .users :
-            self .users [owner_id ]={"role":"owner","name":"System Owner"}
-            self ._save_users ()
-            print (f"👑 Owner recognized: {owner_id }")
-
-    def get_user_role (self ,user_id :str )->str :
-        """Return the role of a given user ID."""
-        if user_id in self .users :
-            return self .users [user_id ].get ("role","user")
-        return "user"
-
-    def set_user_role (self ,caller_id :str ,target_id :str ,role :str )->bool :
-        """Set a user's role. Only 'owner' can set 'admin' or 'owner'."""
-        if self .get_user_role (caller_id )!="owner":
-            return False 
-        
-        if role not in ("owner","admin","user"):
-            return False 
-            
-        if target_id not in self .users :
-            self .users [target_id ]={"name":f"User {target_id }"}
-            
-        self .users [target_id ]["role"]=role 
-        self ._save_users ()
-        return True 
 
     def _get_growth_diagnostics (self )->Dict [str ,Any ]:
         """
@@ -8686,11 +8647,10 @@ class UnifiedSAMSystem :
             return decorated_function 
 
         def _get_auth_context ():
-            """Determine the current user and their role."""
+            """Determine the current user and their role via AuthManager."""
             user_id =request .headers .get ("X-SAM-USER-ID","anonymous")
             
-            # Check for admin token first
-            token =os .getenv ("SAM_ADMIN_TOKEN")or os .getenv ("SAM_CODE_MODIFY_TOKEN")
+            # Extract token from headers or query
             auth_header =request .headers .get ("Authorization","")
             candidate =None 
             if auth_header .startswith ("Bearer "):
@@ -8698,16 +8658,18 @@ class UnifiedSAMSystem :
             if not candidate :
                 candidate =request .headers .get ("X-SAM-ADMIN-TOKEN")or request .args .get ("token")
             
-            if candidate and token and candidate ==token :
-                # If they have the admin token, check if they are the owner
-                owner_id =os .getenv ("SAM_OWNER_ID","owner_1")
-                if user_id ==owner_id :
-                    return user_id ,"owner"
-                return user_id ,"admin"
+            # Use AuthManager to validate token and determine role
+            if self .auth_manager and candidate :
+                uid ,role =self .auth_manager .validate_token (candidate )
+                if uid:
+                    return uid ,role 
                 
-            # If no valid token, check persistent user database
-            role =self .get_user_role (user_id )
-            return user_id ,role 
+            # If no valid token, check legacy static tokens or defaults
+            token =os .getenv ("SAM_ADMIN_TOKEN")or os .getenv ("SAM_CODE_MODIFY_TOKEN")
+            if candidate and token and candidate ==token:
+                return user_id, "admin"
+
+            return user_id ,"user"
 
         def _require_admin_token ():
             """Require owner or admin privileges."""
@@ -9448,6 +9410,35 @@ class UnifiedSAMSystem :
                 return jsonify (self .sensory_controller .get_sensory_state ())
             return jsonify ({"error":"Sensory controller not initialized"}),503 
 
+        @self .app .route ("/api/auth/session",methods =["POST"])
+        def get_session_token ():
+            """Generate a transient session token for a user."""
+            data =request .get_json () or {}
+            user_id =data .get ("user_id","guest_"+secrets .token_hex (4 ))
+            
+            if self .auth_manager :
+                token =self .auth_manager .create_session_token (user_id )
+                return jsonify ({"user_id":user_id ,"token":token ,"role":"user"})
+            return jsonify ({"error":"AuthManager unavailable"}),503 
+
+        @self .app .route ("/api/admin/generate_token",methods =["POST"])
+        def generate_admin_token ():
+            """Generate a persistent admin token (Owner only)."""
+            ok ,error =_require_owner ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            data =request .get_json () or {}
+            admin_id =data .get ("admin_id")
+            if not admin_id :
+                return jsonify ({"error":"admin_id required"}),400 
+                
+            if self .auth_manager :
+                token =self .auth_manager .create_admin_token (admin_id )
+                return jsonify ({"admin_id":admin_id ,"token":token })
+            return jsonify ({"error":"AuthManager unavailable"}),503 
+
         @self .app .route ("/api/admin/roles",methods =["POST"])
         def manage_roles ():
             """Assign roles to users (Owner only)."""
@@ -9457,14 +9448,13 @@ class UnifiedSAMSystem :
                 return jsonify ({"error":msg }),status 
             
             data =request .get_json () or {}
-            caller_id =request .headers .get ("X-SAM-USER-ID")
             target_id =data .get ("user_id")
             role =data .get ("role")
             
             if not target_id or not role :
                 return jsonify ({"error":"Missing user_id or role"}),400 
                 
-            if self .set_user_role (caller_id ,target_id ,role ):
+            if self .auth_manager and self .auth_manager .set_role (target_id ,role ):
                 return jsonify ({"success":True ,"user_id":target_id ,"role":role })
             else :
                 return jsonify ({"error":"Failed to set role or unauthorized"}),403 
