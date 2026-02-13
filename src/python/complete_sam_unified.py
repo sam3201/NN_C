@@ -9282,17 +9282,6 @@ class UnifiedSAMSystem :
         @self .app .route ("/api/status")
         def system_status ():
             """Complete system status"""
-            return jsonify (
-            {
-            "system":"SAM-D Unified Complete System",
-            "status":"active",
-            "c_core":self .system_metrics ["c_core_status"],
-            "python_orchestration":self .system_metrics [
-            "python_orchestration_status"
-            ],
-            "sam_available":bool (getattr (self ,"sam_available",False )),
-            "ollama_available":bool (getattr (self ,"ollama_available",False )),
-            "active_agents":len (getattr (self ,"connected_agents",{})or {}),
             survival_score = (getattr (self .survival_agent ,"survival_score",0.0 ) if self .survival_agent else 0.0 )
             
             # RBAC for finance data
