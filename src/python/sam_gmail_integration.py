@@ -79,7 +79,7 @@ class SAMGmail:
         return {"success": True, "message_id": sent.get("id")}
 
     def schedule_email(self, to_email: str, subject: str, body: str, send_time: str):
-        send_at = dt.datetime.fromisoformat(send_time)
+        send_at = dt.sam_datetime_ref.fromisoformat(send_time)
         entry = {
             "to": to_email,
             "subject": subject,
@@ -102,12 +102,12 @@ class SAMGmail:
         ]
 
     def send_system_report(self, recipient: str, report_type: str):
-        body = f"SAM System Report\nType: {report_type}\nTime: {dt.datetime.utcnow().isoformat()}Z\n"
+        body = f"SAM System Report\nType: {report_type}\nTime: {dt.sam_datetime_ref.utcnow().isoformat()}Z\n"
         return self.send_email(recipient, f"SAM System Report ({report_type})", body)
 
     def _scheduler_loop(self):
         while True:
-            now = dt.datetime.now()
+            now = dt.sam_datetime_ref.now()
             for entry in list(self._scheduled):
                 if entry["status"] != "scheduled":
                     continue
@@ -117,7 +117,7 @@ class SAMGmail:
                         entry["status"] = "sent"
                     except Exception:
                         entry["status"] = "failed"
-            time.sleep(30)
+            sam_time_ref.sleep(30)
 
 
 sam_gmail_instance: Optional[SAMGmail] = None

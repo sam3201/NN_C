@@ -23,7 +23,7 @@ except Exception:
 
 
 def _utc_now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return sam_time_ref.strftime("%Y-%m-%dT%H:%M:%SZ", sam_time_ref.gmtime())
 
 
 @dataclass
@@ -79,7 +79,7 @@ class RevenueDataStore:
             # Preserve the corrupt payload and fail fast to avoid silent data loss
             try:
                 raw = path.read_text()
-                corrupt_path = path.with_suffix(path.suffix + f".corrupt.{int(time.time())}")
+                corrupt_path = path.with_suffix(path.suffix + f".corrupt.{int(sam_time_ref.time())}")
                 corrupt_path.write_text(raw, encoding="utf-8")
                 print(
                     f"[revenue_ops] Corrupt JSON detected in {path}. "
@@ -694,7 +694,7 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
         if not self.send_email:
             return {"sent": 0, "skipped": 0, "failed": 0, "blocked": 1}
 
-        now_ts = now_ts or time.time()
+        now_ts = now_ts or sam_time_ref.time()
         sequences = {s.get("sequence_id"): s for s in self.data_store.list_sequences()}
         leads = {l.get("lead_id"): l for l in self.data_store.list_leads()}
         runs = self.data_store.list_sequence_runs()
@@ -731,7 +731,7 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
                 next_send_at = run["next_send_at"]
 
             try:
-                next_send_ts = time.mktime(time.strptime(next_send_at, "%Y-%m-%dT%H:%M:%SZ"))
+                next_send_ts = sam_time_ref.mktime(sam_time_ref.strptime(next_send_at, "%Y-%m-%dT%H:%M:%SZ"))
             except Exception:
                 next_send_ts = now_ts
 
@@ -759,9 +759,9 @@ th, td {{ border-bottom:1px solid #eee; padding:10px 6px; text-align:left; }}
                     run["next_send_at"] = None
                 else:
                     delay_days = float(steps[current_step - 1].get("delay_days", 1))
-                    run["next_send_at"] = time.strftime(
+                    run["next_send_at"] = sam_time_ref.strftime(
                         "%Y-%m-%dT%H:%M:%SZ",
-                        time.gmtime(now_ts + delay_days * 86400),
+                        sam_time_ref.gmtime(now_ts + delay_days * 86400),
                     )
                     run["status"] = "active"
                 sent += 1

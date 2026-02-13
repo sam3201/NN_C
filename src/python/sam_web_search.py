@@ -50,7 +50,7 @@ def _parse_duckduckgo_html(text: str, max_results: int) -> List[Dict[str, str]]:
 
 def search_web_with_sam(query: str, save_to_drive: bool = False, max_results: int = 5) -> Dict[str, Any]:
     if not query.strip():
-        return {"query": query, "results": [], "source": "duckduckgo", "timestamp": time.time()}
+        return {"query": query, "results": [], "source": "duckduckgo", "timestamp": sam_time_ref.time()}
 
     headers = {
         "User-Agent": "SAM/2.0 (web search)"
@@ -64,7 +64,7 @@ def search_web_with_sam(query: str, save_to_drive: bool = False, max_results: in
         "query": query,
         "results": results,
         "source": "duckduckgo",
-        "timestamp": time.time(),
+        "timestamp": sam_time_ref.time(),
     }
 
     if save_to_drive:

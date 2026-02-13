@@ -1,1 +1,73 @@
 {"ts": "2026-02-13T01:43:09.226320Z", "level": "info", "event": "regression_gate_enabled", "message": "Regression gate enabled for strict local-only provider", "provider": "local:rules"}
+{"ts": "2026-02-13T01:43:09.593938Z", "level": "info", "event": "strict_local_only", "message": "External model providers disabled"}
+{"ts": "2026-02-13T01:43:16.413589Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:17.335420Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:17.502168Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:17.653485Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:17.802410Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:17.802809Z", "level": "info", "event": "growth_evaluation", "message": "Triggering growth system evaluation", "growth_freeze": false, "signals": {"residual": 0.15, "rank_def": 0.12, "retrieval_entropy": 0.25, "interference": 0.05, "planner_friction": 0.12, "context_collapse": 0.05, "compression_waste": 0.12, "temporal_incoherence": 0.05, "plateau_flag": 0.0, "calibration_error": 0.05, "contradiction_score": 0.05, "tool_failure_rate": 0.02, "unknown_growth_rate": 0.01, "cpu_usage": 0.5, "ram_usage": 0.5, "latency": 0.0}}
+{"ts": "2026-02-13T01:43:18.769751Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
+{"ts": "2026-02-13T01:43:22.452334Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:22.585783Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:25.940761Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:29.415228Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:30.238002Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:32.900879Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:35.542373Z", "level": "warn", "event": "c_agent_error", "message": "C agent call failed", "agent": "research", "reason": "Research agent returned no result"}
+{"ts": "2026-02-13T01:43:49.259824Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:43:54.266499Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:43:59.272119Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:04.277736Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:09.282795Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:14.287950Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:19.293204Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:24.298390Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:29.303567Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:34.308726Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:39.313924Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:44.317262Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:49.322581Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:54.327904Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:44:59.329142Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:04.330243Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:09.335040Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:14.340577Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:19.344561Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:20.346104Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
+{"ts": "2026-02-13T01:45:24.347318Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:29.351078Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:34.355771Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:39.358714Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:44.362332Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:49.367916Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:54.371823Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:45:59.376934Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:04.382691Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:09.385359Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:14.386139Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:19.392324Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:19.510154Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:19.510195Z", "level": "info", "event": "growth_evaluation", "message": "Triggering growth system evaluation", "growth_freeze": true, "signals": {"residual": 0.45, "rank_def": 0.12, "retrieval_entropy": 0.25, "interference": 0.05, "planner_friction": 0.12, "context_collapse": 0.05, "compression_waste": 0.12, "temporal_incoherence": 0.05, "plateau_flag": 1.0, "calibration_error": 0.0, "contradiction_score": 0.05, "tool_failure_rate": 0.02, "unknown_growth_rate": 0.01, "cpu_usage": 0.5, "ram_usage": 0.5, "latency": 0.0}}
+{"ts": "2026-02-13T01:46:24.398032Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:29.403349Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:34.408587Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:39.411157Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:44.412536Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:49.418033Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:54.419880Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:46:59.425474Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:04.426936Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:09.432519Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:14.438008Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:19.443804Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:21.344489Z", "level": "info", "event": "finance_snapshot", "message": "Finance summary snapshot", "revenue_paid": 0.0, "revenue_outstanding": 0.0, "revenue_invoiced": 0.0, "revenue_total_incoming": null, "banking_saved": 1750.0, "banking_spent": 250.0, "banking_accounts": 2, "banking_total_balance": 1750.0}
+{"ts": "2026-02-13T01:47:24.446391Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:29.447604Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:34.453062Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:39.458882Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:44.464516Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:49.469990Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:54.471130Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:47:59.476379Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:48:04.481595Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}
+{"ts": "2026-02-13T01:48:09.486871Z", "level": "info", "event": "pressure_plateau", "message": "Performance plateau detected", "avg": 0.5}

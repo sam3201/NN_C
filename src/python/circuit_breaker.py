@@ -54,7 +54,7 @@ class CircuitBreaker:
     
     def _should_attempt_reset(self) -> bool:
         """Check if circuit should attempt to reset"""
-        return (time.time() - self.last_failure_time) >= self.recovery_timeout
+        return (sam_time_ref.time() - self.last_failure_time) >= self.recovery_timeout
     
     def _on_success(self):
         """Handle successful call"""
@@ -66,7 +66,7 @@ class CircuitBreaker:
     def _on_failure(self):
         """Handle failed call"""
         self.failure_count += 1
-        self.last_failure_time = time.time()
+        self.last_failure_time = sam_time_ref.time()
         
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN

@@ -27,7 +27,7 @@ class TaskExecutor:
             'function': func.__name__,
             'args': args,
             'kwargs': kwargs,
-            'submitted_at': time.time()
+            'submitted_at': sam_time_ref.time()
         }
         
         return task_id
@@ -50,7 +50,7 @@ class TaskExecutor:
                     'task_id': task_id,
                     'status': status,
                     'result': result,
-                    'completed_at': time.time()
+                    'completed_at': sam_time_ref.time()
                 }
             else:
                 return {
@@ -83,7 +83,7 @@ class TaskExecutor:
                 completed.append(task_id)
                 self.completed_tasks.append({
                     'task_id': task_id,
-                    'completed_at': time.time()
+                    'completed_at': sam_time_ref.time()
                 })
         
         for task_id in completed:

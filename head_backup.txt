@@ -1,0 +1,500 @@
+#!/usr/bin/env python3
+"""
+SAM-D UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
+Combines Pure C Core + Comprehensive Python Orchestration
+
+This is the unified system that brings together:
+- Pure C AGI Core (consciousness, orchestrator, agents, prebuilt models)
+- Python Orchestration (survival, goals, multi-agent coordination)
+- Unified Web Interface (comprehensive dashboard and APIs)
+- Zero Fallbacks - All components work correctly
+"""
+
+import sys
+import os
+import math
+import time as sam_time_ref
+import json
+import inspect
+import threading
+from datetime import datetime as sam_datetime_ref, timezone
+from pathlib import Path
+import requests
+
+# Optional system monitoring
+try:
+    import psutil
+
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("⚠️ psutil not available - RAM monitoring disabled")
+
+import re  # Add missing import
+import ast
+import subprocess
+import traceback
+import logging
+import random
+import string
+import platform
+import ipaddress
+import shutil  # Added for file operations
+import numpy as np
+from contextlib import contextmanager
+from collections import deque, Counter
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List, Optional, Callable, Any, Union, Tuple
+from flask_cors import CORS
+
+
+# ---------------------------
+# Error / logging helpers
+# ---------------------------
+def _explain_exception(exc: Exception) -> str:
+    """Return a short human-readable meaning for common exceptions."""
+    if isinstance(exc, FileNotFoundError):
+        return "Expected file not found (check path/config)."
+    if isinstance(exc, PermissionError):
+        return "Permission denied (check filesystem or token permissions)."
+    if isinstance(exc, TimeoutError):
+        return "Operation timed out (service slow or unavailable)."
+    if isinstance(exc, KeyError):
+        return "Missing expected key in a dict or payload."
+    if isinstance(exc, ValueError):
+        return "Invalid value or format."
+    if isinstance(exc, TypeError):
+        return "Unexpected type for an operation or argument."
+    if isinstance(exc, ImportError):
+        return "Dependency/module missing or not installed."
+    if isinstance(exc, ConnectionError):
+        return "Network connection failed or service unreachable."
+    return "Unhandled exception; check stack trace for context."
+
+
+def _format_exception(context: str, exc: Exception) -> str:
+    return f"{context} | {exc.__class__.__name__}: {exc} | meaning: {_explain_exception(exc)}"
+
+
+_JSONL_LOG_PATH = None
+_HUMAN_LOG_PATH = None
+_JSONL_LOG_FH = None
+
+
+class _TeeStream:
+    def __init__(self, *streams):
+        self._streams = [s for s in streams if s is not None]
+
+    def write(self, data):
+        for s in self._streams:
+            try:
+                s.write(data)
+                s.flush()
+            except Exception:
+                pass
+        return len(data)
+
+    def flush(self):
+        for s in self._streams:
+            try:
+                s.flush()
+            except Exception:
+                pass
+
+    def isatty(self):
+        return False
+
+
+def setup_runtime_logging():
+    """Configure human-readable log + JSONL event log."""
+    global _JSONL_LOG_PATH, _HUMAN_LOG_PATH, _JSONL_LOG_FH
+    log_dir = os.getenv("SAM_LOG_DIR", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.getenv(
+        "SAM_LOG_FILE", os.path.join(log_dir, "sam_runtime.log")
+    )
+    jsonl_file = os.getenv(
+        "SAM_LOG_JSONL", os.path.join(log_dir, "sam_runtime.jsonl")
+    )
+
+    # Tee stdout/stderr to human-readable log
+    log_fp = open(log_file, "a", encoding="utf-8", buffering=1)
+    sys.stdout = _TeeStream(sys.stdout, log_fp)
+    sys.stderr = _TeeStream(sys.stderr, log_fp)
+
+    _HUMAN_LOG_PATH = log_file
+    _JSONL_LOG_PATH = jsonl_file
+    _JSONL_LOG_FH = open(jsonl_file, "a", encoding="utf-8", buffering=1)
+
+    print(f"🧾 Runtime logging enabled")
+    print(f"   Human log: {log_file}")
+    print(f"   JSONL log: {jsonl_file}")
+
+
+def _utc_now():
+    """UTC timestamp in ISO8601 with Z suffix."""
+    return sam_datetime_ref.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def log_event(level: str, event: str, *args, **data):
+    """Append a structured JSONL log entry.
+
+    Accepts `message` either positionally or via kwargs without raising
+    conflicts when callers pass a `message` key inside **data.
+    """
+    if not _JSONL_LOG_FH:
+        return
+    log_message = ""
+    if args:
+        log_message = args[0]
+    elif "message" in data:
+        log_message = data.pop("message")
+    # Avoid clobbering the primary message field
+    if "message" in data:
+        data = dict(data)
+        data["detail_message"] = data.pop("message")
+    payload = {
+        "ts": _utc_now(),
+        "level": level,
+        "event": event,
+        "message": log_message,
+    }
+    if data:
+        payload.update(data)
+    try:
+        _JSONL_LOG_FH.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+def _is_external_provider_spec(spec: str) -> bool:
+    """Return True if provider spec points to external/model runtime providers."""
+    if not spec:
+        return False
+    provider = spec.split(":", 1)[0].strip().lower()
+    external = {
+        "ollama",
+        "openai",
+        "openrouter",
+        "anthropic",
+        "google",
+        "gemini",
+        "claude",
+        "hf",
+        "huggingface",
+    }
+    return provider in external
+
+
+def _summarize_jsonl_log(path: str, window: int = 200):
+    """Return a moving window + compacted summary of the JSONL log."""
+    total = 0
+    level_counts = {}
+    event_counts = {}
+    last_error = None
+    last_warn = None
+    first_ts = None
+    last_ts = None
+    tail = deque(maxlen=window)
+
+    if not os.path.exists(path):
+        return {
+            "summary": {
+                "total": 0,
+                "window": window,
+                "dropped": 0,
+                "levels": {},
+                "top_events": [],
+                "first_ts": None,
+                "last_ts": None,
+                "last_error": None,
+                "last_warn": None,
+            },
+            "tail": [],
+        }
+
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                payload = json.loads(line)
+            except Exception:
+                payload = {"level": "info", "event": "raw_line", "message": line}
+            total += 1
+            level = str(payload.get("level", "info")).lower()
+            event = payload.get("event") or payload.get("type") or "event"
+            event = str(event)
+            level_counts[level] = level_counts.get(level, 0) + 1
+            event_counts[event] = event_counts.get(event, 0) + 1
+            ts = payload.get("ts")
+            if ts and first_ts is None:
+                first_ts = ts
+            if ts:
+                last_ts = ts
+            if level == "error":
+                last_error = payload
+            if level == "warn":
+                last_warn = payload
+            tail.append(payload)
+
+    top_events = sorted(event_counts.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    summary = {
+        "total": total,
+        "window": window,
+        "dropped": max(total - window, 0),
+        "levels": level_counts,
+        "top_events": top_events,
+        "first_ts": first_ts,
+        "last_ts": last_ts,
+        "last_error": last_error,
+        "last_warn": last_warn,
+    }
+    return {"summary": summary, "tail": list(tail)}
+
+
+# Import SAM components
+from survival_agent import SURVIVAL_PROMPT
+from goal_management import (
+    GoalManager,
+    create_conversationalist_tasks,
+    ensure_domain_goal,
+)
+import sam_config
+from sam_config import config, get_config
+
+# Google API Imports (optional)
+google_drive_available = False
+try:
+    import google.auth
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from googleapiclient.http import MediaFileUpload
+
+    google_drive_available = True
+    print("✅ Google API client libraries available.")
+except ImportError:
+    print(
+        "⚠️ Google API client libraries not available. Google Drive/Docs integration disabled."
+    )
+except Exception as e:
+    print(f"❌ Error importing Google API client libraries: {e}")
+    google_drive_available = False
+
+
+# C Core Modules - Direct Imports (No Fallbacks)
+import consciousness_algorithmic
+import orchestrator_and_agents as multi_agent_orchestrator_c
+
+specialized_agents_c = multi_agent_orchestrator_c  # Alias for combined module
+import sam_meta_controller_c
+import sam_regulator_c
+import sam_sav_dual_system
+from training.regression_suite import run_regression_suite
+from training.teacher_pool import TeacherPool, build_provider, similarity
+from training.distillation import DistillationStreamWriter
+from tools.backup_manager import BackupManager
+from revenue_ops import RevenueOpsEngine
+from banking_ledger import BankingLedger
+
+# Optional integrations
+try:
+    from sam_web_search import (
+        initialize_sam_web_search,
+        search_web_with_sam,
+        SAM_WEB_SEARCH_AVAILABLE,
+    )
+except Exception:
+    initialize_sam_web_search = None
+    search_web_with_sam = None
+    SAM_WEB_SEARCH_AVAILABLE = False
+
+try:
+    from sam_code_modifier import (
+        initialize_sam_code_modifier,
+        analyze_codebase,
+        modify_code_safely,
+        SAM_CODE_MODIFIER_AVAILABLE,
+    )
+except Exception:
+    initialize_sam_code_modifier = None
+    analyze_codebase = None
+    modify_code_safely = None
+    SAM_CODE_MODIFIER_AVAILABLE = False
+
+try:
+    from sam_github_integration import (
+        initialize_sam_github,
+        test_github_connection,
+        save_to_github,
+        get_recent_commits,
+        SAM_GITHUB_AVAILABLE,
+    )
+except Exception:
+    initialize_sam_github = None
+    test_github_connection = None
+    save_to_github = None
+    get_recent_commits = None
+    SAM_GITHUB_AVAILABLE = False
+
+try:
+    from sam_gmail_integration import (
+        initialize_sam_gmail,
+        send_sam_email,
+        schedule_sam_email,
+        SAM_GMAIL_AVAILABLE,
+    )
+except Exception:
+    initialize_sam_gmail = None
+    send_sam_email = None
+    schedule_sam_email = None
+    SAM_GMAIL_AVAILABLE = False
+
+# Integration availability flags (module-level defaults)
+google_drive_available = False
+sam_web_search_available = SAM_WEB_SEARCH_AVAILABLE
+sam_code_modifier_available = SAM_CODE_MODIFIER_AVAILABLE
+sam_gmail_available = SAM_GMAIL_AVAILABLE
+sam_github_available = SAM_GITHUB_AVAILABLE
+print("✅ All C modules available")
+
+# Web Interface Modules - Direct Imports
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    render_template_string,
+    Response,
+    send_file,
+    stream_with_context,
+    session,
+    redirect,
+)
+
+try:
+    from flask_compress import Compress
+
+    flask_compress_available = True
+except (ImportError, ModuleNotFoundError):
+    Compress = None
+    flask_compress_available = False
+
+# Optional imports for enhanced functionality
+try:
+    from flask_socketio import SocketIO
+
+    flask_socketio_available = True
+    if not flask_compress_available:
+        # Re-check or set if not already set by previous try block
+        try:
+            from flask_compress import Compress
+
+            flask_compress_available = True
+        except (ImportError, ModuleNotFoundError):
+            flask_compress_available = False
+except ImportError:
+    flask_socketio_available = False
+    flask_compress_available = False
+flask_available = True
+print("✅ Flask and SocketIO available")
+
+# SAM Components - Direct Imports
+from survival_agent import SURVIVAL_PROMPT
+from goal_management import (
+    GoalManager,
+    create_conversationalist_tasks,
+    ensure_domain_goal,
+)
+from goal_management import GoalManager, create_conversationalist_tasks
+from sam_config import config
+
+print("🎯 System initialization complete - All components available")
+
+
+# Flask optimizations
+def apply_all_optimizations(app):
+    """Apply all Flask optimizations"""
+    try:
+        from flask_compress import Compress
+
+        Compress(app)
+        print("  ✅ Gzip compression enabled")
+    except ImportError:
+        print("  ⚠️ Flask-Compress not available")
+
+    # Add security headers
+    @app.after_request
+    def add_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+    return app
+
+
+# Shutdown handling
+shutdown_handlers = []
+
+
+def register_shutdown_handler(name: str, handler: Callable, priority: int = 10):
+    """Register a shutdown handler"""
+    shutdown_handlers.append((name, handler, priority))
+    print(f"✅ Registered shutdown handler: {name}")
+
+
+def shutdown_aware_operation(operation_func, *args, **kwargs):
+    """Execute operation with shutdown awareness"""
+    if is_shutting_down():
+        print("⚠️ System is shutting down - operation blocked")
+        return None
+    try:
+        return operation_func(*args, **kwargs)
+    except Exception as e:
+        print(f"⚠️ Operation failed: {e}")
+        return None
+
+
+@contextmanager
+def shutdown_guard(label: str):
+    if is_shutting_down():
+        raise InterruptedError(f"Shutdown in progress: {label}")
+    yield
+
+
+def initate_shutdown():
+    """Initiate system shutdown"""
+    print("🛑 System shutdown initiated")
+    for name, handler, priority in sorted(
+        shutdown_handlers, key=lambda x: x[2], reverse=True
+    ):
+        try:
+            handler()
+            print(f"  ✅ Shutdown handler executed: {name}")
+        except Exception as e:
+            print(f"  ❌ Shutdown handler failed: {name} - {e}")
+
+
+# Global variable declarations to fix scoping issues
+sam_gmail = None
+sam_github = None
+
+# Python Orchestration Components - Direct Imports
+from survival_agent import create_survival_agent, integrate_survival_loop
+try:
+    from vision_system import create_vision_system
+except ImportError:
+    create_vision_system = None
+
+try:
+    from sam_code_scanner import create_code_scanner
+except ImportError:
+    create_code_scanner = None
+
+try:

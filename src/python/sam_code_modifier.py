@@ -79,7 +79,7 @@ def modify_code_safely(filepath: str, old_code: str, new_code: str, description:
     if old_code not in content:
         return {"success": False, "message": "Old code not found in file", "file": str(path)}
 
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    timestamp = sam_time_ref.strftime("%Y%m%d_%H%M%S")
     backup_name = f"{path.name}.{timestamp}.bak"
     backup_path = _backup_dir / backup_name
     backup_path.write_text(content, encoding="utf-8")

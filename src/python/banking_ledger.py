@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 
 def _now_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return sam_time_ref.strftime("%Y-%m-%dT%H:%M:%SZ", sam_time_ref.gmtime())
 
 
 def _safe_json_load(path: Path, default):
@@ -18,7 +18,7 @@ def _safe_json_load(path: Path, default):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        corrupt_path = path.with_suffix(path.suffix + f".corrupt.{int(time.time())}")
+        corrupt_path = path.with_suffix(path.suffix + f".corrupt.{int(sam_time_ref.time())}")
         corrupt_path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         raise ValueError(f"Corrupt JSON in {path}") from exc
 

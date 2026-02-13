@@ -173,7 +173,7 @@ class CompleteSAMSystem:
         self.system_metrics = {
             'system_health': 'healthy',
             'learning_events': 0,
-            'uptime': time.time(),
+            'uptime': sam_time_ref.time(),
             'last_activity': None
         }
 
@@ -280,7 +280,7 @@ class CompleteSAMSystem:
         # Initialize meta-controller (SAM lifecycle)
         if self.meta_controller_module:
             try:
-                self.meta_controller = self.meta_controller_module.create(64, 16, 8, int(time.time()))
+                self.meta_controller = self.meta_controller_module.create(64, 16, 8, int(sam_time_ref.time()))
                 self._initialize_identity_anchor()
                 print_status("✅ Meta-controller initialized")
             except Exception as e:
@@ -289,7 +289,7 @@ class CompleteSAMSystem:
         # Initialize SAV core
         if self.sav_module:
             try:
-                self.sav_core = self.sav_module.create(int(time.time()) ^ 0xA5A5A5A5)
+                self.sav_core = self.sav_module.create(int(sam_time_ref.time()) ^ 0xA5A5A5A5)
                 print_status("✅ SAV core initialized")
             except Exception as e:
                 print_error(f"SAV initialization failed: {e}")
@@ -376,7 +376,7 @@ class CompleteSAMSystem:
         """Estimate pressure signals for meta-controller"""
         activity_age = 0.0
         if self.system_metrics.get('last_activity'):
-            activity_age = time.time() - self.system_metrics['last_activity']
+            activity_age = sam_time_ref.time() - self.system_metrics['last_activity']
 
         if self.meta_controller_module and hasattr(self.meta_controller_module, "estimate_pressures"):
             return self.meta_controller_module.estimate_pressures(
@@ -396,7 +396,7 @@ class CompleteSAMSystem:
         planner_friction = min(1.0, max(0.0, (self.system_metrics.get('learning_events', 0) / 50.0)))
         context_collapse = min(1.0, max(0.0, (len(self.current_goals) / 10.0)))
         compression_waste = min(1.0, max(0.0, (len(self.goal_history) / 50.0)))
-        temporal_incoherence = min(1.0, max(0.0, abs(math.sin(time.time() / 60.0))))
+        temporal_incoherence = min(1.0, max(0.0, abs(math.sin(sam_time_ref.time() / 60.0))))
 
         return {
             "residual": residual,
@@ -456,7 +456,7 @@ class CompleteSAMSystem:
                     print_warning("Invariant check failed - entering safe mode")
             except Exception as e:
                 print_error(f"Meta-controller loop error: {e}")
-            time.sleep(2.5)
+            sam_time_ref.sleep(2.5)
     
     def _setup_web_routes(self):
         """Setup Flask web routes"""
@@ -691,7 +691,7 @@ class CompleteSAMSystem:
         temporal_incoherence = 0.05
 
         # Adjust with survival score and activity
-        activity_age = time.time() - (self.system_metrics.get('last_activity') or time.time())
+        activity_age = sam_time_ref.time() - (self.system_metrics.get('last_activity') or sam_time_ref.time())
         if activity_age > 120:
             planner_friction = 0.2
             retrieval_entropy = 0.2
@@ -739,7 +739,7 @@ class CompleteSAMSystem:
                             if not gate_ok:
                                 applied = False
                 self.meta_state = sam_meta_module.get_state(self.meta_controller)
-                time.sleep(5)
+                sam_time_ref.sleep(5)
         self.meta_thread = threading.Thread(target=loop, daemon=True)
         self.meta_thread.start()
 
@@ -782,7 +782,7 @@ class CompleteSAMSystem:
             try:
                 health_status = {
                     'status': 'healthy',
-                    'uptime': time.time() - self.system_metrics['uptime'],
+                    'uptime': sam_time_ref.time() - self.system_metrics['uptime'],
                     'connected_agents': len(self.connected_agents),
                     'system_metrics': self.system_metrics,
                     'survival_score': getattr(self, 'survival_score', 1.0)
@@ -823,7 +823,7 @@ class CompleteSAMSystem:
                     return jsonify({
                         'success': True,
                         'response': result,
-                        'timestamp': datetime.now().isoformat()
+                        'timestamp': sam_datetime_ref.now().isoformat()
                     })
                 else:
                     return jsonify({
@@ -871,7 +871,7 @@ class CompleteSAMSystem:
                     emit('message', {
                         'type': 'response',
                         'data': result,
-                        'timestamp': datetime.now().isoformat()
+                        'timestamp': sam_datetime_ref.now().isoformat()
                     })
             except Exception as e:
                 emit('error', {'error': str(e)})
@@ -993,7 +993,7 @@ class CompleteSAMSystem:
                 if agent_config['status'] == 'available':
                     self.connected_agents[agent_id] = {
                             'config': agent_config,
-                            'connected_at': time.time(),
+                            'connected_at': sam_time_ref.time(),
                             'message_count': 0,
                             'muted': False
                             }
@@ -1021,7 +1021,7 @@ class CompleteSAMSystem:
                 base_agent = self.connected_agents[base_agent_id]['config']
 
                 # Generate unique ID for new agent
-                clone_id = f"{base_agent_id}_clone_{int(time.time())}"
+                clone_id = f"{base_agent_id}_clone_{int(sam_time_ref.time())}"
                 clone_name = custom_name or f"{base_agent['name']}-Clone"
 
                 # Create cloned agent configuration
@@ -1039,7 +1039,7 @@ class CompleteSAMSystem:
                 self.agent_configs[clone_id] = cloned_agent
                 self.connected_agents[clone_id] = {
                             'config': cloned_agent,
-                            'connected_at': time.time(),
+                            'connected_at': sam_time_ref.time(),
                             'message_count': 0,
                             'muted': False
                             }
@@ -1054,7 +1054,7 @@ class CompleteSAMSystem:
             personality = ' '.join(parts[3:]) if len(parts) > 3 else "helpful, intelligent, conversational"
 
             # Generate unique ID
-            spawn_id = f"spawn_{agent_type}_{int(time.time())}"
+            spawn_id = f"spawn_{agent_type}_{int(sam_time_ref.time())}"
 
             # Determine provider and capabilities based on type
             if agent_type.lower() in ['sam', 'neural']:
@@ -1085,7 +1085,7 @@ class CompleteSAMSystem:
             self.agent_configs[spawn_id] = spawned_agent
             self.connected_agents[spawn_id] = {
                         'config': spawned_agent,
-                        'connected_at': time.time(),
+                        'connected_at': sam_time_ref.time(),
                         'message_count': 0,
                         'muted': False
                         }
@@ -1227,7 +1227,7 @@ class CompleteSAMSystem:
         elif cmd == '/survival':
             return f"🛡️ **Survival Metrics**\\n\\n"
             f"Current Survival Score: {self.survival_score:.2f}\\n"
-            f"System Uptime: {time.time() - self.system_metrics['uptime']:.2f} seconds\\n"
+            f"System Uptime: {sam_time_ref.time() - self.system_metrics['uptime']:.2f} seconds\\n"
             f"Active Goals: {len(self.current_goals)}\\n"
             f"Goal History: {len(self.goal_history)} completed goals\\n"
 
@@ -1273,7 +1273,7 @@ class CompleteSAMSystem:
         print("🧪 Running comprehensive system tests...")
         
         test_results = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': sam_datetime_ref.now().isoformat(),
             'system_health': 'unknown',
             'tests_run': 0,
             'tests_passed': 0,
