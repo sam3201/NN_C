@@ -25,20 +25,6 @@
   },
   "skills": {
     "*": "allow"
-  },
-  "agents": {
-    "research": {
-      "tools": {
-        "context7": true,
-        "github-search": true,
-        "skill": true
-      }
-    },
-    "code-analyzer": {
-      "tools": {
-        "filesystem": true,
-        "skill": true
-      }
-    }
   }
 }
+
