@@ -5,7 +5,7 @@ import datetime as dt
 import json
 import os
 import threading
-import time as time_module
+import time as sam_time_ref
 import mimetypes
 from email.message import EmailMessage
 from pathlib import Path

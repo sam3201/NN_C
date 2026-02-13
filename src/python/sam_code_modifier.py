@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-import time as time_module
+import time as sam_time_ref
 from pathlib import Path
 from typing import Dict, Any
 

@@ -38,8 +38,14 @@ extensions = [
         extra_compile_args=COMMON_ARGS,
         extra_link_args=["-Wl,-export_dynamic"] # Add this line
     ),
-    Extension(
-        'sam_meta_controller_c',
+        Extension(
+            "sam_regulator_c",
+            ["src/c_modules/sam_regulator_c.c"],
+            include_dirs=["include"],
+            extra_compile_args=["-O3"],
+        ),
+        Extension(
+            "sam_meta_controller_c",
         sources=['src/c_modules/sam_meta_controller_c.c'],
         include_dirs=['src/c_modules', 'include'],
         library_dirs=[],

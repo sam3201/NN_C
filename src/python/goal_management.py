@@ -1,7 +1,7 @@
 # SAM Goal Management Module
 # Goal management and task coordination for SAM 2.0 AGI
 
-import time as time_module
+import time as sam_time_ref
 import re
 from dataclasses import dataclass, field
 
@@ -15,7 +15,7 @@ class TaskNode:
     estimated_time: int = 0
     task_type: str = "general"
     status: str = "pending"
-    created_at: float = field(default_factory=lambda: time_module.time())
+    created_at: float = field(default_factory=lambda: sam_time_ref.time())
     progress: float = 0.0
     goal_id: str = ""  # Add goal_id field
 
@@ -179,7 +179,7 @@ class GoalManager:
             'description': goal,
             'priority': priority,
             'status': 'active',
-            'created_at': time_module.time(),
+            'created_at': sam_time_ref.time(),
             'progress': 0.0
         }
         if goal_type:
@@ -200,7 +200,7 @@ class GoalManager:
                 goal['progress'] = min(1.0, max(0.0, progress))
                 if progress >= 1.0:
                     goal['status'] = 'completed'
-                    goal['completed_at'] = time_module.time()
+                    goal['completed_at'] = sam_time_ref.time()
                     self.completed_goals.append(goal)
                     self.active_goals.remove(goal)
                 return True
@@ -395,7 +395,7 @@ class GoalManager:
         
         lines += [
             "",
-            f"Last updated: {time_module.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"Last updated: {sam_time_ref.strftime('%Y-%m-%d %H:%M:%S')}",
             f"Total active goals: {len(self.active_goals)}",
             f"Total completed goals: {len(self.completed_goals)}",
             f"Total subtasks: {len(self.subtasks)}"
@@ -472,7 +472,7 @@ class TaskManager:
             'task': task,
             'priority': self.task_priorities.get(priority, 5),
             'dependencies': dependencies or [],
-            'scheduled_at': time_module.time(),
+            'scheduled_at': sam_time_ref.time(),
             'status': 'scheduled',
             'attempts': 0,
             'max_attempts': 3
@@ -516,7 +516,7 @@ class TaskManager:
         task = task_entry['task']
         
         task_entry['status'] = 'running'
-        task_entry['started_at'] = time_module.time()
+        task_entry['started_at'] = sam_time_ref.time()
         task_entry['attempts'] += 1
         
         try:
@@ -524,7 +524,7 @@ class TaskManager:
             result = self._execute_task_by_type(task)
             
             task_entry['status'] = 'completed'
-            task_entry['completed_at'] = time_module.time()
+            task_entry['completed_at'] = sam_time_ref.time()
             task_entry['result'] = result
             
             # Update task status
@@ -537,7 +537,7 @@ class TaskManager:
                 'task_type': task.task_type,
                 'execution_time': task_entry['completed_at'] - task_entry['started_at'],
                 'result': result,
-                'timestamp': time_module.time()
+                'timestamp': sam_time_ref.time()
             })
             
             print(f"✅ TaskManager completed: {task.name} ({task.task_type})")
@@ -683,7 +683,7 @@ class SubgoalExecutionAlgorithm:
                                     subtask.progress = 0.5
                                     
                                     # Simulate completion after some time
-                                    if time_module.time() - subtask.created_at > 30:  # 30 seconds old
+                                    if sam_time_ref.time() - subtask.created_at > 30:  # 30 seconds old
                                         subtask.status = 'completed'
                                         subtask.progress = 1.0
                                         print(f"✅ Completed subtask: {subtask.name}")
@@ -692,7 +692,7 @@ class SubgoalExecutionAlgorithm:
                                     print(f"⚠️ Could not execute subtask: {subtask.name}")
         
         self.execution_history.append({
-            'timestamp': time_module.time(),
+            'timestamp': sam_time_ref.time(),
             'tasks_executed': executed_tasks
         })
         return {"tasks_executed": executed_tasks}

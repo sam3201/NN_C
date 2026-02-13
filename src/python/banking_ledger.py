@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import time as time_module
+import time as sam_time_ref
 import uuid
 from dataclasses import dataclass, asdict
 from pathlib import Path
