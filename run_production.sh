@@ -56,7 +56,7 @@ while true; do
     echo "🎯 Launching system..."
     # We don't use nohup here inside the loop because the loop itself should be backgrounded if needed.
     # But for ease of use, we'll let the user run this script in foreground or background.
-    python3 src/python/complete_sam_unified.py --port 5005
+    python src/python/complete_sam_unified.py --port 5005
     
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
