@@ -21,7 +21,7 @@ fi
 
 # 2. Dependency Check
 echo "📦 Checking dependencies..."
-pip install -q -r requirements.txt
+pip install -r requirements.txt #-q -r requirements.txt
 
 # 3. C-Core Compilation (Critical)
 echo "🧠 Compiling C-Core (God Equation Regulator & Agents)..."
