@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Tuple, List, Any, Optional
 import numpy as np
-import time
+import time as time_module
 
 # ----------------------------
 # Enumerations / IDs

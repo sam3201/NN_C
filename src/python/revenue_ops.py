@@ -7,7 +7,7 @@ import json
 import os
 import re
 import sys
-import time
+import time as time_module
 import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path

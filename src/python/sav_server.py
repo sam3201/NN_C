@@ -3,7 +3,7 @@
 SAV Web UI - Flask front-end for SAM/SAV dual system.
 """
 
-import time
+import time as time_module
 import os
 from flask import Flask, jsonify, request, render_template_string
 

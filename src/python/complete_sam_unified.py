@@ -13,7 +13,7 @@ This is the unified system that brings together:
 import sys
 import os
 import math
-import time
+import time as time_module
 import json
 import inspect
 import threading
@@ -112,8 +112,12 @@ def setup_runtime_logging():
     global _JSONL_LOG_PATH, _HUMAN_LOG_PATH, _JSONL_LOG_FH
     log_dir = os.getenv("SAM_LOG_DIR", "logs")
     os.makedirs(log_dir, exist_ok=True)
-    log_file = os.getenv("SAM_LOG_FILE", os.path.join(log_dir, "sam_runtime.log"))
-    jsonl_file = os.getenv("SAM_LOG_JSONL", os.path.join(log_dir, "sam_runtime.jsonl"))
+    log_file = os.getenv(
+        "SAM_LOG_FILE", os.path.join(log_dir, "sam_runtime_module.log")
+    )
+    jsonl_file = os.getenv(
+        "SAM_LOG_JSONL", os.path.join(log_dir, "sam_runtime_module.jsonl")
+    )
 
     # Tee stdout/stderr to human-readable log
     log_fp = open(log_file, "a", encoding="utf-8", buffering=1)
@@ -131,7 +135,7 @@ def setup_runtime_logging():
 
 def _utc_now():
     """UTC timestamp in ISO8601 with Z suffix."""
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime_module.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def log_event(level: str, event: str, *args, **data):
@@ -585,12 +589,12 @@ class FailureEvent:
         self.stack_trace = stack_trace
         self.failing_tests = failing_tests or []
         self.logs = logs or ""
-        self.timestamp = timestamp or datetime.now().isoformat()
+        self.timestamp = timestamp or datetime_module.now().isoformat()
         self.severity = severity
         self.context = context or "runtime"
         self.research_notes = research_notes or ""
         self.message = message or ""
-        self.id = f"{error_type}_{int(time.time() * 1000)}"
+        self.id = f"{error_type}_{int(time_module.time() * 1000)}"
 
     def to_dict(self):
         return {
@@ -634,7 +638,7 @@ class ObserverAgent:
             stack_trace=self._get_stack_trace(exception),
             failing_tests=self._get_failing_tests(),
             logs=self._get_recent_logs(),
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime_module.now().isoformat(),
             severity=severity,
             context=context or "runtime",
             message=msg,
@@ -875,7 +879,7 @@ class FaultLocalizerAgent:
 
             try:
                 mtime = os.path.getmtime(filepath)
-                hours_old = (time.time() - mtime) / 3600
+                hours_old = (time_module.time() - mtime) / 3600
 
                 # Exponential decay: more recent = more important
                 importance = max(
@@ -1074,7 +1078,7 @@ class FaultLocalizerAgent:
                     if file.endswith(".py"):
                         filepath = os.path.join(root, file)
                         mtime = os.path.getmtime(filepath)
-                        if time.time() - mtime < hours * 3600:
+                        if time_module.time() - mtime < hours * 3600:
                             recent_files.append(
                                 os.path.relpath(filepath, self.system.project_root)
                             )
@@ -1343,7 +1347,7 @@ Confidence Threshold: Must be >= 0.75 for application
 
             # Add a comment to the top of the file
             old_first_line = lines[0]
-            new_first_line = f"# SAM Auto-Patch {datetime.now().isoformat()} applied.\n{old_first_line}"
+            new_first_line = f"# SAM Auto-Patch {datetime_module.now().isoformat()} applied.\n{old_first_line}"
 
             # Construct a 'replace' type change
             return {
@@ -2341,7 +2345,7 @@ class MetaAgent:
                 "memory_usage": mem_usage,
             },
             "recent_improvements": len(self.improvements_applied[-10:]),
-            "timestamp": time.time(),
+            "timestamp": time_module.time(),
         }
 
     def generate_system_improvements(self) -> Dict[str, Any]:
@@ -2431,7 +2435,7 @@ class MetaAgent:
             "summary": "Generated improvement suggestions from live system health.",
             "improvement_phases": improvements,
             "health": health,
-            "timestamp": time.time(),
+            "timestamp": time_module.time(),
         }
 
     def ingest_learning_event(
@@ -2445,7 +2449,7 @@ class MetaAgent:
                 "prompt": prompt,
                 "response": response,
                 "user": user or "user",
-                "ts": time.time(),
+                "ts": time_module.time(),
             }
             self.learning_log.append(record)
             self._persist_learning_event(record)
@@ -2454,7 +2458,7 @@ class MetaAgent:
                 {
                     "type": "chat_learning",
                     "user": user or "user",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime_module.now().isoformat(),
                 }
             )
             self.learning_cycles += 1
@@ -2547,7 +2551,7 @@ class MetaAgent:
             summary_parts.append("Recent conversation distilled.")
         summary = " | ".join(summary_parts)
         return {
-            "ts": time.time(),
+            "ts": time_module.time(),
             "summary": summary,
             "rules": rules[:5],
             "topics": top_topics,
@@ -2562,7 +2566,7 @@ class MetaAgent:
             return
         self.distilled_memory.append(record)
         self._persist_distilled_record(record)
-        self.last_distill_ts = record.get("ts", time.time())
+        self.last_distill_ts = record.get("ts", time_module.time())
         self.last_distilled = record.get("summary", "")
         self.learning_cycles += 1
         self.system.log_event(
@@ -2769,14 +2773,14 @@ class MetaAgent:
             "patch": patch,
             "failure": failure,
             "result": "success",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime_module.now().isoformat(),
         }
         self.patch_history.append(record)
         self.successful_fixes.append(
             {
                 "patch": patch,
                 "failure": failure,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime_module.now().isoformat(),
             }
         )
         self.improvements_applied.append(
@@ -2785,7 +2789,7 @@ class MetaAgent:
                 "patch_id": patch.get("id"),
                 "intent": patch.get("intent"),
                 "confidence": patch.get("confidence"),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime_module.now().isoformat(),
             }
         )
         self.learning_cycles += 1
@@ -2805,20 +2809,20 @@ class MetaAgent:
             "patch": patch,
             "failure": failure,
             "result": "rejected",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime_module.now().isoformat(),
         }
         self.patch_history.append(record)
         self.failed_attempts.append(
             {
                 "patch": patch,
                 "failure": failure,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime_module.now().isoformat(),
             }
         )
         self.errors_detected.append(
             {
                 "error_type": self._get_failure_attr(failure, "error_type", "unknown"),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime_module.now().isoformat(),
             }
         )
         self.learning_cycles += 1
@@ -3549,7 +3553,7 @@ class MetaAgent:
                         new_code = (
                             "def _utc_now():\n"
                             '    """UTC timestamp in ISO8601 with Z suffix."""\n'
-                            '    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")\n\n'
+                            '    return datetime_module.now(timezone.utc).isoformat().replace("+00:00", "Z")\n\n'
                             + anchor
                         )
                         patches.append(
@@ -4797,7 +4801,7 @@ class UnifiedSAMSystem:
 
         # System metrics (initialize early)
         self.system_metrics = {
-            "start_time": datetime.now().isoformat(),
+            "start_time": datetime_module.now().isoformat(),
             "c_core_status": "initializing",
             "python_orchestration_status": "initializing",
             "web_interface_status": "initializing",
@@ -5405,7 +5409,7 @@ class UnifiedSAMSystem:
             personality = "frugal, optimization-focused, efficient"
 
         # Create unique ID and name
-        new_id = f"submodel_{int(time.time())}_{random.randint(100, 999)}"
+        new_id = f"submodel_{int(time_module.time())}_{random.randint(100, 999)}"
         new_name = f"SAM-{base_cfg['name']}-{specialty.split()[0]}"
 
         # Create config
@@ -5421,7 +5425,7 @@ class UnifiedSAMSystem:
         self.agent_configs[new_id] = new_cfg
         self.connected_agents[new_id] = {
             "config": new_cfg,
-            "connected_at": time.time(),
+            "connected_at": time_module.time(),
             "message_count": 0,
             "muted": False,
         }
@@ -5501,7 +5505,7 @@ class UnifiedSAMSystem:
         # Fill remaining with small noise to prevent zero-gradient issues in compiler
         for i in range(53):
             if m[i] == 0:
-                m[i] = abs(math.sin(i + time.time() / 100.0)) * 0.01
+                m[i] = abs(math.sin(i + time_module.time() / 100.0)) * 0.01
 
         return m
 
@@ -5622,9 +5626,9 @@ class UnifiedSAMSystem:
 
         while getattr(self, "watchdog_active", False):
             try:
-                time.sleep(5)  # Check every 5 seconds
+                time_module.sleep(5)  # Check every 5 seconds
 
-                current_time = time.time()
+                current_time = time_module.time()
                 restart_needed = False
 
                 for pattern in watch_patterns:
@@ -5659,18 +5663,18 @@ class UnifiedSAMSystem:
                         "hot_reload_triggered",
                         "Internal watchdog detected file changes",
                         source="internal_watchdog",
-                        timestamp=datetime.now().isoformat(),
+                        timestamp=datetime_module.now().isoformat(),
                     )
 
                     # Give a brief moment for file writes to complete
-                    time.sleep(2)
+                    time_module.sleep(2)
 
                     # Exit to trigger restart by external watcher
                     os._exit(0)
 
             except Exception as e:
                 print(f"⚠️ Watchdog error: {e}")
-                time.sleep(10)  # Wait longer on error
+                time_module.sleep(10)  # Wait longer on error
             print("   ✅ Production-grade debugging and repair capabilities online")
             print("   📚 Continuous learning and self-improvement active")
         else:
@@ -5932,7 +5936,7 @@ class UnifiedSAMSystem:
     ):
         if not self.distill_writer:
             return
-        message_id = f"chatbot:{int(time.time() * 1000)}"
+        message_id = f"chatbot:{int(time_module.time() * 1000)}"
         metadata = {
             "room_id": "chatbot",
             "room_name": "Dashboard Chat",
@@ -5940,7 +5944,7 @@ class UnifiedSAMSystem:
             "user_id": user.get("id"),
             "user_name": user.get("name"),
             "message_id": message_id,
-            "timestamp": time.time(),
+            "timestamp": time_module.time(),
             "context": (context or [])[-10:],
             "multi_agent": bool(getattr(self, "chat_multi_agent", False)),
             "agents_max": int(getattr(self, "chat_agents_max", 3)),
@@ -6048,16 +6052,16 @@ class UnifiedSAMSystem:
                     avg=recent_cal_avg,
                 )
 
-        growth_idle = time.time() - (
-            self.system_metrics.get("last_growth_ts") or time.time()
+        growth_idle = time_module.time() - (
+            self.system_metrics.get("last_growth_ts") or time_module.time()
         )
         if growth_idle > 300:
             residual = max(residual, 0.25)
             planner_friction = max(planner_friction, 0.25)
             retrieval_entropy = max(retrieval_entropy, 0.25)
 
-        activity_age = time.time() - (
-            self.system_metrics.get("last_activity") or time.time()
+        activity_age = time_module.time() - (
+            self.system_metrics.get("last_activity") or time_module.time()
         )
         latency = activity_age / 1000.0 if activity_age > 0 else 0.0
 
@@ -6166,7 +6170,7 @@ class UnifiedSAMSystem:
                 self.system_metrics["last_growth_lambda"] = lambda_val
                 self.system_metrics["last_growth_signals"] = dict(signals)
                 self.system_metrics["last_growth_dominant"] = dominant
-                self.system_metrics["last_growth_signal_ts"] = time.time()
+                self.system_metrics["last_growth_signal_ts"] = time_module.time()
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
 
                 # Retrieve and update growth diagnostics immediately after primitive selection
@@ -6182,11 +6186,11 @@ class UnifiedSAMSystem:
                 ]["growth_frozen"]
 
                 if primitive is None or primitive == 0:
-                    self.system_metrics["last_growth_attempt_ts"] = time.time()
+                    self.system_metrics["last_growth_attempt_ts"] = time_module.time()
                     self.system_metrics["last_growth_attempt_primitive"] = 0
                     self.system_metrics["last_growth_attempt_result"] = "no_primitive"
                 elif primitive is not None and primitive != 0:
-                    self.system_metrics["last_growth_attempt_ts"] = time.time()
+                    self.system_metrics["last_growth_attempt_ts"] = time_module.time()
                     self.system_metrics["last_growth_attempt_primitive"] = primitive
                     applied = False
                     if not self.meta_growth_freeze:
@@ -6206,7 +6210,9 @@ class UnifiedSAMSystem:
                                 self.meta_controller, primitive, bool(gate_ok)
                             )
                             if gate_ok:
-                                self.system_metrics["last_growth_ts"] = time.time()
+                                self.system_metrics["last_growth_ts"] = (
+                                    time_module.time()
+                                )
                                 self.system_metrics["last_growth_primitive"] = primitive
                                 self.system_metrics["last_growth_attempt_result"] = (
                                     "applied"
@@ -6260,7 +6266,7 @@ class UnifiedSAMSystem:
                     self._consolidate_specialists()
 
                 self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
-                time.sleep(5)
+                time_module.sleep(5)
 
         self.meta_thread = threading.Thread(target=loop, daemon=True)
         self.meta_thread.start()
@@ -6269,7 +6275,7 @@ class UnifiedSAMSystem:
         """Persist system state for restart continuity."""
         try:
             state = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime_module.now().isoformat(),
                 "profile": self.profile_name,
                 "system_metrics": self.system_metrics,
                 "meta_state": self.meta_state,
@@ -6515,7 +6521,7 @@ class UnifiedSAMSystem:
                 )
                 return False
             # Throttle to prevent repair loops
-            now = time.time()
+            now = time_module.time()
             last = getattr(self, "_last_meta_repair", 0)
             if now - last < 120:
                 log_event(
@@ -6589,12 +6595,12 @@ class UnifiedSAMSystem:
                             self.skipped_issues_processor_active = False
 
                 # Sleep before next check
-                time.sleep(60)  # Check every minute
+                time_module.sleep(60)  # Check every minute
 
             except Exception as e:
                 print(f"⚠️ Skipped issues processor error: {e}")
                 self.skipped_issues_processor_active = False
-                time.sleep(30)
+                time_module.sleep(30)
 
     def _has_active_issues(self):
         """Check if there are any active issues being processed"""
@@ -6739,7 +6745,7 @@ class UnifiedSAMSystem:
 
             try:
                 # Sleep between healing cycles
-                time.sleep(60)  # Check every minute
+                time_module.sleep(60)  # Check every minute
 
                 # Perform self-healing check
                 issues_found = self._perform_self_healing_check()
@@ -6753,7 +6759,7 @@ class UnifiedSAMSystem:
 
             except Exception as e:
                 print(f"⚠️ Self-healing cycle {healing_cycle} encountered error: {e}")
-                time.sleep(30)  # Wait longer if there was an error
+                time_module.sleep(30)  # Wait longer if there was an error
 
     def _continuous_health_monitoring(self):
         """Continuous health monitoring of system components"""
@@ -6764,7 +6770,7 @@ class UnifiedSAMSystem:
 
             try:
                 # Sleep between monitoring cycles
-                time.sleep(30)  # Check every 30 seconds
+                time_module.sleep(30)  # Check every 30 seconds
 
                 # Monitor component health
                 health_status = self._check_component_health()
@@ -6783,7 +6789,7 @@ class UnifiedSAMSystem:
 
             except Exception as e:
                 print(f"⚠️ Health monitoring cycle {monitor_cycle} error: {e}")
-                time.sleep(15)
+                time_module.sleep(15)
 
     def _perform_self_healing_check(self):
         """Perform a self-healing check and attempt fixes"""
@@ -6812,7 +6818,7 @@ class UnifiedSAMSystem:
                                 skipped_issue = {
                                     "message": issue.get("message", "unknown_issue"),
                                     "reason": issue.get("reason", "not_escalated"),
-                                    "timestamp": datetime.now().isoformat(),
+                                    "timestamp": datetime_module.now().isoformat(),
                                     "severity": issue.get("severity", "low"),
                                     "context": "self_healing",
                                     "original_issue": issue,
@@ -7044,7 +7050,7 @@ class UnifiedSAMSystem:
                 threads.append((name, thread))
 
         # Give non-critical components time to initialize
-        time.sleep(5)
+        time_module.sleep(5)
 
         # Check status of background threads
         for name, thread in threads:
@@ -7764,7 +7770,7 @@ class UnifiedSAMSystem:
             self.connected_agents = {
                 "meta_agent": {
                     "config": self.agent_configs["meta_agent"],
-                    "connected_at": time.time(),
+                    "connected_at": time_module.time(),
                     "message_count": 0,
                     "muted": False,
                 }
@@ -7780,13 +7786,13 @@ class UnifiedSAMSystem:
         if self.sam_available:
             self.connected_agents["sam_alpha"] = {
                 "config": self.agent_configs["sam_alpha"],
-                "connected_at": time.time(),
+                "connected_at": time_module.time(),
                 "message_count": 0,
                 "muted": False,
             }
             self.connected_agents["sam_beta"] = {
                 "config": self.agent_configs["sam_beta"],
-                "connected_at": time.time(),
+                "connected_at": time_module.time(),
                 "message_count": 0,
                 "muted": False,
             }
@@ -7812,7 +7818,7 @@ class UnifiedSAMSystem:
                 if agent_id in self.agent_configs and connected_count < max_ollama:
                     self.connected_agents[agent_id] = {
                         "config": self.agent_configs[agent_id],
-                        "connected_at": time.time(),
+                        "connected_at": time_module.time(),
                         "message_count": 0,
                         "muted": False,
                     }
@@ -7846,7 +7852,7 @@ class UnifiedSAMSystem:
                     self.agent_configs[agent_id]["status"] = "available"
                     self.connected_agents[agent_id] = {
                         "config": self.agent_configs[agent_id],
-                        "connected_at": time.time(),
+                        "connected_at": time_module.time(),
                         "message_count": 0,
                         "muted": False,
                     }
@@ -7876,7 +7882,7 @@ class UnifiedSAMSystem:
             if agent_id in self.agent_configs:
                 self.connected_agents[agent_id] = {
                     "config": self.agent_configs[agent_id],
-                    "connected_at": time.time(),
+                    "connected_at": time_module.time(),
                     "message_count": 0,
                     "muted": False,
                 }
@@ -8037,6 +8043,7 @@ class UnifiedSAMSystem:
             # Initialize goal management system
             print("  - Creating goal management system...")
             self.goal_manager = GoalManager(self)
+            self._ensure_base_goals()  # Load goals from file
             try:
                 task_fn = create_conversationalist_tasks
                 try:
@@ -9144,7 +9151,7 @@ class UnifiedSAMSystem:
                         "last_growth_primitive"
                     ),
                     "last_growth_reason": self.system_metrics.get("last_growth_reason"),
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime_module.now().isoformat(),
                 }
             )
 
@@ -9195,7 +9202,7 @@ class UnifiedSAMSystem:
                 log_event("warn", "server_restart", "Admin requested server restart")
 
                 def _do_restart():
-                    time.sleep(1.0)
+                    time_module.sleep(1.0)
                     os._exit(3)
 
                 threading.Thread(target=_do_restart, daemon=True).start()
@@ -9212,7 +9219,7 @@ class UnifiedSAMSystem:
             return jsonify(
                 {
                     "status": "ok",
-                    "timestamp": time.time(),
+                    "timestamp": time_module.time(),
                     "c_core": self.system_metrics.get("c_core_status", "unknown"),
                     "python_orchestration": self.system_metrics.get(
                         "python_orchestration_status", "unknown"
@@ -9321,7 +9328,7 @@ class UnifiedSAMSystem:
             kind = (kind or "runtime").lower()
             if kind == "human":
                 return _HUMAN_LOG_PATH or os.getenv(
-                    "SAM_LOG_FILE", "logs/sam_runtime.log"
+                    "SAM_LOG_FILE", "logs/sam_runtime_module.log"
                 )
             if kind == "revenue":
                 return (
@@ -9342,7 +9349,7 @@ class UnifiedSAMSystem:
                     )
                 )
             return _JSONL_LOG_PATH or os.getenv(
-                "SAM_LOG_JSONL", "logs/sam_runtime.jsonl"
+                "SAM_LOG_JSONL", "logs/sam_runtime_module.jsonl"
             )
 
         @self.app.route("/api/logs/stream")
@@ -9383,7 +9390,7 @@ class UnifiedSAMSystem:
                             pos = f.tell()
                             line = f.readline()
                             if not line:
-                                time.sleep(0.5)
+                                time_module.sleep(0.5)
                                 f.seek(pos)
                                 continue
                             yield f"data: {line.strip()}\n\n"
@@ -9504,7 +9511,7 @@ class UnifiedSAMSystem:
                         "learning_events": meta.learning_cycles,
                         "distilled_count": len(meta.distilled_memory),
                         "last_patch_outcome": meta.last_patch_outcome,
-                        "last_repair_time": meta.last_repair_time.isoformat()
+                        "last_repair_time": meta.last_repair_time_module.isoformat()
                         if meta.last_repair_time
                         else None,
                     }
@@ -9645,7 +9652,7 @@ class UnifiedSAMSystem:
                     stack_trace=fake_trace,
                     failing_tests=[],
                     logs="meta-agent test",
-                    timestamp=datetime.now().isoformat(),
+                    timestamp=datetime_module.now().isoformat(),
                     severity="medium",
                     context="meta_test",
                     message="Synthetic failure for meta-agent repair test",
@@ -9833,7 +9840,7 @@ class UnifiedSAMSystem:
                     "success": result.success,
                     "message": result.message,
                     "details": result.details,
-                    "timestamp": time.time(),
+                    "timestamp": time_module.time(),
                 }
                 status = 200 if result.success else 500
                 return jsonify(self.backup_last_result), status
@@ -9947,7 +9954,7 @@ class UnifiedSAMSystem:
                                     }
                                 ],
                                 "source": "sam_fallback_research",
-                                "timestamp": datetime.now().isoformat(),
+                                "timestamp": datetime_module.now().isoformat(),
                                 "warning": "Fallback research unavailable",
                             }
                         )
@@ -9959,7 +9966,7 @@ class UnifiedSAMSystem:
                                 {"content": result, "source": "fallback_c_agent"}
                             ],
                             "source": "sam_fallback_research",
-                            "timestamp": datetime.now().isoformat(),
+                            "timestamp": datetime_module.now().isoformat(),
                             "warning": "Using fallback search - dedicated search not available",
                         }
                     )
@@ -10025,7 +10032,7 @@ class UnifiedSAMSystem:
                         "messages": messages,
                         "evaluation": evaluation,  # Added evaluation here
                         "multi_agent": len(messages) > 1,
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime_module.now().isoformat(),
                         "sam_integration": True,
                     }
                 )
@@ -10229,7 +10236,7 @@ class UnifiedSAMSystem:
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
-        # time.
+        # time_module.
         if self.google_token_path.exists():
             creds = Credentials.from_authorized_user_file(
                 str(self.google_token_path), scopes
@@ -10405,7 +10412,7 @@ class UnifiedSAMSystem:
 
         try:
             # Create a temporary zip archive of sam_data
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime_module.now().strftime("%Y%m%d_%H%M%S")
             backup_filename = f"sam_data_backup_{timestamp}.zip"
             temp_zip_path = self.project_root / "sam_data" / backup_filename
 
@@ -10857,12 +10864,12 @@ class UnifiedSAMSystem:
                     "restart_requested",
                     "System restart requested via API",
                     source="admin_api",
-                    timestamp=datetime.now().isoformat(),
+                    timestamp=datetime_module.now().isoformat(),
                 )
 
                 # Trigger graceful shutdown and restart
                 def delayed_restart():
-                    time.sleep(2)  # Give time for response to be sent
+                    time_module.sleep(2)  # Give time for response to be sent
                     print("🔄 Initiating system restart...")
                     os._exit(0)  # This will cause watchmedo to restart the process
 
@@ -10876,7 +10883,7 @@ class UnifiedSAMSystem:
                     {
                         "status": "restart_initiated",
                         "message": "System restart initiated. The system will be back online shortly.",
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime_module.now().isoformat(),
                     }
                 )
 
@@ -11394,7 +11401,7 @@ sam@terminal:~$
                         "success": True,
                         "command": command,
                         "output": result,
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime_module.now().isoformat(),
                     }
                 )
 
@@ -11440,7 +11447,7 @@ sam@terminal:~$
             self.connected_users[user_id] = {
                 "id": user_id,
                 "name": f"User-{len(self.connected_users) + 1}",
-                "joined_at": time.time(),
+                "joined_at": time_module.time(),
                 "current_room": None,
                 "sid": user_id,
             }
@@ -11507,7 +11514,7 @@ sam@terminal:~$
                 self.conversation_rooms[room_id] = {
                     "id": room_id,
                     "name": data.get("room_name", f"Room-{room_id}"),
-                    "created_at": time.time(),
+                    "created_at": time_module.time(),
                     "users": [],
                     "messages": [],
                     "agent_type": agent_type,
@@ -11595,11 +11602,11 @@ sam@terminal:~$
 
             # Store user message
             message_data = {
-                "id": f"msg_{int(time.time() * 1000)}",
+                "id": f"msg_{int(time_module.time() * 1000)}",
                 "user_id": user_id,
                 "user_name": user.get("name", "Unknown"),
                 "message": message,
-                "timestamp": time.time(),
+                "timestamp": time_module.time(),
                 "message_type": "user",
             }
 
@@ -11619,11 +11626,11 @@ sam@terminal:~$
                         cfg, message, conversation_context
                     )
                     response_data = {
-                        "id": f"msg_{int(time.time() * 1000) + random.randint(1, 999)}",
+                        "id": f"msg_{int(time_module.time() * 1000) + random.randint(1, 999)}",
                         "user_id": "sam_agent",
                         "user_name": cfg.get("name") or cfg.get("id") or "Agent",
                         "message": local_reply,
-                        "timestamp": time.time(),
+                        "timestamp": time_module.time(),
                         "message_type": "agent",
                         "agent_type": (cfg.get("type") or cfg.get("id") or "agent"),
                         "capabilities": cfg.get("capabilities", []),
@@ -11654,7 +11661,7 @@ sam@terminal:~$
                 )
 
                 # Simulate typing delay
-                time.sleep(1 + (time.time() % 2))  # 1-3 seconds
+                time_module.sleep(1 + (time_module.time() % 2))  # 1-3 seconds
 
                 # Stop typing indicator
                 self.socketio.start_background_task(
@@ -11684,11 +11691,11 @@ sam@terminal:~$
                         )
                 except Exception as exc:
                     error_data = {
-                        "id": f"msg_{int(time.time() * 1000) + 1}",
+                        "id": f"msg_{int(time_module.time() * 1000) + 1}",
                         "user_id": "system_error",
                         "user_name": "System",
                         "message": f"Teacher pool error: {exc}",
-                        "timestamp": time.time(),
+                        "timestamp": time_module.time(),
                         "message_type": "error",
                     }
                     room["messages"].append(error_data)
@@ -11698,11 +11705,11 @@ sam@terminal:~$
                     return
 
                 response_data = {
-                    "id": f"msg_{int(time.time() * 1000) + 1}",
+                    "id": f"msg_{int(time_module.time() * 1000) + 1}",
                     "user_id": "sam_agent",
                     "user_name": enhanced_response["agent_name"],
                     "message": enhanced_response["response"],
-                    "timestamp": time.time(),
+                    "timestamp": time_module.time(),
                     "message_type": "agent",
                     "agent_type": enhanced_response["agent_type"],
                     "capabilities": enhanced_response.get("capabilities", []),
@@ -11845,7 +11852,7 @@ sam@terminal:~$
 
         self.agent_statuses[agent_type] = {
             "status": status,  # online, idle, responding, disconnected
-            "last_active": time.time(),
+            "last_active": time_module.time(),
             "current_task": status,
         }
 
@@ -11853,7 +11860,11 @@ sam@terminal:~$
         if hasattr(self, "socketio"):
             self.socketio.emit(
                 "agent_status_update",
-                {"agent_type": agent_type, "status": status, "timestamp": time.time()},
+                {
+                    "agent_type": agent_type,
+                    "status": status,
+                    "timestamp": time_module.time(),
+                },
             )
 
     def _get_agent_statuses_internal(self):
@@ -11882,7 +11893,7 @@ sam@terminal:~$
                 statuses[agent_id] = {
                     "name": agent_config["name"],
                     "status": connection_status,
-                    "last_active": time.time(),
+                    "last_active": time_module.time(),
                     "current_task": "idle",
                 }
 
@@ -11920,7 +11931,7 @@ sam@terminal:~$
             "project_manager",
         ]
         if priority:
-            offset = int(time.time()) % len(priority)
+            offset = int(time_module.time()) % len(priority)
             rotated = priority[offset:] + priority[:offset]
         else:
             rotated = []
@@ -12277,7 +12288,7 @@ sam@terminal:~$
                     "prompt": prompt,
                     "response": response,
                     "user": user.get("name") or user.get("id"),
-                    "ts": time.time(),
+                    "ts": time_module.time(),
                 }
             )
         if getattr(self, "distill_dashboard_enabled", False):
@@ -12349,8 +12360,8 @@ sam@terminal:~$
                         "name": (context or {}).get("user_name", "User"),
                     }
                     message_data = {
-                        "id": f"chatbot:{int(time.time() * 1000)}",
-                        "timestamp": time.time(),
+                        "id": f"chatbot:{int(time_module.time() * 1000)}",
+                        "timestamp": time_module.time(),
                         "user_id": user["id"],
                         "user_name": user["name"],
                     }
@@ -12522,7 +12533,7 @@ sam@terminal:~$
                 if agent_config["status"] == "available":
                     self.connected_agents[agent_id] = {
                         "config": agent_config,
-                        "connected_at": time.time(),
+                        "connected_at": time_module.time(),
                         "message_count": 0,
                         "muted": False,
                     }
@@ -12555,7 +12566,7 @@ sam@terminal:~$
                 base_agent = self.connected_agents[base_agent_id]["config"]
 
                 # Generate unique ID for new agent
-                clone_id = f"{base_agent_id}_clone_{int(time.time())}"
+                clone_id = f"{base_agent_id}_clone_{int(time_module.time())}"
                 clone_name = custom_name or f"{base_agent['name']}-Clone"
 
                 # Create cloned agent configuration
@@ -12577,7 +12588,7 @@ sam@terminal:~$
                 self.agent_configs[clone_id] = cloned_agent
                 self.connected_agents[clone_id] = {
                     "config": cloned_agent,
-                    "connected_at": time.time(),
+                    "connected_at": time_module.time(),
                     "message_count": 0,
                     "muted": False,
                 }
@@ -12596,7 +12607,7 @@ sam@terminal:~$
             )
 
             # Generate unique ID
-            spawn_id = f"spawn_{agent_type}_{int(time.time())}"
+            spawn_id = f"spawn_{agent_type}_{int(time_module.time())}"
 
             # Determine provider and capabilities based on type
             if agent_type.lower() in ["sam", "neural"]:
@@ -12647,7 +12658,7 @@ sam@terminal:~$
             self.agent_configs[spawn_id] = spawned_agent
             self.connected_agents[spawn_id] = {
                 "config": spawned_agent,
-                "connected_at": time.time(),
+                "connected_at": time_module.time(),
                 "message_count": 0,
                 "muted": False,
             }
@@ -13088,7 +13099,7 @@ sam@terminal:~$
             commit_message = (
                 " ".join(args)
                 if args
-                else f"SAM System Self-Save - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                else f"SAM System Self-Save - {datetime_module.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
 
             try:
@@ -15546,6 +15557,51 @@ sam@terminal:~$
         """
         return render_template_string(html_template)
 
+    def _ensure_base_goals(self):
+        """Ensure base goals from BASE_GOALS_NO_WRITE_ACCESS.md are present."""
+        if not self.goal_manager:
+            return
+
+        print("🎯 Loading base goals from BASE_GOALS_NO_WRITE_ACCESS.md...")
+        try:
+            # Try to read the base goals file
+            base_goals_path = Path("BASE_GOALS_NO_WRITE_ACCESS.md")
+            if base_goals_path.exists():
+                content = base_goals_path.read_text(encoding="utf-8")
+
+                # Simple parsing for "- **Goal** (id=...)" lines
+                import re
+
+                for line in content.splitlines():
+                    match = re.search(
+                        r"- \*\*(.+?)\*\* \(id=([^,]+), priority=([^,]+)", line
+                    )
+                    if match:
+                        description = match.group(1).strip()
+                        goal_id = match.group(2).strip()
+                        priority = match.group(3).strip()
+
+                        # Map priority strings
+                        p_map = {
+                            "MAX": "critical",
+                            "high": "medium",
+                            "normal": "low",
+                            "none": "N/A",
+                        }
+                        norm_priority = p_map.get(priority, "medium")
+
+                        self.goal_manager.add_goal(
+                            description, priority=norm_priority, goal_id=goal_id
+                        )
+                        print(f"  ✅ Loaded base goal: {description} (ID: {goal_id})")
+            else:
+                print(
+                    "⚠️ BASE_GOALS_NO_WRITE_ACCESS.md not found, skipping base goal load."
+                )
+
+        except Exception as e:
+            print(f"⚠️ Failed to load base goals: {e}")
+
     def _start_revenue_autoplanner(self):
         """Start revenue auto-planner loop (creates actions, waits for approval)."""
         if not self.revenue_ops:
@@ -15571,7 +15627,7 @@ sam@terminal:~$
                     break
                 except Exception as exc:
                     print(f"⚠️ Revenue auto-planner error: {exc}", flush=True)
-                time.sleep(self.revenue_autoplanner_interval_s)
+                time_module.sleep(self.revenue_autoplanner_interval_s)
 
         self.revenue_autoplanner_thread = threading.Thread(
             target=auto_plan_loop, daemon=True
@@ -15598,7 +15654,7 @@ sam@terminal:~$
                     break
                 except Exception as exc:
                     print(f"⚠️ Revenue sequence executor error: {exc}", flush=True)
-                time.sleep(self.revenue_sequence_executor_interval_s)
+                time_module.sleep(self.revenue_sequence_executor_interval_s)
 
         thread = threading.Thread(target=executor_loop, daemon=True)
         thread.start()
@@ -15719,7 +15775,7 @@ sam@terminal:~$
             "approved": approved,
             "quorum": f"{approve_count}/3",
             "votes": votes,
-            "timestamp": time.time(),
+            "timestamp": time_module.time(),
         }
 
         log_event(
@@ -15759,105 +15815,145 @@ sam@terminal:~$
             banking_total_balance=banking.get("total_balance"),  # Added
         )
 
-    def _start_monitoring_system(self):
-        """Start background monitoring system with autonomous operation"""
-        if getattr(self, "_monitoring_started", False):
-            return
-        self._monitoring_started = True
-        print("📊 Starting background monitoring and autonomous operation system...")
+        def _start_monitoring_system(self):
+            """Start background monitoring system with autonomous operation"""
 
-        if not self.autonomous_enabled:
-            print("⚠️ Autonomous loops disabled (SAM_AUTONOMOUS_ENABLED=0)")
-            return
+            if getattr(self, "_monitoring_started", False):
+                return
 
-        def autonomous_operation_loop():
-            import time as t
+            self._monitoring_started = True
+
+            print(
+                "📊 Starting background monitoring and autonomous operation system..."
+            )
+
+            if not self.autonomous_enabled:
+                print("⚠️ Autonomous loops disabled (SAM_AUTONOMOUS_ENABLED=0)")
+
+                return
+
+            monitor_thread = threading.Thread(
+                target=self._autonomous_operation_loop, daemon=True
+            )
+
+            monitor_thread.start()
+
+            print(
+                "✅ Autonomous operation system active - SAM will generate and execute its own goals!"
+            )
+
+        def _autonomous_operation_loop(self):
+            """Background loop for autonomous operations (Phase 5.3)"""
 
             last_finance_log = 0.0
+
             while not is_shutting_down():
                 # Emergency Kill Switch Check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)
+
                 self._check_kill_switch()
 
                 try:
                     with shutdown_guard("autonomous operation"):
                         # Update system metrics
+
                         self._update_system_metrics()
 
                         # Generate autonomous goals
+
                         self._generate_autonomous_goals()
 
                         # Generate autonomous conversations to populate chat
+
                         self._generate_autonomous_conversations()
 
                         # Execute autonomous tasks
+
                         self._execute_autonomous_tasks()
 
                         # Run survival evaluation
+
                         self._run_survival_evaluation()
 
                         # Execute goal management cycle
+
                         self._execute_goal_cycle()
 
                         # Execute TaskManager cycle
+
                         if hasattr(self, "task_manager"):
                             try:
                                 if hasattr(self, "goal_manager"):
                                     self.goal_manager.ensure_subtasks_for_active_goals()
+
                                 self.task_manager.sync_with_goal_manager()
+
                             except Exception as exc:
                                 print(f"⚠️ TaskManager sync error: {exc}", flush=True)
+
                             result = self.task_manager.execute_next_task()
+
                             if result:
                                 print(f"🔧 TaskManager executed: {result}")
 
                         # Trigger growth system occasionally
+
                         if not hasattr(self, "_last_growth_trigger"):
                             self._last_growth_trigger = 0
 
-                        _current_time = t.time()
+                        _current_time = time_module.time()
+
                         if (
                             _current_time - self._last_growth_trigger > 180
                         ):  # Every 3 minutes
                             self._trigger_growth_system()
+
                             self._last_growth_trigger = _current_time
 
                         # Demonstrate capabilities autonomously
+
                         self._demonstrate_capabilities()
 
                         # Coordinate multi-agent tasks
+
                         self._coordinate_multi_agent_tasks()
 
                         # Enable agent-to-agent communication
+
                         self._agent_to_agent_communication()
 
                         # Perform consciousness check
+
                         if hasattr(self, "consciousness"):
                             self._check_consciousness()
 
                         # Update goal README periodically
+
                         if hasattr(self, "goal_manager"):
                             self.goal_manager.export_readme()
 
                         # Periodic finance snapshot logging
+
                         if self.finance_log_interval_s > 0:
-                            _now_ts = t.time()
+                            _now_ts = time_module.time()
+
                             if (
                                 _now_ts - last_finance_log
                             ) >= self.finance_log_interval_s:
                                 self._log_finance_snapshot()
+
                                 last_finance_log = _now_ts
+
                 except InterruptedError:
                     break
+
                 except Exception as e:
                     print(f"⚠️ Autonomous operation error: {e}", flush=True)
-                    t.sleep(5)
-                t.sleep(max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2))))
 
-        monitor_thread = threading.Thread(target=autonomous_operation_loop, daemon=True)
-        monitor_thread.start()
-        print(
-            "✅ Autonomous operation system active - SAM will generate and execute its own goals!"
-        )
+                    time_module.sleep(5)
+
+                time_module.sleep(
+                    max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2)))
+                )
 
     def _start_two_phase_promotion_thread(self):
         """Start background thread to promote from meta-only boot to full system."""
@@ -15868,21 +15964,21 @@ sam@terminal:~$
         def _promote_loop():
             delay = max(0, int(getattr(self, "two_phase_delay_s", 5)))
             if delay:
-                time.sleep(delay)
-            deadline = time.time() + max(
+                time_module.sleep(delay)
+            deadline = time_module.time() + max(
                 10, int(getattr(self, "two_phase_timeout_s", 180))
             )
             while not is_shutting_down():
                 if self._can_promote_to_full_boot():
                     self._promote_to_full_boot()
                     return
-                if time.time() >= deadline:
+                if time_module.time() >= deadline:
                     print(
                         "⚠️ Two-phase promotion timed out - staying in meta-only mode",
                         flush=True,
                     )
                     return
-                time.sleep(2)
+                time_module.sleep(2)
 
         thread = threading.Thread(target=_promote_loop, daemon=True)
         thread.start()
@@ -16010,7 +16106,7 @@ sam@terminal:~$
             if not hasattr(self, "goal_manager"):
                 return
 
-            current_time = time.time()
+            current_time = time_module.time()
 
             # Generate goals every 5 minutes
             if not hasattr(self, "_last_goal_generation"):
@@ -16272,7 +16368,7 @@ sam@terminal:~$
                 },
             ]
 
-            current_time = time.time()
+            current_time = time_module.time()
             topic_index = int(current_time / 300) % len(
                 conversation_topics
             )  # Change every 5 minutes
@@ -16336,7 +16432,7 @@ sam@terminal:~$
             # Check if growth is frozen
             if getattr(self, "meta_growth_freeze", False):
                 print("🧊 Growth system frozen - skipping trigger")
-                self.system_metrics["last_growth_attempt_ts"] = time.time()
+                self.system_metrics["last_growth_attempt_ts"] = time_module.time()
                 self.system_metrics["last_growth_attempt_primitive"] = 0
                 self.system_metrics["last_growth_attempt_result"] = "frozen"
                 self.system_metrics["last_growth_reason"] = "growth_freeze_enabled"
@@ -16361,13 +16457,13 @@ sam@terminal:~$
             self.system_metrics["last_growth_lambda"] = lambda_val
             self.system_metrics["last_growth_signals"] = dict(signals)
             self.system_metrics["last_growth_dominant"] = dominant
-            self.system_metrics["last_growth_signal_ts"] = time.time()
+            self.system_metrics["last_growth_signal_ts"] = time_module.time()
 
             # Select and apply growth primitive
             primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
 
             if primitive and primitive != 0:
-                self.system_metrics["last_growth_attempt_ts"] = time.time()
+                self.system_metrics["last_growth_attempt_ts"] = time_module.time()
                 self.system_metrics["last_growth_attempt_primitive"] = primitive
                 self.system_metrics["last_growth_reason"] = "primitive_selected"
                 print(f"🌱 Growth primitive selected: {primitive}")
@@ -16387,7 +16483,7 @@ sam@terminal:~$
                         sam_meta_controller_c.record_growth_outcome(
                             self.meta_controller, primitive, True
                         )
-                        self.system_metrics["last_growth_ts"] = time.time()
+                        self.system_metrics["last_growth_ts"] = time_module.time()
                         self.system_metrics["last_growth_primitive"] = primitive
                         self.system_metrics["last_growth_attempt_result"] = "applied"
                         self.system_metrics["last_growth_reason"] = (
@@ -16410,7 +16506,7 @@ sam@terminal:~$
                     self.system_metrics["last_growth_reason"] = "primitive_apply_failed"
                     print(f"❌ Failed to apply growth primitive: {primitive}")
             else:
-                self.system_metrics["last_growth_attempt_ts"] = time.time()
+                self.system_metrics["last_growth_attempt_ts"] = time_module.time()
                 self.system_metrics["last_growth_attempt_primitive"] = 0
                 self.system_metrics["last_growth_attempt_result"] = "no_primitive"
                 self.system_metrics["last_growth_reason"] = "no_primitive_selected"
@@ -16491,7 +16587,7 @@ sam@terminal:~$
     def _demonstrate_capabilities(self):
         """Autonomously demonstrate all SAM capabilities"""
         try:
-            current_time = time.time()
+            current_time = time_module.time()
             # Demonstrate different capabilities at controlled intervals
             if not hasattr(self, "_last_demo_research"):
                 self._last_demo_research = 0.0
@@ -16544,7 +16640,7 @@ sam@terminal:~$
     def _agent_to_agent_communication(self):
         """Enable agent-to-agent communication visible in chat interface"""
         try:
-            current_time = time.time()
+            current_time = time_module.time()
             # Ensure default room exists for messages
             self._ensure_default_chat_ready()
 
@@ -16608,11 +16704,11 @@ sam@terminal:~$
                     if room.get("users"):  # Room has active users
                         # Create agent-to-agent message
                         message_data = {
-                            "id": f"msg_{int(time.time() * 1000)}_agent_comm",
+                            "id": f"msg_{int(time_module.time() * 1000)}_agent_comm",
                             "user_id": sender_agent,
                             "user_name": f"🤖 {self.connected_agents[sender_agent]['config']['name']}",
                             "message": f"💬 *to {self.connected_agents[receiver_agent]['config']['name']}*: {agent_message}",
-                            "timestamp": time.time(),
+                            "timestamp": time_module.time(),
                             "message_type": "agent_communication",
                             "agent_sender": sender_agent,
                             "agent_receiver": receiver_agent,
@@ -16645,7 +16741,7 @@ sam@terminal:~$
                 self.connected_users[user_id] = {
                     "id": user_id,
                     "name": user_name,
-                    "connected_at": time.time(),
+                    "connected_at": time_module.time(),
                     "current_room": None,
                 }
             if room_id not in self.conversation_rooms:
@@ -16718,7 +16814,7 @@ sam@terminal:~$
             "quantum computing applications",
         ]
 
-        topic = research_topics[int(time.time()) % len(research_topics)]
+        topic = research_topics[int(time_module.time()) % len(research_topics)]
         result = specialized_agents_c.research(f"Latest developments in {topic}")
         score, reason = self._extract_score(result)
         suffix = f"; reason: {reason}" if reason else ""
@@ -16758,7 +16854,7 @@ sam@terminal:~$
             "construct a database schema",
         ]
 
-        task = code_tasks[int(time.time() / 30) % len(code_tasks)]
+        task = code_tasks[int(time_module.time() / 30) % len(code_tasks)]
         result = specialized_agents_c.generate_code(f"Create {task} in Python")
         print(f"💻 [DEMO] Autonomous code generation: {task[:30]}...", flush=True)
 
@@ -16766,7 +16862,7 @@ sam@terminal:~$
         """Demonstrate financial analysis capabilities autonomously"""
         markets = ["cryptocurrency", "commodities", "forex", "options", "bonds"]
         market = markets[
-            int(time.time() / 120) % len(markets)
+            int(time_module.time() / 120) % len(markets)
         ]  # Different timing than others
 
         result = specialized_agents_c.analyze_market(
@@ -17065,7 +17161,7 @@ sam@terminal:~$
                 self.connected_agents = {
                     "meta_agent": {
                         "config": meta_cfg,
-                        "connected_at": time.time(),
+                        "connected_at": time_module.time(),
                         "message_count": 0,
                         "muted": False,
                     }
@@ -17173,10 +17269,10 @@ class RAMAwareModelSwitcher:
         while self.monitoring_active:
             try:
                 self._check_ram_usage()
-                time.sleep(30)  # Check every 30 seconds
+                time_module.sleep(30)  # Check every 30 seconds
             except Exception as e:
                 print(f"⚠️ RAM monitoring error: {e}")
-                time.sleep(60)  # Wait longer on error
+                time_module.sleep(60)  # Wait longer on error
 
     def _check_ram_usage(self):
         """Check current RAM usage and switch models if needed"""
@@ -17310,7 +17406,7 @@ class RAMAwareModelSwitcher:
             "current_ram_usage": self.current_ram_usage,
             "current_tier": self.current_tier,
             "thresholds": self.model_switch_thresholds,
-            "last_check": time.time(),
+            "last_check": time_module.time(),
         }
 
 
@@ -17351,14 +17447,14 @@ class ConversationDiversityManager:
             try:
                 self._check_response_patterns()
                 self._cleanup_old_history()
-                time.sleep(60)  # Check every minute
+                time_module.sleep(60)  # Check every minute
             except Exception as e:
                 print(f"⚠️ Diversity monitoring error: {e}")
-                time.sleep(120)  # Wait longer on error
+                time_module.sleep(120)  # Wait longer on error
 
     def _check_response_patterns(self):
         """Check for repetitive response patterns"""
-        current_time = time.time()
+        current_time = time_module.time()
         window_start = current_time - (self.response_window_minutes * 60)
 
         # Count MetaAgent responses in recent window
@@ -17481,7 +17577,7 @@ class ConversationDiversityManager:
         # Add new response
         response_entry = {
             "content": response_content,
-            "timestamp": time.time(),
+            "timestamp": time_module.time(),
             "type": response_type,
         }
 
@@ -17495,7 +17591,7 @@ class ConversationDiversityManager:
 
     def _cleanup_old_history(self):
         """Clean up old response history"""
-        cutoff_time = time.time() - (24 * 60 * 60)  # 24 hours ago
+        cutoff_time = time_module.time() - (24 * 60 * 60)  # 24 hours ago
 
         for agent_id in self.response_history:
             self.response_history[agent_id] = [
@@ -17604,7 +17700,7 @@ class VirtualEnvironmentsManager:
 
         try:
             # Create unique container name
-            container_name = f"sam_container_{int(time.time())}"
+            container_name = f"sam_container_{int(time_module.time())}"
 
             # Build docker run command
             docker_cmd = [
@@ -17634,7 +17730,7 @@ class VirtualEnvironmentsManager:
 
             # Track container
             self.active_containers[container_name] = {
-                "start_time": time.time(),
+                "start_time": time_module.time(),
                 "command": command,
                 "status": "completed",
             }
@@ -17788,13 +17884,13 @@ exec(open('{script_path}').read())
 
         result = "🐳 Active Containers:\\n"
         for name, info in self.active_containers.items():
-            runtime = time.time() - info["start_time"]
+            runtime = time_module.time() - info["start_time"]
             result += f"• {name}: {info['status']} ({runtime:.1f}s)\\n"
         return result
 
     def cleanup_containers(self):
         """Clean up old containers"""
-        current_time = time.time()
+        current_time = time_module.time()
         to_remove = []
 
         for name, info in self.active_containers.items():

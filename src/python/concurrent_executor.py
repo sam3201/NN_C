@@ -2,7 +2,7 @@
 # Concurrent task execution for SAM 2.0 AGI
 
 import threading
-import time
+import time as time_module
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, Dict, List, Any
 

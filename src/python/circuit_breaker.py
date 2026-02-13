@@ -1,7 +1,7 @@
 # SAM Circuit Breaker Module
 # Circuit breaker pattern implementation for SAM 2.0 AGI
 
-import time
+import time as time_module
 import threading
 from typing import Dict, Any, Callable, Optional
 from enum import Enum

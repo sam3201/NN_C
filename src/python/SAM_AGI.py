@@ -32,7 +32,7 @@ Version: 2.0 Final
 
 import sys
 import os
-import time
+import time as time_module
 import threading
 import math
 from datetime import datetime

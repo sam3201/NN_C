@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import html
 import re
-import time
+import time as time_module
 from typing import Any, Dict, List, Optional
 
 import requests
