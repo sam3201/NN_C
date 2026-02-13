@@ -15687,6 +15687,28 @@ sam@terminal:~$
                             </div>
                         </div>
                         <div class="card">
+                            <h3>🔐 Admin & Security</h3>
+                            <div style="margin-top:12px;">
+                                <label style="font-size:0.8rem; color:var(--muted);">Assign User Role</label>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="admin-target-uid" placeholder="user_id" style="flex:1; background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <select id="admin-target-role" style="background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);">
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                    <button onclick="applyUserRole()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--accent); color:#041018; font-weight:600;">Apply</button>
+                                </div>
+                            </div>
+                            <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06);">
+                                <label style="font-size:0.8rem; color:var(--muted);">Generate Admin Token</label>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="admin-gen-id" placeholder="admin_name" style="flex:1; background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <button onclick="generateAdminToken()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--accent-2); color:#041018; font-weight:600;">Generate</button>
+                                </div>
+                                <div id="admin-token-result" style="margin-top:10px; font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--success); word-break:break-all;"></div>
+                            </div>
+                        </div>
+                        <div class="card">
                             <h3>System Actions</h3>
                             <div class="metric-row">
                                 <span class="metric-label">Restart System</span>
