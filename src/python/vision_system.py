@@ -48,7 +48,7 @@ class VisionSystem:
             # In a real setup, this would call a local VLM (e.g. LLaVA via Ollama)
             
             analysis = {
-                "timestamp": sam_time_ref.sam_time_ref.time(),
+                "timestamp": sam_time_ref.time(),
                 "source": source,
                 "dimensions": "unknown",
                 "content_summary": "Visual processing placeholder",

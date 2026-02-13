@@ -20,10 +20,10 @@ class SimulationArena:
         self.sim_count = 0
         
     def spawn_simulation(self, sim_type: str = "trading") -> str:
-        sim_id = f"sim_{int(sam_time_ref.sam_time_ref.time())}_{random.randint(100, 999)}"
+        sim_id = f"sim_{int(sam_time_ref.time())}_{random.randint(100, 999)}"
         self.active_simulations[sim_id] = {
             "type": sim_type,
-            "start_time": sam_time_ref.sam_time_ref.time(),
+            "start_time": sam_time_ref.time(),
             "revenue": 0.0,
             "status": "running",
             "complexity": random.uniform(0.1, 0.9)
