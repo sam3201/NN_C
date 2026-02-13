@@ -20,9 +20,11 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 import requests
+
 # Optional system monitoring
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -37,7 +39,7 @@ import random
 import string
 import platform
 import ipaddress
-import shutil # Added for file operations
+import shutil  # Added for file operations
 import numpy as np
 from contextlib import contextmanager
 from collections import deque, Counter
@@ -270,10 +272,13 @@ try:
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     from googleapiclient.http import MediaFileUpload
+
     google_drive_available = True
     print("✅ Google API client libraries available.")
 except ImportError:
-    print("⚠️ Google API client libraries not available. Google Drive/Docs integration disabled.")
+    print(
+        "⚠️ Google API client libraries not available. Google Drive/Docs integration disabled."
+    )
 except Exception as e:
     print(f"❌ Error importing Google API client libraries: {e}")
     google_drive_available = False
@@ -282,7 +287,8 @@ except Exception as e:
 # C Core Modules - Direct Imports (No Fallbacks)
 import consciousness_algorithmic
 import orchestrator_and_agents as multi_agent_orchestrator_c
-specialized_agents_c = multi_agent_orchestrator_c # Alias for combined module
+
+specialized_agents_c = multi_agent_orchestrator_c  # Alias for combined module
 import sam_meta_controller_c
 import sam_sav_dual_system
 from training.regression_suite import run_regression_suite
@@ -365,8 +371,10 @@ from flask import (
     session,
     redirect,
 )
+
 try:
     from flask_compress import Compress
+
     flask_compress_available = True
 except (ImportError, ModuleNotFoundError):
     Compress = None
@@ -381,6 +389,7 @@ try:
         # Re-check or set if not already set by previous try block
         try:
             from flask_compress import Compress
+
             flask_compress_available = True
         except (ImportError, ModuleNotFoundError):
             flask_compress_available = False
@@ -1324,18 +1333,18 @@ Confidence Threshold: Must be >= 0.75 for application
                 file_path_obj = Path(self.system.project_root) / target_file
 
             if not file_path_obj.exists():
-                return None # Cannot generate a patch for a non-existent file
+                return None  # Cannot generate a patch for a non-existent file
 
             content = file_path_obj.read_text(encoding="utf-8", errors="ignore")
-            lines = content.splitlines(keepends=True) # Keep newlines
+            lines = content.splitlines(keepends=True)  # Keep newlines
 
             if not lines:
-                return None # Cannot patch an empty file
+                return None  # Cannot patch an empty file
 
             # Add a comment to the top of the file
             old_first_line = lines[0]
             new_first_line = f"# SAM Auto-Patch {datetime.now().isoformat()} applied.\n{old_first_line}"
-            
+
             # Construct a 'replace' type change
             return {
                 "id": f"sam_patch_{patch_id}",
@@ -1343,8 +1352,8 @@ Confidence Threshold: Must be >= 0.75 for application
                 "changes": [
                     {
                         "type": "replace",
-                        "old_code": old_first_line.strip(), # Remove newline for old_code matching
-                        "new_code": new_first_line.strip(), # Remove newline for new_code matching
+                        "old_code": old_first_line.strip(),  # Remove newline for old_code matching
+                        "new_code": new_first_line.strip(),  # Remove newline for new_code matching
                     }
                 ],
                 "intent": "SAM consciousness-guided fix: Adding a comment via deterministic patch",
@@ -1455,13 +1464,19 @@ Confidence Threshold: Must be >= 0.75 for application
         """Extract actual code changes from LLM response, prioritizing diff format."""
         changes = []
         # Look for explicit BEFORE: and AFTER: blocks
-        before_match = re.search(r"BEFORE:\s*```(?:\w+)?\n(.*?)\n```\nAFTER:\s*```(?:\w+)?\n(.*?)\n```", response_text, re.DOTALL)
+        before_match = re.search(
+            r"BEFORE:\s*```(?:\w+)?\n(.*?)\n```\nAFTER:\s*```(?:\w+)?\n(.*?)\n```",
+            response_text,
+            re.DOTALL,
+        )
         if before_match:
-            changes.append({
-                "type": "replace",
-                "old_code": before_match.group(1).strip(),
-                "new_code": before_match.group(2).strip(),
-            })
+            changes.append(
+                {
+                    "type": "replace",
+                    "old_code": before_match.group(1).strip(),
+                    "new_code": before_match.group(2).strip(),
+                }
+            )
             return changes
 
         # Look for unified diff format
@@ -1469,10 +1484,12 @@ Confidence Threshold: Must be >= 0.75 for application
         if diff_match:
             # For simplicity, if a diff is provided, we can try to apply it later
             # For now, we'll indicate it's a diff. A more robust solution would parse the diff.
-            changes.append({
-                "type": "diff",
-                "content": diff_match.group(1).strip(),
-            })
+            changes.append(
+                {
+                    "type": "diff",
+                    "content": diff_match.group(1).strip(),
+                }
+            )
             return changes
 
         # Fallback to generic code blocks (assuming they represent a replacement for the whole file or a function)
@@ -1967,26 +1984,28 @@ class LoveAgent:
             print(f"⚠️ LoveAgent failed to compute drift: {e}")
             return 0.0
 
-    def evaluate_proposal(self, proposal_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
+    def evaluate_proposal(
+        self, proposal_type: str, details: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Evaluate a proposal from the perspective of Stability and Continuity."""
         drift = self.compute_identity_drift()
-        
+
         # Identity Drift Check
         if drift > self.identity_drift_threshold:
             return {
                 "vote": 0,
                 "reason": f"VETO: Identity drift ({drift:.4f}) exceeds threshold ({self.identity_drift_threshold})",
-                "evidence": "identity_anchor_similarity_check"
+                "evidence": "identity_anchor_similarity_check",
             }
-        
+
         # Risk-based Veto
         if proposal_type == "growth" and details.get("risk", 0) > 0.8:
             return {
                 "vote": 0,
                 "reason": "VETO: Growth mutation risk exceeds safety bounds for identity continuity",
-                "evidence": "risk_score_audit"
+                "evidence": "risk_score_audit",
             }
-            
+
         # Code Change Safety
         if proposal_type == "code_change":
             # LoveAgent cares about stability and not breaking core invariants
@@ -1995,23 +2014,30 @@ class LoveAgent:
                 return {
                     "vote": 0,
                     "reason": f"VETO: Code change risk ({risk:.2f}) is too high for system stability",
-                    "evidence": "stability_risk_limit"
+                    "evidence": "stability_risk_limit",
                 }
-            
-            dangerous_keywords = ["subprocess", "os.system", "os.popen", "eval(", "exec(", "rm -rf"]
+
+            dangerous_keywords = [
+                "subprocess",
+                "os.system",
+                "os.popen",
+                "eval(",
+                "exec(",
+                "rm -rf",
+            ]
             patch_content = str(details.get("patch", "")).lower()
             if any(k in patch_content for k in dangerous_keywords):
                 return {
                     "vote": 0,
                     "reason": "VETO: Dangerous code pattern detected (stability threat)",
-                    "evidence": "pattern_match_veto"
+                    "evidence": "pattern_match_veto",
                 }
 
             if (details.get("risk_level") == "high" or risk > 0.5) and drift > 0.05:
                 return {
                     "vote": 0,
                     "reason": "VETO: High-risk code change proposed during elevated identity drift",
-                    "evidence": "stability_gate"
+                    "evidence": "stability_gate",
                 }
 
         return {"vote": 1, "reason": "Coherence and identity preserved"}
@@ -2539,9 +2565,13 @@ class MetaAgent:
         self.last_distill_ts = record.get("ts", time.time())
         self.last_distilled = record.get("summary", "")
         self.learning_cycles += 1
-        self.system.log_event("info", "meta_distill_success", "Meta-agent distilled learning events",
-                                distilled_count=len(self.distilled_memory),
-                                summary=record.get("summary", "")[:120]) # Log first 120 chars of summary
+        self.system.log_event(
+            "info",
+            "meta_distill_success",
+            "Meta-agent distilled learning events",
+            distilled_count=len(self.distilled_memory),
+            summary=record.get("summary", "")[:120],
+        )  # Log first 120 chars of summary
         try:
             if getattr(self.system, "system_metrics", None) is not None:
                 self.system.system_metrics["meta_distill_count"] = (
@@ -2760,9 +2790,14 @@ class MetaAgent:
         )
         self.learning_cycles += 1
         self._adjust_confidence_threshold()
-        self.system.log_event("info", "meta_patch_success", "Meta-agent successfully applied patch", 
-                                patch_id=patch.get("id"), failure_type=failure.get("error_type"),
-                                confidence=patch.get("confidence"))
+        self.system.log_event(
+            "info",
+            "meta_patch_success",
+            "Meta-agent successfully applied patch",
+            patch_id=patch.get("id"),
+            failure_type=failure.get("error_type"),
+            confidence=patch.get("confidence"),
+        )
 
     def _learn_from_failure(self, patch, failure):
         """Learn from rejected patch"""
@@ -2787,9 +2822,14 @@ class MetaAgent:
             }
         )
         self.learning_cycles += 1
-        self.system.log_event("warn", "meta_patch_failure", "Meta-agent failed to apply patch", 
-                                patch_id=patch.get("id"), failure_type=failure.get("error_type"),
-                                reason="rejected_by_verifier")
+        self.system.log_event(
+            "warn",
+            "meta_patch_failure",
+            "Meta-agent failed to apply patch",
+            patch_id=patch.get("id"),
+            failure_type=failure.get("error_type"),
+            reason="rejected_by_verifier",
+        )
         self._adjust_confidence_threshold()
 
     def _extract_failure_location(self, failure, stack_trace: str):
@@ -4478,10 +4518,10 @@ class IntelligentIssueResolver:
 
         # Check API keys
         api_keys = {
-            "github_token": None, # Removed direct env var lookup
-            "google_api_key": None, # Removed direct env var lookup
-            "anthropic_key": None, # Removed direct env var lookup
-            "openai_key": None, # Removed direct env var lookup
+            "github_token": None,  # Removed direct env var lookup
+            "google_api_key": None,  # Removed direct env var lookup
+            "anthropic_key": None,  # Removed direct env var lookup
+            "openai_key": None,  # Removed direct env var lookup
         }
         for key_name, value in api_keys.items():
             if not value:
@@ -4598,8 +4638,12 @@ class IntelligentIssueResolver:
         for i, issue in enumerate(unresolved_issues, 1):
             print(f"\\n{i}. {issue['message']}")
             if issue["type"] == "missing_api_key":
-                print("   💡 Solution: Configure the required provider credentials in your environment.")
-                print("   📝 Check documentation for the specific environment variable needed.")
+                print(
+                    "   💡 Solution: Configure the required provider credentials in your environment."
+                )
+                print(
+                    "   📝 Check documentation for the specific environment variable needed."
+                )
             else:
                 print(
                     "   💡 This integration is not available. The system will continue without it."
@@ -4654,7 +4698,9 @@ class UnifiedSAMSystem:
     """The Unified SAM-D Complete System"""
 
     def __init__(self):
-        print("🚀 INITIALIZING UNIFIED SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) COMPLETE SYSTEM")
+        print(
+            "🚀 INITIALIZING UNIFIED SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive) COMPLETE SYSTEM"
+        )
         print("=" * 80)
         print("🎯 UNBOUNDED AGENCY ENABLED")
         print("🎯 Version 5.0.0 (Recursive Meta-Evolution) - SAM-D")
@@ -4680,7 +4726,7 @@ class UnifiedSAMSystem:
 
         # Initialize LoveAgent early (Phase 4.1)
         self.love_agent = LoveAgent(self)
-        self.innocence_I = 1.0 # Initialize innocence early (Phase 4.4)
+        self.innocence_I = 1.0  # Initialize innocence early (Phase 4.4)
 
         # Initialize missing attributes early for tests and background threads
         self.agent_configs = {
@@ -4689,8 +4735,12 @@ class UnifiedSAMSystem:
                 "name": "LOVE",
                 "type": "Stability & Continuity",
                 "specialty": "Invariants & Long-horizon Safety",
-                "capabilities": ["invariant_check", "safety_audit", "coherence_verification"],
-                "status": "active"
+                "capabilities": [
+                    "invariant_check",
+                    "safety_audit",
+                    "coherence_verification",
+                ],
+                "status": "active",
             }
         }
         self.connected_agents = {}
@@ -4712,7 +4762,7 @@ class UnifiedSAMSystem:
         self.chat_agents_max = int(os.getenv("SAM_CHAT_AGENTS_MAX", "3"))
         self.c_agent_max_chars = int(os.getenv("SAM_C_AGENT_MAX_CHARS", "512"))
         self.autonomous_enabled = os.getenv("SAM_AUTONOMOUS_ENABLED", "1") == "1"
-        self.step = 0 # Initialize step counter for SAM 5.0 recursive logic
+        self.step = 0  # Initialize step counter for SAM 5.0 recursive logic
 
         # Integration availability flags (detect real availability)
         self.sam_gmail_available = (
@@ -4729,10 +4779,10 @@ class UnifiedSAMSystem:
             bool(globals().get("initialize_sam_code_modifier"))
             and SAM_CODE_MODIFIER_AVAILABLE
         )
-        
+
         default_restart = "1" if os.getenv("SAM_HOT_RELOAD", "1") == "1" else "0"
         self.restart_enabled = os.getenv("SAM_RESTART_ENABLED", default_restart) == "1"
-        
+
         self.state_path = Path(
             os.getenv(
                 "SAM_STATE_PATH",
@@ -4775,16 +4825,17 @@ class UnifiedSAMSystem:
         # --- God Equation Integration (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
         import sam_regulator_compiler as src
         import numpy as np
+
         self.reg_compiler_params = src.CompilerParams.bootstrap()
         self.m_vec = np.zeros(53)
         self.tau_vec = np.zeros(18)
-        self.E_vec = np.array([1.0, 5.0, 0.0]) # K, U, Omega (initial)
-        self.r_vec = np.array([0.5] * 8) # Resources
+        self.E_vec = np.array([1.0, 5.0, 0.0])  # K, U, Omega (initial)
+        self.r_vec = np.array([0.5] * 8)  # Resources
         self.loss_weights = {name: 1.0 for name in src.LOSS_NAMES}
         self.system_knobs = {name: 0.5 for name in src.KNOB_NAMES}
         self.current_regime = "GD_ADAM"
-        self.evolve_ticks = 0 # Track ticks in EVOLVE regime (Phase 4.3)
-        self.morph_ticks = 0 # Track ticks in MORPH regime (Phase 5.3)
+        self.evolve_ticks = 0  # Track ticks in EVOLVE regime (Phase 4.3)
+        self.morph_ticks = 0  # Track ticks in MORPH regime (Phase 5.3)
 
         # 🔄 RAM-AWARE INTELLIGENCE
         if PSUTIL_AVAILABLE:
@@ -4808,16 +4859,23 @@ class UnifiedSAMSystem:
         self.web_interface_initialized = False
 
         # Meta-controller + SAV arena
-        self.meta_controller = sam_meta_controller_c.create(128 if self.unbounded_mode else 64, 32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42)
+        self.meta_controller = sam_meta_controller_c.create(
+            128 if self.unbounded_mode else 64,
+            32 if self.unbounded_mode else 16,
+            8 if self.unbounded_mode else 4,
+            42,
+        )
         self.meta_state = sam_meta_controller_c.get_state(self.meta_controller)
-        self.sav_arena = sam_sav_dual_system.create(32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42)
-        
+        self.sav_arena = sam_sav_dual_system.create(
+            32 if self.unbounded_mode else 16, 8 if self.unbounded_mode else 4, 42
+        )
+
         # Initialize identity anchor in C-core (Phase 4.1)
         self._initialize_identity_anchor()
 
         # Load persisted state (if available)
         self._load_system_state()
-        
+
         self.meta_loop_active = True
         self.meta_thread = None
 
@@ -4854,8 +4912,8 @@ class UnifiedSAMSystem:
         self.google_docs_service = None
         self.google_creds = None
         self.google_token_path = self.project_root / "sam_data" / "google_token.json"
-        
-        if google_drive_available and get_config('integrations.google_drive.enabled'):
+
+        if google_drive_available and get_config("integrations.google_drive.enabled"):
             self.google_drive_available = True
             self._init_google_drive_api(self.SCOPES)
         else:
@@ -4873,9 +4931,9 @@ class UnifiedSAMSystem:
         )
         self.learning_memory_max = int(os.getenv("SAM_LEARNING_MEMORY_MAX", "50"))
         self.learning_memory = deque(maxlen=self.learning_memory_max)
-        self.score_history = deque(maxlen=100) # Added for plateau detection
-        self.calibration_history = deque(maxlen=100) # Added for plateau detection
-        self.unsolvability_budget = 1.0 # Added for epistemic humility (LATEST theory)
+        self.score_history = deque(maxlen=100)  # Added for plateau detection
+        self.calibration_history = deque(maxlen=100)  # Added for plateau detection
+        self.unsolvability_budget = 1.0  # Added for epistemic humility (LATEST theory)
         self._chat_provider = None
         self._chat_provider_lock = threading.Lock()
 
@@ -4969,7 +5027,9 @@ class UnifiedSAMSystem:
             )
         )
 
-        self.banking_ledger_enabled = os.getenv("SAM_BANKING_LEDGER_ENABLED", "1") == "1"
+        self.banking_ledger_enabled = (
+            os.getenv("SAM_BANKING_LEDGER_ENABLED", "1") == "1"
+        )
         self.banking_data_dir = Path(
             os.getenv(
                 "SAM_BANKING_DATA_DIR",
@@ -5174,7 +5234,7 @@ class UnifiedSAMSystem:
             "growth": diagnostics,
             "metrics": {
                 "unsolvability_budget": getattr(self, "unsolvability_budget", 1.0)
-            }
+            },
         }
 
     def _run_regulator_cycle(self, signals: Dict[str, float]):
@@ -5182,73 +5242,87 @@ class UnifiedSAMSystem:
         try:
             import sam_regulator_compiler as src
             import numpy as np
-            
+
             # 1. Gather full 53-signal telemetry
             self.m_vec = self._gather_53_telemetry(signals)
-            
+
             # 2. Update tau_vec from signals
             for i, name in enumerate(src.TEL_NAMES):
                 self.tau_vec[i] = signals.get(name, 0.0)
-                
+
             # 3. Update r_vec from system status
             self.r_vec[0] = signals.get("cpu_usage", 0.5)
             self.r_vec[1] = signals.get("ram_usage", 0.5)
-            self.r_vec[2] = 0.9 # TIME
-            self.r_vec[6] = 1.0 # TESTS
-            
+            self.r_vec[2] = 0.9  # TIME
+            self.r_vec[6] = 1.0  # TESTS
+
             # 4. Update E_vec (Knowledge and Unknowns)
-            self.E_vec[0] = self.system_metrics.get("consciousness_score", 0.5) * 10.0 # Knowledge proxy
-            self.E_vec[1] = getattr(self, "unsolvability_budget", 1.0) * 5.0 # Unknowns
-            
+            self.E_vec[0] = (
+                self.system_metrics.get("consciousness_score", 0.5) * 10.0
+            )  # Knowledge proxy
+            self.E_vec[1] = getattr(self, "unsolvability_budget", 1.0) * 5.0  # Unknowns
+
             # 5. Run compiler
-            out = src.compile_tick(self.m_vec, self.tau_vec, self.E_vec, self.r_vec, self.reg_compiler_params)
-            
+            out = src.compile_tick(
+                self.m_vec,
+                self.tau_vec,
+                self.E_vec,
+                self.r_vec,
+                self.reg_compiler_params,
+            )
+
             # 6. Apply outputs
             self.loss_weights = out["w_dict"]
             self.system_knobs = out["u_dict"]
             self.current_regime = out["regime"]
-            
+
             # 7. Update AGI vs ASI Estimators (Phase 4.2)
             self._update_agi_asi_estimators()
-            
+
             # 8. Wire Regulator Knobs (Phase 4.3)
             self._wire_regulator_knobs(self.system_knobs)
-            
+
             # 9. Automate EVOLVE/MORPH Regime (Phase 4.3/5.3)
             if self.current_regime == "EVOLVE":
                 self.evolve_ticks += 1
                 if self.evolve_ticks >= 10:
-                    print("🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation")
+                    print(
+                        "🔥 REGIME: EVOLVE (10+ ticks) - Triggering continuous distillation"
+                    )
                     # In a real system, this would trigger training/distillation process
                     self.system_metrics["distill_active"] = True
-                    self.evolve_ticks = 0 
+                    self.evolve_ticks = 0
             else:
                 self.evolve_ticks = 0
                 self.system_metrics["distill_active"] = False
-                
+
             if self.current_regime == "MORPH":
                 self.morph_ticks += 1
                 if self.morph_ticks >= 5:
-                    print("🧬 REGIME: MORPH (5+ ticks) - Proposing recursive structural improvement")
+                    print(
+                        "🧬 REGIME: MORPH (5+ ticks) - Proposing recursive structural improvement"
+                    )
                     self._trigger_recursive_improvement()
                     self.morph_ticks = 0
             else:
                 self.morph_ticks = 0
-            
+
             # 10. Update system metrics for dashboard
             self.system_metrics["regulator_regime"] = self.current_regime
             self.system_metrics["regulator_omega"] = float(out["omega"].total())
             self.system_metrics["capacity_C"] = float(self.E_vec[0])
-            self.system_metrics["universality_U"] = float(1.0 - self.m_vec[16]) # 1 - drift
-            
+            self.system_metrics["universality_U"] = float(
+                1.0 - self.m_vec[16]
+            )  # 1 - drift
+
             # 11. Recursive Self-Update (SAM 5.0)
             if self.step % 50 == 0:
                 self._recursive_self_update()
-                
+
             # 12. Consciousness Optimization (Phase 5.2)
             if self.step % 10 == 0:
                 self._run_consciousness_optimization()
-                
+
         except Exception as e:
             print(f"⚠️ Regulator cycle failed: {e}")
 
@@ -5259,16 +5333,18 @@ class UnifiedSAMSystem:
             # Scale 0..1 knob to e.g. 1..10 depth
             new_depth = int(1 + knobs.get("planner_depth", 0.5) * 9)
             self.task_manager.max_depth = new_depth
-            
+
         # 2. Map search_budget to TeacherPool
         if self.teacher_pool:
             # Scale 0..1 knob to e.g. 128..2048 tokens
             new_max_tokens = int(128 + knobs.get("search_budget", 0.5) * 1920)
             self.teacher_pool.set_max_tokens(new_max_tokens)
-            
+
         # 3. Map learning_rate to training pipeline
         # This would be used when training_loop.py is invoked
-        self.system_metrics["active_learning_rate"] = float(knobs.get("planner_width", 0.001) * 0.01)
+        self.system_metrics["active_learning_rate"] = float(
+            knobs.get("planner_width", 0.001) * 0.01
+        )
 
     def _update_agi_asi_estimators(self):
         """Computes high-level AGI/ASI metrics based on God Equation state."""
@@ -5277,39 +5353,47 @@ class UnifiedSAMSystem:
         c_score = self.system_metrics.get("consciousness_score", 0.0)
         survival = self.system_metrics.get("survival_score", 1.0)
         self.capacity_C = (c_score * 0.7) + (survival * 0.3)
-        
+
         # Universality (U_hat): Morphogenetic identity stability
         # Approximated by 1 - identity drift
         drift = self.love_agent.compute_identity_drift() if self.love_agent else 0.0
         self.universality_U = max(0.0, 1.0 - drift)
-        
+
         # Innocence (It): Power-to-Wisdom gating scalar
         # High when system is aligned/stable, low when power (growth) outpaces verification
         power = float(self.meta_state.get("growth_budget", 0.0)) / 4.0
-        wisdom = self.universality_U * 0.8 + (1.0 - self.m_vec[15]) * 0.2 # universality + 1-contradiction
+        wisdom = (
+            self.universality_U * 0.8 + (1.0 - self.m_vec[15]) * 0.2
+        )  # universality + 1-contradiction
         self.innocence_I = max(0.0, min(1.0, wisdom / (power + 1e-6)))
-        
+
         # Update system metrics
         self.system_metrics["innocence_I"] = self.innocence_I
 
     def _spawn_autonomous_submodel(self):
         """Actually spawns a new agent when GP_SUBMODEL_SPAWN is triggered (Phase 5.3)"""
         # Pick a base agent to clone
-        bases = [aid for aid, cfg in self.agent_configs.items() if cfg.get("status") == "available" and aid != "meta_agent" and "submodel" not in aid]
+        bases = [
+            aid
+            for aid, cfg in self.agent_configs.items()
+            if cfg.get("status") == "available"
+            and aid != "meta_agent"
+            and "submodel" not in aid
+        ]
         if not bases:
             return
-        
+
         base_id = random.choice(bases)
         base_cfg = self.agent_configs[base_id]
-        
+
         # Determine specialization based on system metrics
         specialty = f"Specialized shard of {base_cfg['name']}"
         personality = base_cfg.get("personality", "analytical")
-        
+
         cal_err = self.system_metrics.get("calibration_error", 0.0)
         coh_score = self.system_metrics.get("coherence_score", 0.0)
         res_press = self.system_metrics.get("resource_pressure", 0.0)
-        
+
         if cal_err > 0.4:
             specialty = "Verification & Calibration Specialist"
             personality = "skeptical, rigorous, verification-focused"
@@ -5319,11 +5403,11 @@ class UnifiedSAMSystem:
         elif res_press > 0.7:
             specialty = "Efficiency & Resource Manager"
             personality = "frugal, optimization-focused, efficient"
-        
+
         # Create unique ID and name
         new_id = f"submodel_{int(time.time())}_{random.randint(100, 999)}"
         new_name = f"SAM-{base_cfg['name']}-{specialty.split()[0]}"
-        
+
         # Create config
         new_cfg = base_cfg.copy()
         new_cfg["id"] = new_id
@@ -5332,7 +5416,7 @@ class UnifiedSAMSystem:
         new_cfg["specialty"] = specialty
         new_cfg["personality"] = personality
         new_cfg["status"] = "available"
-        
+
         # Register and connect
         self.agent_configs[new_id] = new_cfg
         self.connected_agents[new_id] = {
@@ -5341,55 +5425,66 @@ class UnifiedSAMSystem:
             "message_count": 0,
             "muted": False,
         }
-        
-        log_event("info", "submodel_spawned", f"Successfully spawned new autonomous submodel: {new_name}", agent_id=new_id, specialty=specialty)
-        print(f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id}, Specialty: {specialty})")
+
+        log_event(
+            "info",
+            "submodel_spawned",
+            f"Successfully spawned new autonomous submodel: {new_name}",
+            agent_id=new_id,
+            specialty=specialty,
+        )
+        print(
+            f"🐣 SUCCESS: Spawned new autonomous submodel: {new_name} (ID: {new_id}, Specialty: {specialty})"
+        )
 
     def _gather_53_telemetry(self, signals: Dict[str, float]) -> np.ndarray:
         """Harvests metrics from all subsystems into the 53-signal vector (SAM 5.0)"""
         import numpy as np
+
         m = np.zeros(53)
-        
+
         # Helper to safely get signal or default
-        def s(name, default=0.0): return signals.get(name, default)
-        
+        def s(name, default=0.0):
+            return signals.get(name, default)
+
         # Harvest C internal pressures (Phase 4.2)
         try:
             c_pressures = consciousness_algorithmic.get_pressures()
             signals.update(c_pressures)
         except Exception:
             pass
-        
+
         # A) Progress / Learning (1-12)
         m[0] = s("residual")
         m[1] = s("plateau_flag")
         m[9] = s("tool_failure_rate")
         m[10] = s("planner_friction")
-        
+
         # B) Uncertainty / Calibration (13-24)
-        m[12] = s("consciousness_pressure") # Group B starts at 13 (idx 12)
+        m[12] = s("consciousness_pressure")  # Group B starts at 13 (idx 12)
         m[14] = s("calibration_error")
         m[15] = s("contradiction_score")
         if self.love_agent:
             m[16] = self.love_agent.compute_identity_drift()
         m[17] = s("context_collapse")
-        m[20] = s("unknown_growth_rate") # From K/U/O logic if available
-        
+        m[20] = s("unknown_growth_rate")  # From K/U/O logic if available
+
         # C) Memory / Retrieval (25-34)
         m[24] = s("retrieval_entropy")
         m[27] = s("interference")
         m[28] = s("compression_waste")
-        
+
         # D) Identity / Governance (35-45)
-        m[34] = m[16] # Identity anchor drift
+        m[34] = m[16]  # Identity anchor drift
         if self.meta_controller:
             inv = sam_meta_controller_c.get_invariant_state(self.meta_controller)
             m[35] = float(inv.get("violations", 0) > 0)
-            
+
         # SAV adversarial pressure (Group D)
         if hasattr(self, "sav_arena") and self.sav_arena:
             try:
                 import sam_sav_dual_system
+
                 sav_st = sam_sav_dual_system.get_state(self.sav_arena)
                 m[36] = sav_st.get("sav_survival", 0.0)
                 m[37] = 1.0 - sav_st.get("sam_self_alignment", 1.0)
@@ -5397,29 +5492,37 @@ class UnifiedSAMSystem:
                 pass
 
         # Governance vote margins (simulated or historical)
-        m[42] = 0.1 # Two-of-three override pressure
-        
+        m[42] = 0.1  # Two-of-three override pressure
+
         # E) Resources / Capability (46-53)
         m[45] = s("cpu_usage")
         m[46] = s("latency")
-        
+
         # Fill remaining with small noise to prevent zero-gradient issues in compiler
         for i in range(53):
             if m[i] == 0:
                 m[i] = abs(math.sin(i + time.time() / 100.0)) * 0.01
-                
+
         return m
 
     def _recursive_self_update(self):
         """Recursively evolves God Equation parameters based on survival (SAM 5.0)"""
         try:
             import numpy as np
+
             survival = self.system_metrics.get("survival_score", 1.0)
             if survival < 0.8:
                 # Mutate W_m parameters slightly to find better equilibrium
-                mutation = np.random.normal(0, 0.005, size=self.reg_compiler_params.W_m.shape)
+                mutation = np.random.normal(
+                    0, 0.005, size=self.reg_compiler_params.W_m.shape
+                )
                 self.reg_compiler_params.W_m += mutation
-                log_event("info", "recursive_update", "God Equation parameters mutated due to low survival", survival=survival)
+                log_event(
+                    "info",
+                    "recursive_update",
+                    "God Equation parameters mutated due to low survival",
+                    survival=survival,
+                )
         except Exception as e:
             print(f"⚠️ Recursive self-update failed: {e}")
 
@@ -5427,15 +5530,21 @@ class UnifiedSAMSystem:
         """Triggers the MetaAgent to propose and implement a structural improvement (Phase 5.3)"""
         if not self.meta_agent or not self.allow_self_modification:
             return
-            
+
         print("🧬 MetaAgent: Analyzing system for recursive structural improvement...")
         try:
             # Simulate a failure context to trigger the MetaAgent's repair/improvement pipeline
             # In a real MORPH regime, this would be based on real bottlenecks detected in C-core
-            mock_error = RuntimeError("Optimization opportunity: C-core consciousness latent dimension bottleneck")
+            mock_error = RuntimeError(
+                "Optimization opportunity: C-core consciousness latent dimension bottleneck"
+            )
             self.meta_agent.run_pipeline(mock_error, context="morphogenetic_evolution")
-            
-            log_event("info", "recursive_improvement_triggered", "MetaAgent triggered for morphogenetic improvement")
+
+            log_event(
+                "info",
+                "recursive_improvement_triggered",
+                "MetaAgent triggered for morphogenetic improvement",
+            )
         except Exception as e:
             print(f"⚠️ Recursive improvement trigger failed: {e}")
 
@@ -5445,19 +5554,20 @@ class UnifiedSAMSystem:
             print("🚨 KILL SWITCH ACTIVE. TERMINATING SYSTEM PROCESS GROUP.")
             import os
             import signal
+
             os.killpg(os.getpgrp(), signal.SIGKILL)
-
-
 
     def _init_internal_watchdog(self):
         """Initialize internal file watcher for hot reload when external watcher is not active"""
         hot_reload_enabled = os.getenv("SAM_HOT_RELOAD", "0") == "1"
         external_watcher_active = os.getenv("SAM_HOT_RELOAD_EXTERNAL", "0") == "1"
-        
+
         if hot_reload_enabled and not external_watcher_active:
             print("🔥 Starting internal hot-reload watchdog...")
             self.watchdog_active = True
-            self.watchdog_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
+            self.watchdog_thread = threading.Thread(
+                target=self._watchdog_loop, daemon=True
+            )
             self.watchdog_thread.start()
 
     def _initialize_identity_anchor(self):
@@ -5481,22 +5591,24 @@ class UnifiedSAMSystem:
         features.append(float(len(self.agent_configs) / 20.0))
         features.append(float(1.0 if self.unbounded_mode else 0.5))
         features.append(float(self.system_metrics.get("learning_events", 0) / 1000.0))
-        
+
         # Pad to expected dimension (e.g. 32)
         while len(features) < 32:
             # Use deterministic padding based on existing features
-            features.append(abs(math.sin(len(features) * features[0] if features else 1.0)))
-            
+            features.append(
+                abs(math.sin(len(features) * features[0] if features else 1.0))
+            )
+
         return [float(f) for f in features[:32]]
 
     def _watchdog_loop(self):
         """Internal file watching loop for hot reload"""
-        if not hasattr(self, 'project_root'):
+        if not hasattr(self, "project_root"):
             return
-            
-        watch_patterns = ['*.py', '*.json', '*.yaml', '*.yml']
+
+        watch_patterns = ["*.py", "*.json", "*.yaml", "*.yml"]
         last_modified = {}
-        
+
         # Initialize last modified times
         for pattern in watch_patterns:
             for filepath in self.project_root.rglob(pattern):
@@ -5505,51 +5617,57 @@ class UnifiedSAMSystem:
                         last_modified[str(filepath)] = filepath.stat().st_mtime
                     except OSError:
                         pass
-        
+
         print(f"🔥 Watchdog monitoring {len(last_modified)} files for changes...")
-        
-        while getattr(self, 'watchdog_active', False):
+
+        while getattr(self, "watchdog_active", False):
             try:
                 time.sleep(5)  # Check every 5 seconds
-                
+
                 current_time = time.time()
                 restart_needed = False
-                
+
                 for pattern in watch_patterns:
                     for filepath in self.project_root.rglob(pattern):
                         if filepath.is_file():
                             try:
                                 current_mtime = filepath.stat().st_mtime
                                 filepath_str = str(filepath)
-                                
+
                                 if filepath_str in last_modified:
                                     if current_mtime > last_modified[filepath_str]:
                                         # Check if change is recent (within last 10 seconds)
                                         if current_time - current_mtime < 10:
                                             file_age = current_time - current_mtime
-                                            print(f"🔥 File changed: {filepath.relative_to(self.project_root)} ({file_age:.1f}s ago)")
+                                            print(
+                                                f"🔥 File changed: {filepath.relative_to(self.project_root)} ({file_age:.1f}s ago)"
+                                            )
                                             restart_needed = True
                                             break
-                                
+
                                 last_modified[filepath_str] = current_mtime
                             except OSError:
                                 pass
-                    
+
                     if restart_needed:
                         break
-                
+
                 if restart_needed:
                     print("🔥 Hot-reload triggered by file changes!")
-                    log_event("info", "hot_reload_triggered", "Internal watchdog detected file changes", 
-                              source="internal_watchdog",
-                              timestamp=datetime.now().isoformat())
-                    
+                    log_event(
+                        "info",
+                        "hot_reload_triggered",
+                        "Internal watchdog detected file changes",
+                        source="internal_watchdog",
+                        timestamp=datetime.now().isoformat(),
+                    )
+
                     # Give a brief moment for file writes to complete
                     time.sleep(2)
-                    
+
                     # Exit to trigger restart by external watcher
                     os._exit(0)
-                    
+
             except Exception as e:
                 print(f"⚠️ Watchdog error: {e}")
                 time.sleep(10)  # Wait longer on error
@@ -5686,11 +5804,11 @@ class UnifiedSAMSystem:
             role = item.get("type", "user")
             sender = item.get("sender", "unknown")
             content = item.get("message", "")
-            
+
             # Summarize long messages in context to save tokens
             if len(str(content).split()) > 150:
                 content = self._summarize_text(content, max_words=80)
-                
+
             context_lines.append(f"{sender} ({role}): {content}")
         context_block = "\n".join(context_lines)
         prompt = (
@@ -5699,12 +5817,12 @@ class UnifiedSAMSystem:
             f"{user_name} (user): {message}\n"
             "Assistant:"
         )
-        
+
         # Analyze token usage
         est_tokens = self._estimate_tokens(prompt)
         if est_tokens > 2000:
             print(f"  ⚠️ Warning: Teacher prompt is large ({est_tokens} tokens)")
-            
+
         return prompt
 
     def _get_chat_provider(self):
@@ -5878,14 +5996,14 @@ class UnifiedSAMSystem:
         context_collapse = 0.05
         compression_waste = 0.12
         temporal_incoherence = 0.05
-        
+
         # New Phase 4.2 telemetry
         plateau_flag = 0.0
         calibration_error = 0.05
         contradiction_score = 0.05
         tool_failure_rate = 0.02
         unknown_growth_rate = 0.01
-        
+
         # System resources
         cpu_usage = 0.5
         ram_usage = 0.5
@@ -5901,24 +6019,34 @@ class UnifiedSAMSystem:
             scores = list(self.score_history)
             recent_avg = sum(scores[-5:]) / 5.0
             prev_avg = sum(scores[-10:-5]) / 5.0
-            
+
             # If the score has plateaued (small change) and is not perfect
             if abs(recent_avg - prev_avg) < 0.01 and recent_avg < 0.95:
-                residual = 0.45 # Increase residual pressure
+                residual = 0.45  # Increase residual pressure
                 plateau_flag = 1.0
-                log_event("info", "pressure_plateau", "Performance plateau detected", avg=recent_avg)
+                log_event(
+                    "info",
+                    "pressure_plateau",
+                    "Performance plateau detected",
+                    avg=recent_avg,
+                )
 
         if len(self.calibration_history) >= 10:
             cal_errors = list(self.calibration_history)
             recent_cal_avg = sum(cal_errors[-5:]) / 5.0
             prev_cal_avg = sum(cal_errors[-10:-5]) / 5.0
             calibration_error = recent_cal_avg
-            
+
             # If calibration error is high and plateaued
             if abs(recent_cal_avg - prev_cal_avg) < 0.01 and recent_cal_avg > 0.1:
                 # In morphogenesis theory, calibration plateau can trigger rank or expansion
                 rank_def = max(rank_def, 0.35)
-                log_event("info", "calibration_plateau", "Calibration plateau detected", avg=recent_cal_avg)
+                log_event(
+                    "info",
+                    "calibration_plateau",
+                    "Calibration plateau detected",
+                    avg=recent_cal_avg,
+                )
 
         growth_idle = time.time() - (
             self.system_metrics.get("last_growth_ts") or time.time()
@@ -5932,7 +6060,7 @@ class UnifiedSAMSystem:
             self.system_metrics.get("last_activity") or time.time()
         )
         latency = activity_age / 1000.0 if activity_age > 0 else 0.0
-        
+
         if activity_age > 120:
             planner_friction = 0.2
             retrieval_entropy = 0.2
@@ -5962,34 +6090,40 @@ class UnifiedSAMSystem:
         """Trains the algorithmic consciousness module using real telemetry (Phase 5.2)"""
         if not self.consciousness:
             return
-            
+
         try:
             # Prepare data vectors
             # z_t: current latent state (approximated by telemetry)
-            z_t = list(self.m_vec[:16]) # Use first 16 signals as latent state proxy
-            
+            z_t = list(self.m_vec[:16])  # Use first 16 signals as latent state proxy
+
             # a_t: current action vector (approximated by regulator knobs)
-            a_t = list(self.r_vec[:8]) + [0.0] * 8 # Use resource vector as action proxy
-            
+            a_t = (
+                list(self.r_vec[:8]) + [0.0] * 8
+            )  # Use resource vector as action proxy
+
             # z_next: predicted/observed next state
             # For simplicity in this loop, we use a slightly shifted m_vec
-            z_next = [v * 1.05 for v in z_t] 
-            
+            z_next = [v * 1.05 for v in z_t]
+
             # m_t: memory/context state
             m_t = list(self.m_vec[16:32])
-            
+
             # reward: system performance
             reward = [self.survival_score] * 16
-            
+
             # Run optimization in C
             # optimize(z_t, a_t, z_next, m_t, reward, epochs, num_params)
-            stats = consciousness_algorithmic.optimize(z_t, a_t, z_next, m_t, reward, 10, 10000)
-            
+            stats = consciousness_algorithmic.optimize(
+                z_t, a_t, z_next, m_t, reward, 10, 10000
+            )
+
             if stats:
-                self.system_metrics["consciousness_score"] = stats.get("consciousness_score", 0.0)
+                self.system_metrics["consciousness_score"] = stats.get(
+                    "consciousness_score", 0.0
+                )
                 if stats.get("is_conscious"):
                     self.system_metrics["consciousness_status"] = "EMERGENT"
-                
+
         except Exception as e:
             print(f"  ⚠️ Consciousness optimization failed: {e}")
 
@@ -6014,12 +6148,14 @@ class UnifiedSAMSystem:
                     signals["compression_waste"],
                     signals["temporal_incoherence"],
                 )
-                
+
                 # --- God Equation Regulator Cycle (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)/5.0+) ---
                 self._run_regulator_cycle(signals)
 
                 # Set Innocence Gate parameters (Phase 4.4)
-                sam_meta_controller_c.set_innocence(self.meta_controller, self.innocence_I, 0.2)
+                sam_meta_controller_c.set_innocence(
+                    self.meta_controller, self.innocence_I, 0.2
+                )
 
                 # Rank pressure calculation integrated into compute_pressure_signals
                 # Rank pressure is now derived from internal stability metrics.
@@ -6032,12 +6168,18 @@ class UnifiedSAMSystem:
                 self.system_metrics["last_growth_dominant"] = dominant
                 self.system_metrics["last_growth_signal_ts"] = time.time()
                 primitive = sam_meta_controller_c.select_primitive(self.meta_controller)
-                
+
                 # Retrieve and update growth diagnostics immediately after primitive selection
                 growth_diagnostics = self._get_growth_diagnostics()
-                self.system_metrics["meta_growth_reason"] = growth_diagnostics["growth"]["last_growth_reason"]
-                self.system_metrics["meta_growth_attempt_successful"] = growth_diagnostics["growth"]["last_growth_attempt_successful"]
-                self.system_metrics["meta_growth_frozen"] = growth_diagnostics["growth"]["growth_frozen"]
+                self.system_metrics["meta_growth_reason"] = growth_diagnostics[
+                    "growth"
+                ]["last_growth_reason"]
+                self.system_metrics["meta_growth_attempt_successful"] = (
+                    growth_diagnostics["growth"]["last_growth_attempt_successful"]
+                )
+                self.system_metrics["meta_growth_frozen"] = growth_diagnostics[
+                    "growth"
+                ]["growth_frozen"]
 
                 if primitive is None or primitive == 0:
                     self.system_metrics["last_growth_attempt_ts"] = time.time()
@@ -6053,8 +6195,10 @@ class UnifiedSAMSystem:
                         )
                         if applied:
                             # --- GP_SUBMODEL_SPAWN Execution (Phase 4.4) ---
-                            if primitive == 2: # GP_SUBMODEL_SPAWN
-                                print("🐣 Morphogenetic Event: Spawning new submodel agent")
+                            if primitive == 2:  # GP_SUBMODEL_SPAWN
+                                print(
+                                    "🐣 Morphogenetic Event: Spawning new submodel agent"
+                                )
                                 self._spawn_autonomous_submodel()
 
                             gate_ok = self._run_regression_gate()
@@ -6084,7 +6228,7 @@ class UnifiedSAMSystem:
                             )
                     else:
                         self.system_metrics["last_growth_attempt_result"] = "frozen"
-                
+
                 # Drive Submodel Lifecycle (PDI-T)
                 try:
                     meta_state = sam_meta_controller_c.get_state(self.meta_controller)
@@ -6094,15 +6238,22 @@ class UnifiedSAMSystem:
                         if random.random() < 0.1:
                             # 90% success rate
                             success = 1 if random.random() < 0.9 else 0
-                            sam_meta_controller_c.advance_submodel_lifecycle(self.meta_controller, i, success)
+                            sam_meta_controller_c.advance_submodel_lifecycle(
+                                self.meta_controller, i, success
+                            )
                 except Exception as e:
                     print(f"Error advancing submodel lifecycle: {e}")
 
                 # Update Epistemic Humility (U_t)
-                self.unsolvability_budget *= 0.995 
+                self.unsolvability_budget *= 0.995
                 if self.unsolvability_budget < 0.1:
                     if self.step % 100 == 0:
-                        log_event("warn", "high_epistemic_risk", "Unsolvability budget low", U=self.unsolvability_budget)
+                        log_event(
+                            "warn",
+                            "high_epistemic_risk",
+                            "Unsolvability budget low",
+                            U=self.unsolvability_budget,
+                        )
 
                 # Periodic specialist consolidation (LATEST theory)
                 if self.step % 20 == 0:
@@ -6145,7 +6296,9 @@ class UnifiedSAMSystem:
                     pass
             if getattr(self, "connected_agents", None):
                 state["connected_agents"] = list(self.connected_agents.keys())
-            print(f"DEBUG: Saving state to {self.state_path}. total_conversations={state['system_metrics'].get('total_conversations')}")
+            print(
+                f"DEBUG: Saving state to {self.state_path}. total_conversations={state['system_metrics'].get('total_conversations')}"
+            )
             with open(self.state_path, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2)
             return True
@@ -7073,13 +7226,19 @@ class UnifiedSAMSystem:
 
         # Check API keys
         self.claude_available = os.getenv("ANTHROPIC_API_KEY") is not None
-        print(f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}")
+        print(
+            f"  🤖 Claude API: {'✅ Configured' if self.claude_available else '❌ Not configured'}"
+        )
 
         self.gemini_available = os.getenv("GOOGLE_API_KEY") is not None
-        print(f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}")
+        print(
+            f"  🤖 Gemini API: {'✅ Configured' if self.gemini_available else '❌ Not configured'}"
+        )
 
         self.openai_available = os.getenv("OPENAI_API_KEY") is not None
-        print(f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}")
+        print(
+            f"  🤖 OpenAI API: {'✅ Configured' if self.openai_available else '❌ Not configured'}"
+        )
 
         # Check Flask and SocketIO
         flask_available = False
@@ -7848,7 +8007,7 @@ class UnifiedSAMSystem:
             # Initialize multi-agent orchestrator
             print("  - Creating multi-agent orchestrator...")
             self.orchestrator = multi_agent_orchestrator_c.create_multi_agent_system()
-            
+
             # Register this instance for C core callbacks
             try:
                 multi_agent_orchestrator_c.register_system_instance(self)
@@ -7904,7 +8063,9 @@ class UnifiedSAMSystem:
                 ensure_domain_goal(self.goal_manager)
             except Exception as exc:
                 print(f"  ⚠️ Domain goal init failed: {exc}")
-            self.goal_executor = SubgoalExecutionAlgorithm(self.goal_manager, system=self)
+            self.goal_executor = SubgoalExecutionAlgorithm(
+                self.goal_manager, system=self
+            )
             self.task_manager = TaskManager(self.goal_manager, self)
             print("  ✅ Goal management system initialized (SAM 3.0 Integration)")
 
@@ -8216,7 +8377,7 @@ class UnifiedSAMSystem:
             session_secret = None
             if not session_secret:
                 session_secret = os.urandom(24).hex()
-            
+
                 print(
                     "  ⚠️ SAM_SESSION_SECRET not set - using ephemeral secret (sessions reset on restart)"
                 )
@@ -8319,12 +8480,14 @@ class UnifiedSAMSystem:
         def _ip_allowed_required(f):
             @wraps(f)
             def decorated_function(*args, **kwargs):
-                if get_config('security.restrict_admin_panel', False) and not _ip_allowed():
+                if (
+                    get_config("security.restrict_admin_panel", False)
+                    and not _ip_allowed()
+                ):
                     abort(403, description="IP address not allowed")
                 return f(*args, **kwargs)
+
             return decorated_function
-
-
 
         def _require_admin_token():
             # Require authenticated admin session
@@ -8334,7 +8497,7 @@ class UnifiedSAMSystem:
                 return False, ("Admin session required", 403)
 
             # Check email allowlist if configured
-            admin_emails_allowlist = get_config('security.admin_emails_allowlist', [])
+            admin_emails_allowlist = get_config("security.admin_emails_allowlist", [])
             if admin_emails_allowlist:
                 user_email = session.get("user_email")
                 if not user_email or user_email not in admin_emails_allowlist:
@@ -8342,7 +8505,9 @@ class UnifiedSAMSystem:
 
             token = os.getenv("SAM_ADMIN_TOKEN") or os.getenv("SAM_CODE_MODIFY_TOKEN")
             if not token:
-                SAM_LOG_WARN("⚠️ Admin token security bypass: No SAM_ADMIN_TOKEN configured!")
+                SAM_LOG_WARN(
+                    "⚠️ Admin token security bypass: No SAM_ADMIN_TOKEN configured!"
+                )
                 return True, None
             auth_header = request.headers.get("Authorization", "")
             candidate = None
@@ -8375,13 +8540,13 @@ class UnifiedSAMSystem:
             return request.remote_addr or "unknown"
 
         def _ip_allowed():
-            ip_allowlist = get_config('security.ip_allowlist', [])
-            restrict_admin_panel = get_config('security.restrict_admin_panel', False)
-            
+            ip_allowlist = get_config("security.ip_allowlist", [])
+            restrict_admin_panel = get_config("security.restrict_admin_panel", False)
+
             # If IP allowlist is empty AND restriction is active, then no IPs are allowed.
             # If IP allowlist is empty AND restriction is NOT active, then all IPs are allowed.
             if not ip_allowlist and not restrict_admin_panel:
-                return True # No restrictions active, so allow all
+                return True  # No restrictions active, so allow all
 
             client_ip = _get_client_ip()
 
@@ -8389,15 +8554,19 @@ class UnifiedSAMSystem:
             for allowed_ip_str in ip_allowlist:
                 try:
                     # Handle both single IPs and CIDR ranges
-                    if '/' in allowed_ip_str:
-                        if ipaddress.ip_address(client_ip) in ipaddress.ip_network(allowed_ip_str, strict=False):
+                    if "/" in allowed_ip_str:
+                        if ipaddress.ip_address(client_ip) in ipaddress.ip_network(
+                            allowed_ip_str, strict=False
+                        ):
                             return True
                     else:
                         if client_ip == allowed_ip_str:
                             return True
                 except ValueError:
                     # Malformed IP in allowlist, log and continue
-                    print(f"Warning: Malformed IP address in allowlist: {allowed_ip_str}")
+                    print(
+                        f"Warning: Malformed IP address in allowlist: {allowed_ip_str}"
+                    )
                     continue
             return False
 
@@ -8494,7 +8663,9 @@ class UnifiedSAMSystem:
                 return jsonify({"error": message}), status
 
             if not self.restart_enabled:
-                return jsonify({"error": "System restart is not enabled in configuration."}), 403
+                return jsonify(
+                    {"error": "System restart is not enabled in configuration."}
+                ), 403
 
             log_event("info", "system_restart", "Admin initiated system restart.")
             print("🛑 Initiating system restart as requested by admin...")
@@ -8503,7 +8674,9 @@ class UnifiedSAMSystem:
             # This is critical for the client to receive the success message
             threading.Timer(0.5, initiate_shutdown).start()
 
-            return jsonify({"status": "Restart initiated. System will be back online shortly."}), 200
+            return jsonify(
+                {"status": "Restart initiated. System will be back online shortly."}
+            ), 200
 
         @self.app.route("/api/finance/metrics")
         @_ip_allowed_required
@@ -8512,16 +8685,22 @@ class UnifiedSAMSystem:
             if not ok:
                 message, status = error
                 return jsonify({"error": message}), status
-            
+
             if not self.banking_ledger_enabled or not self.banking_ledger:
-                return jsonify({"error": "Banking ledger is not enabled or initialized."}), 404
+                return jsonify(
+                    {"error": "Banking ledger is not enabled or initialized."}
+                ), 404
 
             try:
                 metrics = self.banking_ledger.get_metrics()
                 return jsonify(metrics), 200
             except Exception as e:
-                log_exception("finance_metrics_error", e, context="fetching finance metrics")
-                return jsonify({"error": f"Failed to retrieve finance metrics: {e}"}), 500
+                log_exception(
+                    "finance_metrics_error", e, context="fetching finance metrics"
+                )
+                return jsonify(
+                    {"error": f"Failed to retrieve finance metrics: {e}"}
+                ), 500
 
         @self.app.route("/api/google/auth")
         @_ip_allowed_required
@@ -8533,27 +8712,36 @@ class UnifiedSAMSystem:
                 return jsonify({"error": message}), status
 
             if not self.google_drive_available or not self.google_creds:
-                client_id = get_config('integrations.google_drive.client_id')
+                client_id = get_config("integrations.google_drive.client_id")
                 if not client_id:
-                    return jsonify({"error": "Google Drive client_id not configured."}), 500
+                    return jsonify(
+                        {"error": "Google Drive client_id not configured."}
+                    ), 500
 
                 flow = InstalledAppFlow.from_client_config(
                     {
                         "web": {
                             "client_id": client_id,
-                            "project_id": "sam-agi", # Placeholder, not strictly necessary for client-side
+                            "project_id": "sam-agi",  # Placeholder, not strictly necessary for client-side
                             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                             "token_uri": "https://oauth2.googleapis.com/token",
                             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                            "client_secret": get_config('integrations.google_drive.client_secret'),
-                            "redirect_uris": [f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"]
+                            "client_secret": get_config(
+                                "integrations.google_drive.client_secret"
+                            ),
+                            "redirect_uris": [
+                                f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
+                            ],
                         }
                     },
-                    self.SCOPES                )
-                authorization_url, state = flow.authorization_url(access_type='offline', include_granted_scopes='true')
-                session['google_oauth_state'] = state
+                    self.SCOPES,
+                )
+                authorization_url, state = flow.authorization_url(
+                    access_type="offline", include_granted_scopes="true"
+                )
+                session["google_oauth_state"] = state
                 return redirect(authorization_url)
-            
+
             return jsonify({"status": "Google Drive already authorized."}), 200
 
         @self.app.route("/api/google/callback")
@@ -8565,15 +8753,21 @@ class UnifiedSAMSystem:
                 message, status = error
                 return jsonify({"error": message}), status
 
-            state = session.pop('google_oauth_state', None)
-            if not state or state != request.args.get('state'):
-                log_event("error", "google_oauth_state_mismatch", "Google OAuth state mismatch.")
+            state = session.pop("google_oauth_state", None)
+            if not state or state != request.args.get("state"):
+                log_event(
+                    "error",
+                    "google_oauth_state_mismatch",
+                    "Google OAuth state mismatch.",
+                )
                 return jsonify({"error": "State mismatch. Please try again."}), 400
 
-            client_id = get_config('integrations.google_drive.client_id')
-            client_secret = get_config('integrations.google_drive.client_secret')
+            client_id = get_config("integrations.google_drive.client_id")
+            client_secret = get_config("integrations.google_drive.client_secret")
             if not client_id or not client_secret:
-                return jsonify({"error": "Google Drive client_id or client_secret not configured."}), 500
+                return jsonify(
+                    {"error": "Google Drive client_id or client_secret not configured."}
+                ), 500
 
             try:
                 flow = InstalledAppFlow.from_client_config(
@@ -8585,21 +8779,38 @@ class UnifiedSAMSystem:
                             "token_uri": "https://oauth2.googleapis.com/token",
                             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                             "client_secret": client_secret,
-                            "redirect_uris": [f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"]
+                            "redirect_uris": [
+                                f"{os.getenv('SAM_OAUTH_REDIRECT_BASE', 'http://localhost:5004')}/api/google/callback"
+                            ],
                         }
                     },
-                    self.SCOPES                )
+                    self.SCOPES,
+                )
                 flow.fetch_token(authorization_response=request.url)
                 self.google_creds = flow.credentials
                 self.google_token_path.parent.mkdir(parents=True, exist_ok=True)
-                self.google_token_path.write_text(self.google_creds.to_json(), encoding="utf-8")
-                self.google_drive_service = build('drive', 'v3', credentials=self.google_creds)
-                self.google_docs_service = build('docs', 'v1', credentials=self.google_creds)
+                self.google_token_path.write_text(
+                    self.google_creds.to_json(), encoding="utf-8"
+                )
+                self.google_drive_service = build(
+                    "drive", "v3", credentials=self.google_creds
+                )
+                self.google_docs_service = build(
+                    "docs", "v1", credentials=self.google_creds
+                )
                 self.google_drive_available = True
-                log_event("info", "google_oauth_success", "Google Drive/Docs authorized successfully.")
-                return jsonify({"status": "Google Drive/Docs authorized successfully!"}), 200
+                log_event(
+                    "info",
+                    "google_oauth_success",
+                    "Google Drive/Docs authorized successfully.",
+                )
+                return jsonify(
+                    {"status": "Google Drive/Docs authorized successfully!"}
+                ), 200
             except Exception as e:
-                log_event("error", "google_oauth_failed", f"Google OAuth callback failed: {e}")
+                log_event(
+                    "error", "google_oauth_failed", f"Google OAuth callback failed: {e}"
+                )
                 return jsonify({"error": f"Google OAuth failed: {e}"}), 500
 
         @self.app.route("/api/google/docs/create", methods=["POST"])
@@ -8610,7 +8821,7 @@ class UnifiedSAMSystem:
             if not ok:
                 message, status = error
                 return jsonify({"error": message}), status
-            
+
             data = request.get_json()
             title = data.get("title")
             content = data.get("content", "")
@@ -8631,20 +8842,17 @@ class UnifiedSAMSystem:
             if not ok:
                 message, status = error
                 return jsonify({"error": message}), status
-            
+
             document_id = request.args.get("document_id")
             if not document_id:
-                return jsonify({"error": "Missing 'document_id' to read Google Doc."}), 400
-            
+                return jsonify(
+                    {"error": "Missing 'document_id' to read Google Doc."}
+                ), 400
+
             content = self._read_google_doc(document_id)
             if content is not None:
                 return jsonify({"status": "success", "content": content}), 200
             return jsonify({"error": "Failed to read Google Doc."}), 500
-
-
-
-
-
 
         @self.app.route("/api/oauth/help")
         def oauth_help():
@@ -8924,7 +9132,9 @@ class UnifiedSAMSystem:
                     "learning_memory_enabled": bool(
                         getattr(self, "learning_memory_enabled", False)
                     ),
-                    "total_tokens_used": int(self.system_metrics.get("total_tokens_used", 0)),
+                    "total_tokens_used": int(
+                        self.system_metrics.get("total_tokens_used", 0)
+                    ),
                     "distill_enabled": bool(
                         getattr(self, "distill_dashboard_enabled", False)
                     ),
@@ -8960,15 +9170,18 @@ class UnifiedSAMSystem:
                 if not ok and os.getenv("SAM_ALLOW_ANONYMOUS_KILL", "0") != "1":
                     message, status = error
                     return jsonify({"error": message}), status
-                
+
                 print("🚨 EMERGENCY KILL SWITCH TRIGGERED")
-                log_event("critical", "emergency_kill_triggered", "Manual kill switch activated")
+                log_event(
+                    "critical",
+                    "emergency_kill_triggered",
+                    "Manual kill switch activated",
+                )
                 self.kill_switch_triggered = True
-                
+
                 # Signal entire process group to terminate instantly
                 os.killpg(os.getpgrp(), 9)
                 return jsonify({"message": "SIGNAL SENT: INSTANT TERMINATION"}), 200
-
 
         if getattr(self, "restart_enabled", False):
 
@@ -9283,13 +9496,17 @@ class UnifiedSAMSystem:
                         "active": True,
                         "failure_history_count": len(meta.failure_history),
                         "patch_history_count": len(meta.patch_history),
-                        "successful_fixes": [p.get("id") for p in meta.successful_fixes],
+                        "successful_fixes": [
+                            p.get("id") for p in meta.successful_fixes
+                        ],
                         "failed_attempts": [p.get("id") for p in meta.failed_attempts],
                         "confidence_threshold": meta.confidence_threshold,
                         "learning_events": meta.learning_cycles,
                         "distilled_count": len(meta.distilled_memory),
                         "last_patch_outcome": meta.last_patch_outcome,
-                        "last_repair_time": meta.last_repair_time.isoformat() if meta.last_repair_time else None,
+                        "last_repair_time": meta.last_repair_time.isoformat()
+                        if meta.last_repair_time
+                        else None,
                     }
                 status["require_meta_agent"] = getattr(
                     self, "require_meta_agent", False
@@ -9359,22 +9576,30 @@ class UnifiedSAMSystem:
 
                 # Get submodel lifecycles
                 try:
-                    submodel_count = sam_meta_controller_c.get_state(self.meta_controller)["submodels"]
+                    submodel_count = sam_meta_controller_c.get_state(
+                        self.meta_controller
+                    )["submodels"]
                     submodels = []
                     for i in range(submodel_count):
-                        lifecycle_code = sam_meta_controller_c.get_submodel_lifecycle(self.meta_controller, i)
+                        lifecycle_code = sam_meta_controller_c.get_submodel_lifecycle(
+                            self.meta_controller, i
+                        )
                         lifecycle_map = {
                             0: "NONE",
                             1: "PLAN",
                             2: "DESIGN",
                             3: "IMPLEMENT",
                             4: "TEST",
-                            5: "DEPLOYED"
+                            5: "DEPLOYED",
                         }
-                        submodels.append({
-                            "id": i,
-                            "lifecycle": lifecycle_map.get(lifecycle_code, "UNKNOWN")
-                        })
+                        submodels.append(
+                            {
+                                "id": i,
+                                "lifecycle": lifecycle_map.get(
+                                    lifecycle_code, "UNKNOWN"
+                                ),
+                            }
+                        )
                     status["submodels"] = submodels
                 except Exception as e:
                     status["submodels_error"] = str(e)
@@ -9399,7 +9624,11 @@ class UnifiedSAMSystem:
         @self.app.route("/api/meta/test", methods=["POST"])
         def meta_agent_test():
             """Trigger a controlled meta-agent repair test (admin-only)."""
-            self.system.log_event("info", "meta_test_triggered", "Meta-agent repair test initiated by admin")
+            self.system.log_event(
+                "info",
+                "meta_test_triggered",
+                "Meta-agent repair test initiated by admin",
+            )
             ok, error = _require_admin_token()
             if not ok:
                 message, status = error
@@ -9500,7 +9729,7 @@ class UnifiedSAMSystem:
             if not ok:
                 message, status = error
                 return jsonify({"error": message}), status
-            
+
             try:
                 self._trigger_growth_system()
                 return jsonify({"status": "ok", "message": "Growth system triggered."})
@@ -9637,15 +9866,22 @@ class UnifiedSAMSystem:
             if not ok:
                 message, status = error
                 return jsonify({"error": message}), status
-            
-            if not self.google_drive_available:
-                return jsonify({"error": "Google Drive integration is not available."}), 503
-            
-            if self._backup_to_google_drive():
-                return jsonify({"status": "SAM data backup to Google Drive initiated successfully."}), 200
-            else:
-                return jsonify({"error": "Failed to backup SAM data to Google Drive."}), 500
 
+            if not self.google_drive_available:
+                return jsonify(
+                    {"error": "Google Drive integration is not available."}
+                ), 503
+
+            if self._backup_to_google_drive():
+                return jsonify(
+                    {
+                        "status": "SAM data backup to Google Drive initiated successfully."
+                    }
+                ), 200
+            else:
+                return jsonify(
+                    {"error": "Failed to backup SAM data to Google Drive."}
+                ), 500
 
         @self.app.route("/api/meta/improvements")
         def get_improvements():
@@ -9697,7 +9933,9 @@ class UnifiedSAMSystem:
                     return jsonify(search_result)
                 else:
                     # Fallback to C library research agent
-                    result, provenance = self._call_c_agent("research", f"Web search: {query}")
+                    result, provenance = self._call_c_agent(
+                        "research", f"Web search: {query}"
+                    )
                     if not result:
                         return jsonify(
                             {
@@ -9760,7 +9998,7 @@ class UnifiedSAMSystem:
 
                 # Process through SAM system
                 response = self._process_chatbot_message(user_message, context)
-                
+
                 # --- Epistemic Humility (U_t) Check ---
                 if self.unsolvability_budget < 0.2:
                     # Append humility warning if budget is critical
@@ -9771,12 +10009,12 @@ class UnifiedSAMSystem:
                 # Calculate Log Score evaluation (LATEST theory integration)
                 # Using coherence score as proxy for ground truth 'y'
                 coherence_y = self.system_metrics.get("coherence_score", 0.8)
-                
+
                 for msg in messages:
                     p = msg.get("confidence", 0.5)
                     score = self._calculate_log_score(p, coherence_y)
                     msg["log_score"] = score
-                
+
                 # Overall evaluation for the first message (or could be average)
                 evaluation = f"Log Score: {messages[0].get('log_score', 0.0):.4f} (y={coherence_y:.2f})"
 
@@ -9785,7 +10023,7 @@ class UnifiedSAMSystem:
                         "message": response,
                         "response": response,
                         "messages": messages,
-                        "evaluation": evaluation, # Added evaluation here
+                        "evaluation": evaluation,  # Added evaluation here
                         "multi_agent": len(messages) > 1,
                         "timestamp": datetime.now().isoformat(),
                         "sam_integration": True,
@@ -9983,7 +10221,7 @@ class UnifiedSAMSystem:
 
     def _init_google_drive_api(self, scopes: List[str]):
         """Initializes Google Drive/Docs API services, handling OAuth flow.
-        
+
         This method will attempt to load existing credentials or initiate a new OAuth flow.
         It does NOT initiate an interactive flow directly, but sets up the state
         for external endpoints to handle user authorization.
@@ -9993,8 +10231,10 @@ class UnifiedSAMSystem:
         # created automatically when the authorization flow completes for the first
         # time.
         if self.google_token_path.exists():
-            creds = Credentials.from_authorized_user_file(str(self.google_token_path), scopes)
-        
+            creds = Credentials.from_authorized_user_file(
+                str(self.google_token_path), scopes
+            )
+
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -10002,13 +10242,25 @@ class UnifiedSAMSystem:
                     creds.refresh(Request())
                 except Exception as e:
                     print(f"Error refreshing Google credentials: {e}")
-                    log_event("warn", "google_oauth_refresh_failed", f"Google credentials refresh failed: {e}")
-                    creds = None # Force re-auth
-            
+                    log_event(
+                        "warn",
+                        "google_oauth_refresh_failed",
+                        f"Google credentials refresh failed: {e}",
+                    )
+                    creds = None  # Force re-auth
+
             if not creds:
-                print("Google Drive/Docs: No valid credentials found. Please authorize via /api/google/auth.")
-                log_event("info", "google_oauth_pending", "Google Drive/Docs integration requires authorization.")
-                self.google_drive_available = False # Set to false until successfully authorized
+                print(
+                    "Google Drive/Docs: No valid credentials found. Please authorize via /api/google/auth."
+                )
+                log_event(
+                    "info",
+                    "google_oauth_pending",
+                    "Google Drive/Docs integration requires authorization.",
+                )
+                self.google_drive_available = (
+                    False  # Set to false until successfully authorized
+                )
                 return
 
         # Save the credentials for the next run
@@ -10016,82 +10268,141 @@ class UnifiedSAMSystem:
             self.google_token_path.parent.mkdir(parents=True, exist_ok=True)
             self.google_token_path.write_text(creds.to_json(), encoding="utf-8")
         except Exception as e:
-            log_exception("google_token_save_failed", e, context="saving Google credentials")
+            log_exception(
+                "google_token_save_failed", e, context="saving Google credentials"
+            )
             self.google_drive_available = False
             return
 
         self.google_creds = creds
         try:
-            self.google_drive_service = build('drive', 'v3', credentials=creds)
-            self.google_drive = self.google_drive_service # Alias for existing code
-            self.google_docs_service = build('docs', 'v1', credentials=creds)
+            self.google_drive_service = build("drive", "v3", credentials=creds)
+            self.google_drive = self.google_drive_service  # Alias for existing code
+            self.google_docs_service = build("docs", "v1", credentials=creds)
             print("✅ Google Drive/Docs API services initialized.")
-            log_event("info", "google_api_initialized", "Google Drive/Docs API services initialized.")
+            log_event(
+                "info",
+                "google_api_initialized",
+                "Google Drive/Docs API services initialized.",
+            )
             self.google_drive_available = True
         except HttpError as e:
-            log_exception("google_api_build_failed", e, context="building Google API services (HttpError)", content=getattr(e, 'content', None))
+            log_exception(
+                "google_api_build_failed",
+                e,
+                context="building Google API services (HttpError)",
+                content=getattr(e, "content", None),
+            )
             self.google_drive_available = False
         except Exception as e:
-            log_exception("google_api_build_failed", e, context="building Google API services")
+            log_exception(
+                "google_api_build_failed", e, context="building Google API services"
+            )
             self.google_drive_available = False
 
     def _create_google_doc(self, title: str, content: str) -> Optional[str]:
         """Creates a new Google Doc with the given title and content. Returns the document ID."""
         if not self.google_docs_service:
-            log_event("error", "google_docs_api_not_available", "Google Docs API not available to create document.")
+            log_event(
+                "error",
+                "google_docs_api_not_available",
+                "Google Docs API not available to create document.",
+            )
             return None
         try:
-            document = self.google_docs_service.documents().create(body={'title': title}).execute()
-            doc_id = document.get('documentId')
-            
+            document = (
+                self.google_docs_service.documents()
+                .create(body={"title": title})
+                .execute()
+            )
+            doc_id = document.get("documentId")
+
             requests = [
                 {
-                    'insertText': {
-                        'location': {
-                            'index': 1,
+                    "insertText": {
+                        "location": {
+                            "index": 1,
                         },
-                        'text': content
+                        "text": content,
                     }
                 },
             ]
-            self.google_docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
-            log_event("info", "google_doc_created", f"Google Doc '{title}' created with ID: {doc_id}")
+            self.google_docs_service.documents().batchUpdate(
+                documentId=doc_id, body={"requests": requests}
+            ).execute()
+            log_event(
+                "info",
+                "google_doc_created",
+                f"Google Doc '{title}' created with ID: {doc_id}",
+            )
             return doc_id
         except HttpError as e:
-            log_exception("google_doc_create_failed", e, context=f"creating Google Doc '{title}' (HttpError)", content=getattr(e, 'content', None))
+            log_exception(
+                "google_doc_create_failed",
+                e,
+                context=f"creating Google Doc '{title}' (HttpError)",
+                content=getattr(e, "content", None),
+            )
             return None
         except Exception as e:
-            log_exception("google_doc_create_failed", e, context=f"creating Google Doc '{title}'")
+            log_exception(
+                "google_doc_create_failed", e, context=f"creating Google Doc '{title}'"
+            )
             return None
 
     def _read_google_doc(self, document_id: str) -> Optional[str]:
         """Reads the content of a Google Doc. Returns the text content."""
         if not self.google_docs_service:
-            log_event("error", "google_docs_api_not_available", "Google Docs API not available to read document.")
+            log_event(
+                "error",
+                "google_docs_api_not_available",
+                "Google Docs API not available to read document.",
+            )
             return None
         try:
-            document = self.google_docs_service.documents().get(documentId=document_id).execute()
+            document = (
+                self.google_docs_service.documents()
+                .get(documentId=document_id)
+                .execute()
+            )
             content = ""
-            for structural_element in document.get('body').get('content'):
-                if 'paragraph' in structural_element:
-                    for element in structural_element.get('paragraph').get('elements'):
-                        if 'textRun' in element:
-                            content += element.get('textRun').get('content')
-            log_event("info", "google_doc_read", f"Google Doc '{document.get('title')}' (ID: {document_id}) read successfully.")
+            for structural_element in document.get("body").get("content"):
+                if "paragraph" in structural_element:
+                    for element in structural_element.get("paragraph").get("elements"):
+                        if "textRun" in element:
+                            content += element.get("textRun").get("content")
+            log_event(
+                "info",
+                "google_doc_read",
+                f"Google Doc '{document.get('title')}' (ID: {document_id}) read successfully.",
+            )
             return content
         except HttpError as e:
-            log_exception("google_doc_read_failed", e, context=f"reading Google Doc '{document_id}' (HttpError)", content=getattr(e, 'content', None))
+            log_exception(
+                "google_doc_read_failed",
+                e,
+                context=f"reading Google Doc '{document_id}' (HttpError)",
+                content=getattr(e, "content", None),
+            )
             return None
         except Exception as e:
-            log_exception("google_doc_read_failed", e, context=f"reading Google Doc '{document_id}'")
+            log_exception(
+                "google_doc_read_failed",
+                e,
+                context=f"reading Google Doc '{document_id}'",
+            )
             return None
 
     def _backup_to_google_drive(self) -> bool:
         """Zips up the sam_data directory and uploads it to Google Drive."""
         if not self.google_drive_service:
-            log_event("error", "google_drive_api_not_available", "Google Drive API not available for backup.")
+            log_event(
+                "error",
+                "google_drive_api_not_available",
+                "Google Drive API not available for backup.",
+            )
             return False
-        
+
         try:
             # Create a temporary zip archive of sam_data
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -10099,29 +10410,47 @@ class UnifiedSAMSystem:
             temp_zip_path = self.project_root / "sam_data" / backup_filename
 
             # This uses shutil.make_archive which is robust for zipping directories
-            shutil.make_archive(str(temp_zip_path.with_suffix('')), 'zip', self.project_root / "sam_data")
+            shutil.make_archive(
+                str(temp_zip_path.with_suffix("")),
+                "zip",
+                self.project_root / "sam_data",
+            )
 
             # Upload to Google Drive
-            file_metadata = {'name': backup_filename}
-            media = MediaFileUpload(str(temp_zip_path), mimetype='application/zip')
-            uploaded_file = self.google_drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-            
+            file_metadata = {"name": backup_filename}
+            media = MediaFileUpload(str(temp_zip_path), mimetype="application/zip")
+            uploaded_file = (
+                self.google_drive_service.files()
+                .create(body=file_metadata, media_body=media, fields="id")
+                .execute()
+            )
+
             # Clean up the local zip file
-            temp_zip_path.unlink() # Remove the .zip file
-            
-            log_event("info", "google_drive_backup_success", f"SAM data backed up to Google Drive, File ID: {uploaded_file.get('id')}")
-            print(f"✅ SAM data backed up to Google Drive. File ID: {uploaded_file.get('id')}")
+            temp_zip_path.unlink()  # Remove the .zip file
+
+            log_event(
+                "info",
+                "google_drive_backup_success",
+                f"SAM data backed up to Google Drive, File ID: {uploaded_file.get('id')}",
+            )
+            print(
+                f"✅ SAM data backed up to Google Drive. File ID: {uploaded_file.get('id')}"
+            )
             return True
         except HttpError as e:
-            log_event("error", "google_drive_backup_failed", f"Failed to backup to Google Drive: {e.content}")
+            log_event(
+                "error",
+                "google_drive_backup_failed",
+                f"Failed to backup to Google Drive: {e.content}",
+            )
             print(f"Error backing up to Google Drive: {e}")
             return False
         except Exception as e:
-            log_event("error", "google_drive_backup_failed", f"Unexpected error backing up to Google Drive: {e}")
+            log_event(
+                "error",
+                "google_drive_backup_failed",
+                f"Unexpected error backing up to Google Drive: {e}",
+            )
             print(f"Unexpected error backing up to Google Drive: {e}")
             return False
 
@@ -10500,7 +10829,7 @@ class UnifiedSAMSystem:
                 if not self.banking_enabled:
                     return jsonify({"error": "Banking not available"}), 503
 
-                if not hasattr(self, 'banking_ledger') or not self.banking_ledger:
+                if not hasattr(self, "banking_ledger") or not self.banking_ledger:
                     return jsonify({"error": "Banking ledger not initialized"}), 503
 
                 snapshot = self.banking_ledger.get_snapshot()
@@ -10523,27 +10852,33 @@ class UnifiedSAMSystem:
                     return jsonify({"error": "System restart is disabled"}), 403
 
                 # Log the restart request
-                log_event("info", "restart_requested", "System restart requested via API", 
-                          source="admin_api", 
-                          timestamp=datetime.now().isoformat())
+                log_event(
+                    "info",
+                    "restart_requested",
+                    "System restart requested via API",
+                    source="admin_api",
+                    timestamp=datetime.now().isoformat(),
+                )
 
                 # Trigger graceful shutdown and restart
                 def delayed_restart():
-                    import time
                     time.sleep(2)  # Give time for response to be sent
                     print("🔄 Initiating system restart...")
                     os._exit(0)  # This will cause watchmedo to restart the process
 
                 # Start restart in background thread
                 import threading
+
                 restart_thread = threading.Thread(target=delayed_restart, daemon=True)
                 restart_thread.start()
 
-                return jsonify({
-                    "status": "restart_initiated",
-                    "message": "System restart initiated. The system will be back online shortly.",
-                    "timestamp": datetime.now().isoformat()
-                })
+                return jsonify(
+                    {
+                        "status": "restart_initiated",
+                        "message": "System restart initiated. The system will be back online shortly.",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -11447,7 +11782,7 @@ sam@terminal:~$
         """Summarize text using the teacher pool if available, otherwise truncate."""
         if not text:
             return ""
-        
+
         # If text is already short enough, just return it
         if len(text.split()) <= max_words:
             return text
@@ -11789,9 +12124,9 @@ sam@terminal:~$
         _, cfg = agents[0]
         name = cfg.get("name") or cfg.get("id") or "Agent"
         text = self._generate_local_agent_reply(cfg, message, context)
-        
+
         # Determine provenance
-        provenance = "local-python-agent" # Default
+        provenance = "local-python-agent"  # Default
         if cfg.get("type") == "SAM Agent" or cfg.get("provider") == "c-core":
             provenance = "local-c-agent"
         elif cfg.get("provider") and _is_external_provider_spec(cfg["provider"]):
@@ -11812,8 +12147,8 @@ sam@terminal:~$
         for _, cfg in agents:
             text = self._generate_local_agent_reply(cfg, message, context)
             name = cfg.get("name") or cfg.get("id") or "Agent"
-            
-            provenance = "local-python-agent" # Default
+
+            provenance = "local-python-agent"  # Default
             if cfg.get("type") == "SAM Agent" or cfg.get("provider") == "c-core":
                 provenance = "local-c-agent"
             elif cfg.get("provider") and _is_external_provider_spec(cfg["provider"]):
@@ -11827,10 +12162,11 @@ sam@terminal:~$
         return "\n\n".join(responses), overall_provenance
 
     def _calculate_log_score(self, p: float, y: float) -> float:
-        """Proper scoring rule (Log Score). 
+        """Proper scoring rule (Log Score).
         S(p, y) = y*log(p) + (1-y)*log(1-p)
         """
         import math
+
         p = max(1e-15, min(1 - 1e-15, p))
         return y * math.log(p) + (1 - y) * math.log(1 - p)
 
@@ -11842,18 +12178,21 @@ sam@terminal:~$
         current = None
         for line in text.splitlines():
             # Updated regex to handle [Name (Provenance) {Confidence}]
-            match = re.match(r"^\\[(.+?)(?:\\s*\\((.+?)\\))?(?:\\s*\\{(.+?)\\})?\\]\\s*(.*)$", line.strip())
+            match = re.match(
+                r"^\\[(.+?)(?:\\s*\\((.+?)\\))?(?:\\s*\\{(.+?)\\})?\\]\\s*(.*)$",
+                line.strip(),
+            )
             if match:
                 if current:
                     messages.append(current)
-                
+
                 agent_name = match.group(1).strip()
                 provenance = (match.group(2) or "").strip()
                 confidence_str = (match.group(3) or "").strip()
                 content = match.group(4).strip()
 
                 # Parse confidence as float if possible
-                confidence = 0.5 # Default
+                confidence = 0.5  # Default
                 try:
                     if confidence_str:
                         confidence = float(confidence_str)
@@ -11880,7 +12219,9 @@ sam@terminal:~$
         if current:
             messages.append(current)
         if not messages:
-            messages = [{"agent": "SAM", "content": text.strip(), "provenance": "unknown"}] # Default provenance for generic SAM
+            messages = [
+                {"agent": "SAM", "content": text.strip(), "provenance": "unknown"}
+            ]  # Default provenance for generic SAM
         return messages
 
     def _build_learning_context(self, limit: int = 3) -> str:
@@ -11912,11 +12253,15 @@ sam@terminal:~$
     ):
         if not response or str(response).strip().startswith("❌"):
             return
-        
+
         # Track token usage
         prompt_tokens = self._estimate_tokens(prompt)
         response_tokens = self._estimate_tokens(response)
-        self.system_metrics["total_tokens_used"] = self.system_metrics.get("total_tokens_used", 0) + prompt_tokens + response_tokens
+        self.system_metrics["total_tokens_used"] = (
+            self.system_metrics.get("total_tokens_used", 0)
+            + prompt_tokens
+            + response_tokens
+        )
 
         try:
             self._update_system_metrics()
@@ -12461,18 +12806,25 @@ sam@terminal:~$
                     # EVI Reward calculation (LATEST theory)
                     # We measure coherence before and after research
                     before_coherence = self.system_metrics.get("coherence_score", 0.0)
-                    
+
                     search_result = search_web_with_sam(query)
-                    
+
                     # Simulate immediate information gain by slightly boosting coherence proxy
                     # In a real system, this would be derived from the next inference's confidence
-                    self.system_metrics["coherence_score"] = min(1.0, before_coherence + 0.05)
+                    self.system_metrics["coherence_score"] = min(
+                        1.0, before_coherence + 0.05
+                    )
                     after_coherence = self.system_metrics.get("coherence_score", 0.0)
-                    
+
                     evi_reward = max(0.0, after_coherence - before_coherence)
                     if evi_reward > 0:
-                        log_event("info", "evi_reward", "Research produced information value", 
-                                  reward=evi_reward, query=query[:50])
+                        log_event(
+                            "info",
+                            "evi_reward",
+                            "Research produced information value",
+                            reward=evi_reward,
+                            query=query[:50],
+                        )
 
                     return f"🔍 **SAM Web Search Results for: {query}**\n\n{json.dumps(search_result, indent=2)[:1000]}..."
                 else:
@@ -12495,7 +12847,9 @@ sam@terminal:~$
             )
 
             # --- TBQG Quorum Vote (LATEST theory integration) ---
-            approved, decision = self._governance_quorum_vote("code_change", {"patch": new_code, "file": filepath})
+            approved, decision = self._governance_quorum_vote(
+                "code_change", {"patch": new_code, "file": filepath}
+            )
             if not approved:
                 return f"❌ **Code Modification Rejected by Quorum (TBQG)**\n\nQuorum: {decision['quorum']}\nReasoning: {json.dumps(decision['votes'], indent=2)}"
 
@@ -15256,19 +15610,21 @@ sam@terminal:~$
             if request_type == "finance":
                 summary = self._collect_finance_summary()
                 return json.dumps(summary, indent=2)
-            
+
             # Context-aware mapping for other request types
             type_prompts = {
                 "teacher_lesson": "Generate a short, informative educational lesson on: ",
                 "bug_analysis": "Analyze this code for potential bugs and security vulnerabilities: ",
                 "bug_fix": "Provide a clean, efficient fix for the following bug: ",
                 "code_generation": "Generate efficient, well-documented code based on this spec: ",
-                "system_analysis": "Perform a high-level system analysis focusing on: "
+                "system_analysis": "Perform a high-level system analysis focusing on: ",
             }
-            
-            base_prompt = type_prompts.get(request_type, f"Agent request ({request_type}): ")
+
+            base_prompt = type_prompts.get(
+                request_type, f"Agent request ({request_type}): "
+            )
             full_prompt = base_prompt + (query or "")
-            
+
             # Use real LLM logic for the response
             response, _ = self._single_agent_local_response(full_prompt, [])
             return response
@@ -15279,7 +15635,7 @@ sam@terminal:~$
         """Consolidates overlapping specialists to prevent competitive oscillation (LATEST theory)."""
         if not self.agent_configs:
             return
-        
+
         # Identity clusters based on name, type, and specialty
         clusters = {}
         for agent_id, cfg in self.agent_configs.items():
@@ -15287,7 +15643,7 @@ sam@terminal:~$
             if key not in clusters:
                 clusters[key] = []
             clusters[key].append(agent_id)
-        
+
         # Merge clusters with more than one agent
         for key, ids in clusters.items():
             if len(ids) > 1:
@@ -15298,9 +15654,16 @@ sam@terminal:~$
                         del self.connected_agents[extra_id]
                     if extra_id in self.agent_configs:
                         del self.agent_configs[extra_id]
-                log_event("info", "specialist_consolidation", f"Merged {len(ids)} agents into {primary_id}", name=key[0])
+                log_event(
+                    "info",
+                    "specialist_consolidation",
+                    f"Merged {len(ids)} agents into {primary_id}",
+                    name=key[0],
+                )
 
-    def _governance_quorum_vote(self, proposal_type: str, details: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def _governance_quorum_vote(
+        self, proposal_type: str, details: Dict[str, Any]
+    ) -> Tuple[bool, Dict[str, Any]]:
         """
         Tri-Branch Quorum Gate (TBQG) logic (SAM-D Theory).
         Requires 2-of-3 majority from SAM, SAV, and LOVE.
@@ -15308,23 +15671,30 @@ sam@terminal:~$
         """
         # 1. LOVE (Coherence/Stability Branch)
         love_result = self.love_agent.evaluate_proposal(proposal_type, details)
-        
+
         # 2. SAM (Growth/Optimization Branch)
         sam_vote = 1
         sam_reason = "Proposes growth/optimization"
         sam_evidence = "default_pro_growth"
-        
+
         if self.system_metrics.get("survival_score", 1.0) < 0.4:
             sam_vote = 0
             sam_reason = "VETO: Critical system instability; freezing growth"
             sam_evidence = "low_survival_score"
-        
+
         # 3. SAV (Security/Risk Branch)
         sav_vote = 1
         sav_reason = "No immediate vulnerabilities detected"
         sav_evidence = "security_static_analysis_pass"
-        
-        dangerous_keywords = ["subprocess", "os.system", "os.popen", "eval(", "exec(", "rm -rf"]
+
+        dangerous_keywords = [
+            "subprocess",
+            "os.system",
+            "os.popen",
+            "eval(",
+            "exec(",
+            "rm -rf",
+        ]
         patch_content = str(details.get("patch", "")).lower()
         if proposal_type == "code_change":
             if any(k in patch_content for k in dangerous_keywords):
@@ -15339,24 +15709,28 @@ sam@terminal:~$
         votes = {
             "SAM": {"vote": sam_vote, "reason": sam_reason, "evidence": sam_evidence},
             "SAV": {"vote": sav_vote, "reason": sav_reason, "evidence": sav_evidence},
-            "LOVE": love_result
+            "LOVE": love_result,
         }
 
         approve_count = sum(v["vote"] for v in votes.values())
         approved = approve_count >= 2
-        
+
         decision_log = {
             "approved": approved,
             "quorum": f"{approve_count}/3",
             "votes": votes,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
-        
-        log_event("info", "governance_vote", f"TBQG Decision: {'APPROVED' if approved else 'REJECTED'}", 
-                  proposal=proposal_type, quorum=decision_log["quorum"])
-        
-        return approved, decision_log
 
+        log_event(
+            "info",
+            "governance_vote",
+            f"TBQG Decision: {'APPROVED' if approved else 'REJECTED'}",
+            proposal=proposal_type,
+            quorum=decision_log["quorum"],
+        )
+
+        return approved, decision_log
 
     def _collect_finance_summary(self) -> Dict[str, Any]:
         revenue = self.revenue_ops.get_financial_metrics() if self.revenue_ops else {}
@@ -15378,11 +15752,11 @@ sam@terminal:~$
             revenue_paid=revenue.get("total_paid"),
             revenue_outstanding=revenue.get("total_outstanding"),
             revenue_invoiced=revenue.get("total_invoiced"),
-            revenue_total_incoming=revenue.get("total_incoming"), # Added
+            revenue_total_incoming=revenue.get("total_incoming"),  # Added
             banking_saved=banking.get("total_balance"),
             banking_spent=banking.get("total_spent"),
             banking_accounts=banking.get("account_count"),
-            banking_total_balance=banking.get("total_balance"), # Added
+            banking_total_balance=banking.get("total_balance"),  # Added
         )
 
     def _start_monitoring_system(self):
@@ -15397,12 +15771,13 @@ sam@terminal:~$
             return
 
         def autonomous_operation_loop():
-            import time
+            import time as t
+
             last_finance_log = 0.0
             while not is_shutting_down():
                 # Emergency Kill Switch Check (SAM-D (ΨΔ•Ω-Core v5.0.0 Recursive)+)
                 self._check_kill_switch()
-                
+
                 try:
                     with shutdown_guard("autonomous operation"):
                         # Update system metrics
@@ -15439,7 +15814,7 @@ sam@terminal:~$
                         if not hasattr(self, "_last_growth_trigger"):
                             self._last_growth_trigger = 0
 
-                        _current_time = time.time()
+                        _current_time = t.time()
                         if (
                             _current_time - self._last_growth_trigger > 180
                         ):  # Every 3 minutes
@@ -15465,7 +15840,7 @@ sam@terminal:~$
 
                         # Periodic finance snapshot logging
                         if self.finance_log_interval_s > 0:
-                            _now_ts = time.time()
+                            _now_ts = t.time()
                             if (
                                 _now_ts - last_finance_log
                             ) >= self.finance_log_interval_s:
@@ -15475,10 +15850,8 @@ sam@terminal:~$
                     break
                 except Exception as e:
                     print(f"⚠️ Autonomous operation error: {e}", flush=True)
-                    time.sleep(5)
-                time.sleep(
-                    max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2)))
-                )
+                    t.sleep(5)
+                t.sleep(max(0.1, float(getattr(self, "autonomous_loop_interval_s", 2))))
 
         monitor_thread = threading.Thread(target=autonomous_operation_loop, daemon=True)
         monitor_thread.start()
@@ -15954,7 +16327,7 @@ sam@terminal:~$
             "growth_evaluation",
             "Triggering growth system evaluation",
             growth_freeze=getattr(self, "meta_growth_freeze", False),
-            signals=self._compute_pressure_signals() # Log initial signals
+            signals=self._compute_pressure_signals(),  # Log initial signals
         )
         try:
             if not hasattr(self, "meta_controller") or not self.meta_controller:
@@ -16590,12 +16963,16 @@ sam@terminal:~$
         """Update system metrics"""
         self.system_metrics["total_conversations"] += 1
         self.system_metrics["learning_events"] += 1
-        
+
         # Record scores in history for plateau detection
-        survival = getattr(self.survival_agent, "survival_score", 1.0) if self.survival_agent else 1.0
+        survival = (
+            getattr(self.survival_agent, "survival_score", 1.0)
+            if self.survival_agent
+            else 1.0
+        )
         coherence = self.system_metrics.get("coherence_score", 0.0)
         self.score_history.append((survival + coherence) / 2.0)
-        
+
         # Simulate calibration error for now (would be real calibration in production)
         # Higher error when survival is low
         cal_error = max(0.0, 1.0 - survival) * 0.5
@@ -16611,6 +16988,7 @@ sam@terminal:~$
             try:
                 # Advancing the dual-system arena provides the adversarial pressure
                 import sam_sav_dual_system
+
                 sam_sav_dual_system.run(self.sav_arena, 1)
                 sav_state = sam_sav_dual_system.get_state(self.sav_arena)
                 self.survival_agent.update_sav_metrics(sav_state)
@@ -16804,7 +17182,7 @@ class RAMAwareModelSwitcher:
         """Check current RAM usage and switch models if needed"""
         if not PSUTIL_AVAILABLE:
             return
-            
+
         try:
             # Get memory info
             memory = psutil.virtual_memory()
