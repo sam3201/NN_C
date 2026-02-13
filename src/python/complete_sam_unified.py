@@ -4869,7 +4869,7 @@ class UnifiedSAMSystem:
         # Initialize C-based God Equation Regulator (Phase 5.3)
         print("  - Initializing C-based God Equation Regulator...")
         self.c_regulator = sam_regulator_c.SAMRegulator()
-        self.reg_compiler_params = None # Replaced by C-Regulator
+        self.reg_compiler_params = src.CompilerParams.bootstrap()
 
         
         self.m_vec = np.zeros(53)
