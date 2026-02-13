@@ -91,3 +91,12 @@ SAM_Code_Backups/
 secrets/openai_key.txt
 secrets/
 .aider*
+
+# ChatGPT conversation logs
+ChatGPT_*.txt
+
+# Aider chat history
+.aider.chat.history.md
+
+# Compiled Python extensions in root (should be in build/)
+*.cpython-*.so

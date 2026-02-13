@@ -108,6 +108,24 @@ extensions = [
         extra_compile_args=COMMON_ARGS,
         extra_link_args=[]
     ),
+    Extension(
+        'sam_consciousness',
+        sources=['src/c_modules/sam_consciousness.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
+    Extension(
+        'sam_memory',
+        sources=['src/c_modules/sam_memory.c'],
+        include_dirs=['include'],
+        library_dirs=[],
+        libraries=[],
+        extra_compile_args=COMMON_ARGS,
+        extra_link_args=[]
+    ),
 ]
 
 setup(

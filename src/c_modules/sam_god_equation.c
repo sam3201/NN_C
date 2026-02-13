@@ -1,154 +1,133 @@
 /*
- * SAM God Equation Core
- * Implementation - Pure C for maximum performance
+ * SAM God Equation Core - with Python Bindings
  */
 
-#include "sam_god_equation.h"
+#include <Python.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-SamGodEquation *sam_god_equation_create(size_t latent_dim, size_t num_terms) {
-    SamGodEquation *ge = (SamGodEquation *)calloc(1, sizeof(SamGodEquation));
-    if (!ge) return NULL;
-    
-    ge->psi_dim = latent_dim;
-    ge->num_terms = num_terms > 0 ? num_terms : SAM_MAX_LOSS_TERMS;
-    
-    // Allocate arrays
-    ge->psi = (double *)calloc(latent_dim, sizeof(double));
-    ge->alpha = (double *)calloc(ge->num_terms, sizeof(double));
-    ge->beta = (double *)calloc(ge->num_terms, sizeof(double));
-    ge->gamma = (double *)calloc(ge->num_terms, sizeof(double));
-    ge->delta = (double *)calloc(ge->num_terms, sizeof(double));
-    ge->zeta = (double *)calloc(ge->num_terms, sizeof(double));
-    ge->workspace = (double *)calloc(256, sizeof(double));
-    ge->workspace_size = 256;
-    
-    // Initialize default K/U/O
-    ge->K = 1.0;
-    ge->U = 5.0;
-    ge->O = 10.0;
-    ge->omega = 0.5;
-    ge->lambda = 0.0;
-    
-    // Default coefficients (from EpistemicSim)
-    ge->alpha[0] = 0.05;   // discovery
-    ge->beta[0] = 1.10;    // discovery scaling
-    ge->gamma[0] = 0.02;   // maintenance
-    ge->delta[0] = 1.00;    // burden scaling
-    ge->zeta[0] = 0.01;     // contradiction penalty
-    
-    return ge;
-}
-
-void sam_god_equation_free(SamGodEquation *ge) {
-    if (!ge) return;
-    if (ge->psi) free(ge->psi);
-    if (ge->alpha) free(ge->alpha);
-    if (ge->beta) free(ge->beta);
-    if (ge->gamma) free(ge->gamma);
-    if (ge->delta) free(ge->delta);
-    if (ge->zeta) free(ge->zeta);
-    if (ge->workspace) free(ge->workspace);
-    free(ge);
-}
+typedef struct {
+    PyObject_HEAD
+    double K;
+    double U;
+    double O;
+    double omega;
+    double alpha;
+    double beta;
+    double gamma;
+    double delta;
+    double zeta;
+} SamGodEquation;
 
 static double sigma_frontier(double U, double O) {
     double rho = 0.7;
     return (U + rho * O) / (1.0 + U + rho * O);
 }
 
-double sam_god_equation_contradiction(const SamGodEquation *ge) {
-    return fmax(0.0, (ge->U + ge->O) / (1.0 + ge->K) - 1.0);
+static double contradiction(double K, double U, double O) {
+    return fmax(0.0, (U + O) / (1.0 + K) - 1.0);
 }
 
-double sam_god_equation_compute(SamGodEquation *ge, double *telemetry, double dt) {
-    if (!ge) return 0.0;
+static int GodEquation_init(SamGodEquation *self, PyObject *args, PyObject *kwds) {
+    self->K = 1.0;
+    self->U = 5.0;
+    self->O = 10.0;
+    self->omega = 0.5;
+    self->alpha = 0.05;
+    self->beta = 1.10;
+    self->gamma = 0.02;
+    self->delta = 1.00;
+    self->zeta = 0.01;
+    return 0;
+}
+
+static PyObject *SamGodEquation_compute(SamGodEquation *self, PyObject *args) {
+    double research = 0.5, verify = 0.5, morph = 0.2;
+    double dt = 1.0;
+    PyArg_ParseTuple(args, "|ddd", &research, &verify, &morph);
     
-    double sigma = sigma_frontier(ge->U, ge->O);
-    double contra = sam_god_equation_contradiction(ge);
+    double sigma = sigma_frontier(self->U, self->O);
+    double contra = contradiction(self->K, self->U, self->O);
     
-    // Get efforts from telemetry if available
-    double research = telemetry ? telemetry[0] : 0.5;
-    double verify = telemetry ? telemetry[1] : 0.5;
-    double morph = telemetry ? telemetry[2] : 0.2;
+    double discovery = self->alpha * pow(self->K, self->beta) * sigma * (0.5 + research);
+    double burden = self->gamma * pow(self->K, self->delta) * (1.2 - 0.7 * verify);
+    double contra_pen = self->zeta * pow(self->K, self->delta) * contra;
     
-    // Discovery term
-    double discovery = ge->alpha[0] * pow(ge->K, ge->beta[0]) * sigma * (0.5 + research);
-    
-    // Maintenance burden
-    double burden = ge->gamma[0] * pow(ge->K, ge->delta[0]) * (1.2 - 0.7 * verify);
-    
-    // Contradiction penalty
-    double contra_pen = ge->zeta[0] * pow(ge->K, ge->delta[0]) * contra;
-    
-    // Update K
     double dK = (discovery - burden - contra_pen) * dt;
-    ge->K = fmax(0.0, ge->K + dK);
+    self->K = fmax(0.0, self->K + dK);
     
-    // Update U (unknowns)
-    double eta = 0.03;   // new unknowns created
-    double mu = 1.0;
-    double kappa = 0.04;  // resolution rate
-    double created_U = eta * pow(fmax(ge->K, 1e-9), mu) * (0.4 + 0.6 * research) * dt;
-    double resolved_U = kappa * ge->U * (0.3 + 0.7 * verify) * dt;
-    ge->U = fmax(0.0, ge->U + created_U - resolved_U);
+    double eta = 0.03, mu = 1.0, kappa = 0.04;
+    double created_U = eta * pow(fmax(self->K, 1e-9), mu) * (0.4 + 0.6 * research) * dt;
+    double resolved_U = kappa * self->U * (0.3 + 0.7 * verify) * dt;
+    self->U = fmax(0.0, self->U + created_U - resolved_U);
     
-    // Update O (opacity)
-    double xi = 0.02;   // new opacity created
-    double nu = 1.0;
-    double chi = 0.06;  // morphogenesis rate
-    double created_O = xi * pow(fmax(ge->K, 1e-9), nu) * (0.5 + 0.5 * research) * dt;
-    double morphed_O = chi * ge->O * (0.2 + 0.8 * morph) * dt;
-    ge->O = fmax(0.0, ge->O + created_O - morphed_O);
+    double xi = 0.02, nu = 1.0, chi = 0.06;
+    double created_O = xi * pow(fmax(self->K, 1e-9), nu) * (0.5 + 0.5 * research) * dt;
+    double morphed_O = chi * self->O * (0.2 + 0.8 * morph) * dt;
+    self->O = fmax(0.0, self->O + created_O - morphed_O);
     
-    // Update omega based on coherence
-    ge->omega = 1.0 - contra;
+    self->omega = 1.0 - contra;
     
-    return ge->K;
+    return PyFloat_FromDouble(self->K);
 }
 
-void sam_god_equation_update_kuo(SamGodEquation *ge, double dt, 
-                                 double research_effort, double verify_effort, double morph_effort) {
-    if (!ge) return;
-    
-    double dummy_telemetry[3] = {research_effort, verify_effort, morph_effort};
-    sam_god_equation_compute(ge, dummy_telemetry, dt);
+static PyObject *SamGodEquation_get_K(SamGodEquation *self, PyObject *args) {
+    return PyFloat_FromDouble(self->K);
 }
 
-double sam_god_equation_task_term(SamGodEquation *ge, double *state) {
-    return ge->K;
+static PyObject *SamGodEquation_get_U(SamGodEquation *self, PyObject *args) {
+    return PyFloat_FromDouble(self->U);
 }
 
-double sam_god_equation_gradient_term(SamGodEquation *ge, double *state, double dt) {
-    return 0.0;  // Simplified
+static PyObject *SamGodEquation_get_O(SamGodEquation *self, PyObject *args) {
+    return PyFloat_FromDouble(self->O);
 }
 
-double sam_god_equation_coherence_term(SamGodEquation *ge) {
-    return ge->omega;
+static PyObject *SamGodEquation_get_omega(SamGodEquation *self, PyObject *args) {
+    return PyFloat_FromDouble(self->omega);
 }
 
-double sam_god_equation_growth_term(SamGodEquation *ge) {
-    return ge->O / (1.0 + ge->K);
+static PyObject *SamGodEquation_contradiction(SamGodEquation *self, PyObject *args) {
+    return PyFloat_FromDouble(contradiction(self->K, self->U, self->O));
 }
 
-double sam_god_equation_emergence_term(SamGodEquation *ge) {
-    return ge->U / (1.0 + ge->K);
-}
+static PyMethodDef SamGodEquationMethods[] = {
+    {"compute", (PyCFunction)SamGodEquation_compute, METH_VARARGS, "Step the equation"},
+    {"get_K", (PyCFunction)SamGodEquation_get_K, METH_VARARGS, "Get K"},
+    {"get_U", (PyCFunction)SamGodEquation_get_U, METH_VARARGS, "Get U"},
+    {"get_O", (PyCFunction)SamGodEquation_get_O, METH_VARARGS, "Get O"},
+    {"get_omega", (PyCFunction)SamGodEquation_get_omega, METH_VARARGS, "Get omega"},
+    {"contradiction", (PyCFunction)SamGodEquation_contradiction, METH_VARARGS, "Get contradiction"},
+    {NULL, NULL, 0, NULL}
+};
 
-// Accessors
-double sam_god_equation_get_K(const SamGodEquation *ge) { return ge ? ge->K : 0.0; }
-double sam_god_equation_get_U(const SamGodEquation *ge) { return ge ? ge->U : 0.0; }
-double sam_god_equation_get_O(const SamGodEquation *ge) { return ge ? ge->O : 0.0; }
-double sam_god_equation_get_omega(const SamGodEquation *ge) { return ge ? ge->omega : 0.0; }
+static PyTypeObject SamGodEquationType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "sam_god_equation.SamGodEquation",
+    .tp_doc = "SAM God Equation K/U/O dynamics",
+    .tp_basicsize = sizeof(SamGodEquation),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+    .tp_init = (initproc)GodEquation_init,
+    .tp_methods = SamGodEquationMethods,
+};
 
-void sam_god_equation_set_coefficients(SamGodEquation *ge, double *alpha, double *beta, 
-                                        double *gamma, double *delta, double *zeta) {
-    if (!ge) return;
-    if (alpha) memcpy(ge->alpha, alpha, ge->num_terms * sizeof(double));
-    if (beta) memcpy(ge->beta, beta, ge->num_terms * sizeof(double));
-    if (gamma) memcpy(ge->gamma, gamma, ge->num_terms * sizeof(double));
-    if (delta) memcpy(ge->delta, delta, ge->num_terms * sizeof(double));
-    if (zeta) memcpy(ge->zeta, zeta, ge->num_terms * sizeof(double));
+static PyModuleDef sam_god_equation_module = {
+    PyModuleDef_HEAD_INIT,
+    "sam_god_equation",
+    "SAM God Equation module",
+    -1,
+    NULL
+};
+
+PyMODINIT_FUNC PyInit_sam_god_equation(void) {
+    PyObject *m;
+    if (PyType_Ready(&SamGodEquationType) < 0) return NULL;
+    m = PyModule_Create(&sam_god_equation_module);
+    if (m == NULL) return NULL;
+    Py_INCREF(&SamGodEquationType);
+    PyModule_AddObject(m, "SamGodEquation", (PyObject *)&SamGodEquationType);
+    return m;
 }

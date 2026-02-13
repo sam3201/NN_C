@@ -1,0 +1,96 @@
+{
+  "name": "NN_C_SAM_D_Project",
+  "version": "5.2.0",
+  "description": "OpenClaw configuration for SAM-D AGI development automation",
+  "environment": {
+    "type": "local",
+    "python_version": "3.10+",
+    "c_compiler": "clang/gcc",
+    "working_directory": "."
+  },
+  "workflows": {
+    "tri_cameral_cycle": {
+      "enabled": true,
+      "branches": ["CIC", "AEE", "CSF"],
+      "decision_matrix": "consensus",
+      "auto_progress": false
+    },
+    "cyclic_development": {
+      "enabled": true,
+      "phases": ["PLAN", "ANALYZE", "BUILD", "ANALYZE", "TEST", "ANALYZE"],
+      "gates_required": true,
+      "loop_on_failure": true
+    },
+    "planning_levels": {
+      "high_level": true,
+      "low_level": true,
+      "integration": "hierarchical"
+    }
+  },
+  "integrations": {
+    "opencode": {
+      "enabled": true,
+      "mcp_servers": ["context7", "github-search", "filesystem"],
+      "skills": ["tri-cameral-orchestrator", "cyclic-development-workflow", "anthropic-reasoning"],
+      "tools": ["subagent_orchestrator", "deep_scan", "verify_completeness"]
+    },
+    "anthropic": {
+      "enabled": true,
+      "model": "claude-3-5-sonnet-20241022",
+      "reasoning_depth": "detailed",
+      "safety_checks": true,
+      "max_tokens": 8192
+    }
+  },
+  "constraints": {
+    "hard_invariants": [
+      "Identity continuity must be preserved",
+      "No breaking changes to public API",
+      "All tests must pass before merge",
+      "Security vulnerabilities must be resolved"
+    ],
+    "soft_guidelines": [
+      "Code coverage should exceed 80%",
+      "Documentation should be comprehensive",
+      "Performance should not regress",
+      "C extensions should be optimized"
+    ]
+  },
+  "execution": {
+    "parallel_subagents": true,
+    "max_subagents": 5,
+    "analysis_gates": {
+      "after_plan": true,
+      "after_build": true,
+      "after_test": true
+    },
+    "auto_document": true,
+    "version_history_tracking": true
+  },
+  "development": {
+    "phases": {
+      "phase_1": {
+        "name": "Core Psychology",
+        "status": "COMPLETE",
+        "components": ["Id/Ego/Superego", "Emotion", "Wisdom"]
+      },
+      "phase_2": {
+        "name": "Power & Control",
+        "status": "IN_PROGRESS",
+        "components": ["Power (P_t)", "Control (C_t)", "Resources", "Capabilities"]
+      },
+      "phase_3": {
+        "name": "Meta Layer",
+        "status": "PLANNED",
+        "components": ["Self-observation", "Counterfactuals", "Versionality"]
+      }
+    }
+  },
+  "commands": {
+    "start_cycle": "openclaw run tri-cameral-cycle",
+    "analyze_codebase": "openclaw analyze --depth deep --extract-equations",
+    "build_c_extensions": "openclaw exec 'python3 setup.py build_ext --inplace'",
+    "run_tests": "openclaw test --suite comprehensive",
+    "verify_system": "openclaw verify --all-components"
+  }
+}

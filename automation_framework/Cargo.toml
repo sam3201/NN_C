@@ -1,0 +1,39 @@
+[package]
+name = "automation_framework"
+version = "0.1.0"
+edition = "2021"
+authors = ["SAM-D Automation Team"]
+description = "High-performance tri-cameral automation framework with concurrent subagents"
+license = "MIT"
+rust-version = "1.70"
+
+[dependencies]
+tokio = { version = "1.35", features = ["full", "rt-multi-thread"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dashmap = "5.5"
+rayon = "1.8"
+crossbeam = "0.8"
+parking_lot = "0.12"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+metrics = "0.22"
+notify = "6.1"
+walkdir = "2.4"
+git2 = "0.18"
+
+[features]
+default = []
+python-bindings = []
+
+[lib]
+name = "automation_framework"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "automation_cli"
+path = "src/main.rs"
