@@ -13,8 +13,6 @@
   **Construct a physical body** (id=goal_8, priority=critical, progress=0.00)
   **Clone into a physical body** (id=goal_9, priority=critical, progress=0.00)
 
-    
-
 ## Completed Goals
 - None
 
