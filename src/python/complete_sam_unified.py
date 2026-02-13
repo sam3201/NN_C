@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#/env python3
 """
 SAM-D UNIFIED COMPLETE SYSTEM - The Final AGI Implementation
 Combines Pure C Core + Comprehensive Python Orchestration
@@ -13070,25 +13070,23 @@ sam@terminal:~$
             return "🧹 **Conversation context cleared!**\n\nStarting fresh conversation with all connected agents."
 
         # Research, code, and finance commands (existing)
-    elif cmd == "/research":
-        query = " ".join(args) if args else "current AI developments"
-                try:
-                    sources = []
-                    source_lines = []
-                    if getattr(self, "web_search_enabled", False):
-                        try:
-                            results_blob = search_web_with_sam(
-                                    query, save_to_drive=False, max_results=6
-                                    )
-                            sources = results_blob.get("results", []) or []
-                        except Exception as exc:
-                            log_event(
-                                    "warn",
-                                    "web_search_error",
-                                    "Web search failed",
-                                    reason=str(exc),
-                                    )
-                            sources = []
+        elif cmd == "/research":
+            query = " ".join(args) if args else "current AI developments"
+            try:
+                sources = []
+                source_lines = []
+                if getattr(self, "web_search_enabled", False):
+                    try:
+                        results_blob = search_web_with_sam(query, save_to_drive=False, max_results=6)
+                        sources = results_blob.get("results", []) or []
+                    except Exception as exc:
+                        log_event(
+                                "warn",
+                                "web_search_error",
+                                "Web search failed",
+                                reason=str(exc),
+                                )
+                        sources = []
 
                 for item in sources[:6]:
                     title = item.get("title") or item.get("source") or "source"
@@ -13413,94 +13411,94 @@ sam@terminal:~$
             return status_info
 
         # Revenue operations commands
-    elif cmd == "/revenue":
-        if not self.revenue_ops:
-            return "❌ Revenue ops not available"
-        if not args:
-            return (
-                    "💰 **Revenue Ops Commands**\n\n"
-                    "• `/revenue queue` - List pending actions\n"
-                    "• `/revenue approve <action_id>` - Approve + execute\n"
-                    "• `/revenue reject <action_id> [reason]` - Reject\n"
-                    "• `/revenue submit <action_type> <json_payload>` - Submit action\n"
-                    "• `/revenue leads` - Show CRM leads\n"
-                    "• `/revenue invoices` - Show invoices\n"
-                    "• `/revenue sequences` - Show email sequences\n"
-                    )
-            sub = args[0]
-            if sub == "queue":
-                actions = self.revenue_ops.list_actions(status="PENDING")
-                if not actions:
-                    return "✅ No pending revenue actions."
-                lines = ["📋 **Pending Revenue Actions**"]
-                for action in actions[:10]:
-                    lines.append(
-                            f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}"
+        elif cmd == "/revenue":
+            if not self.revenue_ops:
+                return "❌ Revenue ops not available"
+            if not args:
+                return (
+                        "💰 **Revenue Ops Commands**\n\n"
+                        "• `/revenue queue` - List pending actions\n"
+                        "• `/revenue approve <action_id>` - Approve + execute\n"
+                        "• `/revenue reject <action_id> [reason]` - Reject\n"
+                        "• `/revenue submit <action_type> <json_payload>` - Submit action\n"
+                        "• `/revenue leads` - Show CRM leads\n"
+                        "• `/revenue invoices` - Show invoices\n"
+                        "• `/revenue sequences` - Show email sequences\n"
+                        )
+                sub = args[0]
+                if sub == "queue":
+                    actions = self.revenue_ops.list_actions(status="PENDING")
+                    if not actions:
+                        return "✅ No pending revenue actions."
+                    lines = ["📋 **Pending Revenue Actions**"]
+                    for action in actions[:10]:
+                        lines.append(
+                                f"• {action['action_id']} | {action['action_type']} | requested_by={action['requested_by']}"
+                                )
+                    return "\n".join(lines)
+                if sub == "approve" and len(args) >= 2:
+                    action_id = args[1]
+                    result = self.revenue_ops.approve_action(
+                            action_id, approver="operator", auto_execute=True
                             )
-                return "\n".join(lines)
-            if sub == "approve" and len(args) >= 2:
-                action_id = args[1]
-                result = self.revenue_ops.approve_action(
-                        action_id, approver="operator", auto_execute=True
+                    return f"✅ Approved: {action_id}\nStatus: {result.get('status')}"
+                if sub == "reject" and len(args) >= 2:
+                    action_id = args[1]
+                    reason = " ".join(args[2:]) if len(args) > 2 else None
+                    result = self.revenue_ops.reject_action(
+                            action_id, approver="operator", reason=reason
+                            )
+                    return f"🚫 Rejected: {action_id}\nStatus: {result.get('status')}"
+                if sub == "submit" and len(args) >= 3:
+                    action_type = args[1]
+                    payload_text = " ".join(args[2:])
+                    try:
+                        payload = json.loads(payload_text)
+                    except Exception:
+                        return "❌ Payload must be valid JSON."
+                    action = self.revenue_ops.submit_action(
+                            action_type=action_type,
+                            payload=payload,
+                            requested_by="operator",
+                            requires_approval=True,
+                            )
+                    return f"📥 Submitted action {action.action_id} ({action.action_type})"
+                if sub == "leads":
+                    snapshot = self.revenue_ops.get_crm_snapshot()
+                    return f"📈 Leads: {len(snapshot.get('leads', []))}"
+                if sub == "invoices":
+                    snapshot = self.revenue_ops.get_invoice_snapshot()
+                    return f"🧾 Invoices: {len(snapshot.get('invoices', []))}"
+                if sub == "sequences":
+                    snapshot = self.revenue_ops.get_sequence_snapshot()
+                    return f"📨 Sequences: {len(snapshot.get('sequences', []))} | Runs: {len(snapshot.get('runs', []))}"
+                return "❌ Unknown revenue subcommand."
+
+            # GitHub integration commands
+            if cmd == "/save-to-github":
+                if not sam_github_available:
+                    return "❌ GitHub integration not available"
+
+                commit_message = (
+                        " ".join(args)
+                        if args
+                        else f"SAM System Self-Save - {sam_datetime_ref.now().strftime('%Y-%m-%d %H:%M:%S')}"
                         )
-                return f"✅ Approved: {action_id}\nStatus: {result.get('status')}"
-            if sub == "reject" and len(args) >= 2:
-                action_id = args[1]
-                reason = " ".join(args[2:]) if len(args) > 2 else None
-                result = self.revenue_ops.reject_action(
-                        action_id, approver="operator", reason=reason
-                        )
-                return f"🚫 Rejected: {action_id}\nStatus: {result.get('status')}"
-            if sub == "submit" and len(args) >= 3:
-                action_type = args[1]
-                payload_text = " ".join(args[2:])
+
                 try:
-                    payload = json.loads(payload_text)
-                except Exception:
-                    return "❌ Payload must be valid JSON."
-                action = self.revenue_ops.submit_action(
-                        action_type=action_type,
-                        payload=payload,
-                        requested_by="operator",
-                        requires_approval=True,
-                        )
-                return f"📥 Submitted action {action.action_id} ({action.action_type})"
-            if sub == "leads":
-                snapshot = self.revenue_ops.get_crm_snapshot()
-                return f"📈 Leads: {len(snapshot.get('leads', []))}"
-            if sub == "invoices":
-                snapshot = self.revenue_ops.get_invoice_snapshot()
-                return f"🧾 Invoices: {len(snapshot.get('invoices', []))}"
-            if sub == "sequences":
-                snapshot = self.revenue_ops.get_sequence_snapshot()
-                return f"📨 Sequences: {len(snapshot.get('sequences', []))} | Runs: {len(snapshot.get('runs', []))}"
-            return "❌ Unknown revenue subcommand."
+                    result = self._save_sam_to_github(commit_message)
+                    if result["success"]:
+                        return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
+                    else:
+                        return f"❌ **GitHub Save Failed**\n\n{result.get('error', 'Unknown error')}"
+                except Exception as e:
+                    return f"❌ GitHub save error: {str(e)}"
 
-        # GitHub integration commands
-    elif cmd == "/save-to-github":
-        if not sam_github_available:
-            return "❌ GitHub integration not available"
+            if cmd == "/github-status":
+                if not sam_github_available:
+                    return "❌ GitHub integration not available"
 
-        commit_message = (
-                " ".join(args)
-                if args
-                else f"SAM System Self-Save - {sam_datetime_ref.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                )
-
-        try:
-            result = self._save_sam_to_github(commit_message)
-                if result["success"]:
-                    return f"✅ **SAM System Saved to GitHub**\n\nCommit: {result['commit_sha'][:8]}\nFiles: {result['files_saved']}\nMessage: {commit_message}"
-                else:
-                    return f"❌ **GitHub Save Failed**\n\n{result.get('error', 'Unknown error')}"
-            except Exception as e:
-                return f"❌ GitHub save error: {str(e)}"
-
-        elif cmd == "/github-status":
-            if not sam_github_available:
-                return "❌ GitHub integration not available"
-
-            status_info = "🐙 **SAM GitHub Integration Status**\n\n"
+                status_info = "🐙 **SAM GitHub Integration Status**\n\n"
             try:
                 remotes_proc = subprocess.run(
                         ["git", "-C", str(self.project_root), "remote", "-v"],
@@ -17677,52 +17675,44 @@ sam@terminal:~$
                 score = min(score, 0.98)  # Cap at 0.98
                 return f"{score:.2f}", "generated_success_score"
 
-            # Check for partial success
-        elif any(k in lower for k in ("partial", "some", "limited", "basic")):
-            return "0.65", "partial_success_score"
+            if any(k in lower for k in ("partial", "some", "limited", "basic")):
+                return "0.65", "partial_success_score"
 
-        # Check for initialization/warmup states
-    elif any(
-            k in lower
-            for k in ("initializ", "warmup", "loading", "queued", "waiting")
-            ):
-        return "0.75", "initializing_score"
+            if any(
+                    k in lower
+                    for k in ("initializ", "warmup", "loading", "queued", "waiting")
+                    ):
+                return "0.75", "initializing_score"
 
-    # Check for timeout issues
-elif any(k in lower for k in ("timeout", "timed out")):
-    return "0.25", "timeout_score"
+            if any(k in lower for k in ("timeout", "timed out")):
+                return "0.25", "timeout_score"
 
-# Check for rate limiting
-            elif any(
+            if any(
                     k in lower for k in ("rate limit", "ratelimit", "too many requests")
                     ):
                 return "0.35", "rate_limited_score"
 
-            # Check for errors
-        elif any(k in lower for k in ("error", "failed", "exception", "traceback")):
-            return "0.15", "error_score"
+            if any(k in lower for k in ("error", "failed", "exception", "traceback")):
+                return "0.15", "error_score"
 
-        # Default fallback - assume reasonable performance for C agents
-    else:
-        # Generate score based on text length and content richness
-                score = 0.70  # Default baseline
-                if len(text) > 200:
-                    score += 0.10
-                if len(text) > 1000:
-                    score += 0.10
-                if any(
-                        k in lower
-                        for k in (
-                            "research",
-                            "analysis",
-                            "code",
-                            "implementation",
-                            "market",
-                            )
-                        ):
-                    score += 0.05
-                score = min(score, 0.85)  # Cap default score
-                return f"{score:.2f}", "generated_default_score"
+            score = 0.70
+            if len(text) > 200:
+                score += 0.10
+            if len(text) > 1000:
+                score += 0.10
+            if any(
+                    k in lower
+                    for k in (
+                        "research",
+                        "analysis",
+                        "code",
+                        "implementation",
+                        "market",
+                        )
+                    ):
+                score += 0.05
+            score = min(score, 0.85)
+            return f"{score:.2f}", "generated_default_score"
         except Exception as exc:
             log_event(
                     "warn",
