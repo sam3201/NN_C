@@ -51,6 +51,9 @@ pub enum AutomationError {
 
     #[error("Unknown error: {message}")]
     Unknown { message: String },
+
+    #[error("External service error: {0}")]
+    ExternalService(String),
 }
 
 impl From<git2::Error> for AutomationError {

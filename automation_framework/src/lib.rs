@@ -16,12 +16,18 @@ pub mod completeness;
 pub mod workflow;
 pub mod errors;
 pub mod model_router;
+pub mod constraints;
+pub mod anthropic;
+
+#[cfg(feature = "python-bindings")]
+pub mod python_bindings;
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub use errors::{AutomationError, Result};
+pub use crate::resource::ResourceQuotas;
 
 /// Main automation framework handle
 pub struct AutomationFramework {
@@ -42,14 +48,6 @@ pub struct FrameworkConfig {
     pub quota_limits: ResourceQuotas,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResourceQuotas {
-    pub api_calls_per_minute: u32,
-    pub tokens_per_hour: u64,
-    pub compute_seconds_per_day: u64,
-    pub storage_mb: u64,
-}
-
 impl Default for FrameworkConfig {
     fn default() -> Self {
         Self {
@@ -58,17 +56,6 @@ impl Default for FrameworkConfig {
             enable_race_detection: true,
             billing_threshold: 100.0,
             quota_limits: ResourceQuotas::default(),
-        }
-    }
-}
-
-impl Default for ResourceQuotas {
-    fn default() -> Self {
-        Self {
-            api_calls_per_minute: 1000,
-            tokens_per_hour: 1_000_000,
-            compute_seconds_per_day: 3600,
-            storage_mb: 1024,
         }
     }
 }
@@ -280,7 +267,7 @@ pub struct RaceCondition {
     pub severity: Severity,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ConflictType {
     ReadWrite,
     WriteWrite,
@@ -288,12 +275,11 @@ pub enum ConflictType {
     Ordering,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Severity {
-    Low,
-    Medium,
-    High,
     Critical,
+    Warning,
+    Info,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -309,5 +295,13 @@ pub struct CompletenessReport {
     pub complete: bool,
     pub missing_items: Vec<String>,
     pub coverage_percentage: f64,
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GovernanceDecision {
+    pub proceed: bool,
+    pub confidence: f64,
+    pub concerns: Vec<String>,
     pub recommendations: Vec<String>,
 }

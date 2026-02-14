@@ -1,12 +1,187 @@
 //! Resource management with billing and quota tracking
 
 use crate::errors::{AutomationError, Result};
-use crate::ResourceQuotas;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
+
+/// Alert severity levels
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AlertSeverity {
+    Info,
+    Warning,
+    Critical,
+}
+
+/// Alert types for resource monitoring
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AlertType {
+    BudgetThreshold { percentage: f64 },
+    QuotaThreshold { resource: String, percentage: f64 },
+    RateLimitWarning { resource: String, current: u64, limit: u64 },
+    FreeModelExhausted,
+    DailyLimitReached,
+}
+
+/// Alert notification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceAlert {
+    pub alert_type: AlertType,
+    pub severity: AlertSeverity,
+    pub message: String,
+    pub timestamp: DateTime<Utc>,
+    pub metadata: HashMap<String, String>,
+}
+
+/// Alert callback type
+pub type AlertCallback = Box<dyn Fn(&ResourceAlert) + Send + Sync>;
+
+/// Alert manager for handling resource notifications
+pub struct AlertManager {
+    callbacks: Vec<AlertCallback>,
+    webhook_url: Option<String>,
+    alert_history: Vec<ResourceAlert>,
+    suppression_window_minutes: i64,
+}
+
+impl Clone for AlertManager {
+    fn clone(&self) -> Self {
+        Self {
+            callbacks: Vec::new(), // Callbacks can't be cloned, start fresh
+            webhook_url: self.webhook_url.clone(),
+            alert_history: self.alert_history.clone(),
+            suppression_window_minutes: self.suppression_window_minutes,
+        }
+    }
+}
+
+impl std::fmt::Debug for AlertManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AlertManager")
+            .field("webhook_url", &self.webhook_url)
+            .field("alert_history_count", &self.alert_history.len())
+            .field("suppression_window_minutes", &self.suppression_window_minutes)
+            .finish()
+    }
+}
+
+impl AlertManager {
+    pub fn new() -> Self {
+        Self {
+            callbacks: Vec::new(),
+            webhook_url: std::env::var("AUTOMATION_ALERT_WEBHOOK").ok(),
+            alert_history: Vec::new(),
+            suppression_window_minutes: 5,
+        }
+    }
+
+    /// Register an alert callback
+    pub fn on_alert<F>(&mut self, callback: F)
+    where
+        F: Fn(&ResourceAlert) + Send + Sync + 'static,
+    {
+        self.callbacks.push(Box::new(callback));
+    }
+
+    /// Set webhook URL for alerts
+    pub fn set_webhook(&mut self, url: String) {
+        self.webhook_url = Some(url);
+    }
+
+    /// Send an alert through all channels
+    pub async fn send_alert(&mut self, alert: ResourceAlert) {
+        // Check if similar alert was sent recently (suppression)
+        if self.is_suppressed(&alert) {
+            return;
+        }
+
+        // Log the alert
+        match alert.severity {
+            AlertSeverity::Critical => error!("{}", alert.message),
+            AlertSeverity::Warning => warn!("{}", alert.message),
+            AlertSeverity::Info => info!("{}", alert.message),
+        }
+
+        // Execute callbacks
+        for callback in &self.callbacks {
+            callback(&alert);
+        }
+
+        // Send webhook if configured
+        if let Some(ref webhook) = self.webhook_url {
+            self.send_webhook(webhook, &alert).await;
+        }
+
+        // Store in history
+        self.alert_history.push(alert);
+    }
+
+    /// Check if similar alert should be suppressed
+    fn is_suppressed(&self, alert: &ResourceAlert) -> bool {
+        let now = Utc::now();
+        let window = chrono::Duration::minutes(self.suppression_window_minutes);
+
+        self.alert_history.iter().any(|hist| {
+            hist.alert_type == alert.alert_type
+                && (now - hist.timestamp) < window
+        })
+    }
+
+    /// Send alert to webhook
+    async fn send_webhook(&self, url: &str, alert: &ResourceAlert) {
+        let client = reqwest::Client::new();
+        let payload = serde_json::json!({
+            "severity": alert.severity,
+            "message": alert.message,
+            "timestamp": alert.timestamp,
+            "metadata": alert.metadata,
+        });
+
+        match client.post(url).json(&payload).send().await {
+            Ok(_) => debug!("Alert webhook sent successfully"),
+            Err(e) => warn!("Failed to send alert webhook: {}", e),
+        }
+    }
+
+    /// Get alert history
+    pub fn get_history(&self) -> &[ResourceAlert] {
+        &self.alert_history
+    }
+
+    /// Clear old alerts from history
+    pub fn clear_old_alerts(&mut self, older_than_hours: i64) {
+        let cutoff = Utc::now() - chrono::Duration::hours(older_than_hours);
+        self.alert_history.retain(|alert| alert.timestamp > cutoff);
+    }
+}
+
+impl Default for AlertManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Resource quota limits
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceQuotas {
+    pub api_calls_per_minute: u32,
+    pub tokens_per_hour: u64,
+    pub compute_seconds_per_day: u64,
+    pub storage_mb: u64,
+}
+
+impl Default for ResourceQuotas {
+    fn default() -> Self {
+        Self {
+            api_calls_per_minute: 1000,
+            tokens_per_hour: 1_000_000,
+            compute_seconds_per_day: 3600,
+            storage_mb: 1024,
+        }
+    }
+}
 
 /// Resource manager for tracking usage, billing, and quotas
 pub struct ResourceManager {
@@ -14,6 +189,7 @@ pub struct ResourceManager {
     usage: ResourceUsage,
     billing: BillingTracker,
     quota_window_start: DateTime<Utc>,
+    alert_manager: AlertManager,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -56,7 +232,21 @@ impl ResourceManager {
             usage: ResourceUsage::default(),
             billing: BillingTracker::new(),
             quota_window_start: Utc::now(),
+            alert_manager: AlertManager::new(),
         }
+    }
+
+    /// Get mutable reference to alert manager
+    pub fn alert_manager_mut(&mut self) -> &mut AlertManager {
+        &mut self.alert_manager
+    }
+
+    /// Register an alert callback
+    pub fn on_alert<F>(&mut self, callback: F)
+    where
+        F: Fn(&ResourceAlert) + Send + Sync + 'static,
+    {
+        self.alert_manager.on_alert(callback);
     }
 
     /// Check if current usage is within quotas
@@ -178,33 +368,100 @@ impl ResourceManager {
         api_cost + token_cost + compute_cost + storage_cost
     }
 
-    /// Check and send billing alerts
-    fn check_billing_alerts(&mut self) {
+    /// Check and send billing alerts (async version)
+    pub async fn check_billing_alerts_async(&mut self) {
         let usage_percentage = self.billing.current_cost / self.billing.cost_limit;
 
         if usage_percentage > 0.9 && !self.billing.alerts_sent.contains(&"90_percent".to_string()) {
-            warn!(
-                "Billing alert: 90% of budget used (${:.2} / ${:.2})",
-                self.billing.current_cost, self.billing.cost_limit
-            );
+            let alert = ResourceAlert {
+                alert_type: AlertType::BudgetThreshold { percentage: 90.0 },
+                severity: AlertSeverity::Critical,
+                message: format!(
+                    "Billing CRITICAL: 90% of budget used (${:.2} / ${:.2})",
+                    self.billing.current_cost, self.billing.cost_limit
+                ),
+                timestamp: Utc::now(),
+                metadata: {
+                    let mut m = HashMap::new();
+                    m.insert("current_cost".to_string(), self.billing.current_cost.to_string());
+                    m.insert("cost_limit".to_string(), self.billing.cost_limit.to_string());
+                    m.insert("percentage".to_string(), "90".to_string());
+                    m
+                },
+            };
+            self.alert_manager.send_alert(alert).await;
             self.billing.alerts_sent.push("90_percent".to_string());
         }
 
-        if usage_percentage > 0.75 && !self.billing.alerts_sent.contains(&"75_percent".to_string())
-        {
-            info!(
-                "Billing notice: 75% of budget used (${:.2} / ${:.2})",
-                self.billing.current_cost, self.billing.cost_limit
-            );
+        if usage_percentage > 0.75 && !self.billing.alerts_sent.contains(&"75_percent".to_string()) {
+            let alert = ResourceAlert {
+                alert_type: AlertType::BudgetThreshold { percentage: 75.0 },
+                severity: AlertSeverity::Warning,
+                message: format!(
+                    "Billing WARNING: 75% of budget used (${:.2} / ${:.2})",
+                    self.billing.current_cost, self.billing.cost_limit
+                ),
+                timestamp: Utc::now(),
+                metadata: {
+                    let mut m = HashMap::new();
+                    m.insert("current_cost".to_string(), self.billing.current_cost.to_string());
+                    m.insert("cost_limit".to_string(), self.billing.cost_limit.to_string());
+                    m.insert("percentage".to_string(), "75".to_string());
+                    m
+                },
+            };
+            self.alert_manager.send_alert(alert).await;
             self.billing.alerts_sent.push("75_percent".to_string());
         }
 
         if usage_percentage > 0.5 && !self.billing.alerts_sent.contains(&"50_percent".to_string()) {
-            info!(
-                "Billing notice: 50% of budget used (${:.2} / ${:.2})",
-                self.billing.current_cost, self.billing.cost_limit
-            );
+            let alert = ResourceAlert {
+                alert_type: AlertType::BudgetThreshold { percentage: 50.0 },
+                severity: AlertSeverity::Info,
+                message: format!(
+                    "Billing INFO: 50% of budget used (${:.2} / ${:.2})",
+                    self.billing.current_cost, self.billing.cost_limit
+                ),
+                timestamp: Utc::now(),
+                metadata: {
+                    let mut m = HashMap::new();
+                    m.insert("current_cost".to_string(), self.billing.current_cost.to_string());
+                    m.insert("cost_limit".to_string(), self.billing.cost_limit.to_string());
+                    m.insert("percentage".to_string(), "50".to_string());
+                    m
+                },
+            };
+            self.alert_manager.send_alert(alert).await;
             self.billing.alerts_sent.push("50_percent".to_string());
+        }
+    }
+
+    /// Check and send billing alerts (sync version for compatibility)
+    fn check_billing_alerts(&mut self) {
+        // Fire and forget async check
+        let runtime = tokio::runtime::Handle::try_current();
+        if let Ok(rt) = runtime {
+            let mut cloned = self.alert_manager.clone();
+            let usage_percentage = self.billing.current_cost / self.billing.cost_limit;
+            let current_cost = self.billing.current_cost;
+            let cost_limit = self.billing.cost_limit;
+            
+            if usage_percentage > 0.9 && !self.billing.alerts_sent.contains(&"90_percent".to_string()) {
+                rt.spawn(async move {
+                    let alert = ResourceAlert {
+                        alert_type: AlertType::BudgetThreshold { percentage: 90.0 },
+                        severity: AlertSeverity::Critical,
+                        message: format!(
+                            "Billing CRITICAL: 90% of budget used (${:.2} / ${:.2})",
+                            current_cost, cost_limit
+                        ),
+                        timestamp: Utc::now(),
+                        metadata: HashMap::new(),
+                    };
+                    cloned.send_alert(alert).await;
+                });
+                self.billing.alerts_sent.push("90_percent".to_string());
+            }
         }
     }
 
