@@ -17,6 +17,21 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR / "src" / "python"))
 
+# Auto-load secrets
+def _load_secrets():
+    secrets_dir = ROOT_DIR / ".secrets"
+    if not secrets_dir.exists():
+        return
+    kimi_file = secrets_dir / "KIMI_K_2.5.py"
+    if kimi_file.exists():
+        content = kimi_file.read_text()
+        for line in content.split('\n'):
+            if 'Authorization' in line and 'Bearer' in line:
+                key = line.split('Bearer')[1].strip().strip('",')
+                os.environ.setdefault('KIMI_API_KEY', key)
+                break
+_load_secrets()
+
 class ExperimentStatus(Enum):
     PASS = "pass"
     FAIL = "fail"

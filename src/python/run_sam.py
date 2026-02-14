@@ -7,6 +7,25 @@ import subprocess
 import sys
 from pathlib import Path
 
+def load_secrets() -> None:
+    """Auto-load API keys from .Secrets/ directory"""
+    # From src/python/run_sam.py, go up to NN_C root
+    secrets_dir = Path(__file__).parent.parent.parent / ".secrets"
+    if not secrets_dir.exists():
+        print(f"[Secrets] Directory not found: {secrets_dir}")
+        return
+    
+    # Load Kimi K2.5
+    kimi_file = secrets_dir / "KIMI_K_2.5.py"
+    if kimi_file.exists():
+        content = kimi_file.read_text()
+        for line in content.split('\n'):
+            if 'Authorization' in line and 'Bearer' in line:
+                key = line.split('Bearer')[1].strip().strip('",')
+                os.environ.setdefault('KIMI_API_KEY', key)
+                print(f"[Secrets] Loaded Kimi API key")
+                break
+
 def load_env_file(p: Path) -> None:
     if not p.exists():
         return
@@ -24,6 +43,9 @@ def load_env_file(p: Path) -> None:
         os.environ.setdefault(k, v)
 
 def main() -> int:
+    # Load secrets first
+    load_secrets()
+    
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default=os.environ.get("SAM_PROFILE", "full"))
     args = ap.parse_args()
