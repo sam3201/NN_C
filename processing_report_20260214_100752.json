@@ -1,0 +1,26 @@
+{
+  "status": "success",
+  "file_processed": "ChatGPT_2026-02-14-09-55-34_LATEST.txt",
+  "file_size_bytes": 167164,
+  "content_length": 164795,
+  "lines": 4927,
+  "words": 24115,
+  "processing_time_seconds": 1.6792492866516113,
+  "iterations": 1,
+  "phases_completed": [
+    "planning",
+    "building",
+    "testing"
+  ],
+  "governance_confidence": 0.7166666666666667,
+  "resource_usage": {
+    "api_calls": 3,
+    "tokens_consumed": 2300,
+    "current_cost": 0.0076,
+    "cost_limit": 100.0,
+    "budget_percentage": 0.007600000000000001
+  },
+  "violations_found": [],
+  "secrets_detected": [],
+  "timestamp": "2026-02-14T10:07:52.788953"
+}
