@@ -416,15 +416,17 @@ class FileProcessor:
         }
         return strategies.get(content_type, strategies["text"])
     
-    def _process_chunk(self, index: int, chunk: str) -> Dict:
+    def _process_chunk(self, index: int, chunk: str, iteration: int = 1) -> Dict:
         """Actually process a chunk of content"""
         result = {
             "index": index,
             "original_length": len(chunk),
+            "full_content": chunk,  # Store full content for completeness
             "summary": "",
             "key_points": [],
             "entities": [],
-            "processed": False
+            "processed": False,
+            "iteration": iteration
         }
         
         # Actually analyze the chunk
@@ -442,8 +444,12 @@ class FileProcessor:
         entities = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', chunk)
         unique_entities = list(set(entities))[:10]  # Top 10 unique entities
         
-        # Create summary
-        summary = ' '.join(key_sentences)[:200] if key_sentences else chunk[:200]
+        # Create summary - more detailed in later iterations
+        if iteration == 1:
+            summary = ' '.join(key_sentences)[:200] if key_sentences else chunk[:200]
+        else:
+            # In later iterations, include more content
+            summary = ' '.join(key_sentences)[:500] if key_sentences else chunk[:500]
         
         result["summary"] = summary
         result["key_points"] = key_sentences[:5]
@@ -698,13 +704,29 @@ async def main():
         quality_improvement = result.quality_score - previous_quality
         previous_quality = result.quality_score
         
-        if decision.action == "proceed" and quality_improvement < MIN_IMPROVEMENT and iteration > 1:
-            print(f"\n✅ Quality improvement minimal ({quality_improvement:.3f}), completing workflow")
+        # Check completeness
+        completeness = processor._check_completeness()
+        
+        # Only stop if we've done at least 3 iterations AND completeness is good
+        can_complete = (
+            decision.action == "proceed" and 
+            quality_improvement < MIN_IMPROVEMENT and 
+            iteration > 2 and  # Require at least 3 iterations
+            completeness >= 0.75  # Require at least 75% completeness
+        )
+        
+        if can_complete:
+            print(f"\n✅ Quality improvement minimal ({quality_improvement:.3f}) and completeness good ({completeness:.1%}), completing workflow")
+            break
+        elif decision.action == "proceed" and completeness < 0.75 and iteration >= max_iterations:
+            print(f"\n⚠️  Max iterations reached with incomplete processing ({completeness:.1%}), completing anyway")
             break
         
         if decision.action == "proceed":
-            print(f"\n✅ Phase complete - Quality: {result.quality_score:.2f}")
-            if iteration < max_iterations:
+            print(f"\n✅ Phase complete - Quality: {result.quality_score:.2f}, Completeness: {completeness:.1%}")
+            if completeness < 0.75:
+                print(f"   ⚠️  Completeness below 75%, continuing to improve...")
+            elif iteration < max_iterations:
                 print("   Continuing to next iteration...")
         elif decision.action == "revise":
             print("\n🔄 Entering revision phase...")
