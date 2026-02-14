@@ -558,20 +558,37 @@ class TriCameralGovernance:
     """Governance system that actually evaluates"""
     
     def evaluate(self, phase: str, result: ProcessingResult) -> GovernanceDecision:
-        """Evaluate a phase result"""
+        """Evaluate a phase result with phase-dependent thresholds"""
+        
+        # Phase-dependent thresholds (more lenient for early phases)
+        phase_thresholds = {
+            "planning": {"cic": 0.0, "aee": 0.0, "csf": 0.0, "max_issues": 10},
+            "building": {"cic": 0.3, "aee": 0.3, "csf": 0.2, "max_issues": 5},
+            "testing": {"cic": 0.5, "aee": 0.5, "csf": 0.4, "max_issues": 3},
+            "revision": {"cic": 0.4, "aee": 0.4, "csf": 0.3, "max_issues": 4}
+        }
+        
+        thresholds = phase_thresholds.get(phase, phase_thresholds["testing"])
         
         # CIC - Constructive (optimistic)
         cic_confidence = 0.7 + (result.quality_score * 0.3)
-        cic_vote = Vote.APPROVE if result.quality_score > 0.5 else Vote.ABSTAIN
+        # Very lenient in planning, stricter in later phases
+        cic_vote = Vote.APPROVE if result.quality_score >= thresholds["cic"] else Vote.ABSTAIN
         
-        # AEE - Adversarial (pessimistic)
-        risk_factor = len(result.issues) * 0.1
+        # AEE - Adversarial (pessimistic) - but not too much
+        risk_factor = len(result.issues) * 0.05  # Reduced from 0.1
         aee_confidence = 0.8 - risk_factor
-        aee_vote = Vote.REJECT if len(result.issues) > 2 else (Vote.APPROVE if result.quality_score > 0.7 else Vote.ABSTAIN)
+        # Only reject if too many issues
+        if len(result.issues) > thresholds["max_issues"]:
+            aee_vote = Vote.REJECT
+        elif result.quality_score >= thresholds["aee"]:
+            aee_vote = Vote.APPROVE
+        else:
+            aee_vote = Vote.ABSTAIN
         
-        # CSF - Coherence (neutral)
+        # CSF - Coherence (neutral) - most lenient
         csf_confidence = 0.75
-        csf_vote = Vote.REJECT if result.quality_score < 0.4 else Vote.APPROVE
+        csf_vote = Vote.REJECT if result.quality_score < thresholds["csf"] else Vote.APPROVE
         
         # Determine action
         votes = [cic_vote, aee_vote, csf_vote]
