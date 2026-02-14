@@ -199,7 +199,7 @@ impl ConstructiveIntelligenceCore {
     
     async fn evaluate(&self, workflow: &Workflow) -> Result<BranchVote> {
         // CIC is optimistic and growth-oriented
-        let mut confidence = 0.8;
+        let mut confidence: f64 = 0.8;
         let mut reasoning = "CIC: This workflow enables growth and expansion.".to_string();
         
         // Adjust based on workflow characteristics
@@ -242,7 +242,7 @@ impl AdversarialExplorationEngine {
     async fn evaluate(&self, workflow: &Workflow) -> Result<BranchVote> {
         // AEE is pessimistic and safety-oriented
         let mut concerns = Vec::new();
-        let mut confidence = 0.5;
+        let mut confidence: f64 = 0.5;
         
         // Check for edge cases
         if workflow.edge_cases.is_empty() {
@@ -299,7 +299,7 @@ impl CoherenceStabilizationField {
     async fn evaluate(&self, workflow: &Workflow) -> Result<BranchVote> {
         // CSF is neutral and invariant-focused
         let mut violations = Vec::new();
-        let mut confidence = 0.9;
+        let mut confidence: f64 = 0.9;
         
         // Check each invariant
         for invariant in &workflow.invariants {
@@ -342,7 +342,7 @@ impl CoherenceStabilizationField {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowRequirements {
     pub available: bool,
     pub estimated_cost: f64,

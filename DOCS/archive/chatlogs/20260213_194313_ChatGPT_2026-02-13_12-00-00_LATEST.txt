@@ -1,0 +1,10 @@
+# Test Log File
+
+This is a test log.
+
+## Section 1
+Some content here.
+https://example.com
+
+## Section 2
+More content.

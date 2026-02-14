@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "total_files": 2,
+  "completed": 2,
+  "failed": 0,
+  "results": [
+    {
+      "file_path": "/tmp/test1.txt",
+      "summary": "Document: 2 lines, 3 words",
+      "contains_code": false,
+      "contains_config": false,
+      "sections_found": 0,
+      "processing_timestamp": "2026-02-13T19:39:19.505788",
+      "archived_to": "archive_test/20260213_193919_test1.txt",
+      "original_deleted": true,
+      "status": "completed"
+    },
+    {
+      "file_path": "/tmp/test2.txt",
+      "summary": "Document: 2 lines, 3 words",
+      "contains_code": false,
+      "contains_config": false,
+      "sections_found": 0,
+      "processing_timestamp": "2026-02-13T19:39:19.506369",
+      "archived_to": "archive_test/20260213_193919_test2.txt",
+      "original_deleted": true,
+      "status": "completed"
+    }
+  ],
+  "archive_location": "archive_test"
+}

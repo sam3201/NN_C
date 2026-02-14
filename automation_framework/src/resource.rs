@@ -16,13 +16,29 @@ pub struct ResourceManager {
     quota_window_start: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ResourceUsage {
+    #[serde(skip)]
     pub api_calls: AtomicU64,
+    #[serde(skip)]
     pub tokens_consumed: AtomicU64,
+    #[serde(skip)]
     pub compute_seconds: AtomicU64,
+    #[serde(skip)]
     pub storage_mb_used: AtomicU64,
     pub timestamp: DateTime<Utc>,
+}
+
+impl Clone for ResourceUsage {
+    fn clone(&self) -> Self {
+        Self {
+            api_calls: AtomicU64::new(self.api_calls.load(Ordering::Relaxed)),
+            tokens_consumed: AtomicU64::new(self.tokens_consumed.load(Ordering::Relaxed)),
+            compute_seconds: AtomicU64::new(self.compute_seconds.load(Ordering::Relaxed)),
+            storage_mb_used: AtomicU64::new(self.storage_mb_used.load(Ordering::Relaxed)),
+            timestamp: self.timestamp,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

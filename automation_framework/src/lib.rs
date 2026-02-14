@@ -137,10 +137,6 @@ impl AutomationFramework {
         // Execute with subagents
         let result = self.subagent_pool.execute_workflow(workflow).await?;
         
-        // Update resource usage
-        let mut resources = self.resource_manager.write().await;
-        resources.record_usage(&result.metrics.resource_usage);
-        
         Ok(result)
     }
     

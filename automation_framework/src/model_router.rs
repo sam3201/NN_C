@@ -79,7 +79,7 @@ impl TaskAnalyzer {
     pub fn analyze(&self, task_description: &str, context: Option<&str>) -> TaskCharacteristics {
         // Analyze task to determine characteristics
         let mut task_type = TaskType::Analysis;
-        let mut complexity = 0.5;
+        let mut complexity: f64 = 0.5;
         let context_size = context.map(|c| c.len()).unwrap_or(0);
         let mut safety_critical = false;
         let mut time_sensitive = false;

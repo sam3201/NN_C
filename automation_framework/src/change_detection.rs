@@ -2,7 +2,6 @@
 
 use crate::errors::Result;
 use crate::{Change, ChangeAnalysis, ChangeType};
-use std::collections::HashMap;
 
 pub struct ChangeTracker;
 

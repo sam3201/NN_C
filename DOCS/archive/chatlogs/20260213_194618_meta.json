@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "branching_used": true,
+  "branches": {
+    "waiter": {
+      "model": "kimi-k2.5",
+      "status": "completed",
+      "confidence": 0.95
+    },
+    "continuer": {
+      "model": "qwen2.5-coder:7b",
+      "status": "completed",
+      "confidence": 0.75
+    }
+  },
+  "revision_phase": {
+    "actions_taken": [
+      "Enhanced section extraction",
+      "Improved URL detection",
+      "Added code block analysis"
+    ],
+    "final_quality": 0.95
+  },
+  "final_output": "Merged high-quality result from waiter branch",
+  "strategy": "waiter_revised_continuer"
+}
