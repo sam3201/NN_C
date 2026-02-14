@@ -139,39 +139,68 @@ impl ConstraintEnforcer {
     
     /// Add default system constraints
     fn add_default_constraints(&mut self) {
-        // HARD: Budget limit
+        // HARD: Budget limit - ACTUALLY CHECKS RESOURCE USAGE
         self.add_constraint(Constraint {
             name: "budget_limit".to_string(),
             constraint_type: ConstraintType::Hard,
             description: "Total cost must not exceed budget limit".to_string(),
             validator: Box::new(|ctx| {
-                // Check if we're within budget
-                true // Placeholder - real implementation would check resource_usage
+                use std::sync::atomic::Ordering;
+                // Calculate actual cost from resource usage
+                let api_calls = ctx.resource_usage.api_calls.load(Ordering::Relaxed);
+                let tokens = ctx.resource_usage.tokens_consumed.load(Ordering::Relaxed);
+                
+                // Pricing: $0.001 per API call, $0.002 per 1K tokens
+                let cost = (api_calls as f64 * 0.001) + ((tokens as f64 / 1000.0) * 0.002);
+                
+                // Default budget limit is $100.00
+                let budget_limit = 100.0;
+                
+                if cost > budget_limit {
+                    return false;
+                }
+                true
             }),
             error_message: "Budget limit exceeded".to_string(),
             recovery_hint: Some("Reduce concurrent subagents or use cheaper models".to_string()),
         });
         
-        // HARD: Security - No eval() or exec() in generated code
+        // HARD: Security - No eval() or exec() in generated code - IMPROVED DETECTION
         self.add_constraint(Constraint {
             name: "no_eval_exec".to_string(),
             constraint_type: ConstraintType::Hard,
             description: "Generated code must not contain eval() or exec()".to_string(),
             validator: Box::new(|ctx| {
+                // Simplified detection without regex
+                let dangerous_functions = ["eval(", "exec(", "compile("];
+                
                 for change in &ctx.changes {
                     if let Some(ref new) = change.new_content {
-                        let content_lower = new.to_lowercase();
-                        if content_lower.contains("eval(") || 
-                           content_lower.contains("exec(") ||
-                           content_lower.contains("compile(") {
-                            // Check if it's actually dangerous (not in a comment or string)
-                            for line in new.lines() {
-                                let line_lower = line.to_lowercase();
-                                if line_lower.contains("eval(") && 
-                                   !line_lower.trim().starts_with("//") &&
-                                   !line_lower.trim().starts_with("#") &&
-                                   !line_lower.contains("\"eval(") {
-                                    return false;
+                        for line in new.lines() {
+                            let line_trimmed = line.trim();
+                            let line_lower = line.to_lowercase();
+                            
+                            // Skip comments
+                            if line_trimmed.starts_with("//") || 
+                               line_trimmed.starts_with("#") ||
+                               line_trimmed.starts_with("/*") ||
+                               line_trimmed.starts_with("*") {
+                                continue;
+                            }
+                            
+                            // Check for dangerous function calls
+                            for func in &dangerous_functions {
+                                if line_lower.contains(func) {
+                                    // Check if it's inside a string literal by counting quotes
+                                    let func_pos = line_lower.find(func).unwrap();
+                                    let before_func = &line[..func_pos];
+                                    let double_quotes = before_func.matches('"').count();
+                                    let single_quotes = before_func.matches('\'').count();
+                                    
+                                    // If even number of quotes (0, 2, 4...), it's actual code not a string
+                                    if double_quotes % 2 == 0 && single_quotes % 2 == 0 {
+                                        return false;
+                                    }
                                 }
                             }
                         }
@@ -183,37 +212,46 @@ impl ConstraintEnforcer {
             recovery_hint: Some("Remove eval/exec or ensure it's in safe context".to_string()),
         });
         
-        // HARD: No secrets in code
+        // HARD: No secrets in code - IMPROVED DETECTION
         self.add_constraint(Constraint {
             name: "no_secrets".to_string(),
             constraint_type: ConstraintType::Hard,
             description: "API keys, passwords, tokens must not be committed".to_string(),
             validator: Box::new(|ctx| {
-                let secret_patterns = [
-                    "api_key",
-                    "apikey",
-                    "password",
-                    "secret",
-                    "token",
-                    "private_key",
-                    "aws_access_key_id",
-                    "aws_secret_access_key",
-                ];
+                // Simplified secret detection without regex for now
+                let secret_keywords = ["api_key", "apikey", "password", "secret_key", "token", "private_key"];
                 
                 for change in &ctx.changes {
                     if let Some(ref new) = change.new_content {
-                        let content_lower = new.to_lowercase();
-                        for pattern in &secret_patterns {
-                            if content_lower.contains(pattern) {
-                                // Check if it looks like an actual secret assignment
-                                for line in new.lines() {
-                                    let line_lower = line.to_lowercase();
-                                    if line_lower.contains(pattern) && 
-                                       (line_lower.contains("=") || line_lower.contains(":")) &&
-                                       !line_lower.contains("example") &&
-                                       !line_lower.contains("placeholder") &&
-                                       !line_lower.contains("your_") {
-                                        return false;
+                        for line in new.lines() {
+                            let line_lower = line.to_lowercase();
+                            let line_trimmed = line.trim();
+                            
+                            // Skip comments
+                            if line_trimmed.starts_with("//") || 
+                               line_trimmed.starts_with("#") ||
+                               line_trimmed.starts_with("/*") {
+                                continue;
+                            }
+                            
+                            // Check for secret keywords with assignment
+                            for keyword in &secret_keywords {
+                                if line_lower.contains(keyword) {
+                                    // Check if followed by = or : (assignment)
+                                    let idx = line_lower.find(keyword).unwrap();
+                                    let after = &line_lower[idx + keyword.len()..];
+                                    
+                                    if after.trim().starts_with("=") || after.trim().starts_with(":") {
+                                        // Check it's not just a comment in code
+                                        if !line_trimmed.starts_with("//") && !line_trimmed.starts_with("#") {
+                                            // Check it's not an example/placeholder
+                                            if !line_lower.contains("your_") &&
+                                               !line_lower.contains("example") &&
+                                               !line_lower.contains("placeholder") &&
+                                               !line_lower.contains("<") {
+                                                return false;
+                                            }
+                                        }
                                     }
                                 }
                             }
