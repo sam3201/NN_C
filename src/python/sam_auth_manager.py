@@ -91,6 +91,10 @@ class AuthManager:
     def _ensure_owner_token(self):
         """Generate and protect the master owner token."""
         owner_id = os.getenv("SAM_OWNER_ID", "owner_1")
+        parent_identity = os.getenv("SAM_PARENT_IDENTITY", "UNSET")
+        
+        if parent_identity == "UNSET":
+            print("⚠️ WARNING: SAM_PARENT_IDENTITY is not set. System is in UNPARENTED mode.")
         
         # Check if owner already has a token
         if owner_id in self.user_data and "token" in self.user_data[owner_id]:
@@ -158,6 +162,10 @@ class AuthManager:
             return info["user_id"], info["role"]
             
         return None, "user"
+
+    def can_access_finance(self, user_id: str) -> bool:
+        """Strict check for financial data access (Owner only)."""
+        return self.get_role(user_id) == "owner"
 
     def set_role(self, caller_id: str, target_id: str, role: str) -> bool:
         """Update a user's role with strict hierarchy enforcement."""

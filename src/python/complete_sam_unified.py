@@ -499,9 +499,18 @@ except ImportError:
     create_code_scanner = None
 
 try:
-    from health_intelligence import create_health_intelligence
-except ImportError:
-    create_health_intelligence = None
+    from health_intelligence import create_health_intelligence 
+except ImportError :
+    create_health_intelligence =None 
+
+try :
+    from skills.subagent_orchestrator import create_orchestrator 
+    from skills.code_analysis import create_analyzer 
+    from skills.test_automation import create_automator 
+except ImportError :
+    create_orchestrator = None 
+    create_analyzer = None 
+    create_automator = None 
 
 try:
     from sam_auth_manager import create_auth_manager
@@ -1567,19 +1576,32 @@ Confidence Threshold: Must be >= 0.75 for application
         return "medium"  # Default
 
     def _extract_assumptions_from_response(self, response_text):
-        """Extract assumptions from LLM response"""
+        """Extract assumptions from LLM response using regex patterns."""
         assumptions = []
-        if "assume" in response_text.lower():
-            # Extract assumption statements
-            pass
+        # Match sentences starting with common assumption phrases
+        patterns = [
+            r"(?i)\bassume\b\s+that\s+([^.!?]+)",
+            r"(?i)\bassuming\b\s+([^.!?]+)",
+            r"(?i)\bgiven\b\s+that\s+([^.!?]+)"
+        ]
+        for pattern in patterns:
+            matches = re.findall(pattern, response_text)
+            for m in matches:
+                assumptions.append(m.strip())
         return assumptions or ["Standard coding practices apply"]
 
     def _extract_unknowns_from_response(self, response_text):
-        """Extract unknowns/risks from LLM response"""
+        """Extract unknowns/risks from LLM response using regex."""
         unknowns = []
-        if "unknown" in response_text.lower() or "uncertain" in response_text.lower():
-            # Extract uncertainty statements
-            pass
+        patterns = [
+            r"(?i)\bunknown\b\s+([^.!?]+)",
+            r"(?i)\buncertain\b\s+([^.!?]+)",
+            r"(?i)\brisk\b\s+of\s+([^.!?]+)"
+        ]
+        for pattern in patterns:
+            matches = re.findall(pattern, response_text)
+            for m in matches:
+                unknowns.append(m.strip())
         return unknowns or ["Full system impact unknown"]
 
 
@@ -1999,7 +2021,7 @@ class VerifierJudgeAgent:
         return min(score, 10.0)  # Cap at 10
 
 
-class LoveAgent:
+class Love:
     """The LOVE branch of the Tri-Cameral Governance system.
     Focuses on Stability, Continuity, and Identity Invariants."""
 
@@ -2016,7 +2038,7 @@ class LoveAgent:
             similarity = res.get("identity_similarity", 1.0)
             return 1.0 - similarity
         except Exception as e:
-            print(f"⚠️ LoveAgent failed to compute drift: {e}")
+            print(f"⚠️ Love failed to compute drift: {e}")
             return 0.0
 
     def evaluate_proposal(
@@ -2043,7 +2065,7 @@ class LoveAgent:
 
             # Code Change Safety
         if proposal_type == "code_change":
-            # LoveAgent cares about stability and not breaking core invariants
+            # Love branch cares about stability and not breaking core invariants
             risk = details.get("risk", 0)
             if risk > 0.8:
                 return {
@@ -4763,8 +4785,8 @@ class UnifiedSAMSystem:
         self.unbounded_mode = os.getenv("SAM_UNBOUNDED_MODE", "1") == "1"
         self.require_meta_agent = os.getenv("SAM_REQUIRE_META_AGENT", "1") == "1"
 
-        # Initialize LoveAgent early (Phase 4.1)
-        self.love_agent = LoveAgent(self)
+        # Initialize Love branch early (Phase 4.1)
+        self.love_agent = Love(self)
         self.innocence_I = 1.0  # Initialize innocence early (Phase 4.4)
 
         # Initialize Health Intelligence (Phase 5.3)
@@ -4783,11 +4805,31 @@ class UnifiedSAMSystem:
 
         # Initialize Sensory Controller (Phase 5.3)
         if create_sensory_controller:
-            self.sensory_controller = create_sensory_controller(self)
-            print("  ✅ Sensory Controller active")
+            self .sensory_controller =create_sensory_controller (self )
+            print ("  ✅ Sensory Controller active")
         else:
-            self.sensory_controller = None
-            print("  ⚠️ Sensory Controller module missing")
+            self .sensory_controller =None
+            print ("  ⚠️ Sensory Controller module missing")
+
+        # Initialize Advanced Skills (Phase 5.3)
+        if create_orchestrator:
+            self .orchestrator =create_orchestrator (self )
+            print ("  ✅ Subagent Orchestrator ready")
+        else:
+            self .orchestrator =None
+
+        if create_analyzer:
+            self .code_analyzer =create_analyzer (self .project_root )
+            print ("  ✅ Code Analyzer ready")
+        else:
+            self .code_analyzer =None
+
+        if create_automator:
+            self .test_automator =create_automator (self .project_root )
+            print ("  ✅ Test Automator ready")
+        else:
+            self .test_automator =None
+        
 
         # Initialize vision system early to avoid race conditions
         try:
@@ -5729,22 +5771,17 @@ class UnifiedSAMSystem:
                     capture_output=True,
                     )
 
-            # Push to parent origin
-            print("   - Pushing to origin/main...")
-            subprocess.run(
-                    ["git", "push", "origin", "main"], cwd=self.project_root, check=True
-                    )
-
-            # Push to SAM AGI official
-            try:
-                print("   - Pushing to sam_agi_official/main...")
+            # Use sync script if available for multi-remote support
+            sync_script = self.project_root / "scripts" / "sync_git.sh"
+            if sync_script.exists():
+                print("   - Using sync_git.sh for multi-remote push...")
+                subprocess.run(["bash", str(sync_script)], cwd=self.project_root, check=True)
+            else:
+                # Fallback to single push
+                print("   - Pushing to origin/main (fallback)...")
                 subprocess.run(
-                        ["git", "push", "sam_agi_official", "main"],
-                        cwd=self.project_root,
-                        capture_output=True,
+                        ["git", "push", "origin", "main"], cwd=self.project_root, check=True
                         )
-            except Exception as e:
-                print(f"   ⚠️ Push to sam_agi_official failed: {e}")
 
             print("✅ Git: Sync complete.")
         except Exception as e:
@@ -8871,12 +8908,11 @@ class UnifiedSAMSystem:
                     ), 200
 
         @self.app.route("/api/finance/metrics")
-        @_ip_allowed_required
-        def finance_metrics():
-            ok, error = _require_admin_token()
-            if not ok:
-                message, status = error
-                return jsonify({"error": message}), status
+        @_ip_allowed_required 
+        def finance_metrics ():
+            user_id ,role =_get_auth_context ()
+            if role != "owner":
+                return jsonify ({"error":"Owner access required for financial data"}),403 
 
             if not self.banking_ledger_enabled or not self.banking_ledger:
                 return jsonify(
@@ -9455,6 +9491,21 @@ class UnifiedSAMSystem:
                 return jsonify(self.sensory_controller.get_sensory_state())
             return jsonify({"error": "Sensory controller not initialized"}), 503
 
+        @self .app .route ("/api/simulation/spawn",methods =["POST"])
+        def spawn_simulation ():
+            """Spawn a new autonomous simulation (Owner only)."""
+            user_id ,role =_get_auth_context ()
+            if role != "owner":
+                return jsonify ({"error":"Owner access required"}),403 
+            
+            data =request .get_json () or {}
+            sim_type =_sanitize_input (data .get ("type","trading"))
+            
+            if self .simulation_arena :
+                sim_id =self .simulation_arena .spawn_simulation (sim_type )
+                return jsonify ({"success":True ,"sim_id":sim_id ,"type":sim_type })
+            return jsonify ({"error":"Simulation arena not initialized"}),503 
+
         @self.app.route("/api/admin/audit_logs", methods=["GET"])
         def view_audit_logs():
             """View security audit logs (Owner only)."""
@@ -9475,6 +9526,57 @@ class UnifiedSAMSystem:
                     return jsonify({"logs": logs})
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
+
+        @self .app .route ("/api/skills/orchestrate",methods =["POST"])
+        def run_orchestration ():
+            """Orchestrate parallel subtasks (Owner only)."""
+            user_id ,role =_get_auth_context ()
+            if role != "owner":
+                return jsonify ({"error":"Owner access required"}),403 
+            
+            data =request .get_json () or {}
+            task =_sanitize_input (data .get ("task",""))
+            agents =int (data .get ("agents",3 ))
+            
+            if self .orchestrator :
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(self .orchestrator .run_parallel_task (task ,agents ))
+                return jsonify (result )
+            return jsonify ({"error":"Orchestrator unavailable"}),503 
+
+        @self .app .route ("/api/skills/analyze",methods =["POST"])
+        def run_code_analysis ():
+            """Analyze a file for security and complexity (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            data =request .get_json () or {}
+            filepath =_sanitize_input (data .get ("filepath",""))
+            
+            if self .code_analyzer :
+                result =self .code_analyzer .analyze_file (filepath )
+                return jsonify (result )
+            return jsonify ({"error":"Code Analyzer unavailable"}),503 
+
+        @self .app .route ("/api/skills/test",methods =["POST"])
+        def run_test_suite ():
+            """Execute test suite (Admin only)."""
+            ok ,error =_require_admin_token ()
+            if not ok :
+                msg ,status =error 
+                return jsonify ({"error":msg }),status 
+            
+            data =request .get_json () or {}
+            target =_sanitize_input (data .get ("target","tests/"))
+            
+            if self .test_automator :
+                result =self .test_automator .run_tests (target )
+                return jsonify (result )
+            return jsonify ({"error":"Test Automator unavailable"}),503 
 
         @self.app.route("/api/auth/session", methods=["POST"])
         def get_session_token():
@@ -10919,6 +11021,9 @@ class UnifiedSAMSystem:
         def revenue_submit_action():
             """Submit a revenue action (approval required)."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -10955,11 +11060,9 @@ class UnifiedSAMSystem:
         def revenue_approve():
             """Approve a revenue action and execute."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
-
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -10979,11 +11082,9 @@ class UnifiedSAMSystem:
         def revenue_reject():
             """Reject a revenue action."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
-
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -11003,11 +11104,9 @@ class UnifiedSAMSystem:
         def revenue_execute():
             """Execute a revenue action explicitly."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
-
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -11024,6 +11123,9 @@ class UnifiedSAMSystem:
         def revenue_leads():
             """CRM snapshot."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_crm_snapshot())
@@ -11034,6 +11136,9 @@ class UnifiedSAMSystem:
         def revenue_sequences():
             """Email sequences snapshot."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 snapshot = self.revenue_ops.get_sequence_snapshot()
@@ -11052,6 +11157,9 @@ class UnifiedSAMSystem:
         def revenue_invoices():
             """Invoices snapshot."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_invoice_snapshot())
@@ -11062,6 +11170,9 @@ class UnifiedSAMSystem:
         def revenue_metrics():
             """Revenue financial summary."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_financial_metrics())
@@ -11072,6 +11183,9 @@ class UnifiedSAMSystem:
         def revenue_audit():
             """Tail of revenue audit log."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 limit = int(request.args.get("limit", "50"))
@@ -11087,6 +11201,9 @@ class UnifiedSAMSystem:
         def revenue_crm_export():
             """Export CRM leads as CSV."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 csv_text = self.revenue_ops.export_leads_csv()
@@ -11104,6 +11221,9 @@ class UnifiedSAMSystem:
         def revenue_crm_import():
             """Import CRM leads from CSV content."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -11119,6 +11239,9 @@ class UnifiedSAMSystem:
         def revenue_invoice_html():
             """Generate invoice HTML."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -11135,6 +11258,9 @@ class UnifiedSAMSystem:
         def revenue_invoice_html_get():
             """Download invoice HTML."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 invoice_id = request.args.get("invoice_id")
@@ -11149,6 +11275,9 @@ class UnifiedSAMSystem:
         def revenue_invoice_pdf():
             """Generate invoice PDF."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json()
@@ -11165,6 +11294,9 @@ class UnifiedSAMSystem:
         def revenue_invoice_pdf_get():
             """Download invoice PDF."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 invoice_id = request.args.get("invoice_id")
@@ -11184,6 +11316,9 @@ class UnifiedSAMSystem:
         def revenue_playbooks():
             """Get revenue ops playbook templates."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 return jsonify(self.revenue_ops.get_playbook_templates())
@@ -11194,6 +11329,9 @@ class UnifiedSAMSystem:
         def revenue_playbooks_import():
             """Import playbook templates into CRM/sequences."""
             try:
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.revenue_ops:
                     return jsonify({"error": "Revenue ops not available"}), 503
                 data = request.get_json() or {}
@@ -11281,13 +11419,12 @@ class UnifiedSAMSystem:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/finance/summary")
-        def finance_summary():
+        @self .app .route ("/api/finance/summary")
+        def finance_summary ():
             """Combined finance summary (revenue + banking)."""
-            ok, error = _require_admin_token()
-            if not ok:
-                msg, status = error
-                return jsonify({"error": msg}), status
+            user_id ,role =_get_auth_context ()
+            if role != "owner":
+                return jsonify ({"error":"Owner access required"}), 403 
             try:
                 return jsonify(self._collect_finance_summary())
             except Exception as e:
@@ -11330,10 +11467,9 @@ class UnifiedSAMSystem:
         def banking_create_account():
             """Create sandbox account."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.banking_ledger:
                     return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
@@ -11391,10 +11527,9 @@ class UnifiedSAMSystem:
         def banking_approve_request():
             """Approve a spend request."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.banking_ledger:
                     return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
@@ -11414,10 +11549,9 @@ class UnifiedSAMSystem:
         def banking_reject_request():
             """Reject a spend request."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.banking_ledger:
                     return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
@@ -11437,10 +11571,9 @@ class UnifiedSAMSystem:
         def banking_execute_request():
             """Execute a spend request explicitly."""
             try:
-                ok, error = _require_admin_token()
-                if not ok:
-                    message, status = error
-                    return jsonify({"error": message}), status
+                user_id ,role =_get_auth_context ()
+                if role != "owner":
+                    return jsonify ({"error":"Owner access required"}),403 
                 if not self.banking_ledger:
                     return jsonify({"error": "Banking sandbox not available"}), 503
                 data = request.get_json() or {}
@@ -13787,6 +13920,53 @@ sam@terminal:~$
                     } catch (err) { console.error(err); }
                 }
 
+                async function skillOrchestrate() {
+                    const task = document.getElementById('skill-orch-task').value.trim();
+                    const resultEl = document.getElementById('skill-result');
+                    if (!task) return;
+                    resultEl.textContent = '🌀 Orchestrating subagents...';
+                    try {
+                        const resp = await fetch('/api/skills/orchestrate', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({task: task, agents: 3})
+                        });
+                        const data = await resp.json();
+                        resultEl.textContent = JSON.stringify(data, null, 2);
+                    } catch (err) { resultEl.textContent = `Error: ${err}`; }
+                }
+
+                async function skillAnalyze() {
+                    const path = document.getElementById('skill-analyze-path').value.trim();
+                    const resultEl = document.getElementById('skill-result');
+                    if (!path) return;
+                    resultEl.textContent = '🔍 Analyzing file...';
+                    try {
+                        const resp = await fetch('/api/skills/analyze', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({filepath: path})
+                        });
+                        const data = await resp.json();
+                        resultEl.textContent = JSON.stringify(data, null, 2);
+                    } catch (err) { resultEl.textContent = `Error: ${err}`; }
+                }
+
+                async function skillTest() {
+                    const target = document.getElementById('skill-test-target').value.trim();
+                    const resultEl = document.getElementById('skill-result');
+                    resultEl.textContent = '🧪 Executing test suite...';
+                    try {
+                        const resp = await fetch('/api/skills/test', {
+                            method: 'POST',
+                            headers: adminHeaders(),
+                            body: JSON.stringify({target: target})
+                        });
+                        const data = await resp.json();
+                        resultEl.textContent = data.stdout || JSON.stringify(data, null, 2);
+                    } catch (err) { resultEl.textContent = `Error: ${err}`; }
+                }
+
                 async function updateAuditLogs() {
                     const panel = document.getElementById('audit-log-panel');
                     if (!panel) return;
@@ -15833,6 +16013,31 @@ sam@terminal:~$
                                 </div>
                                 <div id="admin-token-result" style="margin-top:10px; font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--success); word-break:break-all;"></div>
                             </div>
+                        </div>
+                        <div class="card">
+                            <h3>🛠️ Modular Skills</h3>
+                            <div style="margin-top:12px;">
+                                <label style="font-size:0.8rem; color:var(--muted);">Orchestrate Task</label>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="skill-orch-task" placeholder="Task description" style="flex:1; background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <button onclick="skillOrchestrate()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--accent); color:#041018; font-weight:600;">Run</button>
+                                </div>
+                            </div>
+                            <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06);">
+                                <label style="font-size:0.8rem; color:var(--muted);">Analyze Code</label>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="skill-analyze-path" placeholder="src/python/..." style="flex:1; background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <button onclick="skillAnalyze()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--accent-2); color:#041018; font-weight:600;">Scan</button>
+                                </div>
+                            </div>
+                            <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06);">
+                                <label style="font-size:0.8rem; color:var(--muted);">Execute Tests</label>
+                                <div style="display:flex; gap:8px; margin-top:8px;">
+                                    <input id="skill-test-target" value="tests/" style="flex:1; background:#0c111c; border:1px solid var(--stroke); border-radius:10px; padding:8px; color:var(--text);" />
+                                    <button onclick="skillTest()" style="padding:8px 12px; border-radius:10px; border:none; background:var(--danger); color:white; font-weight:600;">Test</button>
+                                </div>
+                            </div>
+                            <div id="skill-result" style="margin-top:12px; font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--muted); max-height:150px; overflow:auto; white-space:pre-wrap;"></div>
                         </div>
                         <div class="card">
                             <h3>System Actions</h3>

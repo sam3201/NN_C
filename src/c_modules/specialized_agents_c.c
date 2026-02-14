@@ -684,7 +684,7 @@ FinancialAgent *financial_agent_create() __attribute__((visibility("default"))) 
     FinancialAgent *agent = malloc(sizeof(FinancialAgent));
     if (!agent) return NULL;
 
-    agent->base.name = strdup("MoneyMaker");
+    agent->base.name = strdup("RevenueEngine");
     agent->base.capabilities[0] = "market_analysis";
     agent->base.capabilities[1] = "portfolio_optimization";
     agent->base.capabilities[2] = "risk_assessment";
