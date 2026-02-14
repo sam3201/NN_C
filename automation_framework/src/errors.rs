@@ -31,6 +31,12 @@ pub enum AutomationError {
     #[error("Workflow validation failed: {message}")]
     ValidationFailed { message: String },
 
+    #[error("File not found: {0}")]
+    FileNotFound(String),
+
+    #[error("Git error: {0}")]
+    Git(String),
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
@@ -45,6 +51,21 @@ pub enum AutomationError {
 
     #[error("Unknown error: {message}")]
     Unknown { message: String },
+}
+
+impl From<git2::Error> for AutomationError {
+    fn from(err: git2::Error) -> Self {
+        AutomationError::Git(err.message().to_string())
+    }
+}
+
+impl From<walkdir::Error> for AutomationError {
+    fn from(err: walkdir::Error) -> Self {
+        AutomationError::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            err.to_string(),
+        ))
+    }
 }
 
 impl AutomationError {

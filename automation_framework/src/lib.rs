@@ -204,9 +204,12 @@ pub struct SubagentResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangeAnalysis {
     pub changes: Vec<Change>,
-    pub context: String,
-    pub rationale: String,
-    pub impact_score: f64,
+    pub total_lines_changed: usize,
+    pub files_affected: Vec<String>,
+    pub context_analyses: Vec<ContextAnalysis>,
+    pub patterns: Vec<String>,
+    pub impact: ImpactAssessment,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,15 +217,37 @@ pub struct Change {
     pub file_path: String,
     pub change_type: ChangeType,
     pub diff: String,
+    pub old_content: Option<String>,
+    pub new_content: Option<String>,
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub author: String,
+    pub commit_message: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ContextAnalysis {
+    pub surrounding_lines: Vec<String>,
+    pub line_number: Option<usize>,
+    pub code_structure: std::collections::HashMap<String, Vec<String>>,
+    pub dependencies: Vec<String>,
+    pub why_changed: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ImpactAssessment {
+    pub scope: u32,
+    pub risk_level: f64,
+    pub critical_files_affected: Vec<String>,
+    pub potential_breaking_changes: bool,
+    pub complexity_score: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ChangeType {
-    Created,
+    Added,
     Modified,
     Deleted,
-    Renamed(String), // old name
+    Renamed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
