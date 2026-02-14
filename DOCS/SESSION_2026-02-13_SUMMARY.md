@@ -257,3 +257,48 @@ python tools/concurrent_processor.py file.txt --dry-run
 ---
 
 *Ready to process LATEST file when provided*
+
+---
+
+## 🚀 SAM-D MAX UTILITY - DEFAULT/MAX SETUP
+
+### Created: `sam_max.py` (Root level - easy access)
+
+**One-command automation with everything enabled:**
+
+```bash
+# Auto-detect and process latest log
+python sam_max.py
+
+# Process specific file
+python sam_max.py ChatGPT_2026-02-13_12-00-00_LATEST.txt
+
+# Dry run (test mode)
+python sam_max.py --dry-run
+```
+
+**Default Settings (Everything Enabled):**
+- ✅ Auto-detects `ChatGPT_*_LATEST.txt` files
+- ✅ Max 10 concurrent subagents
+- ✅ Deep extraction: sections, URLs, code blocks
+- ✅ Auto-archives to `DOCS/archive/chatlogs/`
+- ✅ Auto-deletes original after archiving
+- ✅ JSON report with full statistics
+- ✅ Kimi K2.5 secrets auto-loaded
+
+**Features:**
+- **Smart Detection**: Searches common locations automatically
+- **Parallel Processing**: Splits large files into chunks
+- **Deep Analysis**: Extracts sections, URLs, timestamps, code
+- **Safe Archiving**: Timestamped backups in organized folders
+- **Auto-Cleanup**: Deletes original after successful archive
+- **Full Reporting**: JSON reports with complete statistics
+
+**Tested**: ✅ Successfully processed test LATEST file
+- Auto-detected test file
+- Archived with timestamp
+- Generated JSON report
+- Ready for production use
+
+---
+
