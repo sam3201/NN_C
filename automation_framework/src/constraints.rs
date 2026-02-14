@@ -171,8 +171,8 @@ impl ConstraintEnforcer {
             constraint_type: ConstraintType::Hard,
             description: "Generated code must not contain eval() or exec()".to_string(),
             validator: Box::new(|ctx| {
-                // Simplified detection without regex
-                let dangerous_functions = ["eval(", "exec(", "compile("];
+                // Simplified detection without regex - handles eval( and eval (
+                let dangerous_patterns = ["eval(", "exec(", "compile(", "eval (", "exec (", "compile ("];
                 
                 for change in &ctx.changes {
                     if let Some(ref new) = change.new_content {
@@ -188,11 +188,11 @@ impl ConstraintEnforcer {
                                 continue;
                             }
                             
-                            // Check for dangerous function calls
-                            for func in &dangerous_functions {
-                                if line_lower.contains(func) {
+                            // Check for dangerous function calls (with or without space)
+                            for pattern in &dangerous_patterns {
+                                if line_lower.contains(pattern) {
                                     // Check if it's inside a string literal by counting quotes
-                                    let func_pos = line_lower.find(func).unwrap();
+                                    let func_pos = line_lower.find(pattern).unwrap();
                                     let before_func = &line[..func_pos];
                                     let double_quotes = before_func.matches('"').count();
                                     let single_quotes = before_func.matches('\'').count();
