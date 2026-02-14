@@ -4,34 +4,123 @@
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
-      "enabled": true
+      "enabled": true,
+      "description": "Documentation search for libraries and APIs"
     },
     "github-search": {
       "type": "remote",
       "url": "https://mcp.grep.app",
-      "enabled": true
+      "enabled": true,
+      "description": "Search GitHub repositories for code patterns"
     },
     "filesystem": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
-      "enabled": true
+      "enabled": true,
+      "description": "Local filesystem operations"
+    },
+    "git": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-git"],
+      "enabled": true,
+      "description": "Git operations and repository analysis"
+    },
+    "python": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-python"],
+      "enabled": true,
+      "description": "Python code execution and analysis"
+    },
+    "sqlite": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sqlite"],
+      "enabled": true,
+      "description": "SQLite database operations"
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "enabled": true,
+      "description": "Break down complex problems step by step"
+    },
+    "puppeteer": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
+      "enabled": false,
+      "description": "Browser automation (requires Chrome)"
+    },
+    "brave-search": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-brave-search"],
+      "enabled": true,
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "description": "Web search via Brave Search API"
+    },
+    "fetch": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "enabled": true,
+      "description": "Fetch web content and process HTML"
     },
     "openclaw-webhook": {
       "type": "local",
       "command": ["python3", "-m", "automation_framework.python.webhook_server"],
       "enabled": true,
-      "port": 8765
+      "port": 8765,
+      "description": "OpenClaw automation webhook server"
+    },
+    "everything": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"],
+      "enabled": false,
+      "description": "Demo server with all MCP capabilities"
     }
   },
   "tools": {
     "context7": true,
     "github-search": true,
     "filesystem": true,
+    "git": true,
+    "python": true,
+    "sqlite": true,
+    "sequential-thinking": true,
+    "puppeteer": false,
+    "brave-search": true,
+    "fetch": true,
     "skill": true,
-    "openclaw": true
+    "openclaw": true,
+    "subagent-orchestrator": true,
+    "deep-scan": true,
+    "parallel-read": true,
+    "verify-completeness": true,
+    "code-analysis": true,
+    "security-scan": true,
+    "test-runner": true,
+    "documentation-generator": true
   },
   "skills": {
-    "*": "allow"
+    "*": "allow",
+    "subagent-orchestrator": "allow",
+    "code-analysis": "allow",
+    "cyclic-development-workflow": "allow",
+    "deep-research": "allow",
+    "system-verification": "allow",
+    "tri-cameral-orchestrator": "allow",
+    "parallel-processing": "allow",
+    "security-analysis": "allow",
+    "test-automation": "allow",
+    "documentation-generation": "allow",
+    "performance-optimization": "allow"
+  },
+  "orchestration": {
+    "max_subagents": 10,
+    "default_subagents": 3,
+    "parallel_timeout": 300,
+    "enable_load_balancing": true,
+    "enable_result_caching": true,
+    "cache_ttl_seconds": 3600
   },
   "webhook": {
     "openclaw": {
@@ -40,5 +129,12 @@
       "retry_count": 3,
       "timeout_seconds": 30
     }
+  },
+  "performance": {
+    "enable_caching": true,
+    "cache_directory": ".opencode/cache",
+    "max_cache_size_mb": 500,
+    "parallel_workers": 8,
+    "chunk_size": 5000
   }
 }

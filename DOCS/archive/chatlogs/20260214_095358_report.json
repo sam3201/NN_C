@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "file_processed": "ChatGPT_2026-02-14-09-49-14_LATEST.txt",
+  "archive_location": "/Users/samueldasari/Personal/NN_C/DOCS/archive/chatlogs/20260214_095358_ChatGPT_2026-02-14-09-49-14_LATEST.txt",
+  "processing_timestamp": "2026-02-14T09:53:58.021080",
+  "stats": {
+    "total_characters": 164795,
+    "total_lines": 0,
+    "total_words": 0,
+    "chunks_processed": 10,
+    "key_sections_found": 0,
+    "urls_found": 0
+  },
+  "extracted_sections": [],
+  "extracted_urls": []
+}
