@@ -1,30 +1,29 @@
 
 SAM-D Experiment Report
 =======================
-Generated: 2026-02-13 18:51:05
-Duration: 0.78s
+Generated: 2026-02-13 19:02:07
+Duration: 1.51s
 
-Summary: 3/6 passed, 3/6 failed
+Summary: 6/6 passed, 0/6 failed
 
 Details:
 
-C Extensions Check: fail
-  Output: Available: 0, Missing: 12
+C Extensions Check: pass
+  Output: Available: 12, Missing: 0
 
 Python Syntax Check: pass
   Output: Checked 3 files
 
-System Import Check: fail
-  Error: Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-    from complete_sam_unified import UnifiedSAMSystem; print('OK')
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Fil
+System Import Check: pass
   Output: ✅ Google API client libraries available.
-
+✅ All C modules available
+✅ Flask and SocketIO available
+🎯 System initialization complete - All components available
+✅ Concurrent executor initialized
+✅ Circui
 
 API Providers Check: pass
-  Output: Available: ['openai', 'ollama']
+  Output: Available: ['openai', 'ollama'], Selected: ollama:qwen2.5-coder:7b ($0.0/1K tokens)
 
 Fallback Patterns Check: pass
   Output: fallback: 51 occurrences
@@ -32,5 +31,5 @@ _fallback: 18 occurrences
 simulated: 10 occurrences
 stub: 4 occurrences
 
-Security Patterns Check: fail
-  Output: unsafe eval usage: 2 occurrences
+Security Patterns Check: pass
+  Output: No security issues found

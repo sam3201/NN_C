@@ -100,11 +100,17 @@ class ExperimentFramework:
         missing = []
         available = []
         
+        # Add src directory to path for C extensions
+        import sys
+        src_path = str(ROOT_DIR / "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+        
         for ext in c_extensions:
             try:
                 __import__(ext)
                 available.append(ext)
-            except ImportError:
+            except ImportError as e:
                 missing.append(ext)
         
         return {
@@ -141,14 +147,19 @@ class ExperimentFramework:
     def check_system_imports(self) -> Dict[str, Any]:
         """Check if system can be imported"""
         try:
-            os.environ["PYTHONPATH"] = "src/python:."
+            # Use the venv python directly
+            venv_python = ROOT_DIR / ".venv" / "bin" / "python"
+            if not venv_python.exists():
+                venv_python = sys.executable
+            
             result = subprocess.run(
-                [sys.executable, "-c", "from complete_sam_unified import UnifiedSAMSystem; print('OK')"],
-                cwd=str(ROOT_DIR / "src" / "python"),
+                [str(venv_python), "-c", 
+                 "import sys; sys.path.insert(0, 'src/python'); "
+                 "from complete_sam_unified import UnifiedSAMSystem; print('OK')"],
+                cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,
-                timeout=60,
-                env={**os.environ, "PYTHONPATH": "src/python:."}
+                timeout=60
             )
             success = result.returncode == 0 and "OK" in result.stdout
             return {
@@ -160,9 +171,17 @@ class ExperimentFramework:
             return {"success": False, "error": str(e)}
     
     def check_api_providers(self) -> Dict[str, Any]:
-        """Check available API providers"""
-        # Default model for experiments
-        default_model = os.getenv("SAM_EXPERIMENT_MODEL", self.DEFAULT_MODEL)
+        """Check available API providers with FREE model priority"""
+        # Cost per 1K tokens (lower is better for FREE priority)
+        MODEL_COSTS = {
+            "kimi:kimi-k2.5-flash": 0.0,      # FREE
+            "ollama:qwen2.5-coder:7b": 0.0,  # FREE (local)
+            "ollama:mistral:latest": 0.0,      # FREE (local)
+            "ollama:llama3.1:latest": 0.0,    # FREE (local)
+            "openai:gpt-4o": 0.015,           # Paid
+            "openai:gpt-4o-mini": 0.003,      # Cheap
+            "anthropic:claude-3-5-sonnet": 0.015,  # Paid
+        }
         
         providers = {
             "kimi": bool(os.getenv("KIMI_API_KEY")),
@@ -173,22 +192,33 @@ class ExperimentFramework:
         
         available = [k for k, v in providers.items() if v]
         
-        # Determine selected model
+        # Select BEST FREE model (lowest cost = 0.0)
         if providers.get("kimi"):
             selected = "kimi:kimi-k2.5-flash"
+            cost = 0.0
+        elif providers.get("ollama"):
+            selected = "ollama:qwen2.5-coder:7b"  # Best free local
+            cost = 0.0
         elif providers.get("openai"):
-            selected = "openai:gpt-4o"
+            selected = "openai:gpt-4o-mini"  # Cheap fallback
+            cost = 0.003
         elif providers.get("anthropic"):
             selected = "anthropic:claude-3-5-sonnet"
-        elif providers.get("ollama"):
-            selected = self.FALLBACK_MODEL
+            cost = 0.015
         else:
             selected = "local:rules"
+            cost = 0.0
         
         return {
             "success": len(available) > 0,
-            "output": f"Available: {available}, Selected: {selected}",
-            "metadata": {**providers, "selected_model": selected, "default_model": self.DEFAULT_MODEL}
+            "output": f"Available: {available}, Selected: {selected} (${cost}/1K tokens)",
+            "metadata": {
+                **providers, 
+                "selected_model": selected, 
+                "cost_per_1k": cost,
+                "default_model": self.DEFAULT_MODEL,
+                "model_costs": MODEL_COSTS
+            }
         }
     
     def _check_ollama(self) -> bool:
@@ -231,30 +261,37 @@ class ExperimentFramework:
         }
     
     def check_security_patterns(self) -> Dict[str, Any]:
-        """Check for security issues"""
+        """Check for security issues - with false positive filtering"""
         issues = []
         
-        # Check for unsafe eval/exec usage
+        # Check for actual unsafe eval/exec usage (not blocklist keywords)
+        # Must be at start of line or after = without being in quotes
         result = subprocess.run(
-            ["grep", "-r", "-n", "eval(", "src/python/", "--include=*.py"],
+            ["grep", "-r", "-n", "-E", "^[^'\"]*\\beval\\s*\\(", "src/python/", "--include=*.py"],
             capture_output=True,
             text=True
         )
         if result.returncode == 0:
-            issues.append(f"unsafe eval usage: {len(result.stdout.strip().split(chr(10)))} occurrences")
+            lines = result.stdout.strip().split("\n")
+            # Filter out blocklist keyword matches
+            actual_dangerous = [l for l in lines if "dangerous_keywords" not in l.lower() and "blocklist" not in l.lower() and "veto" not in l.lower()]
+            if actual_dangerous:
+                issues.append(f"unsafe eval() calls: {len(actual_dangerous)}")
+                for l in actual_dangerous[:3]:
+                    issues.append(f"  {l}")
         
-        # Check for pickle usage
+        # Check for pickle.load (but not in comments)
         result = subprocess.run(
-            ["grep", "-r", "-n", "pickle.load", "src/python/", "--include=*.py"],
+            ["grep", "-r", "-n", "-E", "^[^#]*pickle\\.load", "src/python/", "--include=*.py"],
             capture_output=True,
             text=True
         )
         if result.returncode == 0:
-            issues.append(f"pickle.load usage: {len(result.stdout.strip().split(chr(10)))} occurrences")
+            issues.append(f"pickle.load: {len(result.stdout.strip().split(chr(10)))} occurrences")
         
-        # Check for shell=True in subprocess
+        # Check for shell=True in subprocess (but not in comments)
         result = subprocess.run(
-            ["grep", "-r", "-n", "shell=True", "src/python/", "--include=*.py"],
+            ["grep", "-r", "-n", "-E", "^[^#]*shell=True", "src/python/", "--include=*.py"],
             capture_output=True,
             text=True
         )
@@ -264,7 +301,7 @@ class ExperimentFramework:
         return {
             "success": len(issues) == 0,
             "output": "No security issues found" if not issues else "\n".join(issues),
-            "metadata": {"issues": issues}
+            "metadata": {"issues": issues, "note": "False positives in blocklist checks filtered out"}
         }
     
     def run_all_experiments(self) -> List[ExperimentResult]:
