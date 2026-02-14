@@ -335,6 +335,52 @@ impl ModelRouter {
             }
         );
         
+        // Kimi K2.5 - FREE model (priority: FREE MAX)
+        models.insert(
+            "kimi-k2.5-flash".to_string(),
+            ModelProfile {
+                name: "Kimi K2.5 Flash".to_string(),
+                provider: ModelProvider::Custom("moonshot".to_string()),
+                capabilities: ModelCapabilities {
+                    reasoning: 0.88,
+                    coding: 0.85,
+                    creativity: 0.82,
+                    analysis: 0.86,
+                    long_context: 0.90,
+                    speed: 0.80,
+                },
+                cost_per_1k_tokens: 0.0,  // FREE!
+                latency_ms: 600,
+                context_window: 128_000,
+                reliability_score: 0.92,
+                specialty: vec![TaskType::Reasoning, TaskType::Coding, TaskType::Analysis, TaskType::LongContext],
+                quota_remaining: None,
+            }
+        );
+        
+        // Kimi K2.5 Vision (if available)
+        models.insert(
+            "kimi-k2.5-vision".to_string(),
+            ModelProfile {
+                name: "Kimi K2.5 Vision".to_string(),
+                provider: ModelProvider::Custom("moonshot".to_string()),
+                capabilities: ModelCapabilities {
+                    reasoning: 0.90,
+                    coding: 0.87,
+                    creativity: 0.85,
+                    analysis: 0.88,
+                    long_context: 0.90,
+                    speed: 0.75,
+                },
+                cost_per_1k_tokens: 0.0,  // FREE!
+                latency_ms: 800,
+                context_window: 128_000,
+                reliability_score: 0.90,
+                specialty: vec![TaskType::Reasoning, TaskType::Coding, TaskType::Analysis, TaskType::LongContext, TaskType::MultiModal],
+                quota_remaining: None,
+            }
+        );
+        
         Self {
             models,
             task_analyzer: TaskAnalyzer::new(),
@@ -428,11 +474,18 @@ impl ModelRouter {
         }
         
         // Cost optimization based on current spend (15%)
+        // PRIORITY: FREE models ($0) always get max score
         let cost_tier = self.cost_optimizer.get_cost_tier();
-        let cost_score = match cost_tier {
-            CostTier::Low => 1.0 - (profile.cost_per_1k_tokens * 100.0).min(1.0),
-            CostTier::Medium => 0.7 - (profile.cost_per_1k_tokens * 50.0).min(0.7),
-            CostTier::High => 1.0 - (profile.cost_per_1k_tokens * 10.0).min(1.0),
+        
+        let cost_score = if profile.cost_per_1k_tokens == 0.0 {
+            // FREE model - always max score regardless of tier!
+            1.0
+        } else {
+            match cost_tier {
+                CostTier::Low => 1.0 - (profile.cost_per_1k_tokens * 100.0).min(1.0),
+                CostTier::Medium => 0.7 - (profile.cost_per_1k_tokens * 50.0).min(0.7),
+                CostTier::High => 1.0 - (profile.cost_per_1k_tokens * 10.0).min(1.0),
+            }
         };
         score += cost_score.max(0.0) * 0.15;
         
