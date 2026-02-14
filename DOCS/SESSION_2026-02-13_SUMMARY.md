@@ -302,3 +302,89 @@ python sam_max.py --dry-run
 
 ---
 
+
+---
+
+## 🌳 SAM-D MAX with BRANCHING - Quota/Timeout Handler
+
+### Created: `sam_max_branching.py`
+
+**Intelligent branching for handling quota limits and timeouts**
+
+**The Problem:**
+- Running at night → Quota exhausted
+- Long processing → Timeout occurs
+- Need to wait → But want to continue
+
+**The Solution - Dual Branch Strategy:**
+
+```
+When quota/timeout detected:
+  🅰️ Branch A (Waiter)
+     ├─ Premium model (Kimi/Ollama)
+     ├─ Waits for quota reset
+     └─ High quality (confidence: 0.95)
+  
+  🅱️ Branch B (Continuer)  
+     ├─ Fallback model (qwen2.5-coder:7b)
+     ├─ Continues immediately
+     └─ Acceptable quality (confidence: 0.75)
+
+🔍 Revision Phase:
+  └─ Waiter reviews continuer's work
+  └─ Applies fixes/revisions if needed
+  └─ Final merged result (quality: 0.95)
+```
+
+**Usage:**
+```bash
+# Auto-detect and process with branching
+python sam_max_branching.py
+
+# Force branching mode (for testing)
+python sam_max_branching.py --force-branch
+
+# Test branching logic
+python sam_max_branching.py --test-branch
+```
+
+**Features:**
+- ✅ Auto-detects quota/timeout conditions
+- ✅ Spawns dual branches in parallel
+- ✅ Quality comparison between branches
+- ✅ Automatic revision application
+- ✅ Fallback model tier system
+- ✅ Comprehensive logging and metadata
+
+**Tested Results:**
+```
+Quota Status: limited
+🌳 BRANCHING ACTIVATED
+
+Branches:
+  Waiter: kimi-k2.5 (premium) - 2005ms
+  Continuer: qwen2.5-coder:7b (fallback) - 0ms
+
+Revision Phase:
+  ⚠️ Quality difference detected (0.75 vs 0.95)
+  📝 Applied 3 revisions:
+     - Enhanced section extraction
+     - Improved URL detection  
+     - Added code block analysis
+
+Final Quality: 0.95 (premium)
+✅ Successfully merged branches
+```
+
+**When to Use:**
+- Processing large files at night
+- When quota limits are expected
+- For critical tasks requiring high quality
+- When you can't afford to wait
+
+**Model Tiers:**
+- **Premium:** kimi-k2.5, qwen2.5-coder:14b, deepseek-r1
+- **Fallback:** qwen2.5-coder:7b, mistral:latest, phi:latest
+
+---
+
